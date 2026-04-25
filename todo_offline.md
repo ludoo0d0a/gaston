@@ -1,6 +1,6 @@
 # Offline vector maps & routing — ideas backlog
 
-Notes from design discussion: **offline basemap**, **vector data**, **routable** navigation, and how this could relate to Julius.
+Notes from design discussion: **offline basemap**, **vector data**, **routable** navigation, and how this could relate to Gaston.
 
 ---
 
@@ -27,7 +27,7 @@ Notes from design discussion: **offline basemap**, **vector data**, **routable**
 
 - **What it does:** Load local `.map` files (OSM-derived vector maps), render offline (pan/zoom, layers, markers). Example map sources: [OpenAndroMaps](https://www.openandromaps.org/) and custom extracts.
 - **What it does not do:** Compute routes or turn-by-turn directions.
-- **Pattern:** Router returns a **polyline + steps**; app **draws** the polyline on the Mapsforge map and uses steps for voice/UI.
+- **Pattern:** Router returns a **polyline + steps**; app **draws** the polyline on the Mapsforge map and uses steps for UI.
 
 ---
 
@@ -39,7 +39,7 @@ Pair the renderer with one of:
 - **BRouter** — Offline via **segment files** + profiles; common in the OSM Android ecosystem; map display stays a separate layer.
 - **OSRM / Valhalla** — Powerful; more typical server-side; full in-app offline bundles are heavier and less common.
 
-**Julius today:** `shared/.../api/routing/RoutingClient.kt` documents OSRM/GraphHopper-style **HTTP** APIs—offline would be a **new implementation** (embedded engine + local data), not a drop-in for public demo endpoints.
+**Gaston today:** `shared/.../api/routing/RoutingClient.kt` documents OSRM/GraphHopper-style **HTTP** APIs—offline would be a **new implementation** (embedded engine + local data), not a drop-in for public demo endpoints.
 
 ---
 
@@ -75,11 +75,11 @@ A minimal offline map engine could expose:
 - **Overlays:** POIs, **route polyline**, user location.
 - **Styling:** Mapsforge theme XML vs MapLibre style JSON.
 
-Routing stays **orthogonal:** `RouteResult` → draw polyline + use instructions for TTS/UI.
+Routing stays **orthogonal:** `RouteResult` → draw polyline + use instructions for UI.
 
 ---
 
-## Julius codebase context
+## Gaston codebase context
 
 - **Mobile map UI:** `androidApp/.../ui/MapScreen.kt` uses **Google Maps Compose** (`GoogleMap`).
 - **Routing abstraction:** `RoutingClient` in shared module; implementations can target network APIs today.

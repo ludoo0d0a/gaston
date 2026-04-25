@@ -1,6 +1,6 @@
 # Free API Source Providers for Fuel and IRVE
 
-This document lists the free API source providers integrated into the Julius station finder for fuel and EV charging (IRVE) points across Europe.
+This document lists the free API source providers integrated into **Gaston** for fuel and EV charging (IRVE) points across Europe.
 
 | Provider Name | Region / Country | Category | API Base URL | License / Notes |
 |---------------|------------------|----------|--------------|-----------------|

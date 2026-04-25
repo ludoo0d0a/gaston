@@ -1,43 +1,35 @@
-# Privacy Policy – Julius
+# Privacy Policy – Gaston
 
 **Last updated:** February 2025
 
-Julius ("we", "our", or "the app") is a voice AI assistant for Android and Android Auto. This policy describes how we handle your data.
+Gaston ("we", "our", or "the app") is a fuel and EV charging station finder for Android and Android Auto. This policy describes how we handle your data.
 
 ## 1. Permissions and Data We Access
 
-### 1.1 Microphone (RECORD_AUDIO)
+### 1.1 Location (ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION)
 
-- **Purpose:** Voice input for hands-free interaction.
-- **When used:** Only when you tap to speak or use voice commands.
-- **Processing:** Audio is either processed locally on your device (Embedded agent) or sent to the AI provider you choose (OpenAI, Gemini, Perplexity, ElevenLabs, etc.).
-- **Storage:** We do not store or record your voice. Audio is processed in real time and discarded after the response is generated.
+- **Purpose:** To show nearby stations on the map and compute distances / route context.
+- **When used:** Only while using map/search features that require location.
+- **Storage:** Location is not stored by the app as a history (unless a specific feature explicitly persists a place you entered, like route history).
 
 ### 1.2 Internet (INTERNET)
 
-- **Purpose:** To communicate with AI services when you use cloud-based agents.
-- **Note:** The Embedded agent works fully offline and does not use the internet.
-
-### 1.3 Alarms (SET_ALARM)
-
-- **Purpose:** To set alarms or reminders you request via voice.
+- **Purpose:** To fetch station/price data from external providers (open data and/or partner APIs), map tiles, and optional account sync.
 
 ## 2. Data Collection and Sharing
 
 - **We do not sell your data.**
 - **We do not collect personal data** beyond what is needed for the app to function.
-- When you use cloud-based agents, your voice and messages are sent to the respective provider (OpenAI, Google, Perplexity, ElevenLabs). Their privacy policies apply to that data.
-- API keys you configure are stored locally on your device and are not shared with us.
+- External providers may receive network requests (e.g. to retrieve fuel prices / charging POIs). Their privacy policies apply to their services.
 
 ## 3. Data Storage
 
-- Conversation history and settings are stored locally on your device.
-- We do not operate servers that store your voice or conversation data.
+- Settings and (optional) local preferences (e.g. filters, route history) are stored on your device.
+- If you enable sign-in, some settings may be synchronized via your configured backend (e.g. Firebase/Firestore).
 
 ## 4. Your Choices
 
-- You can deny microphone permission; the app will not record audio.
-- You can choose the Embedded agent for fully offline use.
+- You can deny location permission; the app will still work but cannot show “nearby” results based on your position.
 - You can clear app data at any time via Android settings.
 
 ## 5. Contact

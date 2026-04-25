@@ -1,0 +1,122 @@
+package fr.geoking.gaston.auto
+
+import android.util.Log
+import androidx.car.app.AppManager
+import androidx.car.app.CarContext
+import androidx.car.app.Screen
+import androidx.car.app.SurfaceCallback
+import androidx.car.app.SurfaceContainer
+import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
+import androidx.car.app.model.CarIcon
+import androidx.car.app.model.Header
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.Row
+import androidx.car.app.model.Template
+import androidx.car.app.navigation.model.MapWithContentTemplate
+import androidx.core.graphics.drawable.IconCompat
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import fr.geoking.gaston.R
+
+class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
+
+    private var surfaceRenderer: AutoSurfaceRenderer? = null
+    private val lat = 48.8566
+    private val lon = 2.3522
+    private var zoom = 14
+
+    init {
+        lifecycle.addObserver(this)
+    }
+
+    override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
+        surfaceRenderer?.stop()
+        val surface = surfaceContainer.surface
+        if (surface == null) {
+            surfaceRenderer = null
+            return
+        }
+        if (surfaceContainer.width <= 0 || surfaceContainer.height <= 0) {
+            Log.w("AutoMapTemplateScreen", "Skipping map surface: invalid size ${surfaceContainer.width}x${surfaceContainer.height}")
+            surfaceRenderer = null
+            return
+        }
+        val osmUrl: (Int, Int, Int) -> String = { z, x, y ->
+            "https://tile.openstreetmap.org/$z/$x/$y.png"
+        }
+        surfaceRenderer = AutoSurfaceRenderer(
+            carContext,
+            surface,
+            surfaceContainer.width,
+            surfaceContainer.height,
+            tileUrl = osmUrl
+        ).apply {
+            updateLocation(lat, lon, zoom)
+            updateUserLocation(lat, lon)
+            start()
+        }
+    }
+
+    override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
+        surfaceRenderer?.stop()
+        surfaceRenderer = null
+    }
+
+    override fun onStart(owner: LifecycleOwner) {
+        carContext.getCarService(AppManager::class.java).setSurfaceCallback(this)
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        surfaceRenderer?.stop()
+        surfaceRenderer = null
+    }
+
+    private fun bumpZoom(delta: Int) {
+        zoom = (zoom + delta).coerceIn(4, 18)
+        surfaceRenderer?.updateLocation(lat, lon, zoom)
+        invalidate()
+    }
+
+    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoMapTemplateScreen") {
+        val actionStrip = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setTitle("Home")
+                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_home)).build())
+                    .setOnClickListener { screenManager.popToRoot() }
+                    .build()
+            )
+            .build()
+
+        val listBuilder = ItemList.Builder()
+            .addItem(
+                Row.Builder()
+                    .setTitle("Zoom In")
+                    .setOnClickListener { bumpZoom(1) }
+                    .build()
+            )
+            .addItem(
+                Row.Builder()
+                    .setTitle("Zoom Out")
+                    .setOnClickListener { bumpZoom(-1) }
+                    .build()
+            )
+
+        val contentTemplate = ListTemplate.Builder()
+            .setHeader(
+                Header.Builder()
+                    .setTitle("MapTemplate (OSM)")
+                    .setStartHeaderAction(Action.BACK)
+                    .build()
+            )
+            .setSingleList(listBuilder.build())
+            .build()
+
+        MapWithContentTemplate.Builder()
+            .setContentTemplate(contentTemplate)
+            .setActionStrip(actionStrip)
+            .build()
+    }
+}

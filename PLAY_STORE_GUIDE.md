@@ -50,7 +50,7 @@ If you don't have a signing key yet:
 1. **Generate the keystore** using `keytool` (included with the JDK):
 
    ```bash
-   keytool -genkey -v -keystore julius-app.keystore -alias julius-app -keyalg RSA -keysize 2048 -validity 10000
+   keytool -genkey -v -keystore gaston-app.keystore -alias gaston-app -keyalg RSA -keysize 2048 -validity 10000
    ```
 
    You will be prompted for the keystore password, key password, and certificate details. Remember the **alias** and **passwords** — you'll need them for the other secrets.
@@ -69,15 +69,15 @@ If you already have a `.keystore` or `.jks` file (e.g. from a previous build or 
 
    **macOS / Linux (OpenSSL):**
    ```bash
-   openssl base64 < julius-app.keystore | tr -d '\n' | tee julius-app.keystore.base64.txt
+   openssl base64 < gaston-app.keystore | tr -d '\n' | tee gaston-app.keystore.base64.txt
    ```
 
    **Linux (GNU base64):**
    ```bash
-   base64 -w 0 julius-app.keystore > julius-app.keystore.base64.txt
+   base64 -w 0 gaston-app.keystore > gaston-app.keystore.base64.txt
    ```
 
-4. **Copy the encoded value** from `julius-app.keystore.base64.txt` and paste it into the `SIGNING_KEY` secret. Do not add spaces, newlines, or quotes.
+4. **Copy the encoded value** from `gaston-app.keystore.base64.txt` and paste it into the `SIGNING_KEY` secret. Do not add spaces, newlines, or quotes.
 
 ### 3. `ALIAS`
 

@@ -9,7 +9,7 @@ In Android Auto, allow the user to:
 
 ## Current state
 
-- The Auto POI map uses `PlaceListMapTemplate` in `androidApp/src/main/kotlin/fr/geoking/julius/auto/MapPoiScreen.kt`.
+- The Auto POI map uses `PlaceListMapTemplate` in the Android Auto screens under `androidApp/src/main/kotlin/fr/geoking/gaston/auto/`.
 - `PlaceListMapTemplate` is **host-rendered** and does **not** provide direct camera control (zoom/bearing), so true in-app zoom + north-up/heading requires a **surface-based navigation map**.
 
 ## Implementation plan (later)
@@ -57,8 +57,8 @@ Add map controls with icons (required for map action strips):
 ### 5) Where to wire it
 
 - New/updated files likely needed:
-  - `androidApp/src/main/kotlin/fr/geoking/julius/auto/MapPoiScreen.kt` (template + actions)
-  - New renderer, e.g. `androidApp/src/main/kotlin/fr/geoking/julius/auto/AutoMapSurfaceRenderer.kt`
+  - Android Auto POI map screen (template + actions) under `androidApp/src/main/kotlin/fr/geoking/gaston/auto/`
+  - Surface renderer under `androidApp/src/main/kotlin/fr/geoking/gaston/auto/`
   - Potential shared camera state model (optional)
 - Ensure refresh limits: avoid frequent `invalidate()`; update surface rendering continuously without template refresh spam.
 
@@ -69,11 +69,11 @@ Add map controls with icons (required for map action strips):
 - User can **recenter** to current position quickly.
 - POI markers remain visible and selection still opens `PoiDetailScreen`.
 
-# Julius – TODO & roadmap
+# Gaston – TODO & roadmap
 
-## Features comparison: Julius vs ChargeMap-style apps
+## Features comparison: Gaston vs ChargeMap-style apps
 
-| Feature | Julius | ChargeMap-style (e.g. ChargeMap, PlugShare) |
+| Feature | Gaston | ChargeMap-style (e.g. ChargeMap, PlugShare) |
 |--------|--------|---------------------------------------------|
 | **Map & POIs** | | |
 | Map with charging stations | ✅ Multiple sources (DataGouvElec, OpenChargeMap, Routex, Etalab, etc.) | ✅ |
@@ -99,12 +99,12 @@ Add map controls with icons (required for map action strips):
 | Comments / reviews (text) | ❌ | ✅ |
 | **Platform & UX** | | |
 | Android Auto | ✅ Map + POI list + detail | ✅ Some apps |
-| Voice assistant | ✅ Core feature | ❌ |
+| Voice assistant | ❌ | ❌ |
 | Navigation to station | ✅ Intent to maps/nav | ✅ |
 | Account / sign-in | ❌ | ✅ For sync, payment |
 | In-app payment / RFID | ❌ | ✅ Some networks |
 
-**Summary:** Julius covers map, filters, IRVE extended data, route planning, vehicle profile, and local ratings using **public data only**. Missing vs typical EV apps: favorites, cloud ratings/comments, photos, account, and in-app payment/RFID (all require private/backend or partner APIs).
+**Summary:** Gaston covers map, filters, IRVE extended data, route planning, vehicle profile, and local ratings using **public data only**. Missing vs typical EV apps: favorites, cloud ratings/comments, photos, account, and in-app payment/RFID (all require private/backend or partner APIs).
 
 ---
 
@@ -112,8 +112,8 @@ Add map controls with icons (required for map action strips):
 
 ### List all available fuel cards
 
-- **Goal:** Expose in the app (and optionally via voice) the list of supported / available fuel cards (Routex, Total, Edenred, Shell, GO, DKV, etc.) with short descriptions and coverage.
-- **Scope:** UI (e.g. Map or Settings) to show “Fuel cards” with name, network coverage, and link to more info; optional voice intent “What fuel cards can I use?”.
+- **Goal:** Expose in the app the list of supported / available fuel cards (Routex, Total, Edenred, Shell, GO, DKV, etc.) with short descriptions and coverage.
+- **Scope:** UI (e.g. Map or Settings) to show “Fuel cards” with name, network coverage, and link to more info.
 - **Data:** Maintain a curated list (see [Fuel cards reference](#fuel-cards-reference) below); consider a small in-app screen or bottom sheet listing cards and which POI provider(s) best match each (e.g. Routex → Routex card stations).
 
 ---
@@ -141,12 +141,12 @@ Reference list of fleet / fuel cards (France & Europe) for the “list fuel card
 - **TotalEnergies Fleet:** ~3,500 stations in France and 25,000 EV chargers; mixed fleets with tolls, parking, washing across Europe.
 - **Shell Fleet ID:** Access to Shell, Esso, Avia; strong for international transport with AI route optimization; France, Luxembourg, Belgium.
 - **GO Fuel Card:** 2,600+ stations in France (BP, Avia, Leclerc, ENI, Esso, Dyneff), expanding to 7,300 in Europe; cost control and CO₂ compensation.
-- **Routex:** Alliance of BP, eni, OMV, Repsol; ~18,000 stations in 32 European countries; station finder powered by Wigeogis (integrated in Julius).
+- **Routex:** Alliance of BP, eni, OMV, Repsol; ~18,000 stations in 32 European countries; station finder powered by Wigeogis (integrated in Gaston).
 - **DKV:** European fuel, EV, toll and services; B2B APIs for masterdata and transactions.
 
 ### APIs summary (for implementation)
 
-| Provider        | Purpose              | Auth        | Used in Julius |
+| Provider        | Purpose              | Auth        | Used in Gaston |
 |-----------------|----------------------|------------|-----------------|
 | Wigeogis Routex | Station finder (Routex network) | None (POST) | Yes – `RoutexClient` |
 | Etalab / data.economie.gouv.fr | Fuel prices & stations (France) | None       | Yes – `EtalabClient` |
@@ -161,11 +161,11 @@ Reference list of fleet / fuel cards (France & Europe) for the “list fuel card
 
 - [ ] **List all available fuel cards** – UI (Map/Settings) + optional voice; see [Features > List all available fuel cards](#list-all-available-fuel-cards) and [Fuel cards reference](#fuel-cards-reference).
 - [ ] **Filter POIs by accepted fuel card** – e.g. “only Routex” when Routex provider selected; extend when Total/card-specific sources exist.
-- [ ] **Voice:** “Where can I refuel with my Total card?” – map filtered by card once multiple card sources are available.
+- [ ] **Optional quick filter:** “My card” – map filtered by card once multiple card sources are available.
 
 ---
 
 ## Other ideas (backlog)
 
 - Filter POIs by accepted fuel card (e.g. “only Routex” already implied when Routex provider is selected; extend to “Total only” when/if a Total source exists).
-- Voice: “Where can I refuel with my Total card?” → map filtered by card compatibility once multiple card-specific sources are available.
+- Optional quick filter: “My card” → map filtered by card compatibility once multiple card-specific sources are available.
