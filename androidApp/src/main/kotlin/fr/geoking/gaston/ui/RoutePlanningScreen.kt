@@ -1,0 +1,593 @@
+package fr.geoking.gaston.ui
+
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Directions
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import fr.geoking.gaston.feature.location.LocationHelper
+import fr.geoking.gaston.intent.NavDestination
+import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.VehicleType
+import fr.geoking.gaston.effectiveIrvePowerLevels
+import fr.geoking.gaston.effectiveMapEnergyFilterIds
+import fr.geoking.gaston.effectiveProviders
+import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.ui.map.PoiMarkerHelper
+import fr.geoking.gaston.api.routing.RoutePlanner
+import fr.geoking.gaston.api.routing.RoutingClient
+import fr.geoking.gaston.toll.TollCalculator
+import fr.geoking.gaston.toll.TollEstimate
+import fr.geoking.gaston.api.traffic.TrafficInfo
+import fr.geoking.gaston.api.traffic.TrafficProviderFactory
+import fr.geoking.gaston.api.traffic.TrafficRequest
+import fr.geoking.gaston.api.geocoding.GeocodingClient
+import fr.geoking.gaston.api.geocoding.GeocodedPlace
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntOffset
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RoutePlanningScreen(
+    routePlanner: RoutePlanner,
+    routingClient: RoutingClient,
+    tollCalculator: TollCalculator,
+    trafficProviderFactory: TrafficProviderFactory? = null,
+    poiProvider: PoiProvider,
+    geocodingClient: GeocodingClient,
+    settingsManager: SettingsManager,
+    onBack: () -> Unit,
+    onShowOnMap: ((fr.geoking.gaston.api.routing.RouteResult, List<Poi>) -> Unit)? = null,
+    initialDestination: NavDestination? = null
+) {
+    BackHandler(onBack = onBack)
+    val context = LocalContext.current
+    var currentRoute by remember { mutableStateOf<fr.geoking.gaston.api.routing.RouteResult?>(null) }
+    var originQuery by remember { mutableStateOf("") }
+    var destQuery by remember(initialDestination) {
+        mutableStateOf(
+            if (initialDestination != null) {
+                initialDestination.address ?: initialDestination.latitude?.let { "${initialDestination.latitude}, ${initialDestination.longitude}" } ?: ""
+            } else ""
+        )
+    }
+    var useCurrentLocationAsOrigin by remember { mutableStateOf(true) }
+    var loading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var stations by remember { mutableStateOf<List<Poi>>(emptyList()) }
+    var tollEstimate by remember { mutableStateOf<TollEstimate?>(null) }
+    var routeTraffic by remember { mutableStateOf<TrafficInfo?>(null) }
+    var calculateTrigger by remember { mutableStateOf(0) }
+
+    val settings by settingsManager.settings.collectAsState()
+    var originSuggestions by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
+    var destSuggestions by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
+    var originFocused by remember { mutableStateOf(false) }
+    var destFocused by remember { mutableStateOf(false) }
+    var originFieldHeight by remember { mutableStateOf(0) }
+    var destFieldHeight by remember { mutableStateOf(0) }
+    var selectedOrigin by remember { mutableStateOf<GeocodedPlace?>(null) }
+    var selectedDest by remember { mutableStateOf<GeocodedPlace?>(null) }
+
+    LaunchedEffect(originQuery) {
+        if (originQuery.isBlank() || useCurrentLocationAsOrigin) {
+            originSuggestions = emptyList()
+            return@LaunchedEffect
+        }
+        val historyMatches = settings.routeHistory.filter { it.label.contains(originQuery, ignoreCase = true) }
+        originSuggestions = historyMatches
+        if (originQuery.length > 2) {
+            delay(500)
+            try {
+                val remote = geocodingClient.geocode(originQuery, limit = 5)
+                val newSuggestions = (historyMatches + remote).distinctBy { it.label }
+                originSuggestions = newSuggestions
+            } catch (e: Exception) {
+                // Ignore geocoding errors for autocomplete
+            }
+        }
+    }
+
+    LaunchedEffect(destQuery) {
+        if (destQuery.isBlank()) {
+            destSuggestions = emptyList()
+            return@LaunchedEffect
+        }
+        val historyMatches = settings.routeHistory.filter { it.label.contains(destQuery, ignoreCase = true) }
+        destSuggestions = historyMatches
+        if (destQuery.length > 2) {
+            delay(500)
+            try {
+                val remote = geocodingClient.geocode(destQuery, limit = 5)
+                val newSuggestions = (historyMatches + remote).distinctBy { it.label }
+                destSuggestions = newSuggestions
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+    }
+
+    val hasLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Plan route") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1E293B),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
+            )
+        },
+        containerColor = Color(0xFF0F172A)
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            Text("Origin", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                androidx.compose.material3.Switch(
+                    checked = useCurrentLocationAsOrigin,
+                    onCheckedChange = { useCurrentLocationAsOrigin = it }
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    if (useCurrentLocationAsOrigin) "Use my current location" else "Enter an address / city",
+                    color = Color.White.copy(alpha = 0.9f)
+                )
+            }
+            if (!useCurrentLocationAsOrigin) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Box {
+                    OutlinedTextField(
+                        value = originQuery,
+                        onValueChange = {
+                            originQuery = it.take(120)
+                            selectedOrigin = null
+                        },
+                        label = { Text("Origin address or city") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                        modifier = Modifier.fillMaxWidth()
+                            .onFocusChanged { originFocused = it.isFocused }
+                            .onSizeChanged { originFieldHeight = it.height }
+                    )
+                    if (originFocused && originSuggestions.isNotEmpty()) {
+                        Popup(
+                            onDismissRequest = { originFocused = false },
+                            offset = IntOffset(0, originFieldHeight),
+                            properties = PopupProperties(focusable = false)
+                        ) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                                elevation = CardDefaults.cardElevation(8.dp)
+                            ) {
+                                LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                                    items(originSuggestions) { suggestion ->
+                                        val isHistory = settings.routeHistory.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().clickable {
+                                                originQuery = suggestion.label
+                                                selectedOrigin = suggestion
+                                                originFocused = false
+                                            }.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                if (isHistory) Icons.Default.History else Icons.Default.Place,
+                                                contentDescription = null,
+                                                tint = Color.White.copy(alpha = 0.6f),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(Modifier.width(12.dp))
+                                            Text(
+                                                text = suggestion.label,
+                                                color = Color.White
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Destination", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
+            Spacer(modifier = Modifier.height(4.dp))
+            Box {
+                OutlinedTextField(
+                    value = destQuery,
+                    onValueChange = {
+                        destQuery = it.take(120)
+                        selectedDest = null
+                    },
+                    label = { Text("Destination address or city") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    modifier = Modifier.fillMaxWidth()
+                        .onFocusChanged { destFocused = it.isFocused }
+                        .onSizeChanged { destFieldHeight = it.height }
+                )
+                if (destFocused && destSuggestions.isNotEmpty()) {
+                    Popup(
+                        onDismissRequest = { destFocused = false },
+                        offset = IntOffset(0, destFieldHeight),
+                        properties = PopupProperties(focusable = false)
+                    ) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                            elevation = CardDefaults.cardElevation(8.dp)
+                        ) {
+                            LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                                items(destSuggestions) { suggestion ->
+                                    val isHistory = settings.routeHistory.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            destQuery = suggestion.label
+                                            selectedDest = suggestion
+                                            destFocused = false
+                                        }.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            if (isHistory) Icons.Default.History else Icons.Default.Place,
+                                            contentDescription = null,
+                                            tint = Color.White.copy(alpha = 0.6f),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(12.dp))
+                                        Text(
+                                            text = suggestion.label,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = {
+                        loading = true
+                        error = null
+                        stations = emptyList()
+                        tollEstimate = null
+                        routeTraffic = null
+                        calculateTrigger++
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = !loading && destQuery.isNotBlank() && (useCurrentLocationAsOrigin || originQuery.isNotBlank())
+                ) {
+                    Text(if (loading) "Calculating…" else "Calculate route")
+                }
+
+                if (currentRoute != null && onShowOnMap != null) {
+                    Button(
+                        onClick = { onShowOnMap(currentRoute!!, stations) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Show on Map")
+                    }
+                }
+            }
+
+            error?.let { err ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(err, color = Color(0xFFF87171), style = MaterialTheme.typography.bodySmall)
+            }
+
+            if (loading) {
+                Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color.White)
+                }
+            }
+
+            if (stations.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                tollEstimate?.let { toll ->
+                    Text(
+                        "Estimated toll: €%.2f".format(toll.amountEur),
+                        color = Color.White.copy(alpha = 0.9f),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                routeTraffic?.let { info ->
+                    val roadSummary = info.events.map { it.roadRef }.distinct().sorted().joinToString(", ")
+                    Text(
+                        "Traffic (${info.providerId}): ${info.events.size} events on $roadSummary",
+                        color = Color.White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                val settings by settingsManager.settings.collectAsState()
+                val effectiveProviders = settings.effectiveProviders()
+                val filteredStations = remember(stations, settings, effectiveProviders) {
+                    fr.geoking.gaston.StationMapFilters.apply(
+                        settings = settings,
+                        pois = stations,
+                        providers = effectiveProviders,
+                        skipWhenOnlyOverpass = false
+                    )
+                }
+
+                val title = if (settings.vehicleType == VehicleType.Truck || settings.vehicleType == VehicleType.Motorhome) {
+                    "POIs along route (${filteredStations.size})"
+                } else {
+                    "Stations along route (${filteredStations.size})"
+                }
+                Text(title, color = Color.White, style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (effectiveProviders.any { it.providesFuel }) {
+                        items(MAP_ENERGY_OPTIONS.filter { it.first != "electric" }) { (id, label) ->
+                            val isSelected = settings.selectedMapEnergyTypes.contains(id)
+                            val color = ColorHelper.getFuelColor(id) ?: MaterialTheme.colorScheme.primary
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    val newEnergies = if (isSelected) emptySet() else setOf(id)
+                                    settingsManager.setMapEnergyTypes(newEnergies)
+                                },
+                                label = { Text(label) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = color,
+                                    selectedLabelColor = Color.White
+                                ),
+                                leadingIcon = {
+                                    Box(modifier = Modifier.size(12.dp).background(color, MaterialTheme.shapes.small))
+                                }
+                            )
+                        }
+                    }
+
+                    if (effectiveProviders.any { it.providesElectric }) {
+                        items(MAP_IRVE_POWER_OPTIONS) { (kw, label) ->
+                            val isSelected = settings.mapPowerLevels.contains(kw)
+                            val color = ColorHelper.getPowerColorByLevel(kw)
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    val newLevels = if (isSelected) settings.mapPowerLevels - kw else settings.mapPowerLevels + kw
+                                    settingsManager.setMapPowerLevels(newLevels)
+                                },
+                                label = { Text(label) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = color,
+                                    selectedLabelColor = Color.White
+                                ),
+                                leadingIcon = {
+                                    Box(modifier = Modifier.size(12.dp).background(color, MaterialTheme.shapes.small))
+                                }
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(filteredStations, key = { it.id }) { poi ->
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF334155)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(poi.name.ifBlank { poi.address }, color = Color.White, style = MaterialTheme.typography.bodyLarge)
+                                    Text(poi.address, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
+
+                                    val energyTypes = settings.effectiveMapEnergyFilterIds()
+                                    val powerLevels = settings.effectiveIrvePowerLevels()
+                                    val label = PoiMarkerHelper.getPoiLabel(poi, energyTypes, powerLevels)
+
+                                    if (label != null) {
+                                        val color = PoiMarkerHelper.getPoiColor(
+                                            poi,
+                                            poi.poiCategory ?: if (poi.isElectric) fr.geoking.gaston.poi.PoiCategory.Irve else fr.geoking.gaston.poi.PoiCategory.Gas,
+                                            energyTypes,
+                                            powerLevels
+                                        )
+                                        Text(
+                                            text = label,
+                                            color = Color(color),
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    } else if (poi.powerKw != null) {
+                                        Text("${poi.powerKw} kW", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
+                                IconButton(
+                                    onClick = {
+                                        val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name)}")
+                                        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Directions, contentDescription = "Navigate", tint = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(calculateTrigger, initialDestination) {
+        if (calculateTrigger == 0 && initialDestination == null) return@LaunchedEffect
+        loading = true
+        error = null
+        stations = emptyList()
+        tollEstimate = null
+        routeTraffic = null
+        try {
+            val origin = if (useCurrentLocationAsOrigin) {
+                if (!hasLocation) {
+                    loading = false
+                    error = "Location permission is required to use current location"
+                    return@LaunchedEffect
+                }
+                val loc = LocationHelper.getCurrentLocation(context)
+                if (loc == null) {
+                    loading = false
+                    error = "Could not determine current location"
+                    return@LaunchedEffect
+                }
+                Pair("Current location", loc.latitude to loc.longitude)
+            } else {
+                selectedOrigin?.let { it.label to (it.latitude to it.longitude) } ?: run {
+                    val results = geocodingClient.geocode(originQuery, limit = 1)
+                    val first = results.firstOrNull()
+                    if (first == null) {
+                        loading = false
+                        error = "Origin not found"
+                        return@LaunchedEffect
+                    }
+                    Pair(first.label, first.latitude to first.longitude)
+                }
+            }
+
+            val destination = if (initialDestination?.latitude != null && initialDestination.longitude != null) {
+                Pair(initialDestination.address ?: destQuery, initialDestination.latitude to initialDestination.longitude)
+            } else {
+                selectedDest?.let { it.label to (it.latitude to it.longitude) } ?: run {
+                    val destResults = geocodingClient.geocode(destQuery, limit = 1)
+                    val destFirst = destResults.firstOrNull()
+                    if (destFirst == null) {
+                        loading = false
+                        error = "Destination not found"
+                        return@LaunchedEffect
+                    }
+                    Pair(destFirst.label, destFirst.latitude to destFirst.longitude)
+                }
+            }
+
+            val (oLat, oLon) = origin.second
+            val (dLat, dLon) = destination.second
+
+            if (!useCurrentLocationAsOrigin) {
+                settingsManager.addRouteHistory(GeocodedPlace(origin.first, oLat, oLon))
+            }
+            settingsManager.addRouteHistory(GeocodedPlace(destination.first, dLat, dLon))
+
+            val settings = settingsManager.settings.value
+            val route = routingClient.getRoute(oLat, oLon, dLat, dLon)
+            currentRoute = route
+            if (route != null) {
+                tollEstimate = tollCalculator.estimateToll(route.points, settings.vehicleType)
+                val trafficProviders = trafficProviderFactory?.getProvidersForRoute(route.points).orEmpty()
+                routeTraffic = trafficProviders.firstOrNull()?.let { provider ->
+                    provider.getTraffic(TrafficRequest.Route(route.points))
+                }
+            } else {
+                tollEstimate = null
+                routeTraffic = null
+            }
+
+            routePlanner.getStationsAlongRouteFlow(
+                oLat, oLon, dLat, dLon,
+                poiProvider,
+                radiusMeters = settings.routeStationSearchRadiusMeters
+            ).collect { incrementalStations ->
+                stations = incrementalStations
+                loading = false // Show results as soon as first batch arrives
+            }
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            loading = false
+            error = e.message ?: e.toString()
+        }
+    }
+}
