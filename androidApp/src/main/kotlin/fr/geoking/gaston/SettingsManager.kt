@@ -1,0 +1,363 @@
+package fr.geoking.gaston
+
+import android.content.Context
+import android.content.SharedPreferences
+import fr.geoking.gaston.api.geocoding.GeocodedPlace
+import fr.geoking.gaston.feature.settings.FirestoreSettingsSync
+import fr.geoking.gaston.poi.PoiProviderType
+import fr.geoking.gaston.poi.sanitizeUserPoiProviderSelection
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+enum class CarMapMode { Native, Custom }
+enum class MapEngine { Google, MapLibre }
+enum class MapTheme(val styleUrl: String) {
+    Dark("https://tiles.openfreemap.org/styles/dark"),
+    Modern("https://tiles.openfreemap.org/styles/bright"),
+    Standard("https://tiles.openfreemap.org/styles/liberty")
+}
+
+/** Energy/fuel types for map POI filter (multi-select). */
+val DEFAULT_MAP_ENERGY_TYPES = emptySet<String>()
+
+/** Type d'enseigne: "all", "major", "gms", "independant". */
+const val DEFAULT_MAP_ENSEIGNE_TYPE = "all"
+
+/** Power buckets for IRVE filter (kW). Empty = all. */
+val DEFAULT_MAP_POWER_LEVELS = emptySet<Int>()
+
+/** IRVE operator filter. Empty = all. */
+val DEFAULT_MAP_IRVE_OPERATORS = emptySet<String>()
+
+/** Brand filter. Empty = all. */
+val DEFAULT_MAP_BRANDS = emptySet<String>()
+
+/** Default EV range in km for route planning. */
+const val DEFAULT_EV_RANGE_KM = 300
+
+enum class FuelCard { None, Routex }
+
+data class AppSettings(
+    val vehicleBrand: String = "",
+    val vehicleModel: String = "",
+    val vehicleEnergy: String = "gas", // gas, electric, hybrid
+    val vehicleGasTypes: Set<String> = DEFAULT_MAP_ENERGY_TYPES,
+    val vehiclePowerLevels: Set<Int> = DEFAULT_MAP_POWER_LEVELS,
+    val fuelCard: FuelCard = FuelCard.None,
+    val useVehicleFilter: Boolean = false,
+    val selectedPoiProviders: Set<PoiProviderType> = setOf(PoiProviderType.DataGouv),
+    val selectedMapEnergyTypes: Set<String> = DEFAULT_MAP_ENERGY_TYPES,
+    val mapEnseigneType: String = DEFAULT_MAP_ENSEIGNE_TYPE,
+    val mapBrands: Set<String> = DEFAULT_MAP_BRANDS,
+    val selectedMapServices: Set<String> = emptySet(),
+    val mapPowerLevels: Set<Int> = DEFAULT_MAP_POWER_LEVELS,
+    val mapIrveOperators: Set<String> = DEFAULT_MAP_IRVE_OPERATORS,
+    val selectedMapConnectorTypes: Set<String> = emptySet(),
+    val mapTrafficEnabled: Boolean = false,
+    val debugLoggingEnabled: Boolean = false,
+    val evRangeKm: Int = DEFAULT_EV_RANGE_KM,
+    val evConsumptionKwhPer100km: Float? = null,
+    val openChargeMapKey: String = "",
+    val selectedOverpassAmenityTypes: Set<String> = setOf("toilets", "drinking_water"),
+    val phoneMapEngine: MapEngine = MapEngine.Google,
+    val mapTheme: MapTheme = MapTheme.Dark,
+    val vehicleType: VehicleType = VehicleType.Car,
+    val carMapMode: CarMapMode = CarMapMode.Native,
+    val googleUserName: String? = null,
+    val isLoggedIn: Boolean = false,
+    val tollDataPath: String? = null,
+    val mobiliteitLuxembourgKey: String = "",
+    val routeHistory: List<GeocodedPlace> = emptyList(),
+    val routeStationSearchRadiusMeters: Int = 2000,
+    val filterOnlyHighwayStations: Boolean = false
+)
+
+open class SettingsManager(
+    context: Context,
+    private val firestoreSync: FirestoreSettingsSync? = null
+) {
+    // Keep legacy name so existing installs keep settings.
+    private val prefs: SharedPreferences = context.getSharedPreferences("voice_ai_prefs", Context.MODE_PRIVATE)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val _settings = MutableStateFlow(loadSettings())
+    open val settings: StateFlow<AppSettings> = _settings.asStateFlow()
+
+    fun triggerPullAndMerge() {
+        scope.launch {
+            val remoteMerged = firestoreSync?.downloadAndMerge(_settings.value)
+            if (remoteMerged != null && remoteMerged != _settings.value) {
+                saveSettingsInternal(remoteMerged, upload = false)
+            }
+        }
+    }
+
+    private fun loadSettings(): AppSettings {
+        val mobiliteitLuxembourgKey =
+            prefs.getString("mobiliteit_luxembourg_key", "")?.takeIf { it.isNotEmpty() }
+                ?: BuildConfig.MOBILITEIT_LUXEMBOURG_KEY
+
+        val routeHistoryJson = prefs.getString("route_history", null)
+        val routeHistory = try {
+            if (routeHistoryJson.isNullOrBlank()) emptyList() else Json.decodeFromString<List<GeocodedPlace>>(routeHistoryJson)
+        } catch (_: Exception) {
+            emptyList()
+        }
+
+        val selectedProviders = run {
+            val stored = prefs.getStringSet("poi_providers", null)?.mapNotNull {
+                try { PoiProviderType.valueOf(it) } catch (_: Exception) { null }
+            }?.toSet()
+            (stored ?: setOf(PoiProviderType.DataGouv)).sanitizeUserPoiProviderSelection()
+        }
+
+        fun readIntSet(key: String, fallback: Set<Int>): Set<Int> =
+            prefs.getStringSet(key, null)?.mapNotNull { it.toIntOrNull() }?.toSet() ?: fallback
+
+        val phoneMapEngine = try {
+            MapEngine.valueOf(prefs.getString("phone_map_engine", MapEngine.Google.name) ?: MapEngine.Google.name)
+        } catch (_: Exception) { MapEngine.Google }
+
+        val mapTheme = try {
+            MapTheme.valueOf(prefs.getString("map_theme", MapTheme.Dark.name) ?: MapTheme.Dark.name)
+        } catch (_: Exception) { MapTheme.Dark }
+
+        val carMapMode = try {
+            CarMapMode.valueOf(prefs.getString("car_map_mode", CarMapMode.Native.name) ?: CarMapMode.Native.name)
+        } catch (_: Exception) { CarMapMode.Native }
+
+        val vehicleType = try {
+            VehicleType.valueOf(prefs.getString("vehicle_type", VehicleType.Car.name) ?: VehicleType.Car.name)
+        } catch (_: Exception) { VehicleType.Car }
+
+        val fuelCard = try {
+            FuelCard.valueOf(prefs.getString("fuel_card", FuelCard.None.name) ?: FuelCard.None.name)
+        } catch (_: Exception) { FuelCard.None }
+
+        return AppSettings(
+            vehicleBrand = prefs.getString("vehicle_brand", "") ?: "",
+            vehicleModel = prefs.getString("vehicle_model", "") ?: "",
+            vehicleEnergy = prefs.getString("vehicle_energy", "gas") ?: "gas",
+            vehicleGasTypes = prefs.getStringSet("vehicle_gas_types", null)?.toSet() ?: DEFAULT_MAP_ENERGY_TYPES,
+            vehiclePowerLevels = readIntSet("vehicle_power_levels", DEFAULT_MAP_POWER_LEVELS),
+            fuelCard = fuelCard,
+            useVehicleFilter = prefs.getBoolean("use_vehicle_filter", false),
+            selectedPoiProviders = selectedProviders,
+            selectedMapEnergyTypes = prefs.getStringSet("map_energy_types", null)?.toSet() ?: DEFAULT_MAP_ENERGY_TYPES,
+            mapEnseigneType = prefs.getString("map_enseigne_type", DEFAULT_MAP_ENSEIGNE_TYPE) ?: DEFAULT_MAP_ENSEIGNE_TYPE,
+            mapBrands = prefs.getStringSet("map_brands", null)?.toSet() ?: DEFAULT_MAP_BRANDS,
+            selectedMapServices = prefs.getStringSet("map_services", null)?.toSet() ?: emptySet(),
+            mapPowerLevels = readIntSet("map_power_levels", DEFAULT_MAP_POWER_LEVELS),
+            mapIrveOperators = prefs.getStringSet("map_irve_operators", null)?.toSet() ?: DEFAULT_MAP_IRVE_OPERATORS,
+            selectedMapConnectorTypes = prefs.getStringSet("map_connector_types", null)?.toSet() ?: emptySet(),
+            mapTrafficEnabled = prefs.getBoolean("map_traffic_enabled", false),
+            debugLoggingEnabled = prefs.getBoolean("debug_logging_enabled", false),
+            evRangeKm = prefs.getInt("ev_range_km", DEFAULT_EV_RANGE_KM),
+            evConsumptionKwhPer100km = prefs.getString("ev_consumption_kwh_per_100km", null)?.toFloatOrNull(),
+            openChargeMapKey = prefs.getString("openchargemap_key", "") ?: "",
+            selectedOverpassAmenityTypes = prefs.getStringSet("overpass_amenity_types", null)?.toSet()
+                ?: setOf("toilets", "drinking_water"),
+            phoneMapEngine = phoneMapEngine,
+            mapTheme = mapTheme,
+            vehicleType = vehicleType,
+            carMapMode = carMapMode,
+            googleUserName = prefs.getString("google_user_name", null),
+            isLoggedIn = prefs.getBoolean("is_logged_in", false),
+            tollDataPath = prefs.getString("toll_data_path", null),
+            mobiliteitLuxembourgKey = mobiliteitLuxembourgKey,
+            routeHistory = routeHistory,
+            routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
+            filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false)
+        )
+    }
+
+    open fun saveSettings(settings: AppSettings) {
+        saveSettingsInternal(settings, upload = true)
+    }
+
+    open fun saveSettingsWithThemeCheck(settings: AppSettings) {
+        // Kept for compatibility with existing UI calls.
+        saveSettings(settings)
+    }
+
+    private fun saveSettingsInternal(settings: AppSettings, upload: Boolean) {
+        _settings.value = settings
+        prefs.edit()
+            .putString("vehicle_brand", settings.vehicleBrand)
+            .putString("vehicle_model", settings.vehicleModel)
+            .putString("vehicle_energy", settings.vehicleEnergy)
+            .putStringSet("vehicle_gas_types", settings.vehicleGasTypes)
+            .putStringSet("vehicle_power_levels", settings.vehiclePowerLevels.map { it.toString() }.toSet())
+            .putString("fuel_card", settings.fuelCard.name)
+            .putBoolean("use_vehicle_filter", settings.useVehicleFilter)
+            .putStringSet("poi_providers", settings.selectedPoiProviders.map { it.name }.toSet())
+            .putStringSet("map_energy_types", settings.selectedMapEnergyTypes)
+            .putString("map_enseigne_type", settings.mapEnseigneType)
+            .putStringSet("map_brands", settings.mapBrands)
+            .putStringSet("map_services", settings.selectedMapServices)
+            .putStringSet("map_power_levels", settings.mapPowerLevels.map { it.toString() }.toSet())
+            .putStringSet("map_irve_operators", settings.mapIrveOperators)
+            .putStringSet("map_connector_types", settings.selectedMapConnectorTypes)
+            .putBoolean("map_traffic_enabled", settings.mapTrafficEnabled)
+            .putBoolean("debug_logging_enabled", settings.debugLoggingEnabled)
+            .putInt("ev_range_km", settings.evRangeKm)
+            .putString("ev_consumption_kwh_per_100km", settings.evConsumptionKwhPer100km?.toString())
+            .putString("openchargemap_key", settings.openChargeMapKey)
+            .putStringSet("overpass_amenity_types", settings.selectedOverpassAmenityTypes)
+            .putString("phone_map_engine", settings.phoneMapEngine.name)
+            .putString("map_theme", settings.mapTheme.name)
+            .putString("vehicle_type", settings.vehicleType.name)
+            .putString("car_map_mode", settings.carMapMode.name)
+            .putString("google_user_name", settings.googleUserName)
+            .putBoolean("is_logged_in", settings.isLoggedIn)
+            .putString("toll_data_path", settings.tollDataPath)
+            .putString("mobiliteit_luxembourg_key", settings.mobiliteitLuxembourgKey)
+            .putString("route_history", Json.encodeToString(settings.routeHistory))
+            .putInt("route_station_radius_m", settings.routeStationSearchRadiusMeters)
+            .putBoolean("filter_only_highway", settings.filterOnlyHighwayStations)
+            .apply()
+
+        if (upload) {
+            scope.launch { firestoreSync?.uploadSettings(settings) }
+        }
+    }
+
+    // Convenience setters used across phone + Android Auto screens
+    open fun setPoiProviderTypes(types: Set<PoiProviderType>) {
+        saveSettings(_settings.value.copy(selectedPoiProviders = types.sanitizeUserPoiProviderSelection()))
+    }
+
+    open fun setUseVehicleFilter(enabled: Boolean) {
+        saveSettings(_settings.value.copy(useVehicleFilter = enabled))
+    }
+
+    open fun setPhoneMapEngine(engine: MapEngine) {
+        saveSettings(_settings.value.copy(phoneMapEngine = engine))
+    }
+
+    open fun setCarMapMode(mode: CarMapMode) {
+        saveSettings(_settings.value.copy(carMapMode = mode))
+    }
+
+    open fun setMapTheme(theme: MapTheme) {
+        saveSettings(_settings.value.copy(mapTheme = theme))
+    }
+
+    open fun setMapTrafficEnabled(enabled: Boolean) {
+        saveSettings(_settings.value.copy(mapTrafficEnabled = enabled))
+    }
+
+    open fun setSelectedMapEnergyTypes(types: Set<String>) {
+        saveSettings(_settings.value.copy(selectedMapEnergyTypes = types))
+    }
+
+    // Backwards-compatible name used by various UI screens
+    open fun setMapEnergyTypes(types: Set<String>) = setSelectedMapEnergyTypes(types)
+
+    open fun setMapEnseigneType(type: String) {
+        saveSettings(_settings.value.copy(mapEnseigneType = type))
+    }
+
+    open fun setMapBrands(brands: Set<String>) {
+        saveSettings(_settings.value.copy(mapBrands = brands))
+    }
+
+    open fun setSelectedMapServices(services: Set<String>) {
+        saveSettings(_settings.value.copy(selectedMapServices = services))
+    }
+
+    // Backwards-compatible name used by Android Auto screens
+    open fun setMapServices(services: Set<String>) = setSelectedMapServices(services)
+
+    open fun setMapPowerLevels(levels: Set<Int>) {
+        saveSettings(_settings.value.copy(mapPowerLevels = levels))
+    }
+
+    open fun setMapIrveOperators(ops: Set<String>) {
+        saveSettings(_settings.value.copy(mapIrveOperators = ops))
+    }
+
+    open fun setSelectedMapConnectorTypes(types: Set<String>) {
+        saveSettings(_settings.value.copy(selectedMapConnectorTypes = types))
+    }
+
+    // Backwards-compatible name used by Android Auto / phone filter screens
+    open fun setMapConnectorTypes(types: Set<String>) = setSelectedMapConnectorTypes(types)
+
+    open fun setFuelCard(card: FuelCard) {
+        saveSettings(_settings.value.copy(fuelCard = card))
+    }
+
+    open fun setEvRangeKm(km: Int) {
+        saveSettings(_settings.value.copy(evRangeKm = km))
+    }
+
+    open fun setEvConsumptionKwhPer100km(value: Float?) {
+        saveSettings(_settings.value.copy(evConsumptionKwhPer100km = value))
+    }
+
+    open fun setRouteStationSearchRadiusMeters(value: Int) {
+        saveSettings(_settings.value.copy(routeStationSearchRadiusMeters = value))
+    }
+
+    open fun setFilterOnlyHighwayStations(enabled: Boolean) {
+        saveSettings(_settings.value.copy(filterOnlyHighwayStations = enabled))
+    }
+
+    open fun setVehicleType(type: VehicleType) {
+        saveSettings(_settings.value.copy(vehicleType = type))
+    }
+
+    open fun setOverpassAmenityTypes(types: Set<String>) {
+        saveSettings(_settings.value.copy(selectedOverpassAmenityTypes = types))
+    }
+
+    open fun togglePoiProviderType(type: PoiProviderType) {
+        val current = _settings.value.selectedPoiProviders
+        val next = if (type in current) current - type else current + type
+        setPoiProviderTypes(next)
+    }
+
+    open fun addRouteHistory(place: GeocodedPlace) {
+        val current = _settings.value.routeHistory
+        val deduped = (listOf(place) + current.filterNot { it == place }).distinct()
+        saveSettings(_settings.value.copy(routeHistory = deduped.take(10)))
+    }
+
+    /**
+     * Local-only user rating for a POI. Not synced to Firestore (personal preference).
+     * Stored as a JSON map in shared preferences.
+     */
+    open fun getPoiRating(poiId: String): Int {
+        val raw = prefs.getString("poi_ratings", null) ?: return 0
+        val map = try {
+            Json.decodeFromString<Map<String, Int>>(raw)
+        } catch (_: Exception) {
+            return 0
+        }
+        return map[poiId] ?: 0
+    }
+
+    open fun setPoiRating(poiId: String, rating: Int) {
+        val raw = prefs.getString("poi_ratings", null)
+        val map = try {
+            if (raw.isNullOrBlank()) emptyMap() else Json.decodeFromString<Map<String, Int>>(raw)
+        } catch (_: Exception) {
+            emptyMap()
+        }.toMutableMap()
+
+        if (rating <= 0) map.remove(poiId) else map[poiId] = rating.coerceIn(1, 5)
+
+        // Keep the prefs small: cap to 200 entries (arbitrary, user-level).
+        val capped = map.entries.take(200).associate { it.key to it.value }
+        prefs.edit().putString("poi_ratings", Json.encodeToString(capped)).apply()
+    }
+}
+

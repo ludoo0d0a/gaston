@@ -1,0 +1,1408 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 9.0.0" type="baseline" client="gradle" dependencies="false" name="AGP (9.0.0)" variant="all" version="9.0.0">
+
+    <issue
+        id="MissingPermission"
+        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
+        errorLine1="            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="214"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="MissingPermission"
+        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
+        errorLine1="                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="215"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="MissingPermission"
+        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
+        errorLine1="                val carAudioRecord = CarAudioRecord.create(carContext)"
+        errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidVoiceManager.kt"
+            line="310"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="MissingPermission"
+        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
+        errorLine1="            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidWeatherLookup.kt"
+            line="36"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="MissingPermission"
+        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
+        errorLine1="                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidWeatherLookup.kt"
+            line="37"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="WrongConstant"
+        message="Must be one of: Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST, Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS, Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY, Player.PLAY_WHEN_READY_CHANGE_REASON_REMOTE, Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM, Player.PLAY_WHEN_READY_CHANGE_REASON_SUPPRESSED_TOO_LONG"
+        errorLine1="                .setPlayWhenReady(playWhenReady, Player.PLAYBACK_SUPPRESSION_REASON_NONE)"
+        errorLine2="                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidVoiceManager.kt"
+            line="119"
+            column="50"/>
+    </issue>
+
+    <issue
+        id="CredentialManagerMisuse"
+        message="Call to `CredentialManager.getCredential` without use of `NoCredentialException`"
+        errorLine1="                val result = credentialManager.getCredential(context, request)"
+        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/GoogleAuthManager.kt"
+            line="47"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="CredentialManagerSignInWithGoogle"
+        message="Use of `:googleid` classes without use of `GoogleIdTokenCredential.createFrom`"
+        errorLine1="        val googleIdOption = GetGoogleIdOption.Builder()"
+        errorLine2="                             ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/GoogleAuthManager.kt"
+            line="34"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="AndroidGradlePluginVersion"
+        message="A newer version of Gradle than 9.1.0 is available: 9.4.1"
+        errorLine1="distributionUrl=https\://services.gradle.org/distributions/gradle-9.1.0-bin.zip"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="../gradle/wrapper/gradle-wrapper.properties"
+            line="3"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="AndroidGradlePluginVersion"
+        message="A newer version of com.android.application than 9.0.0 is available: 9.1.0. (There is also a newer version of 9.0.𝑥 available, if upgrading to 9.1.0 is difficult: 9.0.1)"
+        errorLine1="agp = &quot;9.0.0&quot;"
+        errorLine2="      ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="2"
+            column="7"/>
+    </issue>
+
+    <issue
+        id="AndroidGradlePluginVersion"
+        message="A newer version of com.android.kotlin.multiplatform.library than 9.0.0 is available: 9.1.0. (There is also a newer version of 9.0.𝑥 available, if upgrading to 9.1.0 is difficult: 9.0.1)"
+        errorLine1="agp = &quot;9.0.0&quot;"
+        errorLine2="      ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="2"
+            column="7"/>
+    </issue>
+
+    <issue
+        id="AndroidGradlePluginVersion"
+        message="A newer version of com.android.library than 9.0.0 is available: 9.1.0. (There is also a newer version of 9.0.𝑥 available, if upgrading to 9.1.0 is difficult: 9.0.1)"
+        errorLine1="agp = &quot;9.0.0&quot;"
+        errorLine2="      ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="2"
+            column="7"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.foundation:foundation-layout than 1.10.4 is available: 1.10.5"
+        errorLine1="compose = &quot;1.10.4&quot;"
+        errorLine2="          ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="4"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.runtime:runtime than 1.10.4 is available: 1.10.5"
+        errorLine1="compose = &quot;1.10.4&quot;"
+        errorLine2="          ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="4"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.ui:ui than 1.10.4 is available: 1.10.5"
+        errorLine1="compose = &quot;1.10.4&quot;"
+        errorLine2="          ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="4"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.ui:ui-tooling than 1.10.4 is available: 1.10.5"
+        errorLine1="compose = &quot;1.10.4&quot;"
+        errorLine2="          ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="4"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.ui:ui-tooling-preview than 1.10.4 is available: 1.10.5"
+        errorLine1="compose = &quot;1.10.4&quot;"
+        errorLine2="          ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="4"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="Upgrade `androidx.compose.foundation` for keyboard and mouse support"
+        errorLine1="compose = &quot;1.10.4&quot;"
+        errorLine2="          ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="4"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.activity:activity-compose than 1.12.4 is available: 1.13.0"
+        errorLine1="androidx-activityCompose = &quot;1.12.4&quot;"
+        errorLine2="                           ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="7"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.media3:media3-common than 1.9.2 is available: 1.9.3"
+        errorLine1="media3 = &quot;1.9.2&quot;"
+        errorLine2="         ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="16"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.media3:media3-session than 1.9.2 is available: 1.9.3"
+        errorLine1="media3 = &quot;1.9.2&quot;"
+        errorLine2="         ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="16"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.credentials:credentials than 1.5.0-rc01 is available: 1.5.0"
+        errorLine1="androidx-credentials = &quot;1.5.0-rc01&quot;"
+        errorLine2="                       ~~~~~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="22"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.credentials:credentials-play-services-auth than 1.5.0-rc01 is available: 1.5.0"
+        errorLine1="androidx-credentials = &quot;1.5.0-rc01&quot;"
+        errorLine2="                       ~~~~~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="22"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.google.android.libraries.identity.googleid:googleid than 1.1.1 is available: 1.2.0"
+        errorLine1="googleid = &quot;1.1.1&quot;"
+        errorLine2="           ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="23"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-compiler than 2.6.1 is available: 2.8.4"
+        errorLine1="androidx-room = &quot;2.6.1&quot;"
+        errorLine2="                ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="24"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-ktx than 2.6.1 is available: 2.8.4"
+        errorLine1="androidx-room = &quot;2.6.1&quot;"
+        errorLine2="                ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="24"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.room:room-runtime than 2.6.1 is available: 2.8.4"
+        errorLine1="androidx-room = &quot;2.6.1&quot;"
+        errorLine2="                ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="24"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.robolectric:robolectric than 4.14.1 is available: 4.16.1"
+        errorLine1="    testImplementation(&quot;org.robolectric:robolectric:4.14.1&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="220"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlin.android than 2.3.0 is available: 2.3.20"
+        errorLine1="kotlin = &quot;2.3.0&quot;"
+        errorLine2="         ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="3"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlin.multiplatform than 2.3.0 is available: 2.3.20"
+        errorLine1="kotlin = &quot;2.3.0&quot;"
+        errorLine2="         ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="3"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlin.plugin.compose than 2.3.0 is available: 2.3.20"
+        errorLine1="kotlin = &quot;2.3.0&quot;"
+        errorLine2="         ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="3"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of org.jetbrains.kotlin.plugin.serialization than 2.3.0 is available: 2.3.20"
+        errorLine1="kotlin = &quot;2.3.0&quot;"
+        errorLine2="         ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="3"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of io.insert-koin:koin-android than 4.1.1 is available: 4.2.0"
+        errorLine1="koin = &quot;4.1.1&quot;"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="12"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of io.insert-koin:koin-core than 4.1.1 is available: 4.2.0"
+        errorLine1="koin = &quot;4.1.1&quot;"
+        errorLine2="       ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="12"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.google.maps.android:maps-compose than 8.2.0 is available: 8.2.2"
+        errorLine1="maps-compose = &quot;8.2.0&quot;"
+        errorLine2="               ~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="18"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="UnsafeOptInUsageError"
+        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
+        errorLine1="        AndroidVoiceManager(androidContext(), get())"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/di/AppModule.kt"
+            line="194"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="ConfigurationScreenWidthHeight"
+        message="Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize"
+        errorLine1="                val maxHeight = configuration.screenHeightDp.dp * 0.15f"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/MapScreen.kt"
+            line="300"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/PhoneMainScreen.kt"
+            line="54"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/map/PoiDetailCard.kt"
+            line="55"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/SettingsScreen.kt"
+            line="1550"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/components/VoiceMainContent.kt"
+            line="45"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/components/VoiceStatusContent.kt"
+            line="78"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UnusedBoxWithConstraintsScope"
+        message="BoxWithConstraints scope is not used"
+        errorLine1="    ) {"
+        errorLine2="      ^">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/PhoneMainScreen.kt"
+            line="77"
+            column="7"/>
+    </issue>
+
+    <issue
+        id="ExportedService"
+        message="Exported service does not require permission"
+        errorLine1="        &lt;service"
+        errorLine2="         ~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="56"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="SystemPermissionTypo"
+        message="Did you mean `com.android.alarm.permission.SET_ALARM`?"
+        errorLine1="    &lt;uses-permission android:name=&quot;android.permission.SET_ALARM&quot; />"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="8"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `mipmap-anydpi`.">
+        <location
+            file="src/main/res/mipmap-anydpi-v26"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (6415 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="      android:pathData=&quot;m988.9 172.8c-49.2-1.9-70.1 62.5-115.6 74.1-49.5 24.7-100.7 26.6-165.3 9.5 0 7.5 0 13.2 3.7 22.6-55-22.6-100.5 20.9-178.3 5.8-53.2-7.5-74.1-34.1-85.5-34.1-34.1 0-68.4-3.8-91-32.3v-2c32.3-30.4 66.4-41.6 104.4-47.5 3.7-11.5-24.8-34.1-13.4-34.1 24.8 0 47.5-9.5 70.3-19.1 72.1-34.1 130.8-20.7 193.5 5.9 17.1 5.5 45.7 7.5 45.7 7.5 13.2 2 26.6 5.7 38 5.7 0 7.5-7.6 9.5-7.6 17.1 13.1 9.5 30.3 5.8 47.4 5.8 45.5 0 91-34.3 136.8-7.7 7.4 3.9 16.9 15.1 16.9 22.8zm-675.5 13.2c0 0-2.9 2 0 7.7l37.8 75.9c22.8 9.4 36 11.4 56.9 17.1 7.7 0 11.4-15.1 20.9-9.4 4.2 14.7-3.5 44.8-4.2 47.5 0 0-2.2 8.8-7.7 7.7l-82.9-17.2c-15.1-7.7-22.8-28.6-38-36l-2 1.7c28.6 36.1 32.3 112.2 93 108.4-1.7 7.5-12.1 17-18.9 20.9-18.9 11.2-53.2 3.8-64.4-3.7-9.7-7.7-28.6-28.6-28.6-28.6l-3.7-4-2.4 1.8c0 0 29 47.7 15.6 80-22.7-9.4-45.5-20.8-68.4-22.8-24.6 19.1-39.8 53.4-47 80.7-6.6 0.6-13.4-4.9-17.4-10.4-17.6-24.6 2.6-81.1 2.6-81.1l-5.2-1.3c-4.7 13.4-27.5 91.5-88.4 101.3 2-5.4 5.5-16.2 5.5-16.2 3.5-9.9 2-17.8 2-17.8-2-33.7 3.3-68.6 16.7-99l-3.3-1.7c-17.2 18.9-48.8 28.3-69.7 18.9 47.5-32.4 16.5-91.1 41.1-134.8 2-3.8 3.7-5.7 3.7-9.5-9.4-5.7-19.1-3.7-28.3-7.7-11.5-3.7-22.9-11.2-28.6-24.6 30.3-13.2 46.6-41.4 64.6-72.1 12.3-21.4 32.3-36.1 53.2-36.1 3.5 0 4.4-2.6 3.8-7.7-3.8-26.6-9.7-68.4-15.2-113.9l104.2 77.8c7.7 2.9 15.2 0 20.9-1.9 64.6-22.7 117.8-47.3 186-72.2 3.7-1.5 9.2 3.1 11.4 13.2l19.1 85.6c3.7 19.1-17.1 15.1-24.6 26.6-5.9 9.7-2 30.3-15.2 30.3-5.7-5.5-5.7-17.1-13.4-17.1-7.7 9.6-1.7 28.6-15.2 32.5-5.7-5.9-5.7-15.4-15.1-17.1zm-30.4-49.3c0-3.1-0.4-6.1-1.5-9-1.1-2.6-2.9-5.3-4.8-7.5-2.2-2-4.9-3.7-7.7-4.8-2.7-1.1-5.7-1.6-8.8-1.6-11.5 0-20.9 9.5-20.9 22.9 0 13.2 9.4 22.7 20.9 22.7 13.4 0 22.8-9.5 22.8-22.7zm115.5 689.2c0.2-4.2-2.9-4.9-2.9-4.9-23.7-3.7-50.3-9-74.5-21.3 0 0-5.7-3.3-5.7 2v35.6c-0.3 13.6 12.5 30.6 56.9 27 0 0 8.1 16.3-33.6 33.2-15.4 6.4-9.3 17-9.3 17 0 0 5.5 12.9 41.8 23.3-13 25.1-42.7 26.6-37.2 41.5 0 0 3.6 11 26 17-7.1 21.1-27.5 28.6-33.4 40.7-6.2 13.1 13.2 23 11.4 24.1-32.1 20.5-55.8 48.4-59.8 63.2-11.4 32.3-17.6 70.1-24.8 101.8-2.5 10.5-15.4 19.8-23.8 20.2-31.4 1.1-54.9 0-82-0.2-9-0.2-5.3-6.8-5.3-6.8 28.6-51.3 94.1-93.5 83.6-157-28.6-170.7-78.7-269.2-107.1-418.5-10.7-57-12.1-115 6-163.2 4.8 23.6 33.2 45.3 55.8 44.5 9.5-32.4 29.2-85.6 42.4-87.6 15.4-1.7 67.7 25.1 67.7 25.1 15.2-14.3 19.2-35.4 20.5-52.3 17.1 7.4 34.5 11.2 57.4 5.5 39.7-11.5 45.5-23.8 58.6-39 15.2 50.4-6.5 84.3-12 102.1 0 0-0.9 2.4 0.2 3.9 0.2 0.5 1.5 2.2 5.5 0.3 14.3-6.6 28.8-17.6 36.7-24.5 10.1-8.8 38.5-44.2 38.5-44.2 16.2 24.5 12.3 60.1 1.7 83.6 0 0-4.8 9 6.6 7 28.8-5 49.9-59.8 70.1-69 0 0 1.8-0.9 1.8 0 1.8 24.4 0.9 60.7 11.2 78.3 0 0 2.2 4.8 5.5-0.5 10.6-16.5 28.8-60.4 48.4-64.4-0.7 28.2 5.9 70.2 18.4 71.5 10.8 1.1 20.7-26.9 25.5-38.7 5.7-14.1 13.4-25.5 20.9-25.5 2 24.6 11.2 61.8 31.4 62.4 9.7 0.2 7.5-17.1 9.7-30.1 3.5-22.2 14.8-28.4 14.8-28.4 6.1 20.7 14.2 35.9 30.7 46.9 4.9 3.3 11.2 4.1 11.2-5.1-0.2-20 4.2-37.2 11.9-44.4 0.9 2.8 5.1 9.7 8.4 14.1 9 11.8 18.4 18 32.3 13.6 6.1-2 11.8-9.5 12.9-15.2-10.7-16-24.8-42.4-26.6-61.3-3.9-28.6 9.5-53.2 32.1-64.7 17.2-9.4 42-11.2 57.2 2 9.5 8.4 17.1 20.4 17.1 34.3 0 11.2-5 22.7-15.3 28.4q-2.9 1.5-6.2 2.2-3.3 0.6-6.6 0.4-3.3-0.2-6.4-1.3-3.3-1.1-5.9-3.1c-7-5.3-12.8-15.4-18.7-19.1-5.5 13.2 4 28.3 11.4 38 2.7 3.1 5.8 5.7 9.3 7.7 3.5 2 7.2 3.5 11.2 4.2 3.9 0.7 8.1 0.9 12.1 0q5.9-1.1 11.2-4c49.5-36 39.8-72.5 70.3-146.6 6.8-16.7 15.6-33.2 26-48.2l3.7-5.7c21.1-31.7 54.5-53 92.1-58.5 37.6-5.7 75.9 4.8 105.3 28.8 29.5 24 47.5 59.4 49.5 97.4 2 38.1-12.1 75-38.7 102.1-2.2 2.1-4.4 4.3-6.8 6.1-10.1 8.4-12.1 16.7-7.3 20.5 15.4 11.2 19.1 13.2 30.4 26.6 47.4 56.9 68.3 123.3 94.9 189.7 6.8 16.1 16.5 35.7 28.6 47.5 20.4 20 39.1 27.3 66.4 30.6 2.4 0.2-14.3 20.4-1.8 28.4 9.3 5.9 37.6 3.5 47.1-2.2 3.9 28.5-40.5 39.8-37.8 49.7 2.4 8.1 22.8 15.6 47.4 12.1-5.9 21.7-29.6 21.7-30.3 35.4-0.4 13.4 12.5 19.7 31.4 15.6 0 0-6.8 11.6-22.4 27.2-17.3 17.4-7.2 39.4-7.2 39.4 7 15.4 14.5 33.2 32.7 48.2 12.8 10.1 22.4 15.6 30.1 25.2-49 26.2-37.8 70.4-39.7 92.8-1.4 7.3-7.7 7.7-7.7 7.7l-100.1 15.6c-8.1 1.1-14.3-1.7-5-12.9 24.4-28.8 54.7-57.9 71.9-88.2-2.7-10.6-8.2-21.8-15.9-34.1-32.5-52.1-62.8-100.5-93.2-153.7-3.5-5.9-13.4-7.5-13.4-7.5-74.1-13.4-159.1-36.3-214.3-71-4-1.1-3.8 4-3.8 4 0 13.8-1.1 46.8 4.9 55.6 18 25.9 65.7 13.4 72.7 13.2-1.7 18.2-11.8 28.1-30.3 39.6 0 0-3.5 2.2-2.2 5.5 2.9 6.6 19.1 3.3 33.9-2.2-7.9 28.3-33.4 26.8-31.2 36.9 1.5 6.2 9.6 11.7 18.4 11.2-14.7 19.6-36 22.7-36 37.4l3.9 67.3c0 0 0 2.2-1.1 3.3-1.5 1.8-4.8 2.4-4.8 2.4l-97.4 22.9c-2.2 0.6-5.5 0.2-7.9-3.1-2.4-3.3 1.1-8.6 1.1-8.6l62.6-95c3.8-20.9-11.4-34.1-20.8-51-20.9-26.8-43.8-47.5-68.4-62.7-20.5-25.5-22-54-26.4-69.9-1.5-5.9-7.9-3.3-13.2 1.6-13.4 13.4-25.9 29.4-34.5 47.2-4.2 8.8 3.7 15.4 15.6 18.5q4 1.1 7.9 1.5 4.2 0.5 8.2 0.3 4.1-0.3 8.1-1.1 4-0.9 7.7-2.5c2 17.9-19.4 30.8-31.9 36.8 0 0-4.2 1.7-1.3 4.6 7.5 6.8 20.9 6.8 30.8 5 0 0-3.1 17.2-28.4 32.4-20.2 12.3 13 11.2 17.8 9.2-4.8 12.3-23.1 28.4-28.8 39.8-13 25.5-3.7 57-5.7 85.5-2 5.8-7.9 8.4-15.2 9.5l-102.4 3.7c-6.2 0-5.5-7.4-2-11.4l72.1-87.3c5.5-7.5 0.2-12.5-2.2-15.6-32.1-41.8-60.4-85.3-81.1-132.8-15.4 2-40 9.7-43.7 24.6-3.1 12.8 26.3 15.4 39.7 15.4 0 0 2.2 13.4-35.8 26.6 0 0-20.6 6.6-26.8 16.1 0 0-2 2.8 0.9 4.8 8.1 6.4 29.4 6.8 32.5 6.8-15.2 20.7-59.1 20-67.9 27.7-4.6 4 5.3 13.2 31.2 12.8-13 17.1-35.2 14.5-54.7 20.4 0 0-8.8 2-6.2 6.8 7 13 24.4 9.7 19.4 15.4-6.9 7.7-26.2 12.8-36.8 16.1-9 2.6-13.1 7.9-13.1 7.9-7.7 7.7-5.1 17.4-10.2 29.9-7.7 18.9-18 40.7-31.2 57.2 0 0-2 3.3-5.3 0.4l-68.3-55c-5.7-4.6-2.7-11.8-2.7-11.8 6.4-13.4 20.7-16.3 33.9-24.4 18.2-11 37.4-22.9 53.6-41.4 3.6-4.2 4-8.1 4-8.1 7.9-49.7 24-95.2 35.2-143.4 2.8-14.9-13.7-11.4-13.7-11.4-22.6 3.5-59.5 13.6-120.7 8.1-5.4-0.4-7 2-11.6 12.6-5.9 13.4-13.9 22.8-5.5 33.6 14.1 18.5 53 4.2 52.5 5.7-13.2 33.2-49.4 26.8-64.4 46.4 0 0-5.2 5.9-0.8 11 4.1 4.8 19.7 7 44.6 0.7 0 0-10.4 23.5-32.8 30.3-18.4 5.7-30.3 7.9-33.2 16.5-1.7 6.6 4.2 11.9 33.2 9 0 0-6.8 22-33.2 29.5-16.2 4.6-19.5 15.2-24.2 23.7-11.2 20.5-13.4 48.8-27.2 68.2 0 0-2 2.9-6.6-1.1l-58.5-51.7c-2.2-2-3.3-3.9-3.3-3.9-5.7-7.7 11.2-16.1 17.4-21.1 15.4-12.4 40.4-23.4 43.5-47.5 4.6-36.3-9.9-58.1-19.6-89.1-7-22.2-7.2-50.4-5.7-72.6zm583-347.4c20.9 0 43.8-13.2 62.7-26.6 24.4-15.6 45.5-42.2 62.2-67.1 10.8 10.1 24.4 16.7 38.9 19.2 14.7 2.6 29.7 0.6 43.3-5.3 13.4-6 25.1-15.6 33.2-28.2 8.1-12.3 12.3-26.8 12.3-41.5 0-42.2-34.1-76.5-76.1-76.5-1.9-0.3-5.7 0-7.4 0.2-34.1 1.7-57 20.9-79.8 62.6-18.9 36.1-43.6 112-87.3 157.7l-2.4 2.4c-1.3 1.1-1.8 3.1 0.4 3.1z&quot;/>"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_brand_eni.xml"
+            line="10"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="        mutableStateOf("
+        errorLine2="        ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/components/FilterFab.kt"
+            line="32"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var retryCount by remember { mutableStateOf(0) }"
+        errorLine2="                                 ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/MapScreen.kt"
+            line="111"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var calculateTrigger by remember { mutableStateOf(0) }"
+        errorLine2="                                       ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/RoutePlanningScreen.kt"
+            line="94"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_brand_casino` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_brand_casino.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_brand_casino_rounded` appears to be unused"
+        errorLine1="&lt;layer-list xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_brand_casino_rounded.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_brand_indigo` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_brand_indigo.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_brand_indigo_rounded` appears to be unused"
+        errorLine1="&lt;layer-list xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_brand_indigo_rounded.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_brand_intermarche` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_brand_intermarche.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_brand_intermarche_rounded` appears to be unused"
+        errorLine1="&lt;layer-list xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_brand_intermarche_rounded.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.hi_how_can_i_help` appears to be unused"
+        errorLine1="    &lt;string name=&quot;hi_how_can_i_help&quot;>Hi, how can I help you&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="4"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive icon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="158"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="158"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                    this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="169"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                    this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="169"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;gaston://map/gas_stations&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="266"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;gaston://map/gas_stations&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="266"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;gaston://map/electric_stations&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="281"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;gaston://map/electric_stations&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="281"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;gaston://map/hybrid_stations&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="296"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;gaston://map/hybrid_stations&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="296"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;gaston://map/current_location&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="311"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;gaston://map/current_location&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="311"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="326"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="326"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                    data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="335"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                    data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="335"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;google.navigation:q=0,0&amp;layer=t&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="349"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;google.navigation:q=0,0&amp;layer=t&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="349"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;audio/*&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="367"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;audio/*&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="367"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;tel:$number&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="385"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;tel:$number&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="385"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;tel:112&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="404"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                data = Uri.parse(&quot;tel:112&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            line="404"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                                    .setArtworkUri(Uri.parse(&quot;android.resource://${context.packageName}/drawable/ic_launcher_foreground&quot;))"
+        errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/AndroidVoiceManager.kt"
+            line="133"
+            column="52"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                        val uri = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name.ifBlank { poi.address })}&quot;)"
+        errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/auto/AutoRoutePlanningScreen.kt"
+            line="198"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {"
+        errorLine2="                                                ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/auto/AutoRoutePlanningScreen.kt"
+            line="244"
+            column="49"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="        val bitmap = Bitmap.createBitmap(ICON_WIDTH, ICON_HEIGHT, Bitmap.Config.ARGB_8888)"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/auto/DynamicImageGenerator.kt"
+            line="47"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="            val bitmap = Bitmap.createBitmap(ICON_WIDTH, ICON_HEIGHT, Bitmap.Config.ARGB_8888)"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/auto/DynamicImageGenerator.kt"
+            line="66"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Canvas.withRotation` instead?"
+        errorLine1="            canvas.save()"
+        errorLine2="            ~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/auto/DynamicImageGenerator.kt"
+            line="116"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                            data = Uri.parse(&quot;geo:$searchLat,$searchLon?q=${Uri.encode(&quot;Map&quot;)}&quot;)"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/auto/MapPoiScreen.kt"
+            line="243"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                            data = Uri.parse(&quot;geo:$searchLat,$searchLon?q=${Uri.encode(&quot;Map&quot;)}&quot;)"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/auto/MapPoiScreen.kt"
+            line="243"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/MapScreen.kt"
+            line="77"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                            val uri = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name)}&quot;)"
+        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/MapScreen.kt"
+            line="586"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Canvas.withRotation` instead?"
+        errorLine1="        canvas.save()"
+        errorLine2="        ~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/anim/auto/ParticlesEffectSurface.kt"
+            line="52"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="            data = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(title)}&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/auto/PoiDetailScreen.kt"
+            line="32"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="            data = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(title)}&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/auto/PoiDetailScreen.kt"
+            line="32"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                                        val uri = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name)}&quot;)"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/RoutePlanningScreen.kt"
+            line="233"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                    prefs.edit().putString(&quot;agent&quot;, DEFAULT_AGENT.name).apply()"
+        errorLine2="                    ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="348"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                    prefs.edit().putString(&quot;agent&quot;, DEFAULT_AGENT.name).apply()"
+        errorLine2="                    ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="363"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        val edit = prefs.edit()"
+        errorLine2="                   ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="445"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;poi_provider&quot;, type.name).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="463"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;map_energy_types&quot;, types.joinToString(&quot;,&quot;)).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="468"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;map_enseigne_type&quot;, type).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="473"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;map_services&quot;, services.joinToString(&quot;,&quot;)).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="478"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;map_power_levels&quot;, levels.joinToString(&quot;,&quot;)).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="483"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;map_irve_operators&quot;, operators.joinToString(&quot;,&quot;)).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="488"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;map_brands&quot;, brands.joinToString(&quot;,&quot;)).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="493"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;map_connector_types&quot;, types.joinToString(&quot;,&quot;)).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="498"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putBoolean(&quot;map_traffic_enabled&quot;, value).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="503"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;overpass_amenity_types&quot;, value.joinToString(&quot;,&quot;)).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="509"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;stt_engine_preference&quot;, preference.name).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="514"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;vehicle_type&quot;, type.name).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="519"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;vehicle_brand&quot;, brand).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="524"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;vehicle_model&quot;, model).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="529"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;vehicle_energy&quot;, energy).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="534"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;vehicle_gas_types&quot;, types.joinToString(&quot;,&quot;)).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="539"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;vehicle_power_levels&quot;, levels.joinToString(&quot;,&quot;)).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="544"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;fuel_card&quot;, card.name).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="549"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putBoolean(&quot;use_vehicle_filter&quot;, use).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="554"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putInt(&quot;ev_range_km&quot;, value).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="560"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            prefs.edit().putFloat(&quot;ev_consumption_kwh_100&quot;, consumption).apply()"
+        errorLine2="            ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="566"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            prefs.edit().remove(&quot;ev_consumption_kwh_100&quot;).apply()"
+        errorLine2="            ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="569"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putInt(&quot;poi_rating_$poiId&quot;, v).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="583"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            line="614"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(api.url))"
+        errorLine2="                                                            ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/SettingsScreen.kt"
+            line="759"
+            column="61"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                text = Uri.parse(url).host ?: url,"
+        errorLine2="                       ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/SettingsScreen.kt"
+            line="811"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))"
+        errorLine2="                                                                     ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/julius/ui/SettingsScreen.kt"
+            line="1564"
+            column="70"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;com.alphacephei:vosk-android:0.3.75&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="212"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    testImplementation(&quot;org.robolectric:robolectric:4.14.1&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="220"
+            column="24"/>
+    </issue>
+
+</issues>

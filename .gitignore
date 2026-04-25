@@ -1,0 +1,28 @@
+## Local machine / Gradle
+.gradle/
+**/build/
+*.iml
+.idea/
+.DS_Store
+
+## Android Studio / IntelliJ
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+## Signing keys / keystores (NEVER commit)
+*.jks
+*.keystore
+*.p12
+*.pem
+*.der
+**/*.base64.txt
+julius-app.keystore
+julius-app.keystore.base64.txt
+
+## Firebase / Google services (project-specific secret-ish config)
+**/google-services.json
+
+## Temporary folders
+tmp/

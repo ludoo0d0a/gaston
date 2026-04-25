@@ -1,5 +1,6 @@
 import com.android.build.api.dsl.ApplicationExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -11,15 +12,19 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlinAndroid)
-    alias(libs.plugins.google.services)
+    // Only apply Google Services when the local (uncommitted) google-services.json is present.
+    // This keeps CI/clean checkouts buildable without secrets.
+    if (File("google-services.json").exists()) {
+        alias(libs.plugins.google.services)
+    }
 }
 
 configure<ApplicationExtension> {
-    namespace = "fr.geoking.julius"
+    namespace = "fr.geoking.gaston"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "fr.geoking.julius"
+        applicationId = "fr.geoking.gaston"
         minSdk = 26
         targetSdk = 35
         val ciRunNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
