@@ -7,7 +7,7 @@
         errorLine1="            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)"
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="214"
             column="28"/>
     </issue>
@@ -18,7 +18,7 @@
         errorLine1="                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)"
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="215"
             column="20"/>
     </issue>
@@ -29,7 +29,7 @@
         errorLine1="                val carAudioRecord = CarAudioRecord.create(carContext)"
         errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidVoiceManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidVoiceManager.kt"
             line="310"
             column="38"/>
     </issue>
@@ -40,7 +40,7 @@
         errorLine1="            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)"
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidWeatherLookup.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidWeatherLookup.kt"
             line="36"
             column="28"/>
     </issue>
@@ -51,7 +51,7 @@
         errorLine1="                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)"
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidWeatherLookup.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidWeatherLookup.kt"
             line="37"
             column="20"/>
     </issue>
@@ -62,7 +62,7 @@
         errorLine1="                .setPlayWhenReady(playWhenReady, Player.PLAYBACK_SUPPRESSION_REASON_NONE)"
         errorLine2="                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidVoiceManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidVoiceManager.kt"
             line="119"
             column="50"/>
     </issue>
@@ -73,7 +73,7 @@
         errorLine1="                val result = credentialManager.getCredential(context, request)"
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/GoogleAuthManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/GoogleAuthManager.kt"
             line="47"
             column="30"/>
     </issue>
@@ -84,7 +84,7 @@
         errorLine1="        val googleIdOption = GetGoogleIdOption.Builder()"
         errorLine2="                             ~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/GoogleAuthManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/GoogleAuthManager.kt"
             line="34"
             column="30"/>
     </issue>
@@ -392,7 +392,7 @@
         errorLine1="        AndroidVoiceManager(androidContext(), get())"
         errorLine2="        ~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/di/AppModule.kt"
+            file="src/main/kotlin/fr/geoking/gaston/di/AppModule.kt"
             line="194"
             column="9"/>
     </issue>
@@ -403,7 +403,7 @@
         errorLine1="                val maxHeight = configuration.screenHeightDp.dp * 0.15f"
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/MapScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/MapScreen.kt"
             line="300"
             column="33"/>
     </issue>
@@ -414,7 +414,7 @@
         errorLine1="    modifier: Modifier = Modifier"
         errorLine2="    ~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/PhoneMainScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/PhoneMainScreen.kt"
             line="54"
             column="5"/>
     </issue>
@@ -425,7 +425,7 @@
         errorLine1="    modifier: Modifier = Modifier"
         errorLine2="    ~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/map/PoiDetailCard.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/PoiDetailCard.kt"
             line="55"
             column="5"/>
     </issue>
@@ -436,7 +436,7 @@
         errorLine1="    modifier: Modifier = Modifier"
         errorLine2="    ~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/SettingsScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
             line="1550"
             column="5"/>
     </issue>
@@ -447,7 +447,7 @@
         errorLine1="    modifier: Modifier = Modifier"
         errorLine2="    ~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/components/VoiceMainContent.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/components/VoiceMainContent.kt"
             line="45"
             column="5"/>
     </issue>
@@ -458,7 +458,7 @@
         errorLine1="    modifier: Modifier = Modifier"
         errorLine2="    ~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/components/VoiceStatusContent.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/components/VoiceStatusContent.kt"
             line="78"
             column="5"/>
     </issue>
@@ -469,7 +469,7 @@
         errorLine1="    ) {"
         errorLine2="      ^">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/PhoneMainScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/PhoneMainScreen.kt"
             line="77"
             column="7"/>
     </issue>
@@ -520,7 +520,7 @@
         errorLine1="        mutableStateOf("
         errorLine2="        ~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/components/FilterFab.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/components/FilterFab.kt"
             line="32"
             column="9"/>
     </issue>
@@ -531,7 +531,7 @@
         errorLine1="    var retryCount by remember { mutableStateOf(0) }"
         errorLine2="                                 ~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/MapScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/MapScreen.kt"
             line="111"
             column="34"/>
     </issue>
@@ -542,7 +542,7 @@
         errorLine1="    var calculateTrigger by remember { mutableStateOf(0) }"
         errorLine2="                                       ~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/RoutePlanningScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
             line="94"
             column="40"/>
     </issue>
@@ -641,7 +641,7 @@
         errorLine1="                this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="158"
             column="29"/>
     </issue>
@@ -652,7 +652,7 @@
         errorLine1="                this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="158"
             column="29"/>
     </issue>
@@ -663,7 +663,7 @@
         errorLine1="                    this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="169"
             column="33"/>
     </issue>
@@ -674,7 +674,7 @@
         errorLine1="                    this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="169"
             column="33"/>
     </issue>
@@ -685,7 +685,7 @@
         errorLine1="                data = Uri.parse(&quot;gaston://map/gas_stations&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="266"
             column="24"/>
     </issue>
@@ -696,7 +696,7 @@
         errorLine1="                data = Uri.parse(&quot;gaston://map/gas_stations&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="266"
             column="24"/>
     </issue>
@@ -707,7 +707,7 @@
         errorLine1="                data = Uri.parse(&quot;gaston://map/electric_stations&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="281"
             column="24"/>
     </issue>
@@ -718,7 +718,7 @@
         errorLine1="                data = Uri.parse(&quot;gaston://map/electric_stations&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="281"
             column="24"/>
     </issue>
@@ -729,7 +729,7 @@
         errorLine1="                data = Uri.parse(&quot;gaston://map/hybrid_stations&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="296"
             column="24"/>
     </issue>
@@ -740,7 +740,7 @@
         errorLine1="                data = Uri.parse(&quot;gaston://map/hybrid_stations&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="296"
             column="24"/>
     </issue>
@@ -751,7 +751,7 @@
         errorLine1="                data = Uri.parse(&quot;gaston://map/current_location&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="311"
             column="24"/>
     </issue>
@@ -762,7 +762,7 @@
         errorLine1="                data = Uri.parse(&quot;gaston://map/current_location&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="311"
             column="24"/>
     </issue>
@@ -773,7 +773,7 @@
         errorLine1="                data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="326"
             column="24"/>
     </issue>
@@ -784,7 +784,7 @@
         errorLine1="                data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="326"
             column="24"/>
     </issue>
@@ -795,7 +795,7 @@
         errorLine1="                    data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="335"
             column="28"/>
     </issue>
@@ -806,7 +806,7 @@
         errorLine1="                    data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="335"
             column="28"/>
     </issue>
@@ -817,7 +817,7 @@
         errorLine1="                data = Uri.parse(&quot;google.navigation:q=0,0&amp;layer=t&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="349"
             column="24"/>
     </issue>
@@ -828,7 +828,7 @@
         errorLine1="                data = Uri.parse(&quot;google.navigation:q=0,0&amp;layer=t&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="349"
             column="24"/>
     </issue>
@@ -839,7 +839,7 @@
         errorLine1="                data = Uri.parse(&quot;audio/*&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="367"
             column="24"/>
     </issue>
@@ -850,7 +850,7 @@
         errorLine1="                data = Uri.parse(&quot;audio/*&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="367"
             column="24"/>
     </issue>
@@ -861,7 +861,7 @@
         errorLine1="                data = Uri.parse(&quot;tel:$number&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="385"
             column="24"/>
     </issue>
@@ -872,7 +872,7 @@
         errorLine1="                data = Uri.parse(&quot;tel:$number&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="385"
             column="24"/>
     </issue>
@@ -883,7 +883,7 @@
         errorLine1="                data = Uri.parse(&quot;tel:112&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="404"
             column="24"/>
     </issue>
@@ -894,7 +894,7 @@
         errorLine1="                data = Uri.parse(&quot;tel:112&quot;)"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidActionExecutor.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
             line="404"
             column="24"/>
     </issue>
@@ -905,7 +905,7 @@
         errorLine1="                                    .setArtworkUri(Uri.parse(&quot;android.resource://${context.packageName}/drawable/ic_launcher_foreground&quot;))"
         errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/AndroidVoiceManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/AndroidVoiceManager.kt"
             line="133"
             column="52"/>
     </issue>
@@ -916,7 +916,7 @@
         errorLine1="                        val uri = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name.ifBlank { poi.address })}&quot;)"
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/auto/AutoRoutePlanningScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoRoutePlanningScreen.kt"
             line="198"
             column="35"/>
     </issue>
@@ -927,7 +927,7 @@
         errorLine1="        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {"
         errorLine2="                                                ~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/auto/AutoRoutePlanningScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoRoutePlanningScreen.kt"
             line="244"
             column="49"/>
     </issue>
@@ -938,7 +938,7 @@
         errorLine1="        val bitmap = Bitmap.createBitmap(ICON_WIDTH, ICON_HEIGHT, Bitmap.Config.ARGB_8888)"
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/auto/DynamicImageGenerator.kt"
+            file="src/main/kotlin/fr/geoking/gaston/auto/DynamicImageGenerator.kt"
             line="47"
             column="22"/>
     </issue>
@@ -949,7 +949,7 @@
         errorLine1="            val bitmap = Bitmap.createBitmap(ICON_WIDTH, ICON_HEIGHT, Bitmap.Config.ARGB_8888)"
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/auto/DynamicImageGenerator.kt"
+            file="src/main/kotlin/fr/geoking/gaston/auto/DynamicImageGenerator.kt"
             line="66"
             column="26"/>
     </issue>
@@ -960,7 +960,7 @@
         errorLine1="            canvas.save()"
         errorLine2="            ~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/auto/DynamicImageGenerator.kt"
+            file="src/main/kotlin/fr/geoking/gaston/auto/DynamicImageGenerator.kt"
             line="116"
             column="13"/>
     </issue>
@@ -971,7 +971,7 @@
         errorLine1="                            data = Uri.parse(&quot;geo:$searchLat,$searchLon?q=${Uri.encode(&quot;Map&quot;)}&quot;)"
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/auto/MapPoiScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/auto/MapPoiScreen.kt"
             line="243"
             column="36"/>
     </issue>
@@ -982,7 +982,7 @@
         errorLine1="                            data = Uri.parse(&quot;geo:$searchLat,$searchLon?q=${Uri.encode(&quot;Map&quot;)}&quot;)"
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/auto/MapPoiScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/auto/MapPoiScreen.kt"
             line="243"
             column="36"/>
     </issue>
@@ -993,7 +993,7 @@
         errorLine1="    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)"
         errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/MapScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/MapScreen.kt"
             line="77"
             column="18"/>
     </issue>
@@ -1004,7 +1004,7 @@
         errorLine1="                            val uri = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name)}&quot;)"
         errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/MapScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/MapScreen.kt"
             line="586"
             column="39"/>
     </issue>
@@ -1015,7 +1015,7 @@
         errorLine1="        canvas.save()"
         errorLine2="        ~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/anim/auto/ParticlesEffectSurface.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/anim/auto/ParticlesEffectSurface.kt"
             line="52"
             column="9"/>
     </issue>
@@ -1026,7 +1026,7 @@
         errorLine1="            data = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(title)}&quot;)"
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/auto/PoiDetailScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/auto/PoiDetailScreen.kt"
             line="32"
             column="20"/>
     </issue>
@@ -1037,7 +1037,7 @@
         errorLine1="            data = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(title)}&quot;)"
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/auto/PoiDetailScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/auto/PoiDetailScreen.kt"
             line="32"
             column="20"/>
     </issue>
@@ -1048,7 +1048,7 @@
         errorLine1="                                        val uri = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name)}&quot;)"
         errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/RoutePlanningScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
             line="233"
             column="51"/>
     </issue>
@@ -1059,7 +1059,7 @@
         errorLine1="                    prefs.edit().putString(&quot;agent&quot;, DEFAULT_AGENT.name).apply()"
         errorLine2="                    ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="348"
             column="21"/>
     </issue>
@@ -1070,7 +1070,7 @@
         errorLine1="                    prefs.edit().putString(&quot;agent&quot;, DEFAULT_AGENT.name).apply()"
         errorLine2="                    ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="363"
             column="21"/>
     </issue>
@@ -1081,7 +1081,7 @@
         errorLine1="        val edit = prefs.edit()"
         errorLine2="                   ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="445"
             column="20"/>
     </issue>
@@ -1092,7 +1092,7 @@
         errorLine1="        prefs.edit().putString(&quot;poi_provider&quot;, type.name).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="463"
             column="9"/>
     </issue>
@@ -1103,7 +1103,7 @@
         errorLine1="        prefs.edit().putString(&quot;map_energy_types&quot;, types.joinToString(&quot;,&quot;)).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="468"
             column="9"/>
     </issue>
@@ -1114,7 +1114,7 @@
         errorLine1="        prefs.edit().putString(&quot;map_enseigne_type&quot;, type).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="473"
             column="9"/>
     </issue>
@@ -1125,7 +1125,7 @@
         errorLine1="        prefs.edit().putString(&quot;map_services&quot;, services.joinToString(&quot;,&quot;)).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="478"
             column="9"/>
     </issue>
@@ -1136,7 +1136,7 @@
         errorLine1="        prefs.edit().putString(&quot;map_power_levels&quot;, levels.joinToString(&quot;,&quot;)).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="483"
             column="9"/>
     </issue>
@@ -1147,7 +1147,7 @@
         errorLine1="        prefs.edit().putString(&quot;map_irve_operators&quot;, operators.joinToString(&quot;,&quot;)).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="488"
             column="9"/>
     </issue>
@@ -1158,7 +1158,7 @@
         errorLine1="        prefs.edit().putString(&quot;map_brands&quot;, brands.joinToString(&quot;,&quot;)).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="493"
             column="9"/>
     </issue>
@@ -1169,7 +1169,7 @@
         errorLine1="        prefs.edit().putString(&quot;map_connector_types&quot;, types.joinToString(&quot;,&quot;)).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="498"
             column="9"/>
     </issue>
@@ -1180,7 +1180,7 @@
         errorLine1="        prefs.edit().putBoolean(&quot;map_traffic_enabled&quot;, value).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="503"
             column="9"/>
     </issue>
@@ -1191,7 +1191,7 @@
         errorLine1="        prefs.edit().putString(&quot;overpass_amenity_types&quot;, value.joinToString(&quot;,&quot;)).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="509"
             column="9"/>
     </issue>
@@ -1202,7 +1202,7 @@
         errorLine1="        prefs.edit().putString(&quot;stt_engine_preference&quot;, preference.name).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="514"
             column="9"/>
     </issue>
@@ -1213,7 +1213,7 @@
         errorLine1="        prefs.edit().putString(&quot;vehicle_type&quot;, type.name).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="519"
             column="9"/>
     </issue>
@@ -1224,7 +1224,7 @@
         errorLine1="        prefs.edit().putString(&quot;vehicle_brand&quot;, brand).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="524"
             column="9"/>
     </issue>
@@ -1235,7 +1235,7 @@
         errorLine1="        prefs.edit().putString(&quot;vehicle_model&quot;, model).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="529"
             column="9"/>
     </issue>
@@ -1246,7 +1246,7 @@
         errorLine1="        prefs.edit().putString(&quot;vehicle_energy&quot;, energy).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="534"
             column="9"/>
     </issue>
@@ -1257,7 +1257,7 @@
         errorLine1="        prefs.edit().putString(&quot;vehicle_gas_types&quot;, types.joinToString(&quot;,&quot;)).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="539"
             column="9"/>
     </issue>
@@ -1268,7 +1268,7 @@
         errorLine1="        prefs.edit().putString(&quot;vehicle_power_levels&quot;, levels.joinToString(&quot;,&quot;)).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="544"
             column="9"/>
     </issue>
@@ -1279,7 +1279,7 @@
         errorLine1="        prefs.edit().putString(&quot;fuel_card&quot;, card.name).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="549"
             column="9"/>
     </issue>
@@ -1290,7 +1290,7 @@
         errorLine1="        prefs.edit().putBoolean(&quot;use_vehicle_filter&quot;, use).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="554"
             column="9"/>
     </issue>
@@ -1301,7 +1301,7 @@
         errorLine1="        prefs.edit().putInt(&quot;ev_range_km&quot;, value).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="560"
             column="9"/>
     </issue>
@@ -1312,7 +1312,7 @@
         errorLine1="            prefs.edit().putFloat(&quot;ev_consumption_kwh_100&quot;, consumption).apply()"
         errorLine2="            ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="566"
             column="13"/>
     </issue>
@@ -1323,7 +1323,7 @@
         errorLine1="            prefs.edit().remove(&quot;ev_consumption_kwh_100&quot;).apply()"
         errorLine2="            ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="569"
             column="13"/>
     </issue>
@@ -1334,7 +1334,7 @@
         errorLine1="        prefs.edit().putInt(&quot;poi_rating_$poiId&quot;, v).apply()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="583"
             column="9"/>
     </issue>
@@ -1345,7 +1345,7 @@
         errorLine1="        prefs.edit()"
         errorLine2="        ~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/SettingsManager.kt"
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
             line="614"
             column="9"/>
     </issue>
@@ -1356,7 +1356,7 @@
         errorLine1="                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(api.url))"
         errorLine2="                                                            ~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/SettingsScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
             line="759"
             column="61"/>
     </issue>
@@ -1367,7 +1367,7 @@
         errorLine1="                text = Uri.parse(url).host ?: url,"
         errorLine2="                       ~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/SettingsScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
             line="811"
             column="24"/>
     </issue>
@@ -1378,7 +1378,7 @@
         errorLine1="                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))"
         errorLine2="                                                                     ~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/julius/ui/SettingsScreen.kt"
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
             line="1564"
             column="70"/>
     </issue>

@@ -1,4 +1,4 @@
-# Julius – Règles ProGuard/R8 pour le build release
+# gaston – Règles ProGuard/R8 pour le build release
 # Fichier de désobscurcissement : build/outputs/mapping/<variant>/mapping.txt
 # Copie automatique après bundle : build/deobfuscation/mapping-<variant>-<version>.txt
 
@@ -16,8 +16,8 @@
 # Kotlin Serialization
 -keepattributes *Annotation*, InnerClasses
 -dontwarn kotlinx.serialization.Annotations**
--keep,includedescriptorclasses class fr.geoking.julius.**$$serializer { *; }
--keepclassmembers class fr.geoking.julius.** {
+-keep,includedescriptorclasses class fr.geoking.gaston.**$$serializer { *; }
+-keepclassmembers class fr.geoking.gaston.** {
     *** Companion;
 }
 
@@ -37,17 +37,17 @@
 # ---------------------------------------------------------------------------
 -keep class org.koin.** { *; }
 -keepclassmembers class org.koin.** { *; }
--keep class fr.geoking.julius.di.** { *; }
--keepclassmembers class fr.geoking.julius.di.** { <init>(...); }
+-keep class fr.geoking.gaston.di.** { *; }
+-keepclassmembers class fr.geoking.gaston.di.** { <init>(...); }
 # Preserve constructors and types used by Koin for DI
--keepclassmembers class fr.geoking.julius.feature.auth.GoogleAuthManager { <init>(...); }
--keepclassmembers class fr.geoking.julius.SettingsManager { <init>(...); }
--keep class fr.geoking.julius.shared.ConversationStore { *; }
--keep class fr.geoking.julius.shared.VoiceManager { *; }
--keep class fr.geoking.julius.shared.PermissionManager { *; }
--keep class fr.geoking.julius.shared.ActionExecutor { *; }
--keep class fr.geoking.julius.agents.ConversationalAgent { *; }
--keep class fr.geoking.julius.agents.AgentResponse { *; }
+-keepclassmembers class fr.geoking.gaston.feature.auth.GoogleAuthManager { <init>(...); }
+-keepclassmembers class fr.geoking.gaston.SettingsManager { <init>(...); }
+-keep class fr.geoking.gaston.shared.ConversationStore { *; }
+-keep class fr.geoking.gaston.shared.VoiceManager { *; }
+-keep class fr.geoking.gaston.shared.PermissionManager { *; }
+-keep class fr.geoking.gaston.shared.ActionExecutor { *; }
+-keep class fr.geoking.gaston.agents.ConversationalAgent { *; }
+-keep class fr.geoking.gaston.agents.AgentResponse { *; }
 
 # ---------------------------------------------------------------------------
 # Ktor (client HTTP, sérialisation JSON)
@@ -64,13 +64,13 @@
 # ---------------------------------------------------------------------------
 # Application & entry points
 # ---------------------------------------------------------------------------
--keep class fr.geoking.julius.MainActivity { *; }
--keep class fr.geoking.julius.**.*Activity { *; }
--keep class fr.geoking.julius.**.*Service { *; }
--keep class fr.geoking.julius.auto.** { *; }
+-keep class fr.geoking.gaston.MainActivity { *; }
+-keep class fr.geoking.gaston.**.*Activity { *; }
+-keep class fr.geoking.gaston.**.*Service { *; }
+-keep class fr.geoking.gaston.auto.** { *; }
 
 # BuildConfig
--keep class fr.geoking.julius.BuildConfig { *; }
+-keep class fr.geoking.gaston.BuildConfig { *; }
 
 # ---------------------------------------------------------------------------
 # Android Auto (Car App Library)

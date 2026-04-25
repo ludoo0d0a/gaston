@@ -37,7 +37,7 @@ class AutoDashboardScreen(
             "AutoSettingsScreen",
             "AutoTemplateLabScreen",
         )
-        Log.d("JuliusNavigation", "Android Auto Screens: ${screenNames.joinToString(", ")}")
+        Log.d("gastonNavigation", "Android Auto Screens: ${screenNames.joinToString(", ")}")
     }
 
     override fun onGetTemplate(): Template {

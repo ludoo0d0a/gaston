@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
             pendingNavDestination.value = nav
         }
         val data = intent.data
-        if (data?.scheme == "julius" && data.host == "map" && data.path == "/libremap") {
+        if (data?.scheme == "gaston" && data.host == "map" && data.path == "/libremap") {
             pendingLibreMapLab.value = true
         }
     }
@@ -322,7 +322,7 @@ fun MainUI(
 
     LaunchedEffect(Unit) {
         val intent = (context as? Activity)?.intent
-        if (intent?.data?.scheme == "julius" && intent.data?.host == "map") {
+        if (intent?.data?.scheme == "gaston" && intent.data?.host == "map") {
             val path = intent.data?.path
             val currentSettings = settingsManager.settings.value
             if (path == "/gas_stations") {

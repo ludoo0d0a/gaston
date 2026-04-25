@@ -151,7 +151,7 @@ class AutoPlaystoreDashboardScreen(
             .setSingleList(grid.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("Julius - station finder")
+                    .setTitle("gaston - station finder")
                     .setStartHeaderAction(Action.APP_ICON)
                     .build()
             )
