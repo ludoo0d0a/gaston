@@ -1,0 +1,101 @@
+name: Deploy to Google Play Store
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      changesNotSentForReview:
+        description: 'If true, upload only and finish the release in Play Console yourself (managed publishing / draft-style).'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    env:
+      CHANGES_NOT_SENT_FOR_REVIEW: >-
+        ${{
+          (github.event.inputs.changesNotSentForReview != null && (github.event.inputs.changesNotSentForReview == 'true' || github.event.inputs.changesNotSentForReview == true)) ||
+          (github.event.inputs.changesNotSentForReview == null && (vars.CHANGES_NOT_SENT_FOR_REVIEW == 'true' || vars.CHANGES_NOT_SENT_FOR_REVIEW == true)) ||
+          false
+        }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Display Version Information
+        run: |
+          VERSION_CODE=$(( (${{ github.run_number }} * 10) + ${{ github.run_attempt }} ))
+          VERSION_NAME="1.0.${{ github.run_number }}"
+          echo "Version Name: $VERSION_NAME"
+          echo "Version Code: $VERSION_CODE"
+          echo "### Build Info 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version Name:** $VERSION_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version Code:** $VERSION_CODE" >> $GITHUB_STEP_SUMMARY
+
+      - name: Validate signing secrets
+        run: |
+          missing=""
+          [ -z "${{ secrets.SIGNING_KEY }}" ] && missing="$missing SIGNING_KEY"
+          [ -z "${{ secrets.KEY_STORE_PASSWORD }}" ] && missing="$missing KEY_STORE_PASSWORD"
+          [ -z "${{ secrets.ALIAS }}" ] && missing="$missing ALIAS"
+          [ -z "${{ secrets.KEY_PASSWORD }}" ] && missing="$missing KEY_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing or empty GitHub secrets:$missing"
+            echo "See PLAY_STORE_GUIDE.md for step-by-step instructions to configure SIGNING_KEY, KEY_STORE_PASSWORD, ALIAS, KEY_PASSWORD"
+            exit 1
+          fi
+
+      - name: Decode signing key
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+        run: |
+          printf '%s' "$SIGNING_KEY" | tr -d '\n' | base64 -d > release.keystore
+          if [ ! -s release.keystore ]; then
+            echo "::error::SIGNING_KEY secret is empty or invalid. See PLAY_STORE_GUIDE.md for how to generate and base64-encode your keystore."
+            exit 1
+          fi
+          echo "Keystore decoded successfully ($(wc -c < release.keystore) bytes)"
+
+      - name: Build and sign with Gradle
+        env:
+          JULES_KEY: ${{ secrets.JULES_KEY }}
+          GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          OPENCHARGEMAP_KEY: ${{ secrets.OPENCHARGEMAP_KEY }}
+          MOBILITEIT_LUXEMBOURG_KEY: ${{ secrets.MOBILITEIT_LUXEMBOURG_KEY }}
+          TOMTOM_KEY: ${{ secrets.TOMTOM_KEY }}
+        run: |
+          ./gradlew :androidApp:bundlePlaystoreRelease \
+            -Pandroid.injected.signing.store.file=${{ github.workspace }}/release.keystore \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEY_STORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+
+      - name: Prepare release notes
+        run: |
+          mkdir -p .github/play-release-notes
+          echo "Automated test build #${{ github.run_number }}" > .github/play-release-notes/whatsnew-en-US
+
+      - name: Deploy to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: fr.geoking.gaston
+          releaseFiles: androidApp/build/outputs/bundle/playstoreRelease/*.aab
+          track: internal
+          status: completed
+          whatsNewDirectory: .github/play-release-notes
+          changesNotSentForReview: ${{ env.CHANGES_NOT_SENT_FOR_REVIEW == 'true' || env.CHANGES_NOT_SENT_FOR_REVIEW == true }}
