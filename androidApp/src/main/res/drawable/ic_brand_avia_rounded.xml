@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Wide logo: intrinsic size keeps aspect ratio inside the POI circle. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_poi_background_circle" />
+    <item
+        android:width="20.4dp"
+        android:height="14.4dp"
+        android:drawable="@drawable/ic_brand_avia"
+        android:gravity="center" />
+</layer-list>

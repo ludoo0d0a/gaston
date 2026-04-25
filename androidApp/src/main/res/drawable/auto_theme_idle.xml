@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static frame matching phone Sphere theme - idle state. Colors: #0F172A, #6366F1, #8B5CF6 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Dark background matching phone -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FF0F172A" />
+            <size android:width="480dp" android:height="360dp" />
+        </shape>
+    </item>
+    <!-- Outer glow -->
+    <item android:left="120dp" android:right="120dp" android:top="80dp" android:bottom="80dp">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="120dp"
+                android:startColor="#406366F1"
+                android:endColor="#000F172A" />
+        </shape>
+    </item>
+    <!-- Sphere core -->
+    <item android:left="160dp" android:right="160dp" android:top="120dp" android:bottom="120dp">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="80dp"
+                android:startColor="#808B5CF6"
+                android:endColor="#000F172A" />
+        </shape>
+    </item>
+</layer-list>

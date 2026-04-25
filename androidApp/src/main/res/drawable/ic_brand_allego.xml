@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Traced from official mark: https://www.allego.eu/wp-content/uploads/2024/06/A-logo-website-150x150.png -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="150"
+    android:viewportHeight="150">
+    <path
+        android:fillColor="#8BC53E"
+        android:fillType="evenOdd"
+        android:pathData="M71,19 L46,81 L21,82 L15,88 L16,96 L22,100 L37,101 L31,116 L31,122 L33,126 L38,130 L45,130 L51,126 L60,102 L62,100 L102,100 L106,106 L113,125 L119,130 L126,130 L130,128 L133,124 L134,118 L94,19z M82,49 L95,79 L94,82 L70,82 L69,81 L79,54z" />
+</vector>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Atlante-inspired: blue field, white wave + dot (simplified). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FF0077C8"
+        android:pathData="M24,4C35,4 44,13 44,24S35,44 24,44 4,35 4,24 13,4 24,4z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M6,28C10,22 14,22 18,26S26,26 30,22S38,22 42,28L42,32C38,26 34,26 30,30S22,30 18,26S10,26 6,32z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M24,11m-3.5,0a3.5,3.5 0 1,1 7,0a3.5,3.5 0 1,1 -7,0" />
+</vector>
