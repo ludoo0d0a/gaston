@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Euro Garages / EG-inspired: green field, white road stripes (simplified). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FF009639"
+        android:pathData="M24,4C35,4 44,13 44,24S35,44 24,44 4,35 4,24 13,4 24,4z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14,10L18,10L22,38L18,38zM26,10L30,10L34,38L30,38z" />
+</vector>

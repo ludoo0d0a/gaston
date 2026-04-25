@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Dark purple base -->
+    <path
+        android:fillColor="#2D1B4E"
+        android:pathData="M0,0h108v108h-108z" />
+
+    <!-- Outer glow / halo ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#7C4DFF"
+        android:strokeWidth="1.5"
+        android:pathData="M54,18 A36,36 0 1,1 53.99,18"
+        android:strokeAlpha="0.4" />
+
+    <!-- Middle wave ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#B388FF"
+        android:strokeWidth="1.2"
+        android:pathData="M54,24 A30,30 0 1,1 53.99,24"
+        android:strokeAlpha="0.5" />
+
+    <!-- Inner wave ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#D1C4E9"
+        android:strokeWidth="1"
+        android:pathData="M54,30 A24,24 0 1,1 53.99,30"
+        android:strokeAlpha="0.6" />
+
+    <!-- Main purple sphere (center circle) -->
+    <path
+        android:fillColor="#6B4EAA"
+        android:pathData="M54,38 A16,16 0 1,1 53.99,38" />
+
+    <!-- Soft highlight on sphere -->
+    <path
+        android:fillColor="#B388FF"
+        android:fillAlpha="0.35"
+        android:pathData="M48,35 A3,3 0 1,1 47.99,35" />
+</vector>

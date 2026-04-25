@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  E.Leclerc mark (no text), from Wikimedia Commons:
+  https://commons.wikimedia.org/wiki/File:Logo_E.Leclerc_Sans_le_texte.svg
+  License: Public domain / trademark — used as nominative reference for POI markers.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="745.31"
+    android:viewportHeight="745.31">
+    <group
+        android:pivotX="0"
+        android:pivotY="0"
+        android:scaleX="8.1273439"
+        android:scaleY="8.1273439"
+        android:translateX="-2606.3254"
+        android:translateY="-5254.8073">
+        <path
+            android:fillColor="#FF0B70B5"
+            android:pathData="m366.538,738.263c-25.283,0 -45.852,-20.568 -45.852,-45.852 0,-25.283 20.568,-45.852 45.852,-45.852 25.284,0 45.852,20.569 45.852,45.852 0,25.284 -20.569,45.852 -45.852,45.852z m0,-82.009c-19.938,0 -36.156,16.22 -36.156,36.158 0,19.938 16.219,36.158 36.156,36.158 19.937,0 36.158,-16.221 36.158,-36.158 0,-19.937 -16.22,-36.158 -36.158,-36.158z" />
+        <path
+            android:fillColor="#FF0B70B5"
+            android:pathData="m376.245,704.412c0,0 -1.84,5 -9.205,5h-6.33v-26.917c0,-2.103 1.842,-4.083 3.945,-4.083h0.055v-6h-19v6h-0.051c2.104,0 4.051,1.98 4.051,4.083v22.845c0,2.104 -1.947,4.071 -4.051,4.071h0.051v9h21.498 13.502v-14h-4.465z" />
+        <path
+            android:fillColor="#FFED8B18"
+            android:pathData="m371.224,663.619c-5.572,0 -10.719,1.793 -14.875,4.793h12.361v12.72c-3,0.465 -4,2.491 -4,4.92v19.36h3.502c3.234,0 5.836,-2 6.008,-5h10.49v9.204c7,-4.469 11.39,-12.211 11.39,-20.945 0,-13.804 -11.072,-25.052 -24.876,-25.052z" />
+    </group>
+</vector>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Migros-inspired: orange field, white geometric M (simplified). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FFFF6600"
+        android:pathData="M24,4C35,4 44,13 44,24S35,44 24,44 4,35 4,24 13,4 24,4z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,34L12,14L16,14L24,26L32,14L36,14L36,34L32,34L32,22L24,32L16,22L16,34z" />
+</vector>

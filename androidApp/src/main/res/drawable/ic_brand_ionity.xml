@@ -1,0 +1,25 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="488.5"
+    android:viewportHeight="488.5">
+    <!--
+      Wordmark from https://www.freelogovectors.net/svg13/ionity_logo-freelogovectors.net.svg
+      Artboard was 488.5×170.51; centered vertically in a square viewport so the wide logo keeps its aspect ratio in circular markers.
+    -->
+    <group android:translateY="158.995">
+        <group
+            android:translateX="-5.75"
+            android:translateY="-164.75">
+            <path
+                android:fillColor="#D22265"
+                android:pathData="M298.46,180.75a16.3,16.3,0,0,1,13.91,8.82s-17.65-5.53-29.91,17.65c15-1,33.05-1.94,51.75-1.94,38,0,73.89,32.9,148.37,46.66,0,0-20.64-2.24-66.26-10.32A222.39,222.39,0,0,0,310,246.86a239.83,239.83,0,0,1-54.3,13.61,236.6,236.6,0,0,0-16.9,74.78,99.45,99.45,0,0,0-76.28-52.34,95.8,95.8,0,0,0,53.25-31.86,81.45,81.45,0,0,1-19-15A211.3,211.3,0,0,0,91,181.5c-17.2-4.34-44.87-7.63-65.51-13.17a403.44,403.44,0,0,0,59.82,4.79h65.37c29.76,0,65.66,23,90.63,32.16,26.48-49.06,56.54-24.53,56.54-24.53Z" />
+            <path
+                android:fillColor="#D22265"
+                android:pathData="M65.28,180.75a224.4,224.4,0,0,1,74.79,28.12,440,440,0,0,0-48.17-5.54C62,201.24,23.4,193.76,5.75,164.75A266.26,266.26,0,0,0,64.68,181.2Z" />
+            <path
+                android:fillColor="#D12265"
+                android:pathData="M494.25,253.59a67.44,67.44,0,0,1-45.62,16.75c-29,0-84.66-21.69-104.7-20.19a207.33,207.33,0,0,1,84.81-1.65c51.3,8.68,64.91,5.54,64.91,5.54Z" />
+        </group>
+    </group>
+</vector>

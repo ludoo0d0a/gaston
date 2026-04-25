@@ -1,0 +1,11 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_poi_background_circle" />
+    <item
+        android:drawable="@drawable/ic_brand_monoprix"
+        android:gravity="center"
+        android:bottom="4.8dp"
+        android:left="4.8dp"
+        android:right="4.8dp"
+        android:top="4.8dp" />
+</layer-list>
+

@@ -1,0 +1,28 @@
+### Eco-Movement OCPI Data API quick checks
+### Docs: https://developers.eco-movement.com/reference/getting-started-data-api
+
+@baseUrl = https://api.eco-movement.com/api/ocpi/cpo/2.2
+@token = {{ECO_MOVEMENT_TOKEN}}
+
+### Versions (sanity check)
+GET {{baseUrl}}/versions
+Authorization: Token {{token}}
+Accept: application/json
+
+### List locations (page)
+GET {{baseUrl}}/locations?limit=10&offset=0
+Authorization: Token {{token}}
+Accept: application/json
+
+### Location by id (replace with an id from the list response)
+@locationId = REPLACE_ME
+GET {{baseUrl}}/location/{{locationId}}
+Authorization: Token {{token}}
+Accept: application/json
+
+### EVSE by eMI3 id (replace with an evse_id from a location response)
+@evseId = REPLACE_ME
+GET {{baseUrl}}/evse/{{evseId}}
+Authorization: Token {{token}}
+Accept: application/json
+

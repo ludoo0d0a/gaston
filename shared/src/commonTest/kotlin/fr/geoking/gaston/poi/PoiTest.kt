@@ -1,0 +1,37 @@
+package fr.geoking.gaston.poi
+
+import kotlinx.coroutines.runBlocking
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+class PoiTest {
+
+    @Test
+    fun sanitizeUserPoiProviderSelection_keepsOnlySelectableProviders() {
+        // When all providers are enabled (POI_DATA_SOURCES_DISABLED_FOR_USER_SELECTION is empty)
+        val inSet = setOf(PoiProviderType.Etalab, PoiProviderType.GasApi, PoiProviderType.Routex)
+        assertEquals(
+            setOf(PoiProviderType.Etalab, PoiProviderType.GasApi, PoiProviderType.Routex),
+            inSet.sanitizeUserPoiProviderSelection()
+        )
+    }
+
+    @Test
+    fun testMockPoiProvider() = runBlocking {
+        val provider = MockPoiProvider()
+        val pois = provider.getGasStations(48.8566, 2.3522)
+
+        assertEquals(5, pois.size, "Should return 5 mock gas stations")
+
+        val brands = pois.map { it.brand }.toSet()
+        assertTrue(brands.contains("BP"), "Should contain BP")
+        assertTrue(brands.contains("Aral"), "Should contain Aral")
+        assertTrue(brands.contains("Eni"), "Should contain Eni")
+        assertTrue(brands.contains("Circle K"), "Should contain Circle K")
+        assertTrue(brands.contains("OMV"), "Should contain OMV")
+
+        val names = pois.map { it.name }
+        assertTrue(names.any { it.contains("BP") }, "One name should contain BP")
+    }
+}

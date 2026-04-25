@@ -1,0 +1,10 @@
+<!-- REL / motorway stations: blue #0066B3 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <path
+      android:fillColor="#0066B3"
+      android:pathData="M4,10 L4,20 L8,20 L8,14 L16,14 L16,20 L20,20 L20,10 L12,4 L4,10 Z M6,12 L12,7.5 L18,12 L18,18 L14,18 L14,12 L10,12 L10,18 L6,18 Z"/>
+</vector>

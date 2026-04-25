@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Les Mousquetaires 2024 symbol (Intermarché retail group) — logo mark only, no wordmark.
+  Geometry from Wikimedia Commons Les-mousquetaires-2024.svg (red path), scaled to 24×24.
+  Reference: https://www.logotheque-vectorielle.fr/.../logo-vectoriel-les-mousquetaires.jpg
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF2822"
+        android:pathData="M11.249,6.413 C12.808,7.857 15.667,7.799 17.803,7.049 L17.803,6.846 C14.887,6.846 13.299,6.038 11.423,3.613 C10.499,4.219 10.412,5.663 11.249,6.413 M5.157,6.818 L5.157,9.243 C12.491,11.033 19.911,10.109 23,8.723 L23,8.463 C15.407,9.474 8.535,8.55 5.157,6.818 M14.57,11.524 C7.612,11.524 1,20.387 1,20.387 L6.572,20.387 C7.987,17.702 11.105,12.303 13.992,12.303 C16.244,12.303 15.493,15.768 14.31,18.308 L17.543,18.308 C18.236,15.71 18.352,11.524 14.57,11.524" />
+</vector>
