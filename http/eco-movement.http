@@ -2,7 +2,7 @@
 ### Docs: https://developers.eco-movement.com/reference/getting-started-data-api
 
 @baseUrl = https://api.eco-movement.com/api/ocpi/cpo/2.2
-@token = {{ECO_MOVEMENT_TOKEN}}
+@token = {{ECO_MOVEMENT_KEY}}
 
 ### Versions (sanity check)
 GET {{baseUrl}}/versions
