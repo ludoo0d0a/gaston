@@ -64,6 +64,17 @@ configure<ApplicationExtension> {
         val mapsApiKey = prop("GOOGLE_MAPS_KEY")
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
 
+        // AdMob (Play Store): defaults to Google-provided test IDs when not configured.
+        // Keep these out of git by putting them in local.properties or CI env.
+        val admobAppId = sanitizeBuildConfigString(
+            prop("ADMOB_APP_ID", "ca-app-pub-3940256099942544~3347511713")
+        )
+        val admobBannerAdUnitId = sanitizeBuildConfigString(
+            prop("ADMOB_BANNER_UNIT_ID", "ca-app-pub-3940256099942544/6300978111")
+        )
+        manifestPlaceholders["admobAppId"] = admobAppId
+        buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"$admobBannerAdUnitId\"")
+
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
         buildConfigField("String", "JULES_KEY", "\"$julesKey\"")
         buildConfigField("String", "GITHUB_TOKEN", "\"$githubToken\"")
@@ -232,6 +243,9 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.robolectric)
+
+    // Ads (AdMob)
+    implementation(libs.play.services.ads)
 }
 android {
     kotlin {

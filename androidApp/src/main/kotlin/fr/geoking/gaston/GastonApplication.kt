@@ -1,6 +1,7 @@
 package fr.geoking.gaston
 
 import android.app.Application
+import com.google.android.gms.ads.MobileAds
 import fr.geoking.gaston.di.appModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -19,6 +20,14 @@ class GastonApplication : Application() {
         } catch (e: Throwable) {
             initError = e
             android.util.Log.e("GastonApplication", "Koin/DI init failed", e)
+        }
+
+        if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
+            try {
+                MobileAds.initialize(this) {}
+            } catch (e: Throwable) {
+                android.util.Log.e("GastonApplication", "AdMob init failed", e)
+            }
         }
     }
 
