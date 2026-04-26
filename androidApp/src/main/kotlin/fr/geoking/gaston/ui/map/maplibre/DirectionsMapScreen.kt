@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package fr.geoking.gaston.ui.map.maplibre
 
 import androidx.activity.compose.BackHandler

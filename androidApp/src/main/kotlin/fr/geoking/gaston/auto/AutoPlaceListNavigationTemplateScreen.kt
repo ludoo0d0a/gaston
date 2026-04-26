@@ -13,6 +13,7 @@ import androidx.car.app.model.PlaceMarker
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 
+@Suppress("DEPRECATION")
 class AutoPlaceListNavigationTemplateScreen(carContext: CarContext) : Screen(carContext) {
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoPlaceListNavigationTemplateScreen") {
         val listBuilder = ItemList.Builder()

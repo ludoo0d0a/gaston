@@ -96,6 +96,6 @@ jobs:
           packageName: fr.geoking.gaston
           releaseFiles: androidApp/build/outputs/bundle/playstoreRelease/*.aab
           tracks: internal
-          status: completed
+          status: draft
           whatsNewDirectory: .github/play-release-notes
           changesNotSentForReview: ${{ env.CHANGES_NOT_SENT_FOR_REVIEW == 'true' || env.CHANGES_NOT_SENT_FOR_REVIEW == true }}
