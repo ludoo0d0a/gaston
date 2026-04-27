@@ -8,7 +8,8 @@ import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.Metadata
 import androidx.car.app.model.Place
-import androidx.car.app.navigation.model.PlaceListNavigationTemplate
+import androidx.car.app.navigation.model.MapWithContentTemplate
+import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.PlaceMarker
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
@@ -35,19 +36,18 @@ class AutoPlaceListNavigationTemplateScreen(carContext: CarContext) : Screen(car
                     .build()
             )
 
-        PlaceListNavigationTemplate.Builder()
+        val listTemplate = ListTemplate.Builder()
             .setHeader(
                 Header.Builder()
-                    .setTitle("PlaceListNavigationTemplate")
+                    .setTitle("Place List")
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )
-            .setItemList(listBuilder.build())
-            .setActionStrip(
-                androidx.car.app.model.ActionStrip.Builder()
-                    .addAction(Action.Builder().setTitle("Exit").setOnClickListener { screenManager.pop() }.build())
-                    .build()
-            )
+            .setSingleList(listBuilder.build())
+            .build()
+
+        MapWithContentTemplate.Builder()
+            .setContentTemplate(listTemplate)
             .build()
     }
 }

@@ -29,9 +29,14 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.annotations.PolylineOptions
-import org.maplibre.android.annotations.MarkerOptions
-import org.maplibre.android.annotations.IconFactory
+import org.maplibre.android.style.layers.LineLayer
+import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.LineString
+import org.maplibre.geojson.Point
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,61 +100,70 @@ fun DirectionsMapScreen(
                 cameraPosition = initialCameraPosition,
                 onMapReady = { map ->
                     mapLibreMap = map
+                    map.getStyle { style ->
+                        // Setup Route Source and Layer
+                        if (style.getSource("route-source") == null) {
+                            val routePoints = route?.points?.map { org.maplibre.geojson.Point.fromLngLat(it.second, it.first) } ?: emptyList()
+                            val routeLineString = org.maplibre.geojson.LineString.fromLngLats(routePoints)
+                            style.addSource(GeoJsonSource("route-source", routeLineString))
+                        }
+                        if (style.getLayer("route-layer") == null) {
+                            style.addLayer(
+                                LineLayer("route-layer", "route-source").withProperties(
+                                    PropertyFactory.lineColor(android.graphics.Color.CYAN),
+                                    PropertyFactory.lineWidth(5f)
+                                )
+                            )
+                        }
 
-                    // Draw route polyline
-                    route?.points?.let { points ->
-                        val latLngPoints = points.map { LatLng(it.first, it.second) }
-                        map.addPolyline(
-                            PolylineOptions()
-                                .addAll(latLngPoints)
-                                .color(android.graphics.Color.CYAN)
-                                .width(5f)
-                        )
-                    }
-
-                    // Draw markers for POIs along route
-                    filteredPois.forEach { poi ->
-                        map.addMarker(
-                            MarkerOptions()
-                                .position(LatLng(poi.latitude, poi.longitude))
-                                .title(poi.name)
-                                .snippet(poi.address)
-                        )
+                        // Setup POI Source and Layer
+                        if (style.getSource("poi-source") == null) {
+                            style.addSource(GeoJsonSource("poi-source"))
+                        }
+                        if (style.getLayer("poi-layer") == null) {
+                            style.addLayer(
+                                SymbolLayer("poi-layer", "poi-source").withProperties(
+                                    PropertyFactory.iconImage("{poi-id}"),
+                                    PropertyFactory.iconAllowOverlap(true),
+                                    PropertyFactory.iconIgnorePlacement(true)
+                                )
+                            )
+                        }
                     }
                 },
                 update = { map ->
-                    map.clear()
-                    // Re-draw route polyline
-                    route?.points?.let { points ->
-                        val latLngPoints = points.map { LatLng(it.first, it.second) }
-                        map.addPolyline(
-                            PolylineOptions()
-                                .addAll(latLngPoints)
-                                .color(android.graphics.Color.CYAN)
-                                .width(5f)
-                        )
-                    }
+                    map.getStyle { style ->
+                        val energyTypes = settings.effectiveMapEnergyFilterIds()
+                        val powerLevels = settings.effectiveIrvePowerLevels()
 
-                    val energyTypes = settings.effectiveMapEnergyFilterIds()
-                    val powerLevels = settings.effectiveIrvePowerLevels()
+                        val features = filteredPois.map { poi ->
+                            // Update icon only if it doesn't exist
+                            if (style.getImage(poi.id) == null) {
+                                val markerBitmap = PoiMarkerHelper.getMarkerBitmap(
+                                    context = context,
+                                    poi = poi,
+                                    effectiveEnergyTypes = energyTypes,
+                                    effectivePowerLevels = powerLevels,
+                                    isSelected = false,
+                                    sizePx = 120,
+                                    availability = null,
+                                    markerStyle = MarkerStyle.Bubble
+                                )
+                                style.addImage(poi.id, markerBitmap)
+                            }
 
-                    filteredPois.forEach { poi ->
-                        val markerBitmap = PoiMarkerHelper.getMarkerBitmap(
-                            context = context,
-                            poi = poi,
-                            effectiveEnergyTypes = energyTypes,
-                            effectivePowerLevels = powerLevels,
-                            isSelected = false,
-                            sizePx = 120,
-                            availability = null, // Availability not easily available here
-                            markerStyle = MarkerStyle.Bubble
-                        )
-                        val icon = IconFactory.getInstance(context).fromBitmap(markerBitmap)
-                        map.addMarker(
-                            MarkerOptions()
-                                .position(LatLng(poi.latitude, poi.longitude))
-                                .icon(icon)
-                        )
+                            Feature.fromGeometry(
+                                org.maplibre.geojson.Point.fromLngLat(poi.longitude, poi.latitude)
+                            ).apply {
+                                addStringProperty("poi-id", poi.id)
+                            }
+                        }
+
+                        style.getSourceAs<GeoJsonSource>("poi-source")?.setGeoJson(FeatureCollection.fromFeatures(features))
+
+                        // Update route if changed (though it's mostly fixed here)
+                        val routePoints = route?.points?.map { org.maplibre.geojson.Point.fromLngLat(it.second, it.first) } ?: emptyList()
+                        style.getSourceAs<GeoJsonSource>("route-source")?.setGeoJson(org.maplibre.geojson.LineString.fromLngLats(routePoints))
                     }
                 }
             )

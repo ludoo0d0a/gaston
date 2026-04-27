@@ -73,8 +73,12 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.location.LocationComponentActivationOptions
-import org.maplibre.android.annotations.MarkerOptions
-import org.maplibre.android.annotations.IconFactory
+import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.Point
 
 private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
     val r = 6371.0
@@ -433,48 +437,75 @@ fun VectorMapScreen(
                 cameraPosition = initialCameraPosition,
                 onMapReady = { map ->
                     mapLibreMap = map
-                    if (hasLocationPermission) {
-                        map.style?.let { style ->
+                    map.getStyle { style ->
+                        if (hasLocationPermission) {
                             val options = LocationComponentActivationOptions.builder(context, style).build()
                             map.locationComponent.activateLocationComponent(options)
                             map.locationComponent.isLocationComponentEnabled = true
                         }
+
+                        // Setup POI Source and Layer
+                        if (style.getSource("poi-source") == null) {
+                            style.addSource(GeoJsonSource("poi-source"))
+                        }
+                        if (style.getLayer("poi-layer") == null) {
+                            style.addLayer(
+                                SymbolLayer("poi-layer", "poi-source").withProperties(
+                                    PropertyFactory.iconImage("{poi-id}"),
+                                    PropertyFactory.iconAllowOverlap(true),
+                                    PropertyFactory.iconIgnorePlacement(true)
+                                )
+                            )
+                        }
+                    }
+                    map.addOnMapClickListener { point ->
+                        map.getStyle { style ->
+                            val pixel = map.projection.toScreenLocation(point)
+                            val features = map.queryRenderedFeatures(pixel, "poi-layer")
+                            if (features.isNotEmpty()) {
+                                val imageId = features[0].getStringProperty("poi-id")
+                                val poiId = imageId.substringBefore("_")
+                                val poi = poisToShow.find { it.id == poiId }
+                                if (poi != null) {
+                                    selectedPoi = poi
+                                    scrollRequestPoiId = poi.id
+                                    scope.launch { sheetState.show() }
+                                }
+                            }
+                        }
+                        true
                     }
                 },
                 update = { map ->
-                    map.clear()
-                    poisToShow.forEach { poi ->
-                        val isCheapest = minPrice != null && poi.fuelPrices?.any { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest && it.price == minPrice } == true
-                        val markerBitmap = PoiMarkerHelper.getMarkerBitmap(
-                            context = context,
-                            poi = poi,
-                            effectiveEnergyTypes = effectiveEnergies,
-                            effectivePowerLevels = effectivePowerLevels,
-                            isSelected = selectedPoi?.id == poi.id,
-                            isCheapest = isCheapest,
-                            sizePx = 120,
-                            availability = availabilityByPoiId[poi.id],
-                            markerStyle = MarkerStyle.Bubble
-                        )
-                        val icon = IconFactory.getInstance(context).fromBitmap(markerBitmap)
-                        map.addMarker(
-                            MarkerOptions()
-                                .position(LatLng(poi.latitude, poi.longitude))
-                                .icon(icon)
-                        )
-                    }
-                    map.setOnMarkerClickListener { marker ->
-                        val pos = marker.position ?: return@setOnMarkerClickListener true
-                        val poi = poisToShow.find {
-                            kotlin.math.abs(it.latitude - pos.latitude) < 0.0001 &&
-                            kotlin.math.abs(it.longitude - pos.longitude) < 0.0001
+                    map.getStyle { style ->
+                        val features = poisToShow.map { poi ->
+                            val isSelected = selectedPoi?.id == poi.id
+                            val isCheapest = minPrice != null && poi.fuelPrices?.any { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest && it.price == minPrice } == true
+
+                            val imageId = "${poi.id}_${isSelected}_${isCheapest}_${availabilityByPoiId[poi.id]?.hashCode()}"
+
+                            if (style.getImage(imageId) == null) {
+                                val markerBitmap = PoiMarkerHelper.getMarkerBitmap(
+                                    context = context,
+                                    poi = poi,
+                                    effectiveEnergyTypes = effectiveEnergies,
+                                    effectivePowerLevels = effectivePowerLevels,
+                                    isSelected = isSelected,
+                                    isCheapest = isCheapest,
+                                    sizePx = 120,
+                                    availability = availabilityByPoiId[poi.id],
+                                    markerStyle = MarkerStyle.Bubble
+                                )
+                                style.addImage(imageId, markerBitmap)
+                            }
+
+                            Feature.fromGeometry(
+                                Point.fromLngLat(poi.longitude, poi.latitude)
+                            ).apply {
+                                addStringProperty("poi-id", imageId)
+                            }
                         }
-                        if (poi != null) {
-                            selectedPoi = poi
-                            scrollRequestPoiId = poi.id
-                            scope.launch { sheetState.show() }
-                        }
-                        true
+                        style.getSourceAs<GeoJsonSource>("poi-source")?.setGeoJson(FeatureCollection.fromFeatures(features))
                     }
                 }
             )
