@@ -95,7 +95,7 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: fr.geoking.gaston
           releaseFiles: androidApp/build/outputs/bundle/playstoreRelease/*.aab
-          track: internal
-          status: completed
+          tracks: internal
+          status: draft
           whatsNewDirectory: .github/play-release-notes
           changesNotSentForReview: ${{ env.CHANGES_NOT_SENT_FOR_REVIEW == 'true' || env.CHANGES_NOT_SENT_FOR_REVIEW == true }}

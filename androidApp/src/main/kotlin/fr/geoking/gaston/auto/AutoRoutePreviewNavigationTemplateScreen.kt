@@ -10,6 +10,7 @@ import androidx.car.app.model.Template
 import androidx.car.app.navigation.model.MapWithContentTemplate
 import androidx.car.app.model.ListTemplate
 
+@Suppress("DEPRECATION")
 class AutoRoutePreviewNavigationTemplateScreen(carContext: CarContext) : Screen(carContext) {
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoRoutePreviewNavigationTemplateScreen") {
         val listBuilder = ItemList.Builder()

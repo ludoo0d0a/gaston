@@ -6,23 +6,25 @@ This guide provides step-by-step instructions on how to configure your Google Pl
 
 ### 1. Enable the Google Play Android Developer API
 - Go to the [Google Play Console](https://play.google.com/console).
-- In the left-hand menu, navigate to **Setup > API access**.
+- **Note:** Google has been moving things around; on many accounts there is no longer a left-nav **Setup → API access** screen. Service account access is typically managed via **Users and permissions** now (see Step 3 below).
 - Click **Choose a project to link** and select the Google Cloud project you want to link. If you don't have one, you can create a new one.
 - The **Google Play Android Developer API** should be automatically enabled. If not, you can enable it from the [Google Cloud Console](https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com).
+- Canonical Google documentation (kept updated): [`https://developers.google.com/android-publisher/getting_started`](https://developers.google.com/android-publisher/getting_started)
 
 ### 2. Create a Service Account
-- From the **API access** page in the Google Play Console, scroll down to the **Service accounts** section.
-- Click **Create new service account**.
+- Create the service account in Google Cloud (recommended), then grant it access in Play Console (next step).
 - Follow the on-screen instructions to create a service account. You will be redirected to the Google Cloud Platform.
 - When creating the service account, assign it the **Service Account User** role.
 - After creating the service account, you will need to create a key. Choose **JSON** as the key type and download the file. This file contains the credentials needed to authenticate with the Google Play API.
 
 ### 3. Grant Permissions in Play Console
-- Go back to the **API access** page in the Google Play Console.
-- Find the newly created service account in the list and click **Grant access**.
-- Grant the following permissions:
-  - **Admin (all permissions)**: This is the simplest option, but you can also grant more granular permissions if needed.
+- In Play Console, go to **Users and permissions** (sometimes labeled **Users & permissions**).
+- Click **Invite new user**.
+- Paste your service account email (`…@….iam.gserviceaccount.com`).
+- Grant the needed **Account permissions** (for automation, **Release Manager** or **Admin** are the usual choices).
 - Click **Invite user** to save the changes.
+
+**Tip:** Some Google docs still reference an **API access** page mainly as a place to see your **Developer ID** in the URL (e.g. `.../developers/<id>/api-access`). Even if you can’t find that page in the UI, granting access via **Users and permissions** is what matters for permissions.
 
 ## Step 2: GitHub Secrets Configuration
 
