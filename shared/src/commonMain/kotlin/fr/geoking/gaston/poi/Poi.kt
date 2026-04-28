@@ -82,6 +82,8 @@ enum class PoiProviderType(
     Chargy(providesElectric = true),
     /** Fastned UK Open Data API (OCPI 2.2.1). */
     Fastned(providesElectric = true),
+    /** DKV Mobility API portal (OCPI via Azure APIM). */
+    Dkv(providesElectric = true),
     /** Luxembourg OSM fuel + OpenVan.camp weekly reference prices (CC BY 4.0). */
     OpenVanCamp(providesFuel = true),
     /** Spanish government fuel prices (Minetur). */

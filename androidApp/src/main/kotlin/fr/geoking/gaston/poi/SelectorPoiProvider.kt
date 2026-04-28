@@ -33,6 +33,7 @@ class SelectorPoiProvider(
     private val openChargeMap: PoiProvider,
     private val chargy: PoiProvider,
     private val fastned: PoiProvider,
+    private val dkv: PoiProvider,
     private val openVanCamp: PoiProvider,
     private val spainMinetur: PoiProvider,
     private val germanyTankerkoenig: PoiProvider,
@@ -69,6 +70,7 @@ class SelectorPoiProvider(
         PoiProviderType.OpenChargeMap -> openChargeMap
         PoiProviderType.Chargy -> chargy
         PoiProviderType.Fastned -> fastned
+        PoiProviderType.Dkv -> dkv
         PoiProviderType.OpenVanCamp -> openVanCamp
         PoiProviderType.SpainMinetur -> spainMinetur
         PoiProviderType.GermanyTankerkoenig -> germanyTankerkoenig

@@ -7,6 +7,8 @@ import fr.geoking.gaston.api.belib.BelibAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.chargy.ChargyProvider
+import fr.geoking.gaston.api.dkv.DkvOcpiClient
+import fr.geoking.gaston.api.dkv.DkvOcpiProvider
 import fr.geoking.gaston.api.fastned.FastnedOcpiClient
 import fr.geoking.gaston.api.fastned.FastnedOcpiProvider
 import fr.geoking.gaston.api.datagouv.DataGouvCampingClient
@@ -109,6 +111,16 @@ val mapModule = module {
     single<PoiProvider>(named("fastned")) {
         FastnedOcpiProvider(get(), radiusKm = 10, limit = 100)
     }
+    single {
+        DkvOcpiClient(
+            client = get(),
+            subscriptionKey = fr.geoking.gaston.BuildConfig.DKV_SUBSCRIPTION_KEY,
+            authorization = fr.geoking.gaston.BuildConfig.DKV_AUTHORIZATION.takeIf { it.isNotBlank() }
+        )
+    }
+    single<PoiProvider>(named("dkv")) {
+        DkvOcpiProvider(get(), radiusKm = 10, limit = 150)
+    }
     single { OverpassClient(get()) }
     single<PoiProvider>(named("overpass")) {
         OverpassProvider(get(), radiusKm = 5, limit = 100)
@@ -144,6 +156,7 @@ val mapModule = module {
             openChargeMap = get(named("openchargemap")),
             chargy = get(named("chargy")),
             fastned = get(named("fastned")),
+            dkv = get(named("dkv")),
             openVanCamp = get(named("openvancamp")),
             spainMinetur = get(named("spainminetur")),
             germanyTankerkoenig = get(named("germanytankerkoenig")),
