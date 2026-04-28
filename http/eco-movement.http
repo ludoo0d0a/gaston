@@ -1,4 +1,6 @@
-### Eco-Movement OCPI Data API quick checks
+### Ionity API data https://www.ionity.eu/open-data-request
+###
+### Compatible Eco-Movement OCPI Data API quick checks
 ### Docs: https://developers.eco-movement.com/reference/getting-started-data-api
 
 @baseUrl = https://api.eco-movement.com/api/ocpi/cpo/2.2
