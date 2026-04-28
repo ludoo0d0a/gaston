@@ -80,6 +80,8 @@ enum class PoiProviderType(
     DataGouvElec(providesElectric = true),
     OpenChargeMap(providesElectric = true),
     Chargy(providesElectric = true),
+    /** Fastned UK Open Data API (OCPI 2.2.1). */
+    Fastned(providesElectric = true),
     /** Luxembourg OSM fuel + OpenVan.camp weekly reference prices (CC BY 4.0). */
     OpenVanCamp(providesFuel = true),
     /** Spanish government fuel prices (Minetur). */
