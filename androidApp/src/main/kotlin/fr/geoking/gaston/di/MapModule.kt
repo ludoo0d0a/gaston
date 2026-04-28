@@ -11,6 +11,7 @@ import fr.geoking.gaston.api.dkv.DkvOcpiClient
 import fr.geoking.gaston.api.dkv.DkvOcpiProvider
 import fr.geoking.gaston.api.fastned.FastnedOcpiClient
 import fr.geoking.gaston.api.fastned.FastnedOcpiProvider
+import fr.geoking.gaston.api.evpricesfr.EvPricesFrClient
 import fr.geoking.gaston.api.datagouv.DataGouvCampingClient
 import fr.geoking.gaston.api.datagouv.DataGouvCampingProvider
 import fr.geoking.gaston.api.datagouv.DataGouvElecProvider
@@ -111,6 +112,9 @@ val mapModule = module {
     single<PoiProvider>(named("fastned")) {
         FastnedOcpiProvider(get(), radiusKm = 10, limit = 100)
     }
+
+    // Free/public France EV tariff baselines (HTML scraping).
+    single { EvPricesFrClient(get()) }
     single {
         DkvOcpiClient(
             client = get(),

@@ -88,6 +88,20 @@ See [`playstore-assets/README.md`](playstore-assets/README.md) for upload instru
 
 ---
 
+## Free France EV charging “day prices” (tariff baselines)
+
+For coarse, **free/public** France pricing baselines (not per-station for all networks), you can run:
+
+```bash
+python3 scripts/ev_prices_fr.py
+```
+
+Outputs:
+- `tmp/ev-prices-fr-YYYY-MM-DD.json`
+- `tmp/ev-prices-fr-YYYY-MM-DD.csv`
+
+---
+
 ## Tech stack
 
 | Layer | Library |
