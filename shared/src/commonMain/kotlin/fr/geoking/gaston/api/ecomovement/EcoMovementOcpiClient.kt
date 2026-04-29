@@ -11,15 +11,16 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * Minimal client for Eco-Movement OCPI Data API (CPO 2.2).
+ * Client for Eco-Movement OCPI Data API (CPO 2.2.1).
  *
- * Base URL (per Eco-Movement docs): https://api.eco-movement.com/api/ocpi/cpo/2.2
+ * Base URL: https://open-chargepoints.com/api/ocpi/cpo/2.2.1
  * Auth: `Authorization: Token <apiKey>`
+ * Doc: https://developers.eco-movement.com/v2.2.1/reference/get-all-locations-pcpr-api
  */
 class EcoMovementOcpiClient(
     private val client: HttpClient,
     private val apiKey: String,
-    private val baseUrl: String = "https://api.eco-movement.com/api/ocpi/cpo/2.2"
+    private val baseUrl: String = "https://open-chargepoints.com/api/ocpi/cpo/2.2.1"
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -84,17 +85,24 @@ data class EcoMovementOcpiLocation(
     val name: String? = null,
     val address: String? = null,
     val city: String? = null,
-    val postal_code: String? = null,
+    @SerialName("postal_code") val postalCode: String? = null,
+    @SerialName("country_code") val countryCode: String? = null,
     val country: String? = null,
     val coordinates: EcoMovementOcpiCoordinates? = null,
     val evses: List<EcoMovementOcpiEvse>? = null,
-    val operator: EcoMovementOcpiOperator? = null
+    val operator: EcoMovementOcpiBusinessDetails? = null
+)
+
+@Serializable
+data class EcoMovementOcpiBusinessDetails(
+    val name: String? = null,
+    val website: String? = null
 )
 
 @Serializable
 data class EcoMovementOcpiEvse(
     val uid: String? = null,
-    val evse_id: String? = null,
+    @SerialName("evse_id") val evseId: String? = null,
     val status: String? = null,
     val connectors: List<EcoMovementOcpiConnector>? = null
 )
@@ -104,10 +112,10 @@ data class EcoMovementOcpiConnector(
     val id: String? = null,
     val standard: String? = null,
     val format: String? = null,
-    val power_type: String? = null,
-    val max_voltage: Int? = null,
-    val max_amperage: Int? = null,
-    val max_electric_power: Int? = null
+    @SerialName("power_type") val powerType: String? = null,
+    @SerialName("max_voltage") val maxVoltage: Int? = null,
+    @SerialName("max_amperage") val maxAmperage: Int? = null,
+    @SerialName("max_electric_power") val maxElectricPower: Int? = null
 )
 
 @Serializable
@@ -115,9 +123,3 @@ data class EcoMovementOcpiCoordinates(
     val latitude: String? = null,
     val longitude: String? = null
 )
-
-@Serializable
-data class EcoMovementOcpiOperator(
-    val name: String? = null
-)
-
