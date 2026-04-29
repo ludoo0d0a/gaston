@@ -103,7 +103,7 @@ private val UsedApisList = listOf(
 @Composable
 fun SettingsScreen(
     settingsManager: SettingsManager,
-    authManager: GoogleAuthManager,
+    authManager: GoogleAuthManager?,
     errorLog: List<DetailedError>,
     onDismiss: () -> Unit,
     initialScreenStack: List<SettingsScreenPage>? = null,
@@ -179,7 +179,7 @@ fun SettingsScreen(
                         settings = current,
                         settingsManager = settingsManager,
                         authManager = authManager,
-                        firebaseAuth = com.google.firebase.auth.FirebaseAuth.getInstance()
+                        firebaseAuth = try { com.google.firebase.auth.FirebaseAuth.getInstance() } catch (e: Exception) { null }
                     )
                     SettingsScreenPage.MapConfig -> MapConfig(
                         settings = current,
@@ -477,7 +477,7 @@ private fun SettingsHeader(title: String, onBack: () -> Unit) {
 @Composable
 private fun MainMenu(
     settings: AppSettings,
-    authManager: GoogleAuthManager,
+    authManager: GoogleAuthManager?,
     onNavigate: (SettingsScreenPage) -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -541,29 +541,33 @@ private fun MainMenu(
                         fontSize = 14.sp
                     )
                 }
-                if (settings.isLoggedIn) {
-                    TextButton(onClick = {
-                        authManager.signOut { success ->
-                            if (!success) {
-                                scope.launch { snackbarHostState.showSnackbar("Sign out failed") }
-                            }
-                        }
-                    }) {
-                        Text("Sign Out", color = Color(0xFFFF6B6B))
-                    }
-                } else {
-                    Button(
-                        onClick = {
-                            authManager.signIn(context) { success, error ->
+                if (authManager != null) {
+                    if (settings.isLoggedIn) {
+                        TextButton(onClick = {
+                            authManager.signOut { success ->
                                 if (!success) {
-                                    scope.launch { snackbarHostState.showSnackbar(error ?: "Sign in failed") }
+                                    scope.launch { snackbarHostState.showSnackbar("Sign out failed") }
                                 }
                             }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = DeepPurple)
-                    ) {
-                        Text("Sign In")
+                        }) {
+                            Text("Sign Out", color = Color(0xFFFF6B6B))
+                        }
+                    } else {
+                        Button(
+                            onClick = {
+                                authManager.signIn(context) { success, error ->
+                                    if (!success) {
+                                        scope.launch { snackbarHostState.showSnackbar(error ?: "Sign in failed") }
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = DeepPurple)
+                        ) {
+                            Text("Sign In")
+                        }
                     }
+                } else {
+                    Text("Auth Unavailable", color = Color.Gray, fontSize = 14.sp)
                 }
             }
 
@@ -967,8 +971,8 @@ private fun SelectionItem(
 private fun GoogleAccount(
     settings: AppSettings,
     settingsManager: SettingsManager,
-    authManager: GoogleAuthManager,
-    firebaseAuth: com.google.firebase.auth.FirebaseAuth
+    authManager: GoogleAuthManager?,
+    firebaseAuth: com.google.firebase.auth.FirebaseAuth?
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -979,49 +983,53 @@ private fun GoogleAccount(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val firebaseUser = remember { firebaseAuth.currentUser }
-        if (settings.googleUserName != null || firebaseUser != null) {
-            Text(
-                "Connected as ${settings.googleUserName ?: firebaseUser?.displayName ?: "User"}",
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = {
-                    authManager.signOut { success ->
-                        if (!success) {
-                            android.util.Log.e("GoogleAuth", "Sign-out failed")
-                        }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.7f), contentColor = Color.White),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Logout")
-            }
+        if (authManager == null) {
+            Text("Authentication is currently unavailable.", color = Color.White)
         } else {
-            Text(
-                "Sign in to personalize your experience.",
-                color = Lavender,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-            Button(
-                onClick = {
-                    scope.launch {
-                        authManager.signIn(context) { success, error ->
+            val firebaseUser = remember { firebaseAuth?.currentUser }
+            if (settings.googleUserName != null || firebaseUser != null) {
+                Text(
+                    "Connected as ${settings.googleUserName ?: firebaseUser?.displayName ?: "User"}",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = {
+                        authManager.signOut { success ->
                             if (!success) {
-                                android.util.Log.e("GoogleAuth", "Sign-in failed: ${error ?: "Unknown error"}")
+                                android.util.Log.e("GoogleAuth", "Sign-out failed")
                             }
                         }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = DeepPurple),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Sign in with Google")
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.7f), contentColor = Color.White),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Logout")
+                }
+            } else {
+                Text(
+                    "Sign in to personalize your experience.",
+                    color = Lavender,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+                Button(
+                    onClick = {
+                        scope.launch {
+                            authManager.signIn(context) { success, error ->
+                                if (!success) {
+                                    android.util.Log.e("GoogleAuth", "Sign-in failed: ${error ?: "Unknown error"}")
+                                }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = DeepPurple),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Sign in with Google")
+                }
             }
         }
     }

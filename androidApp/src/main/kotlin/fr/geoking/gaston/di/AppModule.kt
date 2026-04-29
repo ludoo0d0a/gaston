@@ -150,15 +150,15 @@ val appModule = module {
         }
     }
 
-    single { FirebaseAuth.getInstance() }
-    single { FirebaseFirestore.getInstance() }
-    single { FirestoreSettingsSync(get(), get()) }
-    single<SettingsManager> { SettingsManager(androidContext(), get()) }
+    single { try { FirebaseAuth.getInstance() } catch (e: Exception) { null } }
+    single { try { FirebaseFirestore.getInstance() } catch (e: Exception) { null } }
+    single { FirestoreSettingsSync(getOrNull(), getOrNull()) }
+    single<SettingsManager> { SettingsManager(androidContext(), getOrNull()) }
 
     single<DiagnosticStore> { DiagnosticStore() }
 
     single<GoogleAuthManager> {
-        GoogleAuthManager(androidContext(), get(), get(), get())
+        GoogleAuthManager(androidContext(), get(), get(), getOrNull())
     }
 
     single<PermissionManager> {
