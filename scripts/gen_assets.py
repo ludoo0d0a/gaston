@@ -509,6 +509,16 @@ def save_launcher_icons(master: Image.Image):
 
         print(f"  {density}: ic_launcher.png + ic_launcher_round.png ({size}×{size})")
 
+    # Adaptive icon foreground (API 26+). We keep the full artwork as-is (including the rounded
+    # square), which guarantees the app uses the latest brand icon even if it isn't a "perfect"
+    # masked adaptive foreground.
+    out_v26 = os.path.join(RES_DIR, "mipmap-anydpi-v26")
+    os.makedirs(out_v26, exist_ok=True)
+    fg_size = 432  # recommended adaptive icon foreground size
+    fg = master.resize((fg_size, fg_size), Image.LANCZOS)
+    fg.save(os.path.join(out_v26, "ic_launcher_foreground.png"), "PNG")
+    print(f"  mipmap-anydpi-v26: ic_launcher_foreground.png ({fg_size}×{fg_size})")
+
 
 # ─── main ──────────────────────────────────────────────────────────────────────
 def main():
