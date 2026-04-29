@@ -115,7 +115,7 @@ fun VectorMapScreen(
     availabilityProviderFactory: BorneAvailabilityProviderFactory?,
     trafficProviderFactory: TrafficProviderFactory? = null,
     settingsManager: SettingsManager,
-    authManager: GoogleAuthManager,
+    authManager: GoogleAuthManager?,
     diagnostics: DiagnosticStore,
     palette: AnimationPalette,
     onBack: () -> Unit,

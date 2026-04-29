@@ -294,7 +294,7 @@ object MapModuleLoader {
         synchronized(lock) {
             if (loaded) return
             android.util.Log.d("MapModuleLoader", "Loading map module (first map open)")
-            GlobalContext.get().loadModules(listOf(mapModule))
+            org.koin.core.context.loadKoinModules(mapModule)
             loaded = true
         }
     }

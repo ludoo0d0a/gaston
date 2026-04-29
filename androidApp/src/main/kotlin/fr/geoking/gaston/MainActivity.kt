@@ -56,6 +56,7 @@ import fr.geoking.gaston.intent.NavDestination
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.koin.android.ext.android.get
+import org.koin.android.ext.android.getKoin
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -144,7 +145,7 @@ class MainActivity : ComponentActivity() {
             android.util.Log.d("MainActivity", "Resolving Koin dependencies...")
             val diagnostics: DiagnosticStore = get()
             val settingsManager: SettingsManager = get()
-            val authManager: GoogleAuthManager = get()
+            val authManager: GoogleAuthManager? = getKoin().getOrNull()
             val networkService: NetworkService = get()
             val fuelForecastRepository: FuelForecastRepository = get()
             android.util.Log.d("MainActivity", "Dependencies resolved successfully.")
@@ -172,7 +173,7 @@ class MainActivity : ComponentActivity() {
     private fun installMainComposeContent(
         diagnostics: DiagnosticStore,
         settingsManager: SettingsManager,
-        authManager: GoogleAuthManager,
+        authManager: GoogleAuthManager?,
         networkService: NetworkService,
         fuelForecastRepository: FuelForecastRepository,
         isPlaystoreDistribution: Boolean
@@ -214,7 +215,7 @@ class MainActivity : ComponentActivity() {
 private fun MainActivityComposeRoot(
     diagnostics: DiagnosticStore,
     settingsManager: SettingsManager,
-    authManager: GoogleAuthManager,
+    authManager: GoogleAuthManager?,
     mapDepsState: kotlinx.coroutines.flow.MutableStateFlow<MapDeps?>,
     onRequestMapDeps: () -> Unit,
     networkService: NetworkService,
@@ -267,7 +268,7 @@ private fun MainActivityComposeRoot(
 fun MainUI(
     diagnostics: DiagnosticStore,
     settingsManager: SettingsManager,
-    authManager: GoogleAuthManager,
+    authManager: GoogleAuthManager?,
     mapDepsState: kotlinx.coroutines.flow.StateFlow<MapDeps?>,
     onRequestMapDeps: () -> Unit,
     networkService: NetworkService,

@@ -131,7 +131,7 @@ fun MapScreen(
     availabilityProviderFactory: BorneAvailabilityProviderFactory?,
     trafficProviderFactory: TrafficProviderFactory? = null,
     settingsManager: SettingsManager,
-    authManager: fr.geoking.gaston.feature.auth.GoogleAuthManager,
+    authManager: fr.geoking.gaston.feature.auth.GoogleAuthManager?,
     diagnostics: DiagnosticStore,
     palette: AnimationPalette,
     onBack: () -> Unit,
