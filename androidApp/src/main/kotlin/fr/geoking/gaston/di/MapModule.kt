@@ -26,6 +26,8 @@ import fr.geoking.gaston.api.belgium.BelgiumPetrolPricesClient
 import fr.geoking.gaston.api.belgium.BelgiumOfficialProvider
 import fr.geoking.gaston.api.gas.GasApiClient
 import fr.geoking.gaston.api.gas.GasApiProvider
+import fr.geoking.gaston.api.it.MimitFuelProvider
+import fr.geoking.gaston.api.no.DrivstoffAppenProvider
 import fr.geoking.gaston.api.openvan.OpenVanCampClient
 import fr.geoking.gaston.api.openvan.OpenVanCampProvider
 import fr.geoking.gaston.api.openchargemap.OpenChargeMapClient
@@ -37,6 +39,8 @@ import fr.geoking.gaston.api.routing.OsrmRoutingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.routex.RoutexProvider
+import fr.geoking.gaston.api.si.GorivaSiProvider
+import fr.geoking.gaston.api.uk.UkCmaFuelProvider
 import fr.geoking.gaston.api.geocoding.AdresseDataGouvGeocodingClient
 import fr.geoking.gaston.api.geocoding.NominatimGeocodingClient
 import fr.geoking.gaston.api.geocoding.GeocodingClient
@@ -89,6 +93,18 @@ val mapModule = module {
     }
     single<PoiProvider>(named("gasapi")) {
         GasApiProvider(get(), radiusKm = 10, limit = 100)
+    }
+    single<PoiProvider>(named("ukcma")) {
+        UkCmaFuelProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single<PoiProvider>(named("mimit")) {
+        MimitFuelProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single<PoiProvider>(named("gorivasi")) {
+        GorivaSiProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single<PoiProvider>(named("drivstoffappen")) {
+        DrivstoffAppenProvider(get(), radiusKm = 20, limit = 150)
     }
     single<PoiProvider>(named("datagouv")) {
         DataGouvProvider(
@@ -181,6 +197,10 @@ val mapModule = module {
             dataGouvPrixCarburant = get(named("datagouvprixcarburant")),
             gasApi = get(named("gasapi")),
             dataGouv = get(named("datagouv")),
+            ukCma = get(named("ukcma")),
+            italyMimit = get(named("mimit")),
+            sloveniaGorivaSi = get(named("gorivasi")),
+            norwayDrivstoffAppen = get(named("drivstoffappen")),
             dataGouvElec = get(named("datagouvelec")),
             openChargeMap = get(named("openchargemap")),
             chargy = get(named("chargy")),

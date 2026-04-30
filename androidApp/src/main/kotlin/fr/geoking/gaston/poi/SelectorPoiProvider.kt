@@ -29,6 +29,10 @@ class SelectorPoiProvider(
     private val dataGouvPrixCarburant: PoiProvider,
     private val gasApi: PoiProvider,
     private val dataGouv: PoiProvider,
+    private val ukCma: PoiProvider,
+    private val italyMimit: PoiProvider,
+    private val sloveniaGorivaSi: PoiProvider,
+    private val norwayDrivstoffAppen: PoiProvider,
     private val dataGouvElec: PoiProvider,
     private val openChargeMap: PoiProvider,
     private val chargy: PoiProvider,
@@ -67,6 +71,10 @@ class SelectorPoiProvider(
         PoiProviderType.Etalab -> dataGouvPrixCarburant
         PoiProviderType.GasApi -> gasApi
         PoiProviderType.DataGouv -> dataGouv
+        PoiProviderType.UkCma -> ukCma
+        PoiProviderType.ItalyMimit -> italyMimit
+        PoiProviderType.SloveniaGorivaSi -> sloveniaGorivaSi
+        PoiProviderType.NorwayDrivstoffAppen -> norwayDrivstoffAppen
         PoiProviderType.DataGouvElec -> dataGouvElec
         PoiProviderType.OpenChargeMap -> openChargeMap
         PoiProviderType.Chargy -> chargy

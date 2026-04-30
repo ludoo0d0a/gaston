@@ -77,6 +77,14 @@ enum class PoiProviderType(
     Etalab(providesFuel = true),
     GasApi(providesFuel = true),
     DataGouv(providesFuel = true),
+    /** UK interim fuel price open data scheme (CMA / Fuel Finder retailer feeds). */
+    UkCma(providesFuel = true),
+    /** Italy MIMIT open data (pipe-delimited CSV exports). */
+    ItalyMimit(providesFuel = true),
+    /** Slovenia goriva.si public REST API. */
+    SloveniaGorivaSi(providesFuel = true),
+    /** Norway DrivstoffAppen public API (real-time). */
+    NorwayDrivstoffAppen(providesFuel = true),
     DataGouvElec(providesElectric = true),
     OpenChargeMap(providesElectric = true),
     Chargy(providesElectric = true),
