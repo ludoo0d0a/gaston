@@ -102,28 +102,41 @@ import kotlin.coroutines.suspendCoroutine
 
 /** Light theme for Play Store phone surfaces (home, diagnostics, map settings). */
 val PlaystoreHomeLightScheme = lightColorScheme(
-    primary = Color(0xFF2563EB),
+    // Pastel green + yellow brand
+    primary = Color(0xFF3E8E5A),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFDBEAFE),
-    onPrimaryContainer = Color(0xFF1E3A8A),
-    surface = Color(0xFFF8FAFC),
+    primaryContainer = Color(0xFFDFF3E6),
+    onPrimaryContainer = Color(0xFF0E3A24),
+    secondary = Color(0xFFF2C94C),
+    onSecondary = Color(0xFF2A2100),
+    secondaryContainer = Color(0xFFFFF2B3),
+    onSecondaryContainer = Color(0xFF2A2100),
+    tertiary = Color(0xFF7BC96F),
+    onTertiary = Color(0xFF0E3A24),
+    surface = Color(0xFFFFFBF3),
     onSurface = Color(0xFF0F172A),
-    surfaceContainerHighest = Color(0xFFE2E8F0),
-    background = Color(0xFFF1F5F9),
+    surfaceContainerHighest = Color(0xFFF3EEDB),
+    background = Color(0xFFFFFDF5),
     onBackground = Color(0xFF0F172A)
 )
 
 /** Dark theme for Play Store phone surfaces (home, diagnostics, map settings). */
 val PlaystoreHomeDarkScheme = darkColorScheme(
-    primary = Color(0xFF60A5FA),
-    onPrimary = Color(0xFF1E3A8A),
-    primaryContainer = Color(0xFF1E40AF),
-    onPrimaryContainer = Color(0xFFDBEAFE),
-    surface = Color(0xFF0F172A),
+    primary = Color(0xFF9FE2B3),
+    onPrimary = Color(0xFF0B2A17),
+    primaryContainer = Color(0xFF1E4D33),
+    onPrimaryContainer = Color(0xFFDFF3E6),
+    secondary = Color(0xFFF6E27A),
+    onSecondary = Color(0xFF2A2100),
+    secondaryContainer = Color(0xFF4A3C10),
+    onSecondaryContainer = Color(0xFFFFF2B3),
+    tertiary = Color(0xFF7BC96F),
+    onTertiary = Color(0xFF052012),
+    surface = Color(0xFF0F2418),
     onSurface = Color(0xFFF8FAFC),
-    surfaceContainerHighest = Color(0xFF1E293B),
-    background = Color(0xFF020617),
-    onBackground = Color(0xFFF1F5F9)
+    surfaceContainerHighest = Color(0xFF14301F),
+    background = Color(0xFF0B1A12),
+    onBackground = Color(0xFFF2F7F2)
 )
 
 @Composable

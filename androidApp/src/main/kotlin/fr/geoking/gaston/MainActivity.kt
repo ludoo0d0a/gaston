@@ -15,7 +15,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -392,7 +391,7 @@ fun MainUI(
         )
     }
 
-    MaterialTheme(colorScheme = darkColorScheme(background = Color(0xFF0F172A))) {
+    PlaystoreTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             when {
                 showNetworkDiagnostics -> {
@@ -619,7 +618,7 @@ fun MainUI(
 private fun StartupErrorContent(error: Throwable) {
     val message = error.message ?: error.toString()
     val fullDetail = buildStartupErrorDetail(error)
-    MaterialTheme(colorScheme = darkColorScheme(background = Color(0xFF0F172A))) {
+    PlaystoreTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Box(Modifier.fillMaxSize().padding(24.dp)) {
                 Column(
