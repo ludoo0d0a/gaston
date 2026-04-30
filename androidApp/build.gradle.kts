@@ -32,7 +32,7 @@ configure<ApplicationExtension> {
         val localProps = rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
             Properties().apply { file.inputStream().use { load(it) } }
         } ?: Properties()
-        // Keys: local.properties first, then env (CI must set env on the step that runs Gradle, e.g. JULES_KEY, GOOGLE_MAPS_KEY)
+        // Keys: local.properties first, then env (CI must set env on the step that runs Gradle, e.g. GOOGLE_MAPS_KEY)
         fun prop(key: String, default: String = "") =
             localProps.getProperty(key) ?: System.getenv(key) ?: default
         // Sanitize for Java string literal: trim, strip newlines, escape backslash and double-quote
@@ -56,7 +56,6 @@ configure<ApplicationExtension> {
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
 
-        val julesKey = sanitizeBuildConfigString(prop("JULES_KEY"))
         val githubToken = sanitizeBuildConfigString(prop("GITHUB_TOKEN"))
         val googleWebClientId = sanitizeBuildConfigString(prop("GOOGLE_WEB_CLIENT_ID", "your_web_client_id_placeholder"))
         val mobiliteitLuxembourgKey = sanitizeBuildConfigString(prop("MOBILITEIT_LUXEMBOURG_KEY"))
@@ -72,7 +71,6 @@ configure<ApplicationExtension> {
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
 
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
-        buildConfigField("String", "JULES_KEY", "\"$julesKey\"")
         buildConfigField("String", "GITHUB_TOKEN", "\"$githubToken\"")
         buildConfigField("String", "MOBILITEIT_LUXEMBOURG_KEY", "\"$mobiliteitLuxembourgKey\"")
         buildConfigField("String", "TOMTOM_KEY", "\"$tomtomKey\"")

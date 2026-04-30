@@ -416,7 +416,7 @@ class CustomMapPoiScreen(
                 itemListBuilder.addItem(
                     androidx.car.app.model.Row.Builder()
                         .setTitle("Add POI")
-                        .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_jules)).build())
+                        .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_add)).build())
                         .setOnClickListener {
                             lifecycleScope.launch {
                                 val loc = LocationHelper.getCurrentLocation(carContext)
