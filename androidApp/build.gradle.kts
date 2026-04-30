@@ -64,6 +64,7 @@ configure<ApplicationExtension> {
         val fastnedUkKey = sanitizeBuildConfigString(prop("FASTNED_UK_KEY", "wVOx5Bf5EU6FLEkqBtV3h5fXj5MLFcJA1tGqApHg"))
         val dkvSubscriptionKey = sanitizeBuildConfigString(prop("DKV_SUBSCRIPTION_KEY"))
         val dkvAuthorization = sanitizeBuildConfigString(prop("DKV_AUTHORIZATION"))
+        val ecoMovementKey = sanitizeBuildConfigString(prop("ECO_MOVEMENT_KEY"))
         val mapsApiKey = prop("GOOGLE_MAPS_KEY")
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
 
@@ -75,6 +76,7 @@ configure<ApplicationExtension> {
         buildConfigField("String", "FASTNED_UK_KEY", "\"$fastnedUkKey\"")
         buildConfigField("String", "DKV_SUBSCRIPTION_KEY", "\"$dkvSubscriptionKey\"")
         buildConfigField("String", "DKV_AUTHORIZATION", "\"$dkvAuthorization\"")
+        buildConfigField("String", "ECO_MOVEMENT_KEY", "\"$ecoMovementKey\"")
 
         // Required for Google Play Services Maps (references legacy Apache HTTP classes removed from Android 9+)
         useLibrary("org.apache.http.legacy")

@@ -84,6 +84,8 @@ enum class PoiProviderType(
     Fastned(providesElectric = true),
     /** DKV Mobility API portal (OCPI via Azure APIM). */
     Dkv(providesElectric = true),
+    /** Eco-Movement OCPI Data API (CPO 2.2.1). */
+    EcoMovement(providesElectric = true),
     /** Luxembourg OSM fuel + OpenVan.camp weekly reference prices (CC BY 4.0). */
     OpenVanCamp(providesFuel = true),
     /** Spanish government fuel prices (Minetur). */

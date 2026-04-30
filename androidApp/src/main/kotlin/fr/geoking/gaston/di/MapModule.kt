@@ -9,6 +9,8 @@ import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.chargy.ChargyProvider
 import fr.geoking.gaston.api.dkv.DkvOcpiClient
 import fr.geoking.gaston.api.dkv.DkvOcpiProvider
+import fr.geoking.gaston.api.ecomovement.EcoMovementOcpiClient
+import fr.geoking.gaston.api.ecomovement.EcoMovementOcpiProvider
 import fr.geoking.gaston.api.fastned.FastnedOcpiClient
 import fr.geoking.gaston.api.fastned.FastnedOcpiProvider
 import fr.geoking.gaston.api.evpricesfr.EvPricesFrClient
@@ -125,6 +127,14 @@ val mapModule = module {
     single<PoiProvider>(named("dkv")) {
         DkvOcpiProvider(get(), radiusKm = 10, limit = 150)
     }
+    single {
+        val sm = get<fr.geoking.gaston.SettingsManager>()
+        val key = sm.settings.value.ecoMovementKey.ifBlank { fr.geoking.gaston.BuildConfig.ECO_MOVEMENT_KEY }
+        EcoMovementOcpiClient(get(), apiKey = key)
+    }
+    single<PoiProvider>(named("ecomovement")) {
+        EcoMovementOcpiProvider(get(), radiusKm = 10, limit = 150)
+    }
     single { OverpassClient(get()) }
     single<PoiProvider>(named("overpass")) {
         OverpassProvider(get(), radiusKm = 5, limit = 100)
@@ -161,6 +171,7 @@ val mapModule = module {
             chargy = get(named("chargy")),
             fastned = get(named("fastned")),
             dkv = get(named("dkv")),
+            ecoMovement = get(named("ecomovement")),
             openVanCamp = get(named("openvancamp")),
             spainMinetur = get(named("spainminetur")),
             germanyTankerkoenig = get(named("germanytankerkoenig")),

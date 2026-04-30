@@ -65,6 +65,8 @@ data class AppSettings(
     val evRangeKm: Int = DEFAULT_EV_RANGE_KM,
     val evConsumptionKwhPer100km: Float? = null,
     val openChargeMapKey: String = "",
+    /** Eco-Movement OCPI Data API key (Authorization: Token ...). */
+    val ecoMovementKey: String = "",
     val selectedOverpassAmenityTypes: Set<String> = setOf("toilets", "drinking_water"),
     val phoneMapEngine: MapEngine = MapEngine.Google,
     val mapTheme: MapTheme = MapTheme.Dark,
@@ -162,6 +164,7 @@ open class SettingsManager(
             evRangeKm = prefs.getInt("ev_range_km", DEFAULT_EV_RANGE_KM),
             evConsumptionKwhPer100km = prefs.getString("ev_consumption_kwh_per_100km", null)?.toFloatOrNull(),
             openChargeMapKey = prefs.getString("openchargemap_key", "") ?: "",
+            ecoMovementKey = prefs.getString("eco_movement_key", "") ?: "",
             selectedOverpassAmenityTypes = prefs.getStringSet("overpass_amenity_types", null)?.toSet()
                 ?: setOf("toilets", "drinking_water"),
             phoneMapEngine = phoneMapEngine,
@@ -210,6 +213,7 @@ open class SettingsManager(
             .putInt("ev_range_km", settings.evRangeKm)
             .putString("ev_consumption_kwh_per_100km", settings.evConsumptionKwhPer100km?.toString())
             .putString("openchargemap_key", settings.openChargeMapKey)
+            .putString("eco_movement_key", settings.ecoMovementKey)
             .putStringSet("overpass_amenity_types", settings.selectedOverpassAmenityTypes)
             .putString("phone_map_engine", settings.phoneMapEngine.name)
             .putString("map_theme", settings.mapTheme.name)

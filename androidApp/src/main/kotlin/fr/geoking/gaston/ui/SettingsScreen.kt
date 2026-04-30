@@ -75,6 +75,7 @@ private val UsedApisList = listOf(
     UsedApi("Overpass API (OpenStreetMap)", "https://wiki.openstreetmap.org/wiki/Overpass_API", "https://www.openstreetmap.org/favicon.ico"),
     // POI & fuel / charging
     UsedApi("Open Charge Map", "https://openchargemap.org", "https://openchargemap.org/favicon.ico"),
+    UsedApi("Eco-Movement (OCPI)", "https://eco-movement.com", null),
     UsedApi("data.gouv.fr", "https://www.data.gouv.fr", "https://www.data.gouv.fr/favicon.ico"),
     UsedApi("ODRE (bornes IRVE)", "https://odre.opendatasoft.com", null),
     UsedApi("Gas API (prix carburants)", "https://gas-api.ovh", null),
@@ -94,6 +95,7 @@ private val UsedApisList = listOf(
 )
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun SettingsScreen(
     settingsManager: SettingsManager,
     authManager: GoogleAuthManager?,
@@ -268,7 +270,10 @@ private fun MapConfig(
                 listOf(
                     PoiProviderType.DataGouvElec to "data.gouv (France official)",
                     PoiProviderType.Chargy to "Chargy (Luxembourg)",
-                    PoiProviderType.OpenChargeMap to "OpenChargeMap"
+                    PoiProviderType.OpenChargeMap to "OpenChargeMap",
+                    PoiProviderType.Fastned to "Fastned (OCPI)",
+                    PoiProviderType.Dkv to "DKV Mobility (OCPI)",
+                    PoiProviderType.EcoMovement to "Eco-Movement (OCPI)"
                 ).forEach { (type, label) ->
                     FilterChip(
                         selected = settings.selectedPoiProviders.contains(type),
@@ -279,6 +284,39 @@ private fun MapConfig(
                         label = { Text(label) },
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Column {
+                Text(
+                    "API keys (optional)",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                OutlinedTextField(
+                    value = settings.openChargeMapKey,
+                    onValueChange = { onUpdate(settings.copy(openChargeMapKey = it)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("OpenChargeMap API key") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = settings.ecoMovementKey,
+                    onValueChange = { onUpdate(settings.copy(ecoMovementKey = it)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Eco-Movement API key") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                ApiKeyHelpLink(
+                    helpText = "Eco-Movement key is used as: Authorization: Token <key>.",
+                    url = "https://developers.eco-movement.com",
+                    linkLabel = "Eco-Movement docs"
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -436,7 +474,6 @@ private fun save(settingsManager: SettingsManager, s: AppSettings) {
     settingsManager.saveSettingsWithThemeCheck(s)
 }
 
-@Composable
 @Composable
 private fun MainMenu(
     settings: AppSettings,
