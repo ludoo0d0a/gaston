@@ -7,6 +7,7 @@ import fr.geoking.gaston.feature.permission.AndroidPermissionManager
 import fr.geoking.gaston.feature.auth.GoogleAuthManager
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
+import fr.geoking.gaston.shared.location.BorderCrossingManager
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.weather.WeatherLookup
 import fr.geoking.gaston.shared.platform.PermissionManager
@@ -178,6 +179,14 @@ val appModule = module {
             androidContext(),
             CoroutineScope(SupervisorJob() + Dispatchers.IO),
             get()
+        )
+    }
+
+    // Initialize BorderCrossingManager here so it starts at app launch
+    single(createdAtStart = true) {
+        BorderCrossingManager(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
+            networkService = get()
         )
     }
 

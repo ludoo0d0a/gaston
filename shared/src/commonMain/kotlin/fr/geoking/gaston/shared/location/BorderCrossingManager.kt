@@ -1,15 +1,14 @@
-package fr.geoking.julius.shared.location
+package fr.geoking.gaston.shared.location
 
-import fr.geoking.julius.shared.conversation.ConversationStore
-import fr.geoking.julius.shared.network.NetworkService
+import fr.geoking.gaston.shared.network.NetworkService
+import fr.geoking.gaston.shared.logging.log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class BorderCrossingManager(
     private val scope: CoroutineScope,
-    private val networkService: NetworkService,
-    private val conversationStore: ConversationStore
+    private val networkService: NetworkService
 ) {
     private var lastCountryCode: String? = null
 
@@ -30,9 +29,9 @@ class BorderCrossingManager(
                     }
 
                     val message = "Welcome to $countryName! You are connected to ${status.operatorName}$networkInfo.$networkSwitchInfo"
-
-                    // Add message to UI and speak it (interruptible)
-                    conversationStore.onUserFinishedSpeaking("CROSS_BORDER_EVENT_INTERNAL: $message")
+                    // Intentionally no ConversationStore dependency here.
+                    // If you later want UI/TTS, inject a callback or event sink from the app layer.
+                    log.d { "CROSS_BORDER_EVENT_INTERNAL: $message" }
                 }
                 if (currentCountry != null) {
                     lastCountryCode = currentCountry
