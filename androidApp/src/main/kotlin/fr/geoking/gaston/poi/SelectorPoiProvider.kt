@@ -137,8 +137,9 @@ class SelectorPoiProvider(
 
     override fun searchFlow(request: PoiSearchRequest): Flow<PoiSearchResult> = channelFlow {
         val settings = settingsManager.settings.value
+        val isoCountry = ParkingRegion.containing(request.latitude, request.longitude)?.countryCode
         val providers = try {
-            settings.effectiveProviders()
+            settings.effectiveProviders(countryCode = isoCountry)
         } catch (e: Exception) {
             Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
             settings.selectedPoiProviders
@@ -356,8 +357,9 @@ class SelectorPoiProvider(
 
     override suspend fun searchResult(request: PoiSearchRequest): PoiSearchResult {
         val settings = settingsManager.settings.value
+        val isoCountry = ParkingRegion.containing(request.latitude, request.longitude)?.countryCode
         val providers = try {
-            settings.effectiveProviders()
+            settings.effectiveProviders(countryCode = isoCountry)
         } catch (e: Exception) {
             Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
             settings.selectedPoiProviders
@@ -638,8 +640,9 @@ class SelectorPoiProvider(
         viewport: MapViewport?
     ): List<Poi> {
         val settings = settingsManager.settings.value
+        val isoCountry = ParkingRegion.containing(latitude, longitude)?.countryCode
         val providers = try {
-            settings.effectiveProviders()
+            settings.effectiveProviders(countryCode = isoCountry)
         } catch (e: Exception) {
             Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
             settings.selectedPoiProviders

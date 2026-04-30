@@ -32,6 +32,7 @@ import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.FuelCard
 import fr.geoking.gaston.MapEngine
 import fr.geoking.gaston.MapTheme
+import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.feature.auth.GoogleAuthManager
 import fr.geoking.gaston.poi.PoiProviderType
@@ -58,6 +59,7 @@ enum class SettingsScreenPage {
     ErrorLog,
     VehicleConfig,
     MapConfig,
+    Sources,
     About
 }
 
@@ -139,6 +141,7 @@ fun SettingsScreen(
                             SettingsScreenPage.GoogleAccount -> "Google account"
                             SettingsScreenPage.VehicleConfig -> "Vehicle"
                             SettingsScreenPage.MapConfig -> "Map"
+                            SettingsScreenPage.Sources -> "Sources"
                         }
                     )
                 },
@@ -192,6 +195,10 @@ fun SettingsScreen(
                     firebaseAuth = try { com.google.firebase.auth.FirebaseAuth.getInstance() } catch (e: Exception) { null }
                 )
                 SettingsScreenPage.MapConfig -> MapConfig(
+                    settings = current,
+                    onUpdate = { save(settingsManager, it) }
+                )
+                SettingsScreenPage.Sources -> SourcesConfig(
                     settings = current,
                     onUpdate = { save(settingsManager, it) }
                 )
@@ -253,7 +260,168 @@ private fun MapConfig(
             }
         }
 
-        // Data Sources
+        // Traffic
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Show traffic", style = MaterialTheme.typography.titleSmall)
+                Text("Google traffic layer", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(
+                checked = settings.mapTrafficEnabled,
+                onCheckedChange = { onUpdate(settings.copy(mapTrafficEnabled = it)) },
+            )
+        }
+
+        // Debug Logging
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Debug logging", style = MaterialTheme.typography.titleSmall)
+                Text("Capture network logs on map", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(
+                checked = settings.debugLoggingEnabled,
+                onCheckedChange = { onUpdate(settings.copy(debugLoggingEnabled = it)) },
+            )
+        }
+
+        // Map Filters
+        Column {
+            Text(
+                "Map filters",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Text(
+                "Fuel types",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
+                    FilterChip(
+                        selected = settings.selectedMapEnergyTypes.contains(id),
+                        onClick = {
+                            val next = if (settings.selectedMapEnergyTypes.contains(id)) settings.selectedMapEnergyTypes - id else settings.selectedMapEnergyTypes + id
+                            onUpdate(settings.copy(selectedMapEnergyTypes = next, useVehicleFilter = false))
+                        },
+                        label = { Text(label) },
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                "Power levels",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
+                    FilterChip(
+                        selected = settings.mapPowerLevels.contains(kw),
+                        onClick = {
+                            val next = if (settings.mapPowerLevels.contains(kw)) settings.mapPowerLevels - kw else settings.mapPowerLevels + kw
+                            onUpdate(settings.copy(mapPowerLevels = next, useVehicleFilter = false))
+                        },
+                        label = { Text(label) },
+                    )
+                }
+            }
+        }
+
+        // Itinerary
+        Column {
+            Text(
+                "Itinerary",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Text(
+                "Search radius: ${settings.routeStationSearchRadiusMeters} m",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Slider(
+                value = settings.routeStationSearchRadiusMeters.toFloat(),
+                onValueChange = { onUpdate(settings.copy(routeStationSearchRadiusMeters = it.toInt())) },
+                valueRange = 0f..2000f,
+                steps = 19,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Only highway stations", style = MaterialTheme.typography.titleSmall)
+                    Text("Filter results to stations on highways", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.filterOnlyHighwayStations,
+                    onCheckedChange = { onUpdate(settings.copy(filterOnlyHighwayStations = it)) },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SourcesConfig(
+    settings: AppSettings,
+    onUpdate: (AppSettings) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Column {
+            Text(
+                "Selection mode",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FilterChip(
+                    selected = settings.poiProviderSelectionMode == PoiProviderSelectionMode.Manual,
+                    onClick = { onUpdate(settings.copy(poiProviderSelectionMode = PoiProviderSelectionMode.Manual)) },
+                    label = { Text("Manual") }
+                )
+                FilterChip(
+                    selected = settings.poiProviderSelectionMode == PoiProviderSelectionMode.Auto,
+                    onClick = { onUpdate(settings.copy(poiProviderSelectionMode = PoiProviderSelectionMode.Auto)) },
+                    label = { Text("Auto (by country)") }
+                )
+            }
+            if (settings.poiProviderSelectionMode == PoiProviderSelectionMode.Auto) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Auto selects sources based on your current country. Your manual selection below remains as a fallback.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
         Column {
             Text(
                 "Data sources",
@@ -405,124 +573,6 @@ private fun MapConfig(
                 )
             }
         }
-
-        // Traffic
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Show traffic", style = MaterialTheme.typography.titleSmall)
-                Text("Google traffic layer", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Switch(
-                checked = settings.mapTrafficEnabled,
-                onCheckedChange = { onUpdate(settings.copy(mapTrafficEnabled = it)) },
-            )
-        }
-
-        // Debug Logging
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Debug logging", style = MaterialTheme.typography.titleSmall)
-                Text("Capture network logs on map", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Switch(
-                checked = settings.debugLoggingEnabled,
-                onCheckedChange = { onUpdate(settings.copy(debugLoggingEnabled = it)) },
-            )
-        }
-
-        // Map Filters
-        Column {
-            Text(
-                "Map filters",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            Text(
-                "Fuel types",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
-                    FilterChip(
-                        selected = settings.selectedMapEnergyTypes.contains(id),
-                        onClick = {
-                            val next = if (settings.selectedMapEnergyTypes.contains(id)) settings.selectedMapEnergyTypes - id else settings.selectedMapEnergyTypes + id
-                            onUpdate(settings.copy(selectedMapEnergyTypes = next, useVehicleFilter = false))
-                        },
-                        label = { Text(label) },
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                "Power levels",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
-                    FilterChip(
-                        selected = settings.mapPowerLevels.contains(kw),
-                        onClick = {
-                            val next = if (settings.mapPowerLevels.contains(kw)) settings.mapPowerLevels - kw else settings.mapPowerLevels + kw
-                            onUpdate(settings.copy(mapPowerLevels = next, useVehicleFilter = false))
-                        },
-                        label = { Text(label) },
-                    )
-                }
-            }
-        }
-
-        // Itinerary
-        Column {
-            Text(
-                "Itinerary",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            Text(
-                "Search radius: ${settings.routeStationSearchRadiusMeters} m",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Slider(
-                value = settings.routeStationSearchRadiusMeters.toFloat(),
-                onValueChange = { onUpdate(settings.copy(routeStationSearchRadiusMeters = it.toInt())) },
-                valueRange = 0f..2000f,
-                steps = 19,
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Only highway stations", style = MaterialTheme.typography.titleSmall)
-                    Text("Filter results to stations on highways", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(
-                    checked = settings.filterOnlyHighwayStations,
-                    onCheckedChange = { onUpdate(settings.copy(filterOnlyHighwayStations = it)) },
-                )
-            }
-        }
     }
 }
 
@@ -639,8 +689,16 @@ private fun MainMenu(
                 )
                 SettingsItem(
                     label = "Map",
-                    value = "Data sources, traffic, filters",
+                    value = "Traffic, filters",
                     onClick = { onNavigate(SettingsScreenPage.MapConfig) }
+                )
+                SettingsItem(
+                    label = "Sources",
+                    value = when (settings.poiProviderSelectionMode) {
+                        PoiProviderSelectionMode.Auto -> "Auto (by country)"
+                        PoiProviderSelectionMode.Manual -> "Manual selection"
+                    },
+                    onClick = { onNavigate(SettingsScreenPage.Sources) }
                 )
                 SettingsItem(
                     label = "Google account",

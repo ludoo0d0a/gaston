@@ -4,6 +4,7 @@ import android.location.Address
 import android.location.Geocoder
 import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -159,7 +160,8 @@ fun PhoneDashboardScreen(
     onOpenRoutes: () -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
     onOpenFuelForecast: () -> Unit,
-    onOpenSettings: (List<SettingsScreenPage>?) -> Unit
+    onOpenSettings: (List<SettingsScreenPage>?) -> Unit,
+    onRequestLocationPermission: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val settings by settingsManager.settings.collectAsState()
@@ -474,44 +476,6 @@ fun PhoneDashboardScreen(
                     }
                 }
 
-                // 0b. Fuel price estimation entry point (moved from top bar)
-                if (fuelForecastRepository != null) {
-                    item {
-                        Card(
-                            onClick = onOpenFuelForecast,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                        ) {
-                            ListItem(
-                                headlineContent = { Text("Price estimation") },
-                                supportingContent = { Text("Local estimate from market + nearby pumps") },
-                                leadingContent = {
-                                    Icon(
-                                        imageVector = Icons.Default.LocalGasStation,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                },
-                                trailingContent = {
-                                    if (fuelForecastLoading && fuelForecastState.historyPoints.isEmpty()) {
-                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                                    } else {
-                                        val price = fuelForecastState.historyPoints.lastOrNull()?.priceEurPerL
-                                        Text(
-                                            text = if (price != null) "€%.3f".format(price) else "—",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                },
-                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                            )
-                        }
-                    }
-                }
-
                 // 1. Nearby Cheapest (loader or card)
                 item {
                     if (isLoadingPois && showLoaderByDelay) {
@@ -537,6 +501,13 @@ fun PhoneDashboardScreen(
                             }
                         }
                     } else {
+                        val cardModifier = if (!hasLocationPermission) {
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { onRequestLocationPermission() }
+                        } else {
+                            Modifier.fillMaxWidth()
+                        }
                         CheapestStationsCard(
                             stations = nearbyPois,
                             userLatitude = userLat,
@@ -544,6 +515,7 @@ fun PhoneDashboardScreen(
                             selectedEnergyIds = energyFilterIds,
                             onClick = { poiForDetails = it },
                             onMapClick = onOpenMap,
+                            modifier = cardModifier,
                             emptyMessage = searchError
                         )
                     }
@@ -599,6 +571,44 @@ fun PhoneDashboardScreen(
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+
+                // 2b. Fuel price estimation entry point (moved after quick actions row)
+                if (fuelForecastRepository != null) {
+                    item {
+                        Card(
+                            onClick = onOpenFuelForecast,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            ListItem(
+                                headlineContent = { Text("Price estimation") },
+                                supportingContent = { Text("Local estimate from market + nearby pumps") },
+                                leadingContent = {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalGasStation,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                trailingContent = {
+                                    if (fuelForecastLoading && fuelForecastState.historyPoints.isEmpty()) {
+                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        val price = fuelForecastState.historyPoints.lastOrNull()?.priceEurPerL
+                                        Text(
+                                            text = if (price != null) "€%.3f".format(price) else "—",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
                         }
                     }
                 }

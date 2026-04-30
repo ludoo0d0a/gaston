@@ -4,6 +4,7 @@ import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
+import fr.geoking.gaston.poi.autoProvidersForCountry
 
 fun AppSettings.effectiveMapEnergyFilterIds(): Set<String> {
     val useVehicle = useVehicleFilter || (selectedMapEnergyTypes.isEmpty() && vehicleBrand.isNotEmpty())
@@ -50,7 +51,23 @@ fun AppSettings.effectiveIrveOperatorFilter(): Set<String> {
     }
 }
 
-fun AppSettings.effectiveProviders(): Set<PoiProviderType> = selectedPoiProviders
+/**
+ * Provider set actually used by the app.
+ *
+ * - [PoiProviderSelectionMode.Manual]: uses [selectedPoiProviders]
+ * - [PoiProviderSelectionMode.Auto]: uses current country (GPS/network) when available
+ *
+ * When [countryCode] is null/unknown, falls back to [selectedPoiProviders] (manual override).
+ */
+fun AppSettings.effectiveProviders(countryCode: String? = null): Set<PoiProviderType> {
+    if (poiProviderSelectionMode == PoiProviderSelectionMode.Manual) return selectedPoiProviders
+    val iso = countryCode?.trim()?.uppercase()?.takeIf { it.length == 2 } ?: return selectedPoiProviders
+    return autoProvidersForCountry(
+        countryCode = iso,
+        vehicleEnergy = vehicleEnergy,
+        fallbackManual = selectedPoiProviders
+    )
+}
 
 fun Set<PoiProviderType>.isOnlyOverpass(): Boolean =
     isNotEmpty() && all { it == PoiProviderType.Overpass }

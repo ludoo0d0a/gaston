@@ -44,6 +44,8 @@ const val DEFAULT_EV_RANGE_KM = 300
 
 enum class FuelCard { None, Routex }
 
+enum class PoiProviderSelectionMode { Manual, Auto }
+
 data class AppSettings(
     val vehicleBrand: String = "",
     val vehicleModel: String = "",
@@ -52,6 +54,8 @@ data class AppSettings(
     val vehiclePowerLevels: Set<Int> = DEFAULT_MAP_POWER_LEVELS,
     val fuelCard: FuelCard = FuelCard.None,
     val useVehicleFilter: Boolean = false,
+    /** When [Auto], provider set is derived from current country (GPS / network). */
+    val poiProviderSelectionMode: PoiProviderSelectionMode = PoiProviderSelectionMode.Manual,
     val selectedPoiProviders: Set<PoiProviderType> = setOf(PoiProviderType.DataGouv),
     val selectedMapEnergyTypes: Set<String> = DEFAULT_MAP_ENERGY_TYPES,
     val mapEnseigneType: String = DEFAULT_MAP_ENSEIGNE_TYPE,
@@ -149,6 +153,13 @@ open class SettingsManager(
             FuelCard.valueOf(prefs.getString("fuel_card", FuelCard.None.name) ?: FuelCard.None.name)
         } catch (_: Exception) { FuelCard.None }
 
+        val poiProviderSelectionMode = try {
+            PoiProviderSelectionMode.valueOf(
+                prefs.getString("poi_provider_selection_mode", PoiProviderSelectionMode.Manual.name)
+                    ?: PoiProviderSelectionMode.Manual.name
+            )
+        } catch (_: Exception) { PoiProviderSelectionMode.Manual }
+
         return AppSettings(
             vehicleBrand = prefs.getString("vehicle_brand", "") ?: "",
             vehicleModel = prefs.getString("vehicle_model", "") ?: "",
@@ -157,6 +168,7 @@ open class SettingsManager(
             vehiclePowerLevels = readIntSet("vehicle_power_levels", DEFAULT_MAP_POWER_LEVELS),
             fuelCard = fuelCard,
             useVehicleFilter = prefs.getBoolean("use_vehicle_filter", false),
+            poiProviderSelectionMode = poiProviderSelectionMode,
             selectedPoiProviders = selectedProviders,
             selectedMapEnergyTypes = prefs.getStringSet("map_energy_types", null)?.toSet() ?: DEFAULT_MAP_ENERGY_TYPES,
             mapEnseigneType = prefs.getString("map_enseigne_type", DEFAULT_MAP_ENSEIGNE_TYPE) ?: DEFAULT_MAP_ENSEIGNE_TYPE,
@@ -209,6 +221,7 @@ open class SettingsManager(
             .putStringSet("vehicle_power_levels", settings.vehiclePowerLevels.map { it.toString() }.toSet())
             .putString("fuel_card", settings.fuelCard.name)
             .putBoolean("use_vehicle_filter", settings.useVehicleFilter)
+            .putString("poi_provider_selection_mode", settings.poiProviderSelectionMode.name)
             .putStringSet("poi_providers", settings.selectedPoiProviders.map { it.name }.toSet())
             .putStringSet("map_energy_types", settings.selectedMapEnergyTypes)
             .putString("map_enseigne_type", settings.mapEnseigneType)
@@ -246,6 +259,10 @@ open class SettingsManager(
     }
 
     // Convenience setters used across phone + Android Auto screens
+    open fun setPoiProviderSelectionMode(mode: PoiProviderSelectionMode) {
+        saveSettings(_settings.value.copy(poiProviderSelectionMode = mode))
+    }
+
     open fun setPoiProviderTypes(types: Set<PoiProviderType>) {
         saveSettings(_settings.value.copy(selectedPoiProviders = types.sanitizeUserPoiProviderSelection()))
     }

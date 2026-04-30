@@ -240,12 +240,19 @@ private fun MainActivityComposeRoot(
     }
 
     val context = LocalContext.current
-    val hasLocationPermission = remember(context) {
-        androidx.core.content.ContextCompat.checkSelfPermission(
-            context,
-            android.Manifest.permission.ACCESS_FINE_LOCATION
-        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    var hasLocationPermission by remember(context) {
+        mutableStateOf(
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        )
     }
+
+    val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted -> hasLocationPermission = isGranted }
+    )
 
     MainUI(
         diagnostics = diagnostics,
@@ -260,7 +267,10 @@ private fun MainActivityComposeRoot(
         pendingNavDestinationFlow = pendingNavDestination,
         pendingLibreMapLab = pendingLibreMapLab,
         isPlaystoreDistribution = isPlaystoreDistribution,
-        hasLocationPermission = hasLocationPermission
+        hasLocationPermission = hasLocationPermission,
+        onRequestLocationPermission = {
+            locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        }
     )
 }
 
@@ -278,7 +288,8 @@ fun MainUI(
     pendingNavDestinationFlow: kotlinx.coroutines.flow.MutableStateFlow<NavDestination?>? = null,
     pendingLibreMapLab: MutableStateFlow<Boolean>? = null,
     isPlaystoreDistribution: Boolean = false,
-    hasLocationPermission: Boolean = false
+    hasLocationPermission: Boolean = false,
+    onRequestLocationPermission: () -> Unit = {}
 ) {
     val pendingNavFlow = pendingNavDestinationFlow ?: remember { MutableStateFlow<NavDestination?>(null) }
     val mapDeps by mapDepsState.collectAsState()
@@ -482,7 +493,8 @@ fun MainUI(
                         onOpenSettings = { stack ->
                             playstoreSettingsInitialStack = stack
                             showPlaystoreSettings = true
-                        }
+                        },
+                        onRequestLocationPermission = onRequestLocationPermission
                     )
                 }
                 showSettings && !isPlaystoreDistribution -> {
@@ -585,7 +597,8 @@ fun MainUI(
                             onOpenSettings = { stack ->
                                 settingsInitialStack = stack
                                 showSettings = true
-                            }
+                            },
+                            onRequestLocationPermission = onRequestLocationPermission
                         )
                     }
                 }
