@@ -65,6 +65,9 @@ configure<ApplicationExtension> {
         val dkvSubscriptionKey = sanitizeBuildConfigString(prop("DKV_SUBSCRIPTION_KEY"))
         val dkvAuthorization = sanitizeBuildConfigString(prop("DKV_AUTHORIZATION"))
         val ecoMovementKey = sanitizeBuildConfigString(prop("ECO_MOVEMENT_KEY"))
+        val fuelpricesDkKey = sanitizeBuildConfigString(prop("FUELPRICES_DK_KEY"))
+        val nswFuelCheckKey = sanitizeBuildConfigString(prop("NSW_FUELCHECK_KEY"))
+        val nswFuelCheckSecret = sanitizeBuildConfigString(prop("NSW_FUELCHECK_SECRET"))
         val mapsApiKey = prop("GOOGLE_MAPS_KEY")
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
 
@@ -77,6 +80,9 @@ configure<ApplicationExtension> {
         buildConfigField("String", "DKV_SUBSCRIPTION_KEY", "\"$dkvSubscriptionKey\"")
         buildConfigField("String", "DKV_AUTHORIZATION", "\"$dkvAuthorization\"")
         buildConfigField("String", "ECO_MOVEMENT_KEY", "\"$ecoMovementKey\"")
+        buildConfigField("String", "FUELPRICES_DK_KEY", "\"$fuelpricesDkKey\"")
+        buildConfigField("String", "NSW_FUELCHECK_KEY", "\"$nswFuelCheckKey\"")
+        buildConfigField("String", "NSW_FUELCHECK_SECRET", "\"$nswFuelCheckSecret\"")
 
         // Required for Google Play Services Maps (references legacy Apache HTTP classes removed from Android 9+)
         useLibrary("org.apache.http.legacy")

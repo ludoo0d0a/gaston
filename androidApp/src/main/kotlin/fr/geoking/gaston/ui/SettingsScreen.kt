@@ -338,6 +338,20 @@ private fun MapConfig(
                     PoiProviderType.ItalyMimit to "MIMIT (Italy official)",
                     PoiProviderType.SloveniaGorivaSi to "goriva.si (Slovenia official)",
                     PoiProviderType.NorwayDrivstoffAppen to "DrivstoffAppen (Norway)",
+                    PoiProviderType.PortugalDgeg to "DGEG (Portugal official)",
+                    PoiProviderType.NetherlandsAnwb to "ANWB (Netherlands/BE/LU)",
+                    PoiProviderType.DenmarkFuelpricesDk to "Fuelprices.dk (Denmark)",
+                    PoiProviderType.Fuelo to "Fuelo.net (multi-country)",
+                    PoiProviderType.AustraliaNswFuelCheck to "FuelCheck (NSW Australia)",
+                    PoiProviderType.CroatiaMzoe to "MZOE (Croatia official)",
+                    PoiProviderType.FinlandPolttoaine to "Polttoaine.net (Finland)",
+                    PoiProviderType.GreeceFuelGr to "FuelGR (Greece)",
+                    PoiProviderType.IrelandPickAPump to "Pick A Pump (Ireland)",
+                    PoiProviderType.MoldovaAnre to "ANRE (Moldova)",
+                    PoiProviderType.RomaniaPeco to "Peco Online (Romania)",
+                    PoiProviderType.SerbiaNis to "NIS (Serbia)",
+                    PoiProviderType.MexicoCre to "CRE (Mexico)",
+                    PoiProviderType.ArgentinaEnergia to "Secretaría de Energía (Argentina)",
                     PoiProviderType.OpenVanCamp to "OpenVan.camp (LU, HR, SI...)",
                     PoiProviderType.SpainMinetur to "Spain Minetur (official)",
                     PoiProviderType.GermanyTankerkoenig to "Tankerkönig (Germany)",
@@ -353,6 +367,42 @@ private fun MapConfig(
                         label = { Text(label) },
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Column {
+                Text(
+                    "Fuel API keys (optional)",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                OutlinedTextField(
+                    value = settings.fuelpricesDkKey,
+                    onValueChange = { onUpdate(settings.copy(fuelpricesDkKey = it)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Fuelprices.dk API key") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = settings.nswFuelCheckKey,
+                    onValueChange = { onUpdate(settings.copy(nswFuelCheckKey = it)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("NSW FuelCheck API key") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = settings.nswFuelCheckSecret,
+                    onValueChange = { onUpdate(settings.copy(nswFuelCheckSecret = it)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("NSW FuelCheck API secret") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
             }
         }
 

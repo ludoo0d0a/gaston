@@ -67,6 +67,12 @@ data class AppSettings(
     val openChargeMapKey: String = "",
     /** Eco-Movement OCPI Data API key (Authorization: Token ...). */
     val ecoMovementKey: String = "",
+    /** Fuelprices.dk API key (Denmark). */
+    val fuelpricesDkKey: String = "",
+    /** NSW FuelCheck API key (Australia). */
+    val nswFuelCheckKey: String = "",
+    /** NSW FuelCheck API secret (Australia). */
+    val nswFuelCheckSecret: String = "",
     val selectedOverpassAmenityTypes: Set<String> = setOf("toilets", "drinking_water"),
     val phoneMapEngine: MapEngine = MapEngine.Google,
     val mapTheme: MapTheme = MapTheme.Dark,
@@ -165,6 +171,9 @@ open class SettingsManager(
             evConsumptionKwhPer100km = prefs.getString("ev_consumption_kwh_per_100km", null)?.toFloatOrNull(),
             openChargeMapKey = prefs.getString("openchargemap_key", "") ?: "",
             ecoMovementKey = prefs.getString("eco_movement_key", "") ?: "",
+            fuelpricesDkKey = prefs.getString("fuelprices_dk_key", "") ?: "",
+            nswFuelCheckKey = prefs.getString("nsw_fuelcheck_key", "") ?: "",
+            nswFuelCheckSecret = prefs.getString("nsw_fuelcheck_secret", "") ?: "",
             selectedOverpassAmenityTypes = prefs.getStringSet("overpass_amenity_types", null)?.toSet()
                 ?: setOf("toilets", "drinking_water"),
             phoneMapEngine = phoneMapEngine,
@@ -214,6 +223,9 @@ open class SettingsManager(
             .putString("ev_consumption_kwh_per_100km", settings.evConsumptionKwhPer100km?.toString())
             .putString("openchargemap_key", settings.openChargeMapKey)
             .putString("eco_movement_key", settings.ecoMovementKey)
+            .putString("fuelprices_dk_key", settings.fuelpricesDkKey)
+            .putString("nsw_fuelcheck_key", settings.nswFuelCheckKey)
+            .putString("nsw_fuelcheck_secret", settings.nswFuelCheckSecret)
             .putStringSet("overpass_amenity_types", settings.selectedOverpassAmenityTypes)
             .putString("phone_map_engine", settings.phoneMapEngine.name)
             .putString("map_theme", settings.mapTheme.name)

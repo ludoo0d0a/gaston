@@ -9,9 +9,27 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **DataGouv (Flux instantané prix carburants)** | France | Fuel | `https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2` | Official (Etalab) |
 | **DataGouv (Prix carburants quotidien)** | France | Fuel | `https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-carburants-quotidien` | Official (Etalab) |
 | **Gas API** | France | Fuel | `https://gas-api.ovh` | Wrapper around French open data |
+| **UK Fuel Finder / CMA open data feeds** | United Kingdom | Fuel | Multiple retailer JSON feeds (see GOV.UK “Access fuel price data”) | Aggregated client-side |
 | **Spain Minetur (MITECO/Minetur)** | Spain | Fuel | `https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/` | Official |
 | **Germany Tankerkönig (MTS-K)** | Germany | Fuel | `https://creativecommons.tankerkoenig.de/` | API key required in some modes |
 | **Austria E‑Control** | Austria | Fuel | `https://api.e-control.at/sprit/1.0/` | Official |
+| **MIMIT (Prezzi + Anagrafica)** | Italy | Fuel | `https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv` + `.../anagrafica_impianti_attivi.csv` | Pipe-delimited since Feb 2026 |
+| **goriva.si** | Slovenia | Fuel | `https://goriva.si/api/v1/search/` | Public REST API |
+| **DrivstoffAppen** | Norway | Fuel | `https://backend.drivstoffapp.no/stations/fuel/nearby` | Public API (OpenAPI available) |
+| **DGEG (Preços Combustíveis)** | Portugal | Fuel | `https://precoscombustiveis.dgeg.gov.pt/api/PrecoComb/PesquisarPostos` | Official |
+| **ANWB** | Netherlands + Belgium + Luxembourg | Fuel | `https://api.anwb.nl/routing/points-of-interest/v3/all` | Bounding-box queries (commercial) |
+| **Fuelprices.dk** | Denmark | Fuel | (API) | API key required |
+| **Fuelo.net** | Multi-country (EU + more) | Fuel | `https://{country}.fuelo.net/...` | Scraper-style; country-scoped |
+| **FuelCheck (NSW)** | Australia (NSW) | Fuel | `https://api.onegov.nsw.gov.au/FuelPriceCheck/v1/fuel/prices` | API key + secret required |
+| **MZOE** | Croatia | Fuel | `https://mzoe-gor.hr/data.json` | Official dataset |
+| **polttoaine.net** | Finland | Fuel | `https://www.polttoaine.net/` | HTML scraping |
+| **FuelGR** | Greece | Fuel | `https://fuelgr.gr/` | Nearby query / community |
+| **Pick A Pump** | Ireland | Fuel | (API) | Community |
+| **ANRE** | Moldova | Fuel | `https://api.ecarburanti.anre.md/public/` | Official-ish open API |
+| **Peco Online** | Romania | Fuel | (API) | Community |
+| **NIS + cenagoriva.rs** | Serbia | Fuel | `https://www.nisgazprom.rs/...` + `https://cenagoriva.rs/...` | Mixed sources |
+| **CRE** | Mexico | Fuel | (places + prices) | Government open data |
+| **Secretaría de Energía** | Argentina | Fuel | (CSV open data) | Government open data |
 | **Belgium official (max prices)** | Belgium | Fuel | (client-backed) | Official max prices (not ANWB) |
 | **OpenVan.camp** | Multi-country (reference prices) | Fuel | `https://openvan.camp/api/fuel/prices` | Weekly reference prices, CC BY 4.0 |
 | **Routex / Wigeogis** | Europe | Fuel | `https://app.wigeogis.com/kunden/routex-sitefinder/backend` | Commercial |
@@ -30,28 +48,8 @@ These sources are listed by Pumperly, but Gaston currently has no corresponding 
 
 | Country | Pumperly source | Type | Notes / what’s missing in Gaston |
 |---|---|---|---|
-| UK | **CMA Open Data** | Government feeds | Missing provider + parsing for the 13 retailer feeds |
-| Portugal | **DGEG** | Government API | Missing provider (and non-commercial disclaimer handling) |
-| Italy | **MIMIT** | Government CSV | Missing provider (CSV ingestion + mapping) |
-| Slovenia | **goriva.si** | Government API | Missing provider |
-| Netherlands | **ANWB** | Commercial API | Missing provider |
-| Belgium | **ANWB** | Commercial API | Gaston uses Belgium official max prices, not ANWB; ANWB provider missing |
-| Luxembourg | **ANWB** | Commercial API | Gaston has Chargy for EV and OpenVan.camp references; ANWB fuel provider missing |
-| Romania | **Peco Online** | Community | Missing provider |
-| Greece | **FuelGR** | Community API | Missing provider |
-| Ireland | **Pick A Pump** | Community API | Missing provider |
-| Croatia | **MZOE** | Government API | Missing provider |
-| Denmark | **FuelPrices.dk** | Commercial API | Missing provider (and API key support) |
-| Norway | **DrivstoffAppen** | Government-mandated | Missing provider |
 | Sweden | **Drivstoffappen** / **bensinpriser.nu** | Community | Missing provider |
-| Serbia | **NIS / cenagoriva** | Brand-level | Missing provider |
-| Finland | **polttoaine.net** | Community | Missing provider |
-| Switzerland + many EU countries | **Fuelo.net** | Community | Missing provider(s) / scrapers; would likely be country-scoped |
-| Turkey | **Fuelo.net** | Community | Missing provider |
-| Moldova | **ANRE** | Government | Missing provider |
-| Australia (WA + NSW) | **FuelWatch / FuelCheck** | Government API | Missing provider |
-| Argentina | **Secretaría de Energía** | Government API | Missing provider |
-| Mexico | **CRE** | Government API | Missing provider |
+| Australia (WA) | **FuelWatch** | Government API | Still missing (endpoint was unstable from CI) |
 
 ## Notes
 

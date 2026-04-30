@@ -85,6 +85,34 @@ enum class PoiProviderType(
     SloveniaGorivaSi(providesFuel = true),
     /** Norway DrivstoffAppen public API (real-time). */
     NorwayDrivstoffAppen(providesFuel = true),
+    /** Portugal official fuel prices (DGEG). */
+    PortugalDgeg(providesFuel = true),
+    /** Netherlands (and nearby) fuel prices via ANWB POI API. */
+    NetherlandsAnwb(providesFuel = true),
+    /** Denmark fuel prices via Fuelprices.dk (API key required). */
+    DenmarkFuelpricesDk(providesFuel = true),
+    /** Multi-country fuel station scraper via Fuelo.net. */
+    Fuelo(providesFuel = true),
+    /** Australia NSW FuelCheck API (API key + secret required). */
+    AustraliaNswFuelCheck(providesFuel = true),
+    /** Croatia MZOE dataset (mzoe-gor.hr). */
+    CroatiaMzoe(providesFuel = true),
+    /** Finland polttoaine.net prices (HTML scraping). */
+    FinlandPolttoaine(providesFuel = true),
+    /** Greece fuelgr.gr prices (nearby query). */
+    GreeceFuelGr(providesFuel = true),
+    /** Ireland Pick A Pump API. */
+    IrelandPickAPump(providesFuel = true),
+    /** Moldova ANRE public API (ecarburanti.anre.md). */
+    MoldovaAnre(providesFuel = true),
+    /** Romania Peco Online station prices. */
+    RomaniaPeco(providesFuel = true),
+    /** Serbia NIS stations + cenagoriva.rs prices. */
+    SerbiaNis(providesFuel = true),
+    /** Mexico CRE places + prices open data. */
+    MexicoCre(providesFuel = true),
+    /** Argentina Secretaría de Energía open data. */
+    ArgentinaEnergia(providesFuel = true),
     DataGouvElec(providesElectric = true),
     OpenChargeMap(providesElectric = true),
     Chargy(providesElectric = true),

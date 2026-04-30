@@ -33,6 +33,20 @@ class SelectorPoiProvider(
     private val italyMimit: PoiProvider,
     private val sloveniaGorivaSi: PoiProvider,
     private val norwayDrivstoffAppen: PoiProvider,
+    private val portugalDgeg: PoiProvider,
+    private val netherlandsAnwb: PoiProvider,
+    private val denmarkFuelpricesDk: PoiProvider,
+    private val fuelo: PoiProvider,
+    private val australiaNswFuelCheck: PoiProvider,
+    private val croatiaMzoe: PoiProvider,
+    private val finlandPolttoaine: PoiProvider,
+    private val greeceFuelGr: PoiProvider,
+    private val irelandPickAPump: PoiProvider,
+    private val moldovaAnre: PoiProvider,
+    private val romaniaPeco: PoiProvider,
+    private val serbiaNis: PoiProvider,
+    private val mexicoCre: PoiProvider,
+    private val argentinaEnergia: PoiProvider,
     private val dataGouvElec: PoiProvider,
     private val openChargeMap: PoiProvider,
     private val chargy: PoiProvider,
@@ -75,6 +89,20 @@ class SelectorPoiProvider(
         PoiProviderType.ItalyMimit -> italyMimit
         PoiProviderType.SloveniaGorivaSi -> sloveniaGorivaSi
         PoiProviderType.NorwayDrivstoffAppen -> norwayDrivstoffAppen
+        PoiProviderType.PortugalDgeg -> portugalDgeg
+        PoiProviderType.NetherlandsAnwb -> netherlandsAnwb
+        PoiProviderType.DenmarkFuelpricesDk -> denmarkFuelpricesDk
+        PoiProviderType.Fuelo -> fuelo
+        PoiProviderType.AustraliaNswFuelCheck -> australiaNswFuelCheck
+        PoiProviderType.CroatiaMzoe -> croatiaMzoe
+        PoiProviderType.FinlandPolttoaine -> finlandPolttoaine
+        PoiProviderType.GreeceFuelGr -> greeceFuelGr
+        PoiProviderType.IrelandPickAPump -> irelandPickAPump
+        PoiProviderType.MoldovaAnre -> moldovaAnre
+        PoiProviderType.RomaniaPeco -> romaniaPeco
+        PoiProviderType.SerbiaNis -> serbiaNis
+        PoiProviderType.MexicoCre -> mexicoCre
+        PoiProviderType.ArgentinaEnergia -> argentinaEnergia
         PoiProviderType.DataGouvElec -> dataGouvElec
         PoiProviderType.OpenChargeMap -> openChargeMap
         PoiProviderType.Chargy -> chargy
@@ -580,6 +608,20 @@ class SelectorPoiProvider(
         dkv.clearCache()
         ecoMovement.clearCache()
         openVanCamp.clearCache()
+        portugalDgeg.clearCache()
+        netherlandsAnwb.clearCache()
+        denmarkFuelpricesDk.clearCache()
+        fuelo.clearCache()
+        australiaNswFuelCheck.clearCache()
+        croatiaMzoe.clearCache()
+        finlandPolttoaine.clearCache()
+        greeceFuelGr.clearCache()
+        irelandPickAPump.clearCache()
+        moldovaAnre.clearCache()
+        romaniaPeco.clearCache()
+        serbiaNis.clearCache()
+        mexicoCre.clearCache()
+        argentinaEnergia.clearCache()
         spainMinetur.clearCache()
         germanyTankerkoenig.clearCache()
         austriaEControl.clearCache()

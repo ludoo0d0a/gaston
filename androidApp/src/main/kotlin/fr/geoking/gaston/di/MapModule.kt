@@ -22,11 +22,23 @@ import fr.geoking.gaston.api.datagouv.DataGouvPrixCarburantProvider
 import fr.geoking.gaston.api.minetur.SpainMineturProvider
 import fr.geoking.gaston.api.tankerkoenig.GermanyTankerkoenigProvider
 import fr.geoking.gaston.api.econtrol.AustriaEControlProvider
+import fr.geoking.gaston.api.argentina.ArgentinaEnergiaProvider
+import fr.geoking.gaston.api.australia.AustraliaNswFuelCheckProvider
+import fr.geoking.gaston.api.croatia.CroatiaMzoeProvider
+import fr.geoking.gaston.api.denmark.FuelpricesDKProvider
 import fr.geoking.gaston.api.belgium.BelgiumPetrolPricesClient
 import fr.geoking.gaston.api.belgium.BelgiumOfficialProvider
+import fr.geoking.gaston.api.dgeg.PortugalDgegProvider
+import fr.geoking.gaston.api.finland.PolttoaineProvider
+import fr.geoking.gaston.api.fuelo.FueloProvider
 import fr.geoking.gaston.api.gas.GasApiClient
 import fr.geoking.gaston.api.gas.GasApiProvider
+import fr.geoking.gaston.api.greece.GreeceFuelGRProvider
+import fr.geoking.gaston.api.ireland.IrelandPickAPumpProvider
 import fr.geoking.gaston.api.it.MimitFuelProvider
+import fr.geoking.gaston.api.mexico.MexicoCREProvider
+import fr.geoking.gaston.api.moldova.MoldovaAnreProvider
+import fr.geoking.gaston.api.netherlands.NetherlandsAnwbProvider
 import fr.geoking.gaston.api.no.DrivstoffAppenProvider
 import fr.geoking.gaston.api.openvan.OpenVanCampClient
 import fr.geoking.gaston.api.openvan.OpenVanCampProvider
@@ -39,6 +51,8 @@ import fr.geoking.gaston.api.routing.OsrmRoutingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.routex.RoutexProvider
+import fr.geoking.gaston.api.romania.RomaniaPecoProvider
+import fr.geoking.gaston.api.serbia.SerbiaNisProvider
 import fr.geoking.gaston.api.si.GorivaSiProvider
 import fr.geoking.gaston.api.uk.UkCmaFuelProvider
 import fr.geoking.gaston.api.geocoding.AdresseDataGouvGeocodingClient
@@ -105,6 +119,53 @@ val mapModule = module {
     }
     single<PoiProvider>(named("drivstoffappen")) {
         DrivstoffAppenProvider(get(), radiusKm = 20, limit = 150)
+    }
+    single<PoiProvider>(named("portugaldgeg")) {
+        PortugalDgegProvider(get())
+    }
+    single<PoiProvider>(named("netherlandsanwb")) {
+        NetherlandsAnwbProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("fuelpricesdk")) {
+        val sm = get<fr.geoking.gaston.SettingsManager>()
+        val key = sm.settings.value.fuelpricesDkKey.ifBlank { fr.geoking.gaston.BuildConfig.FUELPRICES_DK_KEY }
+        FuelpricesDKProvider(get(), apiKey = key, radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("fuelo")) {
+        FueloProvider(get(), radiusKm = 20, limit = 60)
+    }
+    single<PoiProvider>(named("nswfuelcheck")) {
+        val sm = get<fr.geoking.gaston.SettingsManager>()
+        val key = sm.settings.value.nswFuelCheckKey.ifBlank { fr.geoking.gaston.BuildConfig.NSW_FUELCHECK_KEY }
+        val secret = sm.settings.value.nswFuelCheckSecret.ifBlank { fr.geoking.gaston.BuildConfig.NSW_FUELCHECK_SECRET }
+        AustraliaNswFuelCheckProvider(get(), apiKey = key, apiSecret = secret, radiusKm = 20, limit = 60)
+    }
+    single<PoiProvider>(named("croatiamzoe")) {
+        CroatiaMzoeProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("finlandpolttoaine")) {
+        PolttoaineProvider(get(), limit = 40)
+    }
+    single<PoiProvider>(named("greecefuelgr")) {
+        GreeceFuelGRProvider(get(), limit = 60)
+    }
+    single<PoiProvider>(named("irelandpickapump")) {
+        IrelandPickAPumpProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("moldovaanre")) {
+        MoldovaAnreProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("romaniapeco")) {
+        RomaniaPecoProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("serbianis")) {
+        SerbiaNisProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("mexicocre")) {
+        MexicoCREProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("argentinaenergia")) {
+        ArgentinaEnergiaProvider(get(), radiusKm = 20, limit = 80)
     }
     single<PoiProvider>(named("datagouv")) {
         DataGouvProvider(
@@ -201,6 +262,20 @@ val mapModule = module {
             italyMimit = get(named("mimit")),
             sloveniaGorivaSi = get(named("gorivasi")),
             norwayDrivstoffAppen = get(named("drivstoffappen")),
+            portugalDgeg = get(named("portugaldgeg")),
+            netherlandsAnwb = get(named("netherlandsanwb")),
+            denmarkFuelpricesDk = get(named("fuelpricesdk")),
+            fuelo = get(named("fuelo")),
+            australiaNswFuelCheck = get(named("nswfuelcheck")),
+            croatiaMzoe = get(named("croatiamzoe")),
+            finlandPolttoaine = get(named("finlandpolttoaine")),
+            greeceFuelGr = get(named("greecefuelgr")),
+            irelandPickAPump = get(named("irelandpickapump")),
+            moldovaAnre = get(named("moldovaanre")),
+            romaniaPeco = get(named("romaniapeco")),
+            serbiaNis = get(named("serbianis")),
+            mexicoCre = get(named("mexicocre")),
+            argentinaEnergia = get(named("argentinaenergia")),
             dataGouvElec = get(named("datagouvelec")),
             openChargeMap = get(named("openchargemap")),
             chargy = get(named("chargy")),
