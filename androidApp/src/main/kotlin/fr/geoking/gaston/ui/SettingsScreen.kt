@@ -22,13 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.FuelCard
@@ -62,11 +60,6 @@ enum class SettingsScreenPage {
     MapConfig,
     About
 }
-
-private val Lavender = Color(0xFFD1D5FF)
-private val DeepPurple = Color(0xFF21004C)
-private val DarkBackground = Color(0xFF0A0A0A)
-private val SeparatorColor = Color(0xFF2D2D44)
 
 /** Used in About screen: API/service name, website URL, optional logo URL, optional license/credit line. */
 private data class UsedApi(
@@ -129,66 +122,77 @@ fun SettingsScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(DeepPurple, DarkBackground)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = when (currentScreen) {
+                            SettingsScreenPage.Main -> "Settings"
+                            SettingsScreenPage.TollData -> "Highway toll"
+                            SettingsScreenPage.ErrorLog -> "Error log"
+                            SettingsScreenPage.About -> "About"
+                            SettingsScreenPage.GoogleAccount -> "Google account"
+                            SettingsScreenPage.VehicleConfig -> "Vehicle"
+                            SettingsScreenPage.MapConfig -> "Map"
+                        }
+                    )
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = {
+                            if (screenStack.size > 1) {
+                                screenStack = screenStack.dropLast(1)
+                            } else {
+                                onDismiss()
+                            }
+                        }
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            SettingsHeader(
-                title = when (currentScreen) {
-                    SettingsScreenPage.Main -> "Gaston Settings"
-                    SettingsScreenPage.TollData -> "Highway toll (OpenTollData)"
-                    SettingsScreenPage.ErrorLog -> "Error Log"
-                    SettingsScreenPage.About -> "About"
-                    SettingsScreenPage.GoogleAccount -> "Google Account"
-                    SettingsScreenPage.VehicleConfig -> "Vehicle"
-                    SettingsScreenPage.MapConfig -> "Map Settings"
-                },
-                onBack = {
-                    if (screenStack.size > 1) {
-                        screenStack = screenStack.dropLast(1)
-                    } else {
-                        onDismiss()
-                    }
-                }
-            )
-
-            Box(modifier = Modifier.weight(1f)) {
-                when (currentScreen) {
-                    SettingsScreenPage.Main -> MainMenu(
-                        settings = current,
-                        authManager = authManager,
-                        onNavigate = { screenStack = screenStack + it }
-                    )
-                    SettingsScreenPage.VehicleConfig -> VehicleConfig(
-                        settings = current,
-                        onUpdate = { save(settingsManager, it) }
-                    )
-                    SettingsScreenPage.TollData -> TollDataSection(
-                        settings = current,
-                        onUpdate = { save(settingsManager, it) }
-                    )
-                    SettingsScreenPage.ErrorLog -> ErrorLog(errorLog)
-                    SettingsScreenPage.About -> AboutContent()
-                    SettingsScreenPage.GoogleAccount -> GoogleAccount(
-                        settings = current,
-                        settingsManager = settingsManager,
-                        authManager = authManager,
-                        firebaseAuth = try { com.google.firebase.auth.FirebaseAuth.getInstance() } catch (e: Exception) { null }
-                    )
-                    SettingsScreenPage.MapConfig -> MapConfig(
-                        settings = current,
-                        onUpdate = { save(settingsManager, it) }
-                    )
-                }
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            when (currentScreen) {
+                SettingsScreenPage.Main -> MainMenu(
+                    settings = current,
+                    authManager = authManager,
+                    onNavigate = { screenStack = screenStack + it }
+                )
+                SettingsScreenPage.VehicleConfig -> VehicleConfig(
+                    settings = current,
+                    onUpdate = { save(settingsManager, it) }
+                )
+                SettingsScreenPage.TollData -> TollDataSection(
+                    settings = current,
+                    onUpdate = { save(settingsManager, it) }
+                )
+                SettingsScreenPage.ErrorLog -> ErrorLog(errorLog)
+                SettingsScreenPage.About -> AboutContent()
+                SettingsScreenPage.GoogleAccount -> GoogleAccount(
+                    settings = current,
+                    settingsManager = settingsManager,
+                    authManager = authManager,
+                    firebaseAuth = try { com.google.firebase.auth.FirebaseAuth.getInstance() } catch (e: Exception) { null }
+                )
+                SettingsScreenPage.MapConfig -> MapConfig(
+                    settings = current,
+                    onUpdate = { save(settingsManager, it) }
+                )
             }
         }
-
     }
 }
 
@@ -202,24 +206,23 @@ private fun MapConfig(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+            .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         // Map Engine
         Column {
-            Text("Map Engine", color = Lavender, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+            Text(
+                "Map engine",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 MapEngine.entries.forEach { engine ->
                     FilterChip(
                         selected = settings.phoneMapEngine == engine,
                         onClick = { onUpdate(settings.copy(phoneMapEngine = engine)) },
                         label = { Text(engine.name) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Lavender,
-                            selectedLabelColor = DeepPurple,
-                            labelColor = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.1f)
-                        )
                     )
                 }
             }
@@ -228,19 +231,18 @@ private fun MapConfig(
         if (settings.phoneMapEngine == MapEngine.MapLibre) {
             // Map Theme (for MapLibre)
             Column {
-                Text("Map Theme", color = Lavender, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+                Text(
+                    "Map theme",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     MapTheme.entries.forEach { theme ->
                         FilterChip(
                             selected = settings.mapTheme == theme,
                             onClick = { onUpdate(settings.copy(mapTheme = theme)) },
                             label = { Text(theme.name) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Lavender,
-                                selectedLabelColor = DeepPurple,
-                                labelColor = Color.White,
-                                containerColor = Color.White.copy(alpha = 0.1f)
-                            )
                         )
                     }
                 }
@@ -249,9 +251,19 @@ private fun MapConfig(
 
         // Data Sources
         Column {
-            Text("Data Sources", color = Lavender, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+            Text(
+                "Data sources",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
 
-            Text("Electric", color = Lavender.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+            Text(
+                "Electric",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
             FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(
                     PoiProviderType.DataGouvElec to "data.gouv (France official)",
@@ -265,18 +277,17 @@ private fun MapConfig(
                             onUpdate(settings.copy(selectedPoiProviders = next))
                         },
                         label = { Text(label) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Lavender,
-                            selectedLabelColor = DeepPurple,
-                            labelColor = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.1f)
-                        )
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            Text("Fuel", color = Lavender.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+            Text(
+                "Fuel",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
             FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(
                     PoiProviderType.Routex to "Routex",
@@ -296,12 +307,6 @@ private fun MapConfig(
                             onUpdate(settings.copy(selectedPoiProviders = next))
                         },
                         label = { Text(label) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Lavender,
-                            selectedLabelColor = DeepPurple,
-                            labelColor = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.1f)
-                        )
                     )
                 }
             }
@@ -314,18 +319,12 @@ private fun MapConfig(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Show Traffic", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
-                Text("Google traffic layer", color = Lavender.copy(alpha = 0.7f), fontSize = 14.sp)
+                Text("Show traffic", style = MaterialTheme.typography.titleSmall)
+                Text("Google traffic layer", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Switch(
                 checked = settings.mapTrafficEnabled,
                 onCheckedChange = { onUpdate(settings.copy(mapTrafficEnabled = it)) },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Lavender,
-                    checkedTrackColor = DeepPurple,
-                    uncheckedThumbColor = Color.Gray,
-                    uncheckedTrackColor = Color.DarkGray
-                )
             )
         }
 
@@ -336,26 +335,30 @@ private fun MapConfig(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Debug Logging", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
-                Text("Capture network logs on map", color = Lavender.copy(alpha = 0.7f), fontSize = 14.sp)
+                Text("Debug logging", style = MaterialTheme.typography.titleSmall)
+                Text("Capture network logs on map", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Switch(
                 checked = settings.debugLoggingEnabled,
                 onCheckedChange = { onUpdate(settings.copy(debugLoggingEnabled = it)) },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Lavender,
-                    checkedTrackColor = DeepPurple,
-                    uncheckedThumbColor = Color.Gray,
-                    uncheckedTrackColor = Color.DarkGray
-                )
             )
         }
 
         // Map Filters
         Column {
-            Text("Map Filters", color = Lavender, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+            Text(
+                "Map filters",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
 
-            Text("Fuel Types", color = Lavender.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+            Text(
+                "Fuel types",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
             FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
                     FilterChip(
@@ -365,18 +368,17 @@ private fun MapConfig(
                             onUpdate(settings.copy(selectedMapEnergyTypes = next, useVehicleFilter = false))
                         },
                         label = { Text(label) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Lavender,
-                            selectedLabelColor = DeepPurple,
-                            labelColor = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.1f)
-                        )
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            Text("Power Levels", color = Lavender.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+            Text(
+                "Power levels",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
             FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
                     FilterChip(
@@ -386,12 +388,6 @@ private fun MapConfig(
                             onUpdate(settings.copy(mapPowerLevels = next, useVehicleFilter = false))
                         },
                         label = { Text(label) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Lavender,
-                            selectedLabelColor = DeepPurple,
-                            labelColor = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.1f)
-                        )
                     )
                 }
             }
@@ -399,19 +395,23 @@ private fun MapConfig(
 
         // Itinerary
         Column {
-            Text("Itinerary", color = Lavender, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+            Text(
+                "Itinerary",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
 
-            Text("Search radius: ${settings.routeStationSearchRadiusMeters}m", color = Lavender.copy(alpha = 0.7f), fontSize = 14.sp)
+            Text(
+                "Search radius: ${settings.routeStationSearchRadiusMeters} m",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Slider(
                 value = settings.routeStationSearchRadiusMeters.toFloat(),
                 onValueChange = { onUpdate(settings.copy(routeStationSearchRadiusMeters = it.toInt())) },
                 valueRange = 0f..2000f,
                 steps = 19,
-                colors = SliderDefaults.colors(
-                    thumbColor = Lavender,
-                    activeTrackColor = Lavender,
-                    inactiveTrackColor = Color.DarkGray
-                )
             )
 
             Row(
@@ -420,18 +420,12 @@ private fun MapConfig(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Only Highway Stations", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                    Text("Filter results to stations on highways", color = Lavender.copy(alpha = 0.7f), fontSize = 12.sp)
+                    Text("Only highway stations", style = MaterialTheme.typography.titleSmall)
+                    Text("Filter results to stations on highways", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(
                     checked = settings.filterOnlyHighwayStations,
                     onCheckedChange = { onUpdate(settings.copy(filterOnlyHighwayStations = it)) },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Lavender,
-                        checkedTrackColor = DeepPurple,
-                        uncheckedThumbColor = Color.Gray,
-                        uncheckedTrackColor = Color.DarkGray
-                    )
                 )
             }
         }
@@ -443,37 +437,6 @@ private fun save(settingsManager: SettingsManager, s: AppSettings) {
 }
 
 @Composable
-private fun SettingsHeader(title: String, onBack: () -> Unit) {
-    Surface(
-        color = Color(0xFF1A1A2E),
-        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Lavender,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
 @Composable
 private fun MainMenu(
     settings: AppSettings,
@@ -511,115 +474,110 @@ private fun MainMenu(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(top = 16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Google Auth Section
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = if (settings.isLoggedIn) "Hello, ${settings.googleUserName}" else "Not signed in",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = if (settings.isLoggedIn) "Google Account connected" else "Sign in to sync your profile",
-                        color = Lavender.copy(alpha = 0.7f),
-                        fontSize = 14.sp
-                    )
-                }
-                if (authManager != null) {
-                    if (settings.isLoggedIn) {
-                        TextButton(onClick = {
-                            authManager.signOut { success ->
-                                if (!success) {
-                                    scope.launch { snackbarHostState.showSnackbar("Sign out failed") }
-                                }
-                            }
-                        }) {
-                            Text("Sign Out", color = Color(0xFFFF6B6B))
-                        }
-                    } else {
-                        Button(
-                            onClick = {
-                                authManager.signIn(context) { success, error ->
-                                    if (!success) {
-                                        scope.launch { snackbarHostState.showSnackbar(error ?: "Sign in failed") }
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            text = if (settings.isLoggedIn) "Hello, ${settings.googleUserName}" else "Not signed in",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            text = if (settings.isLoggedIn) "Google account connected" else "Sign in to sync your profile",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    trailingContent = {
+                        when {
+                            authManager == null -> Text("Auth unavailable", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            settings.isLoggedIn -> {
+                                TextButton(
+                                    onClick = {
+                                        authManager.signOut { success ->
+                                            if (!success) {
+                                                scope.launch { snackbarHostState.showSnackbar("Sign out failed") }
+                                            }
+                                        }
                                     }
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = DeepPurple)
-                        ) {
-                            Text("Sign In")
+                                ) { Text("Sign out") }
+                            }
+                            else -> {
+                                Button(
+                                    onClick = {
+                                        authManager.signIn(context) { success, error ->
+                                            if (!success) {
+                                                scope.launch { snackbarHostState.showSnackbar(error ?: "Sign in failed") }
+                                            }
+                                        }
+                                    }
+                                ) { Text("Sign in") }
+                            }
                         }
                     }
-                } else {
-                    Text("Auth Unavailable", color = Color.Gray, fontSize = 14.sp)
-                }
+                )
             }
 
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 24.dp),
-                thickness = 0.5.dp,
-                color = SeparatorColor
-            )
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                SettingsItem(
+                    label = "Vehicle",
+                    value = if (settings.vehicleBrand.isNotEmpty()) "${settings.vehicleBrand} ${settings.vehicleModel}" else "Not configured",
+                    onClick = { onNavigate(SettingsScreenPage.VehicleConfig) }
+                )
+                SettingsItem(
+                    label = "Map",
+                    value = "Data sources, traffic, filters",
+                    onClick = { onNavigate(SettingsScreenPage.MapConfig) }
+                )
+                SettingsItem(
+                    label = "Google account",
+                    value = settings.googleUserName ?: "Not connected",
+                    onClick = { onNavigate(SettingsScreenPage.GoogleAccount) }
+                )
+                SettingsItem(
+                    label = "Highway toll",
+                    value = if (!settings.tollDataPath.isNullOrBlank()) "Downloaded" else "Not downloaded",
+                    onClick = { onNavigate(SettingsScreenPage.TollData) }
+                )
+                SettingsItem(
+                    label = "Error log",
+                    value = "View recent errors",
+                    onClick = { onNavigate(SettingsScreenPage.ErrorLog) }
+                )
+                SettingsItem(
+                    label = "About",
+                    value = "Version & build info",
+                    onClick = { onNavigate(SettingsScreenPage.About) }
+                )
+                SettingsItem(
+                    label = "Clear cache",
+                    value = "Markers, images, logs & temp files",
+                    onClick = { showClearCacheConfirm = true }
+                )
+            }
 
-        SettingsItem(
-            label = "Vehicle",
-            value = if (settings.vehicleBrand.isNotEmpty()) "${settings.vehicleBrand} ${settings.vehicleModel}" else "Not configured",
-            onClick = { onNavigate(SettingsScreenPage.VehicleConfig) }
-        )
-        SettingsItem(
-            label = "Map",
-            value = "Data sources, traffic, filters",
-            onClick = { onNavigate(SettingsScreenPage.MapConfig) }
-        )
-
-        SettingsItem(
-            label = "Google Account",
-            value = settings.googleUserName ?: "Not connected",
-            onClick = { onNavigate(SettingsScreenPage.GoogleAccount) }
-        )
-
-        SettingsItem(
-            label = "Highway toll (OpenTollData)",
-            value = if (!settings.tollDataPath.isNullOrBlank()) "Downloaded" else "Not downloaded",
-            onClick = { onNavigate(SettingsScreenPage.TollData) }
-        )
-        SettingsItem(
-            label = "Error Log",
-            value = "View recent errors",
-            onClick = { onNavigate(SettingsScreenPage.ErrorLog) }
-        )
-        SettingsItem(
-            label = "About",
-            value = "Version & build info",
-            onClick = { onNavigate(SettingsScreenPage.About) }
-        )
-        SettingsItem(
-            label = "Clear Cache",
-            value = "Markers, images, logs & temp files",
-            onClick = { showClearCacheConfirm = true }
-        )
-    }
-
-    SnackbarHost(
-        hostState = snackbarHostState,
-        modifier = Modifier.align(Alignment.BottomCenter)
-    )
+            Spacer(Modifier.height(12.dp))
+        }
     }
 }
 
@@ -654,33 +612,32 @@ private fun TollDataSection(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(24.dp)
+            .padding(20.dp)
     ) {
         Text(
             text = "French highway toll estimation uses OpenTollData. Download the data file to see estimated tolls on planned routes.",
-            color = Lavender,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Text(
             text = if (downloaded) "Status: Downloaded" else "Status: Not downloaded",
             color = if (downloaded) Color(0xFF7FFF7F) else Color(0xFFFFB366),
-            fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(bottom = 2.dp)
         )
         fileInfo?.let {
             Text(
                 text = it,
-                color = Lavender.copy(alpha = 0.8f),
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 2.dp)
             )
         }
         Text(
             text = "Path: $displayPath",
-            color = Lavender,
-            fontSize = 12.sp,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
         )
         if (!downloaded || downloadProgress != null) {
@@ -715,10 +672,6 @@ private fun TollDataSection(
                                 )
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Lavender,
-                            contentColor = DeepPurple
-                        )
                     ) {
                         Text("Download toll data (OpenTollData)")
                     }
@@ -729,8 +682,8 @@ private fun TollDataSection(
                     val pct = if (total != null && total > 0) (100 * bytes / total).toInt() else null
                     Text(
                         text = if (pct != null) "Downloading… $pct%" else "Downloading… ${bytes / (1024 * 1024)} MB",
-                        color = Lavender,
-                        fontSize = 14.sp
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -739,7 +692,7 @@ private fun TollDataSection(
             Text(
                 text = "Error: $err",
                 color = Color(0xFFFF6B6B),
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
@@ -753,13 +706,13 @@ private fun AboutContent() {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(24.dp)
+            .padding(20.dp)
     ) {
         Text(
             text = "Gaston",
-            color = Color.White,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(24.dp))
         AboutRow("Version name", BuildConfig.VERSION_NAME)
@@ -768,9 +721,9 @@ private fun AboutContent() {
         Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = "Used APIs & services",
-            color = Lavender.copy(alpha = 0.9f),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(12.dp))
         UsedApisList.forEach { api ->
@@ -806,7 +759,7 @@ private fun AboutApiRow(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .background(DeepPurple, RoundedCornerShape(8.dp)),
+                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center
         ) {
             if (logoUrl != null) {
@@ -818,9 +771,9 @@ private fun AboutApiRow(
             } else {
                 Text(
                     text = name.first().uppercaseChar().toString(),
-                    color = Lavender,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
@@ -828,21 +781,20 @@ private fun AboutApiRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = name,
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = Uri.parse(url).host ?: url,
-                color = Lavender.copy(alpha = 0.7f),
-                fontSize = 12.sp
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (attribution != null) {
                 Text(
                     text = attribution,
-                    color = Lavender.copy(alpha = 0.6f),
-                    fontSize = 11.sp,
-                    lineHeight = 14.sp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 6.dp)
                 )
             }
@@ -850,7 +802,7 @@ private fun AboutApiRow(
         Icon(
             imageVector = Icons.AutoMirrored.Filled.OpenInNew,
             contentDescription = "Open website",
-            tint = Lavender.copy(alpha = 0.8f),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(20.dp)
         )
     }
@@ -866,14 +818,14 @@ private fun AboutRow(label: String, value: String) {
     ) {
         Text(
             text = label,
-            color = Lavender.copy(alpha = 0.8f),
-            fontSize = 16.sp
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -884,45 +836,19 @@ private fun SettingsItem(
     value: String? = null,
     onClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    color = Color.White,
-                    fontSize = 22.sp, // Bigger font
-                    fontWeight = FontWeight.Medium
-                )
-                if (value != null) {
-                    Text(
-                        text = value,
-                        color = Lavender.copy(alpha = 0.7f),
-                        fontSize = 16.sp // Bigger font
-                    )
-                }
+    ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
+        headlineContent = { Text(label, style = MaterialTheme.typography.titleSmall) },
+        supportingContent = {
+            if (value != null) {
+                Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = Lavender,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 24.dp),
-            thickness = 0.5.dp,
-            color = SeparatorColor
-        )
-    }
+        },
+        trailingContent = {
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+    )
 }
 
 @Composable
@@ -939,13 +865,13 @@ private fun SelectionItem(
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = 20.dp),
+                .padding(horizontal = 8.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = label,
-                color = if (isSelected) Lavender else Color.White,
-                fontSize = 20.sp,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 modifier = Modifier.weight(1f)
             )
@@ -954,15 +880,15 @@ private fun SelectionItem(
                 Icon(
                     Icons.Default.Check,
                     contentDescription = null,
-                    tint = Lavender,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
         }
         HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier.padding(horizontal = 8.dp),
             thickness = 0.5.dp,
-            color = SeparatorColor
+            color = MaterialTheme.colorScheme.outlineVariant
         )
     }
 }
@@ -980,19 +906,19 @@ private fun GoogleAccount(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (authManager == null) {
-            Text("Authentication is currently unavailable.", color = Color.White)
+            Text("Authentication is currently unavailable.", color = MaterialTheme.colorScheme.onSurface)
         } else {
             val firebaseUser = remember { firebaseAuth?.currentUser }
             if (settings.googleUserName != null || firebaseUser != null) {
                 Text(
                     "Connected as ${settings.googleUserName ?: firebaseUser?.displayName ?: "User"}",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
@@ -1003,7 +929,6 @@ private fun GoogleAccount(
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.7f), contentColor = Color.White),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Logout")
@@ -1011,8 +936,8 @@ private fun GoogleAccount(
             } else {
                 Text(
                     "Sign in to personalize your experience.",
-                    color = Lavender,
-                    fontSize = 16.sp,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
                 Button(
@@ -1025,7 +950,6 @@ private fun GoogleAccount(
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = DeepPurple),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Sign in with Google")
@@ -1044,52 +968,44 @@ private fun VehicleConfig(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(24.dp)
+            .padding(20.dp)
     ) {
         ConfigTextField("Brand", settings.vehicleBrand) { onUpdate(settings.copy(vehicleBrand = it)) }
         ConfigTextField("Model", settings.vehicleModel) { onUpdate(settings.copy(vehicleModel = it)) }
 
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Energy Type", color = Lavender, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
+        Text(
+            "Energy type",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             FilterChip(
                 selected = settings.vehicleEnergy == "gas",
                 onClick = { onUpdate(settings.copy(vehicleEnergy = "gas")) },
                 label = { Text("Gas") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Lavender,
-                    selectedLabelColor = DeepPurple,
-                    labelColor = Color.White,
-                    containerColor = Color.White.copy(alpha = 0.1f)
-                )
             )
             FilterChip(
                 selected = settings.vehicleEnergy == "electric",
                 onClick = { onUpdate(settings.copy(vehicleEnergy = "electric")) },
                 label = { Text("Electric") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Lavender,
-                    selectedLabelColor = DeepPurple,
-                    labelColor = Color.White,
-                    containerColor = Color.White.copy(alpha = 0.1f)
-                )
             )
             FilterChip(
                 selected = settings.vehicleEnergy == "hybrid",
                 onClick = { onUpdate(settings.copy(vehicleEnergy = "hybrid")) },
                 label = { Text("Hybrid") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Lavender,
-                    selectedLabelColor = DeepPurple,
-                    labelColor = Color.White,
-                    containerColor = Color.White.copy(alpha = 0.1f)
-                )
             )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
         if (settings.vehicleEnergy == "gas" || settings.vehicleEnergy == "hybrid") {
-            Text("Preferred Gas Types", color = Lavender, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
+            Text(
+                "Preferred gas types",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1102,18 +1018,17 @@ private fun VehicleConfig(
                             onUpdate(settings.copy(vehicleGasTypes = newTypes))
                         },
                         label = { Text(label) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Lavender,
-                            selectedLabelColor = DeepPurple,
-                            labelColor = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.1f)
-                        )
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            Text("Fuel Card", color = Lavender, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
+            Text(
+                "Fuel card",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
             FuelCard.entries.forEach { card ->
                 SelectionItem(
                     label = card.name,
@@ -1125,7 +1040,12 @@ private fun VehicleConfig(
         }
 
         if (settings.vehicleEnergy == "electric" || settings.vehicleEnergy == "hybrid") {
-            Text("Preferred Power Range", color = Lavender, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
+            Text(
+                "Preferred power range",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1138,12 +1058,6 @@ private fun VehicleConfig(
                             onUpdate(settings.copy(vehiclePowerLevels = newLevels))
                         },
                         label = { Text(label) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Lavender,
-                            selectedLabelColor = DeepPurple,
-                            labelColor = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.1f)
-                        )
                     )
                 }
             }
@@ -1162,8 +1076,8 @@ private fun ApiKeyHelpLink(
     Column(modifier = modifier.padding(bottom = 4.dp)) {
         Text(
             text = helpText,
-            color = Lavender.copy(alpha = 0.85f),
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Row(
@@ -1178,14 +1092,14 @@ private fun ApiKeyHelpLink(
         ) {
             Text(
                 text = linkLabel,
-                color = Lavender,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary
             )
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                 contentDescription = null,
-                tint = Lavender.copy(alpha = 0.9f),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -1201,21 +1115,15 @@ private fun ConfigTextField(
     Column(modifier = Modifier.padding(vertical = 12.dp)) {
         Text(
             text = label,
-            color = Lavender,
-            fontSize = 16.sp,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
-            textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 18.sp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Lavender,
-                unfocusedBorderColor = SeparatorColor,
-                focusedContainerColor = Color.Black.copy(alpha = 0.3f),
-                unfocusedContainerColor = Color.Black.copy(alpha = 0.2f)
-            ),
+            textStyle = androidx.compose.ui.text.TextStyle(color = MaterialTheme.colorScheme.onSurface),
             shape = RoundedCornerShape(12.dp)
         )
     }
@@ -1233,10 +1141,10 @@ private fun ErrorLog(errorLog: List<DetailedError>) {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(24.dp)
+                .padding(20.dp)
         ) {
             if (reversedLog.isEmpty()) {
-                Text("No errors recorded", color = Lavender, fontSize = 18.sp)
+                Text("No errors recorded", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 Button(
                     onClick = {
@@ -1252,10 +1160,6 @@ private fun ErrorLog(errorLog: List<DetailedError>) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Lavender,
-                        contentColor = DeepPurple
-                    )
                 ) {
                     Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -1270,7 +1174,7 @@ private fun ErrorLog(errorLog: List<DetailedError>) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
-                            .background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
                             .padding(16.dp)
                     ) {
                         Row(
@@ -1280,8 +1184,7 @@ private fun ErrorLog(errorLog: List<DetailedError>) {
                         ) {
                             Text(
                                 text = "[$timestamp] $httpCode",
-                                color = Lavender,
-                                fontSize = 14.sp,
+                                style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.weight(1f)
                             )
@@ -1297,13 +1200,13 @@ private fun ErrorLog(errorLog: List<DetailedError>) {
                                 Icon(
                                     Icons.Default.ContentCopy,
                                     contentDescription = "Copy error",
-                                    tint = Lavender,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = error.message, color = Color.White, fontSize = 16.sp)
+                        Text(text = error.message, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
