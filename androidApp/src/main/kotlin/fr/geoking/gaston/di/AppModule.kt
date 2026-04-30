@@ -150,15 +150,19 @@ val appModule = module {
         }
     }
 
-    single { try { FirebaseAuth.getInstance() } catch (e: Exception) { null } }
-    single { try { FirebaseFirestore.getInstance() } catch (e: Exception) { null } }
-    single { FirestoreSettingsSync(getOrNull(), getOrNull()) }
+    // Koin singletons can't be null; keep Firebase deps optional by resolving them safely here.
+    single {
+        val firestore = runCatching { FirebaseFirestore.getInstance() }.getOrNull()
+        val auth = runCatching { FirebaseAuth.getInstance() }.getOrNull()
+        FirestoreSettingsSync(firestore = firestore, firebaseAuth = auth)
+    }
     single<SettingsManager> { SettingsManager(androidContext(), getOrNull()) }
 
     single<DiagnosticStore> { DiagnosticStore() }
 
     single<GoogleAuthManager> {
-        GoogleAuthManager(androidContext(), get(), get(), getOrNull())
+        val auth = runCatching { FirebaseAuth.getInstance() }.getOrNull()
+        GoogleAuthManager(androidContext(), get(), get(), auth)
     }
 
     single<PermissionManager> {
