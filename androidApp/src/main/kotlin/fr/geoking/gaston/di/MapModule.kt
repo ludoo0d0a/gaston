@@ -133,7 +133,22 @@ val mapModule = module {
         EcoMovementOcpiClient(get(), apiKey = key)
     }
     single<PoiProvider>(named("ecomovement")) {
-        EcoMovementOcpiProvider(get(), radiusKm = 10, limit = 150)
+        val sm = get<fr.geoking.gaston.SettingsManager>()
+        val key = sm.settings.value.ecoMovementKey.ifBlank { fr.geoking.gaston.BuildConfig.ECO_MOVEMENT_KEY }
+        if (key.isBlank()) {
+            object : PoiProvider {
+                override fun supportedCategories(): Set<fr.geoking.gaston.poi.PoiCategory> =
+                    setOf(fr.geoking.gaston.poi.PoiCategory.Irve)
+
+                override suspend fun getGasStations(
+                    latitude: Double,
+                    longitude: Double,
+                    viewport: fr.geoking.gaston.poi.MapViewport?
+                ): List<fr.geoking.gaston.poi.Poi> = emptyList()
+            }
+        } else {
+            EcoMovementOcpiProvider(get(), radiusKm = 10, limit = 150)
+        }
     }
     single { OverpassClient(get()) }
     single<PoiProvider>(named("overpass")) {
