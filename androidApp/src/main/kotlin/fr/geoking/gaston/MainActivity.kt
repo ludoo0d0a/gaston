@@ -170,6 +170,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Check on every open/resume to reliably prompt for updates.
+        // Only meaningful for Play Store distribution.
+        if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
+            inAppUpdateHelper.checkForUpdate()
+        }
+    }
+
     private fun installMainComposeContent(
         diagnostics: DiagnosticStore,
         settingsManager: SettingsManager,
@@ -372,9 +381,8 @@ fun MainUI(
     val updateAvailable by (inAppUpdateHelper?.updateAvailable ?: fallbackUpdateFlow).collectAsState(initial = null)
 
     if (inAppUpdateHelper != null) {
-        LaunchedEffect(Unit) {
-            delay(500)
-            inAppUpdateHelper.checkForUpdate()
+        LaunchedEffect(isPlaystoreDistribution) {
+            if (isPlaystoreDistribution) inAppUpdateHelper.checkForUpdate()
         }
     }
     if (updateAvailable != null) {
