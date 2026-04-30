@@ -76,6 +76,8 @@ private val UsedApisList = listOf(
     // POI & fuel / charging
     UsedApi("Open Charge Map", "https://openchargemap.org", "https://openchargemap.org/favicon.ico"),
     UsedApi("Eco-Movement (OCPI)", "https://eco-movement.com", null),
+    UsedApi("Fastned (OCPI)", "https://fastnedcharging.com", null),
+    UsedApi("DKV Mobility (OCPI)", "https://www.dkv-mobility.com", null),
     UsedApi("data.gouv.fr", "https://www.data.gouv.fr", "https://www.data.gouv.fr/favicon.ico"),
     UsedApi("ODRE (bornes IRVE)", "https://odre.opendatasoft.com", null),
     UsedApi("Gas API (prix carburants)", "https://gas-api.ovh", null),

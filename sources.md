@@ -14,6 +14,9 @@ This document lists the free API source providers integrated into **Gaston** for
 | **DataGouv IRVE** | France | IRVE (EV) | `https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/bornes-irve` | Licence Ouverte 2.0 |
 | **Open Charge Map** | Global / Europe | IRVE (EV) | `https://api.openchargemap.io/v3/poi` | CC BY 4.0 |
 | **Chargy** | Luxembourg | IRVE (EV) | `https://my.chargy.lu/b2bev-external-services/resources/kml` | Chargy Luxembourg |
+| **Fastned (OCPI)** | UK (Open Data) | IRVE (EV) | `https://api.fastned.nl/public/ocpi/cpo/2.2.1/` | OCPI 2.2.1 |
+| **DKV Mobility (OCPI)** | EU (network) | IRVE (EV) | (via API portal / Azure APIM) | Requires subscription key (and optional auth header) |
+| **Eco-Movement (OCPI)** | EU / Global (subscription) | IRVE (EV) | `https://open-chargepoints.com/api/ocpi/cpo/2.2.1` | Requires API key (Authorization: Token ...) |
 | **Belib'** | Paris, France | IRVE (EV) | `https://parisdata.opendatasoft.com/api/explore/v2.1/catalog/datasets/belib-points-de-recharge-pour-vehicules-electriques-disponibilite-temps-reel` | Paris Data (Real-time availability) |
 | **OpenStreetMap (Overpass)** | Global / Europe | Both & More | `https://overpass-api.de/api/interpreter` | ODbL (Base data for many categories) |
 | **Routex** | Europe | Fuel | `https://app.wigeogis.com/kunden/routex-sitefinder/backend` | Commercial provider (integrated as a source) |

@@ -148,6 +148,7 @@ fun MapScaffold(
                                             PoiProviderType.Chargy -> "Source: Chargy (real-time)"
                                             PoiProviderType.Fastned -> "Source: Fastned (UK)"
                                             PoiProviderType.Dkv -> "Source: DKV Mobility"
+                                            PoiProviderType.EcoMovement -> "Source: Eco-Movement"
                                             PoiProviderType.OpenVanCamp -> "Source: OpenVan.camp (LU, HR, SI...)"
                                             PoiProviderType.SpainMinetur -> "Source: Spain Minetur (official)"
                                             PoiProviderType.GermanyTankerkoenig -> "Source: Tankerkönig (Germany)"

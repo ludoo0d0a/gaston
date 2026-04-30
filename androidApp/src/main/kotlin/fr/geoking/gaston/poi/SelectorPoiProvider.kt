@@ -34,6 +34,7 @@ class SelectorPoiProvider(
     private val chargy: PoiProvider,
     private val fastned: PoiProvider,
     private val dkv: PoiProvider,
+    private val ecoMovement: PoiProvider,
     private val openVanCamp: PoiProvider,
     private val spainMinetur: PoiProvider,
     private val germanyTankerkoenig: PoiProvider,
@@ -71,6 +72,7 @@ class SelectorPoiProvider(
         PoiProviderType.Chargy -> chargy
         PoiProviderType.Fastned -> fastned
         PoiProviderType.Dkv -> dkv
+        PoiProviderType.EcoMovement -> ecoMovement
         PoiProviderType.OpenVanCamp -> openVanCamp
         PoiProviderType.SpainMinetur -> spainMinetur
         PoiProviderType.GermanyTankerkoenig -> germanyTankerkoenig
@@ -567,6 +569,8 @@ class SelectorPoiProvider(
         openChargeMap.clearCache()
         chargy.clearCache()
         fastned.clearCache()
+        dkv.clearCache()
+        ecoMovement.clearCache()
         openVanCamp.clearCache()
         spainMinetur.clearCache()
         germanyTankerkoenig.clearCache()
