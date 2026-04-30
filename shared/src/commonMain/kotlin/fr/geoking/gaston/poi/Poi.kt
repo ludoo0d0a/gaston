@@ -85,6 +85,8 @@ enum class PoiProviderType(
     SloveniaGorivaSi(providesFuel = true),
     /** Norway DrivstoffAppen public API (real-time). */
     NorwayDrivstoffAppen(providesFuel = true),
+    /** Sweden DrivstoffAppen / bensinpriser.nu community API (real-time). */
+    SwedenDrivstoffAppen(providesFuel = true),
     /** Portugal official fuel prices (DGEG). */
     PortugalDgeg(providesFuel = true),
     /** Netherlands (and nearby) fuel prices via ANWB POI API. */

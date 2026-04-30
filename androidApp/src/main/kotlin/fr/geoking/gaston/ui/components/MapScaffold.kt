@@ -147,6 +147,7 @@ fun MapScaffold(
                                             PoiProviderType.ItalyMimit -> "Source: MIMIT (Italy)"
                                             PoiProviderType.SloveniaGorivaSi -> "Source: goriva.si (Slovenia)"
                                             PoiProviderType.NorwayDrivstoffAppen -> "Source: DrivstoffAppen (Norway)"
+                                            PoiProviderType.SwedenDrivstoffAppen -> "Source: DrivstoffAppen / bensinpriser.nu (Sweden)"
                                             PoiProviderType.PortugalDgeg -> "Source: DGEG (Portugal)"
                                             PoiProviderType.NetherlandsAnwb -> "Source: ANWB (NL/BE/LU)"
                                             PoiProviderType.DenmarkFuelpricesDk -> "Source: Fuelprices.dk (Denmark)"

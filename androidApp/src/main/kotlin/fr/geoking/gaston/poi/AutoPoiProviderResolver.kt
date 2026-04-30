@@ -23,6 +23,7 @@ fun autoProvidersForCountry(
             "IT" -> PoiProviderType.ItalyMimit
             "SI" -> PoiProviderType.SloveniaGorivaSi
             "NO" -> PoiProviderType.NorwayDrivstoffAppen
+            "SE" -> PoiProviderType.SwedenDrivstoffAppen
             "PT" -> PoiProviderType.PortugalDgeg
             "NL" -> PoiProviderType.NetherlandsAnwb
             "DK" -> PoiProviderType.DenmarkFuelpricesDk

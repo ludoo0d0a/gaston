@@ -33,6 +33,7 @@ class SelectorPoiProvider(
     private val italyMimit: PoiProvider,
     private val sloveniaGorivaSi: PoiProvider,
     private val norwayDrivstoffAppen: PoiProvider,
+    private val swedenDrivstoffAppen: PoiProvider,
     private val portugalDgeg: PoiProvider,
     private val netherlandsAnwb: PoiProvider,
     private val denmarkFuelpricesDk: PoiProvider,
@@ -89,6 +90,7 @@ class SelectorPoiProvider(
         PoiProviderType.ItalyMimit -> italyMimit
         PoiProviderType.SloveniaGorivaSi -> sloveniaGorivaSi
         PoiProviderType.NorwayDrivstoffAppen -> norwayDrivstoffAppen
+        PoiProviderType.SwedenDrivstoffAppen -> swedenDrivstoffAppen
         PoiProviderType.PortugalDgeg -> portugalDgeg
         PoiProviderType.NetherlandsAnwb -> netherlandsAnwb
         PoiProviderType.DenmarkFuelpricesDk -> denmarkFuelpricesDk

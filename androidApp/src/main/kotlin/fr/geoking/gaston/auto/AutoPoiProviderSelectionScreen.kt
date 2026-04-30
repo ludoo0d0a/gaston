@@ -21,6 +21,7 @@ class AutoPoiProviderSelectionScreen(
         PoiProviderType.ItalyMimit to "MIMIT (Italy official)",
         PoiProviderType.SloveniaGorivaSi to "goriva.si (Slovenia official)",
         PoiProviderType.NorwayDrivstoffAppen to "DrivstoffAppen (Norway)",
+        PoiProviderType.SwedenDrivstoffAppen to "DrivstoffAppen / bensinpriser.nu (Sweden)",
         PoiProviderType.PortugalDgeg to "DGEG (Portugal official)",
         PoiProviderType.NetherlandsAnwb to "ANWB (Netherlands/BE/LU)",
         PoiProviderType.DenmarkFuelpricesDk to "Fuelprices.dk (Denmark)",

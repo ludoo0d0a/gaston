@@ -40,6 +40,7 @@ import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.isUserSelectablePoiDataSource
 import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.poi.FuelPriceRegistry
 import fr.geoking.gaston.shared.diagnostics.DetailedError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -386,6 +387,107 @@ private fun SourcesConfig(
     settings: AppSettings,
     onUpdate: (AppSettings) -> Unit
 ) {
+    data class ProviderUiInfo(
+        val type: PoiProviderType,
+        val label: String,
+        /** ISO country codes (e.g. "FR", "BE") or special values ("GLOBAL", "EU"). */
+        val supportedCountries: List<String>,
+        val providesFuel: Boolean = type.providesFuel,
+        val providesElectric: Boolean = type.providesElectric
+    )
+
+    fun countryLabel(code: String): String {
+        val c = code.uppercase()
+        return when (c) {
+            "GLOBAL" -> "Global"
+            "EU" -> "Europe"
+            "PT-AC" -> "Portugal (Azores)"
+            "PT-MA" -> "Portugal (Madeira)"
+            "ES-CN" -> "Spain (Canary Islands)"
+            "ES-IB" -> "Spain (Balearic Islands)"
+            else -> {
+                if (c.length == 2) {
+                    // Prefer device locale for display names.
+                    Locale("", c).getDisplayCountry(Locale.getDefault()).ifBlank { c }
+                } else {
+                    c
+                }
+            }
+        }
+    }
+
+    // Keep this list in sync with FueloProvider.getConfigForLocation()
+    val fueloSupported = listOf(
+        "BG", "CZ", "HU", "PL", "SK",
+        "EE", "LV", "LT",
+        "CH", "BA", "TR", "MK",
+        "PT-AC", "PT-MA", "PT",
+        "ES-CN", "ES-IB", "ES",
+        "IE", "GB",
+        "AT", "BE", "DE", "FR", "GR", "HR", "IT", "NL", "RO", "RS", "SI"
+    )
+
+    val providers = listOf(
+        // Electric
+        ProviderUiInfo(PoiProviderType.DataGouvElec, "data.gouv (France official)", listOf("FR")),
+        ProviderUiInfo(PoiProviderType.Chargy, "Chargy", listOf("LU")),
+        ProviderUiInfo(PoiProviderType.OpenChargeMap, "OpenChargeMap", listOf("GLOBAL")),
+        ProviderUiInfo(PoiProviderType.Fastned, "Fastned (OCPI)", listOf("GB")),
+        ProviderUiInfo(PoiProviderType.Dkv, "DKV Mobility (OCPI)", listOf("EU")),
+        ProviderUiInfo(PoiProviderType.EcoMovement, "Eco‑Movement (OCPI)", listOf("GLOBAL")),
+
+        // Fuel
+        ProviderUiInfo(PoiProviderType.Routex, "Routex", listOf("EU")),
+        ProviderUiInfo(PoiProviderType.Etalab, "Prix carburant (France official)", listOf("FR")),
+        ProviderUiInfo(PoiProviderType.GasApi, "gas-api.ovh", listOf("FR")),
+        ProviderUiInfo(PoiProviderType.DataGouv, "data.gouv (France official)", listOf("FR")),
+        ProviderUiInfo(PoiProviderType.UkCma, "UK Fuel Finder (CMA)", listOf("GB")),
+        ProviderUiInfo(PoiProviderType.ItalyMimit, "MIMIT (Italy official)", listOf("IT")),
+        ProviderUiInfo(PoiProviderType.SloveniaGorivaSi, "goriva.si (Slovenia official)", listOf("SI")),
+        ProviderUiInfo(PoiProviderType.NorwayDrivstoffAppen, "DrivstoffAppen (Norway)", listOf("NO")),
+        ProviderUiInfo(PoiProviderType.SwedenDrivstoffAppen, "DrivstoffAppen / bensinpriser.nu (Sweden)", listOf("SE")),
+        ProviderUiInfo(PoiProviderType.PortugalDgeg, "DGEG (Portugal official)", listOf("PT")),
+        ProviderUiInfo(PoiProviderType.NetherlandsAnwb, "ANWB", listOf("NL", "BE", "LU")),
+        ProviderUiInfo(PoiProviderType.DenmarkFuelpricesDk, "Fuelprices.dk", listOf("DK")),
+        ProviderUiInfo(PoiProviderType.Fuelo, "Fuelo.net", fueloSupported),
+        ProviderUiInfo(PoiProviderType.AustraliaNswFuelCheck, "FuelCheck (NSW Australia)", listOf("AU")),
+        ProviderUiInfo(PoiProviderType.CroatiaMzoe, "MZOE (Croatia official)", listOf("HR")),
+        ProviderUiInfo(PoiProviderType.FinlandPolttoaine, "Polttoaine.net (Finland)", listOf("FI")),
+        ProviderUiInfo(PoiProviderType.GreeceFuelGr, "FuelGR (Greece)", listOf("GR")),
+        ProviderUiInfo(PoiProviderType.IrelandPickAPump, "Pick A Pump (Ireland)", listOf("IE")),
+        ProviderUiInfo(PoiProviderType.MoldovaAnre, "ANRE (Moldova)", listOf("MD")),
+        ProviderUiInfo(PoiProviderType.RomaniaPeco, "Peco Online (Romania)", listOf("RO")),
+        ProviderUiInfo(PoiProviderType.SerbiaNis, "NIS (Serbia)", listOf("RS")),
+        ProviderUiInfo(PoiProviderType.MexicoCre, "CRE (Mexico)", listOf("MX")),
+        ProviderUiInfo(PoiProviderType.ArgentinaEnergia, "Secretaría de Energía (Argentina)", listOf("AR")),
+        ProviderUiInfo(
+            PoiProviderType.OpenVanCamp,
+            "OpenVan.camp",
+            FuelPriceRegistry.REFERENCE_PRICE_COUNTRIES.toList().sorted()
+        ),
+        ProviderUiInfo(PoiProviderType.SpainMinetur, "Spain Minetur (official)", listOf("ES")),
+        ProviderUiInfo(PoiProviderType.GermanyTankerkoenig, "Tankerkönig (Germany)", listOf("DE")),
+        ProviderUiInfo(PoiProviderType.AustriaEControl, "E‑Control (Austria)", listOf("AT")),
+        ProviderUiInfo(PoiProviderType.BelgiumOfficial, "Belgium (official)", listOf("BE")),
+    )
+        .filter { it.type.isUserSelectablePoiDataSource() }
+        .distinctBy { it.type }
+
+    val providersByCountry: Map<String, List<ProviderUiInfo>> = remember(providers) {
+        providers
+            .flatMap { p -> p.supportedCountries.map { c -> c.uppercase() to p } }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, list) -> list.distinctBy { it.type }.sortedBy { it.label.lowercase() } }
+    }
+
+    val sortedCountryKeys = remember(providersByCountry) {
+        val keys = providersByCountry.keys
+        val pinned = listOf("GLOBAL", "EU")
+        (keys - pinned.toSet())
+            .sortedBy { countryLabel(it).lowercase() } +
+            pinned.filter { it in keys }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -430,30 +532,88 @@ private fun SourcesConfig(
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            Text(
-                "Electric",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(
-                    PoiProviderType.DataGouvElec to "data.gouv (France official)",
-                    PoiProviderType.Chargy to "Chargy (Luxembourg)",
-                    PoiProviderType.OpenChargeMap to "OpenChargeMap",
-                    PoiProviderType.Fastned to "Fastned (OCPI)",
-                    PoiProviderType.Dkv to "DKV Mobility (OCPI)",
-                    PoiProviderType.EcoMovement to "Eco-Movement (OCPI)"
-                ).forEach { (type, label) ->
-                    FilterChip(
-                        selected = settings.selectedPoiProviders.contains(type),
-                        onClick = {
-                            val next = if (settings.selectedPoiProviders.contains(type)) settings.selectedPoiProviders - type else settings.selectedPoiProviders + type
-                            onUpdate(settings.copy(selectedPoiProviders = next))
-                        },
-                        label = { Text(label) },
+            sortedCountryKeys.forEach { countryKey ->
+                val list = providersByCountry[countryKey].orEmpty()
+                if (list.isEmpty()) return@forEach
+
+                val fuel = list.filter { it.providesFuel }
+                val electric = list.filter { it.providesElectric }
+
+                Text(
+                    countryLabel(countryKey),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+
+                if (electric.isNotEmpty()) {
+                    Text(
+                        "Electric",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
+                    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        electric.forEach { p ->
+                            val isMultiCountry = p.supportedCountries.size > 1
+                            FilterChip(
+                                selected = settings.selectedPoiProviders.contains(p.type),
+                                onClick = {
+                                    val next = if (settings.selectedPoiProviders.contains(p.type)) settings.selectedPoiProviders - p.type else settings.selectedPoiProviders + p.type
+                                    onUpdate(settings.copy(selectedPoiProviders = next))
+                                },
+                                label = {
+                                    Column {
+                                        Text(p.label)
+                                        if (isMultiCountry) {
+                                            Text(
+                                                p.supportedCountries.joinToString(", ") { countryLabel(it) },
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                },
+                            )
+                        }
+                    }
                 }
+
+                if (fuel.isNotEmpty()) {
+                    if (electric.isNotEmpty()) Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        "Fuel",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        fuel.forEach { p ->
+                            val isMultiCountry = p.supportedCountries.size > 1
+                            FilterChip(
+                                selected = settings.selectedPoiProviders.contains(p.type),
+                                onClick = {
+                                    val next = if (settings.selectedPoiProviders.contains(p.type)) settings.selectedPoiProviders - p.type else settings.selectedPoiProviders + p.type
+                                    onUpdate(settings.copy(selectedPoiProviders = next))
+                                },
+                                label = {
+                                    Column {
+                                        Text(p.label)
+                                        if (isMultiCountry) {
+                                            Text(
+                                                p.supportedCountries.joinToString(", ") { countryLabel(it) },
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -487,54 +647,6 @@ private fun SourcesConfig(
                     url = "https://developers.eco-movement.com",
                     linkLabel = "Eco-Movement docs"
                 )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                "Fuel",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(
-                    PoiProviderType.Routex to "Routex",
-                    PoiProviderType.Etalab to "Prix carburant (France official)",
-                    PoiProviderType.GasApi to "gas-api.ovh",
-                    PoiProviderType.DataGouv to "data.gouv (France official)",
-                    PoiProviderType.UkCma to "UK Fuel Finder (CMA)",
-                    PoiProviderType.ItalyMimit to "MIMIT (Italy official)",
-                    PoiProviderType.SloveniaGorivaSi to "goriva.si (Slovenia official)",
-                    PoiProviderType.NorwayDrivstoffAppen to "DrivstoffAppen (Norway)",
-                    PoiProviderType.PortugalDgeg to "DGEG (Portugal official)",
-                    PoiProviderType.NetherlandsAnwb to "ANWB (Netherlands/BE/LU)",
-                    PoiProviderType.DenmarkFuelpricesDk to "Fuelprices.dk (Denmark)",
-                    PoiProviderType.Fuelo to "Fuelo.net (multi-country)",
-                    PoiProviderType.AustraliaNswFuelCheck to "FuelCheck (NSW Australia)",
-                    PoiProviderType.CroatiaMzoe to "MZOE (Croatia official)",
-                    PoiProviderType.FinlandPolttoaine to "Polttoaine.net (Finland)",
-                    PoiProviderType.GreeceFuelGr to "FuelGR (Greece)",
-                    PoiProviderType.IrelandPickAPump to "Pick A Pump (Ireland)",
-                    PoiProviderType.MoldovaAnre to "ANRE (Moldova)",
-                    PoiProviderType.RomaniaPeco to "Peco Online (Romania)",
-                    PoiProviderType.SerbiaNis to "NIS (Serbia)",
-                    PoiProviderType.MexicoCre to "CRE (Mexico)",
-                    PoiProviderType.ArgentinaEnergia to "Secretaría de Energía (Argentina)",
-                    PoiProviderType.OpenVanCamp to "OpenVan.camp (LU, HR, SI...)",
-                    PoiProviderType.SpainMinetur to "Spain Minetur (official)",
-                    PoiProviderType.GermanyTankerkoenig to "Tankerkönig (Germany)",
-                    PoiProviderType.AustriaEControl to "E-Control (Austria)",
-                    PoiProviderType.BelgiumOfficial to "Belgium (official)"
-                ).filter { (type, _) -> type.isUserSelectablePoiDataSource() }.forEach { (type, label) ->
-                    FilterChip(
-                        selected = settings.selectedPoiProviders.contains(type),
-                        onClick = {
-                            val next = if (settings.selectedPoiProviders.contains(type)) settings.selectedPoiProviders - type else settings.selectedPoiProviders + type
-                            onUpdate(settings.copy(selectedPoiProviders = next))
-                        },
-                        label = { Text(label) },
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))

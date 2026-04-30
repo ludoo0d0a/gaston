@@ -23,6 +23,10 @@ import kotlinx.serialization.json.Json
  */
 class DrivstoffAppenProvider(
     private val client: HttpClient,
+    /** Country name used by backend `countries=` filter (e.g. "Norway", "Sweden"). */
+    private val country: String = "Norway",
+    /** ISO-2 suffix for display in addresses (e.g. "NO", "SE"). */
+    private val countryIso2: String = "NO",
     private val radiusKm: Int = 10,
     private val limit: Int = 150,
 ) : PoiProvider {
@@ -37,7 +41,7 @@ class DrivstoffAppenProvider(
             ?: radiusKm
 
         val url =
-            "https://backend.drivstoffapp.no/stations/fuel/nearby?lat=$latitude&lng=$longitude&radius=$effectiveRadiusKm&limit=$limit&sort_by=distance&countries=Norway"
+            "https://backend.drivstoffapp.no/stations/fuel/nearby?lat=$latitude&lng=$longitude&radius=$effectiveRadiusKm&limit=$limit&sort_by=distance&countries=$country"
         val body = try { client.get(url).bodyAsText() } catch (_: Exception) { return emptyList() }
         val stations = try { json.decodeFromString<List<FuelStation>>(body) } catch (_: Exception) { return emptyList() }
 
@@ -73,14 +77,14 @@ class DrivstoffAppenProvider(
                     if (isNotEmpty()) append(" ")
                     append(zip)
                 }
-                append(" NO")
+                append(" ").append(countryIso2)
             },
             latitude = lat,
             longitude = lon,
             brand = brand,
             poiCategory = PoiCategory.Gas,
             fuelPrices = fuelPrices,
-            source = "DrivstoffAppen (Norway)"
+            source = "DrivstoffAppen / bensinpriser.nu ($country)"
         )
     }
 }
