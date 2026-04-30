@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.EvStation
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Refresh
@@ -88,7 +89,6 @@ import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ui.components.CheapestStationsCard
 import fr.geoking.gaston.ui.components.FuelForecastChartCard
-import fr.geoking.gaston.ui.components.FuelForecastCompactCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -380,6 +380,12 @@ fun PhoneDashboardScreen(
             icon = Icons.Default.SignalCellular4Bar,
             onClick = onOpenNetworkDiagnostics
         ),
+        DashboardRow(
+            title = "About",
+            subtitle = "App info",
+            icon = Icons.Default.Info,
+            onClick = { onOpenSettings(listOf(SettingsScreenPage.About)) }
+        ),
     )
 
     PlaystoreTheme {
@@ -388,14 +394,6 @@ fun PhoneDashboardScreen(
                 TopAppBar(
                     title = { Text("Gaston") },
                     actions = {
-                        if (fuelForecastRepository != null) {
-                            FuelForecastCompactCard(
-                                state = fuelForecastState,
-                                isLoading = fuelForecastLoading,
-                                onClick = onOpenFuelForecast,
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
-                        }
                         IconButton(onClick = { onOpenSettings(null) }) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }
@@ -472,6 +470,44 @@ fun PhoneDashboardScreen(
                                     }
                                 )
                             }
+                        }
+                    }
+                }
+
+                // 0b. Fuel price estimation entry point (moved from top bar)
+                if (fuelForecastRepository != null) {
+                    item {
+                        Card(
+                            onClick = onOpenFuelForecast,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            ListItem(
+                                headlineContent = { Text("Price estimation") },
+                                supportingContent = { Text("Local estimate from market + nearby pumps") },
+                                leadingContent = {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalGasStation,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                trailingContent = {
+                                    if (fuelForecastLoading && fuelForecastState.historyPoints.isEmpty()) {
+                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        val price = fuelForecastState.historyPoints.lastOrNull()?.priceEurPerL
+                                        Text(
+                                            text = if (price != null) "€%.3f".format(price) else "—",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
                         }
                     }
                 }
