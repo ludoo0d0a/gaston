@@ -23,6 +23,14 @@ class GastonApplication : Application() {
             initError = e
             android.util.Log.e("GastonApplication", "Koin/DI init failed", e)
         }
+
+        if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
+            try {
+                MobileAds.initialize(this) {}
+            } catch (e: Throwable) {
+                android.util.Log.e("GastonApplication", "AdMob init failed", e)
+            }
+        }
     }
 
     companion object {

@@ -90,6 +90,7 @@ import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ads.AdMobBanner
 import fr.geoking.gaston.ui.components.CheapestStationsCard
+import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.components.FuelForecastChartCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import kotlinx.coroutines.Dispatchers
@@ -438,6 +439,16 @@ fun PhoneDashboardScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Ad banner (Play Store distribution only).
+                if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
+                    item {
+                        AdMobBanner(
+                            adUnitId = BuildConfig.ADMOB_BANNER_UNIT_ID,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
                 // 0. Chips Selector
                 item {
                     LazyRow(

@@ -25,6 +25,11 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
 
+        <!-- AdMob (required for Google Mobile Ads SDK). -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
+
         <!-- Mobile UI Activity -->
         <activity
             android:name=".MainActivity"
