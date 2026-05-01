@@ -32,8 +32,6 @@ coreKtx = "1.18.0"
 robolectric = "4.16.1"
 voskAndroid = "0.3.75"
 firebase-bom = "33.10.0"
-play-services-ads = "24.6.0"
-
 [libraries]
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -90,7 +88,6 @@ litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", ve
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
-play-services-ads = { module = "com.google.android.gms:play-services-ads", version.ref = "play-services-ads" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }

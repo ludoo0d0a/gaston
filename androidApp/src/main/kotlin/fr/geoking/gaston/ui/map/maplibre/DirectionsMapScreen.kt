@@ -87,6 +87,7 @@ fun DirectionsMapScreen(
             }
         },
         onShowSettings = { /* Maybe show simplified settings? */ },
+        onShowSources = { /* Not used in directions map */ },
         isLoading = false
     ) { padding ->
         Box(

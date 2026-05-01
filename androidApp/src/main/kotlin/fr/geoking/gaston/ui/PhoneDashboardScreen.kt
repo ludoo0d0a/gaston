@@ -88,7 +88,6 @@ import fr.geoking.gaston.poi.anyProvidesFuel
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
-import fr.geoking.gaston.ads.AdMobBanner
 import fr.geoking.gaston.ui.components.CheapestStationsCard
 import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.components.FuelForecastChartCard

@@ -92,7 +92,7 @@ configure<ApplicationExtension> {
         buildConfigField("String", "FUELPRICES_DK_KEY", "\"$fuelpricesDkKey\"")
         buildConfigField("String", "NSW_FUELCHECK_KEY", "\"$nswFuelCheckKey\"")
         buildConfigField("String", "NSW_FUELCHECK_SECRET", "\"$nswFuelCheckSecret\"")
-        buildConfigField("String", "ADMOB_BANNER_ID", "\"$admobBannerId\"")
+        buildConfigField("String", "ADMOB_BANNER_ID", "\"$admobBannerAdUnitId\"")
 
         // Required for Google Play Services Maps (references legacy Apache HTTP classes removed from Android 9+)
         useLibrary("org.apache.http.legacy")
