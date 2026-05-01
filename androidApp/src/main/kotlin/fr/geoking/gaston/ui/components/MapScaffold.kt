@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Directions
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -113,6 +112,22 @@ fun MapScaffold(
                                     }
                                 }
                             }
+                        }
+
+                        IconButton(onClick = onRefresh) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh map",
+                                tint = Color.White
+                            )
+                        }
+
+                        IconButton(onClick = onShowSettings) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Map settings",
+                                tint = Color.White
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -247,42 +262,6 @@ fun MapScaffold(
                         favoritesFilterEnabled = favoritesFilterEnabled,
                         showFavoritesOnly = showFavoritesOnly,
                         onShowFavoritesOnlyChange = onShowFavoritesOnlyChange
-                    )
-                }
-
-                FloatingActionButton(
-                    onClick = onLocateMe,
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MyLocation,
-                        contentDescription = "Locate me"
-                    )
-                }
-
-                FloatingActionButton(
-                    onClick = onRefresh,
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Refresh map"
-                    )
-                }
-
-                FloatingActionButton(
-                    onClick = onShowSettings,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Map settings"
                     )
                 }
             }
