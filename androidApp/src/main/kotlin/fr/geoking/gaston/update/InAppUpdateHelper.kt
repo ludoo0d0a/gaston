@@ -27,7 +27,11 @@ class InAppUpdateHelper(
     private val _updateAvailable = MutableStateFlow<AppUpdateInfo?>(null)
     val updateAvailable: StateFlow<AppUpdateInfo?> = _updateAvailable.asStateFlow()
 
+    private val _installStatus = MutableStateFlow<Int>(InstallStatus.UNKNOWN)
+    val installStatus: StateFlow<Int> = _installStatus.asStateFlow()
+
     private val installStateListener = InstallStateUpdatedListener { state ->
+        _installStatus.value = state.installStatus()
         if (state.installStatus() == InstallStatus.DOWNLOADED) {
             completeUpdate()
         }
@@ -47,6 +51,8 @@ class InAppUpdateHelper(
      */
     fun checkForUpdate() {
         appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+            _installStatus.value = appUpdateInfo.installStatus()
+
             // If the update was downloaded while we were not running (or listener wasn't registered yet),
             // complete it immediately so the app restarts into the updated version.
             if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
@@ -62,10 +68,11 @@ class InAppUpdateHelper(
             }
 
             // If the user already accepted an update flow earlier, Play requires we resume it.
+            // But we don't set _updateAvailable again to avoid redundant popups.
             if (appUpdateInfo.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS &&
                 appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
             ) {
-                _updateAvailable.value = appUpdateInfo
+                // Already in progress, installStatus will track it.
             }
         }
     }
