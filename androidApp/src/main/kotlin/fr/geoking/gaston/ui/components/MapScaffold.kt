@@ -38,6 +38,7 @@ fun MapScaffold(
     onRefresh: () -> Unit,
     onLocateMe: () -> Unit,
     onShowSettings: () -> Unit,
+    onShowSources: () -> Unit,
     onPlanRoute: (() -> Unit)? = null,
     onLocatePlace: (() -> Unit)? = null,
     onRouteToDirection: (() -> Unit)? = null,
@@ -148,7 +149,7 @@ fun MapScaffold(
                     item {
                         FilterChip(
                             selected = false,
-                            onClick = onShowSettings,
+                            onClick = onShowSources,
                             label = {
                                 Text(
                                     if (selectedProviders.isEmpty()) "No Source"

@@ -140,6 +140,7 @@ fun VectorMapScreen(
     var mapSizePx by remember { mutableStateOf(IntSize.Zero) }
     var selectedPoi by remember { mutableStateOf<Poi?>(null) }
     var showMapSettings by remember { mutableStateOf(false) }
+    var initialSettingsPage by remember { mutableStateOf(SettingsScreenPage.MapConfig) }
     var showFavoritesOnly by remember { mutableStateOf(false) }
     var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var frozenPoisForSheet by remember { mutableStateOf<List<Poi>>(emptyList()) }
@@ -305,7 +306,7 @@ fun VectorMapScreen(
             authManager = authManager,
             errorLog = errorLog,
             onDismiss = { showMapSettings = false },
-            initialScreenStack = listOf(SettingsScreenPage.MapConfig)
+            initialScreenStack = listOf(initialSettingsPage)
         )
         return
     }
@@ -395,7 +396,14 @@ fun VectorMapScreen(
                 launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             }
         },
-        onShowSettings = { showMapSettings = true },
+        onShowSettings = {
+            initialSettingsPage = SettingsScreenPage.MapConfig
+            showMapSettings = true
+        },
+        onShowSources = {
+            initialSettingsPage = SettingsScreenPage.Sources
+            showMapSettings = true
+        },
         onPlanRoute = onPlanRoute,
         showFavoritesOnly = showFavoritesOnly,
         onShowFavoritesOnlyChange = { showFavoritesOnly = it },
