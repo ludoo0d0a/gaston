@@ -151,6 +151,7 @@ fun MapScreen(
     var isErrorPaused by remember(selectedProviders) { mutableStateOf(false) }
     var retryCount by remember { mutableStateOf(0) }
     var showMapSettings by remember { mutableStateOf(false) }
+    var initialSettingsPage by remember { mutableStateOf(SettingsScreenPage.MapConfig) }
     var showAddPoiSheet by remember { mutableStateOf(false) }
     var addPoiLinkedOfficialId by remember { mutableStateOf<String?>(null) }
     var addPoiInitialName by remember { mutableStateOf("") }
@@ -394,7 +395,7 @@ fun MapScreen(
             authManager = authManager,
             errorLog = errorLog,
             onDismiss = { showMapSettings = false },
-            initialScreenStack = listOf(SettingsScreenPage.MapConfig)
+            initialScreenStack = listOf(initialSettingsPage)
         )
         return
     }
@@ -427,7 +428,14 @@ fun MapScreen(
                 }
             }
         },
-        onShowSettings = { showMapSettings = true },
+        onShowSettings = {
+            initialSettingsPage = SettingsScreenPage.MapConfig
+            showMapSettings = true
+        },
+        onShowSources = {
+            initialSettingsPage = SettingsScreenPage.Sources
+            showMapSettings = true
+        },
         onPlanRoute = onPlanRoute,
         showFavoritesOnly = showFavoritesOnly,
         onShowFavoritesOnlyChange = { showFavoritesOnly = it },
