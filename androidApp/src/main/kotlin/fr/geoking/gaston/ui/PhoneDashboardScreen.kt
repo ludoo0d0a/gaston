@@ -170,6 +170,7 @@ fun PhoneDashboardScreen(
     hasLocationPermission: Boolean,
     mapDepsReady: Boolean,
     fuelForecastRepository: FuelForecastRepository? = null,
+    isUpdateInProgress: Boolean = false,
     showAds: Boolean = false,
     onOpenMap: () -> Unit,
     onOpenRoutes: () -> Unit,
@@ -409,7 +410,25 @@ fun PhoneDashboardScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Gaston") },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Gaston")
+                            if (isUpdateInProgress) {
+                                Spacer(Modifier.width(12.dp))
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "Update in progress",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    },
                     actions = {
                         IconButton(onClick = { onOpenSettings(null) }) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")

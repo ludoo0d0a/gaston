@@ -48,6 +48,7 @@ import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.ui.UpdateAvailableDialog
 import fr.geoking.gaston.ui.anim.AnimationPalettes
 import com.google.android.play.core.appupdate.AppUpdateInfo
+import com.google.android.play.core.install.model.InstallStatus
 import fr.geoking.gaston.update.InAppUpdateHelper
 import fr.geoking.gaston.feature.auth.GoogleAuthManager
 import fr.geoking.gaston.intent.IntentNavigationHelper
@@ -262,6 +263,13 @@ private fun MainActivityComposeRoot(
         onResult = { isGranted -> hasLocationPermission = isGranted }
     )
 
+    val installStatus by inAppUpdateHelper.installStatus.collectAsState()
+    val isUpdateInProgress = remember(installStatus) {
+        installStatus == InstallStatus.PENDING ||
+                installStatus == InstallStatus.DOWNLOADING ||
+                installStatus == InstallStatus.INSTALLING
+    }
+
     MainUI(
         diagnostics = diagnostics,
         settingsManager = settingsManager,
@@ -272,6 +280,7 @@ private fun MainActivityComposeRoot(
         fuelForecastRepository = fuelForecastRepository,
         inAppUpdateHelper = inAppUpdateHelper,
         onStartUpdate = { info -> inAppUpdateHelper.startUpdate(info, updateResultLauncher) },
+        isUpdateInProgress = isUpdateInProgress,
         pendingNavDestinationFlow = pendingNavDestination,
         pendingLibreMapLab = pendingLibreMapLab,
         isPlaystoreDistribution = isPlaystoreDistribution,
@@ -293,6 +302,7 @@ fun MainUI(
     fuelForecastRepository: FuelForecastRepository? = null,
     inAppUpdateHelper: InAppUpdateHelper? = null,
     onStartUpdate: (AppUpdateInfo) -> Unit = {},
+    isUpdateInProgress: Boolean = false,
     pendingNavDestinationFlow: kotlinx.coroutines.flow.MutableStateFlow<NavDestination?>? = null,
     pendingLibreMapLab: MutableStateFlow<Boolean>? = null,
     isPlaystoreDistribution: Boolean = false,
@@ -490,6 +500,7 @@ fun MainUI(
                         hasLocationPermission = hasLocationPermission,
                         mapDepsReady = mapDeps != null,
                         fuelForecastRepository = fuelForecastRepository,
+                        isUpdateInProgress = isUpdateInProgress,
                         showAds = true,
                         onOpenMap = { showMap = true },
                         onOpenRoutes = {
@@ -595,6 +606,7 @@ fun MainUI(
                             hasLocationPermission = hasLocationPermission,
                             mapDepsReady = mapDeps != null,
                             fuelForecastRepository = fuelForecastRepository,
+                            isUpdateInProgress = isUpdateInProgress,
                             showAds = isPlaystoreDistribution,
                             onOpenMap = { showMap = true },
                             onOpenRoutes = {

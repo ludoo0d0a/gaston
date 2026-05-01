@@ -32,6 +32,7 @@ coreKtx = "1.18.0"
 robolectric = "4.16.1"
 voskAndroid = "0.3.75"
 firebase-bom = "33.10.0"
+
 [libraries]
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
