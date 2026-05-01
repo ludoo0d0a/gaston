@@ -88,6 +88,7 @@ import fr.geoking.gaston.poi.anyProvidesFuel
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
+import fr.geoking.gaston.ads.AdMobBanner
 import fr.geoking.gaston.ui.components.CheapestStationsCard
 import fr.geoking.gaston.ui.components.FuelForecastChartCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
@@ -169,6 +170,7 @@ fun PhoneDashboardScreen(
     hasLocationPermission: Boolean,
     mapDepsReady: Boolean,
     fuelForecastRepository: FuelForecastRepository? = null,
+    showAds: Boolean = false,
     onOpenMap: () -> Unit,
     onOpenRoutes: () -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
@@ -418,6 +420,14 @@ fun PhoneDashboardScreen(
                         titleContentColor = MaterialTheme.colorScheme.onSurface
                     )
                 )
+            },
+            bottomBar = {
+                if (showAds) {
+                    AdMobBanner(
+                        adUnitId = BuildConfig.ADMOB_BANNER_ID,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { padding ->

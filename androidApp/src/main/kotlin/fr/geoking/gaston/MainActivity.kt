@@ -490,6 +490,7 @@ fun MainUI(
                         hasLocationPermission = hasLocationPermission,
                         mapDepsReady = mapDeps != null,
                         fuelForecastRepository = fuelForecastRepository,
+                        showAds = true,
                         onOpenMap = { showMap = true },
                         onOpenRoutes = {
                             showRoutePlanning = true
@@ -594,6 +595,7 @@ fun MainUI(
                             hasLocationPermission = hasLocationPermission,
                             mapDepsReady = mapDeps != null,
                             fuelForecastRepository = fuelForecastRepository,
+                            showAds = isPlaystoreDistribution,
                             onOpenMap = { showMap = true },
                             onOpenRoutes = {
                                 showRoutePlanning = true

@@ -70,6 +70,13 @@ configure<ApplicationExtension> {
         val mapsApiKey = prop("GOOGLE_MAPS_KEY")
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
 
+        // AdMob (app id is not a secret; defaults to Google's public test app id)
+        val admobAppId = prop("ADMOB_APP_ID", "ca-app-pub-3940256099942544~3347511713").trim()
+        manifestPlaceholders["admobAppId"] = admobAppId
+        val admobBannerId = sanitizeBuildConfigString(
+            prop("ADMOB_BANNER_ID", "ca-app-pub-3940256099942544/6300978111")
+        )
+
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
         buildConfigField("String", "GITHUB_TOKEN", "\"$githubToken\"")
         buildConfigField("String", "MOBILITEIT_LUXEMBOURG_KEY", "\"$mobiliteitLuxembourgKey\"")
@@ -81,6 +88,7 @@ configure<ApplicationExtension> {
         buildConfigField("String", "FUELPRICES_DK_KEY", "\"$fuelpricesDkKey\"")
         buildConfigField("String", "NSW_FUELCHECK_KEY", "\"$nswFuelCheckKey\"")
         buildConfigField("String", "NSW_FUELCHECK_SECRET", "\"$nswFuelCheckSecret\"")
+        buildConfigField("String", "ADMOB_BANNER_ID", "\"$admobBannerId\"")
 
         // Required for Google Play Services Maps (references legacy Apache HTTP classes removed from Android 9+)
         useLibrary("org.apache.http.legacy")
@@ -198,6 +206,9 @@ dependencies {
     // Location (replaces deprecated LocationManager.requestSingleUpdate)
     implementation(libs.play.services.location)
     implementation(libs.kotlinx.coroutines.play.services)
+
+    // Ads (AdMob / Google Mobile Ads SDK)
+    implementation(libs.play.services.ads)
 
     // Maps
     implementation(libs.maps.compose)

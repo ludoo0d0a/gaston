@@ -1,6 +1,7 @@
 package fr.geoking.gaston
 
 import android.app.Application
+import com.google.android.gms.ads.MobileAds
 import fr.geoking.gaston.di.appModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -11,6 +12,8 @@ class GastonApplication : Application() {
         super.onCreate()
         android.util.Log.d("GastonApplication", "onCreate start")
         try {
+            // Safe to call once; uses test ids by default unless overridden by local.properties/env
+            MobileAds.initialize(this)
             startKoin {
                 androidContext(this@GastonApplication)
                 modules(appModule)
