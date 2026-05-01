@@ -4,6 +4,7 @@ import android.location.Address
 import android.location.Geocoder
 import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.EvStation
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Refresh
@@ -86,10 +88,10 @@ import fr.geoking.gaston.poi.anyProvidesFuel
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
+import fr.geoking.gaston.ads.AdMobBanner
 import fr.geoking.gaston.ui.components.CheapestStationsCard
 import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.components.FuelForecastChartCard
-import fr.geoking.gaston.ui.components.FuelForecastCompactCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -102,28 +104,41 @@ import kotlin.coroutines.suspendCoroutine
 
 /** Light theme for Play Store phone surfaces (home, diagnostics, map settings). */
 val PlaystoreHomeLightScheme = lightColorScheme(
-    primary = Color(0xFF2563EB),
+    // Pastel green + yellow brand
+    primary = Color(0xFF3E8E5A),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFDBEAFE),
-    onPrimaryContainer = Color(0xFF1E3A8A),
-    surface = Color(0xFFF8FAFC),
+    primaryContainer = Color(0xFFDFF3E6),
+    onPrimaryContainer = Color(0xFF0E3A24),
+    secondary = Color(0xFFF2C94C),
+    onSecondary = Color(0xFF2A2100),
+    secondaryContainer = Color(0xFFFFF2B3),
+    onSecondaryContainer = Color(0xFF2A2100),
+    tertiary = Color(0xFF7BC96F),
+    onTertiary = Color(0xFF0E3A24),
+    surface = Color(0xFFFFFBF3),
     onSurface = Color(0xFF0F172A),
-    surfaceContainerHighest = Color(0xFFE2E8F0),
-    background = Color(0xFFF1F5F9),
+    surfaceContainerHighest = Color(0xFFF3EEDB),
+    background = Color(0xFFFFFDF5),
     onBackground = Color(0xFF0F172A)
 )
 
 /** Dark theme for Play Store phone surfaces (home, diagnostics, map settings). */
 val PlaystoreHomeDarkScheme = darkColorScheme(
-    primary = Color(0xFF60A5FA),
-    onPrimary = Color(0xFF1E3A8A),
-    primaryContainer = Color(0xFF1E40AF),
-    onPrimaryContainer = Color(0xFFDBEAFE),
-    surface = Color(0xFF0F172A),
+    primary = Color(0xFF9FE2B3),
+    onPrimary = Color(0xFF0B2A17),
+    primaryContainer = Color(0xFF1E4D33),
+    onPrimaryContainer = Color(0xFFDFF3E6),
+    secondary = Color(0xFFF6E27A),
+    onSecondary = Color(0xFF2A2100),
+    secondaryContainer = Color(0xFF4A3C10),
+    onSecondaryContainer = Color(0xFFFFF2B3),
+    tertiary = Color(0xFF7BC96F),
+    onTertiary = Color(0xFF052012),
+    surface = Color(0xFF0F2418),
     onSurface = Color(0xFFF8FAFC),
-    surfaceContainerHighest = Color(0xFF1E293B),
-    background = Color(0xFF020617),
-    onBackground = Color(0xFFF1F5F9)
+    surfaceContainerHighest = Color(0xFF14301F),
+    background = Color(0xFF0B1A12),
+    onBackground = Color(0xFFF2F7F2)
 )
 
 @Composable
@@ -156,11 +171,13 @@ fun PhoneDashboardScreen(
     hasLocationPermission: Boolean,
     mapDepsReady: Boolean,
     fuelForecastRepository: FuelForecastRepository? = null,
+    showAds: Boolean = false,
     onOpenMap: () -> Unit,
     onOpenRoutes: () -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
     onOpenFuelForecast: () -> Unit,
-    onOpenSettings: (List<SettingsScreenPage>?) -> Unit
+    onOpenSettings: (List<SettingsScreenPage>?) -> Unit,
+    onRequestLocationPermission: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val settings by settingsManager.settings.collectAsState()
@@ -381,6 +398,12 @@ fun PhoneDashboardScreen(
             icon = Icons.Default.SignalCellular4Bar,
             onClick = onOpenNetworkDiagnostics
         ),
+        DashboardRow(
+            title = "About",
+            subtitle = "App info",
+            icon = Icons.Default.Info,
+            onClick = { onOpenSettings(listOf(SettingsScreenPage.About)) }
+        ),
     )
 
     PlaystoreTheme {
@@ -389,14 +412,6 @@ fun PhoneDashboardScreen(
                 TopAppBar(
                     title = { Text("Gaston") },
                     actions = {
-                        if (fuelForecastRepository != null) {
-                            FuelForecastCompactCard(
-                                state = fuelForecastState,
-                                isLoading = fuelForecastLoading,
-                                onClick = onOpenFuelForecast,
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
-                        }
                         IconButton(onClick = { onOpenSettings(null) }) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }
@@ -406,6 +421,14 @@ fun PhoneDashboardScreen(
                         titleContentColor = MaterialTheme.colorScheme.onSurface
                     )
                 )
+            },
+            bottomBar = {
+                if (showAds) {
+                    AdMobBanner(
+                        adUnitId = BuildConfig.ADMOB_BANNER_ID,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
@@ -512,6 +535,13 @@ fun PhoneDashboardScreen(
                             }
                         }
                     } else {
+                        val cardModifier = if (!hasLocationPermission) {
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { onRequestLocationPermission() }
+                        } else {
+                            Modifier.fillMaxWidth()
+                        }
                         CheapestStationsCard(
                             stations = nearbyPois,
                             userLatitude = userLat,
@@ -519,6 +549,7 @@ fun PhoneDashboardScreen(
                             selectedEnergyIds = energyFilterIds,
                             onClick = { poiForDetails = it },
                             onMapClick = onOpenMap,
+                            modifier = cardModifier,
                             emptyMessage = searchError
                         )
                     }
@@ -574,6 +605,44 @@ fun PhoneDashboardScreen(
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+
+                // 2b. Fuel price estimation entry point (moved after quick actions row)
+                if (fuelForecastRepository != null) {
+                    item {
+                        Card(
+                            onClick = onOpenFuelForecast,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            ListItem(
+                                headlineContent = { Text("Price estimation") },
+                                supportingContent = { Text("Local estimate from market + nearby pumps") },
+                                leadingContent = {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalGasStation,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                trailingContent = {
+                                    if (fuelForecastLoading && fuelForecastState.historyPoints.isEmpty()) {
+                                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        val price = fuelForecastState.historyPoints.lastOrNull()?.priceEurPerL
+                                        Text(
+                                            text = if (price != null) "€%.3f".format(price) else "—",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                            )
                         }
                     }
                 }

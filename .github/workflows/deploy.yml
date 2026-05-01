@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
   workflow_dispatch:
     inputs:
       changesNotSentForReview:
@@ -71,7 +74,6 @@ jobs:
 
       - name: Build and sign with Gradle
         env:
-          JULES_KEY: ${{ secrets.JULES_KEY }}
           GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
           GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
           OPENCHARGEMAP_KEY: ${{ secrets.OPENCHARGEMAP_KEY }}

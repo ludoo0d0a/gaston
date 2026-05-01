@@ -12,6 +12,8 @@ class GastonApplication : Application() {
         super.onCreate()
         android.util.Log.d("GastonApplication", "onCreate start")
         try {
+            // Safe to call once; uses test ids by default unless overridden by local.properties/env
+            MobileAds.initialize(this)
             startKoin {
                 androidContext(this@GastonApplication)
                 modules(appModule)

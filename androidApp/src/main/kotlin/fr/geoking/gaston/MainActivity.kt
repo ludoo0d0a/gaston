@@ -15,7 +15,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -56,6 +55,7 @@ import fr.geoking.gaston.intent.NavDestination
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.koin.android.ext.android.get
+import org.koin.android.ext.android.getKoin
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -144,7 +144,7 @@ class MainActivity : ComponentActivity() {
             android.util.Log.d("MainActivity", "Resolving Koin dependencies...")
             val diagnostics: DiagnosticStore = get()
             val settingsManager: SettingsManager = get()
-            val authManager: GoogleAuthManager = get()
+            val authManager: GoogleAuthManager? = getKoin().getOrNull()
             val networkService: NetworkService = get()
             val fuelForecastRepository: FuelForecastRepository = get()
             android.util.Log.d("MainActivity", "Dependencies resolved successfully.")
@@ -169,10 +169,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Check on every open/resume to reliably prompt for updates.
+        // Only meaningful for Play Store distribution.
+        if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
+            inAppUpdateHelper.checkForUpdate()
+        }
+    }
+
     private fun installMainComposeContent(
         diagnostics: DiagnosticStore,
         settingsManager: SettingsManager,
-        authManager: GoogleAuthManager,
+        authManager: GoogleAuthManager?,
         networkService: NetworkService,
         fuelForecastRepository: FuelForecastRepository,
         isPlaystoreDistribution: Boolean
@@ -214,7 +223,7 @@ class MainActivity : ComponentActivity() {
 private fun MainActivityComposeRoot(
     diagnostics: DiagnosticStore,
     settingsManager: SettingsManager,
-    authManager: GoogleAuthManager,
+    authManager: GoogleAuthManager?,
     mapDepsState: kotlinx.coroutines.flow.MutableStateFlow<MapDeps?>,
     onRequestMapDeps: () -> Unit,
     networkService: NetworkService,
@@ -239,12 +248,19 @@ private fun MainActivityComposeRoot(
     }
 
     val context = LocalContext.current
-    val hasLocationPermission = remember(context) {
-        androidx.core.content.ContextCompat.checkSelfPermission(
-            context,
-            android.Manifest.permission.ACCESS_FINE_LOCATION
-        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    var hasLocationPermission by remember(context) {
+        mutableStateOf(
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        )
     }
+
+    val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted -> hasLocationPermission = isGranted }
+    )
 
     MainUI(
         diagnostics = diagnostics,
@@ -259,7 +275,10 @@ private fun MainActivityComposeRoot(
         pendingNavDestinationFlow = pendingNavDestination,
         pendingLibreMapLab = pendingLibreMapLab,
         isPlaystoreDistribution = isPlaystoreDistribution,
-        hasLocationPermission = hasLocationPermission
+        hasLocationPermission = hasLocationPermission,
+        onRequestLocationPermission = {
+            locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        }
     )
 }
 
@@ -267,7 +286,7 @@ private fun MainActivityComposeRoot(
 fun MainUI(
     diagnostics: DiagnosticStore,
     settingsManager: SettingsManager,
-    authManager: GoogleAuthManager,
+    authManager: GoogleAuthManager?,
     mapDepsState: kotlinx.coroutines.flow.StateFlow<MapDeps?>,
     onRequestMapDeps: () -> Unit,
     networkService: NetworkService,
@@ -277,7 +296,8 @@ fun MainUI(
     pendingNavDestinationFlow: kotlinx.coroutines.flow.MutableStateFlow<NavDestination?>? = null,
     pendingLibreMapLab: MutableStateFlow<Boolean>? = null,
     isPlaystoreDistribution: Boolean = false,
-    hasLocationPermission: Boolean = false
+    hasLocationPermission: Boolean = false,
+    onRequestLocationPermission: () -> Unit = {}
 ) {
     val pendingNavFlow = pendingNavDestinationFlow ?: remember { MutableStateFlow<NavDestination?>(null) }
     val mapDeps by mapDepsState.collectAsState()
@@ -360,9 +380,8 @@ fun MainUI(
     val updateAvailable by (inAppUpdateHelper?.updateAvailable ?: fallbackUpdateFlow).collectAsState(initial = null)
 
     if (inAppUpdateHelper != null) {
-        LaunchedEffect(Unit) {
-            delay(500)
-            inAppUpdateHelper.checkForUpdate()
+        LaunchedEffect(isPlaystoreDistribution) {
+            if (isPlaystoreDistribution) inAppUpdateHelper.checkForUpdate()
         }
     }
     if (updateAvailable != null) {
@@ -372,7 +391,7 @@ fun MainUI(
         )
     }
 
-    MaterialTheme(colorScheme = darkColorScheme(background = Color(0xFF0F172A))) {
+    PlaystoreTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             when {
                 showNetworkDiagnostics -> {
@@ -471,6 +490,7 @@ fun MainUI(
                         hasLocationPermission = hasLocationPermission,
                         mapDepsReady = mapDeps != null,
                         fuelForecastRepository = fuelForecastRepository,
+                        showAds = true,
                         onOpenMap = { showMap = true },
                         onOpenRoutes = {
                             showRoutePlanning = true
@@ -481,7 +501,8 @@ fun MainUI(
                         onOpenSettings = { stack ->
                             playstoreSettingsInitialStack = stack
                             showPlaystoreSettings = true
-                        }
+                        },
+                        onRequestLocationPermission = onRequestLocationPermission
                     )
                 }
                 showSettings && !isPlaystoreDistribution -> {
@@ -574,6 +595,7 @@ fun MainUI(
                             hasLocationPermission = hasLocationPermission,
                             mapDepsReady = mapDeps != null,
                             fuelForecastRepository = fuelForecastRepository,
+                            showAds = isPlaystoreDistribution,
                             onOpenMap = { showMap = true },
                             onOpenRoutes = {
                                 showRoutePlanning = true
@@ -584,7 +606,8 @@ fun MainUI(
                             onOpenSettings = { stack ->
                                 settingsInitialStack = stack
                                 showSettings = true
-                            }
+                            },
+                            onRequestLocationPermission = onRequestLocationPermission
                         )
                     }
                 }
@@ -597,7 +620,7 @@ fun MainUI(
 private fun StartupErrorContent(error: Throwable) {
     val message = error.message ?: error.toString()
     val fullDetail = buildStartupErrorDetail(error)
-    MaterialTheme(colorScheme = darkColorScheme(background = Color(0xFF0F172A))) {
+    PlaystoreTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Box(Modifier.fillMaxSize().padding(24.dp)) {
                 Column(

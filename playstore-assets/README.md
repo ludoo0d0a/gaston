@@ -1,81 +1,124 @@
-# Play Store Assets for Gaston
+# Play Store Assets — Gaston
 
-Assets for publishing Gaston on Google Play.
+Assets for publishing **Gaston** on Google Play.
+
+---
 
 ## Store Listing Copy
 
-### Short description (80 characters max)
-
+### App name
 ```
-Fuel + EV charging station finder with prices for Android & Android Auto.
-```
-
-### Long description (4000 characters max)
-
-```
-Gaston helps you find fuel stations and EV charging points on Android and Android Auto.
-
-FIND STATIONS FAST
-• Search nearby fuel stations with prices (when provided by the data source)
-• Find EV charging points (IRVE) with connector and power details
-• Filter by energy, brand, services, connector types, and more
-
-ON THE ROAD (ANDROID AUTO)
-• Designed for in-car use with Android Auto templates
-• Quickly open station details and navigate with your preferred maps app
-
-DATA SOURCES
-• Uses public/open data sources where available (varies by country/provider)
-• Some providers may require keys (see project docs for setup)
-
-Perfect for drivers who want fuel/charging info at a glance—on phone and in the car.
+Gaston
 ```
 
-## Required Assets
+### Short description (80 chars max)
+```
+Fuel & EV stations finder with prices — for Android & Android Auto.
+```
 
-| Asset | File | Size | Usage |
-|-------|------|------|-------|
-| **App icon** | `icon-512.png` | 512×512 px | High-resolution icon (required) |
-| **Feature graphic** | `feature-graphic-1024x500.png` | 1024×500 px | Store listing banner (required) |
+### Long description (4 000 chars max)
+```
+Never run dry again. Gaston is your co-pilot for every road trip, everyday commute, or cross-country journey.
 
-## Phone Screenshots (2–8 required)
+FIND THE CHEAPEST FUEL NEARBY
+• Real-time fuel prices for SP95, SP95-E10, SP98, Diesel, Diesel+, GPL and more
+• Compare prices across dozens of brands — Shell, TotalEnergies, Leclerc, Auchan, Intermarché and more
+• Sort by distance or price to always get the best deal
 
-| File | Size | Description |
-|------|------|-------------|
-| `screenshot-1-ready.png` | 1080×1920 | Ready / tap to speak |
-| `screenshot-2-listening.png` | 1080×1920 | Listening state |
-| `screenshot-3-conversation.png` | 1080×1920 | Conversation view |
-| `screenshot-4-settings.png` | 1080×1920 | Settings / agent selection |
-| `screenshot-5-speaking.png` | 1080×1920 | Speaking / response |
+CHARGE YOUR EV WITH CONFIDENCE
+• Locate IRVE charging points (public French network + major operators)
+• Filter by connector type: CCS2, CHAdeMO, Type 2, Tesla
+• Filter by minimum power: 22 kW AC to 350 kW DC and beyond
+• See real-time availability and pricing per kWh where provided
 
-Format: PNG, 9:16, 320–3840 px per side, max 8 MB each.
+PLAN SMARTER ROUTES
+• Find stations along your route, not just around you
+• Combine fuel and charging stops in a single search
+• Supports route waypoints for long-distance travel
 
-## 7" Tablet Screenshots (3 required if supporting tablets)
+REST STOPS & SERVICES
+• Discover toilets, rest areas, picnic spots, camper-van services and parking on your route
+• Great for families, truckers, cyclists and road-trippers alike
 
-| File | Size | Description |
-|------|------|-------------|
-| `tablet7-1-ready.png` | 1080×1920 | Ready / tap to speak |
-| `tablet7-2-conversation.png` | 1080×1920 | Conversation view |
-| `tablet7-3-settings.png` | 1080×1920 | Settings |
+ANDROID AUTO — EYES ON THE ROAD
+• Fully designed for safe in-car use with Android Auto templates
+• Big readable cards with station name, distance and price at a glance
+• One tap to open navigation in your preferred maps app
+• No distractions — only the information you need while driving
 
-Format: PNG, 9:16, 320–3840 px per side, max 8 MB each.
+FILTERS THAT WORK FOR YOU
+• Filter by energy type, brand, connector, minimum power, services and open/closed status
+• Filters persist across sessions — set once, drive always
 
-## Optional Assets
+Gaston uses open and public data sources (data availability and freshness vary by country and provider).
 
-- **10" tablet screenshots**: 1600×2560 px
-- **TV banner**: 1280×720 px (if targeting Android TV)
+Perfect for drivers who want fuel and charging information at a glance — on their phone and in the car.
+```
 
-## How to Use
+---
+
+## Asset Manifest
+
+### Required (Google Play)
+
+| File | Dimensions | Purpose |
+|------|-----------|---------|
+| `icon-512.png` | 512 × 512 px | High-resolution app icon (required) |
+| `feature-graphic-1024x500.png` | 1024 × 500 px | Store listing banner (required) |
+
+### Phone Screenshots (min. 2, max. 8)
+
+| File | Dimensions | Screen |
+|------|-----------|--------|
+| `screenshot-1-map.png` | 1080 × 1920 px | Map view — nearest stations with prices |
+| `screenshot-2-fuel-prices.png` | 1080 × 1920 px | Station detail — full fuel price list |
+| `screenshot-3-ev-charging.png` | 1080 × 1920 px | EV detail — connectors, power, availability |
+| `screenshot-4-filters.png` | 1080 × 1920 px | Filters panel — energy, connectors, services |
+| `screenshot-5-android-auto.png` | 1080 × 1920 px | Android Auto list view |
+
+Format: PNG · 9:16 · 320–3 840 px per side · max 8 MB each.
+
+---
+
+## How to Upload
 
 1. Open [Google Play Console](https://play.google.com/console)
 2. Select your app → **Store presence** → **Main store listing**
-3. Upload **icon-512.png** under "App icon"
-4. Upload **feature-graphic-1024x500.png** under "Feature graphic"
-5. Upload **screenshot-1-ready.png** through **screenshot-5-speaking.png** (or replace with real captures)
+3. **App icon** → upload `icon-512.png`
+4. **Feature graphic** → upload `feature-graphic-1024x500.png`
+5. **Phone screenshots** → upload `screenshot-1-map.png` through `screenshot-5-android-auto.png`
 
-## Design Notes
+---
 
-Assets use Gaston branding:
-- Background: `#2D1B4E` (dark purple)
-- Accent: `#7C4DFF`, `#B388FF`, `#D1C4E9` (purple gradient)
-- Center sphere: `#6B4EAA`
+## Android Launcher Icons
+
+PNG launcher icons are generated automatically alongside these assets into:
+
+```
+androidApp/src/main/res/
+  mipmap-mdpi/       ic_launcher.png (48×48)   + ic_launcher_round.png
+  mipmap-hdpi/       ic_launcher.png (72×72)   + ic_launcher_round.png
+  mipmap-xhdpi/      ic_launcher.png (96×96)   + ic_launcher_round.png
+  mipmap-xxhdpi/     ic_launcher.png (144×144) + ic_launcher_round.png
+  mipmap-xxxhdpi/    ic_launcher.png (192×192) + ic_launcher_round.png
+  mipmap-anydpi-v26/ ic_launcher.xml (adaptive — vector)
+```
+
+To regenerate everything after a brand change:
+```bash
+python3 scripts/gen_assets.py
+```
+
+---
+
+## Brand
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| Background | `#2D1B4E` | Dark purple — icon bg, screen bg |
+| Accent violet | `#7C4DFF` | CTAs, rings, highlights |
+| Accent lavender | `#B388FF` | Secondary labels, rings |
+| Accent mist | `#D1C4E9` | Tertiary text, rings |
+| Sphere | `#6B4EAA` | Icon central sphere |
+| Gold | `#FFD228` | Fuel prices |
+| EV green | `#40C482` | Electric / charging |

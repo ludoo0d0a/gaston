@@ -118,7 +118,7 @@ class AutoPlaystoreDashboardScreen(
             GridItem.Builder()
                 .setTitle("Template lab")
                 .setText("Try templates & maps")
-                .setImage(gridIcon(R.drawable.ic_launcher))
+                .setImage(gridIcon(R.mipmap.ic_launcher))
                 .setOnClickListener {
                     screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps))
                 }

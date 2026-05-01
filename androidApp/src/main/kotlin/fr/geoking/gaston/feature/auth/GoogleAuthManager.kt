@@ -24,12 +24,17 @@ class GoogleAuthManager(
     private val appContext: Context,
     private val settingsManager: SettingsManager,
     private val diagnosticStore: DiagnosticStore,
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth?
 ) {
     private val credentialManager = CredentialManager.create(appContext)
     private val scope = CoroutineScope(Dispatchers.Main)
 
     fun signIn(context: Context, onResult: (Boolean, String?) -> Unit) {
+        val auth = firebaseAuth ?: run {
+            onResult(false, "Authentication unavailable (Firebase initialization failed)")
+            return
+        }
+
         val clientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
         val isPlaceholder = clientId.isBlank() || clientId.contains("placeholder", ignoreCase = true)
         Log.d(TAG, "signIn: clientId configured=${!isPlaceholder}, length=${clientId.length}")
@@ -68,8 +73,8 @@ class GoogleAuthManager(
                     val firebaseCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
 
                     try {
-                        firebaseAuth.signInWithCredential(firebaseCredential).await()
-                        val firebaseUser = firebaseAuth.currentUser
+                        auth.signInWithCredential(firebaseCredential).await()
+                        val firebaseUser = auth.currentUser
 
                         val settings = settingsManager.settings.value
                         val firstName = googleIdTokenCredential.givenName ?: googleIdTokenCredential.displayName ?: firebaseUser?.displayName ?: "User"
@@ -119,7 +124,7 @@ class GoogleAuthManager(
     fun signOut(onResult: (Boolean) -> Unit) {
         scope.launch {
             try {
-                firebaseAuth.signOut()
+                firebaseAuth?.signOut()
                 credentialManager.clearCredentialState(ClearCredentialStateRequest())
                 val settings = settingsManager.settings.value
                 settingsManager.saveSettings(settings.copy(

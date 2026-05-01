@@ -32,7 +32,7 @@ configure<ApplicationExtension> {
         val localProps = rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
             Properties().apply { file.inputStream().use { load(it) } }
         } ?: Properties()
-        // Keys: local.properties first, then env (CI must set env on the step that runs Gradle, e.g. JULES_KEY, GOOGLE_MAPS_KEY)
+        // Keys: local.properties first, then env (CI must set env on the step that runs Gradle, e.g. GOOGLE_MAPS_KEY)
         fun prop(key: String, default: String = "") =
             localProps.getProperty(key) ?: System.getenv(key) ?: default
         // Sanitize for Java string literal: trim, strip newlines, escape backslash and double-quote
@@ -56,11 +56,17 @@ configure<ApplicationExtension> {
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
 
-        val julesKey = sanitizeBuildConfigString(prop("JULES_KEY"))
         val githubToken = sanitizeBuildConfigString(prop("GITHUB_TOKEN"))
         val googleWebClientId = sanitizeBuildConfigString(prop("GOOGLE_WEB_CLIENT_ID", "your_web_client_id_placeholder"))
         val mobiliteitLuxembourgKey = sanitizeBuildConfigString(prop("MOBILITEIT_LUXEMBOURG_KEY"))
         val tomtomKey = sanitizeBuildConfigString(prop("TOMTOM_KEY"))
+        val fastnedUkKey = sanitizeBuildConfigString(prop("FASTNED_UK_KEY", "wVOx5Bf5EU6FLEkqBtV3h5fXj5MLFcJA1tGqApHg"))
+        val dkvSubscriptionKey = sanitizeBuildConfigString(prop("DKV_SUBSCRIPTION_KEY"))
+        val dkvAuthorization = sanitizeBuildConfigString(prop("DKV_AUTHORIZATION"))
+        val ecoMovementKey = sanitizeBuildConfigString(prop("ECO_MOVEMENT_KEY"))
+        val fuelpricesDkKey = sanitizeBuildConfigString(prop("FUELPRICES_DK_KEY"))
+        val nswFuelCheckKey = sanitizeBuildConfigString(prop("NSW_FUELCHECK_KEY"))
+        val nswFuelCheckSecret = sanitizeBuildConfigString(prop("NSW_FUELCHECK_SECRET"))
         val mapsApiKey = prop("GOOGLE_MAPS_KEY")
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
 
@@ -76,10 +82,17 @@ configure<ApplicationExtension> {
         buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"$admobBannerAdUnitId\"")
 
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
-        buildConfigField("String", "JULES_KEY", "\"$julesKey\"")
         buildConfigField("String", "GITHUB_TOKEN", "\"$githubToken\"")
         buildConfigField("String", "MOBILITEIT_LUXEMBOURG_KEY", "\"$mobiliteitLuxembourgKey\"")
         buildConfigField("String", "TOMTOM_KEY", "\"$tomtomKey\"")
+        buildConfigField("String", "FASTNED_UK_KEY", "\"$fastnedUkKey\"")
+        buildConfigField("String", "DKV_SUBSCRIPTION_KEY", "\"$dkvSubscriptionKey\"")
+        buildConfigField("String", "DKV_AUTHORIZATION", "\"$dkvAuthorization\"")
+        buildConfigField("String", "ECO_MOVEMENT_KEY", "\"$ecoMovementKey\"")
+        buildConfigField("String", "FUELPRICES_DK_KEY", "\"$fuelpricesDkKey\"")
+        buildConfigField("String", "NSW_FUELCHECK_KEY", "\"$nswFuelCheckKey\"")
+        buildConfigField("String", "NSW_FUELCHECK_SECRET", "\"$nswFuelCheckSecret\"")
+        buildConfigField("String", "ADMOB_BANNER_ID", "\"$admobBannerId\"")
 
         // Required for Google Play Services Maps (references legacy Apache HTTP classes removed from Android 9+)
         useLibrary("org.apache.http.legacy")
@@ -179,6 +192,7 @@ dependencies {
     // Compose & Activity (lifecycle-runtime ensures LifecycleOwner is on classpath for ComponentActivity)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.foundation)
@@ -196,6 +210,9 @@ dependencies {
     // Location (replaces deprecated LocationManager.requestSingleUpdate)
     implementation(libs.play.services.location)
     implementation(libs.kotlinx.coroutines.play.services)
+
+    // Ads (AdMob / Google Mobile Ads SDK)
+    implementation(libs.play.services.ads)
 
     // Maps
     implementation(libs.maps.compose)

@@ -29,9 +29,31 @@ class SelectorPoiProvider(
     private val dataGouvPrixCarburant: PoiProvider,
     private val gasApi: PoiProvider,
     private val dataGouv: PoiProvider,
+    private val ukCma: PoiProvider,
+    private val italyMimit: PoiProvider,
+    private val sloveniaGorivaSi: PoiProvider,
+    private val norwayDrivstoffAppen: PoiProvider,
+    private val swedenDrivstoffAppen: PoiProvider,
+    private val portugalDgeg: PoiProvider,
+    private val netherlandsAnwb: PoiProvider,
+    private val denmarkFuelpricesDk: PoiProvider,
+    private val fuelo: PoiProvider,
+    private val australiaNswFuelCheck: PoiProvider,
+    private val croatiaMzoe: PoiProvider,
+    private val finlandPolttoaine: PoiProvider,
+    private val greeceFuelGr: PoiProvider,
+    private val irelandPickAPump: PoiProvider,
+    private val moldovaAnre: PoiProvider,
+    private val romaniaPeco: PoiProvider,
+    private val serbiaNis: PoiProvider,
+    private val mexicoCre: PoiProvider,
+    private val argentinaEnergia: PoiProvider,
     private val dataGouvElec: PoiProvider,
     private val openChargeMap: PoiProvider,
     private val chargy: PoiProvider,
+    private val fastned: PoiProvider,
+    private val dkv: PoiProvider,
+    private val ecoMovement: PoiProvider,
     private val openVanCamp: PoiProvider,
     private val spainMinetur: PoiProvider,
     private val germanyTankerkoenig: PoiProvider,
@@ -64,9 +86,31 @@ class SelectorPoiProvider(
         PoiProviderType.Etalab -> dataGouvPrixCarburant
         PoiProviderType.GasApi -> gasApi
         PoiProviderType.DataGouv -> dataGouv
+        PoiProviderType.UkCma -> ukCma
+        PoiProviderType.ItalyMimit -> italyMimit
+        PoiProviderType.SloveniaGorivaSi -> sloveniaGorivaSi
+        PoiProviderType.NorwayDrivstoffAppen -> norwayDrivstoffAppen
+        PoiProviderType.SwedenDrivstoffAppen -> swedenDrivstoffAppen
+        PoiProviderType.PortugalDgeg -> portugalDgeg
+        PoiProviderType.NetherlandsAnwb -> netherlandsAnwb
+        PoiProviderType.DenmarkFuelpricesDk -> denmarkFuelpricesDk
+        PoiProviderType.Fuelo -> fuelo
+        PoiProviderType.AustraliaNswFuelCheck -> australiaNswFuelCheck
+        PoiProviderType.CroatiaMzoe -> croatiaMzoe
+        PoiProviderType.FinlandPolttoaine -> finlandPolttoaine
+        PoiProviderType.GreeceFuelGr -> greeceFuelGr
+        PoiProviderType.IrelandPickAPump -> irelandPickAPump
+        PoiProviderType.MoldovaAnre -> moldovaAnre
+        PoiProviderType.RomaniaPeco -> romaniaPeco
+        PoiProviderType.SerbiaNis -> serbiaNis
+        PoiProviderType.MexicoCre -> mexicoCre
+        PoiProviderType.ArgentinaEnergia -> argentinaEnergia
         PoiProviderType.DataGouvElec -> dataGouvElec
         PoiProviderType.OpenChargeMap -> openChargeMap
         PoiProviderType.Chargy -> chargy
+        PoiProviderType.Fastned -> fastned
+        PoiProviderType.Dkv -> dkv
+        PoiProviderType.EcoMovement -> ecoMovement
         PoiProviderType.OpenVanCamp -> openVanCamp
         PoiProviderType.SpainMinetur -> spainMinetur
         PoiProviderType.GermanyTankerkoenig -> germanyTankerkoenig
@@ -95,8 +139,9 @@ class SelectorPoiProvider(
 
     override fun searchFlow(request: PoiSearchRequest): Flow<PoiSearchResult> = channelFlow {
         val settings = settingsManager.settings.value
+        val isoCountry = ParkingRegion.containing(request.latitude, request.longitude)?.countryCode
         val providers = try {
-            settings.effectiveProviders()
+            settings.effectiveProviders(countryCode = isoCountry)
         } catch (e: Exception) {
             Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
             settings.selectedPoiProviders
@@ -314,8 +359,9 @@ class SelectorPoiProvider(
 
     override suspend fun searchResult(request: PoiSearchRequest): PoiSearchResult {
         val settings = settingsManager.settings.value
+        val isoCountry = ParkingRegion.containing(request.latitude, request.longitude)?.countryCode
         val providers = try {
-            settings.effectiveProviders()
+            settings.effectiveProviders(countryCode = isoCountry)
         } catch (e: Exception) {
             Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
             settings.selectedPoiProviders
@@ -562,7 +608,24 @@ class SelectorPoiProvider(
         dataGouvElec.clearCache()
         openChargeMap.clearCache()
         chargy.clearCache()
+        fastned.clearCache()
+        dkv.clearCache()
+        ecoMovement.clearCache()
         openVanCamp.clearCache()
+        portugalDgeg.clearCache()
+        netherlandsAnwb.clearCache()
+        denmarkFuelpricesDk.clearCache()
+        fuelo.clearCache()
+        australiaNswFuelCheck.clearCache()
+        croatiaMzoe.clearCache()
+        finlandPolttoaine.clearCache()
+        greeceFuelGr.clearCache()
+        irelandPickAPump.clearCache()
+        moldovaAnre.clearCache()
+        romaniaPeco.clearCache()
+        serbiaNis.clearCache()
+        mexicoCre.clearCache()
+        argentinaEnergia.clearCache()
         spainMinetur.clearCache()
         germanyTankerkoenig.clearCache()
         austriaEControl.clearCache()
@@ -579,8 +642,9 @@ class SelectorPoiProvider(
         viewport: MapViewport?
     ): List<Poi> {
         val settings = settingsManager.settings.value
+        val isoCountry = ParkingRegion.containing(latitude, longitude)?.countryCode
         val providers = try {
-            settings.effectiveProviders()
+            settings.effectiveProviders(countryCode = isoCountry)
         } catch (e: Exception) {
             Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
             settings.selectedPoiProviders

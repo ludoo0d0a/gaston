@@ -30,7 +30,7 @@ class GitHubClient(
 
     private fun requireToken(token: String): String {
         if (token.isBlank()) {
-            throw NetworkException(null, "GitHub token is required. Add one in Settings → Jules & GitHub.")
+            throw NetworkException(null, "GitHub token is required. Add one in Settings → GitHub.")
         }
         return token
     }
@@ -134,20 +134,14 @@ class GitHubClient(
     private data class IssueCommentBody(val body: String)
 
     /**
-     * Posts an issue comment on the PR. [commentText] is sent prefixed with "@jules " when it does not already start with that (case-insensitive).
+     * Posts an issue comment on the PR.
      */
     suspend fun addCommentOnPullRequest(token: String, owner: String, repo: String, number: Int, commentText: String) {
         requireToken(token)
-        val trimmed = commentText.trim()
-        val bodyText = if (trimmed.startsWith("@jules", ignoreCase = true)) {
-            trimmed
-        } else {
-            "@jules $trimmed"
-        }
         val response = client.post("$baseUrl/repos/$owner/$repo/issues/$number/comments") {
             githubHeaders(token)
             contentType(ContentType.Application.Json)
-            setBody(IssueCommentBody(body = bodyText))
+            setBody(IssueCommentBody(body = commentText.trim()))
         }
         if (response.status.value !in 200..299) {
             throw NetworkException(response.status.value, "GitHub PR comment: ${response.bodyAsText()}")

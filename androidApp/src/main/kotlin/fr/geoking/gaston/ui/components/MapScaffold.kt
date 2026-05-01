@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Directions
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -114,6 +113,22 @@ fun MapScaffold(
                                 }
                             }
                         }
+
+                        IconButton(onClick = onRefresh) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh map",
+                                tint = Color.White
+                            )
+                        }
+
+                        IconButton(onClick = onShowSettings) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Map settings",
+                                tint = Color.White
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color(0xFF0F172A)
@@ -143,9 +158,31 @@ fun MapScaffold(
                                             PoiProviderType.Etalab -> "Source: France (official)"
                                             PoiProviderType.GasApi -> "Source: Gas API"
                                             PoiProviderType.DataGouv -> "Source: France (official)"
+                                            PoiProviderType.UkCma -> "Source: UK Fuel Finder"
+                                            PoiProviderType.ItalyMimit -> "Source: MIMIT (Italy)"
+                                            PoiProviderType.SloveniaGorivaSi -> "Source: goriva.si (Slovenia)"
+                                            PoiProviderType.NorwayDrivstoffAppen -> "Source: DrivstoffAppen (Norway)"
+                                            PoiProviderType.SwedenDrivstoffAppen -> "Source: DrivstoffAppen / bensinpriser.nu (Sweden)"
+                                            PoiProviderType.PortugalDgeg -> "Source: DGEG (Portugal)"
+                                            PoiProviderType.NetherlandsAnwb -> "Source: ANWB (NL/BE/LU)"
+                                            PoiProviderType.DenmarkFuelpricesDk -> "Source: Fuelprices.dk (Denmark)"
+                                            PoiProviderType.Fuelo -> "Source: Fuelo.net"
+                                            PoiProviderType.AustraliaNswFuelCheck -> "Source: FuelCheck (NSW AU)"
+                                            PoiProviderType.CroatiaMzoe -> "Source: MZOE (Croatia)"
+                                            PoiProviderType.FinlandPolttoaine -> "Source: Polttoaine.net (Finland)"
+                                            PoiProviderType.GreeceFuelGr -> "Source: FuelGR (Greece)"
+                                            PoiProviderType.IrelandPickAPump -> "Source: Pick A Pump (Ireland)"
+                                            PoiProviderType.MoldovaAnre -> "Source: ANRE (Moldova)"
+                                            PoiProviderType.RomaniaPeco -> "Source: Peco Online (Romania)"
+                                            PoiProviderType.SerbiaNis -> "Source: NIS (Serbia)"
+                                            PoiProviderType.MexicoCre -> "Source: CRE (Mexico)"
+                                            PoiProviderType.ArgentinaEnergia -> "Source: Energía (Argentina)"
                                             PoiProviderType.DataGouvElec -> "Source: IRVE"
                                             PoiProviderType.OpenChargeMap -> "Source: Open Charge Map"
                                             PoiProviderType.Chargy -> "Source: Chargy (real-time)"
+                                            PoiProviderType.Fastned -> "Source: Fastned (UK)"
+                                            PoiProviderType.Dkv -> "Source: DKV Mobility"
+                                            PoiProviderType.EcoMovement -> "Source: Eco-Movement"
                                             PoiProviderType.OpenVanCamp -> "Source: OpenVan.camp (LU, HR, SI...)"
                                             PoiProviderType.SpainMinetur -> "Source: Spain Minetur (official)"
                                             PoiProviderType.GermanyTankerkoenig -> "Source: Tankerkönig (Germany)"
@@ -225,42 +262,6 @@ fun MapScaffold(
                         favoritesFilterEnabled = favoritesFilterEnabled,
                         showFavoritesOnly = showFavoritesOnly,
                         onShowFavoritesOnlyChange = onShowFavoritesOnlyChange
-                    )
-                }
-
-                FloatingActionButton(
-                    onClick = onLocateMe,
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MyLocation,
-                        contentDescription = "Locate me"
-                    )
-                }
-
-                FloatingActionButton(
-                    onClick = onRefresh,
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Refresh map"
-                    )
-                }
-
-                FloatingActionButton(
-                    onClick = onShowSettings,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Map settings"
                     )
                 }
             }

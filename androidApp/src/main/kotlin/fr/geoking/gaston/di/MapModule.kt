@@ -7,6 +7,13 @@ import fr.geoking.gaston.api.belib.BelibAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.chargy.ChargyProvider
+import fr.geoking.gaston.api.dkv.DkvOcpiClient
+import fr.geoking.gaston.api.dkv.DkvOcpiProvider
+import fr.geoking.gaston.api.ecomovement.EcoMovementOcpiClient
+import fr.geoking.gaston.api.ecomovement.EcoMovementOcpiProvider
+import fr.geoking.gaston.api.fastned.FastnedOcpiClient
+import fr.geoking.gaston.api.fastned.FastnedOcpiProvider
+import fr.geoking.gaston.api.evpricesfr.EvPricesFrClient
 import fr.geoking.gaston.api.datagouv.DataGouvCampingClient
 import fr.geoking.gaston.api.datagouv.DataGouvCampingProvider
 import fr.geoking.gaston.api.datagouv.DataGouvElecProvider
@@ -15,10 +22,24 @@ import fr.geoking.gaston.api.datagouv.DataGouvPrixCarburantProvider
 import fr.geoking.gaston.api.minetur.SpainMineturProvider
 import fr.geoking.gaston.api.tankerkoenig.GermanyTankerkoenigProvider
 import fr.geoking.gaston.api.econtrol.AustriaEControlProvider
+import fr.geoking.gaston.api.argentina.ArgentinaEnergiaProvider
+import fr.geoking.gaston.api.australia.AustraliaNswFuelCheckProvider
+import fr.geoking.gaston.api.croatia.CroatiaMzoeProvider
+import fr.geoking.gaston.api.denmark.FuelpricesDKProvider
 import fr.geoking.gaston.api.belgium.BelgiumPetrolPricesClient
 import fr.geoking.gaston.api.belgium.BelgiumOfficialProvider
+import fr.geoking.gaston.api.dgeg.PortugalDgegProvider
+import fr.geoking.gaston.api.finland.PolttoaineProvider
+import fr.geoking.gaston.api.fuelo.FueloProvider
 import fr.geoking.gaston.api.gas.GasApiClient
 import fr.geoking.gaston.api.gas.GasApiProvider
+import fr.geoking.gaston.api.greece.GreeceFuelGRProvider
+import fr.geoking.gaston.api.ireland.IrelandPickAPumpProvider
+import fr.geoking.gaston.api.it.MimitFuelProvider
+import fr.geoking.gaston.api.mexico.MexicoCREProvider
+import fr.geoking.gaston.api.moldova.MoldovaAnreProvider
+import fr.geoking.gaston.api.netherlands.NetherlandsAnwbProvider
+import fr.geoking.gaston.api.no.DrivstoffAppenProvider
 import fr.geoking.gaston.api.openvan.OpenVanCampClient
 import fr.geoking.gaston.api.openvan.OpenVanCampProvider
 import fr.geoking.gaston.api.openchargemap.OpenChargeMapClient
@@ -30,6 +51,10 @@ import fr.geoking.gaston.api.routing.OsrmRoutingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.routex.RoutexProvider
+import fr.geoking.gaston.api.romania.RomaniaPecoProvider
+import fr.geoking.gaston.api.serbia.SerbiaNisProvider
+import fr.geoking.gaston.api.si.GorivaSiProvider
+import fr.geoking.gaston.api.uk.UkCmaFuelProvider
 import fr.geoking.gaston.api.geocoding.AdresseDataGouvGeocodingClient
 import fr.geoking.gaston.api.geocoding.NominatimGeocodingClient
 import fr.geoking.gaston.api.geocoding.GeocodingClient
@@ -83,6 +108,68 @@ val mapModule = module {
     single<PoiProvider>(named("gasapi")) {
         GasApiProvider(get(), radiusKm = 10, limit = 100)
     }
+    single<PoiProvider>(named("ukcma")) {
+        UkCmaFuelProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single<PoiProvider>(named("mimit")) {
+        MimitFuelProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single<PoiProvider>(named("gorivasi")) {
+        GorivaSiProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single<PoiProvider>(named("drivstoffappen")) {
+        DrivstoffAppenProvider(get(), country = "Norway", countryIso2 = "NO", radiusKm = 20, limit = 150)
+    }
+    single<PoiProvider>(named("drivstoffappen_se")) {
+        DrivstoffAppenProvider(get(), country = "Sweden", countryIso2 = "SE", radiusKm = 20, limit = 150)
+    }
+    single<PoiProvider>(named("portugaldgeg")) {
+        PortugalDgegProvider(get())
+    }
+    single<PoiProvider>(named("netherlandsanwb")) {
+        NetherlandsAnwbProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("fuelpricesdk")) {
+        val sm = get<fr.geoking.gaston.SettingsManager>()
+        val key = sm.settings.value.fuelpricesDkKey.ifBlank { fr.geoking.gaston.BuildConfig.FUELPRICES_DK_KEY }
+        FuelpricesDKProvider(get(), apiKey = key, radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("fuelo")) {
+        FueloProvider(get(), radiusKm = 20, limit = 60)
+    }
+    single<PoiProvider>(named("nswfuelcheck")) {
+        val sm = get<fr.geoking.gaston.SettingsManager>()
+        val key = sm.settings.value.nswFuelCheckKey.ifBlank { fr.geoking.gaston.BuildConfig.NSW_FUELCHECK_KEY }
+        val secret = sm.settings.value.nswFuelCheckSecret.ifBlank { fr.geoking.gaston.BuildConfig.NSW_FUELCHECK_SECRET }
+        AustraliaNswFuelCheckProvider(get(), apiKey = key, apiSecret = secret, radiusKm = 20, limit = 60)
+    }
+    single<PoiProvider>(named("croatiamzoe")) {
+        CroatiaMzoeProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("finlandpolttoaine")) {
+        PolttoaineProvider(get(), limit = 40)
+    }
+    single<PoiProvider>(named("greecefuelgr")) {
+        GreeceFuelGRProvider(get(), limit = 60)
+    }
+    single<PoiProvider>(named("irelandpickapump")) {
+        IrelandPickAPumpProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("moldovaanre")) {
+        MoldovaAnreProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("romaniapeco")) {
+        RomaniaPecoProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("serbianis")) {
+        SerbiaNisProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("mexicocre")) {
+        MexicoCREProvider(get(), radiusKm = 20, limit = 80)
+    }
+    single<PoiProvider>(named("argentinaenergia")) {
+        ArgentinaEnergiaProvider(get(), radiusKm = 20, limit = 80)
+    }
     single<PoiProvider>(named("datagouv")) {
         DataGouvProvider(
             client = get(),
@@ -102,6 +189,46 @@ val mapModule = module {
     }
     single<PoiProvider>(named("chargy")) {
         ChargyProvider(get(), radiusKm = 15, limit = 100)
+    }
+    single { FastnedOcpiClient(get(), apiKey = fr.geoking.gaston.BuildConfig.FASTNED_UK_KEY) }
+    single<PoiProvider>(named("fastned")) {
+        FastnedOcpiProvider(get(), radiusKm = 10, limit = 100)
+    }
+
+    // Free/public France EV tariff baselines (HTML scraping).
+    single { EvPricesFrClient(get()) }
+    single {
+        DkvOcpiClient(
+            client = get(),
+            subscriptionKey = fr.geoking.gaston.BuildConfig.DKV_SUBSCRIPTION_KEY,
+            authorization = fr.geoking.gaston.BuildConfig.DKV_AUTHORIZATION.takeIf { it.isNotBlank() }
+        )
+    }
+    single<PoiProvider>(named("dkv")) {
+        DkvOcpiProvider(get(), radiusKm = 10, limit = 150)
+    }
+    single {
+        val sm = get<fr.geoking.gaston.SettingsManager>()
+        val key = sm.settings.value.ecoMovementKey.ifBlank { fr.geoking.gaston.BuildConfig.ECO_MOVEMENT_KEY }
+        EcoMovementOcpiClient(get(), apiKey = key)
+    }
+    single<PoiProvider>(named("ecomovement")) {
+        val sm = get<fr.geoking.gaston.SettingsManager>()
+        val key = sm.settings.value.ecoMovementKey.ifBlank { fr.geoking.gaston.BuildConfig.ECO_MOVEMENT_KEY }
+        if (key.isBlank()) {
+            object : PoiProvider {
+                override fun supportedCategories(): Set<fr.geoking.gaston.poi.PoiCategory> =
+                    setOf(fr.geoking.gaston.poi.PoiCategory.Irve)
+
+                override suspend fun getGasStations(
+                    latitude: Double,
+                    longitude: Double,
+                    viewport: fr.geoking.gaston.poi.MapViewport?
+                ): List<fr.geoking.gaston.poi.Poi> = emptyList()
+            }
+        } else {
+            EcoMovementOcpiProvider(get(), radiusKm = 10, limit = 150)
+        }
     }
     single { OverpassClient(get()) }
     single<PoiProvider>(named("overpass")) {
@@ -134,9 +261,31 @@ val mapModule = module {
             dataGouvPrixCarburant = get(named("datagouvprixcarburant")),
             gasApi = get(named("gasapi")),
             dataGouv = get(named("datagouv")),
+            ukCma = get(named("ukcma")),
+            italyMimit = get(named("mimit")),
+            sloveniaGorivaSi = get(named("gorivasi")),
+            norwayDrivstoffAppen = get(named("drivstoffappen")),
+            swedenDrivstoffAppen = get(named("drivstoffappen_se")),
+            portugalDgeg = get(named("portugaldgeg")),
+            netherlandsAnwb = get(named("netherlandsanwb")),
+            denmarkFuelpricesDk = get(named("fuelpricesdk")),
+            fuelo = get(named("fuelo")),
+            australiaNswFuelCheck = get(named("nswfuelcheck")),
+            croatiaMzoe = get(named("croatiamzoe")),
+            finlandPolttoaine = get(named("finlandpolttoaine")),
+            greeceFuelGr = get(named("greecefuelgr")),
+            irelandPickAPump = get(named("irelandpickapump")),
+            moldovaAnre = get(named("moldovaanre")),
+            romaniaPeco = get(named("romaniapeco")),
+            serbiaNis = get(named("serbianis")),
+            mexicoCre = get(named("mexicocre")),
+            argentinaEnergia = get(named("argentinaenergia")),
             dataGouvElec = get(named("datagouvelec")),
             openChargeMap = get(named("openchargemap")),
             chargy = get(named("chargy")),
+            fastned = get(named("fastned")),
+            dkv = get(named("dkv")),
+            ecoMovement = get(named("ecomovement")),
             openVanCamp = get(named("openvancamp")),
             spainMinetur = get(named("spainminetur")),
             germanyTankerkoenig = get(named("germanytankerkoenig")),
@@ -270,7 +419,7 @@ object MapModuleLoader {
         synchronized(lock) {
             if (loaded) return
             android.util.Log.d("MapModuleLoader", "Loading map module (first map open)")
-            GlobalContext.get().loadModules(listOf(mapModule))
+            org.koin.core.context.loadKoinModules(mapModule)
             loaded = true
         }
     }

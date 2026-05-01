@@ -16,14 +16,15 @@ private const val COLLECTION_SETTINGS = "user_settings"
 private const val DOCUMENT_ID = "app_settings"
 
 class FirestoreSettingsSync(
-    private val firestore: FirebaseFirestore,
-    private val firebaseAuth: FirebaseAuth
+    private val firestore: FirebaseFirestore?,
+    private val firebaseAuth: FirebaseAuth?
 ) {
     suspend fun uploadSettings(settings: AppSettings) {
-        val userId = firebaseAuth.currentUser?.uid ?: return
+        val userId = firebaseAuth?.currentUser?.uid ?: return
+        val db = firestore ?: return
         try {
             val data = settingsToMap(settings)
-            firestore.collection(COLLECTION_SETTINGS)
+            db.collection(COLLECTION_SETTINGS)
                 .document(userId)
                 .set(data, SetOptions.merge())
                 .await()
@@ -34,9 +35,10 @@ class FirestoreSettingsSync(
     }
 
     suspend fun downloadAndMerge(localSettings: AppSettings): AppSettings? {
-        val userId = firebaseAuth.currentUser?.uid ?: return null
+        val userId = firebaseAuth?.currentUser?.uid ?: return null
+        val db = firestore ?: return null
         try {
-            val doc = firestore.collection(COLLECTION_SETTINGS)
+            val doc = db.collection(COLLECTION_SETTINGS)
                 .document(userId)
                 .get()
                 .await()

@@ -47,7 +47,22 @@ class InAppUpdateHelper(
      */
     fun checkForUpdate() {
         appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+            // If the update was downloaded while we were not running (or listener wasn't registered yet),
+            // complete it immediately so the app restarts into the updated version.
+            if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                completeUpdate()
+                return@addOnSuccessListener
+            }
+
             if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE &&
+                appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
+            ) {
+                _updateAvailable.value = appUpdateInfo
+                return@addOnSuccessListener
+            }
+
+            // If the user already accepted an update flow earlier, Play requires we resume it.
+            if (appUpdateInfo.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS &&
                 appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
             ) {
                 _updateAvailable.value = appUpdateInfo

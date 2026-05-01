@@ -4,9 +4,8 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
 import fr.geoking.gaston.CarMapMode
+import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
-import fr.geoking.gaston.poi.PoiProviderType
-import fr.geoking.gaston.poi.anyProvidesElectric
 
 class AutoMapSettingsScreen(
     carContext: CarContext,
@@ -20,9 +19,22 @@ class AutoMapSettingsScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle("Data Source")
-                .addText(if (settings.selectedPoiProviders.isEmpty()) "None" else settings.selectedPoiProviders.joinToString(", ") { it.name })
+                .addText(
+                    when (settings.poiProviderSelectionMode) {
+                        PoiProviderSelectionMode.Auto -> "Auto (by country)"
+                        PoiProviderSelectionMode.Manual ->
+                            if (settings.selectedPoiProviders.isEmpty()) "None"
+                            else settings.selectedPoiProviders.joinToString(", ") { it.name }
+                    }
+                )
                 .setOnClickListener {
-                    screenManager.push(AutoPoiProviderSelectionScreen(carContext, settingsManager))
+                    val next = if (settings.poiProviderSelectionMode == PoiProviderSelectionMode.Manual) {
+                        PoiProviderSelectionMode.Auto
+                    } else {
+                        PoiProviderSelectionMode.Manual
+                    }
+                    settingsManager.setPoiProviderSelectionMode(next)
+                    invalidate()
                 }
                 .build()
         )

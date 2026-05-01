@@ -29,6 +29,16 @@ class AutoSettingsScreen(
                 .build()
         )
 
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle("About")
+                .addText("Version & data sources")
+                .setOnClickListener {
+                    screenManager.push(AutoAboutScreen(carContext))
+                }
+                .build()
+        )
+
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
             .setHeader(Header.Builder().setTitle("Settings").setStartHeaderAction(Action.BACK).build())

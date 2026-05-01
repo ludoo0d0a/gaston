@@ -144,10 +144,7 @@ class AndroidNetworkService(
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     telephonyManager.signalStrength?.level ?: 0
-                } else {
-                    @Suppress("DEPRECATION")
-                    telephonyManager.signalStrength?.level ?: 0
-                }
+                } else 0
             }
             else -> 0
         }

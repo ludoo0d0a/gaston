@@ -7,8 +7,10 @@ import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
-import androidx.car.app.navigation.model.RoutePreviewNavigationTemplate
+import androidx.car.app.navigation.model.MapWithContentTemplate
+import androidx.car.app.model.ListTemplate
 
+@Suppress("DEPRECATION")
 class AutoRoutePreviewNavigationTemplateScreen(carContext: CarContext) : Screen(carContext) {
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoRoutePreviewNavigationTemplateScreen") {
         val listBuilder = ItemList.Builder()
@@ -27,20 +29,18 @@ class AutoRoutePreviewNavigationTemplateScreen(carContext: CarContext) : Screen(
                     .build()
             )
 
-        RoutePreviewNavigationTemplate.Builder()
+        val listTemplate = ListTemplate.Builder()
             .setHeader(
                 Header.Builder()
                     .setTitle("Route Preview")
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )
-            .setItemList(listBuilder.build())
-            .setNavigateAction(
-                Action.Builder()
-                    .setTitle("Navigate")
-                    .setOnClickListener { /* Start nav */ }
-                    .build()
-            )
+            .setSingleList(listBuilder.build())
+            .build()
+
+        MapWithContentTemplate.Builder()
+            .setContentTemplate(listTemplate)
             .build()
     }
 }
