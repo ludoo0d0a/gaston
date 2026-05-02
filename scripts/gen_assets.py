@@ -93,27 +93,49 @@ def draw_pin(d, cx, cy, size, color_outer=WHITE, color_inner=SPHERE, bolt=True):
 
 
 # ─── 1. LAUNCHER ICON ────────────────────────────────────────────────────────
-def draw_navigation_icon(d, cx, cy, size, color=WHITE):
-    """Draw a modern, bold navigation arrow (compass needle) pointing top-right."""
-    # Scale coordinates based on size
-    s = size * 0.8
-    # Points for a stylized navigation arrow
+def draw_station_icon(d, cx, cy, size, color=WHITE, cutout_color=BG):
+    """Draw a modern, bold station pump silhouette with a lightning bolt cutout."""
+    s = size
+    # Main body
+    w = s * 0.55
+    h = s * 0.85
+    x0, y0 = cx - w/2, cy - h/2
+    x1, y1 = cx + w/2, cy + h/2
+    d.rounded_rectangle([x0, y0, x1, y1], radius=s*0.08, fill=color)
+
+    # The hose/nozzle on the side
+    hw = s * 0.12
+    hh = h * 0.6
+    hx0 = x1 - s*0.02
+    hy0 = y0 + h * 0.1
+    hx1 = x1 + hw
+    hy1 = hy0 + hh
+    d.rounded_rectangle([hx0, hy0, hx1, hy1], radius=s*0.04, fill=color)
+
+    # Nozzle tip / connection
+    d.rectangle([hx0 - s*0.05, hy0, hx1 - s*0.02, hy0 + s*0.1], fill=color)
+
+    # Cutout: Screen
+    sw = w * 0.65
+    sh = h * 0.25
+    sx0, sy0 = cx - sw/2, y0 + h * 0.12
+    sx1, sy1 = cx + sw/2, sy0 + sh
+    d.rounded_rectangle([sx0, sy0, sx1, sy1], radius=s*0.04, fill=cutout_color)
+
+    # Cutout: Lightning bolt in the lower part
+    bw = w * 0.35
+    bh = h * 0.35
+    bcx, bcy = cx, y1 - h * 0.3
+
     pts = [
-        (cx, cy - s*0.5),      # Top tip
-        (cx + s*0.4, cy + s*0.4), # Bottom right
-        (cx, cy + s*0.2),      # Bottom notch
-        (cx - s*0.4, cy + s*0.4), # Bottom left
+        (bcx + bw * 0.2, bcy - bh * 0.5),
+        (bcx - bw * 0.4, bcy + bh * 0.05),
+        (bcx + bw * 0.1, bcy + bh * 0.05),
+        (bcx - bw * 0.2, bcy + bh * 0.5),
+        (bcx + bw * 0.4, bcy - bh * 0.05),
+        (bcx - bw * 0.1, bcy - bh * 0.05),
     ]
-    # Rotate points slightly to point top-right (standard navigation icon look)
-    angle = math.radians(15)
-    rotated_pts = []
-    for px, py in pts:
-        dx, dy = px - cx, py - cy
-        rx = dx * math.cos(angle) - dy * math.sin(angle)
-        ry = dx * math.sin(angle) + dy * math.cos(angle)
-        rotated_pts.append((cx + rx, cy + ry))
-    
-    d.polygon(rotated_pts, fill=color)
+    d.polygon(pts, fill=cutout_color)
 
 def make_icon(size=512):
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
@@ -145,9 +167,9 @@ def make_icon(size=512):
         col = tuple(int(SPHERE[i] * t + ACCENT1[i] * (1 - t)) for i in range(3))
         d.ellipse([cx - step, cy - step, cx + step, cy + step], fill=col)
 
-    # Main Navigation Icon
-    nav_size = int(size * 0.28)
-    draw_navigation_icon(d, cx, cy, nav_size, color=WHITE)
+    # Main Station Icon
+    icon_size = int(size * 0.26)
+    draw_station_icon(d, cx, cy, icon_size, color=WHITE, cutout_color=SPHERE)
 
     # Soft highlight on sphere top-left
     h_r = max(3, int(size * 0.035))
@@ -171,14 +193,14 @@ def make_feature(w=1024, h=500):
         d.ellipse([rcx - r, rcy - r, rcx + r, rcy + r],
                   outline=(*col, alpha), width=3)
 
-    # Decorative navigation icons (right side)
+    # Decorative station icons (right side)
     for px, py, sz, col in [
         (int(w * 0.71), int(h * 0.30), 40, ACCENT1),
         (int(w * 0.83), int(h * 0.55), 30, EV_GREEN),
         (int(w * 0.91), int(h * 0.28), 25, GOLD),
         (int(w * 0.76), int(h * 0.72), 22, ACCENT2),
     ]:
-        draw_navigation_icon(d, px, py, sz, color=col)
+        draw_station_icon(d, px, py, sz, color=col, cutout_color=BG)
 
     # Left text block
     tx = int(w * 0.055)
