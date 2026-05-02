@@ -137,14 +137,15 @@ fun MapScreen(
     onBack: () -> Unit,
     onPlanRoute: (() -> Unit)? = null,
     communityRepo: CommunityPoiRepository? = null,
-    favoritesRepo: FavoritesRepository? = null
+    favoritesRepo: FavoritesRepository? = null,
+    initialSelectedPoi: Poi? = null
 ) {
     BackHandler { onBack() }
 
     val context = LocalContext.current
     val settings by settingsManager.settings.collectAsState()
     val errorLog by diagnostics.errorLog.collectAsState()
-    var cachedPois by remember { mutableStateOf<List<Poi>>(emptyList()) }
+    var cachedPois by remember { mutableStateOf<List<Poi>>(initialSelectedPoi?.let { listOf(it) } ?: emptyList()) }
     var trafficInfo by remember { mutableStateOf<TrafficInfo?>(null) }
     var mapErrorMessage by remember(settings.selectedPoiProviders, settings.poiProviderSelectionMode) {
         mutableStateOf<String?>(null)
@@ -183,11 +184,12 @@ fun MapScreen(
         }
     )
 
-    val defaultLat = 48.8566
-    val defaultLng = 2.3522
+    val defaultLat = initialSelectedPoi?.latitude ?: 48.8566
+    val defaultLng = initialSelectedPoi?.longitude ?: 2.3522
+    val defaultZoom = if (initialSelectedPoi != null) 15f else 12f
 
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(defaultLat, defaultLng), 12f)
+        position = CameraPosition.fromLatLngZoom(LatLng(defaultLat, defaultLng), defaultZoom)
     }
 
     val cameraTarget = cameraPositionState.position.target
@@ -198,7 +200,7 @@ fun MapScreen(
     var didInitialCenter by remember { mutableStateOf(false) }
 
     LaunchedEffect(hasLocationPermission) {
-        if (hasLocationPermission && !didInitialCenter) {
+        if (hasLocationPermission && !didInitialCenter && initialSelectedPoi == null) {
             val location = LocationHelper.getCurrentLocation(context)
             if (location != null) {
                 cameraPositionState.position = CameraPosition.fromLatLngZoom(
@@ -211,13 +213,19 @@ fun MapScreen(
     }
 
     var mapSizePx by remember { mutableStateOf(IntSize.Zero) }
-    var selectedPoi by remember { mutableStateOf<Poi?>(null) }
-    var scrollRequestPoiId by remember { mutableStateOf<String?>(null) }
+    var selectedPoi by remember { mutableStateOf<Poi?>(initialSelectedPoi) }
+    var scrollRequestPoiId by remember { mutableStateOf(initialSelectedPoi?.id) }
     var poiForDetailsDialog by remember { mutableStateOf<Poi?>(null) }
     var availabilityByPoiId by remember { mutableStateOf<Map<String, StationAvailabilitySummary>>(emptyMap()) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(initialSelectedPoi) {
+        if (initialSelectedPoi != null) {
+            sheetState.show()
+        }
+    }
 
     LaunchedEffect(favoritesRepo) {
         if (favoritesRepo != null) {

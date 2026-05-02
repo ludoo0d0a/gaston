@@ -321,6 +321,7 @@ fun MainUI(
     var showRoutePlanning by remember { mutableStateOf(false) }
     var showDirectionsMap by remember { mutableStateOf(false) }
     var showFuelForecast by remember { mutableStateOf(false) }
+    var pendingMapPoi by remember { mutableStateOf<Poi?>(null) }
     var routeForDirections by remember { mutableStateOf<RouteResult?>(null) }
     var stationsForDirections by remember { mutableStateOf<List<Poi>>(emptyList()) }
     var initialNavDestination by remember { mutableStateOf<NavDestination?>(null) }
@@ -462,7 +463,10 @@ fun MainUI(
                     }
                 }
                 isPlaystoreDistribution && showMap && mapDeps != null -> {
-                    BackHandler { showMap = false }
+                    BackHandler {
+                        showMap = false
+                        pendingMapPoi = null
+                    }
                     if (settings.phoneMapEngine == MapEngine.MapLibre) {
                         VectorMapScreen(
                             poiProvider = mapDeps!!.poiProvider,
@@ -472,10 +476,14 @@ fun MainUI(
                             authManager = authManager,
                             diagnostics = diagnostics,
                             palette = palette,
-                            onBack = { showMap = false },
+                            onBack = {
+                                showMap = false
+                                pendingMapPoi = null
+                            },
                             onPlanRoute = { showRoutePlanning = true },
                             communityRepo = mapDeps!!.communityRepo,
-                            favoritesRepo = mapDeps!!.favoritesRepo
+                            favoritesRepo = mapDeps!!.favoritesRepo,
+                            initialSelectedPoi = pendingMapPoi
                         )
                     } else {
                         MapScreen(
@@ -486,10 +494,14 @@ fun MainUI(
                             authManager = authManager,
                             diagnostics = diagnostics,
                             palette = palette,
-                            onBack = { showMap = false },
+                            onBack = {
+                                showMap = false
+                                pendingMapPoi = null
+                            },
                             onPlanRoute = { showRoutePlanning = true },
                             communityRepo = mapDeps!!.communityRepo,
-                            favoritesRepo = mapDeps!!.favoritesRepo
+                            favoritesRepo = mapDeps!!.favoritesRepo,
+                            initialSelectedPoi = pendingMapPoi
                         )
                     }
                 }
@@ -502,7 +514,10 @@ fun MainUI(
                         fuelForecastRepository = fuelForecastRepository,
                         isUpdateInProgress = isUpdateInProgress,
                         showAds = true,
-                        onOpenMap = { showMap = true },
+                        onOpenMap = { poi ->
+                            pendingMapPoi = poi
+                            showMap = true
+                        },
                         onOpenRoutes = {
                             showRoutePlanning = true
                             showMap = true
@@ -554,7 +569,10 @@ fun MainUI(
                     )
                 }
                 showMap -> {
-                    BackHandler { showMap = false }
+                    BackHandler {
+                        showMap = false
+                        pendingMapPoi = null
+                    }
                     if (mapDeps != null) {
                         if (settings.phoneMapEngine == MapEngine.MapLibre) {
                             VectorMapScreen(
@@ -565,10 +583,14 @@ fun MainUI(
                                 authManager = authManager,
                                 diagnostics = diagnostics,
                                 palette = palette,
-                                onBack = { showMap = false },
+                                onBack = {
+                                    showMap = false
+                                    pendingMapPoi = null
+                                },
                                 onPlanRoute = { showRoutePlanning = true },
                                 communityRepo = mapDeps!!.communityRepo,
-                                favoritesRepo = mapDeps!!.favoritesRepo
+                                favoritesRepo = mapDeps!!.favoritesRepo,
+                                initialSelectedPoi = pendingMapPoi
                             )
                         } else {
                             MapScreen(
@@ -579,10 +601,14 @@ fun MainUI(
                                 authManager = authManager,
                                 diagnostics = diagnostics,
                                 palette = palette,
-                                onBack = { showMap = false },
+                                onBack = {
+                                    showMap = false
+                                    pendingMapPoi = null
+                                },
                                 onPlanRoute = { showRoutePlanning = true },
                                 communityRepo = mapDeps!!.communityRepo,
-                                favoritesRepo = mapDeps!!.favoritesRepo
+                                favoritesRepo = mapDeps!!.favoritesRepo,
+                                initialSelectedPoi = pendingMapPoi
                             )
                         }
                     } else {
@@ -608,7 +634,10 @@ fun MainUI(
                             fuelForecastRepository = fuelForecastRepository,
                             isUpdateInProgress = isUpdateInProgress,
                             showAds = isPlaystoreDistribution,
-                            onOpenMap = { showMap = true },
+                            onOpenMap = { poi ->
+                                pendingMapPoi = poi
+                                showMap = true
+                            },
                             onOpenRoutes = {
                                 showRoutePlanning = true
                                 showMap = true

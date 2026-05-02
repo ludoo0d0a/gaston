@@ -173,7 +173,7 @@ fun PhoneDashboardScreen(
     fuelForecastRepository: FuelForecastRepository? = null,
     isUpdateInProgress: Boolean = false,
     showAds: Boolean = false,
-    onOpenMap: () -> Unit,
+    onOpenMap: (Poi?) -> Unit,
     onOpenRoutes: () -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
     onOpenFuelForecast: () -> Unit,
@@ -574,7 +574,7 @@ fun PhoneDashboardScreen(
                             userLongitude = userLon,
                             selectedEnergyIds = energyFilterIds,
                             onClick = { poiForDetails = it },
-                            onMapClick = onOpenMap,
+                            onMapClick = { onOpenMap(null) },
                             modifier = cardModifier,
                             emptyMessage = searchError
                         )
@@ -728,6 +728,10 @@ fun PhoneDashboardScreen(
     poiForDetails?.let { poi ->
         PoiDetailsFullscreenDialog(
             poi = poi,
+            onShowOnMap = {
+                onOpenMap(it)
+                poiForDetails = null
+            },
             onDismiss = { poiForDetails = null }
         )
     }

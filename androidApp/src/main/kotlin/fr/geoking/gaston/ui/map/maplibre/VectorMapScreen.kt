@@ -121,7 +121,8 @@ fun VectorMapScreen(
     onBack: () -> Unit,
     onPlanRoute: (() -> Unit)? = null,
     communityRepo: CommunityPoiRepository? = null,
-    favoritesRepo: FavoritesRepository? = null
+    favoritesRepo: FavoritesRepository? = null,
+    initialSelectedPoi: Poi? = null
 ) {
     BackHandler { onBack() }
 
@@ -129,7 +130,7 @@ fun VectorMapScreen(
     val settings by settingsManager.settings.collectAsState()
     val errorLog by diagnostics.errorLog.collectAsState()
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
-    var cachedPois by remember { mutableStateOf<List<Poi>>(emptyList()) }
+    var cachedPois by remember { mutableStateOf<List<Poi>>(initialSelectedPoi?.let { listOf(it) } ?: emptyList()) }
     var trafficInfo by remember { mutableStateOf<TrafficInfo?>(null) }
     var availabilityByPoiId by remember { mutableStateOf<Map<String, StationAvailabilitySummary>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(false) }
@@ -141,18 +142,24 @@ fun VectorMapScreen(
     }
     var retryCount by remember { mutableStateOf(0) }
     var mapSizePx by remember { mutableStateOf(IntSize.Zero) }
-    var selectedPoi by remember { mutableStateOf<Poi?>(null) }
+    var selectedPoi by remember { mutableStateOf<Poi?>(initialSelectedPoi) }
     var showMapSettings by remember { mutableStateOf(false) }
     var initialSettingsPage by remember { mutableStateOf(SettingsScreenPage.MapConfig) }
     var showFavoritesOnly by remember { mutableStateOf(false) }
     var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var frozenPoisForSheet by remember { mutableStateOf<List<Poi>>(emptyList()) }
-    var scrollRequestPoiId by remember { mutableStateOf<String?>(null) }
+    var scrollRequestPoiId by remember { mutableStateOf(initialSelectedPoi?.id) }
     var poiForDetailsDialog by remember { mutableStateOf<Poi?>(null) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(initialSelectedPoi) {
+        if (initialSelectedPoi != null) {
+            sheetState.show()
+        }
+    }
 
     var hasLocationPermission by remember {
         mutableStateOf(
@@ -172,8 +179,8 @@ fun VectorMapScreen(
 
     val initialCameraPosition = remember {
         CameraPosition.Builder()
-            .target(LatLng(48.8566, 2.3522))
-            .zoom(12.0)
+            .target(LatLng(initialSelectedPoi?.latitude ?: 48.8566, initialSelectedPoi?.longitude ?: 2.3522))
+            .zoom(if (initialSelectedPoi != null) 15.0 else 12.0)
             .build()
     }
 
