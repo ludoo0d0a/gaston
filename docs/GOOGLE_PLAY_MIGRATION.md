@@ -47,15 +47,28 @@ Where to put it:
 
 This project uses Firebase Auth + Firestore for account/settings sync.
 
+**Firebase project ID (Gaston production):** `gaston-c8f44`
+
+Use these links (sign in with a Google account that has access to the project):
+
+| Area | URL |
+|------|-----|
+| Project overview | https://console.firebase.google.com/project/gaston-c8f44/overview |
+| Project settings (apps, SHA keys, `google-services.json`) | https://console.firebase.google.com/project/gaston-c8f44/settings/general |
+| **`GOOGLE_WEB_CLIENT_ID`** — Authentication → Sign-in method → **Google** (Web client ID) | https://console.firebase.google.com/project/gaston-c8f44/authentication/providers |
+| Authentication → Users (verify sign-ins) | https://console.firebase.google.com/project/gaston-c8f44/authentication/users |
+| Linked Google Cloud → OAuth credentials (Web client ID) | https://console.cloud.google.com/apis/credentials?project=gaston-c8f44 |
+
 Checklist:
-- Create / select a **Firebase project**
+- Open the **Firebase project** above (or create one and align the ID in this doc if it changes).
 - Add an **Android app** with:
   - Package: `fr.geoking.gaston`
+- Register **SHA-1** and **SHA-256** fingerprints for debug and release signing keys on the Android app in Project settings.
 - Download `google-services.json`
   - Place it at `androidApp/google-services.json`
   - **Do not commit it** (ignored by `.gitignore`)
 - In Firebase console:
-  - Enable **Authentication** providers you need
+  - Enable **Authentication** providers you need (at minimum **Google** for account sign-in in the app)
   - Create Firestore DB (if used) and set rules
 
 ### 5) Google Sign-In / Credential Manager (Web client ID)
@@ -63,11 +76,15 @@ Checklist:
 Gaston expects a server client id string in BuildConfig:
 - `GOOGLE_WEB_CLIENT_ID`
 
-Checklist:
-- In Google Cloud Console:
-  - Configure OAuth consent screen
-  - Create an OAuth **Web application** client
-  - Copy the **Web client ID**
+**Find `GOOGLE_WEB_CLIENT_ID` in Firebase Console (preferred)**
+
+1. Open **Authentication → Sign-in method** for project `gaston-c8f44`:  
+   https://console.firebase.google.com/project/gaston-c8f44/authentication/providers  
+2. Click **Google** in the providers list (enable it first if it is off; saving creates the OAuth clients if needed).
+3. On the Google provider screen, copy the **Web client ID** (sometimes labeled **Web SDK configuration**). It looks like `….apps.googleusercontent.com`.  
+   That string is your `GOOGLE_WEB_CLIENT_ID`.
+
+If the field is not visible or you manage clients manually, use the linked GCP **Credentials** page in the table above and copy the **Client ID** of the OAuth **Web client** type.
 
 Where to put it:
 - **Local**: `local.properties` (NOT committed)
