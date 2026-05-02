@@ -103,25 +103,6 @@ fun PoiDetailsFullscreenDialog(
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    if (isMergedPoi) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            AssistChip(
-                                onClick = {},
-                                label = { Text("Merged POI", fontSize = 12.sp) },
-                                colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = Color(0xFF0F172A),
-                                    labelColor = Color.White
-                                ),
-                                interactionSource = remember { MutableInteractionSource() }
-                            )
-                            Text(
-                                text = sources.joinToString(" + "),
-                                color = Color.White.copy(alpha = 0.75f),
-                                fontSize = 13.sp
-                            )
-                        }
-                    }
                     brandInfo?.let {
                         Text(it.displayName, color = Color.White.copy(alpha = 0.7f), fontSize = 16.sp)
                     }
@@ -147,64 +128,6 @@ fun PoiDetailsFullscreenDialog(
                                 color = Color.White.copy(alpha = 0.7f),
                                 fontSize = 13.sp
                             )
-                        }
-                    }
-
-                    if (isMergedPoi) {
-                        SectionHeader("Sources")
-                        sources.forEach { s ->
-                            Text(
-                                text = "• $s",
-                                color = Color.White.copy(alpha = 0.9f),
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-
-                    // Community Actions
-                    if (isLoggedIn && (onEdit != null || onRemove != null || onHide != null || onSuggestCorrection != null)) {
-                        SectionHeader("Actions")
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (isCommunityPoi) {
-                                onEdit?.let { TextButton(onClick = it) { Text("Edit", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
-                                onRemove?.let { TextButton(onClick = it) { Text("Remove", color = Color(0xFFFF6B6B), fontSize = 13.sp) } }
-                            } else {
-                                onHide?.let { TextButton(onClick = it) { Text("Hide on map", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
-                                onSuggestCorrection?.let { TextButton(onClick = it) { Text("Suggest correction", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
-                            }
-                        }
-                    }
-
-                    // Rating
-                    if (rating != null || onRate != null) {
-                        SectionHeader("Note")
-                        if (rating != null) {
-                            Text(
-                                text = "Note: $rating/5",
-                                color = Color.White.copy(alpha = 0.9f),
-                                fontSize = 14.sp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                        if (onRate != null) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                (1..5).forEach { star ->
-                                    IconButton(
-                                        onClick = { onRate(star) },
-                                        modifier = Modifier.size(40.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = if (rating != null && star <= rating) Icons.Default.Star else Icons.Outlined.StarBorder,
-                                            contentDescription = "Note $star",
-                                            tint = if (rating != null && star <= rating) Color(0xFFEAB308) else Color.White.copy(alpha = 0.5f),
-                                            modifier = Modifier.size(32.dp)
-                                        )
-                                    }
-                                }
-                            }
                         }
                     }
 
@@ -298,6 +221,24 @@ fun PoiDetailsFullscreenDialog(
                         }
                     }
 
+                    // Community Actions
+                    if (isLoggedIn && (onEdit != null || onRemove != null || onHide != null || onSuggestCorrection != null)) {
+                        SectionHeader("Actions")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (isCommunityPoi) {
+                                onEdit?.let { TextButton(onClick = it) { Text("Edit", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
+                                onRemove?.let { TextButton(onClick = it) { Text("Remove", color = Color(0xFFFF6B6B), fontSize = 13.sp) } }
+                            } else {
+                                onHide?.let { TextButton(onClick = it) { Text("Hide on map", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
+                                onSuggestCorrection?.let { TextButton(onClick = it) { Text("Suggest correction", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
+                            }
+                        }
+                    }
+
+
                     // Restaurant Details
                     poi.restaurantDetails?.let { d ->
                         SectionHeader("Restaurant")
@@ -362,6 +303,17 @@ fun PoiDetailsFullscreenDialog(
                             details.openingHoursFuel.forEach { line ->
                                 Text(line, color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
                             }
+                        }
+                    }
+
+                    if (isMergedPoi) {
+                        SectionHeader("Sources")
+                        sources.forEach { s ->
+                            Text(
+                                text = "• $s",
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontSize = 14.sp
+                            )
                         }
                     }
                 }

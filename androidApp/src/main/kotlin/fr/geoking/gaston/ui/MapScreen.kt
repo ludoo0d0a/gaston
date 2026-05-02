@@ -739,14 +739,14 @@ fun MapScreen(
                 flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 32.dp, start = 16.dp, end = 16.dp)
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
+                contentPadding = PaddingValues(bottom = 32.dp)
             ) {
                 items(listToShow, key = { it.id }) { poi ->
                     val isFav = poi.id in favoriteIds
                     PoiDetailCard(
-                        modifier = Modifier.width((LocalConfiguration.current.screenWidthDp - 32).dp),
+                        modifier = Modifier.width(LocalConfiguration.current.screenWidthDp.dp),
                         poi = poi,
                         availabilitySummary = availabilityByPoiId[poi.id],
                         highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),
