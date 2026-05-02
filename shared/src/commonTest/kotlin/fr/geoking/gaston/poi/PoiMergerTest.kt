@@ -90,4 +90,33 @@ class PoiMergerTest {
         assertEquals(1, merged.size)
         assertEquals(1.60, merged[0].fuelPrices?.first()?.price, "Should pick price with timestamp over null")
     }
+
+    @Test
+    fun mergePois_detectsBrandFromName() {
+        val lat = 48.8566
+        val lon = 2.3522
+
+        // p1 has brand but generic name, p2 has NO brand but name contains "Total"
+        // Names must be similar enough to trigger a merge.
+        val p1 = Poi("1", "Total Paris Sud", "Address 1", lat, lon, brand = "Independant")
+        val p2 = Poi("2", "Total Paris", "Address 1", lat + 0.0001, lon, brand = null)
+
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(1, merged.size)
+        assertEquals("Total", merged[0].brand, "Should detect Total from name and prioritize it over Independant")
+    }
+
+    @Test
+    fun mergePois_detectsBrandFromBrandFieldFuzzy() {
+        val lat = 48.8566
+        val lon = 2.3522
+
+        // p1 has a messy brand string that contains "Esso"
+        val p1 = Poi("1", "Station", "Address 1", lat, lon, brand = "Esso Express - Relais")
+        val p2 = Poi("2", "Station", "Address 1", lat + 0.0001, lon, brand = "Generic")
+
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(1, merged.size)
+        assertEquals("Esso", merged[0].brand, "Should normalize Esso Express to Esso")
+    }
 }

@@ -95,6 +95,36 @@ object BrandRegistry {
     }
 
     /**
+     * Attempts to find a known brand from the provided brand and name.
+     * Checks the brand field first, then looks for keywords in the name.
+     */
+    fun findBrand(name: String?, brand: String?): String? {
+        val normalizedBrand = brand?.let { normalizeLookupKey(it) }
+
+        // 1. Check if the brand field itself is a known brand (highest priority)
+        if (!normalizedBrand.isNullOrBlank()) {
+            val key = BRAND_NAMES.keys.sortedByDescending { it.length }
+                .find { normalizedBrand == it || normalizedBrand.contains(it) }
+            if (key != null) return BRAND_NAMES[key]
+        }
+
+        // 2. Search for brand keywords in the name
+        if (!name.isNullOrBlank()) {
+            val normalizedName = normalizeLookupKey(name)
+            val key = BRAND_NAMES.keys.sortedByDescending { it.length }.find { normalizedName.contains(it) }
+            if (key != null) return BRAND_NAMES[key]
+        }
+
+        // 3. Fallback to the original brand name if it's not generic
+        val generic = setOf("station", "independant", "independant (gms)", "sans enseigne", "autoroute", "route")
+        if (normalizedBrand != null && normalizedBrand !in generic) {
+            return brand
+        }
+
+        return null
+    }
+
+    /**
      * Strip accents, lowercase, and map common API / commercial variants to a single lookup key.
      */
     fun normalizeLookupKey(raw: String): String {

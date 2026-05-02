@@ -171,9 +171,12 @@ object PoiMerger {
 
         val mergedSources = mergeSources(existing.source, incoming.source)
 
+        val brandExisting = BrandRegistry.findBrand(existing.name, existing.brand)
+        val brandIncoming = BrandRegistry.findBrand(incoming.name, incoming.brand)
+
         val mergedBrand = when {
-            isBetterBrand(incoming.brand, existing.brand) -> incoming.brand
-            else -> existing.brand
+            isBetterBrand(brandIncoming, brandExisting) -> brandIncoming
+            else -> brandExisting ?: existing.brand
         }
 
         return existing.copy(
@@ -210,6 +213,9 @@ object PoiMerger {
     private fun isBetterBrand(candidate: String?, current: String?): Boolean {
         if (candidate.isNullOrBlank()) return false
         if (current.isNullOrBlank()) return true
+
+        // If they resolve to the same normalized brand name, no one is "better"
+        if (candidate.equals(current, ignoreCase = true)) return false
 
         val hasIconCandidate = BrandRegistry.hasIcon(candidate)
         val hasIconCurrent = BrandRegistry.hasIcon(current)
