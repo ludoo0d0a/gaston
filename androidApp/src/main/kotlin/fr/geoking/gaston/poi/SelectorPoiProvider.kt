@@ -364,9 +364,13 @@ class SelectorPoiProvider(
                             centerLon = request.longitude
                         )
                         finalEnriched = enriched
-                        PoiSearchResult(pois = applyPostFilters(enriched, request, providers), errors = errors.toList())
-                    }.let { result ->
-                        send(result)
+
+                        val resultToEmit = synchronized(cacheLock) {
+                            cachedPois = PoiMerger.mergeInto(cachedPois, enriched)
+                            enriched.forEach { poiSeenAtMs[it.id] = nowMs }
+                            PoiSearchResult(pois = applyPostFilters(cachedPois, request, providers), errors = errors.toList())
+                        }
+                        send(resultToEmit)
                     }
                 }
             }
@@ -375,7 +379,7 @@ class SelectorPoiProvider(
         // After all providers finish, update the cache.
         val mergedNow = System.currentTimeMillis()
         synchronized(cacheLock) {
-            cachedPois = PoiMerger.mergeInto(cachedPois, finalEnriched)
+            // Already merged in loop, just refresh timestamps for the final set
             finalEnriched.forEach { poiSeenAtMs[it.id] = mergedNow }
             cachedPois.forEach { p ->
                 if (poiSeenAtMs[p.id] == null) poiSeenAtMs[p.id] = mergedNow

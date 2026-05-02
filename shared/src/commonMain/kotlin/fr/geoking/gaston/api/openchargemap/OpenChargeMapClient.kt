@@ -56,6 +56,11 @@ class OpenChargeMapClient(
     private fun parsePoi(obj: JsonObject?): OpenChargeMapPoi? {
         if (obj == null) return null
         val id = obj["ID"]?.jsonPrimitive?.content ?: return null
+
+        // StatusType: 0=Unknown, 10=Operational, 20=Non-Operational, 30=Broken, 50=Removed, 75=Partially Operational, 100=Blocked, 150=Planned, 200=Removed
+        val statusId = obj["StatusTypeID"]?.jsonPrimitive?.content?.toIntOrNull()
+        val isClosed = statusId != null && statusId in listOf(20, 30, 50, 100, 200)
+
         val addr = obj["AddressInfo"]?.jsonObject ?: return null
         val lat = addr["Latitude"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: return null
         val lon = addr["Longitude"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: return null
@@ -84,7 +89,8 @@ class OpenChargeMapClient(
             longitude = lon,
             operator = operator,
             powerKw = maxKw,
-            connectorTypes = connectorTypes
+            connectorTypes = connectorTypes,
+            isClosed = isClosed
         )
     }
 
@@ -109,5 +115,6 @@ data class OpenChargeMapPoi(
     val longitude: Double,
     val operator: String?,
     val powerKw: Double?,
-    val connectorTypes: Set<String>
+    val connectorTypes: Set<String>,
+    val isClosed: Boolean = false
 )

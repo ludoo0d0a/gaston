@@ -63,6 +63,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.koin.core)
             implementation(libs.kermit)
+            implementation(libs.kotlinx.datetime)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)

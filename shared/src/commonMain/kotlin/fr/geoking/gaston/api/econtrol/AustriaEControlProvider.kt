@@ -33,7 +33,7 @@ class AustriaEControlProvider(
         viewport: MapViewport?
     ): List<Poi> {
         // Fetch Diesel as representative for location search
-        val url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-address?latitude=$latitude&longitude=$longitude&fuelType=DIE&includeClosed=false"
+        val url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-address?latitude=$latitude&longitude=$longitude&fuelType=DIE&includeClosed=true"
 
         val response = try {
             client.get(url)
@@ -72,6 +72,7 @@ class AustriaEControlProvider(
         return Poi(
             id = "econtrol:$id",
             name = name ?: "Gas Station",
+            isClosed = open == false,
             address = listOfNotNull(location?.address, location?.postalCode, location?.city).joinToString(" "),
             latitude = location?.latitude ?: 0.0,
             longitude = location?.longitude ?: 0.0,
@@ -87,6 +88,7 @@ class AustriaEControlProvider(
 data class EControlStation(
     val id: Int? = null,
     val name: String? = null,
+    val open: Boolean? = null,
     val location: EControlLocation? = null,
     val prices: List<EControlPrice>? = null
 )

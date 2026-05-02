@@ -230,6 +230,7 @@ data class Poi(
     val fuelPrices: List<FuelPrice>? = null,
     /** Site name (e.g. Routex site_name) for title. */
     val siteName: String? = null,
+    val isClosed: Boolean = false,
     val postcode: String? = null,
     val addressLocal: String? = null,
     val countryLocal: String? = null,
@@ -306,25 +307,10 @@ object MapPoiFilter {
 
     /**
      * Returns true if [poi] should be shown given [selectedEnergyIds].
-     * When [selectedEnergyIds] is empty, returns true (show all).
-     * Hybrid stations (both gas and electric) match if either gas or electric filter matches.
-     * Stations without price data are shown if their primary category matches the selected filters.
+     * [selectedEnergyIds] is currently ignored as per requested behavior: display all stations for now.
      */
     fun matchesEnergyFilter(poi: Poi, selectedEnergyIds: Set<String>): Boolean {
-        if (selectedEnergyIds.isEmpty()) return true
-
-        val matchesElectric = poi.isElectric && "electric" in selectedEnergyIds
-
-        val fuelIds = poi.fuelPrices?.mapNotNull { fuelNameToId(it.fuelName) }?.toSet() ?: emptySet()
-        val matchesFuel = if (fuelIds.isNotEmpty()) {
-            fuelIds.any { it in selectedEnergyIds }
-        } else {
-            // If no fuel prices, check if it's a gas station (explicitly or by default)
-            val isGas = poi.poiCategory == PoiCategory.Gas || (poi.poiCategory == null && !poi.isElectric)
-            isGas && selectedEnergyIds.any { it != "electric" }
-        }
-
-        return matchesElectric || matchesFuel
+        return true
     }
 
     /** Returns true if [powerKw] falls into any of the selected [levels] buckets. */

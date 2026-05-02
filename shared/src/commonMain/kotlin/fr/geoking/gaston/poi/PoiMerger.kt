@@ -1,6 +1,8 @@
 package fr.geoking.gaston.poi
 
 import fr.geoking.gaston.api.routex.RoutexSiteDetails
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.math.abs
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -12,15 +14,17 @@ import kotlin.math.sqrt
 /**
  * Deduplicates POIs that represent the same physical place coming from different sources.
  *
- * Match rule: close enough (distance) AND similar enough (name token overlap).
+ * Match rule: close enough (distance) OR (fairly close AND similar enough name).
  * When merging, combines the underlying data (fuel prices, details, connector types, etc.)
  * into a single [Poi].
  */
 object PoiMerger {
-    // Empirically chosen to avoid merging distinct nearby stations.
-    private const val MERGE_DISTANCE_METERS = 100.0
-    private const val NAME_TOKEN_MIN_LENGTH = 3
-    private const val NAME_SIMILARITY_MIN = 0.25
+    // Distance threshold for unconditional merge.
+    private const val MERGE_DISTANCE_METERS = 50.0
+    // Distance threshold for merge with name matching.
+    private const val MERGE_DISTANCE_WITH_NAME_METERS = 250.0
+    private const val NAME_TOKEN_MIN_LENGTH = 2
+    private const val NAME_SIMILARITY_MIN = 0.8
 
     fun mergePois(pois: List<Poi>): List<Poi> {
         if (pois.isEmpty()) return emptyList()
@@ -71,16 +75,23 @@ object PoiMerger {
 
         // Fast reject on approximate deltas before doing haversine.
         val latDeltaMeters = abs(a.latitude - b.latitude) * 111_000.0
-        if (latDeltaMeters > MERGE_DISTANCE_METERS * 1.2) return false
+        if (latDeltaMeters > MERGE_DISTANCE_WITH_NAME_METERS * 1.2) return false
 
         val lonDeltaMeters =
             abs(a.longitude - b.longitude) * 111_000.0 * cos(((a.latitude + b.latitude) / 2.0) * PI / 180.0)
-        if (lonDeltaMeters > MERGE_DISTANCE_METERS * 1.2) return false
+        if (lonDeltaMeters > MERGE_DISTANCE_WITH_NAME_METERS * 1.2) return false
 
         val distMeters = haversineMeters(a.latitude, a.longitude, b.latitude, b.longitude)
-        if (distMeters > MERGE_DISTANCE_METERS) return false
 
-        return namesSimilarEnough(a, b)
+        // 1. Unconditional merge if extremely close (within 50m)
+        if (distMeters <= MERGE_DISTANCE_METERS) return true
+
+        // 2. Merge if fairly close (within 250m) AND name matches (80%)
+        if (distMeters <= MERGE_DISTANCE_WITH_NAME_METERS) {
+            return namesSimilarEnough(a, b)
+        }
+
+        return false
     }
 
     private fun namesSimilarEnough(a: Poi, b: Poi): Boolean {
@@ -96,13 +107,7 @@ object PoiMerger {
         if (intersection.isEmpty()) return false
         // Similarity based on overlap vs the larger token set.
         val similarity = intersection.size.toDouble() / maxOf(tokensA.size, tokensB.size).toDouble()
-        if (similarity >= NAME_SIMILARITY_MIN) return true
-
-        // Fallback: short prefix match helps with cases like “BP Paris Sud” vs “BP Paris”.
-        val prefixA = na.take(10)
-        val prefixB = nb.take(10)
-        return prefixA == prefixB || prefixA.startsWith(prefixB.takeWhile { it != ' ' }) ||
-            prefixB.startsWith(prefixA.takeWhile { it != ' ' })
+        return similarity >= NAME_SIMILARITY_MIN
     }
 
     private fun buildMatchName(p: Poi): String {
@@ -165,6 +170,12 @@ object PoiMerger {
         val mergedPoiCategory = existing.poiCategory ?: incoming.poiCategory ?: if (mergedIsElectric) PoiCategory.Irve else PoiCategory.Gas
 
         val mergedFuelPrices = mergeFuelPrices(existing.fuelPrices, incoming.fuelPrices)
+
+        // Prices not updated since 4 weeks are considered definitely closed.
+        val staleClosed = mergedFuelPrices != null && mergedFuelPrices.isNotEmpty() &&
+            mergedFuelPrices.all { it.updatedAt != null && isStale(it.updatedAt, weeks = 4) }
+
+        val mergedIsClosed = existing.isClosed || incoming.isClosed || staleClosed
         val mergedIrveDetails = mergeIrveDetails(existing.irveDetails, incoming.irveDetails)
         val mergedRoutexDetails = mergeRoutexDetails(existing.routexDetails, incoming.routexDetails)
         val mergedRestaurantDetails = mergeRestaurantDetails(existing.restaurantDetails, incoming.restaurantDetails)
@@ -185,6 +196,7 @@ object PoiMerger {
             isElectric = mergedIsElectric,
             poiCategory = mergedPoiCategory,
             fuelPrices = mergedFuelPrices,
+            isClosed = mergedIsClosed,
             irveDetails = mergedIrveDetails,
             routexDetails = mergedRoutexDetails,
             restaurantDetails = mergedRestaurantDetails,
@@ -365,6 +377,48 @@ object PoiMerger {
         val a = sin(dLat / 2).pow(2) + cos(lat1 * rad) * cos(lat2 * rad) * sin(dLon / 2).pow(2)
         val c = 2 * atan2(sqrt(a), sqrt(1 - a))
         return r * c
+    }
+
+    private fun isStale(updatedAt: String, weeks: Int): Boolean {
+        return try {
+            val now = Clock.System.now()
+            val updatedInstant = parseFlexible(updatedAt) ?: return false
+            val diff = now - updatedInstant
+            diff.inWholeDays > (weeks * 7)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun parseFlexible(dateStr: String): Instant? {
+        // Attempt ISO format first: 2024-05-20T10:20:30Z
+        try {
+            return Instant.parse(dateStr)
+        } catch (_: Exception) {
+        }
+
+        // Attempt ODS format (DataGouv): 2024-05-20T10:20:30+02:00
+        // (Instant.parse handles ISO-8601 with offset in recent kotlinx-datetime versions)
+
+        // Attempt "YYYY-MM-DD HH:MM:SS" (Mimit)
+        try {
+            val space = dateStr.indexOf(' ')
+            if (space == 10) {
+                val iso = dateStr.replace(' ', 'T') + "Z" // Assume UTC if no zone
+                return Instant.parse(iso)
+            }
+        } catch (_: Exception) {
+        }
+
+        // Attempt YYYY-MM-DD
+        try {
+            if (dateStr.length == 10 && dateStr[4] == '-' && dateStr[7] == '-') {
+                return (dateStr + "T00:00:00Z").let { Instant.parse(it) }
+            }
+        } catch (_: Exception) {
+        }
+
+        return null
     }
 }
 

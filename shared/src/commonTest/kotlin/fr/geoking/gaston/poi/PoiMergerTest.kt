@@ -21,16 +21,100 @@ class PoiMergerTest {
     }
 
     @Test
-    fun mergePois_respects100mThreshold() {
+    fun mergePois_unconditionalMergeWithin50m() {
         val lat = 48.8566
         val lon = 2.3522
 
-        // 0.001 degrees latitude is ~111m
-        val p1 = Poi("1", "Station A", "Address 1", lat, lon, brand = "Generic")
-        val p2 = Poi("2", "Station A", "Address 1", lat + 0.001, lon, brand = "Generic") // ~111m away
+        // ~33m away, different names
+        val p1 = Poi("1", "Station Alpha", "Address 1", lat, lon)
+        val p2 = Poi("2", "Station Beta", "Address 2", lat + 0.0003, lon)
 
         val merged = PoiMerger.mergePois(listOf(p1, p2))
-        assertEquals(2, merged.size, "Should NOT merge POIs more than 100m away")
+        assertEquals(1, merged.size, "Should merge unconditionally within 50m")
+    }
+
+    @Test
+    fun mergePois_noMergeBeyond50mIfNamesDifferent() {
+        val lat = 48.8566
+        val lon = 2.3522
+
+        // ~66m away, different names
+        val p1 = Poi("1", "Station Alpha", "Address 1", lat, lon)
+        val p2 = Poi("2", "Station Beta", "Address 2", lat + 0.0006, lon)
+
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(2, merged.size, "Should NOT merge beyond 50m if names are different")
+    }
+
+    @Test
+    fun mergePois_mergeWithin250mIfNamesMatch() {
+        val lat = 48.8566
+        val lon = 2.3522
+
+        // ~111m away, same name
+        val p1 = Poi("1", "Total Paris", "Address 1", lat, lon)
+        val p2 = Poi("2", "Total Paris", "Address 2", lat + 0.001, lon)
+
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(1, merged.size, "Should merge within 250m if names match")
+    }
+
+    @Test
+    fun mergePois_noMergeBeyond250mEvenIfNamesMatch() {
+        val lat = 48.8566
+        val lon = 2.3522
+
+        // ~333m away, same name
+        val p1 = Poi("1", "Total Paris", "Address 1", lat, lon)
+        val p2 = Poi("2", "Total Paris", "Address 2", lat + 0.003, lon)
+
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(2, merged.size, "Should NOT merge beyond 250m even if names match")
+    }
+
+    @Test
+    fun mergePois_detectsClosureFromStalePrices() {
+        val lat = 48.8566
+        val lon = 2.3522
+
+        // Mocking "now" is hard with kotlinx-datetime Clock.System.now() unless we use a wrapper,
+        // but we can use a date very far in the past.
+        val staleDate = "2000-01-01T10:00:00Z"
+
+        val p1 = Poi("1", "Old Station", "Address", lat, lon, fuelPrices = listOf(
+            FuelPrice("Gazole", 1.50, updatedAt = staleDate)
+        ))
+        val p2 = Poi("2", "Old Station", "Address", lat + 0.0001, lon, fuelPrices = listOf(
+            FuelPrice("SP95", 1.60, updatedAt = staleDate)
+        ))
+
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(1, merged.size)
+        assertTrue(merged[0].isClosed, "Should be marked closed if all prices are stale (>4 weeks)")
+    }
+
+    @Test
+    fun mergePois_keepsOpenIfOnePriceIsRecent() {
+        val lat = 48.8566
+        val lon = 2.3522
+
+        val staleDate = "2000-01-01T10:00:00Z"
+        // Recent date: I'll use a hardcoded one that is likely recent for the next few years,
+        // or just use something very far in the future to be safe in this environment.
+        // Actually, let's use 2025-01-01 if current year is 2024?
+        // Better: use a date that is definitely NOT stale.
+        val recentDate = "2099-01-01T10:00:00Z"
+
+        val p1 = Poi("1", "Mixed Station", "Address", lat, lon, fuelPrices = listOf(
+            FuelPrice("Gazole", 1.50, updatedAt = staleDate)
+        ))
+        val p2 = Poi("2", "Mixed Station", "Address", lat + 0.0001, lon, fuelPrices = listOf(
+            FuelPrice("SP95", 1.60, updatedAt = recentDate)
+        ))
+
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(1, merged.size)
+        assertTrue(!merged[0].isClosed, "Should NOT be marked closed if at least one price is recent")
     }
 
     @Test

@@ -51,6 +51,7 @@ class OpenChargeMapProvider(
                 isOnHighway = false,
                 chargePointCount = null,
                 fuelPrices = null,
+                isClosed = s.isClosed,
                 irveDetails = IrveDetails(connectorTypes = s.connectorTypes),
                 source = "OpenChargeMap"
             )
