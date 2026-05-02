@@ -8,10 +8,16 @@ import fr.geoking.gaston.VehicleType
 import fr.geoking.gaston.parking.ParkingRegion
 import fr.geoking.gaston.api.openvan.OpenVanCampClient
 import fr.geoking.gaston.api.openvan.OpenVanCampProvider
+import fr.geoking.gaston.persistence.PoiCacheDao
+import fr.geoking.gaston.persistence.PoiCacheEntity
 import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -62,8 +68,14 @@ class SelectorPoiProvider(
     private val openVanCampClient: OpenVanCampClient,
     private val overpass: PoiProvider,
     private val dataGouvCamping: PoiProvider?,
+    private val poiCacheDao: PoiCacheDao,
     private val settingsManager: SettingsManager
 ) : PoiProvider {
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     private data class LoadedPoiRegion(
         val centerLat: Double,
@@ -78,6 +90,7 @@ class SelectorPoiProvider(
     private val poiSeenAtMs = mutableMapOf<String, Long>()
     private val loadedRegions = mutableListOf<LoadedPoiRegion>()
     private var lastCacheKey: String? = null
+    private var lastCleanupAtMs: Long = 0
     private val cacheLock = Any()
     private val flowMutex = Mutex()
 
@@ -139,6 +152,20 @@ class SelectorPoiProvider(
 
     override fun searchFlow(request: PoiSearchRequest): Flow<PoiSearchResult> = channelFlow {
         val settings = settingsManager.settings.value
+
+        // Periodic background cleanup
+        val nowCleanup = System.currentTimeMillis()
+        if (nowCleanup - lastCleanupAtMs > 60L * 60L * 1000L) { // Once per hour
+            lastCleanupAtMs = nowCleanup
+            launch(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    poiCacheDao.deleteOldPois(nowCleanup - (12L * 60L * 60L * 1000L))
+                } catch (e: Exception) {
+                    Log.e("SelectorPoiProvider", "Failed to cleanup old POIs", e)
+                }
+            }
+        }
+
         val isoCountry = ParkingRegion.containing(request.latitude, request.longitude)?.countryCode
         val providers = try {
             settings.effectiveProviders(countryCode = isoCountry)
@@ -162,11 +189,22 @@ class SelectorPoiProvider(
         }
 
         val nowMs = System.currentTimeMillis()
-        val ttlMs = 5L * 60L * 1000L // 5 minutes TTL as requested
+        val ttlMs = 12L * 60L * 60L * 1000L // 12 hours TTL as requested
         val expiresBeforeMs = nowMs - ttlMs
-        val maxRegions = 8
+        val maxRegions = 12 // Increased slightly for persistence
         val maxPoisInCache = 1200
 
+        val requiredRadiusKm = request.viewport?.let { v ->
+            radiusKmFromMapViewport(
+                request.latitude,
+                request.longitude,
+                v.zoom,
+                v.mapWidthPx,
+                v.mapHeightPx
+            ).coerceIn(1, 50)
+        } ?: 10
+
+        var isFromMemory = false
         val alreadyCoveredResult = synchronized(cacheLock) {
             if (lastCacheKey != poiFetchKey) {
                 loadedRegions.clear()
@@ -188,16 +226,6 @@ class SelectorPoiProvider(
                 }
             }
 
-            val requiredRadiusKm = request.viewport?.let { v ->
-                radiusKmFromMapViewport(
-                    request.latitude,
-                    request.longitude,
-                    v.zoom,
-                    v.mapWidthPx,
-                    v.mapHeightPx
-                ).coerceIn(1, 50)
-            } ?: 10 // Default radius for dashboard
-
             val viewportCovered = loadedRegions.any { region ->
                 region.maxRadiusKmLoaded >= requiredRadiusKm &&
                         haversineKm(
@@ -209,13 +237,49 @@ class SelectorPoiProvider(
             }
 
             if (viewportCovered) {
+                isFromMemory = true
                 PoiSearchResult(pois = applyPostFilters(cachedPois, request, providers))
             } else null
         }
 
-        if (alreadyCoveredResult != null) {
-            send(alreadyCoveredResult)
-            return@channelFlow
+        var currentAlreadyCoveredResult = alreadyCoveredResult
+        if (currentAlreadyCoveredResult == null) {
+            // Try persistent cache
+            val latDelta = requiredRadiusKm / 111.0
+            val lonDelta = requiredRadiusKm / (111.0 * cos(request.latitude * PI / 180.0))
+            val dbPois = try {
+                poiCacheDao.getPoisInRegion(
+                    latMin = request.latitude - latDelta,
+                    latMax = request.latitude + latDelta,
+                    lonMin = request.longitude - lonDelta,
+                    lonMax = request.longitude + lonDelta,
+                    minUpdatedAtMs = expiresBeforeMs
+                ).mapNotNull {
+                    try {
+                        json.decodeFromString<Poi>(it.poiJson)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("SelectorPoiProvider", "Failed to query DB cache", e)
+                emptyList()
+            }
+
+            if (dbPois.isNotEmpty()) {
+                synchronized(cacheLock) {
+                    cachedPois = PoiMerger.mergeInto(cachedPois, dbPois)
+                    dbPois.forEach { poiSeenAtMs[it.id] = nowMs }
+                }
+                currentAlreadyCoveredResult = PoiSearchResult(pois = applyPostFilters(cachedPois, request, providers))
+            }
+        }
+
+        if (currentAlreadyCoveredResult != null) {
+            send(currentAlreadyCoveredResult)
+            if (isFromMemory) {
+                return@channelFlow
+            }
         }
 
         val allPois = mutableListOf<Poi>()
@@ -309,19 +373,9 @@ class SelectorPoiProvider(
         }
 
         // After all providers finish, update the cache.
-        val requiredRadiusKm = request.viewport?.let { v ->
-            radiusKmFromMapViewport(
-                request.latitude,
-                request.longitude,
-                v.zoom,
-                v.mapWidthPx,
-                v.mapHeightPx
-            ).coerceIn(1, 50)
-        } ?: 10
-
+        val mergedNow = System.currentTimeMillis()
         synchronized(cacheLock) {
             cachedPois = PoiMerger.mergeInto(cachedPois, finalEnriched)
-            val mergedNow = System.currentTimeMillis()
             finalEnriched.forEach { poiSeenAtMs[it.id] = mergedNow }
             cachedPois.forEach { p ->
                 if (poiSeenAtMs[p.id] == null) poiSeenAtMs[p.id] = mergedNow
@@ -355,6 +409,24 @@ class SelectorPoiProvider(
                 poiSeenAtMs.keys.retainAll(keepIds)
             }
         }
+
+        // Persist to DB
+        try {
+            val entities = finalEnriched.map { p ->
+                PoiCacheEntity(
+                    id = p.id,
+                    latitude = p.latitude,
+                    longitude = p.longitude,
+                    name = p.name,
+                    address = p.address,
+                    poiJson = json.encodeToString(p),
+                    updatedAtMs = mergedNow
+                )
+            }
+            poiCacheDao.insertPois(entities)
+        } catch (e: Exception) {
+            Log.e("SelectorPoiProvider", "Failed to persist POIs", e)
+        }
     }
 
     override suspend fun searchResult(request: PoiSearchRequest): PoiSearchResult {
@@ -379,12 +451,22 @@ class SelectorPoiProvider(
         }
 
         val nowMs = System.currentTimeMillis()
-        val ttlMs = 5L * 60L * 1000L // 5 minutes TTL as requested
+        val ttlMs = 12L * 60L * 60L * 1000L // 12 hours TTL as requested
         val expiresBeforeMs = nowMs - ttlMs
-        val maxRegions = 8
+        val maxRegions = 12
         val maxPoisInCache = 1200
 
-        synchronized(cacheLock) {
+        val requiredRadiusKm = request.viewport?.let { v ->
+            radiusKmFromMapViewport(
+                request.latitude,
+                request.longitude,
+                v.zoom,
+                v.mapWidthPx,
+                v.mapHeightPx
+            ).coerceIn(1, 50)
+        } ?: 10
+
+        val cachedResult = synchronized(cacheLock) {
             if (lastCacheKey != poiFetchKey) {
                 loadedRegions.clear()
                 cachedPois = emptyList()
@@ -405,16 +487,6 @@ class SelectorPoiProvider(
                 }
             }
 
-            val requiredRadiusKm = request.viewport?.let { v ->
-                radiusKmFromMapViewport(
-                    request.latitude,
-                    request.longitude,
-                    v.zoom,
-                    v.mapWidthPx,
-                    v.mapHeightPx
-                ).coerceIn(1, 50)
-            } ?: 10 // Default radius for dashboard
-
             val viewportCovered = loadedRegions.any { region ->
                 region.maxRadiusKmLoaded >= requiredRadiusKm &&
                         haversineKm(
@@ -426,7 +498,38 @@ class SelectorPoiProvider(
             }
 
             if (viewportCovered) {
-                return PoiSearchResult(pois = applyPostFilters(cachedPois, request, providers))
+                PoiSearchResult(pois = applyPostFilters(cachedPois, request, providers))
+            } else null
+        }
+
+        if (cachedResult != null) return cachedResult
+
+        // Try persistent cache
+        val latDelta = requiredRadiusKm / 111.0
+        val lonDelta = requiredRadiusKm / (111.0 * cos(request.latitude * PI / 180.0))
+        val dbPois = try {
+            poiCacheDao.getPoisInRegion(
+                latMin = request.latitude - latDelta,
+                latMax = request.latitude + latDelta,
+                lonMin = request.longitude - lonDelta,
+                lonMax = request.longitude + lonDelta,
+                minUpdatedAtMs = expiresBeforeMs
+            ).mapNotNull {
+                try {
+                    json.decodeFromString<Poi>(it.poiJson)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SelectorPoiProvider", "Failed to query DB cache", e)
+            emptyList()
+        }
+
+        if (dbPois.isNotEmpty()) {
+            synchronized(cacheLock) {
+                cachedPois = PoiMerger.mergeInto(cachedPois, dbPois)
+                dbPois.forEach { poiSeenAtMs[it.id] = nowMs }
             }
         }
 
@@ -508,19 +611,9 @@ class SelectorPoiProvider(
             centerLon = request.longitude
         )
 
-        val requiredRadiusKm = request.viewport?.let { v ->
-            radiusKmFromMapViewport(
-                request.latitude,
-                request.longitude,
-                v.zoom,
-                v.mapWidthPx,
-                v.mapHeightPx
-            ).coerceIn(1, 50)
-        } ?: 10
-
+        val mergedNow = System.currentTimeMillis()
         synchronized(cacheLock) {
             cachedPois = PoiMerger.mergeInto(cachedPois, enriched)
-            val mergedNow = System.currentTimeMillis()
             enriched.forEach { poiSeenAtMs[it.id] = mergedNow }
             cachedPois.forEach { p ->
                 if (poiSeenAtMs[p.id] == null) poiSeenAtMs[p.id] = mergedNow
@@ -555,6 +648,24 @@ class SelectorPoiProvider(
                 val keepIds = cachedPois.map { it.id }.toSet()
                 poiSeenAtMs.keys.retainAll(keepIds)
             }
+        }
+
+        // Persist to DB
+        try {
+            val entities = enriched.map { p ->
+                PoiCacheEntity(
+                    id = p.id,
+                    latitude = p.latitude,
+                    longitude = p.longitude,
+                    name = p.name,
+                    address = p.address,
+                    poiJson = json.encodeToString(p),
+                    updatedAtMs = mergedNow
+                )
+            }
+            poiCacheDao.insertPois(entities)
+        } catch (e: Exception) {
+            Log.e("SelectorPoiProvider", "Failed to persist POIs", e)
         }
 
         val result = applyPostFilters(cachedPois, request, providers)
