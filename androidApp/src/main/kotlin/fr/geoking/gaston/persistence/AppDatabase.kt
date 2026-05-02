@@ -9,9 +9,10 @@ import androidx.room.RoomDatabase
         MarketDailyQuoteEntity::class,
         LocalFuelAvgDailyEntity::class,
         FuelPricePredictionEntity::class,
-        FuelPricePredictionScoreEntity::class
+        FuelPricePredictionScoreEntity::class,
+        PoiCacheEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -20,4 +21,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun localFuelAvgDailyDao(): LocalFuelAvgDailyDao
     abstract fun fuelPricePredictionDao(): FuelPricePredictionDao
     abstract fun fuelPricePredictionScoreDao(): FuelPricePredictionScoreDao
+    abstract fun poiCacheDao(): PoiCacheDao
 }

@@ -3,11 +3,13 @@ package fr.geoking.gaston.poi
 import fr.geoking.gaston.api.routex.RoutexSiteDetails
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.Serializable
 
 /**
  * Category of POI for unified search. Extensible: add new values and wire providers as needed.
  * Used by [PoiSearchRequest] and [Poi.poiCategory].
  */
+@Serializable
 enum class PoiCategory {
     /** Fuel / gas stations (Routex, Etalab, GasApi, DataGouv). */
     Gas,
@@ -69,6 +71,7 @@ enum class PoiCategory {
 /**
  * POI data source. [providesFuel] / [providesElectric] classify providers for UI (e.g. filter mode), not OSM extras.
  */
+@Serializable
 enum class PoiProviderType(
     val providesFuel: Boolean = false,
     val providesElectric: Boolean = false,
@@ -160,6 +163,7 @@ fun Iterable<PoiProviderType>.anyProvidesElectric(): Boolean = any { it.provides
  * IRVE-only details: connector types, tarification (free text), opening hours, payment, etc.
  * Used when [Poi.isElectric] and data comes from data.gouv.fr IRVE.
  */
+@Serializable
 data class IrveDetails(
     /** Connector type ids: "type_2", "combo_ccs", "chademo", "ef", "autre". */
     val connectorTypes: Set<String> = emptySet(),
@@ -183,6 +187,7 @@ data class IrveDetails(
  * Restaurant/fast food details from OSM (Overpass): opening hours, cuisine, brand.
  * Used when [Poi.poiCategory] is Restaurant or FastFood and data comes from Overpass.
  */
+@Serializable
 data class RestaurantDetails(
     val openingHours: String? = null,
     val cuisine: String? = null,
@@ -193,6 +198,7 @@ data class RestaurantDetails(
 /**
  * Fuel type and price at a gas station (e.g. from data.gouv.fr / gas-api.ovh).
  */
+@Serializable
 data class FuelPrice(
     val fuelName: String,
     val price: Double,
@@ -200,6 +206,7 @@ data class FuelPrice(
     val outOfStock: Boolean = false
 )
 
+@Serializable
 data class Poi(
     val id: String,
     val name: String,
