@@ -24,6 +24,8 @@ class InAppUpdateHelper(
 ) {
     private val appUpdateManager: AppUpdateManager = AppUpdateManagerFactory.create(context)
 
+    private var isUpdateDismissed = false
+
     private val _updateAvailable = MutableStateFlow<AppUpdateInfo?>(null)
     val updateAvailable: StateFlow<AppUpdateInfo?> = _updateAvailable.asStateFlow()
 
@@ -50,8 +52,16 @@ class InAppUpdateHelper(
      * Prefer [AppUpdateType.FLEXIBLE] so the user can keep using the app while downloading.
      */
     fun checkForUpdate() {
+        if (isUpdateDismissed) return
+
         appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
             _installStatus.value = appUpdateInfo.installStatus()
+
+            // If an update is already in progress, don't suggest it again.
+            val inProgress = appUpdateInfo.installStatus() == InstallStatus.PENDING ||
+                    appUpdateInfo.installStatus() == InstallStatus.DOWNLOADING ||
+                    appUpdateInfo.installStatus() == InstallStatus.INSTALLING
+            if (inProgress) return@addOnSuccessListener
 
             // If the update was downloaded while we were not running (or listener wasn't registered yet),
             // complete it immediately so the app restarts into the updated version.
@@ -103,6 +113,7 @@ class InAppUpdateHelper(
      * Dismisses the "update available" dialog without starting the update.
      */
     fun dismissUpdate() {
+        isUpdateDismissed = true
         _updateAvailable.value = null
     }
 }

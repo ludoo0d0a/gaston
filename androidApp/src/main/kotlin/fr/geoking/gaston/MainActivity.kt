@@ -390,11 +390,6 @@ fun MainUI(
     val fallbackUpdateFlow = remember { MutableStateFlow<AppUpdateInfo?>(null) }
     val updateAvailable by (inAppUpdateHelper?.updateAvailable ?: fallbackUpdateFlow).collectAsState(initial = null)
 
-    if (inAppUpdateHelper != null) {
-        LaunchedEffect(isPlaystoreDistribution) {
-            if (isPlaystoreDistribution) inAppUpdateHelper.checkForUpdate()
-        }
-    }
     if (updateAvailable != null) {
         UpdateAvailableDialog(
             onCancel = { inAppUpdateHelper?.dismissUpdate() },
