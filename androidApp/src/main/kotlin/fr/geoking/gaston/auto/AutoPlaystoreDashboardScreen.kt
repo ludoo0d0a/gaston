@@ -70,8 +70,8 @@ class AutoPlaystoreDashboardScreen(
 
         grid.addItem(
             GridItem.Builder()
-                .setTitle("POI (vehicle)")
-                .setText("Saved vehicle filters")
+                .setTitle("POI Map")
+                .setText("Stations near me")
                 .setImage(gridIcon(R.drawable.ic_poi_caravan_rounded))
                 .setOnClickListener {
                     settingsManager.setUseVehicleFilter(true)

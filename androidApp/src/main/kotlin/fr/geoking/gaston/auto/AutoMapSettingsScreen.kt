@@ -42,7 +42,7 @@ class AutoMapSettingsScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle("Map Mode")
-                .addText("Current: ${settings.carMapMode.name}")
+                .addText("Current: ${settings.carMapMode.name}" + if (settings.carMapMode == CarMapMode.Custom) " (Warning: may not be compliant with POI category)" else "")
                 .setOnClickListener {
                     val nextMode = if (settings.carMapMode == CarMapMode.Native) CarMapMode.Custom else CarMapMode.Native
                     settingsManager.setCarMapMode(nextMode)
