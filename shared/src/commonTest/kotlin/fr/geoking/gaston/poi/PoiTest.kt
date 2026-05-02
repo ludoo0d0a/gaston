@@ -34,4 +34,14 @@ class PoiTest {
         val names = pois.map { it.name }
         assertTrue(names.any { it.contains("BP") }, "One name should contain BP")
     }
+
+    @Test
+    fun matchesEnergyFilter_alwaysReturnsTrue() {
+        val gasPoi = Poi("1", "Gas", "Address", 0.0, 0.0, isElectric = false)
+        val elecPoi = Poi("2", "Elec", "Address", 0.0, 0.0, isElectric = true)
+
+        assertTrue(MapPoiFilter.matchesEnergyFilter(gasPoi, setOf("electric")), "Should show gas even if electric filter active")
+        assertTrue(MapPoiFilter.matchesEnergyFilter(elecPoi, setOf("gazole")), "Should show elec even if gazole filter active")
+        assertTrue(MapPoiFilter.matchesEnergyFilter(gasPoi, emptySet()), "Should show gas with empty filters")
+    }
 }

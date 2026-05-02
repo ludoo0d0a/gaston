@@ -20,6 +20,7 @@ maps-compose = "8.2.2"
 maplibre-android = "13.0.1"
 httpclient-android = "4.3.5.1"
 play-app-update = "2.1.0"
+kotlinx-datetime = "0.6.1"
 play-services-location = "21.3.0"
 play-services-ads = "25.2.0"
 androidx-credentials = "1.5.0"
@@ -66,6 +67,7 @@ kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-cor
 
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 library = { module = "com.llamatik:library", version.ref = "llamatik-library" }
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }
 maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre-android" }
