@@ -1,0 +1,52 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Concentric glow rings -->
+    <path
+        android:strokeColor="#2D7C4DFF"
+        android:strokeWidth="0.8"
+        android:pathData="M54,54m-47.5,0a47.5,47.5 0,1 1,95 0a47.5,47.5 0,1 1,-95 0" />
+    <path
+        android:strokeColor="#40B388FF"
+        android:strokeWidth="0.8"
+        android:pathData="M54,54m-38.8,0a38.8,38.8 0,1 1,77.6 0a38.8,38.8 0,1 1,-77.6 0" />
+    <path
+        android:strokeColor="#55D1C4E9"
+        android:strokeWidth="0.8"
+        android:pathData="M54,54m-30.2,0a30.2,30.2 0,1 1,60.4 0a30.2,30.2 0,1 1,-60.4 0" />
+
+    <!-- Central sphere -->
+    <path
+        android:fillColor="#6B4EAA"
+        android:pathData="M54,54m-23.2,0a23.2,23.2 0,1 1,46.4 0a23.2,23.2 0,1 1,-46.4 0" />
+
+    <!-- Station Pump Icon (White) -->
+    <!-- Body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46.3,42.1 h15.4 c1.2,0 2.2,1 2.2,2.2 v23.8 c0,1.2 -1,2.2 -2.2,2.2 h-15.4 c-1.2,0 -2.2,-1 -2.2,-2.2 v-23.8 c0,-1.2 1,-2.2 2.2,-2.2 z" />
+    <!-- Hose -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M61.2,44.5 h3.3 c0.5,0 0.9,0.4 0.9,0.9 v14.3 c0,0.5 -0.4,0.9 -0.9,0.9 h-3.3 z" />
+    <!-- Nozzle connector -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M59.8,44.5 h4.2 v2.8 h-4.2 z" />
+
+    <!-- Cutouts -->
+    <path
+        android:fillColor="#6B4EAA"
+        android:pathData="M49.0,45.0 h10.0 c0.5,0 0.9,0.4 0.9,0.9 v6.0 c0,0.5 -0.4,0.9 -0.9,0.9 h-10.0 c-0.5,0 -0.9,-0.4 -0.9,-0.9 v-6.0 c0,-0.5 0.4,-0.9 0.9,-0.9 z" />
+    <path
+        android:fillColor="#6B4EAA"
+        android:pathData="M55.1,54.6 L51.8,59.2 H54.5 L52.9,62.9 L56.2,58.4 H53.5 Z" />
+
+    <!-- Soft highlight -->
+    <path
+        android:fillColor="#3CFFFFFF"
+        android:pathData="M45.8,41.7m-3.8,0a3.8,3.8 0,1 1,7.6 0a3.8,3.8 0,1 1,-7.6 0" />
+</vector>
