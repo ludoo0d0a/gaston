@@ -87,6 +87,7 @@ import fr.geoking.gaston.transit.TransitAggregator
 import fr.geoking.gaston.transit.TransitApiSelector
 import fr.geoking.gaston.transit.TransitProvider
 import fr.geoking.gaston.toll.TollCalculator
+import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.ui.OpenTollDataHelper
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.qualifier.named
@@ -131,7 +132,7 @@ val mapModule = module {
     }
     single<PoiProvider>(named("fuelpricesdk")) {
         val sm = get<fr.geoking.gaston.SettingsManager>()
-        val key = sm.settings.value.fuelpricesDkKey.ifBlank { fr.geoking.gaston.BuildConfig.FUELPRICES_DK_KEY }
+        val key = sm.settings.value.fuelpricesDkKey.ifBlank { BuildConfig.FUELPRICES_DK_KEY }
         FuelpricesDKProvider(get(), apiKey = key, radiusKm = 20, limit = 80)
     }
     single<PoiProvider>(named("fuelo")) {
@@ -139,8 +140,8 @@ val mapModule = module {
     }
     single<PoiProvider>(named("nswfuelcheck")) {
         val sm = get<fr.geoking.gaston.SettingsManager>()
-        val key = sm.settings.value.nswFuelCheckKey.ifBlank { fr.geoking.gaston.BuildConfig.NSW_FUELCHECK_KEY }
-        val secret = sm.settings.value.nswFuelCheckSecret.ifBlank { fr.geoking.gaston.BuildConfig.NSW_FUELCHECK_SECRET }
+        val key = sm.settings.value.nswFuelCheckKey.ifBlank { BuildConfig.NSW_FUELCHECK_KEY }
+        val secret = sm.settings.value.nswFuelCheckSecret.ifBlank { BuildConfig.NSW_FUELCHECK_SECRET }
         AustraliaNswFuelCheckProvider(get(), apiKey = key, apiSecret = secret, radiusKm = 20, limit = 60)
     }
     single<PoiProvider>(named("croatiamzoe")) {
@@ -182,15 +183,19 @@ val mapModule = module {
         DataGouvElecProvider(get(), radiusKm = 10, limit = 100)
     }
     single<OpenChargeMapClient> {
-        OpenChargeMapClient(get(), apiKey = get<fr.geoking.gaston.SettingsManager>().settings.value.openChargeMapKey.ifBlank { null })
+        val sm = get<fr.geoking.gaston.SettingsManager>()
+        val key = sm.settings.value.openChargeMapKey.ifBlank {
+            BuildConfig.OPENCHARGEMAP_KEY.takeIf { it.isNotBlank() }
+        }
+        OpenChargeMapClient(get(), apiKey = key)
     }
     single<PoiProvider>(named("openchargemap")) {
         OpenChargeMapProvider(get(), radiusKm = 10, limit = 50)
     }
     single<PoiProvider>(named("chargy")) {
-        ChargyProvider(get(), radiusKm = 15, limit = 100)
+        ChargyProvider(get(), apiKey = BuildConfig.CHARGY_API_KEY, radiusKm = 15, limit = 100)
     }
-    single { FastnedOcpiClient(get(), apiKey = fr.geoking.gaston.BuildConfig.FASTNED_UK_KEY) }
+    single { FastnedOcpiClient(get(), apiKey = BuildConfig.FASTNED_UK_KEY) }
     single<PoiProvider>(named("fastned")) {
         FastnedOcpiProvider(get(), radiusKm = 10, limit = 100)
     }
@@ -200,8 +205,8 @@ val mapModule = module {
     single {
         DkvOcpiClient(
             client = get(),
-            subscriptionKey = fr.geoking.gaston.BuildConfig.DKV_SUBSCRIPTION_KEY,
-            authorization = fr.geoking.gaston.BuildConfig.DKV_AUTHORIZATION.takeIf { it.isNotBlank() }
+            subscriptionKey = BuildConfig.DKV_SUBSCRIPTION_KEY,
+            authorization = BuildConfig.DKV_AUTHORIZATION.takeIf { it.isNotBlank() }
         )
     }
     single<PoiProvider>(named("dkv")) {
@@ -209,12 +214,12 @@ val mapModule = module {
     }
     single {
         val sm = get<fr.geoking.gaston.SettingsManager>()
-        val key = sm.settings.value.ecoMovementKey.ifBlank { fr.geoking.gaston.BuildConfig.ECO_MOVEMENT_KEY }
+        val key = sm.settings.value.ecoMovementKey.ifBlank { BuildConfig.ECO_MOVEMENT_KEY }
         EcoMovementOcpiClient(get(), apiKey = key)
     }
     single<PoiProvider>(named("ecomovement")) {
         val sm = get<fr.geoking.gaston.SettingsManager>()
-        val key = sm.settings.value.ecoMovementKey.ifBlank { fr.geoking.gaston.BuildConfig.ECO_MOVEMENT_KEY }
+        val key = sm.settings.value.ecoMovementKey.ifBlank { BuildConfig.ECO_MOVEMENT_KEY }
         if (key.isBlank()) {
             object : PoiProvider {
                 override fun supportedCategories(): Set<fr.geoking.gaston.poi.PoiCategory> =
@@ -242,7 +247,7 @@ val mapModule = module {
         SpainMineturProvider(get(), radiusKm = 10, limit = 50)
     }
     single<PoiProvider>(named("germanytankerkoenig")) {
-        GermanyTankerkoenigProvider(get(), radiusKm = 10, limit = 50)
+        GermanyTankerkoenigProvider(get(), apiKey = BuildConfig.GERMANY_TANKERKOENIG_KEY, radiusKm = 10, limit = 50)
     }
     single<PoiProvider>(named("austriaecontrol")) {
         AustriaEControlProvider(get(), limit = 50)
@@ -318,7 +323,7 @@ val mapModule = module {
     single { CitaGeoJsonTrafficClient(get()) }
     single { CitaTrafficProvider(get()) }
     single { TomTomTrafficClient(get()) }
-    single { TomTomTrafficProvider(get(), fr.geoking.gaston.BuildConfig.TOMTOM_KEY) }
+    single { TomTomTrafficProvider(get(), BuildConfig.TOMTOM_KEY) }
     single<TrafficProviderFactory> {
         TrafficProviderFactory(
             listOf(
@@ -363,7 +368,7 @@ val mapModule = module {
     single<TransitProvider>(named("fr_ratp")) { FranceTransitProvider(get()) }
     single<TransitProvider>(named("lu_mobiliteit")) {
         val sm = get<fr.geoking.gaston.SettingsManager>()
-        val key = sm.settings.value.mobiliteitLuxembourgKey.ifBlank { fr.geoking.gaston.BuildConfig.MOBILITEIT_LUXEMBOURG_KEY }
+        val key = sm.settings.value.mobiliteitLuxembourgKey.ifBlank { BuildConfig.MOBILITEIT_LUXEMBOURG_KEY }
         LuxembourgTransitProvider(get(), key)
     }
     single<TransitProvider>(named("be_stib")) { BelgiumTransitProvider(get()) }
