@@ -226,29 +226,9 @@ fun MapScreen(
     }
 
     val poisInView = remember(cachedPois, cameraPositionState.position.target, cameraPositionState.position.zoom, mapSizePx, settings, effectiveProviders) {
-        val center = cameraPositionState.position.target
-        val zoom = cameraPositionState.position.zoom
-        val displayRadiusKm = if (mapSizePx.width > 0 && mapSizePx.height > 0) {
-            radiusKmFromMapViewport(
-                center.latitude,
-                center.longitude,
-                zoom,
-                mapSizePx.width,
-                mapSizePx.height
-            ).coerceIn(1, 50)
-        } else 0
-
-        val raw = if (displayRadiusKm > 0) {
-            cachedPois.filter { poi ->
-                approxDistanceKm(center.latitude, center.longitude, poi.latitude, poi.longitude) <= displayRadiusKm * 1.05
-            }
-        } else {
-            cachedPois
-        }
-
         StationMapFilters.apply(
             settings = settings,
-            pois = raw,
+            pois = cachedPois,
             providers = effectiveProviders,
             skipWhenOnlyOverpass = true
         )
@@ -328,7 +308,7 @@ fun MapScreen(
                         )
                     ).collect { result ->
                         if (result.errors.isEmpty() || result.pois.isNotEmpty()) {
-                            cachedPois = result.pois
+                            cachedPois = PoiMerger.mergeInto(cachedPois, result.pois)
 
                             // Availability: refresh for POIs close enough for the cards.
                             val availabilityProvider = availabilityProviderFactory?.getProvider(centerLat, centerLng)

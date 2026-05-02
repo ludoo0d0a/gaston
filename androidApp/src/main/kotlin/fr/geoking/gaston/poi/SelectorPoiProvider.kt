@@ -678,31 +678,15 @@ class SelectorPoiProvider(
     }
 
     private fun applyPostFilters(pois: List<Poi>, request: PoiSearchRequest, providers: Set<PoiProviderType>): List<Poi> {
-        val centerLat = request.latitude
-        val centerLng = request.longitude
-        val displayRadiusKm = request.viewport?.let { v ->
-            radiusKmFromMapViewport(
-                centerLat,
-                centerLng,
-                v.zoom,
-                v.mapWidthPx,
-                v.mapHeightPx
-            ).coerceIn(1, 50)
-        } ?: 10
-
-        val raw = pois.filter { poi ->
-            approxDistanceKm(centerLat, centerLng, poi.latitude, poi.longitude) <= displayRadiusKm * 1.05
-        }
-
         return if (!request.skipFilters) {
             StationMapFilters.apply(
                 settings = settingsManager.settings.value,
-                pois = raw,
+                pois = pois,
                 providers = providers,
                 skipWhenOnlyOverpass = true
             )
         } else {
-            raw
+            pois
         }
     }
 

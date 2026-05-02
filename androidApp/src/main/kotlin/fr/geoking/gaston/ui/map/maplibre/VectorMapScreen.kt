@@ -323,32 +323,9 @@ fun VectorMapScreen(
     }
 
     val poisInView = remember(cachedPois, mapLibreMap?.cameraPosition, mapSizePx, settings, effectiveProviders) {
-        val map = mapLibreMap ?: return@remember emptyList<Poi>()
-        val target = map.cameraPosition.target ?: return@remember emptyList<Poi>()
-        val centerLat = target.latitude
-        val centerLng = target.longitude
-        val zoom = map.cameraPosition.zoom.toFloat()
-        val displayRadiusKm = if (mapSizePx.width > 0 && mapSizePx.height > 0) {
-            radiusKmFromMapViewport(
-                centerLat,
-                centerLng,
-                zoom,
-                mapSizePx.width,
-                mapSizePx.height
-            ).coerceIn(1, 50)
-        } else 0
-
-        val raw = if (displayRadiusKm > 0) {
-            cachedPois.filter { poi ->
-                approxDistanceKm(centerLat, centerLng, poi.latitude, poi.longitude) <= displayRadiusKm * 1.05
-            }
-        } else {
-            cachedPois
-        }
-
         StationMapFilters.apply(
             settings = settings,
-            pois = raw,
+            pois = cachedPois,
             providers = effectiveProviders,
             skipWhenOnlyOverpass = true
         )
