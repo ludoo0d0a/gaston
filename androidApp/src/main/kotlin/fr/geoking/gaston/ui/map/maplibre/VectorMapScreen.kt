@@ -53,7 +53,7 @@ import fr.geoking.gaston.ui.MAP_ENERGY_OPTIONS
 import fr.geoking.gaston.ui.MAP_IRVE_POWER_OPTIONS
 import fr.geoking.gaston.ui.components.MapLoader
 import fr.geoking.gaston.StationMapFilters
-import fr.geoking.gaston.effectiveProviders
+import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
@@ -128,14 +128,17 @@ fun VectorMapScreen(
     val context = LocalContext.current
     val settings by settingsManager.settings.collectAsState()
     val errorLog by diagnostics.errorLog.collectAsState()
-    val selectedProviders = settings.selectedPoiProviders
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
     var cachedPois by remember { mutableStateOf<List<Poi>>(emptyList()) }
     var trafficInfo by remember { mutableStateOf<TrafficInfo?>(null) }
     var availabilityByPoiId by remember { mutableStateOf<Map<String, StationAvailabilitySummary>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(false) }
-    var mapErrorMessage by remember(selectedProviders) { mutableStateOf<String?>(null) }
-    var isErrorPaused by remember(selectedProviders) { mutableStateOf(false) }
+    var mapErrorMessage by remember(settings.selectedPoiProviders, settings.poiProviderSelectionMode) {
+        mutableStateOf<String?>(null)
+    }
+    var isErrorPaused by remember(settings.selectedPoiProviders, settings.poiProviderSelectionMode) {
+        mutableStateOf(false)
+    }
     var retryCount by remember { mutableStateOf(0) }
     var mapSizePx by remember { mutableStateOf(IntSize.Zero) }
     var selectedPoi by remember { mutableStateOf<Poi?>(null) }
@@ -174,7 +177,15 @@ fun VectorMapScreen(
             .build()
     }
 
-    val effectiveProviders = settings.effectiveProviders()
+    val providerResolveLat = mapLibreMap?.cameraPosition?.target?.latitude
+        ?: initialCameraPosition.target?.latitude
+        ?: 48.8566
+    val providerResolveLon = mapLibreMap?.cameraPosition?.target?.longitude
+        ?: initialCameraPosition.target?.longitude
+        ?: 2.3522
+    val effectiveProviders = remember(settings, providerResolveLat, providerResolveLon) {
+        settings.effectiveProvidersAt(providerResolveLat, providerResolveLon)
+    }
 
     LaunchedEffect(favoritesRepo) {
         if (favoritesRepo != null) {
@@ -376,6 +387,8 @@ fun VectorMapScreen(
     MapScaffold(
         title = "Vector Map",
         settingsManager = settingsManager,
+        mapCenterLatitude = mapLibreMap?.cameraPosition?.target?.latitude,
+        mapCenterLongitude = mapLibreMap?.cameraPosition?.target?.longitude,
         onBack = onBack,
         onRefresh = {
             retryCount++

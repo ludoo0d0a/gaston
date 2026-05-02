@@ -20,7 +20,7 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.routing.RouteResult
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
-import fr.geoking.gaston.effectiveProviders
+import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.components.MapScaffold
 import fr.geoking.gaston.ui.map.MarkerStyle
@@ -64,7 +64,11 @@ fun DirectionsMapScreen(
             .build()
     }
 
-    val effectiveProviders = settings.effectiveProviders()
+    val routeLat = route?.points?.firstOrNull()?.first ?: 48.8566
+    val routeLon = route?.points?.firstOrNull()?.second ?: 2.3522
+    val effectiveProviders = remember(settings, routeLat, routeLon) {
+        settings.effectiveProvidersAt(routeLat, routeLon)
+    }
     val filteredPois = remember(pois, settings, effectiveProviders) {
         fr.geoking.gaston.StationMapFilters.apply(
             settings = settings,
@@ -77,6 +81,8 @@ fun DirectionsMapScreen(
     MapScaffold(
         title = "Navigation Preview",
         settingsManager = settingsManager,
+        mapCenterLatitude = route?.points?.firstOrNull()?.first,
+        mapCenterLongitude = route?.points?.firstOrNull()?.second,
         onBack = onBack,
         onRefresh = { /* Route is fixed, but could refresh POIs if needed */ },
         onLocateMe = {

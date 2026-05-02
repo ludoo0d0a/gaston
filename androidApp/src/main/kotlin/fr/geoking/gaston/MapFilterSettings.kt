@@ -1,10 +1,12 @@
 package fr.geoking.gaston
 
+import fr.geoking.gaston.parking.ParkingRegion
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.autoProvidersForCountry
+import java.util.Locale
 
 fun AppSettings.effectiveMapEnergyFilterIds(): Set<String> {
     val useVehicle = useVehicleFilter || (selectedMapEnergyTypes.isEmpty() && vehicleBrand.isNotEmpty())
@@ -68,6 +70,28 @@ fun AppSettings.effectiveProviders(countryCode: String? = null): Set<PoiProvider
         fallbackManual = selectedPoiProviders
     )
 }
+
+/** ISO country code for [latitude]/[longitude] when it falls in a known [ParkingRegion], else null. */
+fun countryCodeAtMapPosition(latitude: Double, longitude: Double): String? =
+    ParkingRegion.containing(latitude, longitude)?.countryCode
+
+/** Human-readable country for the map viewport (same regions as auto provider selection). */
+fun countryDisplayLabelAtMapPosition(
+    latitude: Double,
+    longitude: Double,
+    locale: Locale = Locale.getDefault(),
+): String {
+    val iso = countryCodeAtMapPosition(latitude, longitude) ?: return "Unknown region"
+    val name = Locale("", iso).getDisplayCountry(locale).ifBlank { null }
+    return if (name != null && !name.equals(iso, ignoreCase = true)) "$name ($iso)" else iso
+}
+
+/**
+ * Resolves auto mode from the map position (same logic as [SelectorPoiProvider]).
+ * Manual mode ignores coordinates and returns [selectedPoiProviders].
+ */
+fun AppSettings.effectiveProvidersAt(latitude: Double, longitude: Double): Set<PoiProviderType> =
+    effectiveProviders(countryCode = countryCodeAtMapPosition(latitude, longitude))
 
 fun Set<PoiProviderType>.isOnlyOverpass(): Boolean =
     isNotEmpty() && all { it == PoiProviderType.Overpass }

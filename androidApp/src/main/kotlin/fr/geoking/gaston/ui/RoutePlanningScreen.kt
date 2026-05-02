@@ -67,6 +67,7 @@ import fr.geoking.gaston.VehicleType
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProviders
+import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
@@ -381,7 +382,17 @@ fun RoutePlanningScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                 }
                 val settings by settingsManager.settings.collectAsState()
-                val effectiveProviders = settings.effectiveProviders()
+                val routeMidLat = stations.firstOrNull()?.latitude
+                    ?: currentRoute?.points?.firstOrNull()?.first
+                val routeMidLon = stations.firstOrNull()?.longitude
+                    ?: currentRoute?.points?.firstOrNull()?.second
+                val effectiveProviders = remember(settings, routeMidLat, routeMidLon) {
+                    if (routeMidLat != null && routeMidLon != null) {
+                        settings.effectiveProvidersAt(routeMidLat, routeMidLon)
+                    } else {
+                        settings.effectiveProviders()
+                    }
+                }
                 val filteredStations = remember(stations, settings, effectiveProviders) {
                     fr.geoking.gaston.StationMapFilters.apply(
                         settings = settings,

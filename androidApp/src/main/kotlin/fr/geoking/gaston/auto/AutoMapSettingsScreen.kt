@@ -6,27 +6,41 @@ import androidx.car.app.model.*
 import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.shared.network.NetworkService
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 class AutoMapSettingsScreen(
     carContext: CarContext,
     private val settingsManager: SettingsManager
-) : Screen(carContext) {
+) : Screen(carContext), KoinComponent {
+
+    private val networkService: NetworkService by inject()
 
     override fun onGetTemplate(): Template {
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
 
+        val dataSourceText = when (settings.poiProviderSelectionMode) {
+            PoiProviderSelectionMode.Auto -> {
+                val net = networkService.status.value
+                val countryLine = net.countryName ?: net.countryCode
+                buildString {
+                    append("Auto (by country)")
+                    if (!countryLine.isNullOrBlank()) {
+                        append("\nNetwork country: ").append(countryLine)
+                    }
+                }
+            }
+            PoiProviderSelectionMode.Manual ->
+                if (settings.selectedPoiProviders.isEmpty()) "None"
+                else settings.selectedPoiProviders.joinToString(", ") { it.name }
+        }
+
         listBuilder.addItem(
             Row.Builder()
                 .setTitle("Data Source")
-                .addText(
-                    when (settings.poiProviderSelectionMode) {
-                        PoiProviderSelectionMode.Auto -> "Auto (by country)"
-                        PoiProviderSelectionMode.Manual ->
-                            if (settings.selectedPoiProviders.isEmpty()) "None"
-                            else settings.selectedPoiProviders.joinToString(", ") { it.name }
-                    }
-                )
+                .addText(dataSourceText)
                 .setOnClickListener {
                     val next = if (settings.poiProviderSelectionMode == PoiProviderSelectionMode.Manual) {
                         PoiProviderSelectionMode.Auto

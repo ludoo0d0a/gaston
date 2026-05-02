@@ -70,6 +70,7 @@ import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveProviders
+import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.ui.ColorHelper
 import fr.geoking.gaston.ui.MAP_ENERGY_OPTIONS
@@ -195,7 +196,13 @@ fun PhoneDashboardScreen(
     var fuelForecastLoading by remember { mutableStateOf(false) }
 
     val energyFilterIds = settings.effectiveMapEnergyFilterIds()
-    val providers = settings.effectiveProviders()
+    val providers = remember(settings, userLat, userLon) {
+        if (userLat != null && userLon != null) {
+            settings.effectiveProvidersAt(userLat!!, userLon!!)
+        } else {
+            settings.effectiveProviders()
+        }
+    }
 
     // 400ms delay for the loader appearance to prevent "flashing" on fast/cached requests
     var showLoaderByDelay by remember { mutableStateOf(false) }
@@ -215,12 +222,12 @@ fun PhoneDashboardScreen(
         snapshotFlow {
             Triple(
                 settings.effectiveMapEnergyFilterIds(),
-                settings.effectiveProviders(),
+                settings,
                 settings.useVehicleFilter
             )
         }
         .debounce(300)
-        .collectLatest { (currentEnergyIds, currentProviders, _) ->
+        .collectLatest { (currentEnergyIds, settingsSnapshot, _) ->
             isLoadingPois = true
             searchError = null
 
@@ -235,6 +242,7 @@ fun PhoneDashboardScreen(
             if (location != null) {
                 userLat = location.latitude
                 userLon = location.longitude
+                val currentProviders = settingsSnapshot.effectiveProvidersAt(location.latitude, location.longitude)
 
                 try {
                     val results = poiProvider.search(
@@ -247,7 +255,7 @@ fun PhoneDashboardScreen(
                     )
 
                     val filteredResults = StationMapFilters.apply(
-                        settings = settingsManager.settings.value,
+                        settings = settingsSnapshot,
                         pois = results,
                         providers = currentProviders,
                         skipWhenOnlyOverpass = true

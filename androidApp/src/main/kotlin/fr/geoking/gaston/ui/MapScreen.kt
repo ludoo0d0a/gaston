@@ -85,7 +85,7 @@ import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
-import fr.geoking.gaston.effectiveProviders
+import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -144,11 +144,14 @@ fun MapScreen(
     val context = LocalContext.current
     val settings by settingsManager.settings.collectAsState()
     val errorLog by diagnostics.errorLog.collectAsState()
-    val selectedProviders = settings.selectedPoiProviders
     var cachedPois by remember { mutableStateOf<List<Poi>>(emptyList()) }
     var trafficInfo by remember { mutableStateOf<TrafficInfo?>(null) }
-    var mapErrorMessage by remember(selectedProviders) { mutableStateOf<String?>(null) }
-    var isErrorPaused by remember(selectedProviders) { mutableStateOf(false) }
+    var mapErrorMessage by remember(settings.selectedPoiProviders, settings.poiProviderSelectionMode) {
+        mutableStateOf<String?>(null)
+    }
+    var isErrorPaused by remember(settings.selectedPoiProviders, settings.poiProviderSelectionMode) {
+        mutableStateOf(false)
+    }
     var retryCount by remember { mutableStateOf(0) }
     var showMapSettings by remember { mutableStateOf(false) }
     var initialSettingsPage by remember { mutableStateOf(SettingsScreenPage.MapConfig) }
@@ -187,6 +190,11 @@ fun MapScreen(
         position = CameraPosition.fromLatLngZoom(LatLng(defaultLat, defaultLng), 12f)
     }
 
+    val cameraTarget = cameraPositionState.position.target
+    val effectiveProviders = remember(settings, cameraTarget.latitude, cameraTarget.longitude) {
+        settings.effectiveProvidersAt(cameraTarget.latitude, cameraTarget.longitude)
+    }
+
     var didInitialCenter by remember { mutableStateOf(false) }
 
     LaunchedEffect(hasLocationPermission) {
@@ -216,8 +224,6 @@ fun MapScreen(
             favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
         }
     }
-
-    val effectiveProviders = settings.effectiveProviders()
 
     val poisInView = remember(cachedPois, cameraPositionState.position.target, cameraPositionState.position.zoom, mapSizePx, settings, effectiveProviders) {
         val center = cameraPositionState.position.target
@@ -344,7 +350,7 @@ fun MapScreen(
 
                             mapErrorMessage = msg
                             isErrorPaused = true
-                            diagnostics.recordError(code, "Map ($selectedProviders): $msg")
+                            diagnostics.recordError(code, "Map ($effectiveProviders): $msg")
                         }
                     }
 
@@ -381,7 +387,7 @@ fun MapScreen(
                     isErrorPaused = true
                     diagnostics.recordError(
                         (e as? NetworkException)?.httpCode,
-                        "Map ($selectedProviders): $msg"
+                        "Map ($effectiveProviders): $msg"
                     )
                 } finally {
                     isLoading = false
@@ -403,6 +409,8 @@ fun MapScreen(
     MapScaffold(
         title = "Gas Stations",
         settingsManager = settingsManager,
+        mapCenterLatitude = cameraPositionState.position.target.latitude,
+        mapCenterLongitude = cameraPositionState.position.target.longitude,
         onBack = onBack,
         onRefresh = {
             scope.launch {

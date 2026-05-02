@@ -45,12 +45,14 @@ import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
-import fr.geoking.gaston.effectiveProviders
+import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.toll.TollCalculator
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import fr.geoking.gaston.api.belib.matchAvailabilityToPois
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -82,20 +84,22 @@ class CustomMapPoiScreen(
 
     private var surfaceRenderer: AutoSurfaceRenderer? = null
 
+    /** Last resolved search center; combined with settings so auto mode reloads when the vehicle moves across regions. */
+    private val searchCenterFlow = MutableStateFlow(48.8566 to 2.3522)
+
     init {
         lifecycle.addObserver(this)
         lifecycleScope.launch {
-            settingsManager.settings
-                .map { s ->
-                    PoiFetchSettings(
-                        s.effectiveProviders(),
-                        s.useVehicleFilter,
-                        s.fuelCard,
-                        s.vehicleType,
-                        s.vehicleEnergy,
-                        s.selectedOverpassAmenityTypes
-                    )
-                }
+            combine(settingsManager.settings, searchCenterFlow) { s, (la, lo) ->
+                PoiFetchSettings(
+                    s.effectiveProvidersAt(la, lo),
+                    s.useVehicleFilter,
+                    s.fuelCard,
+                    s.vehicleType,
+                    s.vehicleEnergy,
+                    s.selectedOverpassAmenityTypes
+                )
+            }
                 .distinctUntilChanged()
                 .collectLatest {
                     loadPois()
@@ -141,7 +145,7 @@ class CustomMapPoiScreen(
     )
 
     private fun getFilteredPois(currentSettings: AppSettings): List<Poi> {
-        val effectiveProviders = currentSettings.effectiveProviders()
+        val effectiveProviders = currentSettings.effectiveProvidersAt(searchLat, searchLon)
         return StationMapFilters.apply(
             settings = currentSettings,
             pois = pois,
@@ -169,6 +173,7 @@ class CustomMapPoiScreen(
 
             searchLat = lat
             searchLon = lon
+            searchCenterFlow.value = lat to lon
             Log.d("CustomMapPoiScreen", "loadPois search center lat=$lat lon=$lon")
 
             surfaceRenderer?.updateUserLocation(searchLat, searchLon)

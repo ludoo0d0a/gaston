@@ -17,10 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.countryDisplayLabelAtMapPosition
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
+import fr.geoking.gaston.effectiveProviders
+import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.anyProvidesFuel
@@ -47,10 +50,25 @@ fun MapScaffold(
     favoritesFilterEnabled: Boolean = false,
     isLoading: Boolean = false,
     palette: AnimationPalette? = null,
+    /** Map center for auto mode provider resolution and country label; null uses settings fallback. */
+    mapCenterLatitude: Double? = null,
+    mapCenterLongitude: Double? = null,
     content: @Composable (PaddingValues) -> Unit
 ) {
     val settings by settingsManager.settings.collectAsState()
-    val selectedProviders = settings.selectedPoiProviders
+    val filterBarProviders = remember(settings, mapCenterLatitude, mapCenterLongitude) {
+        when {
+            mapCenterLatitude != null && mapCenterLongitude != null ->
+                settings.effectiveProvidersAt(mapCenterLatitude!!, mapCenterLongitude!!)
+            else -> settings.effectiveProviders()
+        }
+    }
+    val autoAreaLabel = remember(settings.poiProviderSelectionMode, mapCenterLatitude, mapCenterLongitude) {
+        if (settings.poiProviderSelectionMode != PoiProviderSelectionMode.Auto) null
+        else if (mapCenterLatitude != null && mapCenterLongitude != null) {
+            countryDisplayLabelAtMapPosition(mapCenterLatitude!!, mapCenterLongitude!!)
+        } else null
+    }
     var navMenuExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -146,15 +164,65 @@ fun MapScaffold(
                     verticalAlignment = Alignment.CenterVertically,
                     contentPadding = PaddingValues(horizontal = 16.dp)
                 ) {
+                    if (settings.poiProviderSelectionMode == PoiProviderSelectionMode.Auto && autoAreaLabel != null) {
+                        item {
+                            FilterChip(
+                                selected = false,
+                                onClick = onShowSettings,
+                                label = { Text("Area: $autoAreaLabel", maxLines = 1) }
+                            )
+                        }
+                    }
                     item {
                         FilterChip(
                             selected = false,
                             onClick = onShowSources,
                             label = {
                                 Text(
-                                    if (selectedProviders.isEmpty()) "No Source"
-                                    else if (selectedProviders.size == 1) {
-                                        when (selectedProviders.first()) {
+                                    if (filterBarProviders.isEmpty()) "No Source"
+                                    else if (settings.poiProviderSelectionMode == PoiProviderSelectionMode.Auto) {
+                                        if (filterBarProviders.size == 1) {
+                                            "Auto · " + when (filterBarProviders.first()) {
+                                                PoiProviderType.Routex -> "Routex"
+                                                PoiProviderType.Etalab -> "France (official)"
+                                                PoiProviderType.GasApi -> "Gas API"
+                                                PoiProviderType.DataGouv -> "France (official)"
+                                                PoiProviderType.UkCma -> "UK Fuel Finder"
+                                                PoiProviderType.ItalyMimit -> "MIMIT (Italy)"
+                                                PoiProviderType.SloveniaGorivaSi -> "goriva.si (Slovenia)"
+                                                PoiProviderType.NorwayDrivstoffAppen -> "DrivstoffAppen (Norway)"
+                                                PoiProviderType.SwedenDrivstoffAppen -> "DrivstoffAppen / bensinpriser.nu (Sweden)"
+                                                PoiProviderType.PortugalDgeg -> "DGEG (Portugal)"
+                                                PoiProviderType.NetherlandsAnwb -> "ANWB (NL/BE/LU)"
+                                                PoiProviderType.DenmarkFuelpricesDk -> "Fuelprices.dk (Denmark)"
+                                                PoiProviderType.Fuelo -> "Fuelo.net"
+                                                PoiProviderType.AustraliaNswFuelCheck -> "FuelCheck (NSW AU)"
+                                                PoiProviderType.CroatiaMzoe -> "MZOE (Croatia)"
+                                                PoiProviderType.FinlandPolttoaine -> "Polttoaine.net (Finland)"
+                                                PoiProviderType.GreeceFuelGr -> "FuelGR (Greece)"
+                                                PoiProviderType.IrelandPickAPump -> "Pick A Pump (Ireland)"
+                                                PoiProviderType.MoldovaAnre -> "ANRE (Moldova)"
+                                                PoiProviderType.RomaniaPeco -> "Peco Online (Romania)"
+                                                PoiProviderType.SerbiaNis -> "NIS (Serbia)"
+                                                PoiProviderType.MexicoCre -> "CRE (Mexico)"
+                                                PoiProviderType.ArgentinaEnergia -> "Energía (Argentina)"
+                                                PoiProviderType.DataGouvElec -> "IRVE"
+                                                PoiProviderType.OpenChargeMap -> "Open Charge Map"
+                                                PoiProviderType.Chargy -> "Chargy (real-time)"
+                                                PoiProviderType.Fastned -> "Fastned (UK)"
+                                                PoiProviderType.Dkv -> "DKV Mobility"
+                                                PoiProviderType.EcoMovement -> "Eco-Movement"
+                                                PoiProviderType.OpenVanCamp -> "OpenVan.camp (LU, HR, SI...)"
+                                                PoiProviderType.SpainMinetur -> "Spain Minetur (official)"
+                                                PoiProviderType.GermanyTankerkoenig -> "Tankerkönig (Germany)"
+                                                PoiProviderType.AustriaEControl -> "E-Control (Austria)"
+                                                PoiProviderType.BelgiumOfficial -> "Belgium (official)"
+                                                PoiProviderType.Overpass -> "OSM + data.gouv (camping, picnic…)"
+                                                PoiProviderType.Hybrid -> "Hybrid (Gas + EV)"
+                                            }
+                                        } else "Auto · ${filterBarProviders.size} sources"
+                                    } else if (filterBarProviders.size == 1) {
+                                        when (filterBarProviders.first()) {
                                             PoiProviderType.Routex -> "Source: Routex"
                                             PoiProviderType.Etalab -> "Source: France (official)"
                                             PoiProviderType.GasApi -> "Source: Gas API"
@@ -192,13 +260,13 @@ fun MapScaffold(
                                             PoiProviderType.Overpass -> "Source: OSM + data.gouv (camping, picnic…)"
                                             PoiProviderType.Hybrid -> "Source: Hybrid (Gas + EV)"
                                         }
-                                    } else "Sources (${selectedProviders.size})"
+                                    } else "Sources (${filterBarProviders.size})"
                                 )
                             }
                         )
                     }
 
-                    if (selectedProviders.anyProvidesFuel()) {
+                    if (filterBarProviders.anyProvidesFuel()) {
                         items(MAP_ENERGY_OPTIONS.filter { it.first != "electric" }) { (id, label) ->
                             val isSelected = settings.effectiveMapEnergyFilterIds().contains(id)
                             val color = ColorHelper.getFuelColor(id) ?: MaterialTheme.colorScheme.primary
@@ -224,7 +292,7 @@ fun MapScaffold(
                         }
                     }
 
-                    if (selectedProviders.anyProvidesElectric()) {
+                    if (filterBarProviders.anyProvidesElectric()) {
                         items(MAP_IRVE_POWER_OPTIONS) { (kw, label) ->
                             val isSelected = settings.effectiveIrvePowerLevels().contains(kw)
                             val color = ColorHelper.getPowerColorByLevel(kw)
