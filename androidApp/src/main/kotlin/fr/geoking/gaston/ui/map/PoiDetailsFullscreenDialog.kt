@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.*
@@ -40,6 +41,7 @@ fun PoiDetailsFullscreenDialog(
     onRemove: (() -> Unit)? = null,
     onHide: (() -> Unit)? = null,
     onSuggestCorrection: (() -> Unit)? = null,
+    onShowOnMap: ((Poi) -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     val brandInfo = BrandHelper.getBrandInfo(poi.brand)
@@ -86,6 +88,17 @@ fun PoiDetailsFullscreenDialog(
                                 contentDescription = "Close",
                                 tint = Color.White
                             )
+                        }
+                    },
+                    actions = {
+                        onShowOnMap?.let {
+                            IconButton(onClick = { it(poi) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Map,
+                                    contentDescription = "Show on Map",
+                                    tint = Color.White
+                                )
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0F172A))
