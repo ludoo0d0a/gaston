@@ -120,9 +120,24 @@ object BrandHelper {
 
     fun getBrandInfo(brandId: String?): BrandInfo? {
         if (brandId.isNullOrBlank()) return null
-        val normalized = BrandRegistry.normalizeLookupKey(brandId)
 
-        // 1. Try fuzzy match first
+        // 1. Try resolving through common registry first to catch keywords and aliases
+        val detectedBrand = BrandRegistry.findBrand(null, brandId)
+        if (detectedBrand != null) {
+            val lookupKey = BrandRegistry.BRAND_NAMES.entries.find { it.value == detectedBrand }?.key
+                ?: BrandRegistry.normalizeLookupKey(detectedBrand)
+
+            if (brandIcons.containsKey(lookupKey)) {
+                return BrandInfo(
+                    displayName = detectedBrand,
+                    iconResId = brandIcons[lookupKey] ?: R.drawable.ic_poi_gas,
+                    roundedIconResId = roundedBrandIcons[lookupKey] ?: R.drawable.ic_poi_gas_rounded
+                )
+            }
+        }
+
+        // 2. Fallback to existing fuzzy logic if findBrand didn't map to a known icon key
+        val normalized = BrandRegistry.normalizeLookupKey(brandId)
         val fuzzyEntry = BrandRegistry.BRAND_NAMES.entries.find { normalized.contains(it.key) }
         if (fuzzyEntry != null) {
             val key = fuzzyEntry.key
@@ -130,15 +145,6 @@ object BrandHelper {
                 displayName = fuzzyEntry.value,
                 iconResId = brandIcons[key] ?: R.drawable.ic_poi_gas,
                 roundedIconResId = roundedBrandIcons[key] ?: R.drawable.ic_poi_gas_rounded
-            )
-        }
-
-        // 2. Exact match (redundant if fuzzy match caught it, but safe)
-        if (BrandRegistry.BRAND_NAMES.containsKey(normalized)) {
-            return BrandInfo(
-                displayName = BrandRegistry.BRAND_NAMES[normalized]!!,
-                iconResId = brandIcons[normalized] ?: R.drawable.ic_poi_gas,
-                roundedIconResId = roundedBrandIcons[normalized] ?: R.drawable.ic_poi_gas_rounded
             )
         }
 
