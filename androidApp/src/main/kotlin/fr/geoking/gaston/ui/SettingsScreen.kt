@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.*
@@ -555,25 +556,17 @@ private fun SourcesConfig(
                     )
                     FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         electric.forEach { p ->
-                            val isMultiCountry = p.supportedCountries.size > 1
+                            val isMultiCountry = p.supportedCountries.size > 1 || p.supportedCountries.any { it == "GLOBAL" || it == "EU" }
                             FilterChip(
                                 selected = settings.selectedPoiProviders.contains(p.type),
                                 onClick = {
                                     val next = if (settings.selectedPoiProviders.contains(p.type)) settings.selectedPoiProviders - p.type else settings.selectedPoiProviders + p.type
                                     onUpdate(settings.copy(selectedPoiProviders = next))
                                 },
-                                label = {
-                                    Column {
-                                        Text(p.label)
-                                        if (isMultiCountry) {
-                                            Text(
-                                                p.supportedCountries.joinToString(", ") { countryLabel(it) },
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                },
+                                label = { Text(p.label) },
+                                leadingIcon = if (isMultiCountry) {
+                                    { Icon(Icons.Default.Public, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                                } else null
                             )
                         }
                     }
@@ -589,25 +582,17 @@ private fun SourcesConfig(
                     )
                     FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         fuel.forEach { p ->
-                            val isMultiCountry = p.supportedCountries.size > 1
+                            val isMultiCountry = p.supportedCountries.size > 1 || p.supportedCountries.any { it == "GLOBAL" || it == "EU" }
                             FilterChip(
                                 selected = settings.selectedPoiProviders.contains(p.type),
                                 onClick = {
                                     val next = if (settings.selectedPoiProviders.contains(p.type)) settings.selectedPoiProviders - p.type else settings.selectedPoiProviders + p.type
                                     onUpdate(settings.copy(selectedPoiProviders = next))
                                 },
-                                label = {
-                                    Column {
-                                        Text(p.label)
-                                        if (isMultiCountry) {
-                                            Text(
-                                                p.supportedCountries.joinToString(", ") { countryLabel(it) },
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                },
+                                label = { Text(p.label) },
+                                leadingIcon = if (isMultiCountry) {
+                                    { Icon(Icons.Default.Public, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                                } else null
                             )
                         }
                     }
