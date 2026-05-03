@@ -3,10 +3,16 @@ package fr.geoking.gaston.api.routing
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.poi.PoiSearchRequest
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -41,38 +47,59 @@ class RoutePlanner(
     ): Flow<List<Poi>> = channelFlow {
         val route = routingClient.getRoute(originLat, originLon, destLat, destLon)
             ?: throw Exception("No route found")
-        val points = route.points
+        getStationsAlongRouteFlow(route.points, poiProvider, radiusMeters).collect {
+            send(it)
+        }
+    }
+
+    /**
+     * Returns a [Flow] that emits incremental lists of POIs along the provided route points.
+     */
+    fun getStationsAlongRouteFlow(
+        points: List<Pair<Double, Double>>,
+        poiProvider: PoiProvider,
+        radiusMeters: Int = defaultPoiRadiusMeters
+    ): Flow<List<Poi>> = channelFlow {
         if (points.size < 2) {
             send(emptyList())
             return@channelFlow
         }
 
-        val intervalMeters = if (radiusMeters < 5000) {
-            (radiusMeters * 1.6).coerceAtLeast(150.0)
-        } else {
-            defaultSampleIntervalKm * 1000
-        }
+        // Sampling interval: try to cover the route with overlapping search circles.
+        // If radius is 2km, we sample every 3km.
+        val intervalMeters = (radiusMeters * 1.5).coerceIn(500.0, defaultSampleIntervalKm * 1000)
 
         val sampled = samplePointsByDistance(points, intervalMeters)
         val seenIds = mutableSetOf<String>()
         val resultPois = mutableListOf<Poi>()
+        val mutex = Mutex()
+        val semaphore = Semaphore(5) // Limit concurrent provider searches
         val request = PoiSearchRequest(latitude = 0.0, longitude = 0.0, categories = emptySet())
 
-        for ((lat, lon) in sampled) {
-            poiProvider.searchFlow(request.copy(latitude = lat, longitude = lon)).collect { res ->
-                var changed = false
-                for (poi in res.pois) {
-                    if (poi.id !in seenIds) {
-                        val dist = haversineMeters(lat, lon, poi.latitude, poi.longitude)
-                        if (dist <= radiusMeters) {
-                            seenIds.add(poi.id)
-                            resultPois.add(poi)
-                            changed = true
+        coroutineScope {
+            for ((lat, lon) in sampled) {
+                launch {
+                    semaphore.withPermit {
+                        poiProvider.searchFlow(request.copy(latitude = lat, longitude = lon)).collect { res ->
+                            var changed = false
+                            mutex.withLock {
+                                for (poi in res.pois) {
+                                    if (poi.id !in seenIds) {
+                                        val dist = haversineMeters(lat, lon, poi.latitude, poi.longitude)
+                                        if (dist <= radiusMeters) {
+                                            seenIds.add(poi.id)
+                                            resultPois.add(poi)
+                                            changed = true
+                                        }
+                                    }
+                                }
+                            }
+                            if (changed) {
+                                val currentList = mutex.withLock { resultPois.toList() }
+                                send(currentList)
+                            }
                         }
                     }
-                }
-                if (changed) {
-                    send(resultPois.toList())
                 }
             }
         }
