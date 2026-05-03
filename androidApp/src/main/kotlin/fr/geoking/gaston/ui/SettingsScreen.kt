@@ -43,6 +43,8 @@ import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.poi.FuelPriceRegistry
 import fr.geoking.gaston.shared.diagnostics.DetailedError
+import fr.geoking.gaston.ui.components.FuelFilterChip
+import fr.geoking.gaston.ui.components.PowerFilterChip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -311,13 +313,14 @@ private fun MapConfig(
             )
             FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
-                    FilterChip(
-                        selected = settings.selectedMapEnergyTypes.contains(id),
+                    FuelFilterChip(
+                        id = id,
+                        label = label,
+                        isSelected = settings.selectedMapEnergyTypes.contains(id),
                         onClick = {
                             val next = if (settings.selectedMapEnergyTypes.contains(id)) settings.selectedMapEnergyTypes - id else settings.selectedMapEnergyTypes + id
                             onUpdate(settings.copy(selectedMapEnergyTypes = next, useVehicleFilter = false))
-                        },
-                        label = { Text(label) },
+                        }
                     )
                 }
             }
@@ -331,13 +334,14 @@ private fun MapConfig(
             )
             FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
-                    FilterChip(
-                        selected = settings.mapPowerLevels.contains(kw),
+                    PowerFilterChip(
+                        kw = kw,
+                        label = label,
+                        isSelected = settings.mapPowerLevels.contains(kw),
                         onClick = {
                             val next = if (settings.mapPowerLevels.contains(kw)) settings.mapPowerLevels - kw else settings.mapPowerLevels + kw
                             onUpdate(settings.copy(mapPowerLevels = next, useVehicleFilter = false))
-                        },
-                        label = { Text(label) },
+                        }
                     )
                 }
             }
@@ -1259,13 +1263,14 @@ private fun VehicleConfig(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
-                    FilterChip(
-                        selected = settings.vehicleGasTypes.contains(id),
+                    FuelFilterChip(
+                        id = id,
+                        label = label,
+                        isSelected = settings.vehicleGasTypes.contains(id),
                         onClick = {
                             val newTypes = if (settings.vehicleGasTypes.contains(id)) settings.vehicleGasTypes - id else settings.vehicleGasTypes + id
                             onUpdate(settings.copy(vehicleGasTypes = newTypes))
-                        },
-                        label = { Text(label) },
+                        }
                     )
                 }
             }
@@ -1299,13 +1304,14 @@ private fun VehicleConfig(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 MAP_IRVE_POWER_OPTIONS.forEach { (id, label) ->
-                    FilterChip(
-                        selected = settings.vehiclePowerLevels.contains(id),
+                    PowerFilterChip(
+                        kw = id,
+                        label = label,
+                        isSelected = settings.vehiclePowerLevels.contains(id),
                         onClick = {
                             val newLevels = if (settings.vehiclePowerLevels.contains(id)) settings.vehiclePowerLevels - id else settings.vehiclePowerLevels + id
                             onUpdate(settings.copy(vehiclePowerLevels = newLevels))
-                        },
-                        label = { Text(label) },
+                        }
                     )
                 }
             }
