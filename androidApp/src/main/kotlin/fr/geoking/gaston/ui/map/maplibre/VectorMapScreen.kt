@@ -122,7 +122,8 @@ fun VectorMapScreen(
     onPlanRoute: (() -> Unit)? = null,
     communityRepo: CommunityPoiRepository? = null,
     favoritesRepo: FavoritesRepository? = null,
-    initialSelectedPoi: Poi? = null
+    initialSelectedPoi: Poi? = null,
+    initialCenter: LatLng? = null
 ) {
     BackHandler { onBack() }
 
@@ -179,8 +180,8 @@ fun VectorMapScreen(
 
     val initialCameraPosition = remember {
         CameraPosition.Builder()
-            .target(LatLng(initialSelectedPoi?.latitude ?: 48.8566, initialSelectedPoi?.longitude ?: 2.3522))
-            .zoom(if (initialSelectedPoi != null) 15.0 else 12.0)
+            .target(LatLng(initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: 48.8566, initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: 2.3522))
+            .zoom(if (initialSelectedPoi != null || initialCenter != null) 15.0 else 12.0)
             .build()
     }
 

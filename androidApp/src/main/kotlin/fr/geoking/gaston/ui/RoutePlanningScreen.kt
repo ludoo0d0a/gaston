@@ -42,6 +42,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Text
@@ -102,6 +103,7 @@ fun RoutePlanningScreen(
     settingsManager: SettingsManager,
     onBack: () -> Unit,
     onShowOnMap: ((fr.geoking.gaston.api.routing.RouteResult, List<Poi>) -> Unit)? = null,
+    onSearchAtLocation: ((Double, Double) -> Unit)? = null,
     initialDestination: NavDestination? = null
 ) {
     BackHandler(onBack = onBack)
@@ -310,6 +312,7 @@ fun RoutePlanningScreen(
             Text("Destination", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
             Spacer(modifier = Modifier.height(4.dp))
             Box {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = destQuery,
                     onValueChange = {
@@ -319,7 +322,7 @@ fun RoutePlanningScreen(
                     label = { Text("Destination address or city") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.weight(1f)
                         .onFocusChanged { destFocused = it.isFocused }
                         .onSizeChanged { destFieldHeight = it.height },
                     trailingIcon = {
@@ -336,6 +339,12 @@ fun RoutePlanningScreen(
                         }
                     }
                 )
+                if (selectedDest != null && onSearchAtLocation != null) {
+                    IconButton(onClick = { onSearchAtLocation(selectedDest!!.latitude, selectedDest!!.longitude) }) {
+                        Icon(Icons.Default.Place, contentDescription = "Search at destination", tint = Color.White)
+                    }
+                }
+                }
                 if (destFocused && destSuggestions.isNotEmpty()) {
                     Popup(
                         onDismissRequest = { destFocused = false },
@@ -475,13 +484,100 @@ fun RoutePlanningScreen(
                     )
                 }
 
+                val energyTypes = settings.effectiveMapEnergyFilterIds()
+                val fuelIdsForCheapest = energyTypes - "electric"
+                val minPrice = remember(filteredStations, fuelIdsForCheapest) {
+                    if (fuelIdsForCheapest.isEmpty()) null
+                    else {
+                        filteredStations.mapNotNull { poi ->
+                            poi.fuelPrices?.filter { !it.outOfStock && fr.geoking.gaston.poi.MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
+                                ?.minByOrNull { it.price }?.price
+                        }.minOrNull()
+                    }
+                }
+
+                val recommendations = remember(filteredStations, settings, currentRoute) {
+                    val route = currentRoute ?: return@remember emptyList<Poi>()
+                    val rangeKm = if (settings.vehicleEnergy == "electric") {
+                        settings.evRangeKm.toDouble()
+                    } else {
+                        val cap = settings.gasTankCapacityLiters
+                        val cons = settings.gasConsumptionLper100km
+                        if (cap != null && cons != null && cons > 0) (cap / cons * 100.0) else null
+                    } ?: 400.0 // Default 400km if not set
+
+                    val result = mutableListOf<Poi>()
+                    var currentRange = rangeKm
+                    var lastPointIdx = 0
+
+                    // Simple greedy algorithm: find stations when range is < 20%
+                    // This is a basic suggestion based on distance along route
+                    val points = route.points
+                    var distAcc = 0.0
+                    for (i in 1 until points.size) {
+                        val p0 = points[i-1]
+                        val p1 = points[i]
+                        val d = fr.geoking.gaston.shared.location.haversineKm(p0.first, p0.second, p1.first, p1.second)
+                        distAcc += d
+                        if (distAcc >= rangeKm * 0.8) {
+                            // Find best station near this point
+                            val nearby = filteredStations.filter { poi ->
+                                fr.geoking.gaston.shared.location.haversineKm(p1.first, p1.second, poi.latitude, poi.longitude) < 5.0
+                            }.sortedBy { poi ->
+                                // Prioritize cheapest if fuel, otherwise closest
+                                if (minPrice != null) {
+                                    poi.fuelPrices?.minByOrNull { it.price }?.price ?: 99.0
+                                } else {
+                                    fr.geoking.gaston.shared.location.haversineKm(p1.first, p1.second, poi.latitude, poi.longitude)
+                                }
+                            }
+                            nearby.firstOrNull()?.let {
+                                if (it !in result) {
+                                    result.add(it)
+                                    distAcc = 0.0 // Assume refuel only if a station was found
+                                }
+                            }
+                        }
+                    }
+                    result
+                }
+
                 val title = if (settings.vehicleType == VehicleType.Truck || settings.vehicleType == VehicleType.Motorhome) {
                     "POIs along route (${filteredStations.size})"
                 } else {
                     "Stations along route (${filteredStations.size})"
                 }
+                val listState = rememberLazyListState()
                 Text(title, color = Color.White, style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
+
+                if (recommendations.isNotEmpty()) {
+                    Text("Recommended stops", color = Color(0xFFFACC15), style = MaterialTheme.typography.labelLarge)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(recommendations) { poi ->
+                            val scope = rememberCoroutineScope()
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFF475569)),
+                                modifier = Modifier.width(200.dp).clickable {
+                                    val index = filteredStations.indexOfFirst { it.id == poi.id }
+                                    if (index >= 0) {
+                                        scope.launch { listState.animateScrollToItem(index) }
+                                    }
+                                }
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp)) {
+                                    Text(poi.name, color = Color.White, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                                    val price = poi.fuelPrices?.minByOrNull { it.price }?.price
+                                    if (price != null) {
+                                        Text("€%.2f".format(price), color = Color(0xFFFACC15), fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
                 LazyRow(
                     modifier = Modifier
@@ -498,11 +594,18 @@ fun RoutePlanningScreen(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
 
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyColumn(
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     items(filteredStations, key = { it.id }) { poi ->
+                        val isCheapest = minPrice != null && poi.fuelPrices?.any { !it.outOfStock && fr.geoking.gaston.poi.MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest && it.price == minPrice } == true
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF334155)),
-                            modifier = Modifier.fillMaxWidth()
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isCheapest) Color(0xFF1E3A8A) else Color(0xFF334155)
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            border = if (isCheapest) androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFFACC15)) else null
                         ) {
                             Row(
                                 modifier = Modifier
@@ -511,7 +614,24 @@ fun RoutePlanningScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(poi.name.ifBlank { poi.address }, color = Color.White, style = MaterialTheme.typography.bodyLarge)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(poi.name.ifBlank { poi.address }, color = Color.White, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                        if (isCheapest) {
+                                            Surface(
+                                                color = Color(0xFFFACC15),
+                                                shape = MaterialTheme.shapes.extraSmall,
+                                                modifier = Modifier.padding(start = 4.dp)
+                                            ) {
+                                                Text(
+                                                    "CHEAPEST",
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = Color.Black,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                    }
                                     Text(poi.address, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
 
                                     val energyTypes = settings.effectiveMapEnergyFilterIds()

@@ -324,6 +324,7 @@ fun MainUI(
     var showDirectionsMap by remember { mutableStateOf(false) }
     var showFuelForecast by remember { mutableStateOf(false) }
     var pendingMapPoi by remember { mutableStateOf<Poi?>(null) }
+    var pendingMapLocation by remember { mutableStateOf<com.google.android.gms.maps.model.LatLng?>(null) }
     var routeForDirections by remember { mutableStateOf<RouteResult?>(null) }
     var stationsForDirections by remember { mutableStateOf<List<Poi>>(emptyList()) }
     var initialNavDestination by remember { mutableStateOf<NavDestination?>(null) }
@@ -494,11 +495,13 @@ fun MainUI(
                             onBack = {
                                 showMap = false
                                 pendingMapPoi = null
+                            pendingMapLocation = null
                             },
                             onPlanRoute = { showRoutePlanning = true },
                             communityRepo = mapDeps!!.communityRepo,
                             favoritesRepo = mapDeps!!.favoritesRepo,
-                            initialSelectedPoi = pendingMapPoi
+                        initialSelectedPoi = pendingMapPoi,
+                        initialCenter = pendingMapLocation?.let { org.maplibre.android.geometry.LatLng(it.latitude, it.longitude) }
                         )
                     } else {
                         MapScreen(
@@ -512,11 +515,13 @@ fun MainUI(
                             onBack = {
                                 showMap = false
                                 pendingMapPoi = null
+                            pendingMapLocation = null
                             },
                             onPlanRoute = { showRoutePlanning = true },
                             communityRepo = mapDeps!!.communityRepo,
                             favoritesRepo = mapDeps!!.favoritesRepo,
-                            initialSelectedPoi = pendingMapPoi
+                        initialSelectedPoi = pendingMapPoi,
+                        initialCenter = pendingMapLocation
                         )
                     }
                 }
@@ -602,6 +607,11 @@ fun MainUI(
                             stationsForDirections = pois
                             showDirectionsMap = true
                         },
+                        onSearchAtLocation = { lat, lon ->
+                            pendingMapLocation = com.google.android.gms.maps.model.LatLng(lat, lon)
+                            showRoutePlanning = false
+                            showMap = true
+                        },
                         initialDestination = initialNavDestination
                     )
                 }
@@ -609,6 +619,7 @@ fun MainUI(
                     BackHandler {
                         showMap = false
                         pendingMapPoi = null
+                        pendingMapLocation = null
                     }
                     if (mapDeps != null) {
                         if (settings.phoneMapEngine == MapEngine.MapLibre) {
@@ -623,11 +634,13 @@ fun MainUI(
                                 onBack = {
                                     showMap = false
                                     pendingMapPoi = null
+                                    pendingMapLocation = null
                                 },
                                 onPlanRoute = { showRoutePlanning = true },
                                 communityRepo = mapDeps!!.communityRepo,
                                 favoritesRepo = mapDeps!!.favoritesRepo,
-                                initialSelectedPoi = pendingMapPoi
+                                initialSelectedPoi = pendingMapPoi,
+                                initialCenter = pendingMapLocation?.let { org.maplibre.android.geometry.LatLng(it.latitude, it.longitude) }
                             )
                         } else {
                             MapScreen(
@@ -641,11 +654,13 @@ fun MainUI(
                                 onBack = {
                                     showMap = false
                                     pendingMapPoi = null
+                                    pendingMapLocation = null
                                 },
                                 onPlanRoute = { showRoutePlanning = true },
                                 communityRepo = mapDeps!!.communityRepo,
                                 favoritesRepo = mapDeps!!.favoritesRepo,
-                                initialSelectedPoi = pendingMapPoi
+                                initialSelectedPoi = pendingMapPoi,
+                                initialCenter = pendingMapLocation
                             )
                         }
                     } else {
