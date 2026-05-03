@@ -533,13 +533,15 @@ fun MainUI(
                         hasLocationPermission = hasLocationPermission,
                         mapDepsReady = mapDeps != null,
                         fuelForecastRepository = fuelForecastRepository,
+                        geocodingClient = mapDeps?.geocodingClient,
                         isUpdateInProgress = isUpdateInProgress,
                         showAds = true,
                         onOpenMap = { poi ->
                             pendingMapPoi = poi
                             showMap = true
                         },
-                        onOpenRoutes = {
+                        onOpenRoutes = { destination ->
+                            initialNavDestination = destination
                             showRoutePlanning = true
                             showMap = true
                         },
@@ -685,13 +687,15 @@ fun MainUI(
                             hasLocationPermission = hasLocationPermission,
                             mapDepsReady = mapDeps != null,
                             fuelForecastRepository = fuelForecastRepository,
+                            geocodingClient = mapDeps?.geocodingClient,
                             isUpdateInProgress = isUpdateInProgress,
                             showAds = isPlaystoreDistribution,
                             onOpenMap = { poi ->
                                 pendingMapPoi = poi
                                 showMap = true
                             },
-                            onOpenRoutes = {
+                            onOpenRoutes = { destination ->
+                                initialNavDestination = destination
                                 showRoutePlanning = true
                                 showMap = true
                             },
