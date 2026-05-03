@@ -49,8 +49,10 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +68,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import fr.geoking.gaston.feature.location.LocationHelper
+import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.intent.NavDestination
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.VehicleType
@@ -90,6 +93,7 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -660,8 +664,7 @@ fun RoutePlanningScreen(
                                 }
                                 IconButton(
                                     onClick = {
-                                        val label = poi.name.ifBlank { poi.siteName ?: poi.address }
-                                        val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}")
+                                        val uri = IntentNavigationHelper.getNavigationUri(poi)
                                         context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                                     }
                                 ) {

@@ -80,6 +80,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
@@ -883,8 +884,7 @@ fun PhoneDashboardScreen(
                 }
             } else null,
             onNavigate = {
-                val label = poi.name.ifBlank { poi.siteName ?: poi.address }
-                val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}")
+                val uri = IntentNavigationHelper.getNavigationUri(poi)
                 context.startActivity(Intent(Intent.ACTION_VIEW, uri))
             },
             onShowOnMap = {

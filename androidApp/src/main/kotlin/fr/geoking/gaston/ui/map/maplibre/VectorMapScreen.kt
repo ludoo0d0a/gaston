@@ -53,6 +53,7 @@ import fr.geoking.gaston.ui.MAP_ENERGY_OPTIONS
 import fr.geoking.gaston.ui.MAP_IRVE_POWER_OPTIONS
 import fr.geoking.gaston.ui.components.MapLoader
 import fr.geoking.gaston.StationMapFilters
+import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveIrvePowerLevels
@@ -601,8 +602,7 @@ fun VectorMapScreen(
                         highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),
                         highlightedPowerLevels = settings.effectiveIrvePowerLevels(),
                         onNavigate = {
-                            val label = poi.name.ifBlank { poi.siteName ?: poi.address }
-                            val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}")
+                            val uri = IntentNavigationHelper.getNavigationUri(poi)
                             context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                         },
                         onLocate = {
@@ -656,8 +656,7 @@ fun VectorMapScreen(
                 }
             } else null,
             onNavigate = {
-                val label = poi.name.ifBlank { poi.siteName ?: poi.address }
-                val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}")
+                val uri = IntentNavigationHelper.getNavigationUri(poi)
                 context.startActivity(Intent(Intent.ACTION_VIEW, uri))
             },
             onEdit = if (settings.isLoggedIn && isCommunityPoiId(poi.id) && communityRepo != null) {
