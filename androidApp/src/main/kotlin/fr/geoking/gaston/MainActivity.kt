@@ -524,6 +524,7 @@ fun MainUI(
                     PhoneDashboardScreen(
                         settingsManager = settingsManager,
                         poiProvider = mapDeps?.poiProvider,
+                        favoritesRepo = mapDeps?.favoritesRepo,
                         hasLocationPermission = hasLocationPermission,
                         mapDepsReady = mapDeps != null,
                         fuelForecastRepository = fuelForecastRepository,
@@ -665,6 +666,7 @@ fun MainUI(
                         PhoneDashboardScreen(
                             settingsManager = settingsManager,
                             poiProvider = mapDeps?.poiProvider,
+                            favoritesRepo = mapDeps?.favoritesRepo,
                             hasLocationPermission = hasLocationPermission,
                             mapDepsReady = mapDeps != null,
                             fuelForecastRepository = fuelForecastRepository,

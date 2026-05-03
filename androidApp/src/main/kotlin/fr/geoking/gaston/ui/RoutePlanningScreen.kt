@@ -229,7 +229,20 @@ fun RoutePlanningScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         modifier = Modifier.fillMaxWidth()
                             .onFocusChanged { originFocused = it.isFocused }
-                            .onSizeChanged { originFieldHeight = it.height }
+                            .onSizeChanged { originFieldHeight = it.height },
+                        trailingIcon = {
+                            val place = selectedOrigin
+                            if (place != null) {
+                                val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
+                                IconButton(onClick = { settingsManager.toggleFavoriteLocation(place) }) {
+                                    Icon(
+                                        imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                                        contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                                        tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.4f)
+                                    )
+                                }
+                            }
+                        }
                     )
                     if (originFocused && originSuggestions.isNotEmpty()) {
                         Popup(
@@ -308,7 +321,20 @@ fun RoutePlanningScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     modifier = Modifier.fillMaxWidth()
                         .onFocusChanged { destFocused = it.isFocused }
-                        .onSizeChanged { destFieldHeight = it.height }
+                        .onSizeChanged { destFieldHeight = it.height },
+                    trailingIcon = {
+                        val place = selectedDest
+                        if (place != null) {
+                            val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
+                            IconButton(onClick = { settingsManager.toggleFavoriteLocation(place) }) {
+                                Icon(
+                                    imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                                    tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.4f)
+                                )
+                            }
+                        }
+                    }
                 )
                 if (destFocused && destSuggestions.isNotEmpty()) {
                     Popup(
@@ -511,7 +537,8 @@ fun RoutePlanningScreen(
                                 }
                                 IconButton(
                                     onClick = {
-                                        val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name)}")
+                                        val label = poi.name.ifBlank { poi.siteName ?: poi.address }
+                                        val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}")
                                         context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                                     }
                                 ) {
@@ -555,12 +582,15 @@ fun RoutePlanningScreen(
                         error = "Origin not found"
                         return@LaunchedEffect
                     }
+                    selectedOrigin = first
                     Pair(first.label, first.latitude to first.longitude)
                 }
             }
 
             val destination = if (initialDestination?.latitude != null && initialDestination.longitude != null) {
-                Pair(initialDestination.address ?: destQuery, initialDestination.latitude to initialDestination.longitude)
+                val resolved = GeocodedPlace(initialDestination.address ?: destQuery, initialDestination.latitude, initialDestination.longitude)
+                selectedDest = resolved
+                Pair(resolved.label, resolved.latitude to resolved.longitude)
             } else {
                 selectedDest?.let { it.label to (it.latitude to it.longitude) } ?: run {
                     val destResults = geocodingClient.geocode(destQuery, limit = 1)
@@ -570,6 +600,7 @@ fun RoutePlanningScreen(
                         error = "Destination not found"
                         return@LaunchedEffect
                     }
+                    selectedDest = destFirst
                     Pair(destFirst.label, destFirst.latitude to destFirst.longitude)
                 }
             }

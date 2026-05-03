@@ -600,7 +600,8 @@ fun VectorMapScreen(
                         highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),
                         highlightedPowerLevels = settings.effectiveIrvePowerLevels(),
                         onNavigate = {
-                            val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name)}")
+                            val label = poi.name.ifBlank { poi.siteName ?: poi.address }
+                            val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}")
                             context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                         },
                         onLocate = {
@@ -644,6 +645,20 @@ fun VectorMapScreen(
             },
             isLoggedIn = settings.isLoggedIn,
             isCommunityPoi = isCommunityPoiId(poi.id),
+            isFavorite = poi.id in favoriteIds,
+            onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
+                {
+                    scope.launch {
+                        favoritesRepo.toggleFavorite(poi)
+                        favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
+                    }
+                }
+            } else null,
+            onNavigate = {
+                val label = poi.name.ifBlank { poi.siteName ?: poi.address }
+                val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}")
+                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+            },
             onEdit = if (settings.isLoggedIn && isCommunityPoiId(poi.id) && communityRepo != null) {
                 {
                     poiForDetailsDialog = null
