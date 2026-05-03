@@ -1,7 +1,9 @@
 package fr.geoking.gaston.ui
 
+import android.content.Intent
 import android.location.Address
 import android.location.Geocoder
+import android.net.Uri
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,6 +36,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SignalCellular4Bar
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -87,6 +90,7 @@ import fr.geoking.gaston.shared.network.NetworkType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.anyProvidesFuel
 import fr.geoking.gaston.shared.location.approxDistanceKm
+import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ui.components.CheapestStationsCard
@@ -94,6 +98,7 @@ import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.components.FuelForecastChartCard
 import fr.geoking.gaston.ui.components.energySelectorItems
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -169,6 +174,7 @@ private data class DashboardRow(
 fun PhoneDashboardScreen(
     settingsManager: SettingsManager,
     poiProvider: PoiProvider?,
+    favoritesRepo: FavoritesRepository? = null,
     hasLocationPermission: Boolean,
     mapDepsReady: Boolean,
     fuelForecastRepository: FuelForecastRepository? = null,
@@ -184,6 +190,15 @@ fun PhoneDashboardScreen(
 ) {
     val context = LocalContext.current
     val settings by settingsManager.settings.collectAsState()
+    var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+    LaunchedEffect(favoritesRepo) {
+        if (favoritesRepo != null) {
+            favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
+        }
+    }
+
     var nearbyPois by remember { mutableStateOf<List<Poi>>(emptyList()) }
     var isLoadingPois by remember { mutableStateOf(false) }
     var searchError by remember { mutableStateOf<String?>(null) }
@@ -465,6 +480,9 @@ fun PhoneDashboardScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = onOpenFavorites) {
+                            Icon(Icons.Default.Star, contentDescription = "Favorites")
+                        }
                         IconButton(onClick = { onOpenSettings(null) }) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }
@@ -729,6 +747,20 @@ fun PhoneDashboardScreen(
     poiForDetails?.let { poi ->
         PoiDetailsFullscreenDialog(
             poi = poi,
+            isFavorite = poi.id in favoriteIds,
+            onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
+                {
+                    scope.launch {
+                        favoritesRepo.toggleFavorite(poi)
+                        favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
+                    }
+                }
+            } else null,
+            onNavigate = {
+                val label = poi.name.ifBlank { poi.siteName ?: poi.address }
+                val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}")
+                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+            },
             onShowOnMap = {
                 onOpenMap(it)
                 poiForDetails = null

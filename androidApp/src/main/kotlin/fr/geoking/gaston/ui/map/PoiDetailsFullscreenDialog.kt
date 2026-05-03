@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
@@ -42,6 +45,9 @@ fun PoiDetailsFullscreenDialog(
     onHide: (() -> Unit)? = null,
     onSuggestCorrection: (() -> Unit)? = null,
     onShowOnMap: ((Poi) -> Unit)? = null,
+    isFavorite: Boolean = false,
+    onToggleFavorite: (() -> Unit)? = null,
+    onNavigate: (() -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     val brandInfo = BrandHelper.getBrandInfo(poi.brand)
@@ -91,6 +97,24 @@ fun PoiDetailsFullscreenDialog(
                         }
                     },
                     actions = {
+                        onToggleFavorite?.let { toggle ->
+                            IconButton(onClick = toggle) {
+                                Icon(
+                                    imageVector = if (isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
+                                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                                    tint = if (isFavorite) Color(0xFFFACC15) else Color.White
+                                )
+                            }
+                        }
+                        onNavigate?.let { navigate ->
+                            IconButton(onClick = navigate) {
+                                Icon(
+                                    imageVector = Icons.Default.Directions,
+                                    contentDescription = "Navigate",
+                                    tint = Color.White
+                                )
+                            }
+                        }
                         onShowOnMap?.let {
                             IconButton(onClick = { it(poi) }) {
                                 Icon(
