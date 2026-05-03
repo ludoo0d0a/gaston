@@ -13,6 +13,7 @@ import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.shared.network.NetworkService
@@ -52,6 +53,20 @@ class AutoPlaystoreDashboardScreen(
                             )
                         )
                     }
+                }
+                .build()
+        )
+
+        grid.addItem(
+            GridItem.Builder()
+                .setTitle("Parkings")
+                .setText("Nearby lots")
+                .setImage(gridIcon(R.drawable.ic_poi_parking_rounded))
+                .setOnClickListener {
+                    settingsManager.setUseVehicleFilter(false)
+                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
+                    settingsManager.setOverpassAmenityTypes(setOf("parking"))
+                    pushMapScreen()
                 }
                 .build()
         )
