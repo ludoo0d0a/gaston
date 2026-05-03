@@ -1,6 +1,6 @@
 package fr.geoking.gaston.poi
 
-import fr.geoking.gaston.api.routex.RoutexSiteDetails
+import fr.geoking.gaston.api.routex.PoiAmenities
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.math.abs
@@ -177,7 +177,7 @@ object PoiMerger {
 
         val mergedIsClosed = existing.isClosed || incoming.isClosed || staleClosed
         val mergedIrveDetails = mergeIrveDetails(existing.irveDetails, incoming.irveDetails)
-        val mergedRoutexDetails = mergeRoutexDetails(existing.routexDetails, incoming.routexDetails)
+        val mergedAmenities = mergeAmenities(existing.amenities, incoming.amenities)
         val mergedRestaurantDetails = mergeRestaurantDetails(existing.restaurantDetails, incoming.restaurantDetails)
 
         val mergedSources = mergeSources(existing.source, incoming.source)
@@ -198,7 +198,7 @@ object PoiMerger {
             fuelPrices = mergedFuelPrices,
             isClosed = mergedIsClosed,
             irveDetails = mergedIrveDetails,
-            routexDetails = mergedRoutexDetails,
+            amenities = mergedAmenities,
             restaurantDetails = mergedRestaurantDetails,
             // Prefer richer/non-null display fields.
             name = if (existing.name.isNotBlank()) existing.name else incoming.name,
@@ -312,33 +312,39 @@ object PoiMerger {
         )
     }
 
-    private fun mergeRoutexDetails(a: RoutexSiteDetails?, b: RoutexSiteDetails?): RoutexSiteDetails? {
+    private fun mergeAmenities(a: PoiAmenities?, b: PoiAmenities?): PoiAmenities? {
         if (a == null) return b
         if (b == null) return a
-        return RoutexSiteDetails(
-            manned24h = a.manned24h ?: b.manned24h,
-            mannedAutomat24h = a.mannedAutomat24h ?: b.mannedAutomat24h,
-            automat = a.automat ?: b.automat,
-            motorwayIndicator = a.motorwayIndicator ?: b.motorwayIndicator,
-            restaurant = a.restaurant ?: b.restaurant,
-            shop = a.shop ?: b.shop,
-            snackbar = a.snackbar ?: b.snackbar,
-            carWash = a.carWash ?: b.carWash,
-            showers = a.showers ?: b.showers,
-            adBluePump = a.adBluePump ?: b.adBluePump,
-            r4tNetwork = a.r4tNetwork ?: b.r4tNetwork,
-            carVignette = a.carVignette ?: b.carVignette,
-            highspeedDiesel = a.highspeedDiesel ?: b.highspeedDiesel,
-            truckIndicator = a.truckIndicator ?: b.truckIndicator,
-            truckParking = a.truckParking ?: b.truckParking,
-            truckDiesel = a.truckDiesel ?: b.truckDiesel,
-            truckLane = a.truckLane ?: b.truckLane,
-            dieselBio = a.dieselBio ?: b.dieselBio,
-            hvo100 = a.hvo100 ?: b.hvo100,
-            lng = a.lng ?: b.lng,
-            lpg = a.lpg ?: b.lpg,
-            cng = a.cng ?: b.cng,
-            adBlueCanister = a.adBlueCanister ?: b.adBlueCanister,
+        return PoiAmenities(
+            manned24h = mergeBool(a.manned24h, b.manned24h),
+            mannedAutomat24h = mergeBool(a.mannedAutomat24h, b.mannedAutomat24h),
+            automat = mergeBool(a.automat, b.automat),
+            motorwayIndicator = mergeBool(a.motorwayIndicator, b.motorwayIndicator),
+            restaurant = mergeBool(a.restaurant, b.restaurant),
+            shop = mergeBool(a.shop, b.shop),
+            snackbar = mergeBool(a.snackbar, b.snackbar),
+            carWash = mergeBool(a.carWash, b.carWash),
+            showers = mergeBool(a.showers, b.showers),
+            adBluePump = mergeBool(a.adBluePump, b.adBluePump),
+            r4tNetwork = mergeBool(a.r4tNetwork, b.r4tNetwork),
+            carVignette = mergeBool(a.carVignette, b.carVignette),
+            highspeedDiesel = mergeBool(a.highspeedDiesel, b.highspeedDiesel),
+            truckIndicator = mergeBool(a.truckIndicator, b.truckIndicator),
+            truckParking = mergeBool(a.truckParking, b.truckParking),
+            truckDiesel = mergeBool(a.truckDiesel, b.truckDiesel),
+            truckLane = mergeBool(a.truckLane, b.truckLane),
+            dieselBio = mergeBool(a.dieselBio, b.dieselBio),
+            hvo100 = mergeBool(a.hvo100, b.hvo100),
+            lng = mergeBool(a.lng, b.lng),
+            lpg = mergeBool(a.lpg, b.lpg),
+            cng = mergeBool(a.cng, b.cng),
+            adBlueCanister = mergeBool(a.adBlueCanister, b.adBlueCanister),
+            toilets = mergeBool(a.toilets, b.toilets),
+            drinkingWater = mergeBool(a.drinkingWater, b.drinkingWater),
+            food = mergeBool(a.food, b.food),
+            wifi = mergeBool(a.wifi, b.wifi),
+            atm = mergeBool(a.atm, b.atm),
+            playground = mergeBool(a.playground, b.playground),
             monOpenFuel = a.monOpenFuel ?: b.monOpenFuel,
             monCloseFuel = a.monCloseFuel ?: b.monCloseFuel,
             tueOpenFuel = a.tueOpenFuel ?: b.tueOpenFuel,
@@ -356,6 +362,14 @@ object PoiMerger {
             open24h = a.open24h ?: b.open24h,
             openingHoursFuel = (a.openingHoursFuel + b.openingHoursFuel).distinct()
         )
+    }
+
+    private fun mergeBool(a: Boolean?, b: Boolean?): Boolean? {
+        return when {
+            a == true || b == true -> true
+            a == false || b == false -> false
+            else -> null
+        }
     }
 
     private fun mergeRestaurantDetails(a: RestaurantDetails?, b: RestaurantDetails?): RestaurantDetails? {

@@ -313,11 +313,13 @@ fun PoiDetailCard(
                                         )
                                     }
                                 }
-                                poi.routexDetails?.let { d ->
+                                poi.amenities?.let { d ->
                                     val flags = listOfNotNull(
                                         if (d.open24h == true) "24h" else null,
                                         if (d.restaurant == true) "Restaurant" else null,
                                         if (d.shop == true) "Shop" else null,
+                                        if (d.toilets == true) "Toilets" else null,
+                                        if (d.carWash == true) "Car wash" else null,
                                         if (d.showers == true) "Showers" else null,
                                     ).joinToString(" • ")
                                     if (flags.isNotBlank()) {
@@ -385,7 +387,7 @@ private fun PoiDetailCardPreview() {
             postcode = "75008",
             countryLocal = "France",
             fuelPrices = emptyList(),
-            routexDetails = null
+            amenities = null
         ),
         onNavigate = {},
         onLocate = {},

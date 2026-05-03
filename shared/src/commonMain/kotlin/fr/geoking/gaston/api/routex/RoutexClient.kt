@@ -211,9 +211,9 @@ class RoutexClient(
             return arr.mapNotNull { (it as? JsonPrimitive)?.content }
         }
 
-        private fun parseDetails(props: JsonObject): RoutexSiteDetails {
+        private fun parseDetails(props: JsonObject): PoiAmenities {
             fun get(key: String): JsonElement? = props[key]
-            return RoutexSiteDetails(
+            return PoiAmenities(
                 manned24h = parseBoolOrNull(get("manned_24h")),
                 mannedAutomat24h = parseBoolOrNull(get("manned_automat_24h")),
                 automat = parseBoolOrNull(get("automat")),
