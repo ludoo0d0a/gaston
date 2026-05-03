@@ -1225,6 +1225,28 @@ private fun VehicleConfig(
         ConfigTextField("Brand", settings.vehicleBrand) { onUpdate(settings.copy(vehicleBrand = it)) }
         ConfigTextField("Model", settings.vehicleModel) { onUpdate(settings.copy(vehicleModel = it)) }
 
+        if (settings.vehicleEnergy == "gas" || settings.vehicleEnergy == "hybrid") {
+            ConfigTextField(
+                label = "Tank capacity (Liters)",
+                value = settings.gasTankCapacityLiters?.toString() ?: ""
+            ) { onUpdate(settings.copy(gasTankCapacityLiters = it.toFloatOrNull())) }
+            ConfigTextField(
+                label = "Fuel consumption (L/100km)",
+                value = settings.gasConsumptionLper100km?.toString() ?: ""
+            ) { onUpdate(settings.copy(gasConsumptionLper100km = it.toFloatOrNull())) }
+        }
+
+        if (settings.vehicleEnergy == "electric" || settings.vehicleEnergy == "hybrid") {
+            ConfigTextField(
+                label = "Electric range (km)",
+                value = settings.evRangeKm.toString()
+            ) { onUpdate(settings.copy(evRangeKm = it.toIntOrNull() ?: 300)) }
+            ConfigTextField(
+                label = "Electric consumption (kWh/100km)",
+                value = settings.evConsumptionKwhPer100km?.toString() ?: ""
+            ) { onUpdate(settings.copy(evConsumptionKwhPer100km = it.toFloatOrNull())) }
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             "Energy type",

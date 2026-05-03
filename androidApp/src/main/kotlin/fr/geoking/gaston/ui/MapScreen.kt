@@ -138,7 +138,8 @@ fun MapScreen(
     onPlanRoute: (() -> Unit)? = null,
     communityRepo: CommunityPoiRepository? = null,
     favoritesRepo: FavoritesRepository? = null,
-    initialSelectedPoi: Poi? = null
+    initialSelectedPoi: Poi? = null,
+    initialCenter: LatLng? = null
 ) {
     BackHandler { onBack() }
 
@@ -184,9 +185,9 @@ fun MapScreen(
         }
     )
 
-    val defaultLat = initialSelectedPoi?.latitude ?: 48.8566
-    val defaultLng = initialSelectedPoi?.longitude ?: 2.3522
-    val defaultZoom = if (initialSelectedPoi != null) 15f else 12f
+    val defaultLat = initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: 48.8566
+    val defaultLng = initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: 2.3522
+    val defaultZoom = if (initialSelectedPoi != null || initialCenter != null) 15f else 12f
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(defaultLat, defaultLng), defaultZoom)
