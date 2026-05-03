@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SignalCellular4Bar
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -152,7 +153,7 @@ fun PlaystoreLightTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = PlaystoreHomeLightScheme, content = content)
 }
 
-enum class QuickActionType { Fuel, EV, Hybrid }
+enum class QuickActionType { Fuel, EV, Hybrid, Favorites }
 
 private data class DashboardRow(
     val title: String,
@@ -175,6 +176,7 @@ fun PhoneDashboardScreen(
     showAds: Boolean = false,
     onOpenMap: (Poi?) -> Unit,
     onOpenRoutes: () -> Unit,
+    onOpenFavorites: () -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
     onOpenFuelForecast: () -> Unit,
     onOpenSettings: (List<SettingsScreenPage>?) -> Unit,
@@ -383,6 +385,13 @@ fun PhoneDashboardScreen(
                     // Preserve existing fuel filters; 'electric' will be injected by effective filters if needed
                 }
             }
+        ),
+        DashboardRow(
+            title = "Favorites",
+            subtitle = "Saved",
+            icon = Icons.Default.Star,
+            type = QuickActionType.Favorites,
+            onClick = onOpenFavorites
         )
     )
 
@@ -465,6 +474,25 @@ fun PhoneDashboardScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // 0. Where to? Search bar
+                item {
+                    Card(
+                        onClick = onOpenRoutes,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Directions, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(12.dp))
+                            Text("Where to?", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
                 // Ad banner (Play Store distribution only).
                 if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
                     item {

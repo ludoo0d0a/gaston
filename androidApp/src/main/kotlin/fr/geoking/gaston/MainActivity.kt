@@ -37,6 +37,7 @@ import fr.geoking.gaston.ui.map.maplibre.DirectionsMapScreen
 import fr.geoking.gaston.ui.PhoneNetworkLocationScreen
 import fr.geoking.gaston.ui.PhoneDashboardScreen
 import fr.geoking.gaston.ui.PlaystoreTheme
+import fr.geoking.gaston.ui.FavoritesScreen
 import fr.geoking.gaston.ui.RoutePlanningScreen
 import fr.geoking.gaston.api.routing.RouteResult
 import fr.geoking.gaston.ui.SettingsScreen
@@ -318,6 +319,7 @@ fun MainUI(
     var showNetworkDiagnostics by remember { mutableStateOf(false) }
     var showPlaystoreSettings by remember { mutableStateOf(false) }
     var playstoreSettingsInitialStack by remember { mutableStateOf<List<SettingsScreenPage>?>(null) }
+    var showFavorites by remember { mutableStateOf(false) }
     var showRoutePlanning by remember { mutableStateOf(false) }
     var showDirectionsMap by remember { mutableStateOf(false) }
     var showFuelForecast by remember { mutableStateOf(false) }
@@ -382,8 +384,8 @@ fun MainUI(
     }
     val settings by settingsManager.settings.collectAsState()
 
-    LaunchedEffect(showMap, showRoutePlanning, isPlaystoreDistribution) {
-        if (showMap || showRoutePlanning || isPlaystoreDistribution) onRequestMapDeps()
+    LaunchedEffect(showMap, showRoutePlanning, showFavorites, isPlaystoreDistribution) {
+        if (showMap || showRoutePlanning || showFavorites || isPlaystoreDistribution) onRequestMapDeps()
     }
     val paletteIndex by AnimationPalettes.index.collectAsState()
     val palette = remember(paletteIndex) { AnimationPalettes.paletteFor(paletteIndex) }
@@ -432,6 +434,24 @@ fun MainUI(
                         pois = stationsForDirections,
                         settingsManager = settingsManager,
                         onBack = { showDirectionsMap = false }
+                    )
+                }
+                isPlaystoreDistribution && showFavorites && mapDeps != null -> {
+                    FavoritesScreen(
+                        favoritesRepo = mapDeps!!.favoritesRepo,
+                        settingsManager = settingsManager,
+                        onBack = { showFavorites = false },
+                        onSelectPoi = { poi ->
+                            pendingMapPoi = poi
+                            showMap = true
+                            showFavorites = false
+                        },
+                        onSelectLocation = { loc ->
+                            initialNavDestination = NavDestination(address = loc.label, latitude = loc.latitude, longitude = loc.longitude)
+                            showRoutePlanning = true
+                            showMap = true
+                            showFavorites = false
+                        }
                     )
                 }
                 isPlaystoreDistribution && showMap && showRoutePlanning && mapDeps != null -> {
@@ -517,6 +537,9 @@ fun MainUI(
                             showRoutePlanning = true
                             showMap = true
                         },
+                        onOpenFavorites = {
+                            showFavorites = true
+                        },
                         onOpenNetworkDiagnostics = { showNetworkDiagnostics = true },
                         onOpenFuelForecast = { showFuelForecast = true },
                         onOpenSettings = { stack ->
@@ -543,6 +566,24 @@ fun MainUI(
                         pois = stationsForDirections,
                         settingsManager = settingsManager,
                         onBack = { showDirectionsMap = false }
+                    )
+                }
+                showFavorites && mapDeps != null -> {
+                    FavoritesScreen(
+                        favoritesRepo = mapDeps!!.favoritesRepo,
+                        settingsManager = settingsManager,
+                        onBack = { showFavorites = false },
+                        onSelectPoi = { poi ->
+                            pendingMapPoi = poi
+                            showMap = true
+                            showFavorites = false
+                        },
+                        onSelectLocation = { loc ->
+                            initialNavDestination = NavDestination(address = loc.label, latitude = loc.latitude, longitude = loc.longitude)
+                            showRoutePlanning = true
+                            showMap = true
+                            showFavorites = false
+                        }
                     )
                 }
                 showMap && showRoutePlanning && mapDeps != null -> {
@@ -636,6 +677,9 @@ fun MainUI(
                             onOpenRoutes = {
                                 showRoutePlanning = true
                                 showMap = true
+                            },
+                            onOpenFavorites = {
+                                showFavorites = true
                             },
                             onOpenNetworkDiagnostics = { showNetworkDiagnostics = true },
                             onOpenFuelForecast = { showFuelForecast = true },

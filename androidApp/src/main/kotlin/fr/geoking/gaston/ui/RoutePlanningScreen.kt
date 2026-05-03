@@ -30,6 +30,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -130,13 +132,14 @@ fun RoutePlanningScreen(
     var selectedOrigin by remember { mutableStateOf<GeocodedPlace?>(null) }
     var selectedDest by remember { mutableStateOf<GeocodedPlace?>(null) }
 
-    LaunchedEffect(originQuery) {
+    LaunchedEffect(originQuery, settings.favoriteLocations) {
         if (originQuery.isBlank() || useCurrentLocationAsOrigin) {
             originSuggestions = emptyList()
             return@LaunchedEffect
         }
         val historyMatches = settings.routeHistory.filter { it.label.contains(originQuery, ignoreCase = true) }
-        originSuggestions = historyMatches
+        val favoriteMatches = settings.favoriteLocations.filter { it.label.contains(originQuery, ignoreCase = true) }
+        originSuggestions = (favoriteMatches + historyMatches).distinctBy { it.label }
         if (originQuery.length > 2) {
             delay(500)
             try {
@@ -149,13 +152,14 @@ fun RoutePlanningScreen(
         }
     }
 
-    LaunchedEffect(destQuery) {
+    LaunchedEffect(destQuery, settings.favoriteLocations) {
         if (destQuery.isBlank()) {
             destSuggestions = emptyList()
             return@LaunchedEffect
         }
         val historyMatches = settings.routeHistory.filter { it.label.contains(destQuery, ignoreCase = true) }
-        destSuggestions = historyMatches
+        val favoriteMatches = settings.favoriteLocations.filter { it.label.contains(destQuery, ignoreCase = true) }
+        destSuggestions = (favoriteMatches + historyMatches).distinctBy { it.label }
         if (destQuery.length > 2) {
             delay(500)
             try {
@@ -240,6 +244,7 @@ fun RoutePlanningScreen(
                                 LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                                     items(originSuggestions) { suggestion ->
                                         val isHistory = settings.routeHistory.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
+                                        val isFavorite = settings.favoriteLocations.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
                                         Row(
                                             modifier = Modifier.fillMaxWidth().clickable {
                                                 originQuery = suggestion.label
@@ -249,16 +254,36 @@ fun RoutePlanningScreen(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Icon(
-                                                if (isHistory) Icons.Default.History else Icons.Default.Place,
+                                                when {
+                                                    isFavorite -> Icons.Default.Star
+                                                    isHistory -> Icons.Default.History
+                                                    else -> Icons.Default.Place
+                                                },
                                                 contentDescription = null,
-                                                tint = Color.White.copy(alpha = 0.6f),
+                                                tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.6f),
                                                 modifier = Modifier.size(18.dp)
                                             )
                                             Spacer(Modifier.width(12.dp))
                                             Text(
                                                 text = suggestion.label,
-                                                color = Color.White
+                                                color = Color.White,
+                                                modifier = Modifier.weight(1f)
                                             )
+                                            if (!isFavorite && (isHistory || suggestion.latitude != 0.0)) {
+                                                IconButton(
+                                                    onClick = { settingsManager.toggleFavoriteLocation(suggestion) },
+                                                    modifier = Modifier.size(24.dp)
+                                                ) {
+                                                    Icon(Icons.Default.StarBorder, contentDescription = "Add to favorites", tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
+                                                }
+                                            } else if (isFavorite) {
+                                                IconButton(
+                                                    onClick = { settingsManager.toggleFavoriteLocation(suggestion) },
+                                                    modifier = Modifier.size(24.dp)
+                                                ) {
+                                                    Icon(Icons.Default.Star, contentDescription = "Remove from favorites", tint = Color(0xFFFACC15), modifier = Modifier.size(16.dp))
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -298,6 +323,7 @@ fun RoutePlanningScreen(
                             LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                                 items(destSuggestions) { suggestion ->
                                     val isHistory = settings.routeHistory.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
+                                val isFavorite = settings.favoriteLocations.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
                                     Row(
                                         modifier = Modifier.fillMaxWidth().clickable {
                                             destQuery = suggestion.label
@@ -307,16 +333,36 @@ fun RoutePlanningScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
-                                            if (isHistory) Icons.Default.History else Icons.Default.Place,
+                                            when {
+                                                isFavorite -> Icons.Default.Star
+                                                isHistory -> Icons.Default.History
+                                                else -> Icons.Default.Place
+                                            },
                                             contentDescription = null,
-                                            tint = Color.White.copy(alpha = 0.6f),
+                                            tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.6f),
                                             modifier = Modifier.size(18.dp)
                                         )
                                         Spacer(Modifier.width(12.dp))
                                         Text(
                                             text = suggestion.label,
-                                            color = Color.White
+                                            color = Color.White,
+                                            modifier = Modifier.weight(1f)
                                         )
+                                        if (!isFavorite && (isHistory || suggestion.latitude != 0.0)) {
+                                            IconButton(
+                                                onClick = { settingsManager.toggleFavoriteLocation(suggestion) },
+                                                modifier = Modifier.size(24.dp)
+                                            ) {
+                                                Icon(Icons.Default.StarBorder, contentDescription = "Add to favorites", tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
+                                            }
+                                        } else if (isFavorite) {
+                                            IconButton(
+                                                onClick = { settingsManager.toggleFavoriteLocation(suggestion) },
+                                                modifier = Modifier.size(24.dp)
+                                            ) {
+                                                Icon(Icons.Default.Star, contentDescription = "Remove from favorites", tint = Color(0xFFFACC15), modifier = Modifier.size(16.dp))
+                                            }
+                                        }
                                     }
                                 }
                             }

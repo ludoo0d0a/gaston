@@ -80,7 +80,8 @@ class FirestoreSettingsSync(
             "selectedOverpassAmenityTypes" to s.selectedOverpassAmenityTypes.toList(),
             "vehicleType" to s.vehicleType.name,
             "carMapMode" to s.carMapMode.name,
-            "mobiliteitLuxembourgKey" to s.mobiliteitLuxembourgKey
+            "mobiliteitLuxembourgKey" to s.mobiliteitLuxembourgKey,
+            "favoriteLocations" to s.favoriteLocations.map { mapOf("label" to it.label, "latitude" to it.latitude, "longitude" to it.longitude) }
         )
     }
 
@@ -108,6 +109,13 @@ class FirestoreSettingsSync(
         fun parsePoiProviderSet(v: Any) = (v as List<*>).filterIsInstance<String>().mapNotNull {
             try { PoiProviderType.valueOf(it) } catch(e: Exception) { null }
         }.toSet()
+        fun parseGeocodedPlaceList(v: Any) = (v as List<*>).filterIsInstance<Map<String, Any>>().map {
+            fr.geoking.gaston.api.geocoding.GeocodedPlace(
+                label = it["label"] as String,
+                latitude = (it["latitude"] as? Double) ?: (it["latitude"] as? Long)?.toDouble() ?: 0.0,
+                longitude = (it["longitude"] as? Double) ?: (it["longitude"] as? Long)?.toDouble() ?: 0.0
+            )
+        }
 
         return local.copy(
             vehicleBrand = pick(local.vehicleBrand, remote["vehicleBrand"], default.vehicleBrand, ::parseString),
@@ -132,7 +140,8 @@ class FirestoreSettingsSync(
             selectedOverpassAmenityTypes = pick(local.selectedOverpassAmenityTypes, remote["selectedOverpassAmenityTypes"], default.selectedOverpassAmenityTypes, ::parseStringSet),
             vehicleType = pick(local.vehicleType, remote["vehicleType"], default.vehicleType) { parseEnum(it, VehicleType::class.java) },
             carMapMode = pick(local.carMapMode, remote["carMapMode"], default.carMapMode) { parseEnum(it, CarMapMode::class.java) },
-            mobiliteitLuxembourgKey = pick(local.mobiliteitLuxembourgKey, remote["mobiliteitLuxembourgKey"], default.mobiliteitLuxembourgKey, ::parseString)
+            mobiliteitLuxembourgKey = pick(local.mobiliteitLuxembourgKey, remote["mobiliteitLuxembourgKey"], default.mobiliteitLuxembourgKey, ::parseString),
+            favoriteLocations = pick(local.favoriteLocations, remote["favoriteLocations"], default.favoriteLocations, ::parseGeocodedPlaceList)
         )
     }
 }

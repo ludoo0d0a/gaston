@@ -87,6 +87,7 @@ data class AppSettings(
     val tollDataPath: String? = null,
     val mobiliteitLuxembourgKey: String = "",
     val routeHistory: List<GeocodedPlace> = emptyList(),
+    val favoriteLocations: List<GeocodedPlace> = emptyList(),
     val routeStationSearchRadiusMeters: Int = 2000,
     val filterOnlyHighwayStations: Boolean = false
 )
@@ -119,6 +120,13 @@ open class SettingsManager(
         val routeHistoryJson = prefs.getString("route_history", null)
         val routeHistory = try {
             if (routeHistoryJson.isNullOrBlank()) emptyList() else Json.decodeFromString<List<GeocodedPlace>>(routeHistoryJson)
+        } catch (_: Exception) {
+            emptyList()
+        }
+
+        val favoriteLocationsJson = prefs.getString("favorite_locations", null)
+        val favoriteLocations = try {
+            if (favoriteLocationsJson.isNullOrBlank()) emptyList() else Json.decodeFromString<List<GeocodedPlace>>(favoriteLocationsJson)
         } catch (_: Exception) {
             emptyList()
         }
@@ -197,6 +205,7 @@ open class SettingsManager(
             tollDataPath = prefs.getString("toll_data_path", null),
             mobiliteitLuxembourgKey = mobiliteitLuxembourgKey,
             routeHistory = routeHistory,
+            favoriteLocations = favoriteLocations,
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
             filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false)
         )
@@ -249,6 +258,7 @@ open class SettingsManager(
             .putString("toll_data_path", settings.tollDataPath)
             .putString("mobiliteit_luxembourg_key", settings.mobiliteitLuxembourgKey)
             .putString("route_history", Json.encodeToString(settings.routeHistory))
+            .putString("favorite_locations", Json.encodeToString(settings.favoriteLocations))
             .putInt("route_station_radius_m", settings.routeStationSearchRadiusMeters)
             .putBoolean("filter_only_highway", settings.filterOnlyHighwayStations)
             .apply()
@@ -362,6 +372,17 @@ open class SettingsManager(
         val current = _settings.value.routeHistory
         val deduped = (listOf(place) + current.filterNot { it == place }).distinct()
         saveSettings(_settings.value.copy(routeHistory = deduped.take(10)))
+    }
+
+    open fun toggleFavoriteLocation(place: GeocodedPlace) {
+        val current = _settings.value.favoriteLocations
+        val exists = current.any { it.latitude == place.latitude && it.longitude == place.longitude }
+        val next = if (exists) {
+            current.filterNot { it.latitude == place.latitude && it.longitude == place.longitude }
+        } else {
+            current + place
+        }
+        saveSettings(_settings.value.copy(favoriteLocations = next))
     }
 
     /**
