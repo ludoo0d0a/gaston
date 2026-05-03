@@ -11,6 +11,7 @@ import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.R
+import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 
@@ -29,7 +30,7 @@ class PoiDetailScreen(
         val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name
         val body = buildDetailMessage(poi)
         val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
-            data = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(title)}")
+            data = IntentNavigationHelper.getNavigationUri(poi)
         }
         val navigateAction = Action.Builder()
             .setTitle("Navigate to")

@@ -41,7 +41,7 @@ class AutoMapMoreOptionsScreen(
                     .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
                     .setOnClickListener {
                         val intent = Intent(CarContext.ACTION_NAVIGATE).apply {
-                            data = Uri.parse("geo:$lat,$lon?q=${Uri.encode("Map")}")
+                            data = Uri.parse("geo:$lat,$lon?q=${Uri.encode("%.4f, %.4f".format(java.util.Locale.US, lat, lon))}")
                         }
                         carContext.startCarApp(intent)
                     }

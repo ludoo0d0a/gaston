@@ -10,6 +10,13 @@ data class NavDestination(
 )
 
 object IntentNavigationHelper {
+    fun getNavigationUri(poi: fr.geoking.gaston.poi.Poi): Uri {
+        val name = poi.name.takeIf { it.isNotBlank() } ?: poi.siteName?.takeIf { it.isNotBlank() }
+        val address = poi.address.takeIf { it.isNotBlank() } ?: "%.4f, %.4f".format(java.util.Locale.US, poi.latitude, poi.longitude)
+        val label = if (name != null) "$name, $address" else address
+        return Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}")
+    }
+
     fun parseNavIntent(intent: Intent): NavDestination? {
         val uri = intent.data ?: return null
         val scheme = uri.scheme?.lowercase()

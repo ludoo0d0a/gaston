@@ -18,6 +18,7 @@ import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
+import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
@@ -197,7 +198,7 @@ class AutoRoutePlanningScreen(
                     .setTitle(poi.name.ifBlank { poi.address.ifBlank { "POI" } })
                     .addText(poi.address.ifBlank { "${poi.latitude}, ${poi.longitude}" })
                     .setOnClickListener {
-                        val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name.ifBlank { poi.address })}")
+                        val uri = IntentNavigationHelper.getNavigationUri(poi)
                         carContext.startCarApp(Intent(CarContext.ACTION_NAVIGATE).apply { data = uri })
                     }
                     .build()

@@ -81,6 +81,7 @@ import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.DebugLogOverlay
+import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.effectiveIrvePowerLevels
@@ -741,8 +742,7 @@ fun MapScreen(
                         highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),
                         highlightedPowerLevels = settings.effectiveIrvePowerLevels(),
                         onNavigate = {
-                            val label = poi.name.ifBlank { poi.siteName ?: poi.address }
-                            val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}")
+                            val uri = IntentNavigationHelper.getNavigationUri(poi)
                             context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                         },
                         onLocate = {
@@ -810,8 +810,7 @@ fun MapScreen(
                 }
             } else null,
             onNavigate = {
-                val label = poi.name.ifBlank { poi.siteName ?: poi.address }
-                val uri = Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}")
+                val uri = IntentNavigationHelper.getNavigationUri(poi)
                 context.startActivity(Intent(Intent.ACTION_VIEW, uri))
             },
             onEdit = if (settings.isLoggedIn && isCommunityPoiId(poi.id) && communityRepo != null) {
