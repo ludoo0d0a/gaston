@@ -23,15 +23,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.EvStation
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.LocalParking
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SignalCellular4Bar
@@ -46,6 +50,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -63,12 +68,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.StationMapFilters
@@ -80,6 +90,9 @@ import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.ui.ColorHelper
 import fr.geoking.gaston.ui.SettingsScreenPage
 import fr.geoking.gaston.feature.location.LocationHelper
+import fr.geoking.gaston.api.geocoding.GeocodingClient
+import fr.geoking.gaston.api.geocoding.GeocodedPlace
+import fr.geoking.gaston.intent.NavDestination
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
@@ -178,10 +191,11 @@ fun PhoneDashboardScreen(
     hasLocationPermission: Boolean,
     mapDepsReady: Boolean,
     fuelForecastRepository: FuelForecastRepository? = null,
+    geocodingClient: GeocodingClient? = null,
     isUpdateInProgress: Boolean = false,
     showAds: Boolean = false,
     onOpenMap: (Poi?) -> Unit,
-    onOpenRoutes: () -> Unit,
+    onOpenRoutes: (NavDestination?) -> Unit,
     onOpenFavorites: () -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
     onOpenFuelForecast: () -> Unit,
@@ -211,6 +225,31 @@ fun PhoneDashboardScreen(
         )
     }
     var fuelForecastLoading by remember { mutableStateOf(false) }
+
+    var destQuery by remember { mutableStateOf("") }
+    var destSuggestions by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
+    var destFocused by remember { mutableStateOf(false) }
+    var destFieldHeight by remember { mutableStateOf(0) }
+
+    LaunchedEffect(destQuery, settings.favoriteLocations) {
+        if (destQuery.isBlank()) {
+            destSuggestions = emptyList()
+            return@LaunchedEffect
+        }
+        val historyMatches = settings.routeHistory.filter { it.label.contains(destQuery, ignoreCase = true) }
+        val favoriteMatches = settings.favoriteLocations.filter { it.label.contains(destQuery, ignoreCase = true) }
+        destSuggestions = (favoriteMatches + historyMatches).distinctBy { it.label }
+        if (destQuery.length > 2 && geocodingClient != null) {
+            delay(500)
+            try {
+                val remote = geocodingClient.geocode(destQuery, limit = 5)
+                val newSuggestions = (favoriteMatches + historyMatches + remote).distinctBy { it.label }
+                destSuggestions = newSuggestions
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+    }
 
     val energyFilterIds = settings.effectiveMapEnergyFilterIds()
     val providers = remember(settings, userLat, userLon) {
@@ -439,7 +478,7 @@ fun PhoneDashboardScreen(
             title = "Routes",
             subtitle = "Plan a journey",
             icon = Icons.Default.Directions,
-            onClick = onOpenRoutes,
+            onClick = { onOpenRoutes(null) },
             enabled = mapDepsReady
         ),
         DashboardRow(
@@ -512,20 +551,107 @@ fun PhoneDashboardScreen(
             ) {
                 // 0. Where to? Search bar
                 item {
-                    Card(
-                        onClick = onOpenRoutes,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Directions, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.width(12.dp))
-                            Text("Where to?", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Box {
+                        OutlinedTextField(
+                            value = destQuery,
+                            onValueChange = { destQuery = it },
+                            placeholder = { Text("Where to?") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onFocusChanged { destFocused = it.isFocused }
+                                .onSizeChanged { destFieldHeight = it.height },
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                            singleLine = true,
+                            leadingIcon = {
+                                IconButton(onClick = { onOpenRoutes(null) }) {
+                                    Icon(
+                                        Icons.Default.Directions,
+                                        contentDescription = "Open routes",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            },
+                            trailingIcon = {
+                                if (destQuery.isNotEmpty()) {
+                                    IconButton(onClick = { destQuery = "" }) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Clear"
+                                        )
+                                    }
+                                }
+                            },
+                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color.Transparent,
+                            )
+                        )
+
+                        if (destFocused && destSuggestions.isNotEmpty()) {
+                            Popup(
+                                onDismissRequest = { destFocused = false },
+                                offset = IntOffset(0, destFieldHeight),
+                                properties = PopupProperties(focusable = false)
+                            ) {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 0.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    elevation = CardDefaults.cardElevation(8.dp),
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                                ) {
+                                    LazyColumn(modifier = Modifier.heightIn(max = 250.dp)) {
+                                        items(destSuggestions) { suggestion ->
+                                            val isHistory = settings.routeHistory.any {
+                                                it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude
+                                            }
+                                            val isFavorite = settings.favoriteLocations.any {
+                                                it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude
+                                            }
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        destQuery = suggestion.label
+                                                        destFocused = false
+                                                        onOpenRoutes(
+                                                            NavDestination(
+                                                                address = suggestion.label,
+                                                                latitude = suggestion.latitude,
+                                                                longitude = suggestion.longitude
+                                                            )
+                                                        )
+                                                    }
+                                                    .padding(12.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    when {
+                                                        isFavorite -> Icons.Default.Star
+                                                        isHistory -> Icons.Default.History
+                                                        else -> Icons.Default.Place
+                                                    },
+                                                    contentDescription = null,
+                                                    tint = if (isFavorite) Color(0xFFFACC15) else MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                        alpha = 0.6f
+                                                    ),
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(Modifier.width(12.dp))
+                                                Text(
+                                                    text = suggestion.label,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
