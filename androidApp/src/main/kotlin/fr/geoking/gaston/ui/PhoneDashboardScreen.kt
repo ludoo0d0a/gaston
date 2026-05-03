@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.EvStation
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.LocalParking
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -152,7 +153,7 @@ fun PlaystoreLightTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = PlaystoreHomeLightScheme, content = content)
 }
 
-enum class QuickActionType { Fuel, EV, Hybrid }
+enum class QuickActionType { Fuel, EV, Hybrid, Parking }
 
 private data class DashboardRow(
     val title: String,
@@ -383,6 +384,24 @@ fun PhoneDashboardScreen(
                     // Preserve existing fuel filters; 'electric' will be injected by effective filters if needed
                 }
             }
+        ),
+        DashboardRow(
+            title = "Parking",
+            subtitle = "Nearby lots",
+            icon = Icons.Default.LocalParking,
+            type = QuickActionType.Parking,
+            onClick = {
+                val isSelected = !settings.useVehicleFilter &&
+                        settings.selectedPoiProviders == setOf(PoiProviderType.Overpass) &&
+                        settings.selectedOverpassAmenityTypes == setOf("parking")
+                if (isSelected) {
+                    settingsManager.setUseVehicleFilter(true)
+                } else {
+                    settingsManager.setUseVehicleFilter(false)
+                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
+                    settingsManager.setOverpassAmenityTypes(setOf("parking"))
+                }
+            }
         )
     )
 
@@ -593,6 +612,7 @@ fun PhoneDashboardScreen(
                                     QuickActionType.Fuel -> settings.selectedPoiProviders == setOf(PoiProviderType.DataGouv)
                                     QuickActionType.EV -> settings.selectedPoiProviders == setOf(PoiProviderType.DataGouvElec)
                                     QuickActionType.Hybrid -> settings.selectedPoiProviders == setOf(PoiProviderType.Hybrid)
+                                    QuickActionType.Parking -> settings.selectedPoiProviders == setOf(PoiProviderType.Overpass) && settings.selectedOverpassAmenityTypes == setOf("parking")
                                     else -> false
                                 }
                             }

@@ -303,6 +303,7 @@ class SelectorPoiProvider(
                                 "restaurant" -> PoiCategory.Restaurant
                                 "fast_food" -> PoiCategory.FastFood
                                 "speed_camera" -> PoiCategory.Radar
+                                "parking" -> PoiCategory.Parking
                                 else -> null
                             }
                         }.toSet()
@@ -557,6 +558,7 @@ class SelectorPoiProvider(
                                 "restaurant" -> PoiCategory.Restaurant
                                 "fast_food" -> PoiCategory.FastFood
                                 "speed_camera" -> PoiCategory.Radar
+                                "parking" -> PoiCategory.Parking
                                 else -> null
                             }
                         }.toSet()
