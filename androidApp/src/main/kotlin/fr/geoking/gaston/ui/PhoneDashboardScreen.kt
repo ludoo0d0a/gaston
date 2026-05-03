@@ -201,7 +201,9 @@ fun PhoneDashboardScreen(
     onOpenNetworkDiagnostics: () -> Unit,
     onOpenFuelForecast: () -> Unit,
     onOpenSettings: (List<SettingsScreenPage>?) -> Unit,
-    onRequestLocationPermission: () -> Unit = {}
+    onRequestLocationPermission: () -> Unit = {},
+    selectedSearchLocation: GeocodedPlace? = null,
+    onLocationSelected: (GeocodedPlace?) -> Unit = {}
 ) {
     val context = LocalContext.current
     val settings by settingsManager.settings.collectAsState()
@@ -232,16 +234,16 @@ fun PhoneDashboardScreen(
     var destFocused by remember { mutableStateOf(false) }
     var destFieldHeight by remember { mutableStateOf(0) }
 
-    LaunchedEffect(destQuery, settings.favoriteLocations) {
-        if (destQuery.isBlank()) {
+    LaunchedEffect(destQuery, settings.favoriteLocations, selectedSearchLocation) {
+        if (destQuery.isBlank() || destQuery == selectedSearchLocation?.label) {
             destSuggestions = emptyList()
             return@LaunchedEffect
         }
         val historyMatches = settings.routeHistory.filter { it.label.contains(destQuery, ignoreCase = true) }
         val favoriteMatches = settings.favoriteLocations.filter { it.label.contains(destQuery, ignoreCase = true) }
         destSuggestions = (favoriteMatches + historyMatches).distinctBy { it.label }
-        if (destQuery.length > 2 && geocodingClient != null) {
-            delay(500)
+        if (destQuery.length > 1 && geocodingClient != null) {
+            delay(300)
             try {
                 val remote = geocodingClient.geocode(destQuery, limit = 5)
                 val newSuggestions = (favoriteMatches + historyMatches + remote).distinctBy { it.label }
@@ -272,40 +274,54 @@ fun PhoneDashboardScreen(
         }
     }
 
-    LaunchedEffect(poiProvider, hasLocationPermission) {
+    LaunchedEffect(poiProvider, hasLocationPermission, selectedSearchLocation) {
         if (poiProvider == null) return@LaunchedEffect
 
         // Use a flow to debounce settings/filter changes (300ms)
         snapshotFlow {
-            Triple(
+            listOf(
                 settings.effectiveMapEnergyFilterIds(),
                 settings,
-                settings.useVehicleFilter
+                settings.useVehicleFilter,
+                selectedSearchLocation
             )
         }
         .debounce(300)
-        .collectLatest { (currentEnergyIds, settingsSnapshot, _) ->
+        .collectLatest { params ->
+            @Suppress("UNCHECKED_CAST")
+            val currentEnergyIds = params[0] as Set<String>
+            val settingsSnapshot = params[1] as fr.geoking.gaston.AppSettings
+            val selectedLoc = params[3] as GeocodedPlace?
             isLoadingPois = true
             searchError = null
 
-            if (!hasLocationPermission) {
+            val baseLat: Double?
+            val baseLon: Double?
+
+            if (selectedLoc != null) {
+                baseLat = selectedLoc.latitude
+                baseLon = selectedLoc.longitude
+            } else if (hasLocationPermission) {
+                val loc = LocationHelper.getCurrentLocation(context)
+                baseLat = loc?.latitude
+                baseLon = loc?.longitude
+            } else {
                 nearbyPois = emptyList()
                 searchError = "Location permission is required to find nearby stations."
                 isLoadingPois = false
                 return@collectLatest
             }
 
-            val location = LocationHelper.getCurrentLocation(context)
-            if (location != null) {
-                userLat = location.latitude
-                userLon = location.longitude
-                val currentProviders = settingsSnapshot.effectiveProvidersAt(location.latitude, location.longitude)
+            if (baseLat != null && baseLon != null) {
+                userLat = baseLat
+                userLon = baseLon
+                val currentProviders = settingsSnapshot.effectiveProvidersAt(baseLat, baseLon)
 
                 try {
                     val results = poiProvider.search(
                         PoiSearchRequest(
-                            latitude = location.latitude,
-                            longitude = location.longitude,
+                            latitude = baseLat,
+                            longitude = baseLon,
                             categories = emptySet(),
                             skipFilters = true
                         )
@@ -331,8 +347,8 @@ fun PhoneDashboardScreen(
                             if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
                                 priceA.compareTo(priceB)
                             } else {
-                                val distA = approxDistanceKm(location.latitude, location.longitude, a.latitude, a.longitude)
-                                val distB = approxDistanceKm(location.latitude, location.longitude, b.latitude, b.longitude)
+                                val distA = approxDistanceKm(baseLat, baseLon, a.latitude, a.longitude)
+                                val distB = approxDistanceKm(baseLat, baseLon, b.latitude, b.longitude)
                                 distA.compareTo(distB)
                             }
                         }
@@ -352,7 +368,7 @@ fun PhoneDashboardScreen(
 
     LaunchedEffect(userLat, userLon, energyFilterIds, hasLocationPermission, fuelForecastRepository) {
         val repo = fuelForecastRepository ?: return@LaunchedEffect
-        if (!hasLocationPermission) {
+        if (!hasLocationPermission && userLat == null) {
             fuelForecastState = FuelForecastUiState(
                 fuelId = "gazole",
                 locationKey = "",
@@ -564,7 +580,17 @@ fun PhoneDashboardScreen(
                             shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
                             singleLine = true,
                             leadingIcon = {
-                                IconButton(onClick = { onOpenRoutes(null) }) {
+                                IconButton(onClick = {
+                                    onOpenRoutes(
+                                        selectedSearchLocation?.let {
+                                            NavDestination(
+                                                address = it.label,
+                                                latitude = it.latitude,
+                                                longitude = it.longitude
+                                            )
+                                        }
+                                    )
+                                }) {
                                     Icon(
                                         Icons.Default.Directions,
                                         contentDescription = "Open routes",
@@ -574,7 +600,10 @@ fun PhoneDashboardScreen(
                             },
                             trailingIcon = {
                                 if (destQuery.isNotEmpty()) {
-                                    IconButton(onClick = { destQuery = "" }) {
+                                    IconButton(onClick = {
+                                        destQuery = ""
+                                        onLocationSelected(null)
+                                    }) {
                                         Icon(
                                             Icons.Default.Close,
                                             contentDescription = "Clear"
@@ -618,13 +647,7 @@ fun PhoneDashboardScreen(
                                                     .clickable {
                                                         destQuery = suggestion.label
                                                         destFocused = false
-                                                        onOpenRoutes(
-                                                            NavDestination(
-                                                                address = suggestion.label,
-                                                                latitude = suggestion.latitude,
-                                                                longitude = suggestion.longitude
-                                                            )
-                                                        )
+                                                        onLocationSelected(suggestion)
                                                     }
                                                     .padding(12.dp),
                                                 verticalAlignment = Alignment.CenterVertically
@@ -721,7 +744,8 @@ fun PhoneDashboardScreen(
                             onClick = { poiForDetails = it },
                             onMapClick = { onOpenMap(null) },
                             modifier = cardModifier,
-                            emptyMessage = searchError
+                            emptyMessage = searchError,
+                            title = if (selectedSearchLocation != null) "Cheapest near ${selectedSearchLocation.label}" else "Nearby cheapest"
                         )
                     }
                 }

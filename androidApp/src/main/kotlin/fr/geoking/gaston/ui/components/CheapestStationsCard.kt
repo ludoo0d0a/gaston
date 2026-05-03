@@ -32,7 +32,8 @@ fun CheapestStationsCard(
     onClick: (Poi) -> Unit,
     onMapClick: () -> Unit,
     modifier: Modifier = Modifier,
-    emptyMessage: String? = null
+    emptyMessage: String? = null,
+    title: String? = null
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -48,7 +49,7 @@ fun CheapestStationsCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Nearby cheapest",
+                    text = title ?: "Nearby cheapest",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
