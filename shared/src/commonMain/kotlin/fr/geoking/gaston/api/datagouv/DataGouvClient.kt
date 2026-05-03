@@ -104,6 +104,8 @@ class DataGouvClient(
             ?: brand
             ?: if (ville.isNotBlank()) "Station $ville" else "Station"
         val prices = parsePrices(record)
+        val isOnHighway = name.contains("autoroute", ignoreCase = true) ||
+            address.contains("autoroute", ignoreCase = true)
         return DataGouvStation(
             id = id,
             name = name.ifBlank { if (ville.isNotBlank()) "Station $ville" else "Station" },
@@ -111,7 +113,8 @@ class DataGouvClient(
             latitude = lat,
             longitude = lng,
             brand = brand,
-            prices = prices
+            prices = prices,
+            isOnHighway = isOnHighway
         )
     }
 
@@ -201,7 +204,8 @@ data class DataGouvStation(
     val latitude: Double,
     val longitude: Double,
     val brand: String? = null,
-    val prices: List<DataGouvPrice> = emptyList()
+    val prices: List<DataGouvPrice> = emptyList(),
+    val isOnHighway: Boolean = false
 )
 
 /** Fuel price from data.gouv.fr / Gas API. */

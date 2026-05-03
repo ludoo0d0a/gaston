@@ -47,6 +47,7 @@ class RoutexProvider(
                 latitude = site.latitude,
                 longitude = site.longitude,
                 brand = site.brand,
+                isOnHighway = site.details?.motorwayIndicator ?: false,
                 siteName = site.siteName,
                 postcode = site.postcode,
                 addressLocal = site.addressLocal,
