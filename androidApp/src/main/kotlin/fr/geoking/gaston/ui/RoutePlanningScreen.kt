@@ -748,18 +748,20 @@ fun RoutePlanningScreen(
                 routeTraffic = trafficProviders.firstOrNull()?.let { provider ->
                     provider.getTraffic(TrafficRequest.Route(route.points))
                 }
+
+                routePlanner.getStationsAlongRouteFlow(
+                    route.points,
+                    poiProvider,
+                    radiusMeters = settings.routeStationSearchRadiusMeters
+                ).collect { incrementalStations ->
+                    stations = incrementalStations
+                    loading = false // Show results as soon as first batch arrives
+                }
             } else {
                 tollEstimate = null
                 routeTraffic = null
-            }
-
-            routePlanner.getStationsAlongRouteFlow(
-                oLat, oLon, dLat, dLon,
-                poiProvider,
-                radiusMeters = settings.routeStationSearchRadiusMeters
-            ).collect { incrementalStations ->
-                stations = incrementalStations
-                loading = false // Show results as soon as first batch arrives
+                loading = false
+                error = "No route found"
             }
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
