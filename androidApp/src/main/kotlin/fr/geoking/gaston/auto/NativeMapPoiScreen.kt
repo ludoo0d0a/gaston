@@ -118,6 +118,22 @@ class NativeMapPoiScreen(
                     .setOnClickListener { screenManager.popToRoot() }
                     .build()
             )
+            .addAction(
+                Action.Builder()
+                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
+                    .setOnClickListener {
+                        screenManager.push(
+                            AutoMapMoreOptionsScreen(
+                                carContext = carContext,
+                                settingsManager = settingsManager,
+                                lat = searchLat,
+                                lon = searchLon,
+                                onRecenter = { loadPois() }
+                            )
+                        )
+                    }
+                    .build()
+            )
             .build()
 
         val anchorPlace = Place.Builder(CarLocation.create(searchLat, searchLon))
@@ -140,46 +156,6 @@ class NativeMapPoiScreen(
         val itemListBuilder = ItemList.Builder()
             .setNoItemsMessage("No POIs found")
 
-        itemListBuilder.addItem(
-            androidx.car.app.model.Row.Builder()
-                .setTitle(if (sortByPrice) "Sort: Price" else "Sort: Distance")
-                .setOnClickListener {
-                    sortByPrice = !sortByPrice
-                    invalidate()
-                }
-                .build()
-        )
-        val energyModeLabel = when {
-            currentSettings.selectedMapEnergyTypes.contains("electric") && (currentSettings.selectedMapEnergyTypes - "electric").isNotEmpty() -> "Hybrid"
-            currentSettings.selectedMapEnergyTypes.contains("electric") -> "Electric"
-            else -> "Fuel"
-        }
-        itemListBuilder.addItem(
-            androidx.car.app.model.Row.Builder()
-                .setTitle("Energy")
-                .addText(energyModeLabel)
-                .setOnClickListener {
-                    screenManager.push(AutoEnergyMenuScreen(carContext, settingsManager))
-                }
-                .build()
-        )
-        itemListBuilder.addItem(
-            androidx.car.app.model.Row.Builder()
-                .setTitle("More Options")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
-                .setOnClickListener {
-                    screenManager.push(
-                        AutoMapMoreOptionsScreen(
-                            carContext = carContext,
-                            settingsManager = settingsManager,
-                            lat = searchLat,
-                            lon = searchLon,
-                            onRecenter = { loadPois() }
-                        )
-                    )
-                }
-                .build()
-        )
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
