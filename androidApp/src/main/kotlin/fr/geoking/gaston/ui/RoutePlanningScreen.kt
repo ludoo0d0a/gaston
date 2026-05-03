@@ -73,6 +73,7 @@ import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
+import fr.geoking.gaston.ui.components.energySelectorItems
 import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.toll.TollCalculator
@@ -463,49 +464,11 @@ fun RoutePlanningScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (effectiveProviders.any { it.providesFuel }) {
-                        items(MAP_ENERGY_OPTIONS.filter { it.first != "electric" }) { (id, label) ->
-                            val isSelected = settings.selectedMapEnergyTypes.contains(id)
-                            val color = ColorHelper.getFuelColor(id) ?: MaterialTheme.colorScheme.primary
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    val newEnergies = if (isSelected) emptySet() else setOf(id)
-                                    settingsManager.setMapEnergyTypes(newEnergies)
-                                },
-                                label = { Text(label) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = color,
-                                    selectedLabelColor = Color.White
-                                ),
-                                leadingIcon = {
-                                    Box(modifier = Modifier.size(12.dp).background(color, MaterialTheme.shapes.small))
-                                }
-                            )
-                        }
-                    }
-
-                    if (effectiveProviders.any { it.providesElectric }) {
-                        items(MAP_IRVE_POWER_OPTIONS) { (kw, label) ->
-                            val isSelected = settings.mapPowerLevels.contains(kw)
-                            val color = ColorHelper.getPowerColorByLevel(kw)
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    val newLevels = if (isSelected) settings.mapPowerLevels - kw else settings.mapPowerLevels + kw
-                                    settingsManager.setMapPowerLevels(newLevels)
-                                },
-                                label = { Text(label) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = color,
-                                    selectedLabelColor = Color.White
-                                ),
-                                leadingIcon = {
-                                    Box(modifier = Modifier.size(12.dp).background(color, MaterialTheme.shapes.small))
-                                }
-                            )
-                        }
-                    }
+                    energySelectorItems(
+                        settings = settings,
+                        settingsManager = settingsManager,
+                        providers = effectiveProviders
+                    )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
 

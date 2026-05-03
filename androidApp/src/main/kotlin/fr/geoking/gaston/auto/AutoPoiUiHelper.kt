@@ -94,6 +94,7 @@ object AutoPoiUiHelper {
         val rowBuilder = Row.Builder()
             .setTitle(title)
             .setMetadata(Metadata.Builder().setPlace(place).build())
+            .setImage(CarIcon.Builder(IconCompat.createWithBitmap(markerBitmap)).build(), Row.IMAGE_TYPE_LARGE)
             .setBrowsable(true)
             .setOnClickListener(onClick)
 

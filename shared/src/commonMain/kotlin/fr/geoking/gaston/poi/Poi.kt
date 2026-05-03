@@ -34,7 +34,9 @@ enum class PoiCategory {
     /** Fast food (OSM amenity=fast_food). */
     FastFood,
     /** Radars / speed cameras (OSM highway=speed_camera). */
-    Radar;
+    Radar,
+    /** Parking lots (OSM amenity=parking). */
+    Parking;
     companion object {
         /** OSM amenity tag value for this category, when applicable. */
         fun fromOsmAmenity(amenity: String): PoiCategory? = when (amenity) {
@@ -43,6 +45,7 @@ enum class PoiCategory {
             "truck_stop" -> TruckStop
             "restaurant" -> Restaurant
             "fast_food" -> FastFood
+            "parking" -> Parking
             else -> null
         }
         /** OSM tourism tag value for this category. */

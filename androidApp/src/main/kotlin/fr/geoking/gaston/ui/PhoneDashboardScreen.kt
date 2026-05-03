@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.EvStation
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.LocalParking
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -74,8 +75,6 @@ import fr.geoking.gaston.effectiveProviders
 import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.ui.ColorHelper
-import fr.geoking.gaston.ui.MAP_ENERGY_OPTIONS
-import fr.geoking.gaston.ui.MAP_IRVE_POWER_OPTIONS
 import fr.geoking.gaston.ui.SettingsScreenPage
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.poi.MapPoiFilter
@@ -93,6 +92,7 @@ import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ui.components.CheapestStationsCard
 import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.components.FuelForecastChartCard
+import fr.geoking.gaston.ui.components.energySelectorItems
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -153,7 +153,7 @@ fun PlaystoreLightTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = PlaystoreHomeLightScheme, content = content)
 }
 
-enum class QuickActionType { Fuel, EV, Hybrid, Favorites }
+enum class QuickActionType { Fuel, EV, Hybrid, Favorites, Parking }
 
 private data class DashboardRow(
     val title: String,
@@ -392,6 +392,24 @@ fun PhoneDashboardScreen(
             icon = Icons.Default.Star,
             type = QuickActionType.Favorites,
             onClick = onOpenFavorites
+           ),
+      DashboardRow(
+            title = "Parking",
+            subtitle = "Nearby lots",
+            icon = Icons.Default.LocalParking,
+            type = QuickActionType.Parking,
+            onClick = {
+                val isSelected = !settings.useVehicleFilter &&
+                        settings.selectedPoiProviders == setOf(PoiProviderType.Overpass) &&
+                        settings.selectedOverpassAmenityTypes == setOf("parking")
+                if (isSelected) {
+                    settingsManager.setUseVehicleFilter(true)
+                } else {
+                    settingsManager.setUseVehicleFilter(false)
+                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
+                    settingsManager.setOverpassAmenityTypes(setOf("parking"))
+                }
+            }
         )
     )
 
@@ -510,57 +528,11 @@ fun PhoneDashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (providers.anyProvidesFuel()) {
-                            items(MAP_ENERGY_OPTIONS.filter { it.first != "electric" }) { (id, label) ->
-                                val isSelected = settings.effectiveMapEnergyFilterIds().contains(id)
-                                val color = ColorHelper.getFuelColor(id) ?: MaterialTheme.colorScheme.primary
-                                androidx.compose.material3.FilterChip(
-                                    selected = isSelected,
-                                    onClick = {
-                                        val current = settings.selectedMapEnergyTypes
-                                        val next = if (current.contains(id)) current - id else current + id
-                                        settingsManager.setUseVehicleFilter(false)
-                                        settingsManager.setMapEnergyTypes(next)
-                                    },
-                                    label = { Text(label) },
-                                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = color,
-                                        selectedLabelColor = Color.White,
-                                        iconColor = color,
-                                        selectedLeadingIconColor = Color.White
-                                    ),
-                                    leadingIcon = {
-                                        Box(modifier = Modifier.size(12.dp).background(color, MaterialTheme.shapes.small))
-                                    }
-                                )
-                            }
-                        }
-
-                        if (providers.anyProvidesElectric()) {
-                            items(MAP_IRVE_POWER_OPTIONS) { (kw, label) ->
-                                val isSelected = settings.effectiveIrvePowerLevels().contains(kw)
-                                val color = ColorHelper.getPowerColorByLevel(kw)
-                                androidx.compose.material3.FilterChip(
-                                    selected = isSelected,
-                                    onClick = {
-                                        val current = settings.mapPowerLevels
-                                        val next = if (current.contains(kw)) current - kw else current + kw
-                                        settingsManager.setUseVehicleFilter(false)
-                                        settingsManager.setMapPowerLevels(next)
-                                    },
-                                    label = { Text(label) },
-                                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = color,
-                                        selectedLabelColor = Color.White,
-                                        iconColor = color,
-                                        selectedLeadingIconColor = Color.White
-                                    ),
-                                    leadingIcon = {
-                                        Box(modifier = Modifier.size(12.dp).background(color, MaterialTheme.shapes.small))
-                                    }
-                                )
-                            }
-                        }
+                        energySelectorItems(
+                            settings = settings,
+                            settingsManager = settingsManager,
+                            providers = providers
+                        )
                     }
                 }
 
@@ -621,6 +593,7 @@ fun PhoneDashboardScreen(
                                     QuickActionType.Fuel -> settings.selectedPoiProviders == setOf(PoiProviderType.DataGouv)
                                     QuickActionType.EV -> settings.selectedPoiProviders == setOf(PoiProviderType.DataGouvElec)
                                     QuickActionType.Hybrid -> settings.selectedPoiProviders == setOf(PoiProviderType.Hybrid)
+                                    QuickActionType.Parking -> settings.selectedPoiProviders == setOf(PoiProviderType.Overpass) && settings.selectedOverpassAmenityTypes == setOf("parking")
                                     else -> false
                                 }
                             }
