@@ -36,7 +36,7 @@ import fr.geoking.gaston.ui.map.maplibre.VectorMapScreen
 import fr.geoking.gaston.ui.map.maplibre.DirectionsMapScreen
 import fr.geoking.gaston.ui.PhoneNetworkLocationScreen
 import fr.geoking.gaston.ui.PhoneDashboardScreen
-import fr.geoking.gaston.ui.PlaystoreTheme
+import fr.geoking.gaston.ui.dashboard.PlaystoreTheme
 import fr.geoking.gaston.ui.FavoritesScreen
 import fr.geoking.gaston.ui.RoutePlanningScreen
 import fr.geoking.gaston.api.routing.RouteResult

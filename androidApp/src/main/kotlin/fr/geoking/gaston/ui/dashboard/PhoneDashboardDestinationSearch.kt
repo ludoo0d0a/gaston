@@ -102,7 +102,7 @@ fun PhoneDashboardDestinationSearch(
         try {
             val biasPair: Pair<Double, Double>? = when {
                 !hasLocationPermission -> null
-                userLat != null && userLon != null -> userLat!! to userLon!!
+                userLat != null && userLon != null -> userLat to userLon
                 else -> {
                     val loc = withContext(Dispatchers.IO) { LocationHelper.getCurrentLocation(context) }
                     if (loc != null) loc.latitude to loc.longitude else null
