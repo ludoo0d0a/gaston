@@ -302,7 +302,7 @@ fun PoiDetailsFullscreenDialog(
                         }
 
                         // Routex Details
-                        poi.routexDetails?.let { details ->
+                        poi.amenities?.let { details ->
                             SectionHeader("Services & amenities")
                             PoiDetailRow("Manned 24h", details.manned24h)
                             PoiDetailRow("Manned / automat 24h", details.mannedAutomat24h)
@@ -328,6 +328,13 @@ fun PoiDetailsFullscreenDialog(
                             PoiDetailRow("CNG", details.cng)
                             PoiDetailRow("AdBlue canister", details.adBlueCanister)
                             PoiDetailRow("Open 24h", details.open24h)
+
+                            PoiDetailRow("Toilets", details.toilets)
+                            PoiDetailRow("Drinking water", details.drinkingWater)
+                            PoiDetailRow("Food", details.food)
+                            PoiDetailRow("Wifi", details.wifi)
+                            PoiDetailRow("ATM", details.atm)
+                            PoiDetailRow("Playground", details.playground)
 
                             SectionHeader("Fuel opening hours")
                             PoiDetailRowStr("Mon", details.monOpenFuel?.let { o -> details.monCloseFuel?.let { c -> "$o – $c" } ?: o })

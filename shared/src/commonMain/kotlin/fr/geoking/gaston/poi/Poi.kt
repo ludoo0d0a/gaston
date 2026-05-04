@@ -1,6 +1,6 @@
 package fr.geoking.gaston.poi
 
-import fr.geoking.gaston.api.routex.RoutexSiteDetails
+import fr.geoking.gaston.api.routex.PoiAmenities
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
@@ -40,6 +40,8 @@ enum class PoiCategory {
     companion object {
         /** OSM amenity tag value for this category, when applicable. */
         fun fromOsmAmenity(amenity: String): PoiCategory? = when (amenity) {
+            "fuel" -> Gas
+            "charging_station" -> Irve
             "toilets" -> Toilet
             "drinking_water" -> DrinkingWater
             "truck_stop" -> TruckStop
@@ -238,8 +240,8 @@ data class Poi(
     val addressLocal: String? = null,
     val countryLocal: String? = null,
     val townLocal: String? = null,
-    /** Routex-only: amenities and opening hours for fullscreen details. */
-    val routexDetails: RoutexSiteDetails? = null,
+    /** Amenities and opening hours for fullscreen details (from Routex, Overpass, etc.). */
+    val amenities: PoiAmenities? = null,
     /** IRVE-only: connector types, tarification, horaires, payment, etc. */
     val irveDetails: IrveDetails? = null,
     /** Restaurant/fast food only: opening hours, cuisine, brand (e.g. from Overpass). */

@@ -3,11 +3,11 @@ package fr.geoking.gaston.api.routex
 import kotlinx.serialization.Serializable
 
 /**
- * Amenities and opening info for a Routex site (from API).
- * All fields are optional; null means unknown, 0/1 or false/true from API.
+ * Amenities and opening info for a POI (e.g. from Routex API or Overpass).
+ * All fields are optional; null means unknown.
  */
 @Serializable
-data class RoutexSiteDetails(
+data class PoiAmenities(
     val manned24h: Boolean? = null,
     val mannedAutomat24h: Boolean? = null,
     val automat: Boolean? = null,
@@ -31,6 +31,12 @@ data class RoutexSiteDetails(
     val lpg: Boolean? = null,
     val cng: Boolean? = null,
     val adBlueCanister: Boolean? = null,
+    val toilets: Boolean? = null,
+    val drinkingWater: Boolean? = null,
+    val food: Boolean? = null,
+    val wifi: Boolean? = null,
+    val atm: Boolean? = null,
+    val playground: Boolean? = null,
     val monOpenFuel: String? = null,
     val monCloseFuel: String? = null,
     val tueOpenFuel: String? = null,
@@ -65,5 +71,5 @@ data class RoutexSite(
     val addressLocal: String? = null,
     val countryLocal: String? = null,
     val townLocal: String? = null,
-    val details: RoutexSiteDetails? = null
+    val details: PoiAmenities? = null
 )
