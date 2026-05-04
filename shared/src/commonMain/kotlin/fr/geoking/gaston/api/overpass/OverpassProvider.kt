@@ -34,7 +34,9 @@ class OverpassProvider(
         PoiCategory.Restaurant,
         PoiCategory.FastFood,
         PoiCategory.Radar,
-        PoiCategory.Parking
+        PoiCategory.Parking,
+        PoiCategory.Gas,
+        PoiCategory.Irve
     )
 
     override suspend fun search(request: PoiSearchRequest): List<Poi> {
@@ -156,6 +158,8 @@ class OverpassProvider(
         PoiCategory.Restaurant -> "restaurant"
         PoiCategory.FastFood -> "fast_food"
         PoiCategory.Parking -> "parking"
+        PoiCategory.Gas -> "fuel"
+        PoiCategory.Irve -> "charging_station"
         else -> null
     }
 
@@ -184,6 +188,8 @@ class OverpassProvider(
         PoiCategory.FastFood -> "Fast food"
         PoiCategory.Radar -> "Radar"
         PoiCategory.Parking -> "Parking"
+        PoiCategory.Gas -> "Gas station"
+        PoiCategory.Irve -> "Charging station"
         else -> c.name
     }
 }
