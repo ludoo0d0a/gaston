@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fr.geoking.gaston.DEFAULT_MAP_ENERGY_TYPES
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.countryDisplayLabelAtMapPosition
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.anyProvidesFuel
@@ -26,6 +27,9 @@ import fr.geoking.gaston.ui.ColorHelper
 fun FilterFab(
     settingsManager: SettingsManager,
     modifier: Modifier = Modifier,
+    /** When set, the sheet shows the country/region for this map position (same as auto provider area). */
+    mapCenterLatitude: Double? = null,
+    mapCenterLongitude: Double? = null,
     favoritesFilterEnabled: Boolean = false,
     showFavoritesOnly: Boolean = false,
     onShowFavoritesOnlyChange: ((Boolean) -> Unit)? = null
@@ -125,6 +129,17 @@ fun FilterFab(
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
+                }
+
+                if (mapCenterLatitude != null && mapCenterLongitude != null) {
+                    Text(
+                        text = "Area: ${countryDisplayLabelAtMapPosition(mapCenterLatitude, mapCenterLongitude)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.72f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                    )
                 }
 
                 SingleChoiceSegmentedButtonRow(

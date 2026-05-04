@@ -3,7 +3,6 @@ package fr.geoking.gaston.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -14,17 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
-import fr.geoking.gaston.countryDisplayLabelAtMapPosition
-import fr.geoking.gaston.effectiveIrvePowerLevels
-import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProviders
 import fr.geoking.gaston.effectiveProvidersAt
-import fr.geoking.gaston.poi.PoiProviderType
-import fr.geoking.gaston.poi.anyProvidesElectric
-import fr.geoking.gaston.poi.anyProvidesFuel
-import fr.geoking.gaston.ui.ColorHelper
 import fr.geoking.gaston.ui.anim.AnimationPalette
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,12 +48,6 @@ fun MapScaffold(
                 settings.effectiveProvidersAt(mapCenterLatitude!!, mapCenterLongitude!!)
             else -> settings.effectiveProviders()
         }
-    }
-    val autoAreaLabel = remember(settings.poiProviderSelectionMode, mapCenterLatitude, mapCenterLongitude) {
-        if (settings.poiProviderSelectionMode != PoiProviderSelectionMode.Auto) null
-        else if (mapCenterLatitude != null && mapCenterLongitude != null) {
-            countryDisplayLabelAtMapPosition(mapCenterLatitude!!, mapCenterLongitude!!)
-        } else null
     }
     var navMenuExpanded by remember { mutableStateOf(false) }
 
@@ -138,8 +123,8 @@ fun MapScaffold(
 
                         IconButton(onClick = onShowSources) {
                             Icon(
-                                imageVector = Icons.Default.Public,
-                                contentDescription = "Sources",
+                                imageVector = Icons.Default.Hub,
+                                contentDescription = "Data sources",
                                 tint = Color.White
                             )
                         }
@@ -183,6 +168,8 @@ fun MapScaffold(
                 if (onShowFavoritesOnlyChange != null) {
                     FilterFab(
                         settingsManager = settingsManager,
+                        mapCenterLatitude = mapCenterLatitude,
+                        mapCenterLongitude = mapCenterLongitude,
                         favoritesFilterEnabled = favoritesFilterEnabled,
                         showFavoritesOnly = showFavoritesOnly,
                         onShowFavoritesOnlyChange = onShowFavoritesOnlyChange
