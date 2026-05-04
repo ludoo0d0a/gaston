@@ -59,6 +59,9 @@ fun autoProvidersForCountry(
 
         // Sensible cross-border fallback for fuel when we don't have a dedicated provider.
         if (wantFuel && fuelProvider == null) add(PoiProviderType.Fuelo)
+
+        // Always include Overpass as a secondary source for station locations.
+        add(PoiProviderType.Overpass)
     }
 
     // If we failed to resolve anything (shouldn't happen), fall back to manual selection.

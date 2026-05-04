@@ -46,6 +46,8 @@ enum class PoiCategory {
             "restaurant" -> Restaurant
             "fast_food" -> FastFood
             "parking" -> Parking
+            "fuel" -> Gas
+            "charging_station" -> Irve
             else -> null
         }
         /** OSM tourism tag value for this category. */
@@ -140,7 +142,7 @@ enum class PoiProviderType(
     AustriaEControl(providesFuel = true),
     /** Belgian official maximum fuel prices. */
     BelgiumOfficial(providesFuel = true),
-    Overpass,
+    Overpass(providesFuel = true, providesElectric = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }
 

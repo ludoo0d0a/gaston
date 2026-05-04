@@ -30,7 +30,9 @@ class OverpassProvider(
         PoiCategory.Restaurant,
         PoiCategory.FastFood,
         PoiCategory.Radar,
-        PoiCategory.Parking
+        PoiCategory.Parking,
+        PoiCategory.Gas,
+        PoiCategory.Irve
     )
 
     override suspend fun search(request: PoiSearchRequest): List<Poi> {
@@ -52,7 +54,7 @@ class OverpassProvider(
         if (tagFilters.isEmpty()) return emptyList()
         val needsWays = PoiCategory.TruckStop in wanted || PoiCategory.RestArea in wanted ||
             PoiCategory.Restaurant in wanted || PoiCategory.FastFood in wanted ||
-            PoiCategory.Parking in wanted
+            PoiCategory.Parking in wanted || PoiCategory.Gas in wanted || PoiCategory.Irve in wanted
         val elements = if (needsWays) {
             client.queryNodesAndWaysWithTagFilters(
                 latitude = request.latitude,
@@ -114,6 +116,8 @@ class OverpassProvider(
         PoiCategory.Restaurant -> "restaurant"
         PoiCategory.FastFood -> "fast_food"
         PoiCategory.Parking -> "parking"
+        PoiCategory.Gas -> "fuel"
+        PoiCategory.Irve -> "charging_station"
         else -> null
     }
 
@@ -142,6 +146,8 @@ class OverpassProvider(
         PoiCategory.FastFood -> "Fast food"
         PoiCategory.Radar -> "Radar"
         PoiCategory.Parking -> "Parking"
+        PoiCategory.Gas -> "Gas station"
+        PoiCategory.Irve -> "Charging station"
         else -> c.name
     }
 }

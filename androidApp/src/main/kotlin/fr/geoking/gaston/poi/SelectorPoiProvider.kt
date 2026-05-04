@@ -310,10 +310,16 @@ class SelectorPoiProvider(
                         val defaultOverpass = fromSettings.ifEmpty {
                             setOf(PoiCategory.Toilet, PoiCategory.DrinkingWater)
                         }
-                        when (vehicleType) {
+                        val base = when (vehicleType) {
                             VehicleType.Truck -> defaultOverpass + setOf(PoiCategory.TruckStop, PoiCategory.RestArea, PoiCategory.Gas)
                             VehicleType.Motorhome -> defaultOverpass + setOf(PoiCategory.CaravanSite, PoiCategory.Camping, PoiCategory.PicnicSite)
                             else -> defaultOverpass
+                        }
+                        // Always include Gas/Irve as secondary from Overpass if relevant for the vehicle
+                        buildSet {
+                            addAll(base)
+                            if (settings.vehicleEnergy != "electric") add(PoiCategory.Gas)
+                            if (settings.vehicleEnergy != "gas") add(PoiCategory.Irve)
                         }
                     }
 
@@ -565,10 +571,16 @@ class SelectorPoiProvider(
                         val defaultOverpass = fromSettings.ifEmpty {
                             setOf(PoiCategory.Toilet, PoiCategory.DrinkingWater)
                         }
-                        when (vehicleType) {
+                        val base = when (vehicleType) {
                             VehicleType.Truck -> defaultOverpass + setOf(PoiCategory.TruckStop, PoiCategory.RestArea, PoiCategory.Gas)
                             VehicleType.Motorhome -> defaultOverpass + setOf(PoiCategory.CaravanSite, PoiCategory.Camping, PoiCategory.PicnicSite)
                             else -> defaultOverpass
+                        }
+                        // Always include Gas/Irve as secondary from Overpass if relevant for the vehicle
+                        buildSet {
+                            addAll(base)
+                            if (settings.vehicleEnergy != "electric") add(PoiCategory.Gas)
+                            if (settings.vehicleEnergy != "gas") add(PoiCategory.Irve)
                         }
                     }
 

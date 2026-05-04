@@ -62,13 +62,22 @@ fun AppSettings.effectiveIrveOperatorFilter(): Set<String> {
  * When [countryCode] is null/unknown, falls back to [selectedPoiProviders] (manual override).
  */
 fun AppSettings.effectiveProviders(countryCode: String? = null): Set<PoiProviderType> {
-    if (poiProviderSelectionMode == PoiProviderSelectionMode.Manual) return selectedPoiProviders
-    val iso = countryCode?.trim()?.uppercase()?.takeIf { it.length == 2 } ?: return selectedPoiProviders
-    return autoProvidersForCountry(
-        countryCode = iso,
-        vehicleEnergy = vehicleEnergy,
-        fallbackManual = selectedPoiProviders
-    )
+    val base = if (poiProviderSelectionMode == PoiProviderSelectionMode.Manual) {
+        selectedPoiProviders
+    } else {
+        val iso = countryCode?.trim()?.uppercase()?.takeIf { it.length == 2 }
+        if (iso != null) {
+            autoProvidersForCountry(
+                countryCode = iso,
+                vehicleEnergy = vehicleEnergy,
+                fallbackManual = selectedPoiProviders
+            )
+        } else {
+            selectedPoiProviders
+        }
+    }
+    // Always include Overpass as a secondary source for station locations.
+    return base + PoiProviderType.Overpass
 }
 
 /** ISO country code for [latitude]/[longitude] when it falls in a known [ParkingRegion], else null. */
