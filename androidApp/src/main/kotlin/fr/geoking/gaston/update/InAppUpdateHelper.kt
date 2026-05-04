@@ -53,6 +53,8 @@ class InAppUpdateHelper(
      */
     fun checkForUpdate() {
         if (isUpdateDismissed) return
+        // Avoid re-emitting while the "update available" dialog is already showing.
+        if (_updateAvailable.value != null) return
 
         appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
             _installStatus.value = appUpdateInfo.installStatus()
