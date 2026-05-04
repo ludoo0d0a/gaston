@@ -51,8 +51,8 @@ class NativeMapPoiScreen(
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
     private var favoriteIds: Set<String> = emptySet()
     private var isLoading = true
-    private var searchLat: Double = 48.8566
-    private var searchLon: Double = 2.3522
+    private var searchLat: Double = settingsManager.settings.value.lastKnownLat ?: 48.8566
+    private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
     private var sortByPrice: Boolean = false
 
     init {
@@ -74,17 +74,7 @@ class NativeMapPoiScreen(
             isLoading = true
             invalidate()
 
-            var lat = 48.8566
-            var lon = 2.3522
-
-            if (carContext.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                carContext.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                val location = LocationHelper.getCurrentLocation(carContext)
-                if (location != null) {
-                    lat = location.latitude
-                    lon = location.longitude
-                }
-            }
+            val (lat, lon) = LocationHelper.getInitialLocation(carContext, settingsManager)
 
             searchLat = lat
             searchLon = lon

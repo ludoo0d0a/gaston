@@ -30,6 +30,8 @@ class AutoSurfaceRenderer(
     private val surface: Surface,
     private val width: Int,
     private val height: Int,
+    initialLat: Double = 48.8566,
+    initialLon: Double = 2.3522,
     /** XYZ raster tile URL; default is OSM. Lab screens may pass another template for contrast. */
     private val tileUrl: (z: Int, x: Int, y: Int) -> String = { z, x, y ->
         "https://tile.openstreetmap.org/$z/$x/$y.png"
@@ -37,8 +39,8 @@ class AutoSurfaceRenderer(
 ) {
     @Volatile
     private var running = true
-    private var lat: Double = 48.8566
-    private var lon: Double = 2.3522
+    private var lat: Double = initialLat
+    private var lon: Double = initialLon
     private var zoom: Int = 13
     private var userLat: Double? = null
     private var userLon: Double? = null

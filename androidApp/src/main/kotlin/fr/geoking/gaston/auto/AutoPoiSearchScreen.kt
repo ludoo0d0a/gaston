@@ -35,8 +35,8 @@ class AutoPoiSearchScreen(
     private var searchText = ""
     private var allPois: List<Poi> = emptyList()
     private var isLoadingPois = false
-    private var searchLat: Double = 48.8566
-    private var searchLon: Double = 2.3522
+    private var searchLat: Double = settingsManager.settings.value.lastKnownLat ?: 48.8566
+    private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
 
     init {
@@ -48,14 +48,9 @@ class AutoPoiSearchScreen(
             isLoadingPois = true
             invalidate()
 
-            if (carContext.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                carContext.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                val location = LocationHelper.getCurrentLocation(carContext)
-                if (location != null) {
-                    searchLat = location.latitude
-                    searchLon = location.longitude
-                }
-            }
+            val (lat, lon) = LocationHelper.getInitialLocation(carContext, settingsManager)
+            searchLat = lat
+            searchLon = lon
 
             try {
                 val result = poiProvider.searchResult(
