@@ -20,11 +20,19 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import fr.geoking.gaston.R
 
-class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
+import androidx.lifecycle.lifecycleScope
+import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.feature.location.LocationHelper
+import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
+class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver, KoinComponent {
+
+    private val settingsManager: SettingsManager by inject()
     private var surfaceRenderer: AutoSurfaceRenderer? = null
-    private val lat = 48.8566
-    private val lon = 2.3522
+    private var lat = settingsManager.settings.value.lastKnownLat ?: 48.8566
+    private var lon = settingsManager.settings.value.lastKnownLon ?: 2.3522
     private var zoom = 14
 
     init {
@@ -56,6 +64,14 @@ class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), Surfac
             updateLocation(lat, lon, zoom)
             updateUserLocation(lat, lon)
             start()
+        }
+
+        lifecycleScope.launch {
+            val (newLat, newLon) = LocationHelper.getInitialLocation(carContext, settingsManager)
+            lat = newLat
+            lon = newLon
+            surfaceRenderer?.updateLocation(lat, lon, zoom)
+            surfaceRenderer?.updateUserLocation(lat, lon)
         }
     }
 

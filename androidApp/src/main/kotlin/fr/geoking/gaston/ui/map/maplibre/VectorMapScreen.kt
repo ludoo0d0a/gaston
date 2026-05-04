@@ -181,16 +181,18 @@ fun VectorMapScreen(
 
     val initialCameraPosition = remember {
         CameraPosition.Builder()
-            .target(LatLng(initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: 48.8566, initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: 2.3522))
+            .target(LatLng(initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: settings.lastKnownLat ?: 48.8566, initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: settings.lastKnownLon ?: 2.3522))
             .zoom(if (initialSelectedPoi != null || initialCenter != null) 15.0 else 12.0)
             .build()
     }
 
     val providerResolveLat = mapLibreMap?.cameraPosition?.target?.latitude
         ?: initialCameraPosition.target?.latitude
+        ?: settings.lastKnownLat
         ?: 48.8566
     val providerResolveLon = mapLibreMap?.cameraPosition?.target?.longitude
         ?: initialCameraPosition.target?.longitude
+        ?: settings.lastKnownLon
         ?: 2.3522
     val effectiveProviders = remember(settings, providerResolveLat, providerResolveLon) {
         settings.effectiveProvidersAt(providerResolveLat, providerResolveLon)

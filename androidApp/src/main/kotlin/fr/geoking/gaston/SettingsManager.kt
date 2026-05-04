@@ -91,7 +91,9 @@ data class AppSettings(
     val routeHistory: List<GeocodedPlace> = emptyList(),
     val favoriteLocations: List<GeocodedPlace> = emptyList(),
     val routeStationSearchRadiusMeters: Int = 2000,
-    val filterOnlyHighwayStations: Boolean = false
+    val filterOnlyHighwayStations: Boolean = false,
+    val lastKnownLat: Double? = null,
+    val lastKnownLon: Double? = null
 )
 
 open class SettingsManager(
@@ -211,7 +213,9 @@ open class SettingsManager(
             routeHistory = routeHistory,
             favoriteLocations = favoriteLocations,
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
-            filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false)
+            filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false),
+            lastKnownLat = prefs.getString("last_known_lat", null)?.toDoubleOrNull(),
+            lastKnownLon = prefs.getString("last_known_lon", null)?.toDoubleOrNull()
         )
     }
 
@@ -267,6 +271,8 @@ open class SettingsManager(
             .putString("favorite_locations", Json.encodeToString(settings.favoriteLocations))
             .putInt("route_station_radius_m", settings.routeStationSearchRadiusMeters)
             .putBoolean("filter_only_highway", settings.filterOnlyHighwayStations)
+            .putString("last_known_lat", settings.lastKnownLat?.toString())
+            .putString("last_known_lon", settings.lastKnownLon?.toString())
             .apply()
 
         if (upload) {
@@ -366,6 +372,12 @@ open class SettingsManager(
 
     open fun setFilterOnlyHighwayStations(enabled: Boolean) {
         saveSettings(_settings.value.copy(filterOnlyHighwayStations = enabled))
+    }
+
+    open fun saveLastKnownLocation(lat: Double, lon: Double) {
+        if (_settings.value.lastKnownLat != lat || _settings.value.lastKnownLon != lon) {
+            saveSettings(_settings.value.copy(lastKnownLat = lat, lastKnownLon = lon))
+        }
     }
 
     open fun setVehicleType(type: VehicleType) {

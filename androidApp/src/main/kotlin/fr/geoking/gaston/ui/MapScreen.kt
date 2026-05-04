@@ -186,8 +186,8 @@ fun MapScreen(
         }
     )
 
-    val defaultLat = initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: 48.8566
-    val defaultLng = initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: 2.3522
+    val defaultLat = initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: settings.lastKnownLat ?: 48.8566
+    val defaultLng = initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: settings.lastKnownLon ?: 2.3522
     val defaultZoom = if (initialSelectedPoi != null || initialCenter != null) 15f else 12f
 
     val cameraPositionState = rememberCameraPositionState {
@@ -203,14 +203,12 @@ fun MapScreen(
 
     LaunchedEffect(hasLocationPermission) {
         if (hasLocationPermission && !didInitialCenter && initialSelectedPoi == null) {
-            val location = LocationHelper.getCurrentLocation(context)
-            if (location != null) {
-                cameraPositionState.position = CameraPosition.fromLatLngZoom(
-                    LatLng(location.latitude, location.longitude),
-                    12f
-                )
-                didInitialCenter = true
-            }
+            val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+            cameraPositionState.position = CameraPosition.fromLatLngZoom(
+                LatLng(lat, lon),
+                12f
+            )
+            didInitialCenter = true
         }
     }
 
@@ -415,15 +413,13 @@ fun MapScreen(
         },
         onLocateMe = {
             scope.launch {
-                val location = LocationHelper.getCurrentLocation(context)
-                if (location != null) {
-                    cameraPositionState.animate(
-                        CameraUpdateFactory.newLatLngZoom(
-                            LatLng(location.latitude, location.longitude),
-                            12f
-                        )
+                val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngZoom(
+                        LatLng(lat, lon),
+                        12f
                     )
-                }
+                )
             }
         },
         onShowSettings = {

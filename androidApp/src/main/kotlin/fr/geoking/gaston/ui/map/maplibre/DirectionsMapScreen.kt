@@ -59,13 +59,13 @@ fun DirectionsMapScreen(
                 .zoom(10.0)
                 .build()
         } ?: CameraPosition.Builder()
-            .target(LatLng(48.8566, 2.3522))
+            .target(LatLng(settings.lastKnownLat ?: 48.8566, settings.lastKnownLon ?: 2.3522))
             .zoom(10.0)
             .build()
     }
 
-    val routeLat = route?.points?.firstOrNull()?.first ?: 48.8566
-    val routeLon = route?.points?.firstOrNull()?.second ?: 2.3522
+    val routeLat = route?.points?.firstOrNull()?.first ?: settings.lastKnownLat ?: 48.8566
+    val routeLon = route?.points?.firstOrNull()?.second ?: settings.lastKnownLon ?: 2.3522
     val effectiveProviders = remember(settings, routeLat, routeLon) {
         settings.effectiveProvidersAt(routeLat, routeLon)
     }
