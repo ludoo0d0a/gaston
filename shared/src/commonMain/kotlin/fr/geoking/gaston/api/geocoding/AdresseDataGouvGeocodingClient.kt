@@ -22,11 +22,21 @@ class AdresseDataGouvGeocodingClient(
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun geocode(query: String, limit: Int): List<GeocodedPlace> {
+    override suspend fun geocode(
+        query: String,
+        limit: Int,
+        biasLatitude: Double?,
+        biasLongitude: Double?
+    ): List<GeocodedPlace> {
         val q = query.trim()
         if (q.isBlank()) return emptyList()
 
-        val url = "${baseUrl}?q=${q.encodeURLParameter()}&limit=$limit"
+        val url = buildString {
+            append("${baseUrl}?q=${q.encodeURLParameter()}&limit=$limit")
+            if (biasLatitude != null && biasLongitude != null) {
+                append("&lat=$biasLatitude&lon=$biasLongitude")
+            }
+        }
         val response = client.get(url)
         val body = response.bodyAsText()
         if (response.status.value != 200) {

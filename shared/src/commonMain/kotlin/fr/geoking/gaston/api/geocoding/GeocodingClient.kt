@@ -10,6 +10,17 @@ data class GeocodedPlace(
 )
 
 interface GeocodingClient {
-    suspend fun geocode(query: String, limit: Int = 1): List<GeocodedPlace>
+    /**
+     * Forward geocoding / place search.
+     *
+     * @param biasLatitude when set with [biasLongitude], providers that support it rank or constrain
+     *        results near this point (typically the user’s current location).
+     */
+    suspend fun geocode(
+        query: String,
+        limit: Int = 1,
+        biasLatitude: Double? = null,
+        biasLongitude: Double? = null
+    ): List<GeocodedPlace>
 }
 

@@ -174,6 +174,9 @@ fun PlaystoreLightTheme(content: @Composable () -> Unit) {
 
 enum class QuickActionType { Fuel, EV, Hybrid }
 
+/** Minimum query length before opening remote address/city autocomplete on the phone dashboard. */
+private const val PHONE_DEST_AUTOCOMPLETE_MIN_CHARS = 3
+
 private data class DashboardRow(
     val title: String,
     val subtitle: String,
@@ -234,23 +237,53 @@ fun PhoneDashboardScreen(
     var destFocused by remember { mutableStateOf(false) }
     var destFieldHeight by remember { mutableStateOf(0) }
 
-    LaunchedEffect(destQuery, settings.favoriteLocations, selectedSearchLocation) {
+    LaunchedEffect(
+        destQuery,
+        settings.favoriteLocations,
+        settings.routeHistory,
+        selectedSearchLocation,
+        hasLocationPermission,
+        userLat,
+        userLon,
+        geocodingClient
+    ) {
         if (destQuery.isBlank() || destQuery == selectedSearchLocation?.label) {
             destSuggestions = emptyList()
             return@LaunchedEffect
         }
+        if (destQuery.length < PHONE_DEST_AUTOCOMPLETE_MIN_CHARS) {
+            destSuggestions = emptyList()
+            return@LaunchedEffect
+        }
+
         val historyMatches = settings.routeHistory.filter { it.label.contains(destQuery, ignoreCase = true) }
         val favoriteMatches = settings.favoriteLocations.filter { it.label.contains(destQuery, ignoreCase = true) }
-        destSuggestions = (favoriteMatches + historyMatches).distinctBy { it.label }
-        if (destQuery.length > 1 && geocodingClient != null) {
-            delay(300)
-            try {
-                val remote = geocodingClient.geocode(destQuery, limit = 5)
-                val newSuggestions = (favoriteMatches + historyMatches + remote).distinctBy { it.label }
-                destSuggestions = newSuggestions
-            } catch (e: Exception) {
-                // Ignore
+        val localSuggestions = (favoriteMatches + historyMatches).distinctBy { it.label }
+        destSuggestions = localSuggestions
+
+        val client = geocodingClient ?: return@LaunchedEffect
+
+        delay(300)
+        try {
+            val biasPair: Pair<Double, Double>? = when {
+                !hasLocationPermission -> null
+                userLat != null && userLon != null -> userLat!! to userLon!!
+                else -> {
+                    val loc = withContext(Dispatchers.IO) { LocationHelper.getCurrentLocation(context) }
+                    if (loc != null) loc.latitude to loc.longitude else null
+                }
             }
+            val biasLat = biasPair?.first
+            val biasLon = biasPair?.second
+            val remote = client.geocode(
+                destQuery,
+                limit = 8,
+                biasLatitude = biasLat,
+                biasLongitude = biasLon
+            )
+            destSuggestions = (favoriteMatches + historyMatches + remote).distinctBy { it.label }
+        } catch (_: Exception) {
+            // Keep local suggestions only
         }
     }
 

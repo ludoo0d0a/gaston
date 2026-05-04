@@ -10,6 +10,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.math.PI
+import kotlin.math.cos
 
 /**
  * Global geocoding using OpenStreetMap Nominatim.
@@ -22,11 +24,29 @@ class NominatimGeocodingClient(
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun geocode(query: String, limit: Int): List<GeocodedPlace> {
+    override suspend fun geocode(
+        query: String,
+        limit: Int,
+        biasLatitude: Double?,
+        biasLongitude: Double?
+    ): List<GeocodedPlace> {
         val q = query.trim()
         if (q.isBlank()) return emptyList()
 
-        val url = "${baseUrl}?q=${q.encodeURLParameter()}&limit=$limit&format=jsonv2"
+        val url = buildString {
+            append("${baseUrl}?q=${q.encodeURLParameter()}&limit=$limit&format=jsonv2")
+            if (biasLatitude != null && biasLongitude != null) {
+                // viewbox = west, north, east, south — boosts results inside the box without bounded=1
+                val dLat = 0.45
+                val cosLat = cos(PI * biasLatitude / 180.0).coerceAtLeast(0.25)
+                val dLon = 0.45 / cosLat
+                val left = biasLongitude - dLon
+                val right = biasLongitude + dLon
+                val top = biasLatitude + dLat
+                val bottom = biasLatitude - dLat
+                append("&viewbox=$left,$top,$right,$bottom")
+            }
+        }
         val response = client.get(url) {
             // Nominatim requires a User-Agent
             header("User-Agent", "gaston-App (contact@geoking.fr)")
