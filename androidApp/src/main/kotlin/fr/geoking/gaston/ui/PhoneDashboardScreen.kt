@@ -172,7 +172,7 @@ fun PlaystoreLightTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = PlaystoreHomeLightScheme, content = content)
 }
 
-enum class QuickActionType { Fuel, EV, Hybrid, Favorites, Parking }
+enum class QuickActionType { Fuel, EV, Hybrid }
 
 private data class DashboardRow(
     val title: String,
@@ -456,31 +456,6 @@ fun PhoneDashboardScreen(
                     // Preserve existing fuel filters; 'electric' will be injected by effective filters if needed
                 }
             }
-        ),
-        DashboardRow(
-            title = "Favorites",
-            subtitle = "Saved",
-            icon = Icons.Default.Star,
-            type = QuickActionType.Favorites,
-            onClick = onOpenFavorites
-           ),
-      DashboardRow(
-            title = "Parking",
-            subtitle = "Nearby lots",
-            icon = Icons.Default.LocalParking,
-            type = QuickActionType.Parking,
-            onClick = {
-                val isSelected = !settings.useVehicleFilter &&
-                        settings.selectedPoiProviders == setOf(PoiProviderType.Overpass) &&
-                        settings.selectedOverpassAmenityTypes == setOf("parking")
-                if (isSelected) {
-                    settingsManager.setUseVehicleFilter(true)
-                } else {
-                    settingsManager.setUseVehicleFilter(false)
-                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
-                    settingsManager.setOverpassAmenityTypes(setOf("parking"))
-                }
-            }
         )
     )
 
@@ -490,13 +465,6 @@ fun PhoneDashboardScreen(
             subtitle = if (settings.vehicleBrand.isNotEmpty()) "${settings.vehicleBrand} ${settings.vehicleModel}" else "Configure your vehicle",
             icon = Icons.Default.DirectionsCar,
             onClick = { onOpenSettings(listOf(SettingsScreenPage.VehicleConfig)) }
-        ),
-        DashboardRow(
-            title = "Routes",
-            subtitle = "Plan a journey",
-            icon = Icons.Default.Directions,
-            onClick = { onOpenRoutes(null) },
-            enabled = mapDepsReady
         ),
         DashboardRow(
             title = "Network & location",
@@ -689,7 +657,61 @@ fun PhoneDashboardScreen(
                     }
                 }
 
-                // 0. Chips Selector
+                // Energy mode: Fuel / EV / Hybrid
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        quickActions.forEach { action ->
+                            val isSelected = remember(settings, action.type) {
+                                !settings.useVehicleFilter && when (action.type) {
+                                    QuickActionType.Fuel -> settings.selectedPoiProviders == setOf(PoiProviderType.DataGouv)
+                                    QuickActionType.EV -> settings.selectedPoiProviders == setOf(PoiProviderType.DataGouvElec)
+                                    QuickActionType.Hybrid -> settings.selectedPoiProviders == setOf(PoiProviderType.Hybrid)
+                                    null -> false
+                                }
+                            }
+                            Card(
+                                onClick = action.onClick,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                                ),
+                                border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = action.icon,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = action.title,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = action.subtitle,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Energy selector (colored chips)
                 item {
                     LazyRow(
                         modifier = Modifier.fillMaxWidth(),
@@ -704,7 +726,7 @@ fun PhoneDashboardScreen(
                     }
                 }
 
-                // 1. Nearby Cheapest (loader or card)
+                // Nearby cheapest (loader or card)
                 item {
                     if (isLoadingPois && showLoaderByDelay) {
                         Card(
@@ -750,54 +772,100 @@ fun PhoneDashboardScreen(
                     }
                 }
 
-                // 2. Quick Actions Row (Fuel, EV, Hybrid)
+                // Parking + Route
                 item {
+                    val isParkingSelected = !settings.useVehicleFilter &&
+                        settings.selectedPoiProviders == setOf(PoiProviderType.Overpass) &&
+                        settings.selectedOverpassAmenityTypes == setOf("parking")
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        quickActions.forEach { action ->
-                            val isSelected = remember(settings, action.type) {
-                                !settings.useVehicleFilter && when (action.type) {
-                                    QuickActionType.Fuel -> settings.selectedPoiProviders == setOf(PoiProviderType.DataGouv)
-                                    QuickActionType.EV -> settings.selectedPoiProviders == setOf(PoiProviderType.DataGouvElec)
-                                    QuickActionType.Hybrid -> settings.selectedPoiProviders == setOf(PoiProviderType.Hybrid)
-                                    QuickActionType.Parking -> settings.selectedPoiProviders == setOf(PoiProviderType.Overpass) && settings.selectedOverpassAmenityTypes == setOf("parking")
-                                    else -> false
+                        Card(
+                            onClick = {
+                                val isSelected = !settings.useVehicleFilter &&
+                                    settings.selectedPoiProviders == setOf(PoiProviderType.Overpass) &&
+                                    settings.selectedOverpassAmenityTypes == setOf("parking")
+                                if (isSelected) {
+                                    settingsManager.setUseVehicleFilter(true)
+                                } else {
+                                    settingsManager.setUseVehicleFilter(false)
+                                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
+                                    settingsManager.setOverpassAmenityTypes(setOf("parking"))
                                 }
-                            }
-                            Card(
-                                onClick = action.onClick,
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(96.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isParkingSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                            ),
+                            border = if (isParkingSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .aspectRatio(1f),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                                ),
-                                border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
-                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                    .fillMaxSize()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Column(
-                                    modifier = Modifier.fillMaxSize().padding(8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = action.icon,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(32.dp)
-                                    )
-                                    Spacer(Modifier.height(8.dp))
+                                Icon(
+                                    imageVector = Icons.Default.LocalParking,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                Column(verticalArrangement = Arrangement.Center) {
                                     Text(
-                                        text = action.title,
+                                        text = "Parking",
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = action.subtitle,
+                                        text = "Nearby lots",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                        Card(
+                            onClick = { onOpenRoutes(null) },
+                            enabled = mapDepsReady,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(96.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Directions,
+                                    contentDescription = null,
+                                    tint = if (mapDepsReady) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                                    modifier = Modifier.size(36.dp)
+                                )
+                                Column(verticalArrangement = Arrangement.Center) {
+                                    Text(
+                                        text = "Route",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (mapDepsReady) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    )
+                                    Text(
+                                        text = "Plan a journey",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (mapDepsReady) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                     )
                                 }
                             }

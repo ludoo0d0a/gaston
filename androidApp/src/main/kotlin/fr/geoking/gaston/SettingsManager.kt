@@ -56,7 +56,7 @@ data class AppSettings(
     val useVehicleFilter: Boolean = false,
     /** When [Auto], provider set is derived from current country (GPS / network). */
     val poiProviderSelectionMode: PoiProviderSelectionMode = PoiProviderSelectionMode.Manual,
-    val selectedPoiProviders: Set<PoiProviderType> = setOf(PoiProviderType.DataGouv),
+    val selectedPoiProviders: Set<PoiProviderType> = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
     val selectedMapEnergyTypes: Set<String> = DEFAULT_MAP_ENERGY_TYPES,
     val mapEnseigneType: String = DEFAULT_MAP_ENSEIGNE_TYPE,
     val mapBrands: Set<String> = DEFAULT_MAP_BRANDS,
@@ -139,7 +139,19 @@ open class SettingsManager(
             val stored = prefs.getStringSet("poi_providers", null)?.mapNotNull {
                 try { PoiProviderType.valueOf(it) } catch (_: Exception) { null }
             }?.toSet()
-            (stored ?: setOf(PoiProviderType.DataGouv)).sanitizeUserPoiProviderSelection()
+            val base = (stored ?: setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass))
+                .sanitizeUserPoiProviderSelection()
+            // Older builds merged Overpass at runtime without persisting it; keep that once in prefs.
+            if (!prefs.getBoolean("poi_providers_overpass_migrated_v1", false)) {
+                val merged = base + PoiProviderType.Overpass
+                prefs.edit()
+                    .putBoolean("poi_providers_overpass_migrated_v1", true)
+                    .putStringSet("poi_providers", merged.map { it.name }.toSet())
+                    .apply()
+                merged
+            } else {
+                base
+            }
         }
 
         fun readIntSet(key: String, fallback: Set<Int>): Set<Int> =

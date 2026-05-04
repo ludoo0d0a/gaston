@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -21,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
@@ -440,6 +442,7 @@ private fun SourcesConfig(
         ProviderUiInfo(PoiProviderType.Fastned, "Fastned (OCPI)", listOf("GB")),
         ProviderUiInfo(PoiProviderType.Dkv, "DKV Mobility (OCPI)", listOf("EU")),
         ProviderUiInfo(PoiProviderType.EcoMovement, "Eco‑Movement (OCPI)", listOf("GLOBAL")),
+        ProviderUiInfo(PoiProviderType.Overpass, "OpenStreetMap (Overpass API)", listOf("GLOBAL")),
 
         // Fuel
         ProviderUiInfo(PoiProviderType.Routex, "Routex", listOf("EU")),
@@ -487,10 +490,25 @@ private fun SourcesConfig(
 
     val sortedCountryKeys = remember(providersByCountry) {
         val keys = providersByCountry.keys
-        val pinned = listOf("GLOBAL", "EU")
-        (keys - pinned.toSet())
-            .sortedBy { countryLabel(it).lowercase() } +
-            pinned.filter { it in keys }
+        buildList {
+            if ("FR" in keys) add("FR")
+            addAll(
+                (keys - setOf("FR", "EU", "GLOBAL"))
+                    .sortedBy { countryLabel(it).lowercase() }
+            )
+            if ("EU" in keys) add("EU")
+            if ("GLOBAL" in keys) add("GLOBAL")
+        }
+    }
+
+    var countryFilterText by remember { mutableStateOf("") }
+    val filteredCountryKeys = remember(sortedCountryKeys, countryFilterText) {
+        val q = countryFilterText.trim().lowercase()
+        if (q.isEmpty()) sortedCountryKeys
+        else sortedCountryKeys.filter { key ->
+            countryLabel(key).lowercase().contains(q) ||
+                key.lowercase().contains(q)
+        }
     }
 
     Column(
@@ -534,75 +552,140 @@ private fun SourcesConfig(
                 "Data sources",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(bottom = 8.dp)
             )
+            OutlinedTextField(
+                value = countryFilterText,
+                onValueChange = { countryFilterText = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Filter by country or region") },
+                placeholder = { Text("France, DE, global…") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+            )
+            if (filteredCountryKeys.isEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "No country matches this filter.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
-            sortedCountryKeys.forEach { countryKey ->
+            filteredCountryKeys.forEach { countryKey ->
                 val list = providersByCountry[countryKey].orEmpty()
                 if (list.isEmpty()) return@forEach
 
-                val fuel = list.filter { it.providesFuel }
-                val electric = list.filter { it.providesElectric }
+                val allTypesInCountry = list.map { it.type }.toSet()
+                val selectedInCountry = allTypesInCountry.count { it in settings.selectedPoiProviders }
+                val allOn = selectedInCountry == allTypesInCountry.size
+                val chipLabelStyle = MaterialTheme.typography.labelSmall
 
-                Text(
-                    countryLabel(countryKey),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
-
-                if (electric.isNotEmpty()) {
-                    Text(
-                        "Electric",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        electric.forEach { p ->
-                            val isMultiCountry = p.supportedCountries.size > 1 || p.supportedCountries.any { it == "GLOBAL" || it == "EU" }
-                            FilterChip(
-                                selected = settings.selectedPoiProviders.contains(p.type),
-                                onClick = {
-                                    val next = if (settings.selectedPoiProviders.contains(p.type)) settings.selectedPoiProviders - p.type else settings.selectedPoiProviders + p.type
-                                    onUpdate(settings.copy(selectedPoiProviders = next))
+                Column(
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable {
+                                val next = if (allOn) {
+                                    settings.selectedPoiProviders - allTypesInCountry
+                                } else {
+                                    settings.selectedPoiProviders + allTypesInCountry
+                                }
+                                onUpdate(settings.copy(selectedPoiProviders = next))
+                            }
+                            .padding(vertical = 4.dp, horizontal = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                countryLabel(countryKey),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                when {
+                                    allOn -> "${list.size} sources on — tap to turn all off"
+                                    selectedInCountry == 0 -> "${list.size} sources off — tap to enable all"
+                                    else -> "$selectedInCountry / ${list.size} on — tap to enable all"
                                 },
-                                label = { Text(p.label) },
-                                leadingIcon = if (isMultiCountry) {
-                                    { Icon(Icons.Default.Public, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                                } else null
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (allOn) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
                             )
                         }
                     }
-                }
-
-                if (fuel.isNotEmpty()) {
-                    if (electric.isNotEmpty()) Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        "Fuel",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        fuel.forEach { p ->
-                            val isMultiCountry = p.supportedCountries.size > 1 || p.supportedCountries.any { it == "GLOBAL" || it == "EU" }
-                            FilterChip(
-                                selected = settings.selectedPoiProviders.contains(p.type),
-                                onClick = {
-                                    val next = if (settings.selectedPoiProviders.contains(p.type)) settings.selectedPoiProviders - p.type else settings.selectedPoiProviders + p.type
-                                    onUpdate(settings.copy(selectedPoiProviders = next))
-                                },
-                                label = { Text(p.label) },
-                                leadingIcon = if (isMultiCountry) {
-                                    { Icon(Icons.Default.Public, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                                } else null
+                    FlowRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        list
+                            .sortedWith(
+                                compareBy<ProviderUiInfo> { !it.providesElectric }
+                                    .thenBy { it.label.lowercase() }
                             )
-                        }
+                            .forEach { p ->
+                                val isMultiCountry =
+                                    p.supportedCountries.size > 1 ||
+                                        p.supportedCountries.any { it == "GLOBAL" || it == "EU" }
+                                FilterChip(
+                                    selected = settings.selectedPoiProviders.contains(p.type),
+                                    onClick = {
+                                        val next =
+                                            if (settings.selectedPoiProviders.contains(p.type)) {
+                                                settings.selectedPoiProviders - p.type
+                                            } else {
+                                                settings.selectedPoiProviders + p.type
+                                            }
+                                        onUpdate(settings.copy(selectedPoiProviders = next))
+                                    },
+                                    label = {
+                                        Text(
+                                            p.label,
+                                            maxLines = 1,
+                                            style = chipLabelStyle,
+                                        )
+                                    },
+                                    leadingIcon = if (isMultiCountry) {
+                                        {
+                                            Icon(
+                                                Icons.Default.Public,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp),
+                                            )
+                                        }
+                                    } else {
+                                        null
+                                    },
+                                    modifier = Modifier.heightIn(min = 30.dp),
+                                )
+                            }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -1497,7 +1580,9 @@ fun SettingsScreenPreview() {
     val mockSettingsManager = remember(context) {
         object : SettingsManager(context) {
             private val mockSettings = MutableStateFlow(
-                AppSettings(selectedPoiProviders = setOf(PoiProviderType.DataGouv))
+                AppSettings(
+                    selectedPoiProviders = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+                )
             )
             override val settings: StateFlow<AppSettings> = mockSettings.asStateFlow()
             override fun saveSettings(settings: AppSettings) {

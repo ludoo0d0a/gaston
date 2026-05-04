@@ -76,8 +76,7 @@ fun AppSettings.effectiveProviders(countryCode: String? = null): Set<PoiProvider
             selectedPoiProviders
         }
     }
-    // Always include Overpass as a secondary source for station locations.
-    return base + PoiProviderType.Overpass
+    return base
 }
 
 /** ISO country code for [latitude]/[longitude] when it falls in a known [ParkingRegion], else null. */
