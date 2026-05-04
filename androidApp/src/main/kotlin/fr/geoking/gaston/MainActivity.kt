@@ -325,6 +325,14 @@ fun MainUI(
     var showFuelForecast by remember { mutableStateOf(false) }
     var pendingMapPoi by remember { mutableStateOf<Poi?>(null) }
     var pendingMapLocation by remember { mutableStateOf<com.google.android.gms.maps.model.LatLng?>(null) }
+    var dashboardSelectedLocation by remember { mutableStateOf<fr.geoking.gaston.api.geocoding.GeocodedPlace?>(null) }
+
+    LaunchedEffect(dashboardSelectedLocation) {
+        dashboardSelectedLocation?.let {
+            pendingMapLocation = com.google.android.gms.maps.model.LatLng(it.latitude, it.longitude)
+        }
+    }
+
     var routeForDirections by remember { mutableStateOf<RouteResult?>(null) }
     var stationsForDirections by remember { mutableStateOf<List<Poi>>(emptyList()) }
     var initialNavDestination by remember { mutableStateOf<NavDestination?>(null) }
@@ -554,7 +562,9 @@ fun MainUI(
                             playstoreSettingsInitialStack = stack
                             showPlaystoreSettings = true
                         },
-                        onRequestLocationPermission = onRequestLocationPermission
+                        onRequestLocationPermission = onRequestLocationPermission,
+                        selectedSearchLocation = dashboardSelectedLocation,
+                        onLocationSelected = { dashboardSelectedLocation = it }
                     )
                 }
                 showSettings && !isPlaystoreDistribution -> {
@@ -708,7 +718,9 @@ fun MainUI(
                                 settingsInitialStack = stack
                                 showSettings = true
                             },
-                            onRequestLocationPermission = onRequestLocationPermission
+                            onRequestLocationPermission = onRequestLocationPermission,
+                            selectedSearchLocation = dashboardSelectedLocation,
+                            onLocationSelected = { dashboardSelectedLocation = it }
                         )
                     }
                 }
