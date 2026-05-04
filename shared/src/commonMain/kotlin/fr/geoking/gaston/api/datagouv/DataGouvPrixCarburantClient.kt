@@ -104,6 +104,7 @@ class DataGouvPrixCarburantClient(
             ?: brand
             ?: if (ville.isNotBlank()) "Station $ville" else "Station"
         val fuels = parseFuels(record)
+        val isOnHighway = pop == "A"
         return DataGouvPrixCarburantStation(
             id = id,
             name = name.ifBlank { if (ville.isNotBlank()) "Station $ville" else "Station" },
@@ -111,7 +112,8 @@ class DataGouvPrixCarburantClient(
             latitude = lat,
             longitude = lng,
             brand = brand,
-            fuels = fuels
+            fuels = fuels,
+            isOnHighway = isOnHighway
         )
     }
 
@@ -218,7 +220,8 @@ data class DataGouvPrixCarburantStation(
     val latitude: Double,
     val longitude: Double,
     val brand: String? = null,
-    val fuels: List<DataGouvPrixCarburantFuelPrice> = emptyList()
+    val fuels: List<DataGouvPrixCarburantFuelPrice> = emptyList(),
+    val isOnHighway: Boolean = false
 )
 
 @Serializable

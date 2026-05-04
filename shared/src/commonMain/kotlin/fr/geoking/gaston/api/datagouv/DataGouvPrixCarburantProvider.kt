@@ -57,6 +57,7 @@ class DataGouvPrixCarburantProvider(
                 latitude = station.latitude,
                 longitude = station.longitude,
                 brand = station.brand,
+                isOnHighway = station.isOnHighway,
                 fuelPrices = station.fuels.map { p ->
                     FuelPrice(
                         fuelName = p.name,

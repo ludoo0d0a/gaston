@@ -70,6 +70,7 @@ class DataGouvProvider(
                 latitude = station.latitude,
                 longitude = station.longitude,
                 brand = station.brand,
+                isOnHighway = station.isOnHighway,
                 fuelPrices = station.prices.map { p ->
                     FuelPrice(
                         fuelName = p.fuelName,
