@@ -65,7 +65,10 @@ fun FilterFab(
     val favoritesFilterActive = favoritesFilterEnabled && showFavoritesOnly
     val activeFilterCount = remember(settings, filterMode, favoritesFilterActive) {
         val favCount = if (favoritesFilterActive) 1 else 0
-        if (settings.useVehicleFilter) return@remember 1 + favCount
+        val amenityCount = if (settings.selectedOverpassAmenityTypes.isNotEmpty()) 1 else 0
+
+        if (settings.useVehicleFilter) return@remember 1 + favCount + amenityCount
+
         val fuelFilters = if (filterMode == 0 || filterMode == 2) {
             val brandFilter = if (settings.mapBrands.isNotEmpty()) 1 else 0
             val energyFilter = if (settings.selectedMapEnergyTypes.isNotEmpty()) 1 else 0
@@ -79,7 +82,7 @@ fun FilterFab(
             operatorFilter + powerFilter + connectorFilter
         } else 0
 
-        favCount + fuelFilters + elecFilters
+        favCount + amenityCount + fuelFilters + elecFilters
     }
 
     ExtendedFloatingActionButton(
@@ -247,15 +250,19 @@ fun FilterFab(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
+                    Spacer(modifier = Modifier.height(24.dp))
                 } else {
                     if (filterMode == 0 || filterMode == 2) {
                         FuelFilters(settingsManager)
-                        if (filterMode == 2) Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                     if (filterMode == 1 || filterMode == 2) {
                         ElectricFilters(settingsManager)
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
+
+                AmenityFilters(settingsManager)
 
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -266,6 +273,45 @@ fun FilterFab(
                     Text("Apply")
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AmenityFilters(settingsManager: SettingsManager) {
+    val settings by settingsManager.settings.collectAsState()
+
+    FilterSectionTitle("Amenities (Overpass)")
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        OVERPASS_AMENITY_OPTIONS.forEach { (id, label) ->
+            val isSelected = settings.selectedOverpassAmenityTypes.contains(id)
+            FilterChip(
+                selected = isSelected,
+                onClick = {
+                    val next = if (isSelected) {
+                        settings.selectedOverpassAmenityTypes - id
+                    } else {
+                        settings.selectedOverpassAmenityTypes + id
+                    }
+                    settingsManager.setOverpassAmenityTypes(next)
+                },
+                label = { Text(label) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    labelColor = Color.White,
+                    containerColor = Color(0xFF334155)
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isSelected,
+                    borderColor = Color.White.copy(alpha = 0.3f),
+                    selectedBorderColor = MaterialTheme.colorScheme.primary
+                )
+            )
         }
     }
 }
