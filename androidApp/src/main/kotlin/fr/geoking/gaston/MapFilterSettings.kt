@@ -3,10 +3,61 @@ package fr.geoking.gaston
 import fr.geoking.gaston.parking.ParkingRegion
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.autoProvidersForCountries
 import java.util.Locale
+
+fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
+    "toilets" -> PoiCategory.Toilet
+    "drinking_water" -> PoiCategory.DrinkingWater
+    "camp_site" -> PoiCategory.Camping
+    "caravan_site" -> PoiCategory.CaravanSite
+    "picnic_site" -> PoiCategory.PicnicSite
+    "truck_stop" -> PoiCategory.TruckStop
+    "rest_area" -> PoiCategory.RestArea
+    "restaurant" -> PoiCategory.Restaurant
+    "fast_food" -> PoiCategory.FastFood
+    "speed_camera" -> PoiCategory.Radar
+    "parking" -> PoiCategory.Parking
+    "viewpoint" -> PoiCategory.Viewpoint
+    else -> null
+}
+
+fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
+    val categories = mutableSetOf<PoiCategory>()
+
+    // Amenities: strictly based on selection
+    selectedOverpassAmenityTypes.mapNotNullTo(categories) { categoryFromAmenityId(it) }
+
+    // Energy: Gas/Irve
+    val energyFilters = effectiveMapEnergyFilterIds()
+    if (energyFilters.contains("electric")) {
+        categories.add(PoiCategory.Irve)
+    }
+    if (energyFilters.any { it != "electric" }) {
+        categories.add(PoiCategory.Gas)
+    }
+
+    // Vehicle-specific extra amenities (only when "For my car" is active)
+    if (useVehicleFilter) {
+        when (vehicleType) {
+            VehicleType.Truck -> {
+                categories.add(PoiCategory.TruckStop)
+                categories.add(PoiCategory.RestArea)
+            }
+            VehicleType.Motorhome -> {
+                categories.add(PoiCategory.CaravanSite)
+                categories.add(PoiCategory.Camping)
+                categories.add(PoiCategory.PicnicSite)
+            }
+            else -> {}
+        }
+    }
+
+    return categories
+}
 
 fun AppSettings.effectiveMapEnergyFilterIds(): Set<String> {
     val useVehicle = useVehicleFilter || (selectedMapEnergyTypes.isEmpty() && vehicleBrand.isNotEmpty())
@@ -119,9 +170,16 @@ object StationMapFilters {
         providers: Set<PoiProviderType>,
         skipWhenOnlyOverpass: Boolean,
     ): List<Poi> {
-        if (skipWhenOnlyOverpass && providers.isOnlyOverpass()) return pois
-
         var result = pois
+
+        // Filter by allowed categories (strictly based on settings)
+        val allowedCategories = settings.effectiveAllowedCategories()
+        result = result.filter { poi ->
+            val cat = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
+            cat in allowedCategories
+        }
+
+        if (skipWhenOnlyOverpass && providers.isOnlyOverpass()) return result
 
         // Filter by energy type
         val energyFilters = settings.effectiveMapEnergyFilterIds()
