@@ -228,4 +228,27 @@ class PoiMergerTest {
         // If a.toilets is false (not null), it keeps false.
         // Let's check my logic in mergeAmenities again.
     }
+
+    @Test
+    fun mergePois_prefersBetterName() {
+        val lat = 48.8566
+        val lon = 2.3522
+
+        // "Route" is generic, "Total Paris" is better.
+        // p1 has a lower ID so it will be the "existing" POI during merge.
+        val p1 = Poi("1", "Route", "Address 1", lat, lon)
+        val p2 = Poi("2", "Total Paris", "Address 1", lat + 0.0001, lon)
+
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(1, merged.size)
+        assertEquals("Total Paris", merged[0].name, "Should pick 'Total Paris' over 'Route'")
+
+        // Test reverse IDs
+        val p3 = Poi("1", "Total Paris", "Address 1", lat, lon)
+        val p4 = Poi("2", "Route", "Address 1", lat + 0.0001, lon)
+
+        val merged2 = PoiMerger.mergePois(listOf(p3, p4))
+        assertEquals(1, merged2.size)
+        assertEquals("Total Paris", merged2[0].name, "Should pick 'Total Paris' over 'Route' regardless of ID")
+    }
 }

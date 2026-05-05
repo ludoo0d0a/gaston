@@ -201,7 +201,7 @@ object PoiMerger {
             amenities = mergedAmenities,
             restaurantDetails = mergedRestaurantDetails,
             // Prefer richer/non-null display fields.
-            name = if (existing.name.isNotBlank()) existing.name else incoming.name,
+            name = if (isBetterName(incoming.name, existing.name)) incoming.name else existing.name,
             address = if (existing.address.isNotBlank()) existing.address else incoming.address,
             siteName = preferNonBlank(existing.siteName, incoming.siteName),
             brand = mergedBrand,
@@ -220,6 +220,29 @@ object PoiMerger {
 
     private fun preferNonBlank(a: String?, b: String?): String? {
         return a?.takeIf { it.isNotBlank() } ?: b?.takeIf { it.isNotBlank() }
+    }
+
+    private fun isBetterName(candidate: String, current: String): Boolean {
+        if (candidate.isBlank()) return false
+        if (current.isBlank()) return true
+        if (candidate.equals(current, ignoreCase = true)) return false
+
+        val candLower = candidate.lowercase()
+        val currLower = current.lowercase()
+
+        // 1. Generic labels to avoid
+        val generic = setOf("station", "route", "autoroute")
+        if (currLower in generic && candLower !in generic) return true
+        if (candLower in generic && currLower !in generic) return false
+
+        // 2. Brand presence: Prefer names that contain a known brand
+        val brandCand = BrandRegistry.findBrand(candidate, null)
+        val brandCurr = BrandRegistry.findBrand(current, null)
+        if (brandCand != null && brandCurr == null) return true
+        if (brandCand == null && brandCurr != null) return false
+
+        // 3. Length heuristic: longer names are often more descriptive
+        return candLower.length > currLower.length
     }
 
     private fun isBetterBrand(candidate: String?, current: String?): Boolean {
