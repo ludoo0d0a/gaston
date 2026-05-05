@@ -694,33 +694,6 @@ private fun SourcesConfig(
                 }
             }
 
-            Column {
-                Text(
-                    "Amenity types (Overpass)",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OVERPASS_AMENITY_OPTIONS.forEach { (id, label) ->
-                        FilterChip(
-                            selected = settings.selectedOverpassAmenityTypes.contains(id),
-                            onClick = {
-                                val next = if (settings.selectedOverpassAmenityTypes.contains(id)) {
-                                    settings.selectedOverpassAmenityTypes - id
-                                } else {
-                                    settings.selectedOverpassAmenityTypes + id
-                                }
-                                onUpdate(settings.copy(selectedOverpassAmenityTypes = next))
-                            },
-                            label = { Text(label) }
-                        )
-                    }
-                }
-            }
         }
     }
 }
