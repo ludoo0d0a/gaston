@@ -14,9 +14,9 @@ class AutoPoiProviderSelectionScreen(
 
     private val options = listOf(
         PoiProviderType.Routex to "Routex",
-        PoiProviderType.Etalab to "Prix carburant (France official)",
+        PoiProviderType.Etalab to "data.gouv.fr (Fuel instant)",
         PoiProviderType.GasApi to "gas-api.ovh",
-        PoiProviderType.DataGouv to "data.gouv (France official)",
+        PoiProviderType.DataGouv to "data.gouv.fr (Fuel daily)",
         PoiProviderType.UkCma to "UK Fuel Finder (CMA)",
         PoiProviderType.ItalyMimit to "MIMIT (Italy official)",
         PoiProviderType.SloveniaGorivaSi to "goriva.si (Slovenia official)",
@@ -36,7 +36,7 @@ class AutoPoiProviderSelectionScreen(
         PoiProviderType.SerbiaNis to "NIS (Serbia)",
         PoiProviderType.MexicoCre to "CRE (Mexico)",
         PoiProviderType.ArgentinaEnergia to "Secretaría de Energía (Argentina)",
-        PoiProviderType.DataGouvElec to "data.gouv.fr (EV)",
+        PoiProviderType.DataGouvElec to "data.gouv.fr (Electric)",
         PoiProviderType.OpenChargeMap to "Open Charge Map",
         PoiProviderType.Chargy to "Chargy (Luxembourg)",
         PoiProviderType.Fastned to "Fastned (OCPI)",

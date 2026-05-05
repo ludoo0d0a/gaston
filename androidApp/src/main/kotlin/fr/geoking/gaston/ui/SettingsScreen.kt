@@ -436,7 +436,7 @@ private fun SourcesConfig(
 
     val providers = listOf(
         // Electric
-        ProviderUiInfo(PoiProviderType.DataGouvElec, "data.gouv (France official)", listOf("FR")),
+        ProviderUiInfo(PoiProviderType.DataGouvElec, "data.gouv.fr (Electric)", listOf("FR")),
         ProviderUiInfo(PoiProviderType.Chargy, "Chargy", listOf("LU")),
         ProviderUiInfo(PoiProviderType.OpenChargeMap, "OpenChargeMap", listOf("GLOBAL")),
         ProviderUiInfo(PoiProviderType.Fastned, "Fastned (OCPI)", listOf("GB")),
@@ -446,9 +446,9 @@ private fun SourcesConfig(
 
         // Fuel
         ProviderUiInfo(PoiProviderType.Routex, "Routex", listOf("EU")),
-        ProviderUiInfo(PoiProviderType.Etalab, "Prix carburant (France official)", listOf("FR")),
+        ProviderUiInfo(PoiProviderType.Etalab, "data.gouv.fr (Fuel instant)", listOf("FR")),
         ProviderUiInfo(PoiProviderType.GasApi, "gas-api.ovh", listOf("FR")),
-        ProviderUiInfo(PoiProviderType.DataGouv, "data.gouv (France official)", listOf("FR")),
+        ProviderUiInfo(PoiProviderType.DataGouv, "data.gouv.fr (Fuel daily)", listOf("FR")),
         ProviderUiInfo(PoiProviderType.UkCma, "UK Fuel Finder (CMA)", listOf("GB")),
         ProviderUiInfo(PoiProviderType.ItalyMimit, "MIMIT (Italy official)", listOf("IT")),
         ProviderUiInfo(PoiProviderType.SloveniaGorivaSi, "goriva.si (Slovenia official)", listOf("SI")),
