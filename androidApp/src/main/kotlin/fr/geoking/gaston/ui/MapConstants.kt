@@ -12,7 +12,9 @@ val OVERPASS_AMENITY_OPTIONS = listOf(
     "rest_area" to "Rest",
     "restaurant" to "Resto",
     "fast_food" to "Fast food",
-    "speed_camera" to "Radar"
+    "speed_camera" to "Radar",
+    "parking" to "Parking",
+    "viewpoint" to "Viewpoint"
 )
 
 val VEHICLE_TYPE_OPTIONS = listOf(
