@@ -3,6 +3,7 @@ package fr.geoking.gaston
 import android.app.Application
 import com.google.android.gms.ads.MobileAds
 import fr.geoking.gaston.di.appModule
+import fr.geoking.gaston.premium.RevenueCatInitializer
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
@@ -14,6 +15,7 @@ class GastonApplication : Application() {
         try {
             // Safe to call once; uses test ids by default unless overridden by local.properties/env
             MobileAds.initialize(this)
+            RevenueCatInitializer.initialize(this, BuildConfig.REVENUECAT_API_KEY)
             startKoin {
                 androidContext(this@GastonApplication)
                 modules(appModule)

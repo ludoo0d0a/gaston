@@ -64,6 +64,8 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.kermit)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.revenuecat.purchases)
+            implementation(libs.revenuecat.purchases.ui)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)

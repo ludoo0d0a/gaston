@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
@@ -74,6 +75,8 @@ import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.community.isCommunityPoiId
 import fr.geoking.gaston.ui.components.MapScaffold
+import fr.geoking.gaston.premium.BillingManager
+import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import fr.geoking.gaston.ui.ColorHelper
 import fr.geoking.gaston.ui.map.AddPoiSheet
 import fr.geoking.gaston.ui.map.PoiDetailCard
@@ -81,6 +84,8 @@ import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.DebugLogOverlay
+import fr.geoking.gaston.ui.anim.AnimationPalette
+import fr.geoking.gaston.ui.anim.AnimationPalettes
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.StationMapFilters
@@ -95,8 +100,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
-import fr.geoking.gaston.ui.anim.AnimationPalette
-import fr.geoking.gaston.ui.anim.AnimationPalettes
 
 /** Converts a vector drawable to a BitmapDescriptor for map markers (fromResource only supports bitmaps). Scales with zoom when sizePx varies. */
 private fun vectorDrawableToBitmapDescriptor(
@@ -169,6 +172,9 @@ fun MapScreen(
     var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var isLoading by remember { mutableStateOf(false) }
     var frozenPoisForSheet by remember { mutableStateOf<List<Poi>>(emptyList()) }
+    val billingManager = org.koin.compose.koinInject<fr.geoking.gaston.premium.BillingManager>()
+    var showPaywallForFavorite by remember { mutableStateOf(false) }
+
 
     var hasLocationPermission by remember {
         mutableStateOf(
@@ -220,6 +226,20 @@ fun MapScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+
+    if (showPaywallForFavorite && !settings.isPremium) {
+        PremiumPaywallPopup(
+            billingManager = billingManager,
+            onDismiss = { showPaywallForFavorite = false },
+            onPurchaseSuccess = {
+                scope.launch {
+                    billingManager.refreshStatus()
+                    settingsManager.setPremium(billingManager.isPremium.value)
+                    showPaywallForFavorite = false
+                }
+            }
+        )
+    }
 
     LaunchedEffect(initialSelectedPoi) {
         if (initialSelectedPoi != null) {
@@ -756,9 +776,13 @@ fun MapScreen(
                         isFavorite = isFav,
                         onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
                             {
-                                scope.launch {
-                                    favoritesRepo.toggleFavorite(poi)
-                                    favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
+                                if (settings.isPremium) {
+                                    scope.launch {
+                                        favoritesRepo.toggleFavorite(poi)
+                                        favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
+                                    }
+                                } else {
+                                    showPaywallForFavorite = true
                                 }
                             }
                         } else null
@@ -799,9 +823,13 @@ fun MapScreen(
             isFavorite = poi.id in favoriteIds,
             onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
                 {
-                    scope.launch {
-                        favoritesRepo.toggleFavorite(poi)
-                        favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
+                    if (settings.isPremium) {
+                        scope.launch {
+                            favoritesRepo.toggleFavorite(poi)
+                            favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
+                        }
+                    } else {
+                        showPaywallForFavorite = true
                     }
                 }
             } else null,

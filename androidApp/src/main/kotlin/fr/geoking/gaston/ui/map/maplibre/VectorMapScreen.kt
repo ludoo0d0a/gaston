@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package fr.geoking.gaston.ui.map.maplibre
 
 import android.Manifest
@@ -7,10 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -18,10 +16,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,84 +28,56 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
+import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.SettingsManager
-import fr.geoking.gaston.poi.*
-import fr.geoking.gaston.poi.MapPoiFilter
-import fr.geoking.gaston.feature.location.LocationHelper
-import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
-import fr.geoking.gaston.ui.anim.AnimationPalette
+import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.belib.matchAvailabilityToPois
-import fr.geoking.gaston.api.traffic.TrafficInfo
+import fr.geoking.gaston.api.routing.RoutePlanner
+import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
-import fr.geoking.gaston.api.traffic.TrafficRequest
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
-import fr.geoking.gaston.feature.auth.GoogleAuthManager
-import fr.geoking.gaston.ui.ColorHelper
-import fr.geoking.gaston.ui.MAP_ENERGY_OPTIONS
-import fr.geoking.gaston.ui.MAP_IRVE_POWER_OPTIONS
-import fr.geoking.gaston.ui.components.MapLoader
-import fr.geoking.gaston.StationMapFilters
-import fr.geoking.gaston.intent.IntentNavigationHelper
-import fr.geoking.gaston.effectiveProvidersAt
-import fr.geoking.gaston.effectiveMapEnergyFilterIds
-import fr.geoking.gaston.effectiveIrvePowerLevels
-import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
 import fr.geoking.gaston.community.isCommunityPoiId
+import fr.geoking.gaston.effectiveIrvePowerLevels
+import fr.geoking.gaston.effectiveMapEnergyFilterIds
+import fr.geoking.gaston.effectiveProvidersAt
+import fr.geoking.gaston.feature.location.LocationHelper
+import fr.geoking.gaston.intent.IntentNavigationHelper
+import fr.geoking.gaston.poi.MapViewport
+import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiMerger
+import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.PoiSearchRequest
+import fr.geoking.gaston.shared.location.approxDistanceKm
+import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
+import fr.geoking.gaston.shared.network.NetworkException
+import fr.geoking.gaston.toll.TollCalculator
 import fr.geoking.gaston.ui.SettingsScreen
 import fr.geoking.gaston.ui.SettingsScreenPage
 import fr.geoking.gaston.ui.components.MapScaffold
+import fr.geoking.gaston.premium.BillingManager
+import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiDetailCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
+import fr.geoking.gaston.ui.map.AddPoiSheet
+import fr.geoking.gaston.ui.map.DebugLogOverlay
+import fr.geoking.gaston.ui.anim.AnimationPalette
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.location.LocationComponentActivationOptions
-import org.maplibre.android.style.layers.SymbolLayer
-import org.maplibre.android.style.layers.PropertyFactory
-import org.maplibre.android.style.sources.GeoJsonSource
-import org.maplibre.geojson.Feature
-import org.maplibre.geojson.FeatureCollection
-import org.maplibre.geojson.Point
-
-private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-    val r = 6371.0
-    val rad = kotlin.math.PI / 180.0
-    val dLat = (lat2 - lat1) * rad
-    val dLon = (lon2 - lon1) * rad
-    val sinDLat = kotlin.math.sin(dLat / 2)
-    val sinDLon = kotlin.math.sin(dLon / 2)
-    val a = sinDLat * sinDLat +
-        kotlin.math.cos(lat1 * rad) * kotlin.math.cos(lat2 * rad) *
-        sinDLon * sinDLon
-    val c = 2 * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
-    return r * c
-}
-
-private fun approxDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-    val dLatKm = (lat2 - lat1) * 111.0
-    val avgLatRad = ((lat1 + lat2) / 2.0) * kotlin.math.PI / 180.0
-    val dLonKm = (lon2 - lon1) * 111.0 * kotlin.math.cos(avgLatRad)
-    return kotlin.math.sqrt(dLatKm * dLatKm + dLonKm * dLonKm)
-}
-
-private data class LoadedPoiRegion(
-    val centerLat: Double,
-    val centerLng: Double,
-    val maxRadiusKmLoaded: Int,
-    val loadedAtMs: Long
-)
+import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
+import fr.geoking.gaston.api.geocoding.GeocodingClient
 
 @OptIn(ExperimentalMaterial3Api::class, kotlinx.coroutines.FlowPreview::class)
 @Composable
@@ -116,13 +86,17 @@ fun VectorMapScreen(
     availabilityProviderFactory: BorneAvailabilityProviderFactory?,
     trafficProviderFactory: TrafficProviderFactory? = null,
     settingsManager: SettingsManager,
-    authManager: GoogleAuthManager?,
+    authManager: fr.geoking.gaston.feature.auth.GoogleAuthManager?,
     diagnostics: DiagnosticStore,
     palette: AnimationPalette,
     onBack: () -> Unit,
     onPlanRoute: (() -> Unit)? = null,
     communityRepo: CommunityPoiRepository? = null,
     favoritesRepo: FavoritesRepository? = null,
+    routePlanner: RoutePlanner? = null,
+    routingClient: RoutingClient? = null,
+    tollCalculator: TollCalculator? = null,
+    geocodingClient: GeocodingClient? = null,
     initialSelectedPoi: Poi? = null,
     initialCenter: LatLng? = null
 ) {
@@ -131,11 +105,7 @@ fun VectorMapScreen(
     val context = LocalContext.current
     val settings by settingsManager.settings.collectAsState()
     val errorLog by diagnostics.errorLog.collectAsState()
-    var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
     var cachedPois by remember { mutableStateOf<List<Poi>>(initialSelectedPoi?.let { listOf(it) } ?: emptyList()) }
-    var trafficInfo by remember { mutableStateOf<TrafficInfo?>(null) }
-    var availabilityByPoiId by remember { mutableStateOf<Map<String, StationAvailabilitySummary>>(emptyMap()) }
-    var isLoading by remember { mutableStateOf(false) }
     var mapErrorMessage by remember(settings.selectedPoiProviders, settings.poiProviderSelectionMode) {
         mutableStateOf<String?>(null)
     }
@@ -143,6 +113,8 @@ fun VectorMapScreen(
         mutableStateOf(false)
     }
     var retryCount by remember { mutableStateOf(0) }
+    var isLoading by remember { mutableStateOf(false) }
+
     var mapSizePx by remember { mutableStateOf(IntSize.Zero) }
     var selectedPoi by remember { mutableStateOf<Poi?>(initialSelectedPoi) }
     var showMapSettings by remember { mutableStateOf(false) }
@@ -150,12 +122,29 @@ fun VectorMapScreen(
     var showFavoritesOnly by remember { mutableStateOf(false) }
     var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var frozenPoisForSheet by remember { mutableStateOf<List<Poi>>(emptyList()) }
+    val billingManager = org.koin.compose.koinInject<fr.geoking.gaston.premium.BillingManager>()
+    var showPaywallForFavorite by remember { mutableStateOf(false) }
+
     var scrollRequestPoiId by remember { mutableStateOf(initialSelectedPoi?.id) }
     var poiForDetailsDialog by remember { mutableStateOf<Poi?>(null) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+
+    if (showPaywallForFavorite && !settings.isPremium) {
+        PremiumPaywallPopup(
+            billingManager = billingManager,
+            onDismiss = { showPaywallForFavorite = false },
+            onPurchaseSuccess = {
+                scope.launch {
+                    billingManager.refreshStatus()
+                    settingsManager.setPremium(billingManager.isPremium.value)
+                    showPaywallForFavorite = false
+                }
+            }
+        )
+    }
 
     LaunchedEffect(initialSelectedPoi) {
         if (initialSelectedPoi != null) {
@@ -179,24 +168,19 @@ fun VectorMapScreen(
         }
     )
 
-    val initialCameraPosition = remember {
-        CameraPosition.Builder()
-            .target(LatLng(initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: settings.lastKnownLat ?: 48.8566, initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: settings.lastKnownLon ?: 2.3522))
-            .zoom(if (initialSelectedPoi != null || initialCenter != null) 15.0 else 12.0)
-            .build()
-    }
+    var mapController by remember { mutableStateOf<LibreMapController?>(null) }
+    var availabilityByPoiId by remember { mutableStateOf<Map<String, StationAvailabilitySummary>>(emptyMap()) }
+    var showAddPoiSheet by remember { mutableStateOf(false) }
+    var addPoiLinkedOfficialId by remember { mutableStateOf<String?>(null) }
+    var addPoiInitialName by remember { mutableStateOf("") }
+    var addPoiInitialAddress by remember { mutableStateOf("") }
+    var addPoiInitialLat by remember { mutableStateOf<Double?>(null) }
+    var addPoiInitialLng by remember { mutableStateOf<Double?>(null) }
+    var addPoiExistingCommunityId by remember { mutableStateOf<String?>(null) }
 
-    val providerResolveLat = mapLibreMap?.cameraPosition?.target?.latitude
-        ?: initialCameraPosition.target?.latitude
-        ?: settings.lastKnownLat
-        ?: 48.8566
-    val providerResolveLon = mapLibreMap?.cameraPosition?.target?.longitude
-        ?: initialCameraPosition.target?.longitude
-        ?: settings.lastKnownLon
-        ?: 2.3522
-    val effectiveProviders = remember(settings, providerResolveLat, providerResolveLon) {
-        settings.effectiveProvidersAt(providerResolveLat, providerResolveLon)
-    }
+    val defaultLat = initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: settings.lastKnownLat ?: 48.8566
+    val defaultLng = initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: settings.lastKnownLon ?: 2.3522
+    val defaultZoom = if (initialSelectedPoi != null || initialCenter != null) 15.0 else 12.0
 
     LaunchedEffect(favoritesRepo) {
         if (favoritesRepo != null) {
@@ -204,136 +188,12 @@ fun VectorMapScreen(
         }
     }
 
-    val poiFetchKey = remember(
-        effectiveProviders,
-        settings.useVehicleFilter,
-        settings.fuelCard,
-        settings.vehicleType,
-        settings.vehicleEnergy,
-        settings.selectedOverpassAmenityTypes
-    ) {
-        buildString {
-            append(effectiveProviders.sortedBy { it.name }.joinToString(",") { it.name })
-            append("|vehicleFilter=").append(settings.useVehicleFilter)
-            append("|fuelCard=").append(settings.fuelCard)
-            append("|vehicleType=").append(settings.vehicleType)
-            append("|vehicleEnergy=").append(settings.vehicleEnergy)
-            append("|overpassAmenities=").append(settings.selectedOverpassAmenityTypes.sorted().joinToString(","))
-        }
+    val currentTarget = mapController?.cameraPosition?.collectAsState()?.value?.target ?: LatLng(defaultLat, defaultLng)
+    val effectiveProviders = remember(settings, currentTarget.latitude, currentTarget.longitude) {
+        settings.effectiveProvidersAt(currentTarget.latitude, currentTarget.longitude)
     }
 
-    val loadedRegions = remember { mutableListOf<LoadedPoiRegion>() }
-    val poiSeenAtMs = remember { mutableStateMapOf<String, Long>() }
-    var lastCacheKey by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(poiFetchKey, mapSizePx, retryCount, mapLibreMap) {
-        val map = mapLibreMap ?: return@LaunchedEffect
-        val currentCacheKey = "|size=${mapSizePx.width}x${mapSizePx.height}"
-        if (lastCacheKey != currentCacheKey) {
-            loadedRegions.clear()
-            cachedPois = emptyList()
-            poiSeenAtMs.clear()
-            availabilityByPoiId = emptyMap()
-            trafficInfo = null
-            mapErrorMessage = null
-            isErrorPaused = false
-            lastCacheKey = currentCacheKey
-        }
-
-        if (mapSizePx.width <= 0 || mapSizePx.height <= 0) return@LaunchedEffect
-
-        snapshotFlow { map.cameraPosition }.debounce(350).collectLatest { position ->
-                if (isErrorPaused || selectedPoi != null) return@collectLatest
-
-                val target = position.target ?: return@collectLatest
-                val centerLat = target.latitude
-                val centerLng = target.longitude
-                val zoom = position.zoom.toFloat()
-                val nowMs = System.currentTimeMillis()
-                val ttlMs = 8L * 60L * 60L * 1000L
-                val expiresBeforeMs = nowMs - ttlMs
-
-                val requiredRadiusKm = radiusKmFromMapViewport(
-                    centerLat,
-                    centerLng,
-                    zoom,
-                    mapSizePx.width,
-                    mapSizePx.height
-                ).coerceIn(1, 50)
-
-                loadedRegions.removeAll { it.loadedAtMs < expiresBeforeMs }
-
-                val viewportCovered = loadedRegions.any { region ->
-                    region.maxRadiusKmLoaded >= requiredRadiusKm &&
-                        haversineKm(
-                            centerLat,
-                            centerLng,
-                            region.centerLat,
-                            region.centerLng
-                        ) <= (region.maxRadiusKmLoaded - requiredRadiusKm).toDouble() + 0.5
-                }
-
-                if (viewportCovered) return@collectLatest
-
-                try {
-                    isLoading = true
-                    val viewport = MapViewport(zoom, mapSizePx.width, mapSizePx.height)
-                    poiProvider.searchFlow(
-                        PoiSearchRequest(
-                            latitude = centerLat,
-                            longitude = centerLng,
-                            viewport = viewport,
-                            categories = emptySet(),
-                            skipFilters = true
-                        )
-                    ).collect { result ->
-                        if (result.errors.isEmpty() || result.pois.isNotEmpty()) {
-                            val finalPois = result.pois
-                            cachedPois = PoiMerger.mergeInto(cachedPois, finalPois)
-                            val now = System.currentTimeMillis()
-                            finalPois.forEach { poiSeenAtMs[it.id] = now }
-
-                            // Only add to loadedRegions if we have at least one provider that responded successfully
-                            // or if it's the final emission (which searchFlow handles).
-                            // In this case, we add it to mark this area as covered.
-                            loadedRegions.add(LoadedPoiRegion(centerLat, centerLng, requiredRadiusKm, now))
-
-                            // Availability refresh
-                            val availabilityProvider = availabilityProviderFactory?.getProvider(centerLat, centerLng)
-                            if (availabilityProvider != null) {
-                                val availabilityRadiusKm = requiredRadiusKm.coerceAtMost(20).coerceAtLeast(10)
-                                val availabilities = availabilityProvider.getAvailability(centerLat, centerLng, availabilityRadiusKm)
-                                val matched = matchAvailabilityToPois(availabilities, finalPois)
-                                availabilityByPoiId = availabilityByPoiId + matched
-                            }
-                        }
-
-                        if (result.errors.isNotEmpty() && result.pois.isEmpty()) {
-                            mapErrorMessage = result.errors.first().message
-                            isErrorPaused = true
-                        }
-                    }
-                } catch (e: Exception) {
-                    mapErrorMessage = e.message
-                    isErrorPaused = true
-                } finally {
-                    isLoading = false
-                }
-            }
-    }
-
-    if (showMapSettings) {
-        SettingsScreen(
-            settingsManager = settingsManager,
-            authManager = authManager,
-            errorLog = errorLog,
-            onDismiss = { showMapSettings = false },
-            initialScreenStack = listOf(initialSettingsPage)
-        )
-        return
-    }
-
-    val poisInView = remember(cachedPois, mapLibreMap?.cameraPosition, mapSizePx, settings, effectiveProviders) {
+    val poisInView = remember(cachedPois, currentTarget, mapController?.cameraPosition?.collectAsState()?.value?.zoom, mapSizePx, settings, effectiveProviders) {
         StationMapFilters.apply(
             settings = settings,
             pois = cachedPois,
@@ -372,29 +232,126 @@ fun VectorMapScreen(
         }
     }
 
+    LaunchedEffect(mapSizePx, retryCount, mapController) {
+        val controller = mapController ?: return@LaunchedEffect
+        if (mapSizePx.width <= 0 || mapSizePx.height <= 0) return@LaunchedEffect
+
+        if (!hasLocationPermission) {
+            launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+
+        controller.cameraPosition
+            .debounce(350)
+            .collectLatest { position ->
+                if (isErrorPaused || selectedPoi != null) return@collectLatest
+
+                val centerLat = position.target.latitude
+                val centerLng = position.target.longitude
+                val zoom = position.zoom.toFloat()
+
+                val requiredRadiusKm = radiusKmFromMapViewport(
+                    centerLat,
+                    centerLng,
+                    zoom,
+                    mapSizePx.width,
+                    mapSizePx.height
+                ).coerceIn(1, 50)
+
+                mapErrorMessage = null
+
+                val viewport = MapViewport(
+                    zoom = zoom,
+                    mapWidthPx = mapSizePx.width,
+                    mapHeightPx = mapSizePx.height
+                )
+
+                try {
+                    isLoading = true
+                    poiProvider.searchFlow(
+                        PoiSearchRequest(
+                            latitude = centerLat,
+                            longitude = centerLng,
+                            viewport = viewport,
+                            categories = emptySet(),
+                            skipFilters = true
+                        )
+                    ).collect { result ->
+                        if (result.errors.isEmpty() || result.pois.isNotEmpty()) {
+                            cachedPois = PoiMerger.mergeInto(cachedPois, result.pois)
+
+                            val availabilityProvider = availabilityProviderFactory?.getProvider(centerLat, centerLng)
+                            if (availabilityProvider != null) {
+                                val availabilityRadiusKm = requiredRadiusKm.coerceAtMost(20).coerceAtLeast(10)
+                                val availabilities = availabilityProvider.getAvailability(centerLat, centerLng, availabilityRadiusKm)
+                                val poisForAvailability = cachedPois.filter { poi ->
+                                    approxDistanceKm(centerLat, centerLng, poi.latitude, poi.longitude) <= availabilityRadiusKm * 1.05
+                                }
+                                val matched = matchAvailabilityToPois(availabilities, poisForAvailability)
+                                availabilityByPoiId = availabilityByPoiId + matched
+                            }
+                        }
+
+                        if (result.errors.isNotEmpty() && result.pois.isEmpty()) {
+                            val firstError = result.errors.first()
+                            val msg = firstError.message
+                            val code = firstError.httpCode
+
+                            mapErrorMessage = msg
+                            isErrorPaused = true
+                            diagnostics.recordError(code, "Vector Map ($effectiveProviders): $msg")
+                        }
+                    }
+                } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                    val msg = e.message?.takeIf { it.isNotBlank() } ?: e.toString()
+                    mapErrorMessage = msg
+                    isErrorPaused = true
+                    diagnostics.recordError(
+                        (e as? NetworkException)?.httpCode,
+                        "Vector Map ($effectiveProviders): $msg"
+                    )
+                } finally {
+                    isLoading = false
+                }
+            }
+    }
+
+    if (showMapSettings) {
+        SettingsScreen(
+            settingsManager = settingsManager,
+            authManager = authManager,
+            errorLog = errorLog,
+            onDismiss = { showMapSettings = false },
+            initialScreenStack = listOf(initialSettingsPage)
+        )
+        return
+    }
+
     MapScaffold(
-        title = "Vector Map",
+        title = "Gas Stations (Beta)",
         settingsManager = settingsManager,
-        mapCenterLatitude = mapLibreMap?.cameraPosition?.target?.latitude,
-        mapCenterLongitude = mapLibreMap?.cameraPosition?.target?.longitude,
+        mapCenterLatitude = currentTarget.latitude,
+        mapCenterLongitude = currentTarget.longitude,
         onBack = onBack,
         onRefresh = {
-            retryCount++
+            scope.launch {
+                CacheManager.clearAllCaches(context)
+                cachedPois = emptyList()
+                availabilityByPoiId = emptyMap()
+                mapErrorMessage = null
+                isErrorPaused = false
+                retryCount++
+            }
         },
         onLocateMe = {
-            if (hasLocationPermission) {
-                scope.launch {
-                    val loc = LocationHelper.getCurrentLocation(context)
-                    if (loc != null) {
-                        mapLibreMap?.animateCamera(
-                            CameraUpdateFactory.newLatLng(
-                                LatLng(loc.latitude, loc.longitude)
-                            )
-                        )
-                    }
-                }
-            } else {
-                launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            scope.launch {
+                val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                mapController?.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(
+                        LatLng(lat, lon),
+                        12.0
+                    )
+                )
             }
         },
         onShowSettings = {
@@ -418,113 +375,33 @@ fun VectorMapScreen(
                 .padding(padding)
                 .onSizeChanged { mapSizePx = it }
         ) {
-            val effectiveEnergies = settings.effectiveMapEnergyFilterIds()
-            val effectivePowerLevels = settings.effectiveIrvePowerLevels()
+            val configuration = LocalConfiguration.current
+            val mapPaddingBottom = if (selectedPoi != null) (configuration.screenHeightDp * 0.4f).dp else 0.dp
 
-            val poisToShow = if (frozenPoisForSheet.isNotEmpty()) {
-                frozenPoisForSheet
-            } else if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
-                poisInView.filter { it.id in favoriteIds }
-            } else {
-                poisInView
-            }
-
-            val fuelIdsForCheapest = effectiveEnergies - "electric"
-            val minPrice = remember(poisToShow, fuelIdsForCheapest) {
-                if (fuelIdsForCheapest.isEmpty()) null
-                else {
-                    poisToShow.mapNotNull { poi ->
-                        poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
-                            ?.minByOrNull { it.price }?.price
-                    }.minOrNull()
-                }
-            }
-
-            MapLibreView(
+            LibreMap(
                 modifier = Modifier.fillMaxSize(),
                 styleUrl = settings.mapTheme.styleUrl,
-                cameraPosition = initialCameraPosition,
-                onMapReady = { map ->
-                    mapLibreMap = map
-                    map.getStyle { style ->
-                        if (hasLocationPermission) {
-                            val options = LocationComponentActivationOptions.builder(context, style).build()
-                            map.locationComponent.activateLocationComponent(options)
-                            map.locationComponent.isLocationComponentEnabled = true
-                        }
-
-                        // Setup POI Source and Layer
-                        if (style.getSource("poi-source") == null) {
-                            style.addSource(GeoJsonSource("poi-source"))
-                        }
-                        if (style.getLayer("poi-layer") == null) {
-                            style.addLayer(
-                                SymbolLayer("poi-layer", "poi-source").withProperties(
-                                    PropertyFactory.iconImage("{poi-id}"),
-                                    PropertyFactory.iconAllowOverlap(true),
-                                    PropertyFactory.iconIgnorePlacement(true)
-                                )
-                            )
-                        }
-                    }
-                    map.addOnMapClickListener { point ->
-                        map.getStyle { style ->
-                            val pixel = map.projection.toScreenLocation(point)
-                            val features = map.queryRenderedFeatures(pixel, "poi-layer")
-                            if (features.isNotEmpty()) {
-                                val imageId = features[0].getStringProperty("poi-id")
-                                val poiId = imageId.substringBefore("_")
-                                val poi = poisToShow.find { it.id == poiId }
-                                if (poi != null) {
-                                    selectedPoi = poi
-                                    scrollRequestPoiId = poi.id
-                                    scope.launch { sheetState.show() }
-                                }
-                            }
-                        }
-                        true
-                    }
+                initialCameraPosition = LatLng(defaultLat, defaultLng) to defaultZoom,
+                contentPaddingBottom = mapPaddingBottom,
+                onMapReady = { mapController = it },
+                poisInView = if (frozenPoisForSheet.isNotEmpty()) frozenPoisForSheet else if (showFavoritesOnly && favoriteIds.isNotEmpty()) poisInView.filter { it.id in favoriteIds } else poisInView,
+                selectedPoiId = selectedPoi?.id,
+                availabilityByPoiId = availabilityByPoiId,
+                onPoiClick = { poi ->
+                    selectedPoi = poi
+                    scrollRequestPoiId = poi.id
+                    scope.launch { sheetState.show() }
                 },
-                update = { map ->
-                    map.getStyle { style ->
-                        val features = poisToShow.map { poi ->
-                            val isSelected = selectedPoi?.id == poi.id
-                            val isCheapest = minPrice != null && poi.fuelPrices?.any { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest && it.price == minPrice } == true
-
-                            val imageId = "${poi.id}_${isSelected}_${isCheapest}_${availabilityByPoiId[poi.id]?.hashCode()}"
-
-                            if (style.getImage(imageId) == null) {
-                                val markerBitmap = PoiMarkerHelper.getMarkerBitmap(
-                                    context = context,
-                                    poi = poi,
-                                    effectiveEnergyTypes = effectiveEnergies,
-                                    effectivePowerLevels = effectivePowerLevels,
-                                    isSelected = isSelected,
-                                    isCheapest = isCheapest,
-                                    sizePx = 120,
-                                    availability = availabilityByPoiId[poi.id],
-                                    markerStyle = MarkerStyle.Bubble
-                                )
-                                style.addImage(imageId, markerBitmap)
-                            }
-
-                            Feature.fromGeometry(
-                                Point.fromLngLat(poi.longitude, poi.latitude)
-                            ).apply {
-                                addStringProperty("poi-id", imageId)
-                            }
-                        }
-                        style.getSourceAs<GeoJsonSource>("poi-source")?.setGeoJson(FeatureCollection.fromFeatures(features))
-                    }
-                }
+                effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
+                effectivePowerLevels = settings.effectiveIrvePowerLevels()
             )
 
-            if (isLoading) {
-                MapLoader(
-                    palette = palette,
+            if (settings.debugLoggingEnabled) {
+                DebugLogOverlay(
                     modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .zIndex(1f)
+                        .align(Alignment.TopEnd)
+                        .padding(top = 16.dp)
+                        .zIndex(2f)
                 )
             }
         }
@@ -533,7 +410,7 @@ fun VectorMapScreen(
     LaunchedEffect(selectedPoi?.id, scrollRequestPoiId) {
         val poi = selectedPoi ?: return@LaunchedEffect
         if (scrollRequestPoiId != null) return@LaunchedEffect
-        mapLibreMap?.animateCamera(
+        mapController?.animateCamera(
             CameraUpdateFactory.newLatLng(
                 LatLng(poi.latitude, poi.longitude)
             )
@@ -591,14 +468,14 @@ fun VectorMapScreen(
                 flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 32.dp, start = 16.dp, end = 16.dp)
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
+                contentPadding = PaddingValues(bottom = 32.dp)
             ) {
                 items(listToShow, key = { it.id }) { poi ->
                     val isFav = poi.id in favoriteIds
                     PoiDetailCard(
-                        modifier = Modifier.width((LocalConfiguration.current.screenWidthDp - 32).dp),
+                        modifier = Modifier.width(LocalConfiguration.current.screenWidthDp.dp),
                         poi = poi,
                         availabilitySummary = availabilityByPoiId[poi.id],
                         highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),
@@ -609,7 +486,7 @@ fun VectorMapScreen(
                         },
                         onLocate = {
                             scope.launch {
-                                mapLibreMap?.animateCamera(
+                                mapController?.animateCamera(
                                     CameraUpdateFactory.newLatLng(
                                         LatLng(poi.latitude, poi.longitude)
                                     )
@@ -622,9 +499,13 @@ fun VectorMapScreen(
                         isFavorite = isFav,
                         onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
                             {
-                                scope.launch {
-                                    favoritesRepo.toggleFavorite(poi)
-                                    favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
+                                if (settings.isPremium) {
+                                    scope.launch {
+                                        favoritesRepo.toggleFavorite(poi)
+                                        favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
+                                    }
+                                } else {
+                                    showPaywallForFavorite = true
                                 }
                             }
                         } else null
@@ -632,6 +513,20 @@ fun VectorMapScreen(
                 }
             }
         }
+    }
+
+    if (showAddPoiSheet) {
+        AddPoiSheet(
+            initialLat = addPoiInitialLat,
+            initialLng = addPoiInitialLng,
+            linkedOfficialId = addPoiLinkedOfficialId,
+            existingCommunityId = addPoiExistingCommunityId,
+            initialName = addPoiInitialName,
+            initialAddress = addPoiInitialAddress,
+            communityRepo = communityRepo,
+            onDismiss = { showAddPoiSheet = false },
+            onSaved = { retryCount++ }
+        )
     }
 
     poiForDetailsDialog?.let { poi ->
@@ -651,9 +546,13 @@ fun VectorMapScreen(
             isFavorite = poi.id in favoriteIds,
             onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
                 {
-                    scope.launch {
-                        favoritesRepo.toggleFavorite(poi)
-                        favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
+                    if (settings.isPremium) {
+                        scope.launch {
+                            favoritesRepo.toggleFavorite(poi)
+                            favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
+                        }
+                    } else {
+                        showPaywallForFavorite = true
                     }
                 }
             } else null,
@@ -663,6 +562,13 @@ fun VectorMapScreen(
             },
             onEdit = if (settings.isLoggedIn && isCommunityPoiId(poi.id) && communityRepo != null) {
                 {
+                    addPoiExistingCommunityId = poi.id
+                    addPoiInitialName = poi.name
+                    addPoiInitialAddress = poi.address
+                    addPoiInitialLat = poi.latitude
+                    addPoiInitialLng = poi.longitude
+                    addPoiLinkedOfficialId = null
+                    showAddPoiSheet = true
                     poiForDetailsDialog = null
                     selectedPoi = null
                     scope.launch { sheetState.hide() }
@@ -692,6 +598,13 @@ fun VectorMapScreen(
             } else null,
             onSuggestCorrection = if (settings.isLoggedIn && !isCommunityPoiId(poi.id) && communityRepo != null) {
                 {
+                    addPoiLinkedOfficialId = poi.id
+                    addPoiExistingCommunityId = null
+                    addPoiInitialName = poi.name
+                    addPoiInitialAddress = poi.address
+                    addPoiInitialLat = poi.latitude
+                    addPoiInitialLng = poi.longitude
+                    showAddPoiSheet = true
                     poiForDetailsDialog = null
                     selectedPoi = null
                     scope.launch { sheetState.hide() }

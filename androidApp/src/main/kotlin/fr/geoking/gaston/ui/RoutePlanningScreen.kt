@@ -89,6 +89,8 @@ import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.api.traffic.TrafficRequest
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
+import fr.geoking.gaston.premium.BillingManager
+import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.layout.onSizeChanged
@@ -108,6 +110,7 @@ fun RoutePlanningScreen(
     poiProvider: PoiProvider,
     geocodingClient: GeocodingClient,
     settingsManager: SettingsManager,
+    billingManager: fr.geoking.gaston.premium.BillingManager = org.koin.compose.koinInject(),
     onBack: () -> Unit,
     onShowOnMap: ((fr.geoking.gaston.api.routing.RouteResult, List<Poi>) -> Unit)? = null,
     onSearchAtLocation: ((Double, Double) -> Unit)? = null,
@@ -133,6 +136,23 @@ fun RoutePlanningScreen(
     var calculateTrigger by remember { mutableStateOf(0) }
 
     val settings by settingsManager.settings.collectAsState()
+    val scope = rememberCoroutineScope()
+    var showPaywallForFavorite by remember { mutableStateOf(false) }
+
+    if (showPaywallForFavorite && !settings.isPremium) {
+        PremiumPaywallPopup(
+            billingManager = billingManager,
+            onDismiss = { showPaywallForFavorite = false },
+            onPurchaseSuccess = {
+                scope.launch {
+                    billingManager.refreshStatus()
+                    settingsManager.setPremium(billingManager.isPremium.value)
+                    showPaywallForFavorite = false
+                }
+            }
+        )
+    }
+
     var originSuggestions by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
     var destSuggestions by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
     var originFocused by remember { mutableStateOf(false) }
@@ -243,7 +263,13 @@ fun RoutePlanningScreen(
                             val place = selectedOrigin
                             if (place != null) {
                                 val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
-                                IconButton(onClick = { settingsManager.toggleFavoriteLocation(place) }) {
+                                IconButton(onClick = {
+                                    if (settings.isPremium) {
+                                        settingsManager.toggleFavoriteLocation(place)
+                                    } else {
+                                        showPaywallForFavorite = true
+                                    }
+                                }) {
                                     Icon(
                                         imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                                         contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
@@ -294,14 +320,26 @@ fun RoutePlanningScreen(
                                             )
                                             if (!isFavorite && (isHistory || suggestion.latitude != 0.0)) {
                                                 IconButton(
-                                                    onClick = { settingsManager.toggleFavoriteLocation(suggestion) },
+                                                    onClick = {
+                                                        if (settings.isPremium) {
+                                                            settingsManager.toggleFavoriteLocation(suggestion)
+                                                        } else {
+                                                            showPaywallForFavorite = true
+                                                        }
+                                                    },
                                                     modifier = Modifier.size(24.dp)
                                                 ) {
                                                     Icon(Icons.Default.StarBorder, contentDescription = "Add to favorites", tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
                                                 }
                                             } else if (isFavorite) {
                                                 IconButton(
-                                                    onClick = { settingsManager.toggleFavoriteLocation(suggestion) },
+                                                    onClick = {
+                                                        if (settings.isPremium) {
+                                                            settingsManager.toggleFavoriteLocation(suggestion)
+                                                        } else {
+                                                            showPaywallForFavorite = true
+                                                        }
+                                                    },
                                                     modifier = Modifier.size(24.dp)
                                                 ) {
                                                     Icon(Icons.Default.Star, contentDescription = "Remove from favorites", tint = Color(0xFFFACC15), modifier = Modifier.size(16.dp))
@@ -336,7 +374,13 @@ fun RoutePlanningScreen(
                         val place = selectedDest
                         if (place != null) {
                             val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
-                            IconButton(onClick = { settingsManager.toggleFavoriteLocation(place) }) {
+                            IconButton(onClick = {
+                                if (settings.isPremium) {
+                                    settingsManager.toggleFavoriteLocation(place)
+                                } else {
+                                    showPaywallForFavorite = true
+                                }
+                            }) {
                                 Icon(
                                     imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                                     contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
@@ -393,14 +437,26 @@ fun RoutePlanningScreen(
                                         )
                                         if (!isFavorite && (isHistory || suggestion.latitude != 0.0)) {
                                             IconButton(
-                                                onClick = { settingsManager.toggleFavoriteLocation(suggestion) },
+                                                onClick = {
+                                                    if (settings.isPremium) {
+                                                        settingsManager.toggleFavoriteLocation(suggestion)
+                                                    } else {
+                                                        showPaywallForFavorite = true
+                                                    }
+                                                },
                                                 modifier = Modifier.size(24.dp)
                                             ) {
                                                 Icon(Icons.Default.StarBorder, contentDescription = "Add to favorites", tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
                                             }
                                         } else if (isFavorite) {
                                             IconButton(
-                                                onClick = { settingsManager.toggleFavoriteLocation(suggestion) },
+                                                onClick = {
+                                                    if (settings.isPremium) {
+                                                        settingsManager.toggleFavoriteLocation(suggestion)
+                                                    } else {
+                                                        showPaywallForFavorite = true
+                                                    }
+                                                },
                                                 modifier = Modifier.size(24.dp)
                                             ) {
                                                 Icon(Icons.Default.Star, contentDescription = "Remove from favorites", tint = Color(0xFFFACC15), modifier = Modifier.size(16.dp))

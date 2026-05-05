@@ -52,6 +52,8 @@ import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.install.model.InstallStatus
 import fr.geoking.gaston.update.InAppUpdateHelper
 import fr.geoking.gaston.feature.auth.GoogleAuthManager
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.intent.NavDestination
 import kotlinx.coroutines.delay
@@ -129,6 +131,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         android.util.Log.d("MainActivity", "onCreate start")
+
+        val billingManager: fr.geoking.gaston.premium.BillingManager = get()
+        val settingsManager: SettingsManager = get()
+        lifecycleScope.launch {
+            billingManager.refreshStatus()
+            billingManager.isPremium.collect { isPremium ->
+                settingsManager.setPremium(isPremium)
+            }
+        }
 
         val appError = GastonApplication.initError
         if (appError != null) {

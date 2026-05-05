@@ -7,6 +7,7 @@ import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
@@ -80,6 +81,24 @@ class AutoFuelForecastScreen(
     }
 
     override fun onGetTemplate(): Template {
+        if (!settingsManager.settings.value.isPremium) {
+            return MessageTemplate.Builder("Gaston Premium Required")
+                .setHeader(
+                    Header.Builder()
+                        .setTitle("Fuel Price Outlook")
+                        .setStartHeaderAction(Action.BACK)
+                        .build()
+                )
+                .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_poi_gas_rounded)).build())
+                .addAction(
+                    Action.Builder()
+                        .setTitle("OK")
+                        .setOnClickListener { screenManager.pop() }
+                        .build()
+                )
+                .build()
+        }
+
         val list = ItemList.Builder()
 
         if (loading) {
