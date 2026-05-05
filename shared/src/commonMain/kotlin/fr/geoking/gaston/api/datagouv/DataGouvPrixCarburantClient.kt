@@ -94,10 +94,12 @@ class DataGouvPrixCarburantClient(
         val cp = record["cp"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
         val address = listOf(adresse, cp, ville).filter { it.isNotBlank() }.joinToString(", ")
         val pop = record["pop"]?.jsonPrimitive?.contentOrNull
-        val brand = when (pop) {
-            "A" -> "Autoroute"
-            "R" -> "Route"
-            else -> record["marque"]?.jsonPrimitive?.contentOrNull?.trim()
+        val rawMarque = record["marque"]?.jsonPrimitive?.contentOrNull?.trim()
+        val brand = when {
+            !rawMarque.isNullOrBlank() -> rawMarque
+            pop == "A" -> "Autoroute"
+            pop == "R" -> "Route"
+            else -> null
         }
         val name = record["nom"]?.jsonPrimitive?.contentOrNull?.trim()
             ?: record["name"]?.jsonPrimitive?.contentOrNull?.trim()

@@ -214,4 +214,47 @@ class DataGouvPrixCarburantClientTest {
         assertNotNull(sp95)
         assertEquals(1.95, sp95.priceEur)
     }
+
+    @Test
+    fun parseStationFromRecord_prefersMarqueOverPop() {
+        val json = Json { ignoreUnknownKeys = true }
+        val record = json.parseToJsonElement(
+            """
+            {
+                "id": "1",
+                "marque": "TotalEnergies",
+                "pop": "R",
+                "ville": "Paris",
+                "latitude": 48.0,
+                "longitude": 2.0
+            }
+            """
+        ).jsonObject
+
+        val station = client.parseStationFromRecord(record)
+        assertNotNull(station)
+        assertEquals("TotalEnergies", station.brand)
+        assertEquals("TotalEnergies", station.name)
+    }
+
+    @Test
+    fun parseStationFromRecord_usesPopWhenMarqueMissing() {
+        val json = Json { ignoreUnknownKeys = true }
+        val record = json.parseToJsonElement(
+            """
+            {
+                "id": "1",
+                "pop": "R",
+                "ville": "Paris",
+                "latitude": 48.0,
+                "longitude": 2.0
+            }
+            """
+        ).jsonObject
+
+        val station = client.parseStationFromRecord(record)
+        assertNotNull(station)
+        assertEquals("Route", station.brand)
+        assertEquals("Route", station.name)
+    }
 }
