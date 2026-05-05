@@ -81,7 +81,7 @@ class FirestoreSettingsSync(
             "vehicleType" to s.vehicleType.name,
             "carMapMode" to s.carMapMode.name,
             "mobiliteitLuxembourgKey" to s.mobiliteitLuxembourgKey,
-            "favoriteLocations" to s.favoriteLocations.map { mapOf("label" to it.label, "latitude" to it.latitude, "longitude" to it.longitude) }
+            "favoriteLocations" to s.favoriteLocations.map { mapOf("label" to it.label, "latitude" to it.latitude, "longitude" to it.longitude, "city" to it.city) }
         )
     }
 
@@ -113,7 +113,8 @@ class FirestoreSettingsSync(
             fr.geoking.gaston.api.geocoding.GeocodedPlace(
                 label = it["label"] as String,
                 latitude = (it["latitude"] as? Double) ?: (it["latitude"] as? Long)?.toDouble() ?: 0.0,
-                longitude = (it["longitude"] as? Double) ?: (it["longitude"] as? Long)?.toDouble() ?: 0.0
+                longitude = (it["longitude"] as? Double) ?: (it["longitude"] as? Long)?.toDouble() ?: 0.0,
+                city = it["city"] as? String
             )
         }
 

@@ -202,7 +202,7 @@ fun MapScreen(
     var didInitialCenter by remember { mutableStateOf(false) }
 
     LaunchedEffect(hasLocationPermission) {
-        if (hasLocationPermission && !didInitialCenter && initialSelectedPoi == null) {
+        if (hasLocationPermission && !didInitialCenter && initialSelectedPoi == null && initialCenter == null) {
             val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
             cameraPositionState.position = CameraPosition.fromLatLngZoom(
                 LatLng(lat, lon),

@@ -6,7 +6,8 @@ import kotlinx.serialization.Serializable
 data class GeocodedPlace(
     val label: String,
     val latitude: Double,
-    val longitude: Double
+    val longitude: Double,
+    val city: String? = null
 )
 
 interface GeocodingClient {

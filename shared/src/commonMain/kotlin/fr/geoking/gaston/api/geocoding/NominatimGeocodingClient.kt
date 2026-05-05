@@ -26,7 +26,7 @@ class NominatimGeocodingClient(
         val q = query.trim()
         if (q.isBlank()) return emptyList()
 
-        val url = "${baseUrl}?q=${q.encodeURLParameter()}&limit=$limit&format=jsonv2"
+        val url = "${baseUrl}?q=${q.encodeURLParameter()}&limit=$limit&format=jsonv2&addressdetails=1"
         val response = client.get(url) {
             // Nominatim requires a User-Agent
             header("User-Agent", "gaston-App (contact@geoking.fr)")
@@ -43,7 +43,12 @@ class NominatimGeocodingClient(
             val lon = obj["lon"]?.jsonPrimitive?.content?.toDoubleOrNull()
             if (lat == null || lon == null) return@mapNotNull null
             val label = obj["display_name"]?.jsonPrimitive?.content ?: q
-            GeocodedPlace(label = label, latitude = lat, longitude = lon)
+            val address = obj["address"]?.jsonObject
+            val city = address?.get("city")?.jsonPrimitive?.content
+                ?: address?.get("town")?.jsonPrimitive?.content
+                ?: address?.get("village")?.jsonPrimitive?.content
+                ?: address?.get("municipality")?.jsonPrimitive?.content
+            GeocodedPlace(label = label, latitude = lat, longitude = lon, city = city)
         }
     }
 }

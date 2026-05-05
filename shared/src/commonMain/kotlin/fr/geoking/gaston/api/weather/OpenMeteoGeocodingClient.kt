@@ -35,6 +35,6 @@ class OpenMeteoGeocodingClient(
         val admin = first["admin1"]?.jsonPrimitive?.content
         val country = first["country"]?.jsonPrimitive?.content
         val label = listOfNotNull(placeName, admin, country).distinct().joinToString(", ")
-        return GeocodedPlace(label = label, latitude = lat, longitude = lon)
+        return GeocodedPlace(label = label, latitude = lat, longitude = lon, city = placeName)
     }
 }

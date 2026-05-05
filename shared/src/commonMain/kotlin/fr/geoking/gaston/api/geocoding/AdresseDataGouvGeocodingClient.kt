@@ -46,7 +46,8 @@ class AdresseDataGouvGeocodingClient(
             val label = props?.get("label")?.jsonPrimitive?.contentOrNull
                 ?: props?.get("name")?.jsonPrimitive?.contentOrNull
                 ?: q
-            GeocodedPlace(label = label, latitude = lat, longitude = lon)
+            val city = props?.get("city")?.jsonPrimitive?.contentOrNull
+            GeocodedPlace(label = label, latitude = lat, longitude = lon, city = city)
         }
     }
 }

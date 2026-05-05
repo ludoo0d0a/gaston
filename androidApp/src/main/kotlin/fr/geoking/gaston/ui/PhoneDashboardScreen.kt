@@ -706,48 +706,33 @@ fun PhoneDashboardScreen(
 
                 // 1. Nearby Cheapest (loader or card)
                 item {
-                    if (isLoadingPois && showLoaderByDelay) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                        ) {
-                            Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    "Nearby cheapest",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.align(Alignment.Start).padding(bottom = 12.dp)
-                                )
-                                Box(Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                                        Spacer(Modifier.height(8.dp))
-                                        Text("Searching nearby...", style = MaterialTheme.typography.bodySmall)
-                                    }
-                                }
-                            }
-                        }
+                    val cardModifier = if (!hasLocationPermission) {
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onRequestLocationPermission() }
                     } else {
-                        val cardModifier = if (!hasLocationPermission) {
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable { onRequestLocationPermission() }
-                        } else {
-                            Modifier.fillMaxWidth()
-                        }
-                        CheapestStationsCard(
-                            stations = nearbyPois,
-                            userLatitude = userLat,
-                            userLongitude = userLon,
-                            selectedEnergyIds = energyFilterIds,
-                            onClick = { poiForDetails = it },
-                            onMapClick = { onOpenMap(null) },
-                            modifier = cardModifier,
-                            emptyMessage = searchError,
-                            title = if (selectedSearchLocation != null) "Cheapest near ${selectedSearchLocation.label}" else "Nearby cheapest"
-                        )
+                        Modifier.fillMaxWidth()
                     }
+                    val cheapestTitle = remember(selectedSearchLocation) {
+                        if (selectedSearchLocation != null) {
+                            val placeName = selectedSearchLocation.city ?: selectedSearchLocation.label.split(",").first().trim()
+                            "Cheapest near $placeName"
+                        } else {
+                            "Nearby cheapest"
+                        }
+                    }
+                    CheapestStationsCard(
+                        stations = nearbyPois,
+                        userLatitude = userLat,
+                        userLongitude = userLon,
+                        selectedEnergyIds = energyFilterIds,
+                        onClick = { poiForDetails = it },
+                        onMapClick = { onOpenMap(null) },
+                        modifier = cardModifier,
+                        isLoading = isLoadingPois && showLoaderByDelay,
+                        emptyMessage = searchError,
+                        title = cheapestTitle
+                    )
                 }
 
                 // 2. Quick Actions Row (Fuel, EV, Hybrid)
