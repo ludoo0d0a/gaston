@@ -36,7 +36,9 @@ enum class PoiCategory {
     /** Radars / speed cameras (OSM highway=speed_camera). */
     Radar,
     /** Parking lots (OSM amenity=parking). */
-    Parking;
+    Parking,
+    /** Points of interest with a view (OSM tourism=viewpoint). */
+    Viewpoint;
     companion object {
         /** OSM amenity tag value for this category, when applicable. */
         fun fromOsmAmenity(amenity: String): PoiCategory? = when (amenity) {
@@ -48,8 +50,6 @@ enum class PoiCategory {
             "restaurant" -> Restaurant
             "fast_food" -> FastFood
             "parking" -> Parking
-            "fuel" -> Gas
-            "charging_station" -> Irve
             else -> null
         }
         /** OSM tourism tag value for this category. */
@@ -57,6 +57,7 @@ enum class PoiCategory {
             "camp_site" -> Camping
             "caravan_site" -> CaravanSite
             "picnic_site" -> PicnicSite
+            "viewpoint" -> Viewpoint
             else -> null
         }
         /** OSM highway tag value for this category (e.g. rest_area). */

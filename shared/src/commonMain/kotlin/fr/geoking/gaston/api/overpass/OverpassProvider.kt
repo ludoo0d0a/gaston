@@ -35,6 +35,7 @@ class OverpassProvider(
         PoiCategory.FastFood,
         PoiCategory.Radar,
         PoiCategory.Parking,
+        PoiCategory.Viewpoint,
         PoiCategory.Gas,
         PoiCategory.Irve
     )
@@ -158,8 +159,6 @@ class OverpassProvider(
         PoiCategory.Restaurant -> "restaurant"
         PoiCategory.FastFood -> "fast_food"
         PoiCategory.Parking -> "parking"
-        PoiCategory.Gas -> "fuel"
-        PoiCategory.Irve -> "charging_station"
         else -> null
     }
 
@@ -167,6 +166,7 @@ class OverpassProvider(
         PoiCategory.Camping -> "camp_site"
         PoiCategory.CaravanSite -> "caravan_site"
         PoiCategory.PicnicSite -> "picnic_site"
+        PoiCategory.Viewpoint -> "viewpoint"
         else -> null
     }
 
@@ -188,6 +188,7 @@ class OverpassProvider(
         PoiCategory.FastFood -> "Fast food"
         PoiCategory.Radar -> "Radar"
         PoiCategory.Parking -> "Parking"
+        PoiCategory.Viewpoint -> "Viewpoint"
         PoiCategory.Gas -> "Gas station"
         PoiCategory.Irve -> "Charging station"
         else -> c.name

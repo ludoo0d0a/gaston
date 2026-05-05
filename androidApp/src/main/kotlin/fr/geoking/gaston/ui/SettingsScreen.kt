@@ -66,6 +66,7 @@ enum class SettingsScreenPage {
     VehicleConfig,
     MapConfig,
     Sources,
+    App,
     About
 }
 
@@ -148,6 +149,7 @@ fun SettingsScreen(
                             SettingsScreenPage.VehicleConfig -> "Vehicle"
                             SettingsScreenPage.MapConfig -> "Map"
                             SettingsScreenPage.Sources -> "Sources"
+                            SettingsScreenPage.App -> "App"
                         }
                     )
                 },
@@ -205,6 +207,10 @@ fun SettingsScreen(
                     onUpdate = { save(settingsManager, it) }
                 )
                 SettingsScreenPage.Sources -> SourcesConfig(
+                    settings = current,
+                    onUpdate = { save(settingsManager, it) }
+                )
+                SettingsScreenPage.App -> AppConfig(
                     settings = current,
                     onUpdate = { save(settingsManager, it) }
                 )
@@ -688,74 +694,114 @@ private fun SourcesConfig(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
             Column {
                 Text(
-                    "API keys (optional)",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    "Amenity types (Overpass)",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                OutlinedTextField(
-                    value = settings.openChargeMapKey,
-                    onValueChange = { onUpdate(settings.copy(openChargeMapKey = it)) },
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("OpenChargeMap API key") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = settings.ecoMovementKey,
-                    onValueChange = { onUpdate(settings.copy(ecoMovementKey = it)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Eco-Movement API key") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                ApiKeyHelpLink(
-                    helpText = "Eco-Movement key is used as: Authorization: Token <key>.",
-                    url = "https://developers.eco-movement.com",
-                    linkLabel = "Eco-Movement docs"
-                )
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OVERPASS_AMENITY_OPTIONS.forEach { (id, label) ->
+                        FilterChip(
+                            selected = settings.selectedOverpassAmenityTypes.contains(id),
+                            onClick = {
+                                val next = if (settings.selectedOverpassAmenityTypes.contains(id)) {
+                                    settings.selectedOverpassAmenityTypes - id
+                                } else {
+                                    settings.selectedOverpassAmenityTypes + id
+                                }
+                                onUpdate(settings.copy(selectedOverpassAmenityTypes = next))
+                            },
+                            label = { Text(label) }
+                        )
+                    }
+                }
             }
+        }
+    }
+}
 
+@Composable
+private fun AppConfig(
+    settings: AppSettings,
+    onUpdate: (AppSettings) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Column {
+            Text(
+                "API keys (optional)",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedTextField(
+                value = settings.openChargeMapKey,
+                onValueChange = { onUpdate(settings.copy(openChargeMapKey = it)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("OpenChargeMap API key") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
             Spacer(modifier = Modifier.height(12.dp))
-            Column {
-                Text(
-                    "Fuel API keys (optional)",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OutlinedTextField(
-                    value = settings.fuelpricesDkKey,
-                    onValueChange = { onUpdate(settings.copy(fuelpricesDkKey = it)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Fuelprices.dk API key") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = settings.nswFuelCheckKey,
-                    onValueChange = { onUpdate(settings.copy(nswFuelCheckKey = it)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("NSW FuelCheck API key") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = settings.nswFuelCheckSecret,
-                    onValueChange = { onUpdate(settings.copy(nswFuelCheckSecret = it)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("NSW FuelCheck API secret") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
-                )
-            }
+            OutlinedTextField(
+                value = settings.ecoMovementKey,
+                onValueChange = { onUpdate(settings.copy(ecoMovementKey = it)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Eco-Movement API key") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            ApiKeyHelpLink(
+                helpText = "Eco-Movement key is used as: Authorization: Token <key>.",
+                url = "https://developers.eco-movement.com",
+                linkLabel = "Eco-Movement docs"
+            )
+        }
+
+        Column {
+            Text(
+                "Fuel API keys (optional)",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedTextField(
+                value = settings.fuelpricesDkKey,
+                onValueChange = { onUpdate(settings.copy(fuelpricesDkKey = it)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Fuelprices.dk API key") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedTextField(
+                value = settings.nswFuelCheckKey,
+                onValueChange = { onUpdate(settings.copy(nswFuelCheckKey = it)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("NSW FuelCheck API key") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedTextField(
+                value = settings.nswFuelCheckSecret,
+                onValueChange = { onUpdate(settings.copy(nswFuelCheckSecret = it)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("NSW FuelCheck API secret") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
         }
     }
 }
@@ -898,6 +944,11 @@ private fun MainMenu(
                     label = "Error log",
                     value = "View recent errors",
                     onClick = { onNavigate(SettingsScreenPage.ErrorLog) }
+                )
+                SettingsItem(
+                    label = "App",
+                    value = "API keys",
+                    onClick = { onNavigate(SettingsScreenPage.App) }
                 )
                 SettingsItem(
                     label = "About",

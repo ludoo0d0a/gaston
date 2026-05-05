@@ -304,6 +304,7 @@ class SelectorPoiProvider(
                                 "fast_food" -> PoiCategory.FastFood
                                 "speed_camera" -> PoiCategory.Radar
                                 "parking" -> PoiCategory.Parking
+                                "viewpoint" -> PoiCategory.Viewpoint
                                 else -> null
                             }
                         }.toSet()
@@ -565,6 +566,7 @@ class SelectorPoiProvider(
                                 "fast_food" -> PoiCategory.FastFood
                                 "speed_camera" -> PoiCategory.Radar
                                 "parking" -> PoiCategory.Parking
+                                "viewpoint" -> PoiCategory.Viewpoint
                                 else -> null
                             }
                         }.toSet()

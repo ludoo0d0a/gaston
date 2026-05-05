@@ -291,6 +291,7 @@ object PoiMarkerHelper {
         return when (category) {
             PoiCategory.Radar -> 0xFFDC3545.toInt()
             PoiCategory.Parking -> 0xFF007BFF.toInt() // Parking blue
+            PoiCategory.Viewpoint -> 0xFF6C757D.toInt() // Viewpoint gray
             else -> 0xFF17A2B8.toInt()
         }
     }
@@ -308,6 +309,7 @@ object PoiMarkerHelper {
             PoiCategory.PicnicSite -> R.drawable.ic_poi_picnic_rounded
             PoiCategory.Radar -> R.drawable.ic_poi_radar_rounded
             PoiCategory.Parking -> R.drawable.ic_poi_parking_rounded
+            PoiCategory.Viewpoint -> R.drawable.ic_map
             else -> if (poi.isElectric) R.drawable.ic_poi_electric_rounded else R.drawable.ic_poi_gas_rounded
         }
     }
