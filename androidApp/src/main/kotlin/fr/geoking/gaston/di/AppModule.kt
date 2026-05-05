@@ -2,6 +2,7 @@ package fr.geoking.gaston.di
 
 import android.content.Context
 import fr.geoking.gaston.feature.network.AndroidNetworkService
+import fr.geoking.gaston.feature.notification.NotificationHelper
 import fr.geoking.gaston.feature.weather.AndroidWeatherLookup
 import fr.geoking.gaston.feature.permission.AndroidPermissionManager
 import fr.geoking.gaston.feature.auth.GoogleAuthManager
@@ -169,6 +170,8 @@ val appModule = module {
     single<PermissionManager> {
         AndroidPermissionManager(androidContext())
     }
+
+    single { NotificationHelper(androidContext()) }
 
     single<WeatherLookup> {
         AndroidWeatherLookup(androidContext(), get())
