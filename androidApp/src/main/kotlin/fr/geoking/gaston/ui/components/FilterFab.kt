@@ -13,14 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import fr.geoking.gaston.DEFAULT_MAP_ENERGY_TYPES
-import fr.geoking.gaston.SettingsManager
-import fr.geoking.gaston.countryDisplayLabelAtMapPosition
+import fr.geoking.gaston.*
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.anyProvidesFuel
 import fr.geoking.gaston.ui.*
-import fr.geoking.gaston.ui.ColorHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +57,14 @@ fun FilterFab(
                 }
             }
         )
+    }
+
+    val filterBarProviders = remember(settings, mapCenterLatitude, mapCenterLongitude) {
+        when {
+            mapCenterLatitude != null && mapCenterLongitude != null ->
+                settings.effectiveProvidersAt(mapCenterLatitude, mapCenterLongitude)
+            else -> settings.effectiveProviders()
+        }
     }
 
     val favoritesFilterActive = favoritesFilterEnabled && showFavoritesOnly
@@ -253,11 +258,11 @@ fun FilterFab(
                     Spacer(modifier = Modifier.height(24.dp))
                 } else {
                     if (filterMode == 0 || filterMode == 2) {
-                        FuelFilters(settingsManager)
+                        FuelFilters(settingsManager, filterBarProviders)
                         Spacer(modifier = Modifier.height(24.dp))
                     }
                     if (filterMode == 1 || filterMode == 2) {
-                        ElectricFilters(settingsManager)
+                        ElectricFilters(settingsManager, filterBarProviders)
                         Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
@@ -317,42 +322,32 @@ private fun AmenityFilters(settingsManager: SettingsManager) {
 }
 
 @Composable
-private fun FuelFilters(settingsManager: SettingsManager) {
+private fun FuelFilters(settingsManager: SettingsManager, providers: Set<PoiProviderType>) {
     val settings by settingsManager.settings.collectAsState()
     val brandOptions = remember { BrandHelper.getGasBrands() }
 
-    FilterSectionTitle("Fuel Types")
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
-            val isSelected = settings.selectedMapEnergyTypes.contains(id)
-            val chipColor = ColorHelper.getFuelColor(id) ?: MaterialTheme.colorScheme.primary
-            FilterChip(
-                selected = isSelected,
-                onClick = {
-                    val newEnergies = if (isSelected) emptySet() else setOf(id)
-                    settingsManager.setMapEnergyTypes(newEnergies)
-                },
-                label = { Text(label) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = chipColor,
-                    selectedLabelColor = Color.White,
-                    labelColor = Color.White,
-                    containerColor = Color(0xFF334155)
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = isSelected,
-                    borderColor = Color.White.copy(alpha = 0.3f),
-                    selectedBorderColor = chipColor
+    if (providers.anyProvidesFuel()) {
+        FilterSectionTitle("Fuel Types")
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
+                FuelFilterChip(
+                    id = id,
+                    label = label,
+                    isSelected = settings.effectiveMapEnergyFilterIds().contains(id),
+                    onClick = {
+                        val current = settings.selectedMapEnergyTypes
+                        val next = if (current.contains(id)) current - id else current + id
+                        settingsManager.setUseVehicleFilter(false)
+                        settingsManager.setMapEnergyTypes(next)
+                    }
                 )
-            )
+            }
         }
+        Spacer(modifier = Modifier.height(24.dp))
     }
-
-    Spacer(modifier = Modifier.height(24.dp))
 
     FilterSectionTitle("Brands")
     MultiSelectBrandFilter(
@@ -363,42 +358,32 @@ private fun FuelFilters(settingsManager: SettingsManager) {
 }
 
 @Composable
-private fun ElectricFilters(settingsManager: SettingsManager) {
+private fun ElectricFilters(settingsManager: SettingsManager, providers: Set<PoiProviderType>) {
     val settings by settingsManager.settings.collectAsState()
     val brandOptions = remember { BrandHelper.getElectricBrands() }
 
-    FilterSectionTitle("Power Range")
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        MAP_IRVE_POWER_OPTIONS.forEach { (id, label) ->
-            val isSelected = settings.mapPowerLevels.contains(id)
-            val chipColor = ColorHelper.getPowerColorByLevel(id)
-            FilterChip(
-                selected = isSelected,
-                onClick = {
-                    val newLevels = if (isSelected) settings.mapPowerLevels - id else settings.mapPowerLevels + id
-                    settingsManager.setMapPowerLevels(newLevels)
-                },
-                label = { Text(label) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = chipColor,
-                    selectedLabelColor = Color.White,
-                    labelColor = Color.White,
-                    containerColor = Color(0xFF334155)
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = isSelected,
-                    borderColor = Color.White.copy(alpha = 0.3f),
-                    selectedBorderColor = chipColor
+    if (providers.anyProvidesElectric()) {
+        FilterSectionTitle("Power Range")
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
+                PowerFilterChip(
+                    kw = kw,
+                    label = label,
+                    isSelected = settings.effectiveIrvePowerLevels().contains(kw),
+                    onClick = {
+                        val current = settings.mapPowerLevels
+                        val next = if (current.contains(kw)) current - kw else current + kw
+                        settingsManager.setUseVehicleFilter(false)
+                        settingsManager.setMapPowerLevels(next)
+                    }
                 )
-            )
+            }
         }
+        Spacer(modifier = Modifier.height(24.dp))
     }
-
-    Spacer(modifier = Modifier.height(16.dp))
 
     FilterSectionTitle("Connectors")
     FlowRow(
