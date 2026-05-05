@@ -142,6 +142,13 @@ class MainActivity : ComponentActivity() {
         }
 
         handleIntent(intent)
+
+        // Check for updates once at startup.
+        // Only meaningful for Play Store distribution.
+        if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
+            inAppUpdateHelper.checkForUpdate()
+        }
+
         try {
             android.util.Log.d("MainActivity", "Resolving Koin dependencies...")
             val diagnostics: DiagnosticStore = get()
@@ -173,11 +180,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Check on every open/resume to reliably prompt for updates.
-        // Only meaningful for Play Store distribution.
-        if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
-            inAppUpdateHelper.checkForUpdate()
-        }
     }
 
     private fun installMainComposeContent(

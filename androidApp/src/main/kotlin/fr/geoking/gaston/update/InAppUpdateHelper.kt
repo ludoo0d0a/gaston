@@ -99,6 +99,9 @@ class InAppUpdateHelper(
         appUpdateInfo: AppUpdateInfo,
         launcher: ActivityResultLauncher<IntentSenderRequest>
     ) {
+        // Once the user clicks "Update", we consider it handled for this session
+        // so the popup doesn't reappear if they return to the app while it's starting.
+        isUpdateDismissed = true
         val options = AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build()
         appUpdateManager.startUpdateFlowForResult(appUpdateInfo, launcher, options)
         _updateAvailable.value = null
