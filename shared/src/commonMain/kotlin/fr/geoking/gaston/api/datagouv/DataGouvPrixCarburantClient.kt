@@ -178,7 +178,9 @@ class DataGouvPrixCarburantClient(
                 val raw = obj["valeur"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
                     ?: obj["@valeur"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
                     ?: obj["value"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
-                if (raw != null) list.add(DataGouvPrixCarburantFuelPrice(name = nom, priceEur = raw))
+                val maj = obj["maj"]?.jsonPrimitive?.contentOrNull
+                    ?: obj["@maj"]?.jsonPrimitive?.contentOrNull
+                if (raw != null) list.add(DataGouvPrixCarburantFuelPrice(name = nom, priceEur = raw, updatedAt = maj))
             }
         }
 
@@ -192,17 +194,19 @@ class DataGouvPrixCarburantClient(
             "gplc" to "GPLc"
         ).forEach { (fieldPrefix, fuelName) ->
             val price = record["${fieldPrefix}_prix"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
+            val maj = record["${fieldPrefix}_maj"]?.jsonPrimitive?.contentOrNull
             if (price != null && list.none { it.name.equals(fuelName, ignoreCase = true) }) {
-                list.add(DataGouvPrixCarburantFuelPrice(name = fuelName, priceEur = price))
+                list.add(DataGouvPrixCarburantFuelPrice(name = fuelName, priceEur = price, updatedAt = maj))
             }
         }
 
         val singleNom = record["prix_nom"]?.jsonPrimitive?.contentOrNull
         val singleVal = record["prix_valeur"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
+        val singleMaj = record["prix_maj"]?.jsonPrimitive?.contentOrNull
         if (singleNom != null && singleVal != null) {
             val exists = list.any { it.name == singleNom }
             if (!exists) {
-                list.add(DataGouvPrixCarburantFuelPrice(name = singleNom, priceEur = singleVal))
+                list.add(DataGouvPrixCarburantFuelPrice(name = singleNom, priceEur = singleVal, updatedAt = singleMaj))
             }
         }
         return list
@@ -229,5 +233,6 @@ data class DataGouvPrixCarburantStation(
 @Serializable
 data class DataGouvPrixCarburantFuelPrice(
     val name: String,
-    val priceEur: Double
+    val priceEur: Double,
+    val updatedAt: String? = null
 )

@@ -181,6 +181,7 @@ object PoiMerger {
         val mergedRestaurantDetails = mergeRestaurantDetails(existing.restaurantDetails, incoming.restaurantDetails)
 
         val mergedSources = mergeSources(existing.source, incoming.source)
+        val mergedSourceUpdates = mergeSourceUpdates(existing.sourceUpdates, incoming.sourceUpdates)
 
         val brandExisting = BrandRegistry.findBrand(existing.name, existing.brand)
         val brandIncoming = BrandRegistry.findBrand(incoming.name, incoming.brand)
@@ -215,6 +216,7 @@ object PoiMerger {
             chargePointCount = mergeMaxOrNull(existing.chargePointCount, incoming.chargePointCount),
             // Connector / fuel price details are merged above.
             source = mergedSources,
+            sourceUpdates = mergedSourceUpdates,
         )
     }
 
@@ -288,6 +290,19 @@ object PoiMerger {
             .flatten()
             .distinct()
         return parts.takeIf { it.isNotEmpty() }?.joinToString(" + ")
+    }
+
+    private fun mergeSourceUpdates(a: Map<String, String>?, b: Map<String, String>?): Map<String, String>? {
+        if (a == null) return b
+        if (b == null) return a
+        val merged = a.toMutableMap()
+        for ((source, timestamp) in b) {
+            val existing = merged[source]
+            if (existing == null || timestamp > existing) {
+                merged[source] = timestamp
+            }
+        }
+        return merged.takeIf { it.isNotEmpty() }
     }
 
     private fun mergeFuelPrices(a: List<FuelPrice>?, b: List<FuelPrice>?): List<FuelPrice>? {
@@ -419,43 +434,12 @@ object PoiMerger {
     private fun isStale(updatedAt: String, weeks: Int): Boolean {
         return try {
             val now = Clock.System.now()
-            val updatedInstant = parseFlexible(updatedAt) ?: return false
+            val updatedInstant = fr.geoking.gaston.shared.datetime.DateTimeUtils.parseFlexible(updatedAt) ?: return false
             val diff = now - updatedInstant
             diff.inWholeDays > (weeks * 7)
         } catch (e: Exception) {
             false
         }
-    }
-
-    private fun parseFlexible(dateStr: String): Instant? {
-        // Attempt ISO format first: 2024-05-20T10:20:30Z
-        try {
-            return Instant.parse(dateStr)
-        } catch (_: Exception) {
-        }
-
-        // Attempt ODS format (DataGouv): 2024-05-20T10:20:30+02:00
-        // (Instant.parse handles ISO-8601 with offset in recent kotlinx-datetime versions)
-
-        // Attempt "YYYY-MM-DD HH:MM:SS" (Mimit)
-        try {
-            val space = dateStr.indexOf(' ')
-            if (space == 10) {
-                val iso = dateStr.replace(' ', 'T') + "Z" // Assume UTC if no zone
-                return Instant.parse(iso)
-            }
-        } catch (_: Exception) {
-        }
-
-        // Attempt YYYY-MM-DD
-        try {
-            if (dateStr.length == 10 && dateStr[4] == '-' && dateStr[7] == '-') {
-                return (dateStr + "T00:00:00Z").let { Instant.parse(it) }
-            }
-        } catch (_: Exception) {
-        }
-
-        return null
     }
 }
 
