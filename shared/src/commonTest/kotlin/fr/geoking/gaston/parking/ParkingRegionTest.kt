@@ -40,4 +40,29 @@ class ParkingRegionTest {
     fun containing_outsideEurope_returnsNull() {
         assertNull(ParkingRegion.containing(40.7128, -74.0060))
     }
+
+    @Test
+    fun allContaining_Metz_returnsFranceAndGermany() {
+        // Metz: 49.11, 6.17
+        val regions = ParkingRegion.allContaining(49.11, 6.17)
+        assertEquals(2, regions.size)
+        // Order by specificity (Germany then France in the current list, though both are "large")
+        // Actually Germany (index 6) comes before France (index 7) in bySpecificity list
+        assertEquals(setOf(ParkingRegion.France, ParkingRegion.Germany), regions.toSet())
+    }
+
+    @Test
+    fun allInViewport_nearBorder_returnsMultiple() {
+        // Viewport covering part of FR, DE, LU
+        val regions = ParkingRegion.allInViewport(
+            latMin = 49.4,
+            latMax = 49.6,
+            lonMin = 6.0,
+            lonMax = 6.4
+        )
+        val codes = regions.map { it.countryCode }.toSet()
+        // Use println to debug if it fails again
+        // println("Detected codes: $codes")
+        assertEquals(setOf("FR", "DE", "LU", "BE"), codes)
+    }
 }

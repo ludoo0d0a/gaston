@@ -132,5 +132,22 @@ enum class ParkingRegion(
         /** Returns the region containing (lat, lon), or null if none. */
         fun containing(lat: Double, lon: Double): ParkingRegion? =
             bySpecificity.firstOrNull { it.contains(lat, lon) }
+
+        /** Returns all regions containing (lat, lon). Useful for cross-border areas. */
+        fun allContaining(lat: Double, lon: Double): List<ParkingRegion> =
+            bySpecificity.filter { it.contains(lat, lon) }
+
+        /** Returns all regions intersecting with the given viewport. */
+        fun allInViewport(
+            latMin: Double,
+            latMax: Double,
+            lonMin: Double,
+            lonMax: Double
+        ): List<ParkingRegion> {
+            return bySpecificity.filter { region ->
+                region.latMin <= latMax && region.latMax >= latMin &&
+                        region.lonMin <= lonMax && region.lonMax >= lonMin
+            }
+        }
     }
 }
