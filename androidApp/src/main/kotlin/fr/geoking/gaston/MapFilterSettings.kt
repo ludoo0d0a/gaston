@@ -5,7 +5,7 @@ import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
-import fr.geoking.gaston.poi.autoProvidersForCountry
+import fr.geoking.gaston.poi.autoProvidersForCountries
 import java.util.Locale
 
 fun AppSettings.effectiveMapEnergyFilterIds(): Set<String> {
@@ -59,16 +59,15 @@ fun AppSettings.effectiveIrveOperatorFilter(): Set<String> {
  * - [PoiProviderSelectionMode.Manual]: uses [selectedPoiProviders]
  * - [PoiProviderSelectionMode.Auto]: uses current country (GPS/network) when available
  *
- * When [countryCode] is null/unknown, falls back to [selectedPoiProviders] (manual override).
+ * When [countryCodes] is empty, falls back to [selectedPoiProviders] (manual override).
  */
-fun AppSettings.effectiveProviders(countryCode: String? = null): Set<PoiProviderType> {
+fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Set<PoiProviderType> {
     val base = if (poiProviderSelectionMode == PoiProviderSelectionMode.Manual) {
         selectedPoiProviders
     } else {
-        val iso = countryCode?.trim()?.uppercase()?.takeIf { it.length == 2 }
-        if (iso != null) {
-            autoProvidersForCountry(
-                countryCode = iso,
+        if (countryCodes.isNotEmpty()) {
+            autoProvidersForCountries(
+                countryCodes = countryCodes,
                 vehicleEnergy = vehicleEnergy,
                 fallbackManual = selectedPoiProviders
             )
@@ -79,19 +78,23 @@ fun AppSettings.effectiveProviders(countryCode: String? = null): Set<PoiProvider
     return base
 }
 
-/** ISO country code for [latitude]/[longitude] when it falls in a known [ParkingRegion], else null. */
-fun countryCodeAtMapPosition(latitude: Double, longitude: Double): String? =
-    ParkingRegion.containing(latitude, longitude)?.countryCode
+/** ISO country codes for [latitude]/[longitude] when it falls in known [ParkingRegion]s. */
+fun countryCodesAtMapPosition(latitude: Double, longitude: Double): List<String> =
+    ParkingRegion.allContaining(latitude, longitude).map { it.countryCode }
 
-/** Human-readable country for the map viewport (same regions as auto provider selection). */
+/** Human-readable countries for the map position (same regions as auto provider selection). */
 fun countryDisplayLabelAtMapPosition(
     latitude: Double,
     longitude: Double,
     locale: Locale = Locale.getDefault(),
 ): String {
-    val iso = countryCodeAtMapPosition(latitude, longitude) ?: return "Unknown region"
-    val name = Locale("", iso).getDisplayCountry(locale).ifBlank { null }
-    return if (name != null && !name.equals(iso, ignoreCase = true)) "$name ($iso)" else iso
+    val isos = countryCodesAtMapPosition(latitude, longitude)
+    if (isos.isEmpty()) return "Unknown region"
+
+    return isos.joinToString(" / ") { iso ->
+        val name = Locale("", iso).getDisplayCountry(locale).ifBlank { null }
+        if (name != null && !name.equals(iso, ignoreCase = true)) "$name ($iso)" else iso
+    }
 }
 
 /**
@@ -99,7 +102,7 @@ fun countryDisplayLabelAtMapPosition(
  * Manual mode ignores coordinates and returns [selectedPoiProviders].
  */
 fun AppSettings.effectiveProvidersAt(latitude: Double, longitude: Double): Set<PoiProviderType> =
-    effectiveProviders(countryCode = countryCodeAtMapPosition(latitude, longitude))
+    effectiveProviders(countryCodes = countryCodesAtMapPosition(latitude, longitude))
 
 fun Set<PoiProviderType>.isOnlyOverpass(): Boolean =
     isNotEmpty() && all { it == PoiProviderType.Overpass }

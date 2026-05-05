@@ -94,6 +94,26 @@ class SelectorPoiProvider(
     private val cacheLock = Any()
     private val flowMutex = Mutex()
 
+    private fun getCountryCodes(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        hasViewport: Boolean
+    ): List<String> {
+        return if (hasViewport) {
+            val latDelta = radiusKm / 111.0
+            val lonDelta = radiusKm / (111.0 * cos(latitude * PI / 180.0))
+            ParkingRegion.allInViewport(
+                latMin = latitude - latDelta,
+                latMax = latitude + latDelta,
+                lonMin = longitude - lonDelta,
+                lonMax = longitude + lonDelta
+            ).map { it.countryCode }
+        } else {
+            ParkingRegion.allContaining(latitude, longitude).map { it.countryCode }
+        }
+    }
+
     private fun getProvider(type: PoiProviderType): PoiProvider = when (type) {
         PoiProviderType.Routex -> routex
         PoiProviderType.Etalab -> dataGouvPrixCarburant
@@ -166,9 +186,25 @@ class SelectorPoiProvider(
             }
         }
 
-        val isoCountry = ParkingRegion.containing(request.latitude, request.longitude)?.countryCode
+        val requiredRadiusKm = request.viewport?.let { v ->
+            radiusKmFromMapViewport(
+                request.latitude,
+                request.longitude,
+                v.zoom,
+                v.mapWidthPx,
+                v.mapHeightPx
+            ).coerceIn(1, 50)
+        } ?: 10
+
+        val isoCountries = getCountryCodes(
+            latitude = request.latitude,
+            longitude = request.longitude,
+            radiusKm = requiredRadiusKm,
+            hasViewport = request.viewport != null
+        )
+
         val providers = try {
-            settings.effectiveProviders(countryCode = isoCountry)
+            settings.effectiveProviders(countryCodes = isoCountries)
         } catch (e: Exception) {
             Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
             settings.selectedPoiProviders
@@ -193,16 +229,6 @@ class SelectorPoiProvider(
         val expiresBeforeMs = nowMs - ttlMs
         val maxRegions = 12 // Increased slightly for persistence
         val maxPoisInCache = 1200
-
-        val requiredRadiusKm = request.viewport?.let { v ->
-            radiusKmFromMapViewport(
-                request.latitude,
-                request.longitude,
-                v.zoom,
-                v.mapWidthPx,
-                v.mapHeightPx
-            ).coerceIn(1, 50)
-        } ?: 10
 
         var isFromMemory = false
         val alreadyCoveredResult = synchronized(cacheLock) {
@@ -443,9 +469,26 @@ class SelectorPoiProvider(
 
     override suspend fun searchResult(request: PoiSearchRequest): PoiSearchResult {
         val settings = settingsManager.settings.value
-        val isoCountry = ParkingRegion.containing(request.latitude, request.longitude)?.countryCode
+
+        val requiredRadiusKm = request.viewport?.let { v ->
+            radiusKmFromMapViewport(
+                request.latitude,
+                request.longitude,
+                v.zoom,
+                v.mapWidthPx,
+                v.mapHeightPx
+            ).coerceIn(1, 50)
+        } ?: 10
+
+        val isoCountries = getCountryCodes(
+            latitude = request.latitude,
+            longitude = request.longitude,
+            radiusKm = requiredRadiusKm,
+            hasViewport = request.viewport != null
+        )
+
         val providers = try {
-            settings.effectiveProviders(countryCode = isoCountry)
+            settings.effectiveProviders(countryCodes = isoCountries)
         } catch (e: Exception) {
             Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
             settings.selectedPoiProviders
@@ -467,16 +510,6 @@ class SelectorPoiProvider(
         val expiresBeforeMs = nowMs - ttlMs
         val maxRegions = 12
         val maxPoisInCache = 1200
-
-        val requiredRadiusKm = request.viewport?.let { v ->
-            radiusKmFromMapViewport(
-                request.latitude,
-                request.longitude,
-                v.zoom,
-                v.mapWidthPx,
-                v.mapHeightPx
-            ).coerceIn(1, 50)
-        } ?: 10
 
         val cachedResult = synchronized(cacheLock) {
             if (lastCacheKey != poiFetchKey) {
@@ -757,9 +790,26 @@ class SelectorPoiProvider(
         viewport: MapViewport?
     ): List<Poi> {
         val settings = settingsManager.settings.value
-        val isoCountry = ParkingRegion.containing(latitude, longitude)?.countryCode
+
+        val radiusKm = viewport?.let {
+            radiusKmFromMapViewport(
+                latitude,
+                longitude,
+                it.zoom,
+                it.mapWidthPx,
+                it.mapHeightPx
+            ).coerceIn(1, 50)
+        } ?: 10
+
+        val isoCountries = getCountryCodes(
+            latitude = latitude,
+            longitude = longitude,
+            radiusKm = radiusKm,
+            hasViewport = viewport != null
+        )
+
         val providers = try {
-            settings.effectiveProviders(countryCode = isoCountry)
+            settings.effectiveProviders(countryCodes = isoCountries)
         } catch (e: Exception) {
             Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
             settings.selectedPoiProviders
@@ -803,33 +853,38 @@ class SelectorPoiProvider(
     ): List<Poi> {
         if (PoiProviderType.OpenVanCamp !in providers) return pois
 
-        // Determine target country from search center
-        val region = ParkingRegion.containing(centerLat, centerLon) ?: return pois
-        val iso = region.countryCode
+        // Determine target countries from search center
+        val regions = ParkingRegion.allContaining(centerLat, centerLon)
+        if (regions.isEmpty()) return pois
 
-        if (!FuelPriceRegistry.hasReferencePrice(iso)) return pois
+        var enrichedPois = pois
+        regions.forEach { region ->
+            val iso = region.countryCode
+            if (!FuelPriceRegistry.hasReferencePrice(iso)) return@forEach
 
-        val prices = try {
-            openVanCampClient.getReferenceFuelPrices(iso)?.takeIf { it.isNotEmpty() } ?: return pois
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
-            return pois
+            val prices = try {
+                openVanCampClient.getReferenceFuelPrices(iso)?.takeIf { it.isNotEmpty() } ?: return@forEach
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                return@forEach
+            }
+
+            enrichedPois = enrichedPois.map { p ->
+                if (p.isElectric) return@map p
+                val cat = p.poiCategory ?: PoiCategory.Gas
+                if (cat != PoiCategory.Gas) return@map p
+                if (!region.contains(p.latitude, p.longitude)) return@map p
+                if (!p.fuelPrices.isNullOrEmpty()) return@map p
+
+                p.copy(
+                    fuelPrices = prices,
+                    source = when (val s = p.source) {
+                        null -> "OpenVan.camp ($iso official price)"
+                        else -> "$s + OpenVan.camp ($iso official price)"
+                    }
+                )
+            }
         }
-
-        return pois.map { p ->
-            if (p.isElectric) return@map p
-            val cat = p.poiCategory ?: PoiCategory.Gas
-            if (cat != PoiCategory.Gas) return@map p
-            if (!region.contains(p.latitude, p.longitude)) return@map p
-            if (!p.fuelPrices.isNullOrEmpty()) return@map p
-
-            p.copy(
-                fuelPrices = prices,
-                source = when (val s = p.source) {
-                    null -> "OpenVan.camp ($iso official price)"
-                    else -> "$s + OpenVan.camp ($iso official price)"
-                }
-            )
-        }
+        return enrichedPois
     }
 }
