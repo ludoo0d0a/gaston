@@ -40,7 +40,7 @@ class IrelandPickAPumpClient(private val client: HttpClient) {
     suspend fun fetchNearbyStations(lat: Double, lon: Double, radius: Int): List<PAPStation> {
         val response = client.get("$baseUrl?lat=$lat&lng=$lon&radius=$radius") {
             header("Accept", "application/json")
-            header("User-Agent", "Mozilla/5.0 (compatible; Julius/1.0)")
+            header("User-Agent", "Mozilla/5.0 (compatible; Gaston/1.0)")
             header("Origin", "https://pickapump.com")
         }
         return response.body<List<PAPStation>>()

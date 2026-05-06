@@ -25,7 +25,7 @@ class ArgentinaEnergiaClient(private val client: HttpClient) {
 
     suspend fun fetchAllData(): List<ArgentinaCSVRow> {
         val response = client.get(csvUrl) {
-            header("User-Agent", "Mozilla/5.0 (compatible; Julius/1.0)")
+            header("User-Agent", "Mozilla/5.0 (compatible; Gaston/1.0)")
         }
         val text = response.bodyAsText()
         return parseCSV(text)

@@ -16,7 +16,7 @@ class GreeceFuelGRProvider(
 
     private val fuelGRClient = GreeceFuelGRClient(client)
 
-    // Map FuelGR fuel type parameters to Julius fuel names
+    // Map FuelGR fuel type parameters to Gaston fuel names
     private val fuelQueries = mapOf(
         "1" to "SP95",
         "4" to "Gazole",

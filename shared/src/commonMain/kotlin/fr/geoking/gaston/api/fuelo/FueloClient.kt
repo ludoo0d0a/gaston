@@ -57,7 +57,7 @@ class FueloClient(private val client: HttpClient) {
                 append("zoom", "14")
             }
         ) {
-            header("User-Agent", "Mozilla/5.0 (compatible; Julius/1.0)")
+            header("User-Agent", "Mozilla/5.0 (compatible; Gaston/1.0)")
         }
         val data = response.body<FueloListResponse>()
         if (data.status != "OK") return emptyList()
@@ -73,7 +73,7 @@ class FueloClient(private val client: HttpClient) {
     suspend fun fetchStationInfo(subdomain: String, stationId: String): String? {
         val url = "https://$subdomain.fuelo.net/ajax/get_infowindow_content/$stationId?lang=en"
         val response = client.get(url) {
-            header("User-Agent", "Mozilla/5.0 (compatible; Julius/1.0)")
+            header("User-Agent", "Mozilla/5.0 (compatible; Gaston/1.0)")
             header("Accept", "application/json")
         }
         val data = response.body<FueloInfoResponse>()

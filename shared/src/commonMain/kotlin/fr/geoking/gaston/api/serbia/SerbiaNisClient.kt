@@ -38,7 +38,7 @@ class SerbiaNisClient(private val client: HttpClient) {
     suspend fun fetchNISStations(): List<NISStation> {
         val response = client.get(mapUrl) {
             header("Accept", "text/html")
-            header("User-Agent", "Mozilla/5.0 (compatible; Julius/1.0)")
+            header("User-Agent", "Mozilla/5.0 (compatible; Gaston/1.0)")
         }
         val html = response.bodyAsText()
         val match = Regex("var\\s+bs\\s*=\\s*(\\{[^;]*\\})\\s*;").find(html)
@@ -55,7 +55,7 @@ class SerbiaNisClient(private val client: HttpClient) {
         val url = "$cenaBaseUrl$path"
         val response = client.get(url) {
             header("Accept", "text/html")
-            header("User-Agent", "Mozilla/5.0 (compatible; Julius/1.0)")
+            header("User-Agent", "Mozilla/5.0 (compatible; Gaston/1.0)")
         }
         val html = response.bodyAsText()
         return parseCenaGorivaPage(html)

@@ -36,7 +36,7 @@ class FuelpricesDKClient(private val client: HttpClient) {
         val response = client.get("$apiBase/v1/stations/all?bbox=$bbox") {
             header("Accept", "application/json")
             header("X-API-KEY", apiKey)
-            header("User-Agent", "Mozilla/5.0 (compatible; Julius/1.0)")
+            header("User-Agent", "Mozilla/5.0 (compatible; Gaston/1.0)")
         }
         return response.body<List<DKStationWithPrices>>()
     }

@@ -27,7 +27,7 @@ class MexicoCREClient(private val client: HttpClient) {
 
     suspend fun fetchPlaces(): List<MexicoPlace> {
         val response = client.get(placesUrl) {
-            header("User-Agent", "Mozilla/5.0 (compatible; Julius/1.0)")
+            header("User-Agent", "Mozilla/5.0 (compatible; Gaston/1.0)")
         }
         val channel = response.bodyAsChannel()
         val places = mutableListOf<MexicoPlace>()
@@ -76,7 +76,7 @@ class MexicoCREClient(private val client: HttpClient) {
 
     suspend fun fetchPrices(): List<MexicoPrice> {
         val response = client.get(pricesUrl) {
-            header("User-Agent", "Mozilla/5.0 (compatible; Julius/1.0)")
+            header("User-Agent", "Mozilla/5.0 (compatible; Gaston/1.0)")
         }
         val channel = response.bodyAsChannel()
         val prices = mutableListOf<MexicoPrice>()
