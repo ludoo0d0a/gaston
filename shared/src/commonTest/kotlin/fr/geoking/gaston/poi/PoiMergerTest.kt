@@ -60,16 +60,42 @@ class PoiMergerTest {
     }
 
     @Test
-    fun mergePois_noMergeBeyond250mEvenIfNamesMatch() {
+    fun mergePois_mergeWithin300mIfSameBrand() {
         val lat = 48.8566
         val lon = 2.3522
 
-        // ~333m away, same name
-        val p1 = Poi("1", "Total Paris", "Address 1", lat, lon)
-        val p2 = Poi("2", "Total Paris", "Address 2", lat + 0.003, lon)
+        // ~277m away (0.0025 * 111,000)
+        val p1 = Poi("1", "Total Station", "Address 1", lat, lon, brand = "Total")
+        val p2 = Poi("2", "Another Station", "Address 2", lat + 0.0025, lon, brand = "Total")
 
         val merged = PoiMerger.mergePois(listOf(p1, p2))
-        assertEquals(2, merged.size, "Should NOT merge beyond 250m even if names match")
+        assertEquals(1, merged.size, "Should merge within 300m if brands match")
+    }
+
+    @Test
+    fun mergePois_noMergeBeyond300mEvenIfSameBrand() {
+        val lat = 48.8566
+        val lon = 2.3522
+
+        // ~388m away (0.0035 * 111,000)
+        val p1 = Poi("1", "Total Station", "Address 1", lat, lon, brand = "Total")
+        val p2 = Poi("2", "Another Station", "Address 2", lat + 0.0035, lon, brand = "Total")
+
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(2, merged.size, "Should NOT merge beyond 300m even if brands match")
+    }
+
+    @Test
+    fun mergePois_noMergeBeyond300mEvenIfNamesMatch() {
+        val lat = 48.8566
+        val lon = 2.3522
+
+        // ~388m away, same name
+        val p1 = Poi("1", "Total Paris", "Address 1", lat, lon)
+        val p2 = Poi("2", "Total Paris", "Address 2", lat + 0.0035, lon)
+
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(2, merged.size, "Should NOT merge beyond 300m even if names match")
     }
 
     @Test

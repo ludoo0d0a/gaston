@@ -56,6 +56,7 @@ class PoiDetailScreen(
 
     private fun buildDetailMessage(poi: Poi): String {
         val lines = mutableListOf<String>()
+        poi.source?.takeIf { it.isNotBlank() }?.let { lines.add("Source: $it") }
         poi.brand?.takeIf { it.isNotBlank() }?.let { lines.add(it) }
         if (poi.isElectric) {
             poi.operator?.takeIf { it.isNotBlank() }?.let { lines.add(it) }
@@ -76,7 +77,9 @@ class PoiDetailScreen(
                 lines.add("")
                 prices.forEach { fp ->
                     val priceStr = if (fp.outOfStock) "—" else "€%.3f".format(fp.price)
-                    val updated = fp.updatedAt?.let { " ($it)" } ?: ""
+                    val updated = fp.updatedAt?.let {
+                        " (${fr.geoking.gaston.shared.datetime.DateTimeUtils.formatRelativeTime(it)})"
+                    } ?: ""
                     lines.add("${fp.fuelName}: $priceStr$updated")
                 }
             }

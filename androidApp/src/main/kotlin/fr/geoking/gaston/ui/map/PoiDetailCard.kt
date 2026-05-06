@@ -72,7 +72,6 @@ fun PoiDetailCard(
     }
 
     val sources = rememberSources(poi.source)
-    val isMergedPoi = sources.size >= 2
     val effectiveCategory = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
 
     Card(
@@ -113,20 +112,22 @@ fun PoiDetailCard(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        if (isMergedPoi) {
+                        if (sources.isNotEmpty()) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                AssistChip(
-                                    onClick = {},
-                                    label = { Text("Merged POI", fontSize = 11.sp) },
-                                    colors = AssistChipDefaults.assistChipColors(
-                                        containerColor = Color(0xFF0F172A),
-                                        labelColor = Color.White
-                                    ),
-                                    interactionSource = remember { MutableInteractionSource() }
-                                )
+                                if (sources.size >= 2) {
+                                    AssistChip(
+                                        onClick = {},
+                                        label = { Text("Merged POI", fontSize = 11.sp) },
+                                        colors = AssistChipDefaults.assistChipColors(
+                                            containerColor = Color(0xFF0F172A),
+                                            labelColor = Color.White
+                                        ),
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    )
+                                }
                                 Text(
                                     text = sources.joinToString(" + "),
                                     color = Color.White.copy(alpha = 0.7f),
@@ -250,12 +251,23 @@ fun PoiDetailCard(
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
                                             )
-                                            Text(
-                                                text = if (fp.outOfStock) "—" else "€%.3f".format(fp.price),
-                                                color = if (fp.outOfStock) Color.White.copy(alpha = 0.5f) else Color(0xFF22C55E),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                val updatedAt = fp.updatedAt
+                                                if (updatedAt != null) {
+                                                    Text(
+                                                        text = fr.geoking.gaston.shared.datetime.DateTimeUtils.formatRelativeTime(updatedAt),
+                                                        color = Color.White.copy(alpha = 0.4f),
+                                                        fontSize = 10.sp,
+                                                        modifier = Modifier.padding(end = 8.dp)
+                                                    )
+                                                }
+                                                Text(
+                                                    text = if (fp.outOfStock) "—" else "€%.3f".format(fp.price),
+                                                    color = if (fp.outOfStock) Color.White.copy(alpha = 0.5f) else Color(0xFF22C55E),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
                                         }
                                     }
                                 } else {

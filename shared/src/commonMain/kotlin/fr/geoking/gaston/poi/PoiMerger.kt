@@ -22,7 +22,9 @@ object PoiMerger {
     // Distance threshold for unconditional merge.
     private const val MERGE_DISTANCE_METERS = 50.0
     // Distance threshold for merge with name matching.
-    private const val MERGE_DISTANCE_WITH_NAME_METERS = 250.0
+    private const val MERGE_DISTANCE_WITH_NAME_METERS = 300.0
+    // Distance threshold for merge with same brand.
+    private const val MERGE_DISTANCE_WITH_BRAND_METERS = 300.0
     private const val NAME_TOKEN_MIN_LENGTH = 2
     private const val NAME_SIMILARITY_MIN = 0.8
 
@@ -74,19 +76,27 @@ object PoiMerger {
         if (a.id == b.id) return true
 
         // Fast reject on approximate deltas before doing haversine.
+        val maxDist = maxOf(MERGE_DISTANCE_WITH_NAME_METERS, MERGE_DISTANCE_WITH_BRAND_METERS)
         val latDeltaMeters = abs(a.latitude - b.latitude) * 111_000.0
-        if (latDeltaMeters > MERGE_DISTANCE_WITH_NAME_METERS * 1.2) return false
+        if (latDeltaMeters > maxDist * 1.2) return false
 
         val lonDeltaMeters =
             abs(a.longitude - b.longitude) * 111_000.0 * cos(((a.latitude + b.latitude) / 2.0) * PI / 180.0)
-        if (lonDeltaMeters > MERGE_DISTANCE_WITH_NAME_METERS * 1.2) return false
+        if (lonDeltaMeters > maxDist * 1.2) return false
 
         val distMeters = haversineMeters(a.latitude, a.longitude, b.latitude, b.longitude)
 
         // 1. Unconditional merge if extremely close (within 50m)
         if (distMeters <= MERGE_DISTANCE_METERS) return true
 
-        // 2. Merge if fairly close (within 250m) AND name matches (80%)
+        // 2. Merge if fairly close (within 300m) AND same brand
+        if (distMeters <= MERGE_DISTANCE_WITH_BRAND_METERS) {
+            val brandA = BrandRegistry.findBrand(a.name, a.brand)
+            val brandB = BrandRegistry.findBrand(b.name, b.brand)
+            if (brandA != null && brandA == brandB) return true
+        }
+
+        // 3. Merge if fairly close (within 300m) AND name matches (80%)
         if (distMeters <= MERGE_DISTANCE_WITH_NAME_METERS) {
             return namesSimilarEnough(a, b)
         }
