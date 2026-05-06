@@ -12,6 +12,7 @@ import fr.geoking.gaston.api.openvan.OpenVanCampProvider
 import fr.geoking.gaston.persistence.PoiCacheDao
 import fr.geoking.gaston.persistence.PoiCacheEntity
 import fr.geoking.gaston.poi.PoiMerger
+import fr.geoking.gaston.repository.StationPriceHistoryRepository
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
@@ -70,7 +71,8 @@ class SelectorPoiProvider(
     private val overpass: PoiProvider,
     private val dataGouvCamping: PoiProvider?,
     private val poiCacheDao: PoiCacheDao,
-    private val settingsManager: SettingsManager
+    private val settingsManager: SettingsManager,
+    private val historyRepo: StationPriceHistoryRepository? = null
 ) : PoiProvider {
 
     private val json = Json {
@@ -181,6 +183,7 @@ class SelectorPoiProvider(
             launch(kotlinx.coroutines.Dispatchers.IO) {
                 try {
                     poiCacheDao.deleteOldPois(nowCleanup - (12L * 60L * 60L * 1000L))
+                    historyRepo?.deleteOldSamples(nowCleanup - (30L * 24L * 60L * 60L * 1000L))
                 } catch (e: Exception) {
                     Log.e("SelectorPoiProvider", "Failed to cleanup old POIs", e)
                 }
@@ -349,7 +352,8 @@ class SelectorPoiProvider(
                             centerLat = request.latitude,
                             centerLon = request.longitude
                         )
-                        finalEnriched = enriched
+                        val rated = enrichPriceRatings(enriched)
+                        finalEnriched = rated
 
                         val resultToEmit = synchronized(cacheLock) {
                             cachedPois = PoiMerger.mergeInto(cachedPois, enriched)
@@ -566,11 +570,12 @@ class SelectorPoiProvider(
             centerLat = request.latitude,
             centerLon = request.longitude
         )
+        val rated = enrichPriceRatings(enriched)
 
         val mergedNow = System.currentTimeMillis()
         synchronized(cacheLock) {
-            cachedPois = PoiMerger.mergeInto(cachedPois, enriched)
-            enriched.forEach { poiSeenAtMs[it.id] = mergedNow }
+            cachedPois = PoiMerger.mergeInto(cachedPois, rated)
+            rated.forEach { poiSeenAtMs[it.id] = mergedNow }
             cachedPois.forEach { p ->
                 if (poiSeenAtMs[p.id] == null) poiSeenAtMs[p.id] = mergedNow
             }
@@ -742,6 +747,25 @@ class SelectorPoiProvider(
         )
         Log.d("SelectorPoiProvider", "selected=$providers lat=$latitude lon=$longitude -> ${result.size} pois (energy+power+operator+connector filter)")
         return result
+    }
+
+    private suspend fun enrichPriceRatings(pois: List<Poi>): List<Poi> {
+        val repo = historyRepo ?: return pois
+        val now = System.currentTimeMillis()
+        return pois.map { poi ->
+            if (poi.poiCategory != PoiCategory.Gas) return@map poi
+
+            // Record current prices for history
+            repo.recordFromPoi(poi, now)
+
+            // Attach rating if possible (based on primary fuel)
+            val primaryFuel = poi.fuelPrices?.firstOrNull { !it.outOfStock }?.let { MapPoiFilter.fuelNameToId(it.fuelName) }
+            val rating = if (primaryFuel != null) {
+                repo.getPriceRating(poi.id, primaryFuel, nowMs = now)
+            } else null
+
+            if (rating != null) poi.copy(priceRating = rating) else poi
+        }
     }
 
     /**

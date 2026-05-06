@@ -176,6 +176,8 @@ val appModule = module {
 
     single { NotificationHelper(androidContext()) }
 
+    single { fr.geoking.gaston.repository.StationPriceHistoryRepository(dao = get<AppDatabase>().stationPriceSampleDao(), nationalDao = get<AppDatabase>().nationalFuelPriceDao()) }
+
     single<WeatherLookup> {
         AndroidWeatherLookup(androidContext(), get())
     }

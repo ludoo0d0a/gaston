@@ -300,7 +300,8 @@ val mapModule = module {
             overpass = get(named("overpass")),
             dataGouvCamping = get(named("datagouvcamping")),
             poiCacheDao = get<fr.geoking.gaston.persistence.AppDatabase>().poiCacheDao(),
-            settingsManager = get()
+            settingsManager = get(),
+            historyRepo = get()
         )
     }
     single { CommunityPoiStorage(androidContext()) }

@@ -212,6 +212,31 @@ class DataGouvPrixCarburantClient(
         return list
     }
 
+    /**
+     * Fetches national fuel price averages for France.
+     * Uses a broad query (no location filter) and aggregates results by fuel type.
+     * Note: data.economie.gouv.fr does not provide a direct 'national average' record in this dataset,
+     * so we sample a large number of records to estimate it.
+     */
+    suspend fun getNationalAverages(limit: Int = 100): Map<String, Double> {
+        val url = "$baseUrl/records?limit=$limit"
+        val response = client.get(url)
+        val body = response.bodyAsText()
+        if (response.status.value != 200) {
+            throw NetworkException(response.status.value, "Prix carburants API error: $body")
+        }
+
+        val stations = parseRecords(body)
+        val fuelPrices = mutableMapOf<String, MutableList<Double>>()
+        for (station in stations) {
+            for (fuel in station.fuels) {
+                fuelPrices.getOrPut(fuel.name.lowercase()) { mutableListOf() }.add(fuel.priceEur)
+            }
+        }
+
+        return fuelPrices.mapValues { it.value.average() }
+    }
+
     companion object {
         const val DEFAULT_BASE_URL =
             "https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2"

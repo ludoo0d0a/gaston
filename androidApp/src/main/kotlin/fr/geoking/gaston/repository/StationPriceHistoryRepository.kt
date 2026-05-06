@@ -1,14 +1,17 @@
 package fr.geoking.gaston.repository
 
+import fr.geoking.gaston.persistence.NationalFuelPriceDao
 import fr.geoking.gaston.persistence.StationPriceSampleDao
 import fr.geoking.gaston.persistence.StationPriceSampleEntity
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
+import java.time.LocalDate
 import java.util.UUID
 import kotlin.math.abs
 
 class StationPriceHistoryRepository(
-    private val dao: StationPriceSampleDao
+    private val dao: StationPriceSampleDao,
+    private val nationalDao: NationalFuelPriceDao? = null
 ) {
     data class PricePoint(
         val observedAtMs: Long,
@@ -72,6 +75,56 @@ class StationPriceHistoryRepository(
                     )
                 }
             }
+    }
+
+    /**
+     * Calculates a price rating (0.0 to 10.0) based on how this station's prices
+     * compare to national averages over the last 30 days.
+     *
+     * A score of 10 means the station is consistently much cheaper than average.
+     * A score of 5 means it's about average.
+     * A score of 0 means it's consistently much more expensive.
+     */
+    suspend fun getPriceRating(stationId: String, fuelId: String, countryCode: String = "FR", nowMs: Long = System.currentTimeMillis()): Double? {
+        if (nationalDao == null) return null
+
+        val fromMs = nowMs - daysToMs(30)
+        val samples = dao.samplesSince(stationId, fromMs).filter { it.fuelId == fuelId }
+        if (samples.isEmpty()) return null
+
+        val fromDay = LocalDate.now().minusDays(30).toString()
+        val nationalPrices = nationalDao.getPricesSince(countryCode, fuelId, fromDay)
+            .associateBy { it.day }
+        if (nationalPrices.isEmpty()) return null
+
+        var totalWeight = 0.0
+        var weightedDiffSum = 0.0
+
+        for (sample in samples) {
+            val day = LocalDate.ofEpochDay(sample.observedAtMs / (24L * 60L * 60L * 1000L)).toString()
+            val national = nationalPrices[day]?.avgPrice ?: nationalPrices.values.firstOrNull()?.avgPrice ?: continue
+
+            // Difference in percentage. Negative means cheaper.
+            val diffPct = (sample.price - national) / national
+
+            // Recency weighting: more recent samples have higher weight.
+            val ageDays = (nowMs - sample.observedAtMs).toDouble() / (24L * 60L * 60L * 1000L)
+            val weight = 1.0 / (1.0 + ageDays / 7.0)
+
+            weightedDiffSum += diffPct * weight
+            totalWeight += weight
+        }
+
+        if (totalWeight == 0.0) return null
+        val avgDiffPct = weightedDiffSum / totalWeight
+
+        // Mapping: -5% or better -> 10.0, 0% -> 5.0, +5% or worse -> 0.0
+        val rating = 5.0 - (avgDiffPct * 100.0)
+        return rating.coerceIn(0.0, 10.0)
+    }
+
+    suspend fun deleteOldSamples(beforeMs: Long) {
+        dao.deleteOldSamples(beforeMs)
     }
 
     private fun daysToMs(days: Int): Long = days.toLong() * 24L * 60L * 60L * 1000L

@@ -43,6 +43,7 @@ class FuelForecastRepository(
     private val localAvgDao = db.localFuelAvgDailyDao()
     private val predictionDao = db.fuelPricePredictionDao()
     private val scoreDao = db.fuelPricePredictionScoreDao()
+    private val nationalDao = db.nationalFuelPriceDao()
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     companion object {
@@ -111,6 +112,8 @@ class FuelForecastRepository(
                 )
             )
         }
+
+        refreshNationalAveragesIfStale(today, now)
 
         refreshMarketCacheIfStale(now)
 
@@ -254,6 +257,31 @@ class FuelForecastRepository(
             for (d in h.await()) rows += quoteEntity(StooqSymbols.HEATING_OIL, d, nowMs)
             for (d in e.await()) rows += quoteEntity(StooqSymbols.EURUSD, d, nowMs)
             if (rows.isNotEmpty()) marketDao.upsertAll(rows)
+        }
+    }
+
+    private suspend fun refreshNationalAveragesIfStale(today: String, nowMs: Long) {
+        val fuelToSample = "gazole"
+        val existing = nationalDao.getPrice("FR", fuelToSample, today)
+        if (existing != null && nowMs - existing.updatedAtMs < MARKET_CACHE_MS) return
+
+        try {
+            val averages = prix.getNationalAverages(limit = 100)
+            for ((fuelName, price) in averages) {
+                val fuelId = MapPoiFilter.fuelNameToId(fuelName) ?: continue
+                nationalDao.upsert(
+                    fr.geoking.gaston.persistence.NationalFuelPriceEntity(
+                        id = UUID.randomUUID().toString(),
+                        countryCode = "FR",
+                        fuelId = fuelId,
+                        day = today,
+                        avgPrice = price,
+                        updatedAtMs = nowMs
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FuelForecastRepository", "Failed to refresh national averages", e)
         }
     }
 
