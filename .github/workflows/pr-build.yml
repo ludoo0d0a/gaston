@@ -1,0 +1,40 @@
+name: PR build (merge with main)
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (PR merged into main)
+        uses: actions/checkout@v4
+        with:
+          # On pull_request events, this checks out GitHub's synthetic merge commit
+          # (equivalent to merging the PR branch into main for validation).
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build
+        env:
+          # Some modules expect these to exist at build time; keep them empty for CI.
+          GOOGLE_MAPS_KEY: ""
+          GOOGLE_WEB_CLIENT_ID: ""
+          OPENCHARGEMAP_KEY: ""
+          MOBILITEIT_LUXEMBOURG_KEY: ""
+          TOMTOM_KEY: ""
+        run: |
+          ./gradlew --no-daemon :androidApp:assembleDebug :shared:build

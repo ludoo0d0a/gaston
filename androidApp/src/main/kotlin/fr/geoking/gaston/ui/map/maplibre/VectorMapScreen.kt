@@ -72,10 +72,13 @@ import fr.geoking.gaston.ui.anim.AnimationPalette
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.maps.MapLibreMap
 import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 
@@ -168,7 +171,8 @@ fun VectorMapScreen(
         }
     )
 
-    var mapController by remember { mutableStateOf<LibreMapController?>(null) }
+    var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
+    var cameraPosition by remember { mutableStateOf<CameraPosition?>(null) }
     var availabilityByPoiId by remember { mutableStateOf<Map<String, StationAvailabilitySummary>>(emptyMap()) }
     var showAddPoiSheet by remember { mutableStateOf(false) }
     var addPoiLinkedOfficialId by remember { mutableStateOf<String?>(null) }
@@ -188,12 +192,27 @@ fun VectorMapScreen(
         }
     }
 
-    val currentTarget = mapController?.cameraPosition?.collectAsState()?.value?.target ?: LatLng(defaultLat, defaultLng)
+    DisposableEffect(mapLibreMap) {
+        val map = mapLibreMap
+        if (map == null) {
+            cameraPosition = null
+            onDispose { }
+        } else {
+            cameraPosition = map.cameraPosition
+            val idleListener = MapLibreMap.OnCameraIdleListener {
+                cameraPosition = map.cameraPosition
+            }
+            map.addOnCameraIdleListener(idleListener)
+            onDispose { map.removeOnCameraIdleListener(idleListener) }
+        }
+    }
+
+    val currentTarget = cameraPosition?.target ?: LatLng(defaultLat, defaultLng)
     val effectiveProviders = remember(settings, currentTarget.latitude, currentTarget.longitude) {
         settings.effectiveProvidersAt(currentTarget.latitude, currentTarget.longitude)
     }
 
-    val poisInView = remember(cachedPois, currentTarget, mapController?.cameraPosition?.collectAsState()?.value?.zoom, mapSizePx, settings, effectiveProviders) {
+    val poisInView = remember(cachedPois, currentTarget, cameraPosition?.zoom, mapSizePx, settings, effectiveProviders) {
         StationMapFilters.apply(
             settings = settings,
             pois = cachedPois,
@@ -232,21 +251,26 @@ fun VectorMapScreen(
         }
     }
 
-    LaunchedEffect(mapSizePx, retryCount, mapController) {
-        val controller = mapController ?: return@LaunchedEffect
+    LaunchedEffect(mapSizePx, retryCount, mapLibreMap) {
+        val map = mapLibreMap ?: return@LaunchedEffect
         if (mapSizePx.width <= 0 || mapSizePx.height <= 0) return@LaunchedEffect
 
         if (!hasLocationPermission) {
             launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
 
-        controller.cameraPosition
+        snapshotFlow { cameraPosition }
+            .filterNotNull()
+            .distinctUntilChanged { old, new ->
+                old.target == new.target && old.zoom == new.zoom
+            }
             .debounce(350)
             .collectLatest { position ->
                 if (isErrorPaused || selectedPoi != null) return@collectLatest
 
-                val centerLat = position.target.latitude
-                val centerLng = position.target.longitude
+                val target = position.target ?: return@collectLatest
+                val centerLat = target.latitude
+                val centerLng = target.longitude
                 val zoom = position.zoom.toFloat()
 
                 val requiredRadiusKm = radiusKmFromMapViewport(
@@ -346,7 +370,7 @@ fun VectorMapScreen(
         onLocateMe = {
             scope.launch {
                 val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                mapController?.animateCamera(
+                mapLibreMap?.animateCamera(
                     CameraUpdateFactory.newLatLngZoom(
                         LatLng(lat, lon),
                         12.0
@@ -383,7 +407,7 @@ fun VectorMapScreen(
                 styleUrl = settings.mapTheme.styleUrl,
                 initialCameraPosition = LatLng(defaultLat, defaultLng) to defaultZoom,
                 contentPaddingBottom = mapPaddingBottom,
-                onMapReady = { mapController = it },
+                onMapReady = { mapLibreMap = it },
                 poisInView = if (frozenPoisForSheet.isNotEmpty()) frozenPoisForSheet else if (showFavoritesOnly && favoriteIds.isNotEmpty()) poisInView.filter { it.id in favoriteIds } else poisInView,
                 selectedPoiId = selectedPoi?.id,
                 availabilityByPoiId = availabilityByPoiId,
@@ -410,7 +434,7 @@ fun VectorMapScreen(
     LaunchedEffect(selectedPoi?.id, scrollRequestPoiId) {
         val poi = selectedPoi ?: return@LaunchedEffect
         if (scrollRequestPoiId != null) return@LaunchedEffect
-        mapController?.animateCamera(
+        mapLibreMap?.animateCamera(
             CameraUpdateFactory.newLatLng(
                 LatLng(poi.latitude, poi.longitude)
             )
@@ -486,7 +510,7 @@ fun VectorMapScreen(
                         },
                         onLocate = {
                             scope.launch {
-                                mapController?.animateCamera(
+                                mapLibreMap?.animateCamera(
                                     CameraUpdateFactory.newLatLng(
                                         LatLng(poi.latitude, poi.longitude)
                                     )
