@@ -12,10 +12,20 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
+import fr.geoking.gaston.SettingsManager
+import org.koin.compose.koinInject
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,10 +37,28 @@ fun PhoneDashboardTopBar(
     onOpenFavorites: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
+    val settingsManager = koinInject<SettingsManager>()
+    val settings by settingsManager.settings.collectAsState()
+
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Gaston")
+                if (settings.isPremium) {
+                    Spacer(Modifier.width(8.dp))
+                    Surface(
+                        color = Color(0xFFFACC15),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            "PREMIUM",
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
                 if (isUpdateInProgress) {
                     Spacer(Modifier.width(12.dp))
                     CircularProgressIndicator(

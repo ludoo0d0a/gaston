@@ -20,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +35,12 @@ import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ui.components.FuelForecastChartCard
 import fr.geoking.gaston.ui.dashboard.PlaystoreTheme
+import fr.geoking.gaston.premium.BillingManager
+import fr.geoking.gaston.ui.components.PremiumPaywallPopup
+import fr.geoking.gaston.SettingsManager
+import org.koin.compose.koinInject
+import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -41,8 +48,28 @@ import kotlinx.coroutines.withContext
 @Composable
 fun FuelForecastScreen(
     repository: FuelForecastRepository,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    settingsManager: SettingsManager = koinInject(),
+    billingManager: BillingManager = koinInject()
 ) {
+    val settings by settingsManager.settings.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    var showPaywall by remember { mutableStateOf(!settings.isPremium) }
+    if (showPaywall && !settings.isPremium) {
+        PremiumPaywallPopup(
+            billingManager = billingManager,
+            onDismiss = onBack,
+            onPurchaseSuccess = {
+                scope.launch {
+                    billingManager.refreshStatus()
+                    settingsManager.setPremium(billingManager.isPremium.value)
+                    showPaywall = false
+                }
+            }
+        )
+    }
+
     val context = LocalContext.current
     var states by remember { mutableStateOf<Map<String, FuelForecastUiState>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(false) }

@@ -90,6 +90,7 @@ data class AppSettings(
     val mobiliteitLuxembourgKey: String = "",
     val routeHistory: List<GeocodedPlace> = emptyList(),
     val favoriteLocations: List<GeocodedPlace> = emptyList(),
+    val isPremium: Boolean = false,
     val routeStationSearchRadiusMeters: Int = 2000,
     val filterOnlyHighwayStations: Boolean = false,
     val lastKnownLat: Double? = null,
@@ -224,6 +225,7 @@ open class SettingsManager(
             mobiliteitLuxembourgKey = mobiliteitLuxembourgKey,
             routeHistory = routeHistory,
             favoriteLocations = favoriteLocations,
+            isPremium = prefs.getBoolean("is_premium", false),
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
             filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false),
             lastKnownLat = prefs.getString("last_known_lat", null)?.toDoubleOrNull(),
@@ -281,6 +283,7 @@ open class SettingsManager(
             .putString("mobiliteit_luxembourg_key", settings.mobiliteitLuxembourgKey)
             .putString("route_history", Json.encodeToString(settings.routeHistory))
             .putString("favorite_locations", Json.encodeToString(settings.favoriteLocations))
+            .putBoolean("is_premium", settings.isPremium)
             .putInt("route_station_radius_m", settings.routeStationSearchRadiusMeters)
             .putBoolean("filter_only_highway", settings.filterOnlyHighwayStations)
             .putString("last_known_lat", settings.lastKnownLat?.toString())
@@ -394,6 +397,12 @@ open class SettingsManager(
 
     open fun setVehicleType(type: VehicleType) {
         saveSettings(_settings.value.copy(vehicleType = type))
+    }
+
+    open fun setPremium(premium: Boolean) {
+        if (_settings.value.isPremium != premium) {
+            saveSettings(_settings.value.copy(isPremium = premium))
+        }
     }
 
     open fun setOverpassAmenityTypes(types: Set<String>) {

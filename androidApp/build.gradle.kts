@@ -67,6 +67,7 @@ configure<ApplicationExtension> {
         val dkvSubscriptionKey = sanitizeBuildConfigString(prop("DKV_SUBSCRIPTION_KEY"))
         val dkvAuthorization = sanitizeBuildConfigString(prop("DKV_AUTHORIZATION"))
         val ecoMovementKey = sanitizeBuildConfigString(prop("ECO_MOVEMENT_KEY"))
+        val revenueCatApiKey = sanitizeBuildConfigString(prop("REVENUECAT_API_KEY", "goog_placeholder_api_key"))
         val fuelpricesDkKey = sanitizeBuildConfigString(prop("FUELPRICES_DK_KEY"))
         val nswFuelCheckKey = sanitizeBuildConfigString(prop("NSW_FUELCHECK_KEY"))
         val nswFuelCheckSecret = sanitizeBuildConfigString(prop("NSW_FUELCHECK_SECRET"))
@@ -95,6 +96,7 @@ configure<ApplicationExtension> {
         buildConfigField("String", "DKV_SUBSCRIPTION_KEY", "\"$dkvSubscriptionKey\"")
         buildConfigField("String", "DKV_AUTHORIZATION", "\"$dkvAuthorization\"")
         buildConfigField("String", "ECO_MOVEMENT_KEY", "\"$ecoMovementKey\"")
+        buildConfigField("String", "REVENUECAT_API_KEY", "\"$revenueCatApiKey\"")
         buildConfigField("String", "FUELPRICES_DK_KEY", "\"$fuelpricesDkKey\"")
         buildConfigField("String", "NSW_FUELCHECK_KEY", "\"$nswFuelCheckKey\"")
         buildConfigField("String", "NSW_FUELCHECK_SECRET", "\"$nswFuelCheckSecret\"")
@@ -239,6 +241,7 @@ dependencies {
 
     // DI
     implementation(libs.koin.android)
+    implementation(libs.koin.compose)
 
     // Play In-App Update (warns when update available; flexible flow)
     implementation(libs.play.app.update)

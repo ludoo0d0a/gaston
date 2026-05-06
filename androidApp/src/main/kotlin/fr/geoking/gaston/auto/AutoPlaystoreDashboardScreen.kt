@@ -162,11 +162,12 @@ class AutoPlaystoreDashboardScreen(
                 .build()
         )
 
+        val title = if (settingsManager.settings.value.isPremium) "gaston premium" else "gaston - station finder"
         return GridTemplate.Builder()
             .setSingleList(grid.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("gaston - station finder")
+                    .setTitle(title)
                     .setStartHeaderAction(Action.APP_ICON)
                     .build()
             )

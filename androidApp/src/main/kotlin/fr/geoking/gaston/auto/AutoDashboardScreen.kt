@@ -172,11 +172,12 @@ class AutoDashboardScreen(
                 .build()
         )
 
+        val title = if (settingsManager.settings.value.isPremium) "Gaston Premium" else "Gaston"
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("Gaston")
+                    .setTitle(title)
                     .setStartHeaderAction(Action.APP_ICON)
                     .build()
             )

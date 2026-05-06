@@ -23,13 +23,17 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.premium.BillingManager
+import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
     favoritesRepo: FavoritesRepository,
     settingsManager: SettingsManager,
+    billingManager: BillingManager = koinInject(),
     onBack: () -> Unit,
     onSelectPoi: (Poi) -> Unit,
     onSelectLocation: (GeocodedPlace) -> Unit
@@ -37,6 +41,22 @@ fun FavoritesScreen(
     BackHandler(onBack = onBack)
     val scope = rememberCoroutineScope()
     val settings by settingsManager.settings.collectAsState()
+
+    var showPaywall by remember { mutableStateOf(!settings.isPremium) }
+    if (showPaywall && !settings.isPremium) {
+        PremiumPaywallPopup(
+            billingManager = billingManager,
+            onDismiss = onBack,
+            onPurchaseSuccess = {
+                scope.launch {
+                    billingManager.refreshStatus()
+                    settingsManager.setPremium(billingManager.isPremium.value)
+                    showPaywall = false
+                }
+            }
+        )
+        return
+    }
 
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Stations", "Locations")

@@ -34,6 +34,7 @@ import io.ktor.util.AttributeKey
 import io.ktor.util.toMap
 import fr.geoking.gaston.shared.logging.DebugLogStore
 import fr.geoking.gaston.shared.logging.NetworkLog
+import fr.geoking.gaston.premium.BillingManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -159,6 +160,8 @@ val appModule = module {
         FirestoreSettingsSync(firestore = firestore, firebaseAuth = auth)
     }
     single<SettingsManager> { SettingsManager(androidContext(), getOrNull()) }
+
+    single { BillingManager() }
 
     single<DiagnosticStore> { DiagnosticStore() }
 
