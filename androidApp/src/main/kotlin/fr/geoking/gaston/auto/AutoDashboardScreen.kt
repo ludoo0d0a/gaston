@@ -67,20 +67,6 @@ class AutoDashboardScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Parkings")
-                .addText("Nearby lots")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_poi_parking_rounded)).build())
-                .setOnClickListener {
-                    settingsManager.setUseVehicleFilter(false)
-                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
-                    settingsManager.setOverpassAmenityTypes(setOf("parking"))
-                    pushMapScreen()
-                }
-                .build()
-        )
-
-        listBuilder.addItem(
-            Row.Builder()
                 .setTitle("Fuel price outlook")
                 .addText("Local estimate from market + nearby pumps")
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
@@ -95,22 +81,10 @@ class AutoDashboardScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle("Map")
-                .addText("Search nearby gas/EV stations")
+                .addText("Nearby gas/EV stations")
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
                 .setOnClickListener {
                     settingsManager.setUseVehicleFilter(false)
-                    pushMapScreen()
-                }
-                .build()
-        )
-
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle("POI Map")
-                .addText("Search filtered by vehicle settings")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
-                .setOnClickListener {
-                    settingsManager.setUseVehicleFilter(true)
                     pushMapScreen()
                 }
                 .build()
@@ -141,33 +115,65 @@ class AutoDashboardScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Network & Location Info")
-                .addText("Check cellular and GPS status")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_speaker)).build())
-                .setOnClickListener {
-                    screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService))
-                }
-                .build()
-        )
-
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle("Template lab")
-                .addText("POI / navigation templates & maps")
+                .setTitle("More Options")
+                .addText("Settings, Network, Lab, Parkings")
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
                 .setOnClickListener {
-                    screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps))
-                }
-                .build()
-        )
+                    screenManager.push(
+                        object : Screen(carContext) {
+                            override fun onGetTemplate(): Template {
+                                val moreList = ItemList.Builder()
+                                    .addItem(
+                                        Row.Builder()
+                                            .setTitle("POI Map (Vehicle)")
+                                            .addText("Filtered by vehicle settings")
+                                            .setOnClickListener {
+                                                settingsManager.setUseVehicleFilter(true)
+                                                pushMapScreen()
+                                                screenManager.pop()
+                                            }
+                                            .build()
+                                    )
+                                    .addItem(
+                                        Row.Builder()
+                                            .setTitle("Parkings")
+                                            .addText("Nearby lots")
+                                            .setOnClickListener {
+                                                settingsManager.setUseVehicleFilter(false)
+                                                settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
+                                                settingsManager.setOverpassAmenityTypes(setOf("parking"))
+                                                pushMapScreen()
+                                                screenManager.pop()
+                                            }
+                                            .build()
+                                    )
+                                    .addItem(
+                                        Row.Builder()
+                                            .setTitle("Network & Location")
+                                            .setOnClickListener { screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService)) }
+                                            .build()
+                                    )
+                                    .addItem(
+                                        Row.Builder()
+                                            .setTitle("Template lab")
+                                            .setOnClickListener { screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps)) }
+                                            .build()
+                                    )
+                                    .addItem(
+                                        Row.Builder()
+                                            .setTitle("Settings")
+                                            .setOnClickListener { screenManager.push(AutoSettingsScreen(carContext, settingsManager)) }
+                                            .build()
+                                    )
+                                    .build()
 
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle("Settings")
-                .addText("Toll data and car-safe options")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
-                .setOnClickListener {
-                    screenManager.push(AutoSettingsScreen(carContext, settingsManager))
+                                return ListTemplate.Builder()
+                                    .setHeader(Header.Builder().setTitle("More Options").setStartHeaderAction(Action.BACK).build())
+                                    .setSingleList(moreList)
+                                    .build()
+                            }
+                        }
+                    )
                 }
                 .build()
         )

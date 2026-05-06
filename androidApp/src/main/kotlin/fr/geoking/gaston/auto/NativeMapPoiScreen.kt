@@ -105,6 +105,7 @@ class NativeMapPoiScreen(
             .addAction(
                 Action.Builder()
                     .setTitle("Home")
+                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_home)).build())
                     .setOnClickListener { screenManager.popToRoot() }
                     .build()
             )
