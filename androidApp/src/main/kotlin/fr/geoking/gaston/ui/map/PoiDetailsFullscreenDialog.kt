@@ -27,6 +27,7 @@ import androidx.compose.ui.window.DialogProperties
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.shared.datetime.DateTimeUtils
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.ColorHelper
 
@@ -196,6 +197,18 @@ fun PoiDetailsFullscreenDialog(
                                         }
                                     }
                                 }
+
+                                val overallLastUpdate = poi.sourceUpdates?.values?.maxOrNull()
+                                    ?: prices.mapNotNull { it.updatedAt }.maxOrNull()
+                                overallLastUpdate?.let { timestamp ->
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "Last updated ${DateTimeUtils.formatRelativeTime(timestamp)}",
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.align(Alignment.End)
+                                    )
+                                }
                             }
                         }
 
@@ -355,11 +368,26 @@ fun PoiDetailsFullscreenDialog(
                         if (isMergedPoi) {
                             SectionHeader("Sources")
                             sources.forEach { s ->
-                                Text(
-                                    text = "• $s",
-                                    color = Color.White.copy(alpha = 0.9f),
-                                    fontSize = 14.sp
-                                )
+                                val updateTime = poi.sourceUpdates?.get(s)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "• $s",
+                                        color = Color.White.copy(alpha = 0.9f),
+                                        fontSize = 14.sp
+                                    )
+                                    if (updateTime != null) {
+                                        Text(
+                                            text = DateTimeUtils.formatRelativeTime(updateTime),
+                                            color = Color.White.copy(alpha = 0.6f),
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
                             }
                         }
                     }
