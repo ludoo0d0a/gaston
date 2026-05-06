@@ -245,8 +245,8 @@ fun VectorMapScreen(
             .collectLatest { position ->
                 if (isErrorPaused || selectedPoi != null) return@collectLatest
 
-                val centerLat = position.target.latitude
-                val centerLng = position.target.longitude
+                val centerLat = position.target?.latitude ?: 0.0
+                val centerLng = position.target?.longitude ?: 0.0
                 val zoom = position.zoom.toFloat()
 
                 val requiredRadiusKm = radiusKmFromMapViewport(

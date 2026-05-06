@@ -3,6 +3,8 @@ package fr.geoking.gaston.ui.map
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Directions
@@ -72,7 +74,6 @@ fun PoiDetailCard(
     }
 
     val sources = rememberSources(poi.source)
-    val isMergedPoi = sources.size >= 2
     val effectiveCategory = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
 
     Card(
@@ -84,12 +85,11 @@ fun PoiDetailCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
-                ) { onShowDetails() },
-            verticalArrangement = Arrangement.SpaceBetween
+                ) { onShowDetails() }
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(
@@ -113,29 +113,6 @@ fun PoiDetailCard(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        if (isMergedPoi) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                AssistChip(
-                                    onClick = {},
-                                    label = { Text("Merged POI", fontSize = 11.sp) },
-                                    colors = AssistChipDefaults.assistChipColors(
-                                        containerColor = Color(0xFF0F172A),
-                                        labelColor = Color.White
-                                    ),
-                                    interactionSource = remember { MutableInteractionSource() }
-                                )
-                                Text(
-                                    text = sources.joinToString(" + "),
-                                    color = Color.White.copy(alpha = 0.7f),
-                                    fontSize = 11.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
                         brandInfo?.let { info ->
                             if (isGenericName || !displayTitle.startsWith(info.displayName, ignoreCase = true)) {
                                 Text(
@@ -194,7 +171,7 @@ fun PoiDetailCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -221,22 +198,22 @@ fun PoiDetailCard(
                 }
 
                 if (isSelected) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    // Compact “show everything we have” summary for merged POIs.
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f, fill = false)
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
                     ) {
                         when (effectiveCategory) {
                             PoiCategory.Gas -> {
                                 val prices = poi.fuelPrices.orEmpty()
                                 if (prices.isNotEmpty()) {
                                     val sorted = prices.sortedBy { it.fuelName.lowercase() }
-                                    sorted.take(6).forEach { fp ->
+                                    sorted.forEach { fp ->
                                         val fuelId = MapPoiFilter.fuelNameToId(fp.fuelName)
                                         val matchColor = fuelId?.let { ColorHelper.getFuelColor(it) }
                                         Row(
@@ -296,7 +273,6 @@ fun PoiDetailCard(
                                 }
                             }
                             else -> {
-                                // For non fuel/IRVE categories, show whatever extra info we have.
                                 poi.restaurantDetails?.let { d ->
                                     val r = listOfNotNull(
                                         if (d.isFastFood) "Fast food" else null,
@@ -338,13 +314,16 @@ fun PoiDetailCard(
                 }
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                if (isLoggedIn && onToggleFavorite != null) {
-                    IconButton(onClick = onToggleFavorite) {
+            if (isLoggedIn && onToggleFavorite != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    IconButton(
+                        onClick = onToggleFavorite,
+                        modifier = Modifier.size(32.dp)
+                    ) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
                             contentDescription = if (isFavorite) "Saved" else "Save",
