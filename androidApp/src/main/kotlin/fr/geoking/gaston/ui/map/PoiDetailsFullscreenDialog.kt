@@ -61,7 +61,6 @@ fun PoiDetailsFullscreenDialog(
             ?.distinct()
             ?: emptyList()
     }
-    val isMergedPoi = sources.size >= 2
     val locationSummary = buildList {
         listOf(poi.townLocal, poi.postcode).filter { !it.isNullOrBlank() }.joinToString(", ").takeIf { it.isNotBlank() }?.let { add(it) }
         poi.countryLocal?.takeIf { it.isNotBlank() }?.let { add(it) }
@@ -365,7 +364,7 @@ fun PoiDetailsFullscreenDialog(
                             }
                         }
 
-                        if (isMergedPoi) {
+                        if (sources.isNotEmpty()) {
                             SectionHeader("Sources")
                             sources.forEach { s ->
                                 val updateTime = poi.sourceUpdates?.get(s)
