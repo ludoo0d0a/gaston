@@ -20,7 +20,6 @@ class AutoPlaceListMapTemplateScreen(carContext: CarContext) : Screen(carContext
                 Row.Builder()
                     .setTitle("Eiffel Tower")
                     .addText("Champ de Mars, 5 Avenue Anatole France, 75007 Paris")
-                    .setBrowsable(true)
                     .setMetadata(
                         Metadata.Builder()
                             .setPlace(
@@ -37,7 +36,6 @@ class AutoPlaceListMapTemplateScreen(carContext: CarContext) : Screen(carContext
                 Row.Builder()
                     .setTitle("Louvre Museum")
                     .addText("Rue de Rivoli, 75001 Paris")
-                    .setBrowsable(true)
                     .setMetadata(
                         Metadata.Builder()
                             .setPlace(

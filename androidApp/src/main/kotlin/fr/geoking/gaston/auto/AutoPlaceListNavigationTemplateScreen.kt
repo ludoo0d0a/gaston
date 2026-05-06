@@ -22,7 +22,6 @@ class AutoPlaceListNavigationTemplateScreen(carContext: CarContext) : Screen(car
                 Row.Builder()
                     .setTitle("Eiffel Tower")
                     .addText("Champ de Mars, 5 Avenue Anatole France, 75007 Paris")
-                    .setBrowsable(true)
                     .setMetadata(
                         Metadata.Builder()
                             .setPlace(
