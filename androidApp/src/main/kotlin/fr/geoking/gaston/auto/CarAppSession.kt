@@ -20,6 +20,7 @@ import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.api.weather.WeatherProviderFactory
+import fr.geoking.gaston.shared.location.BorderCrossingManager
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.di.MapDeps
@@ -45,10 +46,10 @@ class CarAppSession : Session(), KoinComponent {
     private val settingsManager: SettingsManager by inject()
     private val networkService: NetworkService by inject()
     private val fuelForecastRepository: FuelForecastRepository by inject()
+    private val borderCrossingManager: BorderCrossingManager by inject()
 
     private var cachedMapDeps: MapDeps? = null
 
-    private var lastCountryCode: String? = null
     private var lastIsRoaming: Boolean? = null
 
     init {
@@ -57,25 +58,20 @@ class CarAppSession : Session(), KoinComponent {
                 handleNetworkStatusChange(status)
             }
         }
-    }
-
-    private fun handleNetworkStatusChange(status: NetworkStatus) {
-        val country = status.countryName ?: status.countryCode
-
-        // Country change detection
-        if (status.countryCode != null && status.countryCode != lastCountryCode) {
-            if (lastCountryCode != null) {
-                // Only show "welcome" if it's a real change, not the first detection
-                // Actually the user said "When app detect user enter in a new country"
-                // Usually this means crossing a border.
+        lifecycleScope.launch {
+            borderCrossingManager.borderCrossingEvents.collect { event ->
+                val country = event.countryName ?: event.countryCode
                 val alert = Alert.Builder(NETWORK_ALERT_ID, CarText.create("welcome in \"$country\""), 5000)
                     .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
                     .build()
 
                 carContext.getCarService(AppManager::class.java).showAlert(alert)
             }
-            lastCountryCode = status.countryCode
         }
+    }
+
+    private fun handleNetworkStatusChange(status: NetworkStatus) {
+        val country = status.countryName ?: status.countryCode
 
         // Roaming change detection
         if (status.isRoaming != lastIsRoaming) {
