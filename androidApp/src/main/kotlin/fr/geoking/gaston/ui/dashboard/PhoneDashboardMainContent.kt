@@ -45,11 +45,15 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.effectiveAllowedCategories
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.intent.NavDestination
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderType
+import fr.geoking.gaston.poi.anyProvidesElectric
+import fr.geoking.gaston.poi.anyProvidesFuel
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ui.SettingsScreenPage
@@ -98,6 +102,26 @@ fun PhoneDashboardMainContent(
     onLocationSelected: (GeocodedPlace?) -> Unit,
     onPoiSelected: (Poi) -> Unit
 ) {
+    val currentEnergyMode = remember(settings, providers) {
+        if (settings.useVehicleFilter) {
+            when (settings.vehicleEnergy) {
+                "electric" -> QuickActionType.EV
+                "hybrid" -> QuickActionType.Hybrid
+                else -> QuickActionType.Fuel
+            }
+        } else {
+            val activeCategories = settings.effectiveAllowedCategories()
+            val hasGas = activeCategories.contains(PoiCategory.Gas) && providers.anyProvidesFuel()
+            val hasIrve = activeCategories.contains(PoiCategory.Irve) && providers.anyProvidesElectric()
+
+            when {
+                hasGas && hasIrve -> QuickActionType.Hybrid
+                hasIrve -> QuickActionType.EV
+                else -> QuickActionType.Fuel
+            }
+        }
+    }
+
     val quickActions = listOf(
         DashboardRow(
             title = "Fuel",
@@ -105,13 +129,14 @@ fun PhoneDashboardMainContent(
             icon = Icons.Default.LocalGasStation,
             type = QuickActionType.Fuel,
             onClick = {
-                val isSelected = !settings.useVehicleFilter && settings.selectedPoiProviders == setOf(PoiProviderType.DataGouv)
-                if (isSelected) {
-                    settingsManager.setUseVehicleFilter(true)
-                } else {
-                    settingsManager.setUseVehicleFilter(false)
-                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.DataGouv))
-                    settingsManager.setMapEnergyTypes(settings.selectedMapEnergyTypes - "electric")
+                if (currentEnergyMode != QuickActionType.Fuel) {
+                    if (settings.vehicleEnergy == "gas") {
+                        settingsManager.setUseVehicleFilter(true)
+                    } else {
+                        settingsManager.setUseVehicleFilter(false)
+                        settingsManager.setPoiProviderTypes(setOf(PoiProviderType.DataGouv))
+                        settingsManager.setMapEnergyTypes(settings.selectedMapEnergyTypes - "electric")
+                    }
                 }
             }
         ),
@@ -121,13 +146,14 @@ fun PhoneDashboardMainContent(
             icon = Icons.Default.EvStation,
             type = QuickActionType.EV,
             onClick = {
-                val isSelected = !settings.useVehicleFilter && settings.selectedPoiProviders == setOf(PoiProviderType.DataGouvElec)
-                if (isSelected) {
-                    settingsManager.setUseVehicleFilter(true)
-                } else {
-                    settingsManager.setUseVehicleFilter(false)
-                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.DataGouvElec))
-                    settingsManager.setMapEnergyTypes(setOf("electric"))
+                if (currentEnergyMode != QuickActionType.EV) {
+                    if (settings.vehicleEnergy == "electric") {
+                        settingsManager.setUseVehicleFilter(true)
+                    } else {
+                        settingsManager.setUseVehicleFilter(false)
+                        settingsManager.setPoiProviderTypes(setOf(PoiProviderType.DataGouvElec))
+                        settingsManager.setMapEnergyTypes(setOf("electric"))
+                    }
                 }
             }
         ),
@@ -137,12 +163,14 @@ fun PhoneDashboardMainContent(
             icon = Icons.Default.Map,
             type = QuickActionType.Hybrid,
             onClick = {
-                val isSelected = !settings.useVehicleFilter && settings.selectedPoiProviders == setOf(PoiProviderType.Hybrid)
-                if (isSelected) {
-                    settingsManager.setUseVehicleFilter(true)
-                } else {
-                    settingsManager.setUseVehicleFilter(false)
-                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Hybrid))
+                if (currentEnergyMode != QuickActionType.Hybrid) {
+                    if (settings.vehicleEnergy == "hybrid") {
+                        settingsManager.setUseVehicleFilter(true)
+                    } else {
+                        settingsManager.setUseVehicleFilter(false)
+                        settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Hybrid))
+                        settingsManager.setMapEnergyTypes(emptySet())
+                    }
                 }
             }
         )
@@ -196,7 +224,10 @@ fun PhoneDashboardMainContent(
         }
 
         item {
-            PhoneDashboardQuickModeRow(settings = settings, quickActions = quickActions)
+            PhoneDashboardQuickModeRow(
+                currentEnergyMode = currentEnergyMode,
+                quickActions = quickActions
+            )
         }
 
         item {
@@ -270,7 +301,7 @@ fun PhoneDashboardMainContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PhoneDashboardQuickModeRow(
-    settings: AppSettings,
+    currentEnergyMode: QuickActionType,
     quickActions: List<DashboardRow>
 ) {
     Row(
@@ -278,14 +309,7 @@ private fun PhoneDashboardQuickModeRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         quickActions.forEach { action ->
-            val isSelected = remember(settings, action.type) {
-                !settings.useVehicleFilter && when (action.type) {
-                    QuickActionType.Fuel -> settings.selectedPoiProviders == setOf(PoiProviderType.DataGouv)
-                    QuickActionType.EV -> settings.selectedPoiProviders == setOf(PoiProviderType.DataGouvElec)
-                    QuickActionType.Hybrid -> settings.selectedPoiProviders == setOf(PoiProviderType.Hybrid)
-                    null -> false
-                }
-            }
+            val isSelected = action.type == currentEnergyMode
             Card(
                 onClick = action.onClick,
                 modifier = Modifier

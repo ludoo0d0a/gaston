@@ -32,6 +32,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.effectiveMapEnergyFilterIds
+import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.FuelCard
 import fr.geoking.gaston.MapEngine
 import fr.geoking.gaston.MapTheme
