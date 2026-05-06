@@ -541,7 +541,8 @@ fun MainUI(
                             communityRepo = mapDeps!!.communityRepo,
                             favoritesRepo = mapDeps!!.favoritesRepo,
                         initialSelectedPoi = pendingMapPoi,
-                        initialCenter = pendingMapLocation?.let { org.maplibre.android.geometry.LatLng(it.latitude, it.longitude) }
+                        initialCenterLat = pendingMapLocation?.latitude,
+                        initialCenterLon = pendingMapLocation?.longitude
                         )
                     } else {
                         MapScreen(
@@ -561,7 +562,8 @@ fun MainUI(
                             communityRepo = mapDeps!!.communityRepo,
                             favoritesRepo = mapDeps!!.favoritesRepo,
                         initialSelectedPoi = pendingMapPoi,
-                        initialCenter = pendingMapLocation
+                        initialCenterLat = pendingMapLocation?.latitude,
+                        initialCenterLon = pendingMapLocation?.longitude
                         )
                     }
                 }
@@ -684,7 +686,8 @@ fun MainUI(
                                 communityRepo = mapDeps!!.communityRepo,
                                 favoritesRepo = mapDeps!!.favoritesRepo,
                                 initialSelectedPoi = pendingMapPoi,
-                                initialCenter = pendingMapLocation?.let { org.maplibre.android.geometry.LatLng(it.latitude, it.longitude) }
+                                initialCenterLat = pendingMapLocation?.latitude,
+                                initialCenterLon = pendingMapLocation?.longitude
                             )
                         } else {
                             MapScreen(
@@ -704,7 +707,8 @@ fun MainUI(
                                 communityRepo = mapDeps!!.communityRepo,
                                 favoritesRepo = mapDeps!!.favoritesRepo,
                                 initialSelectedPoi = pendingMapPoi,
-                                initialCenter = pendingMapLocation
+                                initialCenterLat = pendingMapLocation?.latitude,
+                                initialCenterLon = pendingMapLocation?.longitude
                             )
                         }
                     } else {

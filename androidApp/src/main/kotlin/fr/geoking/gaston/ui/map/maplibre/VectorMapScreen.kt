@@ -37,8 +37,6 @@ import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.belib.matchAvailabilityToPois
-import fr.geoking.gaston.api.routing.RoutePlanner
-import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
@@ -56,7 +54,6 @@ import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
 import fr.geoking.gaston.shared.network.NetworkException
-import fr.geoking.gaston.toll.TollCalculator
 import fr.geoking.gaston.ui.SettingsScreen
 import fr.geoking.gaston.ui.SettingsScreenPage
 import fr.geoking.gaston.ui.components.MapScaffold
@@ -80,7 +77,6 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
-import fr.geoking.gaston.api.geocoding.GeocodingClient
 
 @OptIn(ExperimentalMaterial3Api::class, kotlinx.coroutines.FlowPreview::class)
 @Composable
@@ -96,12 +92,9 @@ fun VectorMapScreen(
     onPlanRoute: (() -> Unit)? = null,
     communityRepo: CommunityPoiRepository? = null,
     favoritesRepo: FavoritesRepository? = null,
-    routePlanner: RoutePlanner? = null,
-    routingClient: RoutingClient? = null,
-    tollCalculator: TollCalculator? = null,
-    geocodingClient: GeocodingClient? = null,
     initialSelectedPoi: Poi? = null,
-    initialCenter: LatLng? = null
+    initialCenterLat: Double? = null,
+    initialCenterLon: Double? = null
 ) {
     BackHandler { onBack() }
 
@@ -182,9 +175,9 @@ fun VectorMapScreen(
     var addPoiInitialLng by remember { mutableStateOf<Double?>(null) }
     var addPoiExistingCommunityId by remember { mutableStateOf<String?>(null) }
 
-    val defaultLat = initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: settings.lastKnownLat ?: 48.8566
-    val defaultLng = initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: settings.lastKnownLon ?: 2.3522
-    val defaultZoom = if (initialSelectedPoi != null || initialCenter != null) 15.0 else 12.0
+    val defaultLat = initialSelectedPoi?.latitude ?: initialCenterLat ?: settings.lastKnownLat ?: 48.8566
+    val defaultLng = initialSelectedPoi?.longitude ?: initialCenterLon ?: settings.lastKnownLon ?: 2.3522
+    val defaultZoom = if (initialSelectedPoi != null || (initialCenterLat != null && initialCenterLon != null)) 15.0 else 12.0
 
     LaunchedEffect(favoritesRepo) {
         if (favoritesRepo != null) {
