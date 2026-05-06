@@ -36,12 +36,18 @@ class PoiTest {
     }
 
     @Test
-    fun matchesEnergyFilter_alwaysReturnsTrue() {
-        val gasPoi = Poi("1", "Gas", "Address", 0.0, 0.0, isElectric = false)
+    fun matchesEnergyFilter_correctlyFilters() {
+        val gasPoi = Poi(
+            "1", "Gas", "Address", 0.0, 0.0, isElectric = false,
+            fuelPrices = listOf(FuelPrice("Gazole", 1.5))
+        )
         val elecPoi = Poi("2", "Elec", "Address", 0.0, 0.0, isElectric = true)
 
-        assertTrue(MapPoiFilter.matchesEnergyFilter(gasPoi, setOf("electric")), "Should show gas even if electric filter active")
-        assertTrue(MapPoiFilter.matchesEnergyFilter(elecPoi, setOf("gazole")), "Should show elec even if gazole filter active")
+        assertTrue(MapPoiFilter.matchesEnergyFilter(elecPoi, setOf("electric")), "Should show elec if electric filter active")
+        assertTrue(!MapPoiFilter.matchesEnergyFilter(gasPoi, setOf("electric")), "Should NOT show gas if ONLY electric filter active")
+        assertTrue(MapPoiFilter.matchesEnergyFilter(gasPoi, setOf("gazole")), "Should show gas if gazole filter active")
+        assertTrue(!MapPoiFilter.matchesEnergyFilter(elecPoi, setOf("gazole")), "Should NOT show elec if ONLY gazole filter active")
         assertTrue(MapPoiFilter.matchesEnergyFilter(gasPoi, emptySet()), "Should show gas with empty filters")
+        assertTrue(MapPoiFilter.matchesEnergyFilter(elecPoi, emptySet()), "Should show elec with empty filters")
     }
 }

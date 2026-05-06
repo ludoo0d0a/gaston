@@ -33,11 +33,17 @@ fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
 
     // Energy: Gas/Irve
     val energyFilters = effectiveMapEnergyFilterIds()
-    if (energyFilters.contains("electric")) {
-        categories.add(PoiCategory.Irve)
-    }
-    if (energyFilters.any { it != "electric" }) {
+    if (energyFilters.isEmpty()) {
+        // If no filter selected, show both (default "All")
         categories.add(PoiCategory.Gas)
+        categories.add(PoiCategory.Irve)
+    } else {
+        if (energyFilters.contains("electric")) {
+            categories.add(PoiCategory.Irve)
+        }
+        if (energyFilters.any { it != "electric" }) {
+            categories.add(PoiCategory.Gas)
+        }
     }
 
     // Vehicle-specific extra amenities (only when "For my car" is active)
