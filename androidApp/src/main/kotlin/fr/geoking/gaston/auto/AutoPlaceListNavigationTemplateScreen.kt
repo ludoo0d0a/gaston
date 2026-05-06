@@ -16,7 +16,11 @@ import androidx.car.app.model.Template
 
 @Suppress("DEPRECATION")
 class AutoPlaceListNavigationTemplateScreen(carContext: CarContext) : Screen(carContext) {
-    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoPlaceListNavigationTemplateScreen") {
+    override fun onGetTemplate(): Template = safeCarTemplate(
+        carContext = carContext,
+        logTag = "AutoPlaceListNavigationTemplateScreen",
+        templateName = "MapWithContentTemplate(ListTemplate)"
+    ) {
         val listBuilder = ItemList.Builder()
             .addItem(
                 Row.Builder()

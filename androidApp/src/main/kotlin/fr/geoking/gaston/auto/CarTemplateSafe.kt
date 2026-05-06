@@ -6,6 +6,8 @@ import androidx.car.app.model.Action
 import androidx.car.app.model.Header
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
+import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
+import org.koin.core.context.GlobalContext
 
 /**
  * Builds a car template and, on failure, returns a [MessageTemplate] so the head unit shows a clear
@@ -14,13 +16,52 @@ import androidx.car.app.model.Template
 internal fun safeCarTemplate(
     carContext: CarContext,
     logTag: String,
+    templateName: String? = null,
     block: () -> Template
 ): Template = try {
     block()
 } catch (e: Exception) {
     Log.e(logTag, "onGetTemplate failed", e)
-    val detail = e.message?.trim()?.take(280)?.let { "\n\n$it" } ?: ""
-    val body = ("This screen could not be built for this Android Auto version or head unit.$detail").take(500)
+
+    fun Exception.rootCause(): Throwable {
+        var cur: Throwable = this
+        while (cur.cause != null && cur.cause !== cur) cur = cur.cause!!
+        return cur
+    }
+
+    val root = e.rootCause()
+    val screenLine = "Screen: $logTag"
+    val templateLine = templateName?.takeIf { it.isNotBlank() }?.let { "Template: $it" } ?: "Template: (unknown)"
+    val errorLine = "Error: ${e::class.java.simpleName}${e.message?.trim()?.takeIf { it.isNotEmpty() }?.let { ": $it" } ?: ""}"
+    val rootLine =
+        if (root !== e) {
+            "Cause: ${root::class.java.simpleName}${root.message?.trim()?.takeIf { it.isNotEmpty() }?.let { ": $it" } ?: ""}"
+        } else {
+            null
+        }
+
+    val body = listOfNotNull(
+        "This screen couldn't be built (host rejected template or template validation failed).",
+        screenLine,
+        templateLine,
+        errorLine,
+        rootLine
+    ).joinToString(separator = "\n").take(500)
+
+    // Persist for later retrieval from Settings (phone).
+    runCatching {
+        GlobalContext.get().get<DiagnosticStore>().recordError(
+            httpCode = null,
+            message = buildString {
+                append("AndroidAuto template error\n")
+                append(screenLine).append('\n')
+                append(templateLine).append('\n')
+                append(errorLine)
+                if (rootLine != null) append('\n').append(rootLine)
+            }
+        )
+    }
+
     MessageTemplate.Builder(body)
         .setHeader(
             Header.Builder()

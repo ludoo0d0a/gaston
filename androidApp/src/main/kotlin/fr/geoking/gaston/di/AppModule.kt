@@ -48,6 +48,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.UUID
 import kotlin.random.Random
+import fr.geoking.gaston.diagnostics.DiagnosticsPersistence
 
 val appModule = module {
     single<HttpClient> {
@@ -164,6 +165,9 @@ val appModule = module {
     single { BillingManager() }
 
     single<DiagnosticStore> { DiagnosticStore() }
+
+    // Persist error log for later retrieval & copy from Settings.
+    single(createdAtStart = true) { DiagnosticsPersistence(androidContext(), get()) }
 
     single<GoogleAuthManager> {
         val auth = runCatching { FirebaseAuth.getInstance() }.getOrNull()

@@ -95,7 +95,11 @@ class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), Surfac
         invalidate()
     }
 
-    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoMapTemplateScreen") {
+    override fun onGetTemplate(): Template = safeCarTemplate(
+        carContext = carContext,
+        logTag = "AutoMapTemplateScreen",
+        templateName = "MapWithContentTemplate"
+    ) {
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()

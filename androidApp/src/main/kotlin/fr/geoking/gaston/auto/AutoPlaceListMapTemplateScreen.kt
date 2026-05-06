@@ -14,7 +14,11 @@ import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 
 class AutoPlaceListMapTemplateScreen(carContext: CarContext) : Screen(carContext) {
-    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoPlaceListMapTemplateScreen") {
+    override fun onGetTemplate(): Template = safeCarTemplate(
+        carContext = carContext,
+        logTag = "AutoPlaceListMapTemplateScreen",
+        templateName = "PlaceListMapTemplate"
+    ) {
         val listBuilder = ItemList.Builder()
             .addItem(
                 Row.Builder()
