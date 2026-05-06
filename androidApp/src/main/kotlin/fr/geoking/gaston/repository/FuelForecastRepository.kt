@@ -137,6 +137,7 @@ class FuelForecastRepository(
         scorePendingPredictions(today)
 
         val resultMap = mutableMapOf<String, FuelForecastUiState>()
+        val allHistories = mutableMapOf<String, List<DailyPricePoint>>()
 
         for (fuel in effectiveFuels) {
             val baseline = localAvgDao.getDay(locKey, fuel, today)?.avgPrice
@@ -148,6 +149,7 @@ class FuelForecastRepository(
             val history = localAvgDao.series(locKey, fuel, fromDay).map {
                 DailyPricePoint(day = it.day, priceEurPerL = it.avgPrice, isForecast = false)
             }
+            allHistories[fuel] = history
 
             val predictions = predictionDao.forCreationDay(today, fuel, locKey)
             val forecastPoints = predictions.map { p ->
@@ -178,6 +180,15 @@ class FuelForecastRepository(
                 accuracyMae7d = accRow?.mae,
                 lastScoreDirectionCorrect = lastScore?.directionCorrect,
                 errorMessage = error
+            )
+        }
+
+        if (allHistories.isNotEmpty()) {
+            resultMap["unified"] = FuelForecastUiState(
+                fuelId = "unified",
+                locationKey = locKey,
+                allFuelsHistory = allHistories,
+                brentHistory = brent
             )
         }
 
@@ -296,5 +307,7 @@ data class FuelForecastUiState(
     val accuracyHitRate7d: Double? = null,
     val accuracyMae7d: Double? = null,
     val lastScoreDirectionCorrect: Boolean? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val allFuelsHistory: Map<String, List<DailyPricePoint>> = emptyMap(),
+    val brentHistory: List<DailyClose> = emptyList()
 )

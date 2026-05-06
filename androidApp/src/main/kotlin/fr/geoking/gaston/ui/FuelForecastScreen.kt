@@ -34,6 +34,7 @@ import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ui.components.FuelForecastChartCard
+import fr.geoking.gaston.ui.components.UnifiedFuelForecastChartCard
 import fr.geoking.gaston.ui.dashboard.PlaystoreTheme
 import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
@@ -125,6 +126,16 @@ fun FuelForecastScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
+                    }
+
+                    val unifiedState = states["unified"]
+                    if (unifiedState != null) {
+                        item {
+                            UnifiedFuelForecastChartCard(
+                                state = unifiedState,
+                                isLoading = isLoading && states.isEmpty()
+                            )
+                        }
                     }
 
                     val sortedFuels = listOf("gazole", "sp95", "sp98", "gplc", "e85")
