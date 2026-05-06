@@ -1375,6 +1375,10 @@ private fun VehicleConfig(
 
         if (settings.vehicleEnergy == "electric" || settings.vehicleEnergy == "hybrid") {
             ConfigTextField(
+                label = "Battery capacity (kWh)",
+                value = settings.batteryCapacityKwh?.toString() ?: ""
+            ) { onUpdate(settings.copy(batteryCapacityKwh = it.toFloatOrNull())) }
+            ConfigTextField(
                 label = "Electric range (km)",
                 value = settings.evRangeKm.toString()
             ) { onUpdate(settings.copy(evRangeKm = it.toIntOrNull() ?: 300)) }

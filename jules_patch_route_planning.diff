@@ -1,0 +1,40 @@
+--- a/androidApp/src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt
++++ b/androidApp/src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt
+@@ -561,13 +561,29 @@
+
+                 val recommendations = remember(filteredStations, settings, currentRoute) {
+                     val route = currentRoute ?: return@remember emptyList<Poi>()
+-                    val rangeKm = if (settings.vehicleEnergy == "electric") {
+-                        settings.evRangeKm.toDouble()
+-                    } else {
+-                        val cap = settings.gasTankCapacityLiters
+-                        val cons = settings.gasConsumptionLper100km
+-                        if (cap != null && cons != null && cons > 0) (cap / cons * 100.0) else null
+-                    } ?: 400.0 // Default 400km if not set
++                    val rangeKm = when (settings.vehicleEnergy) {
++                        "electric" -> {
++                            val bat = settings.batteryCapacityKwh
++                            val cons = settings.evConsumptionKwhPer100km
++                            if (bat != null && cons != null && cons > 0) (bat / cons * 100.0)
++                            else settings.evRangeKm.toDouble()
++                        }
++                        "hybrid" -> {
++                            val gasCap = settings.gasTankCapacityLiters
++                            val gasCons = settings.gasConsumptionLper100km
++                            val gasRange = if (gasCap != null && gasCons != null && gasCons > 0) (gasCap / gasCons * 100.0) else 0.0
++
++                            val bat = settings.batteryCapacityKwh
++                            val eleCons = settings.evConsumptionKwhPer100km
++                            val eleRange = if (bat != null && eleCons != null && eleCons > 0) (bat / eleCons * 100.0) else settings.evRangeKm.toDouble()
++
++                            gasRange + eleRange
++                        }
++                        else -> { // gas
++                            val cap = settings.gasTankCapacityLiters
++                            val cons = settings.gasConsumptionLper100km
++                            if (cap != null && cons != null && cons > 0) (cap / cons * 100.0) else 400.0
++                        }
++                    }
+
+                     val result = mutableListOf<Poi>()
+                     var currentRange = rangeKm
