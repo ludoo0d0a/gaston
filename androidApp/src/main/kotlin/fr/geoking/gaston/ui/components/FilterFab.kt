@@ -67,22 +67,27 @@ fun FilterFab(
         }
     }
 
+    val effectiveEnergyIds = settings.effectiveMapEnergyFilterIds()
+    val effectivePowerLevels = settings.effectiveIrvePowerLevels()
+    val effectiveBrands = settings.effectiveFuelBrandFilterIds()
+    val effectiveOperators = settings.effectiveIrveOperatorFilter()
+
     val favoritesFilterActive = favoritesFilterEnabled && showFavoritesOnly
-    val activeFilterCount = remember(settings, filterMode, favoritesFilterActive) {
+    val activeFilterCount = remember(settings, filterMode, favoritesFilterActive, effectiveEnergyIds, effectivePowerLevels, effectiveBrands, effectiveOperators) {
         val favCount = if (favoritesFilterActive) 1 else 0
         val amenityCount = if (settings.selectedOverpassAmenityTypes.isNotEmpty()) 1 else 0
 
         if (settings.useVehicleFilter) return@remember 1 + favCount + amenityCount
 
         val fuelFilters = if (filterMode == 0 || filterMode == 2) {
-            val brandFilter = if (settings.mapBrands.isNotEmpty()) 1 else 0
-            val energyFilter = if (settings.selectedMapEnergyTypes.isNotEmpty()) 1 else 0
+            val brandFilter = if (effectiveBrands.isNotEmpty()) 1 else 0
+            val energyFilter = if (effectiveEnergyIds.any { it != "electric" }) 1 else 0
             brandFilter + energyFilter
         } else 0
 
         val elecFilters = if (filterMode == 1 || filterMode == 2) {
-            val operatorFilter = if (settings.mapIrveOperators.isNotEmpty()) 1 else 0
-            val powerFilter = if (settings.mapPowerLevels.isNotEmpty()) 1 else 0
+            val operatorFilter = if (effectiveOperators.isNotEmpty()) 1 else 0
+            val powerFilter = if (effectivePowerLevels.isNotEmpty()) 1 else 0
             val connectorFilter = if (settings.selectedMapConnectorTypes.isNotEmpty()) 1 else 0
             operatorFilter + powerFilter + connectorFilter
         } else 0
@@ -327,6 +332,7 @@ private fun FuelFilters(settingsManager: SettingsManager, providers: Set<PoiProv
     val brandOptions = remember { BrandHelper.getGasBrands() }
 
     if (providers.anyProvidesFuel()) {
+        val effectiveEnergyIds = settings.effectiveMapEnergyFilterIds()
         FilterSectionTitle("Fuel Types")
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -336,7 +342,7 @@ private fun FuelFilters(settingsManager: SettingsManager, providers: Set<PoiProv
                 FuelFilterChip(
                     id = id,
                     label = label,
-                    isSelected = settings.effectiveMapEnergyFilterIds().contains(id),
+                    isSelected = effectiveEnergyIds.contains(id),
                     onClick = {
                         val current = settings.selectedMapEnergyTypes
                         val next = if (current.contains(id)) current - id else current + id
@@ -352,7 +358,7 @@ private fun FuelFilters(settingsManager: SettingsManager, providers: Set<PoiProv
     FilterSectionTitle("Brands")
     MultiSelectBrandFilter(
         options = brandOptions,
-        selectedIds = settings.mapBrands,
+        selectedIds = settings.effectiveFuelBrandFilterIds(),
         onUpdate = { settingsManager.setMapBrands(it) }
     )
 }
@@ -363,6 +369,7 @@ private fun ElectricFilters(settingsManager: SettingsManager, providers: Set<Poi
     val brandOptions = remember { BrandHelper.getElectricBrands() }
 
     if (providers.anyProvidesElectric()) {
+        val effectivePowerLevels = settings.effectiveIrvePowerLevels()
         FilterSectionTitle("Power Range")
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -372,7 +379,7 @@ private fun ElectricFilters(settingsManager: SettingsManager, providers: Set<Poi
                 PowerFilterChip(
                     kw = kw,
                     label = label,
-                    isSelected = settings.effectiveIrvePowerLevels().contains(kw),
+                    isSelected = effectivePowerLevels.contains(kw),
                     onClick = {
                         val current = settings.mapPowerLevels
                         val next = if (current.contains(kw)) current - kw else current + kw
@@ -419,7 +426,7 @@ private fun ElectricFilters(settingsManager: SettingsManager, providers: Set<Poi
     FilterSectionTitle("Brands / Operators")
     MultiSelectBrandFilter(
         options = brandOptions,
-        selectedIds = settings.mapIrveOperators,
+        selectedIds = settings.effectiveIrveOperatorFilter(),
         onUpdate = { settingsManager.setMapIrveOperators(it) },
         label = "Search operators..."
     )

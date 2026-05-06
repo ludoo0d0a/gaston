@@ -4,6 +4,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.effectiveFuelBrandFilterIds
 import fr.geoking.gaston.ui.BrandHelper
 
 class AutoMapBrandSelectionScreen(
@@ -15,9 +16,10 @@ class AutoMapBrandSelectionScreen(
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
         val brands = BrandHelper.getGasBrands()
+        val effectiveBrands = settings.effectiveFuelBrandFilterIds()
 
         brands.forEach { (id, label) ->
-            val isSelected = settings.mapBrands.contains(id)
+            val isSelected = effectiveBrands.contains(id)
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(label)

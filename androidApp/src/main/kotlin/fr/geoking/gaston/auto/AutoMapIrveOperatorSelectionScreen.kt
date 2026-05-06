@@ -4,6 +4,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.effectiveIrveOperatorFilter
 import fr.geoking.gaston.ui.BrandHelper
 
 class AutoMapIrveOperatorSelectionScreen(
@@ -15,9 +16,10 @@ class AutoMapIrveOperatorSelectionScreen(
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
         val operators = BrandHelper.getElectricBrands()
+        val effectiveOperators = settings.effectiveIrveOperatorFilter()
 
         operators.forEach { (id, label) ->
-            val isSelected = settings.mapIrveOperators.contains(id)
+            val isSelected = effectiveOperators.contains(id)
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(label)

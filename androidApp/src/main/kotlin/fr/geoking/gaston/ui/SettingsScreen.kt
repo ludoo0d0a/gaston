@@ -319,14 +319,16 @@ private fun MapConfig(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
+            val effectiveEnergyIds = settings.effectiveMapEnergyFilterIds()
             FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
                     FuelFilterChip(
                         id = id,
                         label = label,
-                        isSelected = settings.selectedMapEnergyTypes.contains(id),
+                        isSelected = effectiveEnergyIds.contains(id),
                         onClick = {
-                            val next = if (settings.selectedMapEnergyTypes.contains(id)) settings.selectedMapEnergyTypes - id else settings.selectedMapEnergyTypes + id
+                            val current = settings.selectedMapEnergyTypes
+                            val next = if (current.contains(id)) current - id else current + id
                             onUpdate(settings.copy(selectedMapEnergyTypes = next, useVehicleFilter = false))
                         }
                     )
@@ -340,14 +342,16 @@ private fun MapConfig(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
+            val effectivePowerLevels = settings.effectiveIrvePowerLevels()
             FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
                     PowerFilterChip(
                         kw = kw,
                         label = label,
-                        isSelected = settings.mapPowerLevels.contains(kw),
+                        isSelected = effectivePowerLevels.contains(kw),
                         onClick = {
-                            val next = if (settings.mapPowerLevels.contains(kw)) settings.mapPowerLevels - kw else settings.mapPowerLevels + kw
+                            val current = settings.mapPowerLevels
+                            val next = if (current.contains(kw)) current - kw else current + kw
                             onUpdate(settings.copy(mapPowerLevels = next, useVehicleFilter = false))
                         }
                     )

@@ -4,6 +4,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.ui.MAP_ENERGY_OPTIONS
 
 class AutoMapEnergySelectionScreen(
@@ -14,9 +15,10 @@ class AutoMapEnergySelectionScreen(
     override fun onGetTemplate(): Template {
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
+        val effectiveEnergies = settings.effectiveMapEnergyFilterIds()
 
         MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.take(6).forEach { (id, label) ->
-            val isSelected = settings.selectedMapEnergyTypes.contains(id)
+            val isSelected = effectiveEnergies.contains(id)
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(label)

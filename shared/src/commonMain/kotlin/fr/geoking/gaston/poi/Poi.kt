@@ -317,10 +317,31 @@ object MapPoiFilter {
 
     /**
      * Returns true if [poi] should be shown given [selectedEnergyIds].
-     * [selectedEnergyIds] is currently ignored as per requested behavior: display all stations for now.
      */
     fun matchesEnergyFilter(poi: Poi, selectedEnergyIds: Set<String>): Boolean {
-        return true
+        if (selectedEnergyIds.isEmpty()) return true
+
+        // If it's an electric station and "electric" is selected, it's a match.
+        if (poi.isElectric && "electric" in selectedEnergyIds) return true
+
+        // For fuel stations, check if any of its fuels are in the selection.
+        val fuels = poi.fuelPrices
+        if (!fuels.isNullOrEmpty()) {
+            return fuels.any { fp ->
+                val id = fuelNameToId(fp.fuelName)
+                id != null && id in selectedEnergyIds
+            }
+        }
+
+        // If it's a gas station (not electric) but we don't have price info (e.g. from OSM),
+        // and we have ANY fuel filter selected, we show it (lenient).
+        // If we only have "electric" selected, we don't show it.
+        if (!poi.isElectric) {
+            val hasFuelFilter = selectedEnergyIds.any { it != "electric" }
+            return hasFuelFilter
+        }
+
+        return false
     }
 
     /** Returns true if [powerKw] falls into any of the selected [levels] buckets. */

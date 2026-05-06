@@ -4,6 +4,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.ui.MAP_IRVE_POWER_OPTIONS
 
 class AutoMapIrvePowerSelectionScreen(
@@ -14,9 +15,10 @@ class AutoMapIrvePowerSelectionScreen(
     override fun onGetTemplate(): Template {
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
+        val effectivePowerLevels = settings.effectiveIrvePowerLevels()
 
         MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
-            val isSelected = settings.mapPowerLevels.contains(kw)
+            val isSelected = effectivePowerLevels.contains(kw)
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(label)
