@@ -105,20 +105,8 @@ configure<ApplicationExtension> {
         // Required for Google Play Services Maps (references legacy Apache HTTP classes removed from Android 9+)
         useLibrary("org.apache.http.legacy")
 
-        buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "false")
-    }
-
-    flavorDimensions += "distribution"
-    productFlavors {
-        create("full") {
-            dimension = "distribution"
-            isDefault = true
-            buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "false")
-        }
-        create("playstore") {
-            dimension = "distribution"
-            buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "true")
-        }
+        // Only a single distribution remains (Play Store).
+        buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "true")
     }
 
     buildTypes {
