@@ -98,8 +98,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
+import fr.geoking.gaston.ui.map.MapCameraSample
+import fr.geoking.gaston.ui.map.MapErrorBanner
+import fr.geoking.gaston.ui.map.rememberErrorClipboardCopyHandler
+import fr.geoking.gaston.ui.map.rememberMapDataState
+import fr.geoking.gaston.ui.map.PoiOverlayHost
 
 /** Converts a vector drawable to a BitmapDescriptor for map markers (fromResource only supports bitmaps). Scales with zoom when sizePx varies. */
 private fun vectorDrawableToBitmapDescriptor(
@@ -151,15 +157,6 @@ fun MapScreen(
     val context = LocalContext.current
     val settings by settingsManager.settings.collectAsState()
     val errorLog by diagnostics.errorLog.collectAsState()
-    var cachedPois by remember { mutableStateOf<List<Poi>>(initialSelectedPoi?.let { listOf(it) } ?: emptyList()) }
-    var trafficInfo by remember { mutableStateOf<TrafficInfo?>(null) }
-    var mapErrorMessage by remember(settings.selectedPoiProviders, settings.poiProviderSelectionMode) {
-        mutableStateOf<String?>(null)
-    }
-    var isErrorPaused by remember(settings.selectedPoiProviders, settings.poiProviderSelectionMode) {
-        mutableStateOf(false)
-    }
-    var retryCount by remember { mutableStateOf(0) }
     var showMapSettings by remember { mutableStateOf(false) }
     var initialSettingsPage by remember { mutableStateOf(SettingsScreenPage.MapConfig) }
     var showAddPoiSheet by remember { mutableStateOf(false) }
@@ -171,7 +168,6 @@ fun MapScreen(
     var addPoiExistingCommunityId by remember { mutableStateOf<String?>(null) }
     var showFavoritesOnly by remember { mutableStateOf(false) }
     var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var isLoading by remember { mutableStateOf(false) }
     var frozenPoisForSheet by remember { mutableStateOf<List<Poi>>(emptyList()) }
     val billingManager = org.koin.compose.koinInject<fr.geoking.gaston.premium.BillingManager>()
     var showPaywallForFavorite by remember { mutableStateOf(false) }
@@ -221,32 +217,7 @@ fun MapScreen(
 
     var mapSizePx by remember { mutableStateOf(IntSize.Zero) }
     var selectedPoi by remember { mutableStateOf<Poi?>(initialSelectedPoi) }
-    var scrollRequestPoiId by remember { mutableStateOf(initialSelectedPoi?.id) }
-    var poiForDetailsDialog by remember { mutableStateOf<Poi?>(null) }
-    var availabilityByPoiId by remember { mutableStateOf<Map<String, StationAvailabilitySummary>>(emptyMap()) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-    val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-
-    if (showPaywallForFavorite && !settings.isPremium) {
-        PremiumPaywallPopup(
-            billingManager = billingManager,
-            onDismiss = { showPaywallForFavorite = false },
-            onPurchaseSuccess = {
-                scope.launch {
-                    billingManager.refreshStatus()
-                    settingsManager.setPremium(billingManager.isPremium.value)
-                    showPaywallForFavorite = false
-                }
-            }
-        )
-    }
-
-    LaunchedEffect(initialSelectedPoi) {
-        if (initialSelectedPoi != null) {
-            sheetState.show()
-        }
-    }
 
     LaunchedEffect(favoritesRepo) {
         if (favoritesRepo != null) {
@@ -254,10 +225,34 @@ fun MapScreen(
         }
     }
 
-    val poisInView = remember(cachedPois, cameraPositionState.position.target, cameraPositionState.position.zoom, mapSizePx, settings, effectiveProviders) {
+    val cameraFlow = remember(cameraPositionState) {
+        snapshotFlow { cameraPositionState.position }
+            .map { pos -> MapCameraSample(pos.target.latitude, pos.target.longitude, pos.zoom) }
+            .distinctUntilChanged()
+            .debounce(350)
+    }
+
+    val (mapData, mapActions) = rememberMapDataState(
+        context = context,
+        poiProvider = poiProvider,
+        availabilityProviderFactory = availabilityProviderFactory,
+        trafficProviderFactory = trafficProviderFactory,
+        settingsManager = settingsManager,
+        diagnostics = diagnostics,
+        effectiveProvidersLabel = effectiveProviders.toString(),
+        initialSelectedPoi = initialSelectedPoi,
+        cameraFlow = cameraFlow,
+        mapWidthPx = mapSizePx.width,
+        mapHeightPx = mapSizePx.height,
+        selectedPoi = selectedPoi,
+        isLocationPermissionGranted = hasLocationPermission,
+        requestLocationPermission = { launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
+    )
+
+    val poisInView = remember(mapData.cachedPois, cameraPositionState.position.target, cameraPositionState.position.zoom, mapSizePx, settings, effectiveProviders) {
         StationMapFilters.apply(
             settings = settings,
-            pois = cachedPois,
+            pois = mapData.cachedPois,
             providers = effectiveProviders,
             skipWhenOnlyOverpass = true
         )
@@ -293,117 +288,6 @@ fun MapScreen(
         }
     }
 
-    LaunchedEffect(mapSizePx, retryCount) {
-        if (mapSizePx.width <= 0 || mapSizePx.height <= 0) return@LaunchedEffect
-
-        if (!hasLocationPermission) {
-            launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-
-        snapshotFlow { cameraPositionState.position }
-            .debounce(350)
-            .collectLatest { position ->
-                if (isErrorPaused || selectedPoi != null) return@collectLatest
-
-                val centerLat = position.target.latitude
-                val centerLng = position.target.longitude
-                val zoom = position.zoom
-
-                val requiredRadiusKm = radiusKmFromMapViewport(
-                    centerLat,
-                    centerLng,
-                    zoom,
-                    mapSizePx.width,
-                    mapSizePx.height
-                ).coerceIn(1, 50)
-
-                mapErrorMessage = null
-
-                val viewport = MapViewport(
-                    zoom = zoom,
-                    mapWidthPx = mapSizePx.width,
-                    mapHeightPx = mapSizePx.height
-                )
-
-                try {
-                    isLoading = true
-                    poiProvider.searchFlow(
-                        PoiSearchRequest(
-                            latitude = centerLat,
-                            longitude = centerLng,
-                            viewport = viewport,
-                            categories = emptySet(),
-                            skipFilters = true
-                        )
-                    ).collect { result ->
-                        if (result.errors.isEmpty() || result.pois.isNotEmpty()) {
-                            cachedPois = PoiMerger.mergeInto(cachedPois, result.pois)
-
-                            // Availability: refresh for POIs close enough for the cards.
-                            val availabilityProvider = availabilityProviderFactory?.getProvider(centerLat, centerLng)
-                            if (availabilityProvider != null) {
-                                val availabilityRadiusKm = requiredRadiusKm.coerceAtMost(20).coerceAtLeast(10)
-                                val availabilities = availabilityProvider.getAvailability(centerLat, centerLng, availabilityRadiusKm)
-                                val poisForAvailability = cachedPois.filter { poi ->
-                                    approxDistanceKm(centerLat, centerLng, poi.latitude, poi.longitude) <= availabilityRadiusKm * 1.05
-                                }
-                                val matched = matchAvailabilityToPois(availabilities, poisForAvailability)
-                                availabilityByPoiId = availabilityByPoiId + matched
-                            }
-                        }
-
-                        if (result.errors.isNotEmpty() && result.pois.isEmpty()) {
-                            val firstError = result.errors.first()
-                            val msg = firstError.message
-                            val code = firstError.httpCode
-
-                            mapErrorMessage = msg
-                            isErrorPaused = true
-                            diagnostics.recordError(code, "Map ($effectiveProviders): $msg")
-                        }
-                    }
-
-                    // Traffic: updated only when a POI fetch happens.
-                    val availabilityProvider = availabilityProviderFactory?.getProvider(centerLat, centerLng)
-                    if (availabilityProvider != null) {
-                        val availabilityRadiusKm = requiredRadiusKm.coerceAtMost(20).coerceAtLeast(10)
-                        val availabilities = availabilityProvider.getAvailability(centerLat, centerLng, availabilityRadiusKm)
-                        val poisForAvailability = cachedPois.filter { poi ->
-                            approxDistanceKm(centerLat, centerLng, poi.latitude, poi.longitude) <= availabilityRadiusKm * 1.05
-                        }
-                        val matched = matchAvailabilityToPois(availabilities, poisForAvailability)
-                        availabilityByPoiId = availabilityByPoiId + matched
-                    }
-
-                    val trafficProvider = trafficProviderFactory?.getProvider(centerLat, centerLng)
-                    if (trafficProvider != null) {
-                        val halfSpan = 0.15
-                        trafficInfo = trafficProvider.getTraffic(
-                            TrafficRequest.Bbox(
-                                centerLat - halfSpan,
-                                centerLng - halfSpan,
-                                centerLat + halfSpan,
-                                centerLng + halfSpan
-                            )
-                        )
-                    } else {
-                        trafficInfo = null
-                    }
-                } catch (e: Exception) {
-                    if (e is kotlinx.coroutines.CancellationException) throw e
-                    val msg = e.message?.takeIf { it.isNotBlank() } ?: e.toString()
-                    mapErrorMessage = msg
-                    isErrorPaused = true
-                    diagnostics.recordError(
-                        (e as? NetworkException)?.httpCode,
-                        "Map ($effectiveProviders): $msg"
-                    )
-                } finally {
-                    isLoading = false
-                }
-            }
-    }
-
     if (showMapSettings) {
         SettingsScreen(
             settingsManager = settingsManager,
@@ -422,15 +306,7 @@ fun MapScreen(
         mapCenterLongitude = cameraPositionState.position.target.longitude,
         onBack = onBack,
         onRefresh = {
-            scope.launch {
-                CacheManager.clearAllCaches(context)
-                cachedPois = emptyList()
-                availabilityByPoiId = emptyMap()
-                trafficInfo = null
-                mapErrorMessage = null
-                isErrorPaused = false
-                retryCount++
-            }
+            mapActions.refresh(true)
         },
         onLocateMe = {
             scope.launch {
@@ -455,7 +331,7 @@ fun MapScreen(
         showFavoritesOnly = showFavoritesOnly,
         onShowFavoritesOnlyChange = { showFavoritesOnly = it },
         favoritesFilterEnabled = settings.isLoggedIn && favoritesRepo != null,
-        isLoading = isLoading,
+        isLoading = mapData.isLoading,
         palette = palette
     ) { padding ->
         Column(
@@ -463,75 +339,14 @@ fun MapScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            mapErrorMessage?.let { msg ->
-                val configuration = LocalConfiguration.current
-                val maxHeight = configuration.screenHeightDp.dp * 0.15f
-                val clipboard = LocalClipboard.current
-
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = maxHeight),
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    shadowElevation = 2.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = msg,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TextButton(
-                                onClick = {
-                                    scope.launch {
-                                        clipboard.setClipEntry(ClipEntry(android.content.ClipData.newPlainText("error", msg)))
-                                    }
-                                },
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                modifier = Modifier.height(32.dp)
-                            ) {
-                                Text("Copy", fontSize = 12.sp)
-                            }
-                            TextButton(
-                                onClick = {
-                                    mapErrorMessage = null
-                                },
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                modifier = Modifier.height(32.dp)
-                            ) {
-                                Text("Ignore", fontSize = 12.sp)
-                            }
-                            Button(
-                                onClick = {
-                                    mapErrorMessage = null
-                                    isErrorPaused = false
-                                    retryCount++
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                    contentColor = MaterialTheme.colorScheme.onError
-                                ),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                modifier = Modifier.height(32.dp)
-                            ) {
-                                Text("Retry", fontSize = 12.sp)
-                            }
-                        }
-                    }
-                }
+            mapData.mapErrorMessage?.let { msg ->
+                val onCopy = rememberErrorClipboardCopyHandler(msg)
+                MapErrorBanner(
+                    message = msg,
+                    onCopy = onCopy,
+                    onIgnore = mapActions.clearError,
+                    onRetry = mapActions.retry
+                )
             }
 
             if (settings.isLoggedIn && (communityRepo != null || favoritesRepo != null)) {
@@ -608,7 +423,7 @@ fun MapScreen(
                     }
 
                     poisToShow.forEach { poi ->
-                        val availability = availabilityByPoiId[poi.id]
+                        val availability = mapData.availabilityByPoiId[poi.id]
                         val isPoiSelected = selectedPoi?.id == poi.id
                         val isCheapest = remember(poi, minPrice, fuelIdsForCheapest) {
                             if (minPrice == null) false
@@ -640,13 +455,11 @@ fun MapScreen(
                             anchor = Offset(0.5f, 1f),
                             onClick = {
                                 selectedPoi = poi
-                                scrollRequestPoiId = poi.id
-                                scope.launch { sheetState.show() }
                                 true
                             }
                         )
                     }
-                    trafficInfo?.events?.forEach { event ->
+                    mapData.trafficInfo?.events?.forEach { event ->
                         val bbox = event.bbox ?: return@forEach
                         val lat = (bbox.latMin + bbox.latMax) / 2
                         val lon = (bbox.lonMin + bbox.lonMax) / 2
@@ -678,219 +491,34 @@ fun MapScreen(
         }
     }
 
-    // Keep the map camera centered on the POI currently selected in the bottom sheet.
-    // We intentionally wait for programmatic sheet scrolling to finish (see `scrollRequestPoiId`),
-    // otherwise the map animation could fight with the sheet repositioning.
-    LaunchedEffect(selectedPoi?.id, scrollRequestPoiId) {
-        val poi = selectedPoi ?: return@LaunchedEffect
-        if (scrollRequestPoiId != null) return@LaunchedEffect
-        // Animation accounts for the contentPadding set in GoogleMap when selectedPoi != null
-        cameraPositionState.animate(
-            CameraUpdateFactory.newLatLng(
-                LatLng(poi.latitude, poi.longitude)
-            )
-        )
-    }
-
-    if (selectedPoi != null) {
-        val listToShow = frozenPoisForSheet.takeIf { it.isNotEmpty() } ?: listOf(selectedPoi!!)
-        val currentListToShow by rememberUpdatedState(listToShow)
-
-        // If the user tapped a map marker, scroll the bottom sheet so the corresponding card is shown.
-        LaunchedEffect(scrollRequestPoiId) {
-            val requestId = scrollRequestPoiId ?: return@LaunchedEffect
-            val index = currentListToShow.indexOfFirst { it.id == requestId }
-            if (index >= 0) {
-                lazyListState.scrollToItem(index)
-            }
-            scrollRequestPoiId = null
-        }
-
-        // When the LazyRow is snapped, consider the card closest to the center as the "selected" card.
-        // Selecting a new card drives the camera centering via the `LaunchedEffect(selectedPoi?.id, ...)` above.
-        val currentScrollRequestPoiId by rememberUpdatedState(scrollRequestPoiId)
-        LaunchedEffect(lazyListState) {
-            snapshotFlow { lazyListState.isScrollInProgress }.collect { inProgress ->
-                if (inProgress) return@collect
-                if (currentScrollRequestPoiId != null) return@collect
-
-                val viewportWidth = lazyListState.layoutInfo.viewportSize.width
-                if (viewportWidth <= 0) return@collect
-
-                val viewportCenter = viewportWidth / 2
-                val closestItem = lazyListState.layoutInfo.visibleItemsInfo.minByOrNull { item ->
-                    val itemCenter = item.offset + item.size / 2
-                    kotlin.math.abs(itemCenter - viewportCenter)
-                }
-
-                val centeredPoi = closestItem?.index?.let { idx -> currentListToShow.getOrNull(idx) } ?: return@collect
-                if (selectedPoi?.id != centeredPoi.id) {
-                    selectedPoi = centeredPoi
-                }
-            }
-        }
-
-        ModalBottomSheet(
-            onDismissRequest = {
-                scope.launch { sheetState.hide() }
-                selectedPoi = null
-                scrollRequestPoiId = null
-            },
-            sheetState = sheetState,
-            sheetGesturesEnabled = true,
-            containerColor = Color(0xFF1E293B),
-            dragHandle = { BottomSheetDefaults.DragHandle(color = Color.White.copy(alpha = 0.7f)) }
-        ) {
-            LazyRow(
-                state = lazyListState,
-                flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(0.dp),
-                contentPadding = PaddingValues(bottom = 32.dp)
-            ) {
-                items(listToShow, key = { it.id }) { poi ->
-                    val isFav = poi.id in favoriteIds
-                    PoiDetailCard(
-                        modifier = Modifier.width(LocalConfiguration.current.screenWidthDp.dp),
-                        poi = poi,
-                        availabilitySummary = availabilityByPoiId[poi.id],
-                        highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),
-                        highlightedPowerLevels = settings.effectiveIrvePowerLevels(),
-                        onNavigate = {
-                            val uri = IntentNavigationHelper.getNavigationUri(poi)
-                            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                        },
-                        onLocate = {
-                            scope.launch {
-                                cameraPositionState.animate(
-                                    CameraUpdateFactory.newLatLng(
-                                        LatLng(poi.latitude, poi.longitude)
-                                    )
-                                )
-                            }
-                        },
-                        onShowDetails = { poiForDetailsDialog = poi },
-                        isSelected = poi.id == selectedPoi?.id,
-                        isLoggedIn = settings.isLoggedIn,
-                        isFavorite = isFav,
-                        onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
-                            {
-                                if (settings.isPremium) {
-                                    scope.launch {
-                                        favoritesRepo.toggleFavorite(poi)
-                                        favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
-                                    }
-                                } else {
-                                    showPaywallForFavorite = true
-                                }
-                            }
-                        } else null
+    PoiOverlayHost(
+        context = context,
+        settingsManager = settingsManager,
+        settings = settings,
+        availabilityByPoiId = mapData.availabilityByPoiId,
+        favoritesRepo = favoritesRepo,
+        favoriteIds = favoriteIds,
+        setFavoriteIds = { favoriteIds = it },
+        communityRepo = communityRepo,
+        selectedPoi = selectedPoi,
+        onSelectedPoiChange = { selectedPoi = it },
+        poisForOverlay = if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
+            poisInView.filter { it.id in favoriteIds }
+        } else {
+            poisInView
+        },
+        onCenterMapOnPoi = { poi ->
+            scope.launch {
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLng(
+                        LatLng(poi.latitude, poi.longitude)
                     )
-                }
+                )
             }
-        }
-    }
-
-    if (showAddPoiSheet) {
-        AddPoiSheet(
-            initialLat = addPoiInitialLat,
-            initialLng = addPoiInitialLng,
-            linkedOfficialId = addPoiLinkedOfficialId,
-            existingCommunityId = addPoiExistingCommunityId,
-            initialName = addPoiInitialName,
-            initialAddress = addPoiInitialAddress,
-            communityRepo = communityRepo,
-            onDismiss = { showAddPoiSheet = false },
-            onSaved = { retryCount++ }
-        )
-    }
-
-    poiForDetailsDialog?.let { poi ->
-        val ratingState = remember(poi.id) { mutableStateOf(settingsManager.getPoiRating(poi.id)) }
-        PoiDetailsFullscreenDialog(
-            poi = poi,
-            availabilitySummary = availabilityByPoiId[poi.id],
-            highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),
-            highlightedPowerLevels = settings.effectiveIrvePowerLevels(),
-            rating = ratingState.value,
-            onRate = { r ->
-                settingsManager.setPoiRating(poi.id, r)
-                ratingState.value = r
-            },
-            isLoggedIn = settings.isLoggedIn,
-            isCommunityPoi = isCommunityPoiId(poi.id),
-            isFavorite = poi.id in favoriteIds,
-            onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
-                {
-                    if (settings.isPremium) {
-                        scope.launch {
-                            favoritesRepo.toggleFavorite(poi)
-                            favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
-                        }
-                    } else {
-                        showPaywallForFavorite = true
-                    }
-                }
-            } else null,
-            onNavigate = {
-                val uri = IntentNavigationHelper.getNavigationUri(poi)
-                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-            },
-            onEdit = if (settings.isLoggedIn && isCommunityPoiId(poi.id) && communityRepo != null) {
-                {
-                    addPoiExistingCommunityId = poi.id
-                    addPoiInitialName = poi.name
-                    addPoiInitialAddress = poi.address
-                    addPoiInitialLat = poi.latitude
-                    addPoiInitialLng = poi.longitude
-                    addPoiLinkedOfficialId = null
-                    showAddPoiSheet = true
-                    poiForDetailsDialog = null
-                    selectedPoi = null
-                    scope.launch { sheetState.hide() }
-                }
-            } else null,
-            onRemove = if (settings.isLoggedIn && isCommunityPoiId(poi.id) && communityRepo != null) {
-                {
-                    scope.launch {
-                        communityRepo.removeCommunityPoi(poi.id)
-                        retryCount++
-                        poiForDetailsDialog = null
-                        selectedPoi = null
-                        sheetState.hide()
-                    }
-                }
-            } else null,
-            onHide = if (settings.isLoggedIn && !isCommunityPoiId(poi.id) && communityRepo != null) {
-                {
-                    scope.launch {
-                        communityRepo.hideOfficialPoi(poi.id)
-                        retryCount++
-                        poiForDetailsDialog = null
-                        selectedPoi = null
-                        sheetState.hide()
-                    }
-                }
-            } else null,
-            onSuggestCorrection = if (settings.isLoggedIn && !isCommunityPoiId(poi.id) && communityRepo != null) {
-                {
-                    addPoiLinkedOfficialId = poi.id
-                    addPoiExistingCommunityId = null
-                    addPoiInitialName = poi.name
-                    addPoiInitialAddress = poi.address
-                    addPoiInitialLat = poi.latitude
-                    addPoiInitialLng = poi.longitude
-                    showAddPoiSheet = true
-                    poiForDetailsDialog = null
-                    selectedPoi = null
-                    scope.launch { sheetState.hide() }
-                }
-            } else null,
-            onDismiss = { poiForDetailsDialog = null }
-        )
-    }
+        },
+        onInvalidate = { mapActions.invalidate() },
+        initialSelectedPoi = initialSelectedPoi
+    )
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF0F172A)
