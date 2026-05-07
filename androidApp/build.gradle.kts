@@ -150,6 +150,9 @@ configure<ApplicationExtension> {
 
     lint {
         baseline = file("lint-baseline.xml")
+        // Ensure we lint transitive dependencies too (incl. bundled native .so from AARs),
+        // which is required to catch 16KB page-size alignment issues early.
+        checkDependencies = true
     }
 
 }

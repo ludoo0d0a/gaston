@@ -37,4 +37,5 @@ jobs:
           MOBILITEIT_LUXEMBOURG_KEY: ""
           TOMTOM_KEY: ""
         run: |
-          ./gradlew --no-daemon :androidApp:assembleDebug :shared:build
+          # Build + lint to catch issues early (including 16KB page-size native library alignment).
+          ./gradlew --no-daemon :androidApp:assembleDebug :androidApp:lintDebug :shared:build

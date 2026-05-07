@@ -112,3 +112,11 @@ Outputs:
 | Map | MapLibre Android |
 | Network | Ktor |
 | DI | Koin |
+
+---
+
+## 16 KB page size support (Android 15+)
+
+Gaston doesn’t ship any native code from this repo, but some dependencies may include native (`.so`) libraries. The project uses a recent Android Gradle Plugin (AGP) and runs Android Lint in CI so **misaligned native libraries (16 KB requirement)** are detected early.
+
+Reference: `Support 16 KB page sizes` → `https://developer.android.com/guide/practices/page-sizes`
