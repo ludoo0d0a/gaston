@@ -81,7 +81,7 @@ class BelibAvailabilityClient(
         return r * c
     }
 
-    private fun parseRecords(body: String): List<BelibPdcRecord> {
+    internal fun parseRecords(body: String): List<BelibPdcRecord> {
         val element = json.parseToJsonElement(body)
         val obj = element.jsonObject
         val results = resultsAsList(obj)
