@@ -5,10 +5,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.LocalParking
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Landscape
+import androidx.compose.material.icons.filled.OutdoorGrill
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.Wc
+import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -317,7 +325,9 @@ private fun FuelFilters(settingsManager: SettingsManager, providers: Set<PoiProv
         FilterSectionTitle("Fuel Types")
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            maxLines = 2,
         ) {
             MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
                 FuelFilterChip(
@@ -326,7 +336,8 @@ private fun FuelFilters(settingsManager: SettingsManager, providers: Set<PoiProv
                     isSelected = effectiveEnergyIds.contains(id),
                     onClick = {
                         val current = settings.selectedMapEnergyTypes
-                        val next = if (current.contains(id)) current - id else current + id
+                        val keepElectric = current.contains("electric")
+                        val next = if (keepElectric) setOf(id, "electric") else setOf(id)
                         settingsManager.setUseVehicleFilter(false)
                         settingsManager.setMapEnergyTypes(next)
                     }
@@ -346,7 +357,9 @@ private fun ElectricFilters(settingsManager: SettingsManager, providers: Set<Poi
         FilterSectionTitle("Power Range")
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            maxLines = 2,
         ) {
             MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
                 PowerFilterChip(
@@ -354,8 +367,7 @@ private fun ElectricFilters(settingsManager: SettingsManager, providers: Set<Poi
                     label = label,
                     isSelected = effectivePowerLevels.contains(kw),
                     onClick = {
-                        val current = settings.mapPowerLevels
-                        val next = if (current.contains(kw)) current - kw else current + kw
+                        val next = setOf(kw)
                         settingsManager.setUseVehicleFilter(false)
                         settingsManager.setMapPowerLevels(next)
                     }
@@ -411,6 +423,17 @@ private fun amenityIcon(id: String): ImageVector = when (id) {
     "parking" -> Icons.Filled.LocalParking
     "toilets" -> Icons.Filled.Wc
     "drinking_water" -> Icons.Filled.WaterDrop
+    "truck_stop" -> Icons.Filled.LocalShipping
+    "camp_site" -> Icons.Filled.Landscape
+    // Requested: "Aire CC" should be a tree icon
+    "caravan_site" -> Icons.Filled.Forest
+    "picnic_site" -> Icons.Filled.OutdoorGrill
+    "rest_area" -> Icons.Filled.Forest
+    "restaurant" -> Icons.Filled.Restaurant
+    "fast_food" -> Icons.Filled.Fastfood
+    "speed_camera" -> Icons.Filled.Speed
+    // Requested: viewpoint should be “jumelles” (closest Material icon)
+    "viewpoint" -> Icons.Filled.Visibility
     else -> Icons.Filled.LocationOn
 }
 

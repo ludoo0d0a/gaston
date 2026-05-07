@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -178,6 +179,8 @@ fun PoiOverlayHost(
             containerColor = Color(0xFF1E293B),
             dragHandle = { BottomSheetDefaults.DragHandle(color = Color.White.copy(alpha = 0.7f)) }
         ) {
+            val configuration = LocalConfiguration.current
+            val cardHeight = (configuration.screenHeightDp * 0.85f).dp
             LazyRow(
                 state = lazyListState,
                 flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState),
@@ -189,7 +192,9 @@ fun PoiOverlayHost(
                 items(listToShow, key = { it.id }) { poi ->
                     val isFav = poi.id in favoriteIds
                     PoiDetailCard(
-                        modifier = Modifier.width(LocalConfiguration.current.screenWidthDp.dp),
+                        modifier = Modifier
+                            .width(configuration.screenWidthDp.dp)
+                            .height(cardHeight),
                         poi = poi,
                         availabilitySummary = availabilityByPoiId[poi.id],
                         highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),

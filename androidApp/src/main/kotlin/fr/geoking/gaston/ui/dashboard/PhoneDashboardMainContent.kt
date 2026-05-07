@@ -88,6 +88,13 @@ private fun EnergyFilterMode.toQuickActionType(): QuickActionType = when (this) 
     EnergyFilterMode.Hybrid -> QuickActionType.Hybrid
 }
 
+private fun cityLabelFromGeocodedPlace(place: GeocodedPlace): String {
+    val raw = place.label.trim()
+    if (raw.isBlank()) return raw
+    // Labels typically look like "Paris, Île-de-France, France" (or similar). We only want the city.
+    return raw.substringBefore(',').trim().ifBlank { raw }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhoneDashboardMainContent(
@@ -379,7 +386,11 @@ private fun PhoneDashboardNearbyCheapestSection(
             onMapClick = { onOpenMap(null) },
             modifier = cardModifier,
             emptyMessage = searchError,
-            title = if (selectedSearchLocation != null) "Cheapest near ${selectedSearchLocation.label}" else "Nearby cheapest"
+            title = if (selectedSearchLocation != null) {
+                "Cheapest near ${cityLabelFromGeocodedPlace(selectedSearchLocation)}"
+            } else {
+                "Nearby cheapest"
+            }
         )
     }
 }

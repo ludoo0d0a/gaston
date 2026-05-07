@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fr.geoking.gaston.R
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.poi.FuelPrice
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.Poi
@@ -75,9 +76,47 @@ fun PoiDetailCard(
 
     val effectiveCategory = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
 
+    @Composable
+    fun FuelPricesCompactList(prices: List<FuelPrice>) {
+        val sorted = prices.sortedBy { it.fuelName.lowercase() }
+        sorted.forEach { fp ->
+            val fuelId = MapPoiFilter.fuelNameToId(fp.fuelName)
+            val matchColor = fuelId?.let { ColorHelper.getFuelColor(it) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = fp.fuelName,
+                    color = matchColor ?: Color.White.copy(alpha = 0.85f),
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val updatedAt = fp.updatedAt
+                    if (updatedAt != null) {
+                        Text(
+                            text = fr.geoking.gaston.shared.datetime.DateTimeUtils.formatRelativeTime(updatedAt),
+                            color = Color.White.copy(alpha = 0.4f),
+                            fontSize = 10.sp,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                    }
+                    Text(
+                        text = if (fp.outOfStock) "—" else "€%.3f".format(fp.price),
+                        color = if (fp.outOfStock) Color.White.copy(alpha = 0.5f) else Color(0xFF22C55E),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+
     Card(
         modifier = modifier
-            .height(200.dp),
+            .defaultMinSize(minHeight = 200.dp),
         colors = CardDefaults.cardColors(containerColor = if (isSelected) Color(0xFF475569) else Color(0xFF334155)),
         shape = MaterialTheme.shapes.large
     ) {
@@ -213,40 +252,7 @@ fun PoiDetailCard(
                             PoiCategory.Gas -> {
                                 val prices = poi.fuelPrices.orEmpty()
                                 if (prices.isNotEmpty()) {
-                                    val sorted = prices.sortedBy { it.fuelName.lowercase() }
-                                    sorted.forEach { fp ->
-                                        val fuelId = MapPoiFilter.fuelNameToId(fp.fuelName)
-                                        val matchColor = fuelId?.let { ColorHelper.getFuelColor(it) }
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                text = fp.fuelName,
-                                                color = matchColor ?: Color.White.copy(alpha = 0.85f),
-                                                fontSize = 12.sp,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                val updatedAt = fp.updatedAt
-                                                if (updatedAt != null) {
-                                                    Text(
-                                                        text = fr.geoking.gaston.shared.datetime.DateTimeUtils.formatRelativeTime(updatedAt),
-                                                        color = Color.White.copy(alpha = 0.4f),
-                                                        fontSize = 10.sp,
-                                                        modifier = Modifier.padding(end = 8.dp)
-                                                    )
-                                                }
-                                                Text(
-                                                    text = if (fp.outOfStock) "—" else "€%.3f".format(fp.price),
-                                                    color = if (fp.outOfStock) Color.White.copy(alpha = 0.5f) else Color(0xFF22C55E),
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Medium
-                                                )
-                                            }
-                                        }
-                                    }
+                                    FuelPricesCompactList(prices)
                                 } else {
                                     Text(
                                         text = "No fuel price details available",
@@ -282,6 +288,14 @@ fun PoiDetailCard(
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis
                                     )
+                                }
+
+                                // Always show the full list of known fuel prices, even when the user filtered the map
+                                // to Electric or a specific fuel type (hybrid stations can have both).
+                                val prices = poi.fuelPrices.orEmpty()
+                                if (prices.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    FuelPricesCompactList(prices)
                                 }
                             }
                             else -> {

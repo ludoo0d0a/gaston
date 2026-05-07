@@ -5,11 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -130,18 +130,20 @@ fun EnergyTypeSelectorRows(
 
     Column(modifier = modifier.fillMaxWidth()) {
         if (showFuelRow) {
-            LazyRow(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                maxLines = 2,
             ) {
-                items(MAP_ENERGY_OPTIONS.filter { it.first != "electric" }) { (id, label) ->
+                MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
                     FuelFilterChip(
                         id = id,
                         label = label,
                         isSelected = settings.effectiveMapEnergyFilterIds().contains(id),
                         onClick = {
-                            val current = settings.selectedMapEnergyTypes
-                            val next = if (current.contains(id)) current - id else current + id
+                            val keepElectric = mode == EnergyFilterMode.Hybrid
+                            val next = if (keepElectric) setOf(id, "electric") else setOf(id)
                             settingsManager.setUseVehicleFilter(false)
                             settingsManager.setMapEnergyTypes(next)
                         }
@@ -155,20 +157,20 @@ fun EnergyTypeSelectorRows(
         }
 
         if (showElectricRow) {
-            LazyRow(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                maxLines = 2,
             ) {
-                items(MAP_IRVE_POWER_OPTIONS) { (kw, label) ->
+                MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
                     PowerFilterChip(
                         kw = kw,
                         label = label,
                         isSelected = settings.effectiveIrvePowerLevels().contains(kw),
                         onClick = {
-                            val current = settings.mapPowerLevels
-                            val next = if (current.contains(kw)) current - kw else current + kw
                             settingsManager.setUseVehicleFilter(false)
-                            settingsManager.setMapPowerLevels(next)
+                            settingsManager.setMapPowerLevels(setOf(kw))
                         }
                     )
                 }

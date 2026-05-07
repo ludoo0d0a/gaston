@@ -355,10 +355,14 @@ open class SettingsManager(
     open fun setMapEnergyTypes(types: Set<String>) = setSelectedMapEnergyTypes(types)
 
     open fun setEnergyFilterMode(mode: EnergyFilterMode) {
+        val current = _settings.value.selectedMapEnergyTypes
+        val currentFuel: String? = current.firstOrNull { it != "electric" }
+        val fallbackFuel = "e85"
+
         val nextTypes = when (mode) {
-            EnergyFilterMode.Fuel -> setOf("e85")
+            EnergyFilterMode.Fuel -> setOf(currentFuel ?: fallbackFuel)
             EnergyFilterMode.Electric -> setOf("electric")
-            EnergyFilterMode.Hybrid -> setOf("e85", "electric")
+            EnergyFilterMode.Hybrid -> setOf(currentFuel ?: fallbackFuel, "electric")
         }
         saveSettings(_settings.value.copy(
             useVehicleFilter = false,

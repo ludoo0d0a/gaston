@@ -3,14 +3,14 @@ package fr.geoking.gaston.ui
 import fr.geoking.gaston.VehicleType
 
 val OVERPASS_AMENITY_OPTIONS = listOf(
-    "toilets" to "Toilets",
+    "toilets" to "Restroom",
     "drinking_water" to "Water",
     "camp_site" to "Camping",
     "caravan_site" to "Aire CC",
     "picnic_site" to "Picnic",
     "truck_stop" to "Truck",
-    "rest_area" to "Rest",
-    "restaurant" to "Resto",
+    "rest_area" to "Rest area",
+    "restaurant" to "Restaurant",
     "fast_food" to "Fast food",
     "speed_camera" to "Radar",
     "parking" to "Parking",

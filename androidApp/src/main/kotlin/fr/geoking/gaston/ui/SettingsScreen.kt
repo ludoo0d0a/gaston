@@ -322,7 +322,12 @@ private fun MapConfig(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             val effectiveEnergyIds = settings.effectiveMapEnergyFilterIds()
-            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                maxLines = 2,
+            ) {
                 MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
                     FuelFilterChip(
                         id = id,
@@ -330,7 +335,8 @@ private fun MapConfig(
                         isSelected = effectiveEnergyIds.contains(id),
                         onClick = {
                             val current = settings.selectedMapEnergyTypes
-                            val next = if (current.contains(id)) current - id else current + id
+                            val keepElectric = current.contains("electric")
+                            val next = if (keepElectric) setOf(id, "electric") else setOf(id)
                             onUpdate(settings.copy(selectedMapEnergyTypes = next, useVehicleFilter = false))
                         }
                     )
@@ -345,15 +351,19 @@ private fun MapConfig(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             val effectivePowerLevels = settings.effectiveIrvePowerLevels()
-            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                maxLines = 2,
+            ) {
                 MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
                     PowerFilterChip(
                         kw = kw,
                         label = label,
                         isSelected = effectivePowerLevels.contains(kw),
                         onClick = {
-                            val current = settings.mapPowerLevels
-                            val next = if (current.contains(kw)) current - kw else current + kw
+                            val next = setOf(kw)
                             onUpdate(settings.copy(mapPowerLevels = next, useVehicleFilter = false))
                         }
                     )
