@@ -63,7 +63,7 @@ import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ui.SettingsScreenPage
 import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.components.CheapestStationsCard
-import fr.geoking.gaston.ui.components.energySelectorItems
+import fr.geoking.gaston.ui.components.EnergyTypeSelectorRows
 
 private enum class QuickActionType { Fuel, EV, Hybrid }
 
@@ -213,17 +213,11 @@ fun PhoneDashboardMainContent(
         }
 
         item {
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                energySelectorItems(
-                    settings = settings,
-                    settingsManager = settingsManager,
-                    providers = providers
-                )
-            }
+            EnergyTypeSelectorRows(
+                settings = settings,
+                settingsManager = settingsManager,
+                providers = providers
+            )
         }
 
         item {

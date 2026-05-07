@@ -1,9 +1,15 @@
 package fr.geoking.gaston.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -13,7 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.EnergyFilterMode
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.effectiveEnergyFilterMode
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.poi.PoiProviderType
@@ -105,6 +113,66 @@ fun LazyListScope.energySelectorItems(
                     settingsManager.setMapPowerLevels(next)
                 }
             )
+        }
+    }
+}
+
+@Composable
+fun EnergyTypeSelectorRows(
+    settings: AppSettings,
+    settingsManager: SettingsManager,
+    providers: Set<PoiProviderType>,
+    modifier: Modifier = Modifier,
+) {
+    val mode = settings.effectiveEnergyFilterMode()
+    val showFuelRow = providers.anyProvidesFuel() && (mode == EnergyFilterMode.Fuel || mode == EnergyFilterMode.Hybrid)
+    val showElectricRow = providers.anyProvidesElectric() && (mode == EnergyFilterMode.Electric || mode == EnergyFilterMode.Hybrid)
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (showFuelRow) {
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(MAP_ENERGY_OPTIONS.filter { it.first != "electric" }) { (id, label) ->
+                    FuelFilterChip(
+                        id = id,
+                        label = label,
+                        isSelected = settings.effectiveMapEnergyFilterIds().contains(id),
+                        onClick = {
+                            val current = settings.selectedMapEnergyTypes
+                            val next = if (current.contains(id)) current - id else current + id
+                            settingsManager.setUseVehicleFilter(false)
+                            settingsManager.setMapEnergyTypes(next)
+                        }
+                    )
+                }
+            }
+        }
+
+        if (showFuelRow && showElectricRow) {
+            Spacer(Modifier.height(8.dp))
+        }
+
+        if (showElectricRow) {
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(MAP_IRVE_POWER_OPTIONS) { (kw, label) ->
+                    PowerFilterChip(
+                        kw = kw,
+                        label = label,
+                        isSelected = settings.effectiveIrvePowerLevels().contains(kw),
+                        onClick = {
+                            val current = settings.mapPowerLevels
+                            val next = if (current.contains(kw)) current - kw else current + kw
+                            settingsManager.setUseVehicleFilter(false)
+                            settingsManager.setMapPowerLevels(next)
+                        }
+                    )
+                }
+            }
         }
     }
 }

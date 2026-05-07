@@ -79,7 +79,7 @@ import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
-import fr.geoking.gaston.ui.components.energySelectorItems
+import fr.geoking.gaston.ui.components.EnergyTypeSelectorRows
 import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.toll.TollCalculator
@@ -659,19 +659,14 @@ fun RoutePlanningScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                LazyRow(
+                EnergyTypeSelectorRows(
+                    settings = settings,
+                    settingsManager = settingsManager,
+                    providers = effectiveProviders,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    energySelectorItems(
-                        settings = settings,
-                        settingsManager = settingsManager,
-                        providers = effectiveProviders
-                    )
-                }
+                        .padding(vertical = 8.dp)
+                )
                 Spacer(modifier = Modifier.height(8.dp))
 
                 LazyColumn(

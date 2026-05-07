@@ -4,15 +4,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.LocalParking
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.Wc
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import fr.geoking.gaston.*
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
@@ -54,27 +57,23 @@ fun FilterFab(
 
     val effectiveEnergyIds = settings.effectiveMapEnergyFilterIds()
     val effectivePowerLevels = settings.effectiveIrvePowerLevels()
-    val effectiveBrands = settings.effectiveFuelBrandFilterIds()
-    val effectiveOperators = settings.effectiveIrveOperatorFilter()
 
     val favoritesFilterActive = favoritesFilterEnabled && showFavoritesOnly
-    val activeFilterCount = remember(settings, filterMode, favoritesFilterActive, effectiveEnergyIds, effectivePowerLevels, effectiveBrands, effectiveOperators) {
+    val activeFilterCount = remember(settings, filterMode, favoritesFilterActive, effectiveEnergyIds, effectivePowerLevels) {
         val favCount = if (favoritesFilterActive) 1 else 0
         val amenityCount = if (settings.selectedOverpassAmenityTypes.isNotEmpty()) 1 else 0
 
         if (settings.useVehicleFilter) return@remember 1 + favCount + amenityCount
 
         val fuelFilters = if (filterMode == 0 || filterMode == 2) {
-            val brandFilter = if (effectiveBrands.isNotEmpty()) 1 else 0
             val energyFilter = if (effectiveEnergyIds.any { it != "electric" }) 1 else 0
-            brandFilter + energyFilter
+            energyFilter
         } else 0
 
         val elecFilters = if (filterMode == 1 || filterMode == 2) {
-            val operatorFilter = if (effectiveOperators.isNotEmpty()) 1 else 0
             val powerFilter = if (effectivePowerLevels.isNotEmpty()) 1 else 0
             val connectorFilter = if (settings.selectedMapConnectorTypes.isNotEmpty()) 1 else 0
-            operatorFilter + powerFilter + connectorFilter
+            powerFilter + connectorFilter
         } else 0
 
         favCount + amenityCount + fuelFilters + elecFilters
@@ -94,6 +93,13 @@ fun FilterFab(
     )
 
     if (showSheet) {
+        // Brand/operator filters are deprecated on the phone map filter sheet.
+        // Ensure we don't keep silently filtering if the user had old values stored.
+        LaunchedEffect(Unit) {
+            if (settings.mapBrands.isNotEmpty()) settingsManager.setMapBrands(emptySet())
+            if (settings.mapIrveOperators.isNotEmpty()) settingsManager.setMapIrveOperators(emptySet())
+        }
+
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
             sheetState = sheetState,
@@ -249,15 +255,6 @@ fun FilterFab(
                 }
 
                 AmenityFilters(settingsManager)
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = { showSheet = false },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Apply")
-                }
             }
         }
     }
@@ -274,6 +271,7 @@ private fun AmenityFilters(settingsManager: SettingsManager) {
     ) {
         OVERPASS_AMENITY_OPTIONS.forEach { (id, label) ->
             val isSelected = settings.selectedOverpassAmenityTypes.contains(id)
+            val icon = remember(id) { amenityIcon(id) }
             FilterChip(
                 selected = isSelected,
                 onClick = {
@@ -285,6 +283,14 @@ private fun AmenityFilters(settingsManager: SettingsManager) {
                     settingsManager.setOverpassAmenityTypes(next)
                 },
                 label = { Text(label) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primary,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
@@ -305,7 +311,6 @@ private fun AmenityFilters(settingsManager: SettingsManager) {
 @Composable
 private fun FuelFilters(settingsManager: SettingsManager, providers: Set<PoiProviderType>) {
     val settings by settingsManager.settings.collectAsState()
-    val brandOptions = remember { BrandHelper.getGasBrands() }
 
     if (providers.anyProvidesFuel()) {
         val effectiveEnergyIds = settings.effectiveMapEnergyFilterIds()
@@ -330,19 +335,11 @@ private fun FuelFilters(settingsManager: SettingsManager, providers: Set<PoiProv
         }
         Spacer(modifier = Modifier.height(24.dp))
     }
-
-    FilterSectionTitle("Brands")
-    MultiSelectBrandFilter(
-        options = brandOptions,
-        selectedIds = settings.effectiveFuelBrandFilterIds(),
-        onUpdate = { settingsManager.setMapBrands(it) }
-    )
 }
 
 @Composable
 private fun ElectricFilters(settingsManager: SettingsManager, providers: Set<PoiProviderType>) {
     val settings by settingsManager.settings.collectAsState()
-    val brandOptions = remember { BrandHelper.getElectricBrands() }
 
     if (providers.anyProvidesElectric()) {
         val effectivePowerLevels = settings.effectiveIrvePowerLevels()
@@ -398,14 +395,6 @@ private fun ElectricFilters(settingsManager: SettingsManager, providers: Set<Poi
     }
 
     Spacer(modifier = Modifier.height(24.dp))
-
-    FilterSectionTitle("Brands / Operators")
-    MultiSelectBrandFilter(
-        options = brandOptions,
-        selectedIds = settings.effectiveIrveOperatorFilter(),
-        onUpdate = { settingsManager.setMapIrveOperators(it) },
-        label = "Search operators..."
-    )
 }
 
 @Composable
@@ -418,108 +407,11 @@ private fun FilterSectionTitle(title: String) {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-@Composable
-private fun MultiSelectBrandFilter(
-    options: List<Pair<String, String>>,
-    selectedIds: Set<String>,
-    onUpdate: (Set<String>) -> Unit,
-    label: String = "Search brands..."
-) {
-    var expanded by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-
-    val filteredOptions = remember(searchQuery, options) {
-        if (searchQuery.isBlank()) options
-        else options.filter { it.second.contains(searchQuery, ignoreCase = true) }
-    }
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = { Text(label, color = Color.White.copy(alpha = 0.7f)) },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-                    focusedTrailingIconColor = Color.White,
-                    unfocusedTrailingIconColor = Color.White.copy(alpha = 0.7f)
-                ),
-                modifier = Modifier
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
-                    .fillMaxWidth()
-            )
-
-            if (filteredOptions.isNotEmpty()) {
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                    containerColor = Color(0xFF334155)
-                ) {
-                    filteredOptions.forEach { (id, brandName) ->
-                        val isSelected = selectedIds.contains(id)
-                        DropdownMenuItem(
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(
-                                        checked = isSelected,
-                                        onCheckedChange = null,
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = MaterialTheme.colorScheme.primary,
-                                            uncheckedColor = Color.White.copy(alpha = 0.5f)
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(brandName, color = Color.White)
-                                }
-                            },
-                            onClick = {
-                                val next = if (isSelected) selectedIds - id else selectedIds + id
-                                onUpdate(next)
-                            }
-                        )
-                    }
-                }
-            }
-        }
-
-        if (selectedIds.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                selectedIds.forEach { id ->
-                    val brandName = options.find { it.first == id }?.second ?: id
-                    FilterChip(
-                        selected = true,
-                        onClick = { onUpdate(selectedIds - id) },
-                        label = { Text(brandName, fontSize = 12.sp) },
-                        trailingIcon = {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Remove",
-                                modifier = Modifier.size(16.dp)
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                            selectedTrailingIconColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    )
-                }
-            }
-        }
-    }
+private fun amenityIcon(id: String): ImageVector = when (id) {
+    "parking" -> Icons.Filled.LocalParking
+    "toilets" -> Icons.Filled.Wc
+    "drinking_water" -> Icons.Filled.WaterDrop
+    else -> Icons.Filled.LocationOn
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
