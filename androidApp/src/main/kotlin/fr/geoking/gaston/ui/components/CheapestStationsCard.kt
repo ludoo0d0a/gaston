@@ -143,11 +143,12 @@ private fun CheapestStationItem(
             val fuelIds = selectedEnergyIds - "electric"
 
             // Display fuel price if applicable
-            if (!poi.fuelPrices.isNullOrEmpty()) {
+            if (!poi.isElectric) {
+                val prices = poi.fuelPrices.orEmpty()
                 val matchingPrices = if (fuelIds.isEmpty()) {
-                    poi.fuelPrices!!
+                    prices
                 } else {
-                    poi.fuelPrices!!.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                    prices.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
                 }
 
                 val bestPrice = matchingPrices.minByOrNull { it.price }
@@ -163,6 +164,14 @@ private fun CheapestStationItem(
                         text = bestPrice.fuelName,
                         style = MaterialTheme.typography.labelSmall,
                         color = fuelId?.let { ColorHelper.getFuelColor(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else if (fuelIds.isNotEmpty()) {
+                    // Fuel selected but no matching price at this station: keep station visible and show placeholder.
+                    Text(
+                        text = "—",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

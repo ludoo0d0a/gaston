@@ -323,27 +323,18 @@ object MapPoiFilter {
     fun matchesEnergyFilter(poi: Poi, selectedEnergyIds: Set<String>): Boolean {
         if (selectedEnergyIds.isEmpty()) return true
 
-        // If it's an electric station and "electric" is selected, it's a match.
-        if (poi.isElectric && "electric" in selectedEnergyIds) return true
+        val wantElectric = "electric" in selectedEnergyIds
+        val wantFuel = selectedEnergyIds.any { it != "electric" }
 
-        // For fuel stations, check if any of its fuels are in the selection.
-        val fuels = poi.fuelPrices
-        if (!fuels.isNullOrEmpty()) {
-            return fuels.any { fp ->
-                val id = fuelNameToId(fp.fuelName)
-                id != null && id in selectedEnergyIds
-            }
+        // IMPORTANT UX:
+        // - Energy selection is used to choose the category (Gas vs IRVE),
+        //   but should NOT hide stations just because a specific fuel/price is missing.
+        // - Same strategy applies to electric: show IRVE when "electric" is selected,
+        //   even if tariff/price details are unavailable.
+        return when {
+            poi.isElectric -> wantElectric
+            else -> wantFuel
         }
-
-        // If it's a gas station (not electric) but we don't have price info (e.g. from OSM),
-        // and we have ANY fuel filter selected, we show it (lenient).
-        // If we only have "electric" selected, we don't show it.
-        if (!poi.isElectric) {
-            val hasFuelFilter = selectedEnergyIds.any { it != "electric" }
-            return hasFuelFilter
-        }
-
-        return false
     }
 
     /** Returns true if [powerKw] falls into any of the selected [levels] buckets. */
