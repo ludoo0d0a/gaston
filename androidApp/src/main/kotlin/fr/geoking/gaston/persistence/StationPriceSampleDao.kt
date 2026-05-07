@@ -28,5 +28,8 @@ interface StationPriceSampleDao {
         """
     )
     suspend fun samplesSince(stationId: String, fromMs: Long): List<StationPriceSampleEntity>
+
+    @Query("DELETE FROM station_price_samples WHERE observedAtMs < :beforeMs")
+    suspend fun deleteOldSamples(beforeMs: Long)
 }
 

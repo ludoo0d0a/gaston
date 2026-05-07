@@ -150,6 +150,43 @@ fun PoiDetailsFullscreenDialog(
                             Text(line, color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
                         }
 
+                        if (!poi.isElectric && poi.priceRating != null) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            val rating = poi.priceRating!!
+                            val ratingColor = when {
+                                rating >= 7.5 -> Color(0xFF22C55E) // Green
+                                rating >= 4.5 -> Color(0xFFFACC15) // Yellow
+                                else -> Color(0xFFFF6B6B) // Red
+                            }
+                            val ratingLabel = when {
+                                rating >= 8.5 -> "Consistently very cheap"
+                                rating >= 7.0 -> "Consistently cheap"
+                                rating >= 4.0 -> "Average prices"
+                                rating >= 2.0 -> "Consistently expensive"
+                                else -> "Very expensive"
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    color = ratingColor.copy(alpha = 0.2f),
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = "%.1f / 10".format(rating),
+                                        color = ratingColor,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = ratingLabel,
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+
                         if (poi.isElectric) {
                             listOfNotNull(
                                 poi.operator?.takeIf { it.isNotBlank() },

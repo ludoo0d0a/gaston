@@ -239,6 +239,8 @@ data class Poi(
     /** Site name (e.g. Routex site_name) for title. */
     val siteName: String? = null,
     val isClosed: Boolean = false,
+    /** Price consistency rating (0.0 to 10.0). */
+    val priceRating: Double? = null,
     val postcode: String? = null,
     val addressLocal: String? = null,
     val countryLocal: String? = null,
