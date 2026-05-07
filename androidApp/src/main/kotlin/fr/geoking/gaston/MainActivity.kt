@@ -33,9 +33,8 @@ import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkStatus
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.di.MapModuleLoader
-import fr.geoking.gaston.ui.MapScreen
-import fr.geoking.gaston.ui.map.maplibre.VectorMapScreen
 import fr.geoking.gaston.ui.map.maplibre.DirectionsMapScreen
+import fr.geoking.gaston.ui.map.MapFactory
 import fr.geoking.gaston.ui.PhoneNetworkLocationScreen
 import fr.geoking.gaston.ui.PhoneDashboardScreen
 import fr.geoking.gaston.ui.dashboard.PlaystoreTheme
@@ -522,50 +521,28 @@ fun MainUI(
                     BackHandler {
                         showMap = false
                         pendingMapPoi = null
+                        pendingMapLocation = null
                     }
-                    if (settings.phoneMapEngine == MapEngine.MapLibre) {
-                        VectorMapScreen(
-                            poiProvider = mapDeps!!.poiProvider,
-                            availabilityProviderFactory = mapDeps!!.availabilityProviderFactory,
-                            trafficProviderFactory = mapDeps!!.trafficProviderFactory,
-                            settingsManager = settingsManager,
-                            authManager = authManager,
-                            diagnostics = diagnostics,
-                            palette = palette,
-                            onBack = {
-                                showMap = false
-                                pendingMapPoi = null
+                    MapFactory(
+                        poiProvider = mapDeps!!.poiProvider,
+                        availabilityProviderFactory = mapDeps!!.availabilityProviderFactory,
+                        trafficProviderFactory = mapDeps!!.trafficProviderFactory,
+                        settingsManager = settingsManager,
+                        authManager = authManager,
+                        diagnostics = diagnostics,
+                        palette = palette,
+                        onBack = {
+                            showMap = false
+                            pendingMapPoi = null
                             pendingMapLocation = null
-                            },
-                            onPlanRoute = { showRoutePlanning = true },
-                            communityRepo = mapDeps!!.communityRepo,
-                            favoritesRepo = mapDeps!!.favoritesRepo,
+                        },
+                        onPlanRoute = { showRoutePlanning = true },
+                        communityRepo = mapDeps!!.communityRepo,
+                        favoritesRepo = mapDeps!!.favoritesRepo,
                         initialSelectedPoi = pendingMapPoi,
                         initialCenterLat = pendingMapLocation?.latitude,
                         initialCenterLon = pendingMapLocation?.longitude
-                        )
-                    } else {
-                        MapScreen(
-                            poiProvider = mapDeps!!.poiProvider,
-                            availabilityProviderFactory = mapDeps!!.availabilityProviderFactory,
-                            trafficProviderFactory = mapDeps!!.trafficProviderFactory,
-                            settingsManager = settingsManager,
-                            authManager = authManager,
-                            diagnostics = diagnostics,
-                            palette = palette,
-                            onBack = {
-                                showMap = false
-                                pendingMapPoi = null
-                            pendingMapLocation = null
-                            },
-                            onPlanRoute = { showRoutePlanning = true },
-                            communityRepo = mapDeps!!.communityRepo,
-                            favoritesRepo = mapDeps!!.favoritesRepo,
-                        initialSelectedPoi = pendingMapPoi,
-                        initialCenterLat = pendingMapLocation?.latitude,
-                        initialCenterLon = pendingMapLocation?.longitude
-                        )
-                    }
+                    )
                 }
                 isPlaystoreDistribution && !showMap -> {
                     PhoneDashboardScreen(
@@ -668,49 +645,26 @@ fun MainUI(
                         pendingMapLocation = null
                     }
                     if (mapDeps != null) {
-                        if (settings.phoneMapEngine == MapEngine.MapLibre) {
-                            VectorMapScreen(
-                                poiProvider = mapDeps!!.poiProvider,
-                                availabilityProviderFactory = mapDeps!!.availabilityProviderFactory,
-                                trafficProviderFactory = mapDeps!!.trafficProviderFactory,
-                                settingsManager = settingsManager,
-                                authManager = authManager,
-                                diagnostics = diagnostics,
-                                palette = palette,
-                                onBack = {
-                                    showMap = false
-                                    pendingMapPoi = null
-                                    pendingMapLocation = null
-                                },
-                                onPlanRoute = { showRoutePlanning = true },
-                                communityRepo = mapDeps!!.communityRepo,
-                                favoritesRepo = mapDeps!!.favoritesRepo,
-                                initialSelectedPoi = pendingMapPoi,
-                                initialCenterLat = pendingMapLocation?.latitude,
-                                initialCenterLon = pendingMapLocation?.longitude
-                            )
-                        } else {
-                            MapScreen(
-                                poiProvider = mapDeps!!.poiProvider,
-                                availabilityProviderFactory = mapDeps!!.availabilityProviderFactory,
-                                trafficProviderFactory = mapDeps!!.trafficProviderFactory,
-                                settingsManager = settingsManager,
-                                authManager = authManager,
-                                diagnostics = diagnostics,
-                                palette = palette,
-                                onBack = {
-                                    showMap = false
-                                    pendingMapPoi = null
-                                    pendingMapLocation = null
-                                },
-                                onPlanRoute = { showRoutePlanning = true },
-                                communityRepo = mapDeps!!.communityRepo,
-                                favoritesRepo = mapDeps!!.favoritesRepo,
-                                initialSelectedPoi = pendingMapPoi,
-                                initialCenterLat = pendingMapLocation?.latitude,
-                                initialCenterLon = pendingMapLocation?.longitude
-                            )
-                        }
+                        MapFactory(
+                            poiProvider = mapDeps!!.poiProvider,
+                            availabilityProviderFactory = mapDeps!!.availabilityProviderFactory,
+                            trafficProviderFactory = mapDeps!!.trafficProviderFactory,
+                            settingsManager = settingsManager,
+                            authManager = authManager,
+                            diagnostics = diagnostics,
+                            palette = palette,
+                            onBack = {
+                                showMap = false
+                                pendingMapPoi = null
+                                pendingMapLocation = null
+                            },
+                            onPlanRoute = { showRoutePlanning = true },
+                            communityRepo = mapDeps!!.communityRepo,
+                            favoritesRepo = mapDeps!!.favoritesRepo,
+                            initialSelectedPoi = pendingMapPoi,
+                            initialCenterLat = pendingMapLocation?.latitude,
+                            initialCenterLon = pendingMapLocation?.longitude
+                        )
                     } else {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()

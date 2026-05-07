@@ -123,6 +123,26 @@ open class SettingsManager(
             prefs.getString("mobiliteit_luxembourg_key", "")?.takeIf { it.isNotEmpty() }
                 ?: BuildConfig.MOBILITEIT_LUXEMBOURG_KEY
 
+        val openChargeMapKey =
+            prefs.getString("openchargemap_key", "")?.takeIf { it.isNotBlank() }
+                ?: BuildConfig.OPENCHARGEMAP_KEY
+
+        val ecoMovementKey =
+            prefs.getString("eco_movement_key", "")?.takeIf { it.isNotBlank() }
+                ?: BuildConfig.ECO_MOVEMENT_KEY
+
+        val fuelpricesDkKey =
+            prefs.getString("fuelprices_dk_key", "")?.takeIf { it.isNotBlank() }
+                ?: BuildConfig.FUELPRICES_DK_KEY
+
+        val nswFuelCheckKey =
+            prefs.getString("nsw_fuelcheck_key", "")?.takeIf { it.isNotBlank() }
+                ?: BuildConfig.NSW_FUELCHECK_KEY
+
+        val nswFuelCheckSecret =
+            prefs.getString("nsw_fuelcheck_secret", "")?.takeIf { it.isNotBlank() }
+                ?: BuildConfig.NSW_FUELCHECK_SECRET
+
         val routeHistoryJson = prefs.getString("route_history", null)
         val routeHistory = try {
             if (routeHistoryJson.isNullOrBlank()) emptyList() else Json.decodeFromString<List<GeocodedPlace>>(routeHistoryJson)
@@ -210,11 +230,11 @@ open class SettingsManager(
             batteryCapacityKwh = prefs.getString("battery_capacity_kwh", null)?.toFloatOrNull(),
             gasTankCapacityLiters = prefs.getString("gas_tank_capacity_liters", null)?.toFloatOrNull(),
             gasConsumptionLper100km = prefs.getString("gas_consumption_l_per_100km", null)?.toFloatOrNull(),
-            openChargeMapKey = prefs.getString("openchargemap_key", "") ?: "",
-            ecoMovementKey = prefs.getString("eco_movement_key", "") ?: "",
-            fuelpricesDkKey = prefs.getString("fuelprices_dk_key", "") ?: "",
-            nswFuelCheckKey = prefs.getString("nsw_fuelcheck_key", "") ?: "",
-            nswFuelCheckSecret = prefs.getString("nsw_fuelcheck_secret", "") ?: "",
+            openChargeMapKey = openChargeMapKey,
+            ecoMovementKey = ecoMovementKey,
+            fuelpricesDkKey = fuelpricesDkKey,
+            nswFuelCheckKey = nswFuelCheckKey,
+            nswFuelCheckSecret = nswFuelCheckSecret,
             selectedOverpassAmenityTypes = prefs.getStringSet("overpass_amenity_types", null)?.toSet()
                 ?: setOf("toilets", "drinking_water"),
             phoneMapEngine = phoneMapEngine,
