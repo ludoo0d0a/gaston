@@ -67,7 +67,9 @@ fun PhoneDashboardDestinationSearch(
     onOpenRoutes: (NavDestination?) -> Unit
 ) {
     val context = LocalContext.current
-    var destQuery by remember { mutableStateOf("") }
+    var destQuery by remember(selectedSearchLocation?.label) {
+        mutableStateOf(selectedSearchLocation?.label.orEmpty())
+    }
     var destSuggestions by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
     var destFocused by remember { mutableStateOf(false) }
     var destFieldHeight by remember { mutableIntStateOf(0) }

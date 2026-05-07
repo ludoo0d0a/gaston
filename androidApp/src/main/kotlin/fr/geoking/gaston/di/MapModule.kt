@@ -364,7 +364,6 @@ val mapModule = module {
 
     single<RoutingClient> { OsrmRoutingClient(get()) }
     single<RoutePlanner> { RoutePlanner(get()) }
-    single<GeocodingClient> { NominatimGeocodingClient(get()) }
 
     // Transit (bus/tram): location-based provider selection (France, Luxembourg, Belgium).
     single<TransitProvider>(named("fr_ratp")) { FranceTransitProvider(get()) }

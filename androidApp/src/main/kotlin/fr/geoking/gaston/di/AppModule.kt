@@ -18,6 +18,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import fr.geoking.gaston.feature.settings.FirestoreSettingsSync
 import androidx.room.Room
 import fr.geoking.gaston.persistence.AppDatabase
+import fr.geoking.gaston.api.geocoding.GeocodingClient
+import fr.geoking.gaston.api.geocoding.NominatimGeocodingClient
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpRequestRetry
@@ -153,6 +155,9 @@ val appModule = module {
             }
         }
     }
+
+    // Used by the phone dashboard "Where to?" autocomplete even before map deps load.
+    single<GeocodingClient> { NominatimGeocodingClient(get()) }
 
     // Koin singletons can't be null; keep Firebase deps optional by resolving them safely here.
     single {
