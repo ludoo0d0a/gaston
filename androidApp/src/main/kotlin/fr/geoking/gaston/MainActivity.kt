@@ -37,7 +37,7 @@ import fr.geoking.gaston.ui.map.maplibre.DirectionsMapScreen
 import fr.geoking.gaston.ui.map.MapFactory
 import fr.geoking.gaston.ui.PhoneNetworkLocationScreen
 import fr.geoking.gaston.ui.PhoneDashboardScreen
-import fr.geoking.gaston.ui.dashboard.PlaystoreTheme
+import fr.geoking.gaston.ui.dashboard.GastonTheme
 import fr.geoking.gaston.ui.FavoritesScreen
 import fr.geoking.gaston.ui.RoutePlanningScreen
 import fr.geoking.gaston.api.routing.RouteResult
@@ -439,7 +439,7 @@ fun MainUI(
         )
     }
 
-    PlaystoreTheme {
+    GastonTheme(themeMode = settings.uiThemeMode) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             when {
                 showNetworkDiagnostics -> {
@@ -679,7 +679,7 @@ fun MainUI(
                     )
                 }
                 else -> {
-                    PlaystoreTheme {
+                    GastonTheme(themeMode = settings.uiThemeMode) {
                         PhoneDashboardScreen(
                             settingsManager = settingsManager,
                             poiProvider = mapDeps?.poiProvider,
@@ -723,7 +723,7 @@ fun MainUI(
 private fun StartupErrorContent(error: Throwable) {
     val message = error.message ?: error.toString()
     val fullDetail = buildStartupErrorDetail(error)
-    PlaystoreTheme {
+    GastonTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Box(Modifier.fillMaxSize().padding(24.dp)) {
                 Column(

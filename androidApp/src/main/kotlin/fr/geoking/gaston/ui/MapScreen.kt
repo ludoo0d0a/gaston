@@ -47,10 +47,12 @@ import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.*
 import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.ThemeMode
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
@@ -391,12 +393,20 @@ fun MapScreen(
                     cameraPositionState = cameraPositionState,
                     properties = MapProperties(
                         isMyLocationEnabled = hasLocationPermission,
-                        isTrafficEnabled = settings.mapTrafficEnabled
+                        isTrafficEnabled = settings.mapTrafficEnabled,
+                        mapStyleOptions = run {
+                            val dark = when (settings.uiThemeMode) {
+                                ThemeMode.Dark -> true
+                                ThemeMode.Light -> false
+                                ThemeMode.System -> androidx.compose.foundation.isSystemInDarkTheme()
+                            }
+                            if (dark) MapStyleOptions.loadRawResourceStyle(context, R.raw.google_map_style_dark)
+                            else null
+                        }
                     ),
                     uiSettings = MapUiSettings(myLocationButtonEnabled = hasLocationPermission),
                     contentPadding = PaddingValues(bottom = mapPaddingBottom)
                 ) {
-                    val mapContext = LocalContext.current
                     val zoom = cameraPositionState.position.zoom
                     val sizePx = remember(zoom) { markerSizePxForZoom(zoom) }
 
@@ -434,7 +444,7 @@ fun MapScreen(
                         val markerBitmap = remember(poi, effectiveEnergies, effectivePowerLevels, isPoiSelected, isCheapest, sizePx, availability) {
                             BitmapDescriptorFactory.fromBitmap(
                                 PoiMarkerHelper.getMarkerBitmap(
-                                    context = mapContext,
+                                    context = context,
                                     poi = poi,
                                     effectiveEnergyTypes = effectiveEnergies,
                                     effectivePowerLevels = effectivePowerLevels,

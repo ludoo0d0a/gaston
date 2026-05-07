@@ -36,11 +36,98 @@ First-class Android Auto support using the Car App Library. Big readable cards, 
 
 ## Key features
 
-- **Map + POI search** — nearby stations, search along route, interactive map (MapLibre)
-- **Prices** — fuel prices and EV charging costs from open/public data sources
-- **Rich filters** — energy type, brand, connector, min. power, services, open status
-- **Android Auto** — car-friendly templates (list, place details, route preview)
-- **KMP architecture** — shared business logic, platform-specific UI
+### Map & POIs
+
+- Interactive map with two engines: **Google Maps** and **MapLibre** (with light/dark/auto themes)
+- Nearby POI search (fuel stations, EV chargers, rest stops, services)
+- **Search along your route** — pick a destination and get POIs within a configurable radius from the path
+- POI detail view with full price list, address, services, opening hours and quick actions
+- **Favorites** — save and re-open your favorite stations / chargers
+- **Local ratings** (1–5 stars, on-device, no backend required)
+- Brand-aware POI markers (Shell, TotalEnergies, Leclerc, BP, Esso, Auchan, Intermarché, …)
+- Real-time **Google traffic** overlay (when Google Maps engine is selected)
+
+### Fuel prices
+
+- Live prices for **SP95, SP95-E10, SP98, Diesel, Diesel+, GPL** and country-specific fuels
+- "Cheapest stations" card on the dashboard
+- **Fuel price forecast / history** — per-station price history and national price charts
+- Country-aware reference prices (OpenVan.camp, weekly baselines)
+- **Fuel card** preference (Routex, UTA Edenred, TotalEnergies Fleet, Shell Fleet ID, GO, DKV, EuroShell, Aral, Repsol)
+- Filter to **only show highway stations**
+
+### EV charging
+
+- Public charging points across multiple sources (data.gouv IRVE, OpenChargeMap, Fastned, DKV, Eco‑Movement, Chargy …)
+- Connector type filter — **CCS2, CHAdeMO, Type 2, Type 3, Tesla, E/F**
+- Minimum power filter — **22 kW AC → 350 kW DC** and beyond
+- Per-kWh pricing where available
+- **Real-time availability** (Belib for Paris, OCPI feeds where exposed)
+- IRVE operator and power-tier selection
+
+### Vehicle profile
+
+- Energy type: **Gas / Electric / Hybrid**
+- Brand & model
+- Tank capacity (L) and consumption (L/100 km) for thermal engines
+- Battery capacity (kWh), range (km) and consumption (kWh/100 km) for EVs
+- Preferred fuel types and preferred power tiers — used to auto-tune map filters
+
+### Route planning & navigation
+
+- Route planning **A → B** with **OSRM**
+- Suggested fuel & charging **stops along the route** (vehicle-aware)
+- Route preview (distance, duration, polyline)
+- One-tap **navigation hand-off** to the system maps app
+- **Highway toll estimation** for French motorways (OpenTollData)
+- Multi-region **traffic events** (CITA Luxembourg, TomTom, Google traffic layer)
+- **Weather** along the route (Open-Meteo + WMO codes)
+
+### Rest stops & services (POIs)
+
+- Toilets, drinking water, rest areas, picnic spots
+- **Camper-van services** (water, waste, electricity)
+- **Parking** (ParkApi, OpenStreetMap)
+- Camping sites (Hérault Data, OSM)
+- Configurable Overpass amenity selection
+
+### Multi-country data sources
+
+- **30+ POI providers** spanning Western, Central, Northern, Southern Europe and beyond
+- Selection mode: **Manual** (pick exact sources) or **Auto** (auto-select by current country)
+- Per-country toggles — enable/disable a whole country in one tap
+- Optional API keys for premium feeds (OpenChargeMap, Eco-Movement, Fuelprices.dk, NSW FuelCheck)
+- Full source list: see [`sources.md`](sources.md)
+
+### Android Auto
+
+- First-class Android Auto integration (Car App Library)
+- Car-friendly templates: **list, grid, pane, place-list-map, navigation, message, search, sign-in**
+- POI map screen with surface-rendered LibreMap (lab)
+- **In-car filters** — energy, brand, connector, min. power, IRVE operator, services, Overpass amenities
+- **Route planning & route preview** in the car
+- **Fuel forecast** in the car
+- Vehicle settings (tank, consumption, battery, EV range, energy type)
+- Settings, sources and POI provider selection from the car
+- Network/location info screen + error / guidance screens
+
+### Account, sync & monetization
+
+- **Google sign-in** (Firebase Auth)
+- **Cloud settings sync** via Firestore (favorites, vehicle profile, preferred sources)
+- **Premium tier** with paywall popup (Google Play Billing)
+- **AdMob banner** for the free tier
+- **In-app updates** (Google Play Core)
+- Local **error log** with copy-to-clipboard
+
+### Architecture & platform
+
+- **Kotlin Multiplatform** — `:shared` module for models, networking and provider clients
+- Phone UI in **Jetpack Compose** (Material 3); Auto UI via **Car App Library**
+- Networking with **Ktor**, DI with **Koin**
+- On-device persistence with **Room** (price history, national fuel prices, favorites)
+- Cache management with one-tap "Clear cache"
+- **Android 15+ 16 KB page size** support (lint-checked in CI)
 
 ---
 

@@ -18,6 +18,7 @@ import kotlinx.serialization.json.Json
 
 enum class CarMapMode { Native, Custom }
 enum class MapEngine { Google, MapLibre }
+enum class ThemeMode { System, Light, Dark }
 enum class MapTheme(val styleUrl: String) {
     Dark("https://tiles.openfreemap.org/styles/dark"),
     Modern("https://tiles.openfreemap.org/styles/bright"),
@@ -47,6 +48,8 @@ enum class FuelCard { None, Routex }
 enum class PoiProviderSelectionMode { Manual, Auto }
 
 data class AppSettings(
+    /** App UI theme preference (affects phone surfaces and map styling). */
+    val uiThemeMode: ThemeMode = ThemeMode.System,
     val vehicleBrand: String = "",
     val vehicleModel: String = "",
     val vehicleEnergy: String = "gas", // gas, electric, hybrid
@@ -206,7 +209,12 @@ open class SettingsManager(
             )
         } catch (_: Exception) { PoiProviderSelectionMode.Manual }
 
+        val uiThemeMode = try {
+            ThemeMode.valueOf(prefs.getString("ui_theme_mode", ThemeMode.System.name) ?: ThemeMode.System.name)
+        } catch (_: Exception) { ThemeMode.System }
+
         return AppSettings(
+            uiThemeMode = uiThemeMode,
             vehicleBrand = prefs.getString("vehicle_brand", "") ?: "",
             vehicleModel = prefs.getString("vehicle_model", "") ?: "",
             vehicleEnergy = prefs.getString("vehicle_energy", "gas") ?: "gas",
@@ -267,6 +275,7 @@ open class SettingsManager(
     private fun saveSettingsInternal(settings: AppSettings, upload: Boolean) {
         _settings.value = settings
         prefs.edit()
+            .putString("ui_theme_mode", settings.uiThemeMode.name)
             .putString("vehicle_brand", settings.vehicleBrand)
             .putString("vehicle_model", settings.vehicleModel)
             .putString("vehicle_energy", settings.vehicleEnergy)

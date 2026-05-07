@@ -6,6 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import fr.geoking.gaston.ThemeMode
 
 /** Light theme for Play Store phone surfaces (home, diagnostics, map settings). */
 val PlaystoreHomeLightScheme = lightColorScheme(
@@ -46,12 +47,20 @@ val PlaystoreHomeDarkScheme = darkColorScheme(
 )
 
 @Composable
-fun PlaystoreTheme(content: @Composable () -> Unit) {
-    val colorScheme = if (isSystemInDarkTheme()) PlaystoreHomeDarkScheme else PlaystoreHomeLightScheme
+fun GastonTheme(
+    themeMode: ThemeMode = ThemeMode.System,
+    content: @Composable () -> Unit
+) {
+    val dark = when (themeMode) {
+        ThemeMode.Dark -> true
+        ThemeMode.Light -> false
+        ThemeMode.System -> isSystemInDarkTheme()
+    }
+    val colorScheme = if (dark) PlaystoreHomeDarkScheme else PlaystoreHomeLightScheme
     MaterialTheme(colorScheme = colorScheme, content = content)
 }
 
 @Composable
-fun PlaystoreLightTheme(content: @Composable () -> Unit) {
+fun GastonLightTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = PlaystoreHomeLightScheme, content = content)
 }

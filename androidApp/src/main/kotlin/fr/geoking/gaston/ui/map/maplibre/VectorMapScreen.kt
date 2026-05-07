@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -34,6 +35,8 @@ import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.StationMapFilters
+import fr.geoking.gaston.ThemeMode
+import fr.geoking.gaston.MapTheme
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.belib.matchAvailabilityToPois
@@ -308,7 +311,15 @@ fun VectorMapScreen(
 
                 LibreMap(
                     modifier = Modifier.fillMaxSize(),
-                    styleUrl = settings.mapTheme.styleUrl,
+                    styleUrl = run {
+                        val dark = when (settings.uiThemeMode) {
+                            ThemeMode.Dark -> true
+                            ThemeMode.Light -> false
+                            ThemeMode.System -> isSystemInDarkTheme()
+                        }
+                        val theme = if (dark) MapTheme.Dark else MapTheme.Modern
+                        theme.styleUrl
+                    },
                     initialCameraPosition = LatLng(defaultLat, defaultLng) to defaultZoom,
                     contentPaddingBottom = mapPaddingBottom,
                     onMapReady = { mapLibreMap = it },

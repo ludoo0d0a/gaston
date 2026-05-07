@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkType
-import fr.geoking.gaston.ui.dashboard.PlaystoreTheme
+import fr.geoking.gaston.ui.dashboard.GastonTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -70,7 +70,7 @@ fun PhoneNetworkLocationScreen(
         loading = false
     }
 
-    PlaystoreTheme {
+    GastonTheme {
         Scaffold(
             topBar = {
                 TopAppBar(

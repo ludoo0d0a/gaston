@@ -35,7 +35,7 @@ import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ui.components.FuelForecastChartCard
 import fr.geoking.gaston.ui.components.UnifiedFuelForecastChartCard
-import fr.geoking.gaston.ui.dashboard.PlaystoreTheme
+import fr.geoking.gaston.ui.dashboard.GastonTheme
 import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import fr.geoking.gaston.SettingsManager
@@ -92,7 +92,7 @@ fun FuelForecastScreen(
         }
     }
 
-    PlaystoreTheme {
+    GastonTheme(themeMode = settings.uiThemeMode) {
         Scaffold(
             topBar = {
                 TopAppBar(

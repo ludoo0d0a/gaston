@@ -40,7 +40,7 @@ import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.dashboard.PhoneDashboardMainContent
 import fr.geoking.gaston.ui.dashboard.PhoneDashboardTopBar
-import fr.geoking.gaston.ui.dashboard.PlaystoreTheme
+import fr.geoking.gaston.ui.dashboard.GastonTheme
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -246,7 +246,7 @@ fun PhoneDashboardScreen(
         }
     }
 
-    PlaystoreTheme {
+    GastonTheme(themeMode = settings.uiThemeMode) {
         Scaffold(
             topBar = {
                 PhoneDashboardTopBar(

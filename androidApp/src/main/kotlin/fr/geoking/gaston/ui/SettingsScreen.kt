@@ -39,6 +39,7 @@ import fr.geoking.gaston.MapEngine
 import fr.geoking.gaston.MapTheme
 import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.ThemeMode
 import fr.geoking.gaston.feature.auth.GoogleAuthManager
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
@@ -726,6 +727,28 @@ private fun AppConfig(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
+        // Theme
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Dark theme", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "Also applies to maps for night driving",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = settings.uiThemeMode == ThemeMode.Dark,
+                onCheckedChange = { enabled ->
+                    onUpdate(settings.copy(uiThemeMode = if (enabled) ThemeMode.Dark else ThemeMode.Light))
+                },
+            )
+        }
+
         Column {
             Text(
                 "API keys (optional)",
