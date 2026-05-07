@@ -3,6 +3,8 @@ package fr.geoking.gaston.ui.map
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Directions
@@ -71,7 +73,6 @@ fun PoiDetailCard(
         if (isEmpty()) add("%.4f, %.4f".format(poi.latitude, poi.longitude))
     }
 
-    val sources = rememberSources(poi.source)
     val effectiveCategory = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
 
     Card(
@@ -83,7 +84,7 @@ fun PoiDetailCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(12.dp)
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -112,31 +113,6 @@ fun PoiDetailCard(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        if (sources.isNotEmpty()) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                if (sources.size >= 2) {
-                                    AssistChip(
-                                        onClick = {},
-                                        label = { Text("Merged POI", fontSize = 11.sp) },
-                                        colors = AssistChipDefaults.assistChipColors(
-                                            containerColor = Color(0xFF0F172A),
-                                            labelColor = Color.White
-                                        ),
-                                        interactionSource = remember { MutableInteractionSource() }
-                                    )
-                                }
-                                Text(
-                                    text = sources.joinToString(" + "),
-                                    color = Color.White.copy(alpha = 0.7f),
-                                    fontSize = 11.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
                         brandInfo?.let { info ->
                             if (isGenericName || !displayTitle.startsWith(info.displayName, ignoreCase = true)) {
                                 Text(
@@ -195,7 +171,7 @@ fun PoiDetailCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -222,22 +198,23 @@ fun PoiDetailCard(
                 }
 
                 if (isSelected) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // Compact “show everything we have” summary for merged POIs.
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f, fill = false)
+                            .verticalScroll(rememberScrollState())
                     ) {
                         when (effectiveCategory) {
                             PoiCategory.Gas -> {
                                 val prices = poi.fuelPrices.orEmpty()
                                 if (prices.isNotEmpty()) {
                                     val sorted = prices.sortedBy { it.fuelName.lowercase() }
-                                    sorted.take(6).forEach { fp ->
+                                    sorted.forEach { fp ->
                                         val fuelId = MapPoiFilter.fuelNameToId(fp.fuelName)
                                         val matchColor = fuelId?.let { ColorHelper.getFuelColor(it) }
                                         Row(
@@ -370,17 +347,6 @@ fun PoiDetailCard(
     }
 }
 
-@Composable
-private fun rememberSources(source: String?): List<String> {
-    return remember(source) {
-        source
-            ?.split("+")
-            ?.map { it.trim() }
-            ?.filter { it.isNotBlank() }
-            ?.distinct()
-            ?: emptyList()
-    }
-}
 
 
 @Preview(showBackground = true, backgroundColor = 0xFF0F172A)
