@@ -105,7 +105,7 @@ This repo’s `.gitignore` already covers these.
 
 - Bump versionCode/versionName in CI or `local.properties` if you use local overrides.
 - Build:
-  - `./gradlew :androidApp:bundlePlaystoreRelease`
+  - `./gradlew :androidApp:bundleRelease`
 - Upload the AAB in Play Console.
 - Verify Android Auto category and templates comply with the declared category.
 
