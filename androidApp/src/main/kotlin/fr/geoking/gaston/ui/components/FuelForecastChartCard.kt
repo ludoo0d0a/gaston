@@ -1,13 +1,18 @@
 package fr.geoking.gaston.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -21,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -28,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.repository.DailyPricePoint
 import fr.geoking.gaston.repository.FuelForecastUiState
+import fr.geoking.gaston.ui.ColorHelper
 import java.util.Locale
 import kotlin.math.max
 
@@ -69,6 +76,167 @@ fun FuelForecastCompactCard(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun UnifiedFuelForecastChartCard(
+    state: FuelForecastUiState,
+    isLoading: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text(
+                "Price Comparison (normalized)",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                "Relative trends of local fuels vs Brent. 14-day history.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (isLoading && state.allFuelsHistory.isEmpty()) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .padding(top = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(strokeWidth = 2.dp)
+                }
+            } else {
+                val brentColor = MaterialTheme.colorScheme.secondary
+                val primaryColor = MaterialTheme.colorScheme.primary
+                val fuelColors = state.allFuelsHistory.keys.associateWith {
+                    ColorHelper.getFuelColor(it) ?: primaryColor
+                }
+
+                UnifiedForecastChart(
+                    allFuelsHistory = state.allFuelsHistory,
+                    brentHistory = state.brentHistory,
+                    fuelColors = fuelColors,
+                    brentColor = brentColor,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .padding(top = 16.dp)
+                )
+
+                FlowRow(
+                    modifier = Modifier.padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    state.allFuelsHistory.keys.sorted().forEach { fuelId ->
+                        val color = fuelColors[fuelId] ?: primaryColor
+                        val label = when (fuelId) {
+                            "gazole" -> "Gazole"
+                            "sp95" -> "SP95/E10"
+                            "sp98" -> "SP98"
+                            "gplc" -> "GPLc"
+                            "e85" -> "E85"
+                            else -> fuelId
+                        }
+                        LegendItem(label, color)
+                    }
+                    if (state.brentHistory.isNotEmpty()) {
+                        LegendItem("Brent", brentColor)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LegendItem(label: String, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(start = 4.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun UnifiedForecastChart(
+    allFuelsHistory: Map<String, List<DailyPricePoint>>,
+    brentHistory: List<fr.geoking.gaston.fuelforecast.DailyClose>,
+    fuelColors: Map<String, Color>,
+    brentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val gridColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+
+    val allDays = (allFuelsHistory.values.flatten().map { it.day } + brentHistory.map { it.day }).distinct().sorted()
+    if (allDays.isEmpty()) return
+
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
+
+        fun xFor(day: String): Float {
+            val i = allDays.indexOf(day)
+            if (i < 0) return 0f
+            return w * (i / denom.toFloat())
+        }
+
+        drawLine(gridColor, Offset(0f, h * 0.5f), Offset(w, h * 0.5f), strokeWidth = 1f)
+
+        if (brentHistory.size >= 2) {
+            val bSorted = brentHistory.sortedBy { it.day }
+            val prices = bSorted.map { it.close }
+            val minP = prices.minOrNull() ?: 0.0
+            val maxP = prices.maxOrNull() ?: 1.0
+            val range = (maxP - minP).coerceAtLeast(0.001)
+
+            val path = Path()
+            bSorted.forEachIndexed { i, pt ->
+                val x = xFor(pt.day)
+                val norm = ((pt.close - minP) / range).coerceIn(0.0, 1.0)
+                val y = h - norm.toFloat() * h
+                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            drawPath(path, brentColor, style = Stroke(width = 2.5f, cap = StrokeCap.Round))
+        }
+
+        allFuelsHistory.forEach { (fuelId, history) ->
+            if (history.size >= 2) {
+                val color = fuelColors[fuelId] ?: Color.Gray
+                val sorted = history.sortedBy { it.day }
+                val prices = sorted.map { it.priceEurPerL }
+                val minP = prices.minOrNull() ?: 0.0
+                val maxP = prices.maxOrNull() ?: 1.0
+                val range = (maxP - minP).coerceAtLeast(0.001)
+
+                val path = Path()
+                sorted.forEachIndexed { i, pt ->
+                    val x = xFor(pt.day)
+                    val norm = ((pt.priceEurPerL - minP) / range).coerceIn(0.0, 1.0)
+                    val y = h - norm.toFloat() * h
+                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                drawPath(path, color, style = Stroke(width = 3.5f, cap = StrokeCap.Round))
             }
         }
     }
