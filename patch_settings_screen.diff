@@ -1,0 +1,13 @@
+--- a/androidApp/src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt
++++ b/androidApp/src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt
+@@ -1374,6 +1374,10 @@
+         }
+
+         if (settings.vehicleEnergy == "electric" || settings.vehicleEnergy == "hybrid") {
++            ConfigTextField(
++                label = "Battery capacity (kWh)",
++                value = settings.batteryCapacityKwh?.toString() ?: ""
++            ) { onUpdate(settings.copy(batteryCapacityKwh = it.toFloatOrNull())) }
+             ConfigTextField(
+                 label = "Electric range (km)",
+                 value = settings.evRangeKm.toString()

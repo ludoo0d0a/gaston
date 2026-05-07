@@ -68,6 +68,7 @@ data class AppSettings(
     val debugLoggingEnabled: Boolean = false,
     val evRangeKm: Int = DEFAULT_EV_RANGE_KM,
     val evConsumptionKwhPer100km: Float? = null,
+    val batteryCapacityKwh: Float? = null,
     val gasTankCapacityLiters: Float? = null,
     val gasConsumptionLper100km: Float? = null,
     val openChargeMapKey: String = "",
@@ -206,6 +207,7 @@ open class SettingsManager(
             debugLoggingEnabled = prefs.getBoolean("debug_logging_enabled", false),
             evRangeKm = prefs.getInt("ev_range_km", DEFAULT_EV_RANGE_KM),
             evConsumptionKwhPer100km = prefs.getString("ev_consumption_kwh_per_100km", null)?.toFloatOrNull(),
+            batteryCapacityKwh = prefs.getString("battery_capacity_kwh", null)?.toFloatOrNull(),
             gasTankCapacityLiters = prefs.getString("gas_tank_capacity_liters", null)?.toFloatOrNull(),
             gasConsumptionLper100km = prefs.getString("gas_consumption_l_per_100km", null)?.toFloatOrNull(),
             openChargeMapKey = prefs.getString("openchargemap_key", "") ?: "",
@@ -265,6 +267,7 @@ open class SettingsManager(
             .putBoolean("debug_logging_enabled", settings.debugLoggingEnabled)
             .putInt("ev_range_km", settings.evRangeKm)
             .putString("ev_consumption_kwh_per_100km", settings.evConsumptionKwhPer100km?.toString())
+            .putString("battery_capacity_kwh", settings.batteryCapacityKwh?.toString())
             .putString("gas_tank_capacity_liters", settings.gasTankCapacityLiters?.toString())
             .putString("gas_consumption_l_per_100km", settings.gasConsumptionLper100km?.toString())
             .putString("openchargemap_key", settings.openChargeMapKey)
@@ -371,6 +374,18 @@ open class SettingsManager(
 
     open fun setEvConsumptionKwhPer100km(value: Float?) {
         saveSettings(_settings.value.copy(evConsumptionKwhPer100km = value))
+    }
+
+    open fun setBatteryCapacityKwh(value: Float?) {
+        saveSettings(_settings.value.copy(batteryCapacityKwh = value))
+    }
+
+    open fun setVehicleBrand(value: String) {
+        saveSettings(_settings.value.copy(vehicleBrand = value))
+    }
+
+    open fun setVehicleModel(value: String) {
+        saveSettings(_settings.value.copy(vehicleModel = value))
     }
 
     open fun setGasTankCapacityLiters(value: Float?) {
