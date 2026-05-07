@@ -33,7 +33,7 @@ class BelibAvailabilityProvider(
         }
     }
 
-    private fun mapStatut(statutPdc: String): AvailabilityStatus {
+    internal fun mapStatut(statutPdc: String): AvailabilityStatus {
         val s = statutPdc.trim().lowercase()
         return when {
             s == "disponible" -> AvailabilityStatus.Available
@@ -50,7 +50,7 @@ class BelibAvailabilityProvider(
     }
 
     /** Derive a station key from PDC id (e.g. FR*V75*E9004*01*1 -> FR*V75*E9004*01) for grouping. */
-    private fun stationIdFromPdcId(idPdc: String): String? {
+    internal fun stationIdFromPdcId(idPdc: String): String? {
         val parts = idPdc.split("*")
         return if (parts.size >= 5) parts.dropLast(1).joinToString("*") else null
     }

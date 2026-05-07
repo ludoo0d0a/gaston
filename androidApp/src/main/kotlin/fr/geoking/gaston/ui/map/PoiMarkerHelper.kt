@@ -61,7 +61,8 @@ object PoiMarkerHelper {
         val category = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
         val categoryColor = getPoiColor(poi, category, effectiveEnergyTypes, effectivePowerLevels)
 
-        val cacheKey = "${poi.id}_${label}_${headDrawableId}_${categoryColor}_${isSelected}_${isCheapest}_${sizePx}_$MARKER_LAYOUT_CACHE_TAG"
+        val availKey = availability?.let { "${it.availableCount}/${it.totalCount}" } ?: "na"
+        val cacheKey = "${poi.id}_${label}_${headDrawableId}_${categoryColor}_${isSelected}_${isCheapest}_${sizePx}_${availKey}_$MARKER_LAYOUT_CACHE_TAG"
         synchronized(cache) {
             cache.get(cacheKey)?.let { return it }
         }
@@ -170,6 +171,26 @@ object PoiMarkerHelper {
             canvas.drawRoundRect(labelRect, corner, corner, bgPaint)
             canvas.drawRoundRect(labelRect, corner, corner, labelStroke)
             canvas.drawText(label, labelRect.centerX(), labelBaseline, textPaint)
+        }
+
+        // 4) Availability dot (bottom right of the head)
+        if (availability != null) {
+            val dotR = w * 0.12f
+            val dotCx = circleCx + circleR * 0.707f
+            val dotCy = circleCy + circleR * 0.707f
+            val dotColor = if (availability.availableCount > 0) 0xFF22C55E.toInt() else 0xFFEF4444.toInt()
+
+            val dotFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.FILL
+                color = dotColor
+            }
+            val dotStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = strokeW * 0.8f
+                color = Color.WHITE
+            }
+            canvas.drawCircle(dotCx, dotCy, dotR, dotFill)
+            canvas.drawCircle(dotCx, dotCy, dotR, dotStroke)
         }
 
         synchronized(cache) {
