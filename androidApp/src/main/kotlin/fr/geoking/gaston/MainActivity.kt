@@ -35,6 +35,7 @@ import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.di.MapModuleLoader
 import fr.geoking.gaston.ui.map.maplibre.DirectionsMapScreen
 import fr.geoking.gaston.ui.map.MapFactory
+import fr.geoking.gaston.ui.EmergencyScreen
 import fr.geoking.gaston.ui.PhoneNetworkLocationScreen
 import fr.geoking.gaston.ui.PhoneDashboardScreen
 import fr.geoking.gaston.ui.dashboard.GastonTheme
@@ -348,6 +349,7 @@ fun MainUI(
     /** Both flavors: dashboard home; map opens from there or from deep link. */
     var showMap by remember { mutableStateOf(false) }
     var showNetworkDiagnostics by remember { mutableStateOf(false) }
+    var showEmergency by remember { mutableStateOf(false) }
     var showPlaystoreSettings by remember { mutableStateOf(false) }
     var playstoreSettingsInitialStack by remember { mutableStateOf<List<SettingsScreenPage>?>(null) }
     var showFavorites by remember { mutableStateOf(false) }
@@ -447,6 +449,13 @@ fun MainUI(
                     PhoneNetworkLocationScreen(
                         networkService = networkService,
                         onBack = { showNetworkDiagnostics = false }
+                    )
+                }
+                showEmergency -> {
+                    BackHandler { showEmergency = false }
+                    EmergencyScreen(
+                        networkService = networkService,
+                        onBack = { showEmergency = false }
                     )
                 }
                 isPlaystoreDistribution && showPlaystoreSettings -> {
@@ -569,6 +578,7 @@ fun MainUI(
                         },
                         onOpenNetworkDiagnostics = { showNetworkDiagnostics = true },
                         onOpenFuelForecast = { showFuelForecast = true },
+                        onOpenEmergency = { showEmergency = true },
                         onOpenSettings = { stack ->
                             playstoreSettingsInitialStack = stack
                             showPlaystoreSettings = true
@@ -704,6 +714,7 @@ fun MainUI(
                             },
                             onOpenNetworkDiagnostics = { showNetworkDiagnostics = true },
                             onOpenFuelForecast = { showFuelForecast = true },
+                            onOpenEmergency = { showEmergency = true },
                             onOpenSettings = { stack ->
                                 settingsInitialStack = stack
                                 showSettings = true

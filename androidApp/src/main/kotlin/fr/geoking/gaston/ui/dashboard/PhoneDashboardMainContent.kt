@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.LocalParking
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.SignalCellular4Bar
+import androidx.compose.material.icons.filled.Sos
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -119,6 +120,7 @@ fun PhoneDashboardMainContent(
     onOpenMap: (Poi?) -> Unit,
     onOpenRoutes: (NavDestination?) -> Unit,
     onOpenFuelForecast: () -> Unit,
+    onOpenEmergency: () -> Unit,
     onOpenSettings: (List<SettingsScreenPage>?) -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
     onRequestLocationPermission: () -> Unit,
@@ -261,6 +263,10 @@ fun PhoneDashboardMainContent(
                     onOpenFuelForecast = onOpenFuelForecast
                 )
             }
+        }
+
+        item {
+            PhoneDashboardEmergencyCard(onOpenEmergency = onOpenEmergency)
         }
 
         item {
@@ -497,6 +503,49 @@ private fun PhoneDashboardParkingRouteRow(
                         color = if (mapDepsReady) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     )
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PhoneDashboardEmergencyCard(onOpenEmergency: () -> Unit) {
+    val emergencyRed = Color(0xFFD32F2F)
+    val onEmergency = Color.White
+    Card(
+        onClick = onOpenEmergency,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = emergencyRed),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Sos,
+                contentDescription = null,
+                tint = onEmergency,
+                modifier = Modifier.size(36.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Emergency",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = onEmergency,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Locate yourself · share location · call 112",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onEmergency.copy(alpha = 0.9f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
