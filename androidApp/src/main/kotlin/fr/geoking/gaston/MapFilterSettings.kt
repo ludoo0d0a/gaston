@@ -9,6 +9,20 @@ import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.autoProvidersForCountries
 import java.util.Locale
 
+enum class EnergyFilterMode { Fuel, Electric, Hybrid }
+
+fun AppSettings.effectiveEnergyFilterMode(): EnergyFilterMode {
+    val energyFilters = effectiveMapEnergyFilterIds()
+    val hasElectric = energyFilters.contains("electric")
+    val hasFuel = energyFilters.isEmpty() || energyFilters.any { it != "electric" }
+
+    return when {
+        hasElectric && hasFuel -> EnergyFilterMode.Hybrid
+        hasElectric -> EnergyFilterMode.Electric
+        else -> EnergyFilterMode.Fuel
+    }
+}
+
 fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
     "toilets" -> PoiCategory.Toilet
     "drinking_water" -> PoiCategory.DrinkingWater
@@ -123,9 +137,14 @@ fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Se
         selectedPoiProviders
     } else {
         if (countryCodes.isNotEmpty()) {
+            val energyFilters = effectiveMapEnergyFilterIds()
+            val wantElectric = energyFilters.isEmpty() || "electric" in energyFilters
+            val wantFuel = energyFilters.isEmpty() || energyFilters.any { it != "electric" }
+
             autoProvidersForCountries(
                 countryCodes = countryCodes,
-                vehicleEnergy = vehicleEnergy,
+                wantFuel = wantFuel,
+                wantElectric = wantElectric,
                 fallbackManual = selectedPoiProviders
             )
         } else {
@@ -190,7 +209,13 @@ object StationMapFilters {
         // Filter by energy type
         val energyFilters = settings.effectiveMapEnergyFilterIds()
         if (energyFilters.isNotEmpty()) {
-            result = result.filter { MapPoiFilter.matchesEnergyFilter(it, energyFilters) }
+            result = result.filter { poi ->
+                // Filter out OSM charging stations if electric is not explicitly selected
+                if (poi.source == "OpenStreetMap" && poi.poiCategory == PoiCategory.Irve && "electric" !in energyFilters) {
+                    return@filter false
+                }
+                MapPoiFilter.matchesEnergyFilter(poi, energyFilters)
+            }
         }
 
         // Filter by power range (IRVE)

@@ -8,13 +8,11 @@ package fr.geoking.gaston.poi
  */
 fun autoProvidersForCountries(
     countryCodes: List<String>,
-    vehicleEnergy: String,
+    wantFuel: Boolean,
+    wantElectric: Boolean,
     fallbackManual: Set<PoiProviderType>
 ): Set<PoiProviderType> {
     if (countryCodes.isEmpty()) return fallbackManual
-
-    val wantFuel = vehicleEnergy != "electric"
-    val wantElectric = vehicleEnergy != "gas"
 
     val resolved = mutableSetOf<PoiProviderType>()
 

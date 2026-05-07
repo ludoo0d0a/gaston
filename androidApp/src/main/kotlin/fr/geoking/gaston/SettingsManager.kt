@@ -334,6 +334,19 @@ open class SettingsManager(
     // Backwards-compatible name used by various UI screens
     open fun setMapEnergyTypes(types: Set<String>) = setSelectedMapEnergyTypes(types)
 
+    open fun setEnergyFilterMode(mode: EnergyFilterMode) {
+        val nextTypes = when (mode) {
+            EnergyFilterMode.Fuel -> setOf("e85")
+            EnergyFilterMode.Electric -> setOf("electric")
+            EnergyFilterMode.Hybrid -> setOf("e85", "electric")
+        }
+        saveSettings(_settings.value.copy(
+            useVehicleFilter = false,
+            poiProviderSelectionMode = PoiProviderSelectionMode.Auto,
+            selectedMapEnergyTypes = nextTypes
+        ))
+    }
+
     open fun setMapEnseigneType(type: String) {
         saveSettings(_settings.value.copy(mapEnseigneType = type))
     }

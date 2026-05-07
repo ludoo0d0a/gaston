@@ -36,27 +36,12 @@ fun FilterFab(
     val sheetState = rememberModalBottomSheetState()
 
     // Mode: 0 for Fuel, 1 for Electric, 2 for Hybrid
-    var filterMode by remember(settings.selectedPoiProviders, settings.useVehicleFilter, settings.vehicleEnergy) {
-        mutableStateOf(
-            if (settings.useVehicleFilter) {
-                when (settings.vehicleEnergy) {
-                    "electric" -> 1
-                    "hybrid" -> 2
-                    else -> 0
-                }
-            } else {
-                val p = settings.selectedPoiProviders
-                val hasElec = p.anyProvidesElectric()
-                val hasFuel = p.anyProvidesFuel()
-                val hasHybrid = p.contains(PoiProviderType.Hybrid)
-
-                when {
-                    hasHybrid || (hasElec && hasFuel) -> 2
-                    hasElec -> 1
-                    else -> 0
-                }
-            }
-        )
+    val filterMode = remember(settings) {
+        when (settings.effectiveEnergyFilterMode()) {
+            EnergyFilterMode.Fuel -> 0
+            EnergyFilterMode.Electric -> 1
+            EnergyFilterMode.Hybrid -> 2
+        }
     }
 
     val filterBarProviders = remember(settings, mapCenterLatitude, mapCenterLongitude) {
@@ -163,12 +148,8 @@ fun FilterFab(
                     SegmentedButton(
                         selected = filterMode == 0,
                         onClick = {
-                            filterMode = 0
-                            val p = settings.selectedPoiProviders
-                            val hasElec = p.anyProvidesElectric()
-                            val hasHybrid = p.contains(PoiProviderType.Hybrid)
-                            if (hasElec || hasHybrid) {
-                                settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Routex))
+                            if (filterMode != 0) {
+                                settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel)
                             }
                         },
                         shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3),
@@ -183,12 +164,8 @@ fun FilterFab(
                     SegmentedButton(
                         selected = filterMode == 1,
                         onClick = {
-                            filterMode = 1
-                            val p = settings.selectedPoiProviders
-                            val hasFuel = p.anyProvidesFuel()
-                            val hasHybrid = p.contains(PoiProviderType.Hybrid)
-                            if (hasFuel || hasHybrid || p.isEmpty()) {
-                                settingsManager.setPoiProviderTypes(setOf(PoiProviderType.DataGouvElec))
+                            if (filterMode != 1) {
+                                settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric)
                             }
                         },
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
@@ -203,9 +180,8 @@ fun FilterFab(
                     SegmentedButton(
                         selected = filterMode == 2,
                         onClick = {
-                            filterMode = 2
-                            if (!settings.selectedPoiProviders.contains(PoiProviderType.Hybrid)) {
-                                settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Hybrid))
+                            if (filterMode != 2) {
+                                settingsManager.setEnergyFilterMode(EnergyFilterMode.Hybrid)
                             }
                         },
                         shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
