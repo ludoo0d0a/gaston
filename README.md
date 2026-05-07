@@ -23,6 +23,9 @@ On long journeys, Gaston also surfaces toilets, rest areas, picnic spots, camper
 ### 🚗 Android Auto — eyes on the road
 First-class Android Auto support using the Car App Library. Big readable cards, safe templates and one-tap navigation — no fumbling with your phone while driving.
 
+### 🆘 Emergency helper & highway costs
+Quick access to road-trip essentials when something goes wrong, plus highway toll estimation to plan the real cost of a journey.
+
 ---
 
 ## Project structure
@@ -79,9 +82,16 @@ First-class Android Auto support using the Car App Library. Big readable cards, 
 - Suggested fuel & charging **stops along the route** (vehicle-aware)
 - Route preview (distance, duration, polyline)
 - One-tap **navigation hand-off** to the system maps app
-- **Highway toll estimation** for French motorways (OpenTollData)
+- **Highway cost planner** — estimate motorway tolls for French routes with OpenTollData
 - Multi-region **traffic events** (CITA Luxembourg, TomTom, Google traffic layer)
 - **Weather** along the route (Open-Meteo + WMO codes)
+
+### Emergency helper
+
+- Quick emergency helper for road incidents and unexpected stops
+- Surface nearby useful POIs such as parking, rest areas, toilets, water and services
+- One-tap navigation to the closest safe stop or assistance location
+- Android Auto-friendly access so drivers can stay focused on the road
 
 ### Rest stops & services (POIs)
 
