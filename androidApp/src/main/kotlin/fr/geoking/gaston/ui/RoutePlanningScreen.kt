@@ -78,6 +78,8 @@ import fr.geoking.gaston.effectiveProviders
 import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.components.EnergyTypeSelectorRows
 import fr.geoking.gaston.api.routing.RoutePlanner
@@ -114,7 +116,8 @@ fun RoutePlanningScreen(
     onBack: () -> Unit,
     onShowOnMap: ((fr.geoking.gaston.api.routing.RouteResult, List<Poi>) -> Unit)? = null,
     onSearchAtLocation: ((Double, Double) -> Unit)? = null,
-    initialDestination: NavDestination? = null
+    initialDestination: NavDestination? = null,
+    showAds: Boolean = false
 ) {
     BackHandler(onBack = onBack)
     val context = LocalContext.current
@@ -220,7 +223,15 @@ fun RoutePlanningScreen(
                 )
             )
         },
-        containerColor = Color(0xFF0F172A)
+        containerColor = Color(0xFF0F172A),
+        bottomBar = {
+            if (showAds) {
+                AdMobBanner(
+                    adUnitId = BuildConfig.ADMOB_BANNER_ID,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
     ) { padding ->
         Column(
             modifier = Modifier

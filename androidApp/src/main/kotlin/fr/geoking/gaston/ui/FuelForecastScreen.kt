@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
+import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.components.FuelForecastChartCard
 import fr.geoking.gaston.ui.components.UnifiedFuelForecastChartCard
 import fr.geoking.gaston.ui.dashboard.GastonTheme
@@ -51,7 +54,8 @@ fun FuelForecastScreen(
     repository: FuelForecastRepository,
     onBack: () -> Unit,
     settingsManager: SettingsManager = koinInject(),
-    billingManager: BillingManager = koinInject()
+    billingManager: BillingManager = koinInject(),
+    showAds: Boolean = false
 ) {
     val settings by settingsManager.settings.collectAsState()
     val scope = rememberCoroutineScope()
@@ -108,6 +112,14 @@ fun FuelForecastScreen(
                         }
                     }
                 )
+            },
+            bottomBar = {
+                if (showAds) {
+                    AdMobBanner(
+                        adUnitId = BuildConfig.ADMOB_BANNER_ID,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         ) { padding ->
             if (isLoading && states.isEmpty()) {

@@ -205,15 +205,6 @@ fun PhoneDashboardMainContent(
             )
         }
 
-        if (BuildConfig.IS_PLAYSTORE_DISTRIBUTION) {
-            item {
-                AdMobBanner(
-                    adUnitId = BuildConfig.ADMOB_BANNER_UNIT_ID,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-
         item {
             PhoneDashboardQuickModeRow(
                 currentEnergyMode = currentEnergyMode,

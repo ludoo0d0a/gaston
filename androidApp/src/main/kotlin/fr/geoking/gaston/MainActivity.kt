@@ -473,7 +473,8 @@ fun MainUI(
                     BackHandler { showFuelForecast = false }
                     FuelForecastScreen(
                         repository = fuelForecastRepository!!,
-                        onBack = { showFuelForecast = false }
+                        onBack = { showFuelForecast = false },
+                        showAds = isPlaystoreDistribution
                     )
                 }
                 isPlaystoreDistribution && showDirectionsMap && mapDeps != null -> {
@@ -518,7 +519,8 @@ fun MainUI(
                             stationsForDirections = pois
                             showDirectionsMap = true
                         },
-                        initialDestination = initialNavDestination
+                        initialDestination = initialNavDestination,
+                        showAds = isPlaystoreDistribution
                     )
                 }
                 isPlaystoreDistribution && showMap && mapDeps == null -> {
@@ -549,7 +551,8 @@ fun MainUI(
                         communityRepo = mapDeps!!.communityRepo,
                         favoritesRepo = mapDeps!!.favoritesRepo,
                         initialSelectedPoi = pendingMapPoi,
-                        initialCenter = pendingMapLocation
+                        initialCenter = pendingMapLocation,
+                        showAds = isPlaystoreDistribution
                     )
                 }
                 isPlaystoreDistribution && !showMap -> {
@@ -644,7 +647,8 @@ fun MainUI(
                             showRoutePlanning = false
                             showMap = true
                         },
-                        initialDestination = initialNavDestination
+                        initialDestination = initialNavDestination,
+                        showAds = isPlaystoreDistribution
                     )
                 }
                 showMap -> {
@@ -671,7 +675,8 @@ fun MainUI(
                             communityRepo = mapDeps!!.communityRepo,
                             favoritesRepo = mapDeps!!.favoritesRepo,
                             initialSelectedPoi = pendingMapPoi,
-                            initialCenter = pendingMapLocation
+                            initialCenter = pendingMapLocation,
+                            showAds = isPlaystoreDistribution
                         )
                     } else {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -683,7 +688,8 @@ fun MainUI(
                     BackHandler { showFuelForecast = false }
                     FuelForecastScreen(
                         repository = fuelForecastRepository,
-                        onBack = { showFuelForecast = false }
+                        onBack = { showFuelForecast = false },
+                        showAds = isPlaystoreDistribution
                     )
                 }
                 else -> {

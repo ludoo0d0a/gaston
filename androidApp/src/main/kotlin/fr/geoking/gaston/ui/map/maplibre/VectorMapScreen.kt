@@ -101,7 +101,8 @@ fun VectorMapScreen(
     communityRepo: CommunityPoiRepository? = null,
     favoritesRepo: FavoritesRepository? = null,
     initialSelectedPoi: Poi? = null,
-    initialCenter: com.google.android.gms.maps.model.LatLng? = null
+    initialCenter: com.google.android.gms.maps.model.LatLng? = null,
+    showAds: Boolean = false
 ) {
     BackHandler { onBack() }
 
@@ -254,7 +255,8 @@ fun VectorMapScreen(
         onShowFavoritesOnlyChange = { showFavoritesOnly = it },
         favoritesFilterEnabled = settings.isLoggedIn && favoritesRepo != null,
         isLoading = mapData.isLoading,
-        palette = palette
+        palette = palette,
+        showAds = showAds
     ) { padding ->
         Column(
             modifier = Modifier
