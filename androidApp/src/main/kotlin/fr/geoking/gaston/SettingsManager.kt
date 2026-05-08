@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.feature.settings.FirestoreSettingsSync
+import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.sanitizeUserPoiProviderSelection
 import kotlinx.coroutines.CoroutineScope
@@ -60,6 +61,7 @@ data class AppSettings(
     /** When [Auto], provider set is derived from current country (GPS / network). */
     val poiProviderSelectionMode: PoiProviderSelectionMode = PoiProviderSelectionMode.Manual,
     val selectedPoiProviders: Set<PoiProviderType> = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+    val mapEnergyMode: EnergyFilterMode = EnergyFilterMode.Fuel,
     val selectedMapEnergyTypes: Set<String> = DEFAULT_MAP_ENERGY_TYPES,
     val mapEnseigneType: String = DEFAULT_MAP_ENSEIGNE_TYPE,
     val mapBrands: Set<String> = DEFAULT_MAP_BRANDS,
@@ -213,6 +215,24 @@ open class SettingsManager(
             ThemeMode.valueOf(prefs.getString("ui_theme_mode", ThemeMode.System.name) ?: ThemeMode.System.name)
         } catch (_: Exception) { ThemeMode.System }
 
+        val selectedMapEnergyTypes = prefs.getStringSet("map_energy_types", null)?.toSet() ?: DEFAULT_MAP_ENERGY_TYPES
+
+        val mapEnergyMode = try {
+            val stored = prefs.getString("map_energy_mode", null)
+            if (stored != null) {
+                EnergyFilterMode.valueOf(stored)
+            } else {
+                // Infer from legacy selectedMapEnergyTypes
+                val hasElectric = selectedMapEnergyTypes.contains("electric")
+                val hasFuel = selectedMapEnergyTypes.any { it != "electric" }
+                when {
+                    hasElectric && hasFuel -> EnergyFilterMode.Hybrid
+                    hasElectric -> EnergyFilterMode.Electric
+                    else -> EnergyFilterMode.Fuel
+                }
+            }
+        } catch (_: Exception) { EnergyFilterMode.Fuel }
+
         return AppSettings(
             uiThemeMode = uiThemeMode,
             vehicleBrand = prefs.getString("vehicle_brand", "") ?: "",
@@ -224,7 +244,8 @@ open class SettingsManager(
             useVehicleFilter = prefs.getBoolean("use_vehicle_filter", false),
             poiProviderSelectionMode = poiProviderSelectionMode,
             selectedPoiProviders = selectedProviders,
-            selectedMapEnergyTypes = prefs.getStringSet("map_energy_types", null)?.toSet() ?: DEFAULT_MAP_ENERGY_TYPES,
+            mapEnergyMode = mapEnergyMode,
+            selectedMapEnergyTypes = selectedMapEnergyTypes,
             mapEnseigneType = prefs.getString("map_enseigne_type", DEFAULT_MAP_ENSEIGNE_TYPE) ?: DEFAULT_MAP_ENSEIGNE_TYPE,
             mapBrands = prefs.getStringSet("map_brands", null)?.toSet() ?: DEFAULT_MAP_BRANDS,
             selectedMapServices = prefs.getStringSet("map_services", null)?.toSet() ?: emptySet(),
@@ -285,6 +306,7 @@ open class SettingsManager(
             .putBoolean("use_vehicle_filter", settings.useVehicleFilter)
             .putString("poi_provider_selection_mode", settings.poiProviderSelectionMode.name)
             .putStringSet("poi_providers", settings.selectedPoiProviders.map { it.name }.toSet())
+            .putString("map_energy_mode", settings.mapEnergyMode.name)
             .putStringSet("map_energy_types", settings.selectedMapEnergyTypes)
             .putString("map_enseigne_type", settings.mapEnseigneType)
             .putStringSet("map_brands", settings.mapBrands)
@@ -357,26 +379,24 @@ open class SettingsManager(
     }
 
     open fun setSelectedMapEnergyTypes(types: Set<String>) {
-        saveSettings(_settings.value.copy(selectedMapEnergyTypes = types))
+        val filtered = types.filter { it != "electric" }.toSet()
+        val currentMode = _settings.value.mapEnergyMode
+        val nextMode = if (currentMode == EnergyFilterMode.Electric) EnergyFilterMode.Fuel else currentMode
+        saveSettings(_settings.value.copy(
+            selectedMapEnergyTypes = filtered,
+            mapEnergyMode = nextMode,
+            useVehicleFilter = false
+        ))
     }
 
     // Backwards-compatible name used by various UI screens
     open fun setMapEnergyTypes(types: Set<String>) = setSelectedMapEnergyTypes(types)
 
     open fun setEnergyFilterMode(mode: EnergyFilterMode) {
-        val current = _settings.value.selectedMapEnergyTypes
-        val currentFuel: String? = current.firstOrNull { it != "electric" }
-        val fallbackFuel = "e85"
-
-        val nextTypes = when (mode) {
-            EnergyFilterMode.Fuel -> setOf(currentFuel ?: fallbackFuel)
-            EnergyFilterMode.Electric -> setOf("electric")
-            EnergyFilterMode.Hybrid -> setOf(currentFuel ?: fallbackFuel, "electric")
-        }
         saveSettings(_settings.value.copy(
             useVehicleFilter = false,
             poiProviderSelectionMode = PoiProviderSelectionMode.Auto,
-            selectedMapEnergyTypes = nextTypes
+            mapEnergyMode = mode
         ))
     }
 
@@ -396,7 +416,13 @@ open class SettingsManager(
     open fun setMapServices(services: Set<String>) = setSelectedMapServices(services)
 
     open fun setMapPowerLevels(levels: Set<Int>) {
-        saveSettings(_settings.value.copy(mapPowerLevels = levels))
+        val currentMode = _settings.value.mapEnergyMode
+        val nextMode = if (currentMode == EnergyFilterMode.Fuel) EnergyFilterMode.Electric else currentMode
+        saveSettings(_settings.value.copy(
+            mapPowerLevels = levels,
+            mapEnergyMode = nextMode,
+            useVehicleFilter = false
+        ))
     }
 
     open fun setMapIrveOperators(ops: Set<String>) {

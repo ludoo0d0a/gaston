@@ -19,11 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.AppSettings
-import fr.geoking.gaston.EnergyFilterMode
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.effectiveEnergyFilterMode
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
+import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.anyProvidesFuel
@@ -89,7 +89,7 @@ fun LazyListScope.energySelectorItems(
             FuelFilterChip(
                 id = id,
                 label = label,
-                isSelected = settings.effectiveMapEnergyFilterIds().contains(id),
+                isSelected = settings.selectedMapEnergyTypes.contains(id),
                 onClick = {
                     val current = settings.selectedMapEnergyTypes
                     val next = if (current.contains(id)) current - id else current + id
@@ -140,12 +140,10 @@ fun EnergyTypeSelectorRows(
                     FuelFilterChip(
                         id = id,
                         label = label,
-                        isSelected = settings.effectiveMapEnergyFilterIds().contains(id),
+                        isSelected = settings.selectedMapEnergyTypes.contains(id),
                         onClick = {
-                            val keepElectric = mode == EnergyFilterMode.Hybrid
-                            val next = if (keepElectric) setOf(id, "electric") else setOf(id)
                             settingsManager.setUseVehicleFilter(false)
-                            settingsManager.setMapEnergyTypes(next)
+                            settingsManager.setMapEnergyTypes(setOf(id))
                         }
                     )
                 }

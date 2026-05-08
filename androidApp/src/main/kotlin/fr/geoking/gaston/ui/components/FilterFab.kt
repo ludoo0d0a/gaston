@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.*
+import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.anyProvidesFuel
@@ -321,7 +322,7 @@ private fun FuelFilters(settingsManager: SettingsManager, providers: Set<PoiProv
     val settings by settingsManager.settings.collectAsState()
 
     if (providers.anyProvidesFuel()) {
-        val effectiveEnergyIds = settings.effectiveMapEnergyFilterIds()
+        val selectedEnergyIds = settings.selectedMapEnergyTypes
         FilterSectionTitle("Fuel Types")
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -333,13 +334,10 @@ private fun FuelFilters(settingsManager: SettingsManager, providers: Set<PoiProv
                 FuelFilterChip(
                     id = id,
                     label = label,
-                    isSelected = effectiveEnergyIds.contains(id),
+                    isSelected = selectedEnergyIds.contains(id),
                     onClick = {
-                        val current = settings.selectedMapEnergyTypes
-                        val keepElectric = current.contains("electric")
-                        val next = if (keepElectric) setOf(id, "electric") else setOf(id)
                         settingsManager.setUseVehicleFilter(false)
-                        settingsManager.setMapEnergyTypes(next)
+                        settingsManager.setMapEnergyTypes(setOf(id))
                     }
                 )
             }

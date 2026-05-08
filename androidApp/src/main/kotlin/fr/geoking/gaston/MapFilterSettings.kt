@@ -1,6 +1,7 @@
 package fr.geoking.gaston
 
 import fr.geoking.gaston.parking.ParkingRegion
+import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
@@ -9,16 +10,12 @@ import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.autoProvidersForCountries
 import java.util.Locale
 
-enum class EnergyFilterMode { Fuel, Electric, Hybrid }
-
 fun AppSettings.effectiveEnergyFilterMode(): EnergyFilterMode {
-    val energyFilters = effectiveMapEnergyFilterIds()
-    val hasElectric = energyFilters.contains("electric")
-    val hasFuel = energyFilters.isEmpty() || energyFilters.any { it != "electric" }
+    if (!useVehicleFilter) return mapEnergyMode
 
-    return when {
-        hasElectric && hasFuel -> EnergyFilterMode.Hybrid
-        hasElectric -> EnergyFilterMode.Electric
+    return when (vehicleEnergy) {
+        "electric" -> EnergyFilterMode.Electric
+        "hybrid" -> EnergyFilterMode.Hybrid
         else -> EnergyFilterMode.Fuel
     }
 }
@@ -46,17 +43,13 @@ fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
     selectedOverpassAmenityTypes.mapNotNullTo(categories) { categoryFromAmenityId(it) }
 
     // Energy: Gas/Irve
-    val energyFilters = effectiveMapEnergyFilterIds()
-    if (energyFilters.isEmpty()) {
-        // If no filter selected, show both (default "All")
-        categories.add(PoiCategory.Gas)
-        categories.add(PoiCategory.Irve)
-    } else {
-        if (energyFilters.contains("electric")) {
-            categories.add(PoiCategory.Irve)
-        }
-        if (energyFilters.any { it != "electric" }) {
+    val mode = effectiveEnergyFilterMode()
+    when (mode) {
+        EnergyFilterMode.Fuel -> categories.add(PoiCategory.Gas)
+        EnergyFilterMode.Electric -> categories.add(PoiCategory.Irve)
+        EnergyFilterMode.Hybrid -> {
             categories.add(PoiCategory.Gas)
+            categories.add(PoiCategory.Irve)
         }
     }
 
@@ -81,14 +74,18 @@ fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
 
 fun AppSettings.effectiveMapEnergyFilterIds(): Set<String> {
     val useVehicle = useVehicleFilter || (selectedMapEnergyTypes.isEmpty() && vehicleBrand.isNotEmpty())
-    return if (useVehicle) {
-        when (vehicleEnergy) {
+    if (useVehicle) {
+        return when (vehicleEnergy) {
             "electric" -> setOf("electric")
             "hybrid" -> vehicleGasTypes + "electric"
             else -> vehicleGasTypes
         }
-    } else {
-        selectedMapEnergyTypes
+    }
+
+    return when (mapEnergyMode) {
+        EnergyFilterMode.Fuel -> selectedMapEnergyTypes
+        EnergyFilterMode.Electric -> setOf("electric")
+        EnergyFilterMode.Hybrid -> selectedMapEnergyTypes + "electric"
     }
 }
 
@@ -137,9 +134,9 @@ fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Se
         selectedPoiProviders
     } else {
         if (countryCodes.isNotEmpty()) {
-            val energyFilters = effectiveMapEnergyFilterIds()
-            val wantElectric = energyFilters.isEmpty() || "electric" in energyFilters
-            val wantFuel = energyFilters.isEmpty() || energyFilters.any { it != "electric" }
+            val mode = effectiveEnergyFilterMode()
+            val wantElectric = mode == EnergyFilterMode.Electric || mode == EnergyFilterMode.Hybrid
+            val wantFuel = mode == EnergyFilterMode.Fuel || mode == EnergyFilterMode.Hybrid
 
             autoProvidersForCountries(
                 countryCodes = countryCodes,
@@ -207,15 +204,10 @@ object StationMapFilters {
         if (skipWhenOnlyOverpass && providers.isOnlyOverpass()) return result
 
         // Filter by energy type
-        val energyFilters = settings.effectiveMapEnergyFilterIds()
-        if (energyFilters.isNotEmpty()) {
-            result = result.filter { poi ->
-                // Filter out OSM charging stations if electric is not explicitly selected
-                if (poi.source == "OpenStreetMap" && poi.poiCategory == PoiCategory.Irve && "electric" !in energyFilters) {
-                    return@filter false
-                }
-                MapPoiFilter.matchesEnergyFilter(poi, energyFilters)
-            }
+        val mode = settings.effectiveEnergyFilterMode()
+        val fuelFilters = settings.selectedMapEnergyTypes
+        result = result.filter { poi ->
+            MapPoiFilter.matchesEnergyFilter(poi, mode, fuelFilters)
         }
 
         // Filter by power range (IRVE)
