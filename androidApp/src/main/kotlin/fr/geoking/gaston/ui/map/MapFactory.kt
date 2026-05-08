@@ -13,6 +13,7 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
 import fr.geoking.gaston.ui.MapScreen
+import com.google.android.gms.maps.model.LatLng
 import fr.geoking.gaston.ui.anim.AnimationPalette
 import fr.geoking.gaston.ui.map.maplibre.VectorMapScreen
 
@@ -30,8 +31,7 @@ fun MapFactory(
     communityRepo: CommunityPoiRepository? = null,
     favoritesRepo: FavoritesRepository? = null,
     initialSelectedPoi: Poi? = null,
-    initialCenterLat: Double? = null,
-    initialCenterLon: Double? = null
+    initialCenter: LatLng? = null
 ) {
     val settings by settingsManager.settings.collectAsState()
     when (settings.phoneMapEngine) {
@@ -48,8 +48,7 @@ fun MapFactory(
             communityRepo = communityRepo,
             favoritesRepo = favoritesRepo,
             initialSelectedPoi = initialSelectedPoi,
-            initialCenterLat = initialCenterLat,
-            initialCenterLon = initialCenterLon
+            initialCenter = initialCenter
         )
         MapEngine.Google -> MapScreen(
             poiProvider = poiProvider,
@@ -64,8 +63,7 @@ fun MapFactory(
             communityRepo = communityRepo,
             favoritesRepo = favoritesRepo,
             initialSelectedPoi = initialSelectedPoi,
-            initialCenterLat = initialCenterLat,
-            initialCenterLon = initialCenterLon
+            initialCenter = initialCenter
         )
     }
 }
