@@ -151,7 +151,8 @@ fun MapScreen(
     communityRepo: CommunityPoiRepository? = null,
     favoritesRepo: FavoritesRepository? = null,
     initialSelectedPoi: Poi? = null,
-    initialCenter: LatLng? = null
+    initialCenter: LatLng? = null,
+    showAds: Boolean = false
 ) {
     BackHandler { onBack() }
 
@@ -333,7 +334,8 @@ fun MapScreen(
         onShowFavoritesOnlyChange = { showFavoritesOnly = it },
         favoritesFilterEnabled = settings.isLoggedIn && favoritesRepo != null,
         isLoading = mapData.isLoading,
-        palette = palette
+        palette = palette,
+        showAds = showAds
     ) { padding ->
         Column(
             modifier = Modifier

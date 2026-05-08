@@ -13,8 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.ui.anim.AnimationPalette
+import fr.geoking.gaston.ui.components.AdMobBanner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +39,7 @@ fun MapScaffold(
     /** Map center for auto mode provider resolution and country label; null uses settings fallback. */
     mapCenterLatitude: Double? = null,
     mapCenterLongitude: Double? = null,
+    showAds: Boolean = false,
     content: @Composable (PaddingValues) -> Unit
 ) {
     val settings by settingsManager.settings.collectAsState()
@@ -147,6 +150,14 @@ fun MapScaffold(
                         onShowFavoritesOnlyChange = onShowFavoritesOnlyChange
                     )
                 }
+            }
+        },
+        bottomBar = {
+            if (showAds) {
+                AdMobBanner(
+                    adUnitId = BuildConfig.ADMOB_BANNER_ID,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     ) { padding ->
