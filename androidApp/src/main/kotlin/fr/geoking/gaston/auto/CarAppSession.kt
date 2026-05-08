@@ -146,7 +146,8 @@ class CarAppSession : Session(), KoinComponent {
                 return ErrorScreen(
                     carContext,
                     errorMessage = "Failed to load map components.",
-                    errorDetail = "Dependencies could not be initialized."
+                    errorDetail = "Dependencies could not be initialized.",
+                    templateType = "Root screen"
                 )
             }
             val destQuery = nav.address ?: nav.latitude?.let { "${nav.latitude}, ${nav.longitude}" } ?: ""
@@ -184,7 +185,8 @@ class CarAppSession : Session(), KoinComponent {
             ErrorScreen(
                 carContext,
                 errorMessage = e.message ?: e.toString(),
-                errorDetail = e.stackTraceToString().take(300)
+                errorDetail = e.stackTraceToString().take(300),
+                templateType = "Root screen"
             )
         }
     }

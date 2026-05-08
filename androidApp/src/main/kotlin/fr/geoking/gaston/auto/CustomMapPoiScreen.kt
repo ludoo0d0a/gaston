@@ -15,6 +15,7 @@ import androidx.car.app.model.ItemList
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.navigation.model.MapWithContentTemplate
 import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import android.graphics.Rect
 import androidx.car.app.SurfaceCallback
@@ -315,56 +316,60 @@ class CustomMapPoiScreen(
         invalidate()
     }
 
-    override fun onGetTemplate(): Template {
-        return try {
-            val actionStrip = ActionStrip.Builder()
-                .addAction(
-                    Action.Builder()
-                        .setTitle("Zoom In")
-                        .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_add)).build())
-                        .setOnClickListener { bumpZoom(1) }
-                        .build()
-                )
-                .addAction(
-                    Action.Builder()
-                        .setTitle("Zoom Out")
-                        .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_remove)).build())
-                        .setOnClickListener { bumpZoom(-1) }
-                        .build()
-                )
-                .addAction(
-                    Action.Builder()
-                        .setTitle("Home")
-                        .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_home)).build())
-                        .setOnClickListener { screenManager.popToRoot() }
-                        .build()
-                )
-                .build()
-
-            val title = "Nearby Stations"
-
-            if (isLoading) {
-                return MapWithContentTemplate.Builder()
-                    .setContentTemplate(
-                        ListTemplate.Builder()
-                            .setLoading(true)
-                            .setHeader(mapContentHeaderBuilder(title).build())
-                            .build()
-                    )
-                    .setActionStrip(actionStrip)
+    override fun onGetTemplate(): Template = safeCarTemplate(
+        carContext = carContext,
+        logTag = "CustomMapPoiScreen",
+        templateName = "MapWithContentTemplate"
+    ) {
+        // With a surface-rendered MapWithContentTemplate, hosts can be strict about the ActionStrip.
+        // Keep it to a single action and move other controls into the list content.
+        val actionStrip = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setTitle("Home")
+                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_home)).build())
+                    .setOnClickListener { screenManager.popToRoot() }
                     .build()
-            }
+            )
+            .build()
 
-            val currentSettings = settingsManager.settings.value
+        val title = "Nearby Stations"
 
-            // Build POI rows.
-            val itemListBuilder = ItemList.Builder()
-                .setNoItemsMessage("No POIs found")
+        if (isLoading) {
+            return@safeCarTemplate MapWithContentTemplate.Builder()
+                .setContentTemplate(
+                    ListTemplate.Builder()
+                        .setLoading(true)
+                        .setHeader(mapContentHeaderBuilder(title).build())
+                        .build()
+                )
+                .setActionStrip(actionStrip)
+                .build()
+        }
 
-            // 1) Functional rows
-            var functionalRowCount = 3
-            itemListBuilder.addItem(
+        val currentSettings = settingsManager.settings.value
+
+        // Build POI rows.
+        val itemListBuilder = ItemList.Builder()
+            .setNoItemsMessage("No POIs found")
+
+        // 1) Functional rows
+        var functionalRowCount = 5
+        itemListBuilder
+            .addItem(
                 androidx.car.app.model.Row.Builder()
+                    .setTitle("Zoom In")
+                    .setOnClickListener { bumpZoom(1) }
+                    .build()
+            )
+            .addItem(
+                androidx.car.app.model.Row.Builder()
+                    .setTitle("Zoom Out")
+                    .setOnClickListener { bumpZoom(-1) }
+                    .build()
+            )
+            .addItem(
+                Row.Builder()
                     .setTitle(if (sortByPrice) "Sort: Price" else "Sort: Distance")
                     .setOnClickListener {
                         sortByPrice = !sortByPrice
@@ -372,138 +377,130 @@ class CustomMapPoiScreen(
                     }
                     .build()
             )
-            val energyModeLabel = when {
-                currentSettings.selectedMapEnergyTypes.contains("electric") && (currentSettings.selectedMapEnergyTypes - "electric").isNotEmpty() -> "Hybrid"
-                currentSettings.selectedMapEnergyTypes.contains("electric") -> "Electric"
-                else -> "Fuel"
-            }
-            itemListBuilder.addItem(
-                androidx.car.app.model.Row.Builder()
-                    .setTitle("Energy")
-                    .addText(energyModeLabel)
-                    .setOnClickListener {
-                        screenManager.push(AutoEnergyMenuScreen(carContext, settingsManager))
-                    }
-                    .build()
-            )
-            itemListBuilder.addItem(
-                androidx.car.app.model.Row.Builder()
-                    .setTitle("More Options")
-                    .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
-                    .setOnClickListener {
-                        screenManager.push(
-                            AutoMapMoreOptionsScreen(
-                                carContext = carContext,
-                                settingsManager = settingsManager,
-                                lat = searchLat,
-                                lon = searchLon,
-                                onRecenter = { loadPois() }
-                            )
+
+        val energyModeLabel = when {
+            currentSettings.selectedMapEnergyTypes.contains("electric") && (currentSettings.selectedMapEnergyTypes - "electric").isNotEmpty() -> "Hybrid"
+            currentSettings.selectedMapEnergyTypes.contains("electric") -> "Electric"
+            else -> "Fuel"
+        }
+        itemListBuilder.addItem(
+            Row.Builder()
+                .setTitle("Energy")
+                .addText(energyModeLabel)
+                .setOnClickListener {
+                    screenManager.push(AutoEnergyMenuScreen(carContext, settingsManager))
+                }
+                .build()
+        )
+        itemListBuilder.addItem(
+            Row.Builder()
+                .setTitle("More Options")
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
+                .setOnClickListener {
+                    screenManager.push(
+                        AutoMapMoreOptionsScreen(
+                            carContext = carContext,
+                            settingsManager = settingsManager,
+                            lat = searchLat,
+                            lon = searchLon,
+                            onRecenter = { loadPois() }
                         )
+                    )
+                }
+                .build()
+        )
+
+        // 2) Optional rows
+        val hasCommunity = settingsManager.settings.value.isLoggedIn && communityRepo != null
+        if (hasCommunity) {
+            functionalRowCount++
+            itemListBuilder.addItem(
+                Row.Builder()
+                    .setTitle("Add POI")
+                    .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_add)).build())
+                    .setOnClickListener {
+                        lifecycleScope.launch {
+                            val loc = LocationHelper.getCurrentLocation(carContext)
+                            val clat = loc?.latitude ?: searchLat
+                            val clon = loc?.longitude ?: searchLon
+                            screenManager.push(AddPoiAutoScreen(carContext, communityRepo, clat, clon) { loadPois() })
+                        }
                     }
                     .build()
             )
+        }
 
-            // 2) Optional rows
-            val hasCommunity = settingsManager.settings.value.isLoggedIn && communityRepo != null
-            if (hasCommunity) {
-                functionalRowCount++
-                itemListBuilder.addItem(
-                    androidx.car.app.model.Row.Builder()
-                        .setTitle("Add POI")
-                        .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_add)).build())
-                        .setOnClickListener {
-                            lifecycleScope.launch {
-                                val loc = LocationHelper.getCurrentLocation(carContext)
-                                val clat = loc?.latitude ?: searchLat
-                                val clon = loc?.longitude ?: searchLon
-                                screenManager.push(AddPoiAutoScreen(carContext, communityRepo, clat, clon) { loadPois() })
-                            }
-                        }
-                        .build()
-                )
-            }
-            val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
-            val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
-            val filteredPois = getFilteredPois(currentSettings)
+        val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
+        val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
+        val filteredPois = getFilteredPois(currentSettings)
 
-            surfaceRenderer?.let { renderer ->
-                renderer.updateLocation(searchLat, searchLon, zoom)
-                renderer.updatePois(
-                    newPois = filteredPois,
-                    effectiveEnergyTypes = effectiveEnergies,
-                    effectivePowerLevels = effectivePowerLevels
-                )
-            }
+        surfaceRenderer?.let { renderer ->
+            renderer.updateLocation(searchLat, searchLon, zoom)
+            renderer.updatePois(
+                newPois = filteredPois,
+                effectiveEnergyTypes = effectiveEnergies,
+                effectivePowerLevels = effectivePowerLevels
+            )
+        }
 
-            val sortedPois = if (sortByPrice) {
-                val fuelIds = effectiveEnergies - "electric"
-                if (fuelIds.isEmpty()) {
-                    filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
-                } else {
-                    filteredPois.sortedWith { a, b ->
-                        val pricesA = a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                        val pricesB = b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+        val sortedPois = if (sortByPrice) {
+            val fuelIds = effectiveEnergies - "electric"
+            if (fuelIds.isEmpty()) {
+                filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
+            } else {
+                filteredPois.sortedWith { a, b ->
+                    val pricesA = a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                    val pricesB = b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
 
-                        val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
-                        val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
+                    val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
+                    val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
 
-                        if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
-                            priceA.compareTo(priceB)
-                        } else {
-                            val distA = approxDistanceKm(searchLat, searchLon, a.latitude, a.longitude)
-                            val distB = approxDistanceKm(searchLat, searchLon, b.latitude, b.longitude)
-                            distA.compareTo(distB)
-                        }
+                    if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
+                        priceA.compareTo(priceB)
+                    } else {
+                        val distA = approxDistanceKm(searchLat, searchLon, a.latitude, a.longitude)
+                        val distB = approxDistanceKm(searchLat, searchLon, b.latitude, b.longitude)
+                        distA.compareTo(distB)
                     }
                 }
-            } else {
-                filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
             }
-
-            val limitedPois = sortedPois.take(6 - functionalRowCount)
-            limitedPois.forEach { poi ->
-                val availability = availabilityByPoiId[poi.id]
-                itemListBuilder.addItem(
-                    AutoPoiUiHelper.buildPoiRow(
-                        carContext = carContext,
-                        poi = poi,
-                        availability = availability,
-                        effectiveEnergyTypes = effectiveEnergies,
-                        effectivePowerLevels = effectivePowerLevels,
-                        distanceFromLatLon = searchLat to searchLon
-                    ) {
-                        screenManager.push(
-                            PoiDetailScreen(
-                                carContext = carContext,
-                                poi = poi,
-                                availabilitySummary = availability,
-                                rating = null
-                            )
-                        )
-                    }
-                )
-            }
-
-            val listTemplate = ListTemplate.Builder()
-                .setHeader(mapContentHeaderBuilder(title).build())
-                .setSingleList(itemListBuilder.build())
-                .build()
-
-            return MapWithContentTemplate.Builder()
-                .setContentTemplate(listTemplate)
-                .setActionStrip(actionStrip)
-                .build()
-        } catch (e: Exception) {
-            Log.e("CustomMapPoiScreen", "Error building template", e)
-            MessageTemplate.Builder("Failed to load map: ${e.message}")
-                .setHeader(
-                    Header.Builder()
-                        .setTitle("Error")
-                        .setStartHeaderAction(Action.BACK)
-                        .build()
-                )
-                .build()
+        } else {
+            filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
         }
+
+        val capacity = (6 - functionalRowCount).coerceAtLeast(0)
+        val limitedPois = sortedPois.take(capacity)
+        limitedPois.forEach { poi ->
+            val availability = availabilityByPoiId[poi.id]
+            itemListBuilder.addItem(
+                AutoPoiUiHelper.buildPoiRow(
+                    carContext = carContext,
+                    poi = poi,
+                    availability = availability,
+                    effectiveEnergyTypes = effectiveEnergies,
+                    effectivePowerLevels = effectivePowerLevels,
+                    distanceFromLatLon = searchLat to searchLon
+                ) {
+                    screenManager.push(
+                        PoiDetailScreen(
+                            carContext = carContext,
+                            poi = poi,
+                            availabilitySummary = availability,
+                            rating = null
+                        )
+                    )
+                }
+            )
+        }
+
+        val listTemplate = ListTemplate.Builder()
+            .setHeader(mapContentHeaderBuilder(title).build())
+            .setSingleList(itemListBuilder.build())
+            .build()
+
+        MapWithContentTemplate.Builder()
+            .setContentTemplate(listTemplate)
+            .setActionStrip(actionStrip)
+            .build()
     }
 }

@@ -1,10 +1,39 @@
-<!-- Circle K: circle, brand red #F01428 -->
+<!-- Circle K symbol (vectorized from Wikimedia Commons: Circle_K_Logotype.svg). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
+    android:viewportWidth="60"
+    android:viewportHeight="60">
+
   <path
-      android:fillColor="#F01428"
-      android:pathData="M12,2 A10,10 0 1 1 2,12 A10,10 0 1 1 12,2 Z"/>
+      android:fillColor="#FFFFFF"
+      android:pathData="M0.723,0.273h49.882v59.569H0.723z" />
+
+  <path
+      android:fillColor="#EE2E24"
+      android:pathData="M1.45,1.002h48.428V49.43H1.45z" />
+
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M40.092,36.462c2.333,-3.044 3.731,-6.913 3.731,-11.247 0,-10.314 -7.845,-18.163 -18.16,-18.163 -10.314,0 -18.162,7.849 -18.162,18.163 0,10.313 7.848,18.16 18.162,18.16 3.648,0 6.994,-0.987 9.793,-2.716L24.097,26.013v9.216h-6.392V15.203h6.392v9.218l6.583,-9.218h7.299l-7.107,9.629 9.22,11.63z" />
+
+  <path
+      android:fillColor="#F99B2A"
+      android:pathData="M1.45,51.851h48.428v7.264H1.45z" />
+
+  <path
+      android:fillColor="#EE2E24"
+      android:pathData="M57.366,55.916a3,3 0 1 1 -6,0 3,3 0 0 1 6,0z" />
+
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M56.866,55.916a2.5,2.5 0 1 1 -5,0 2.5,2.5 0 0 1 5,0z" />
+
+  <path
+      android:fillColor="#EE2E24"
+      android:pathData="M53.058,55.96v-1.613l0.71,0.002c0.708,0.003 0.76,0.005 0.94,0.027 0.271,0.034 0.434,0.104 0.58,0.252a0.816,0.816 0 0 1 0.17,0.24c0.06,0.13 0.082,0.223 0.081,0.358 0,0.229 -0.081,0.432 -0.242,0.602 -0.166,0.176 -0.353,0.264 -0.636,0.3l-0.037,0.004 0.072,0.036c0.126,0.063 0.18,0.107 0.305,0.251 0.118,0.138 0.234,0.304 0.426,0.613 0.1,0.161 0.209,0.339 0.327,0.523l0.011,0.018h-0.636l-0.043,-0.077a132.452,132.452 0 0 0 -0.12,-0.214 7.82,7.82 0 0 0 -0.354,-0.6c-0.149,-0.224 -0.273,-0.356 -0.389,-0.414 -0.1,-0.05 -0.195,-0.064 -0.455,-0.064h-0.192V57.573h-0.518V55.96z" />
+
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M54.464,55.747a0.882,0.882 0 0 0 0.293,-0.077 0.313,0.313 0 0 0 0.097,-0.073 0.419,0.419 0 0 0 0.133,-0.307 0.431,0.431 0 0 0 -0.242,-0.42 0.67,0.67 0 0 0 -0.24,-0.069 5.324,5.324 0 0 0 -0.502,-0.012l-0.427,-0.003v0.977l0.408,-0.003a5.24,5.24 0 0 0 0.48,-0.013z" />
 </vector>

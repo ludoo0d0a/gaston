@@ -17,12 +17,18 @@ import fr.geoking.gaston.R
 class ErrorScreen(
     carContext: CarContext,
     private val errorMessage: String,
-    private val errorDetail: String? = null
+    private val errorDetail: String? = null,
+    private val templateType: String? = null
 ) : Screen(carContext) {
 
     override fun onGetTemplate(): Template {
         val detail = errorDetail?.take(200) ?: ""
-        val fullText = if (detail.isNotEmpty()) "$errorMessage\n$detail" else errorMessage
+        val templateLine = templateType?.takeIf { it.isNotBlank() }?.let { "Template: $it" } ?: ""
+        val fullText = listOfNotNull(
+            errorMessage.takeIf { it.isNotBlank() },
+            templateLine.takeIf { it.isNotBlank() },
+            detail.takeIf { it.isNotBlank() }
+        ).joinToString(separator = "\n")
 
         return MessageTemplate.Builder(fullText.take(500))
             .setIcon(
