@@ -11,8 +11,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PriceCheck
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -28,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
@@ -68,6 +76,7 @@ fun PoiOverlayHost(
 
     var showPaywallForFavorite by remember { mutableStateOf(false) }
     var frozenPoisForSheet by remember { mutableStateOf<List<Poi>>(emptyList()) }
+    var showCheapestOnly by remember { mutableStateOf(false) }
     var scrollRequestPoiId by remember { mutableStateOf(initialSelectedPoi?.id) }
     var poiForDetailsDialog by remember { mutableStateOf<Poi?>(null) }
 
@@ -128,6 +137,44 @@ fun PoiOverlayHost(
         }
     }
 
+    val fuelIdsForCheapest = remember(settings) { settings.effectiveMapEnergyFilterIds() - "electric" }
+    val minPrice = remember(poisForOverlay, fuelIdsForCheapest) {
+        if (fuelIdsForCheapest.isEmpty()) null
+        else {
+            poisForOverlay.mapNotNull { poi ->
+                poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
+                    ?.minByOrNull { it.price }?.price
+            }.minOrNull()
+        }
+    }
+
+    val cheapestPois = remember(poisForOverlay, minPrice, fuelIdsForCheapest) {
+        if (minPrice == null) emptyList()
+        else {
+            poisForOverlay.filter { poi ->
+                poi.fuelPrices?.any { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest && it.price == minPrice } == true
+            }
+        }
+    }
+
+    LaunchedEffect(showCheapestOnly) {
+        if (showCheapestOnly && cheapestPois.isNotEmpty()) {
+            if (selectedPoi == null || cheapestPois.none { it.id == selectedPoi.id }) {
+                val first = cheapestPois.first()
+                onSelectedPoiChange(first)
+                scrollRequestPoiId = first.id
+            }
+        }
+    }
+
+    LaunchedEffect(selectedPoi?.id) {
+        if (selectedPoi == null) {
+            showCheapestOnly = false
+        } else if (showCheapestOnly && cheapestPois.isNotEmpty() && cheapestPois.none { it.id == selectedPoi.id }) {
+            showCheapestOnly = false
+        }
+    }
+
     // Keep the map centered on the currently-selected POI (after sheet snap / scroll).
     LaunchedEffect(selectedPoi?.id, scrollRequestPoiId) {
         val poi = selectedPoi ?: return@LaunchedEffect
@@ -136,7 +183,11 @@ fun PoiOverlayHost(
     }
 
     if (selectedPoi != null) {
-        val listToShow = frozenPoisForSheet.takeIf { it.isNotEmpty() } ?: listOf(selectedPoi)
+        val listToShow = if (showCheapestOnly && cheapestPois.isNotEmpty()) {
+            cheapestPois
+        } else {
+            frozenPoisForSheet.takeIf { it.isNotEmpty() } ?: listOf(selectedPoi)
+        }
         val currentListToShow by rememberUpdatedState(listToShow)
 
         LaunchedEffect(scrollRequestPoiId) {
@@ -179,6 +230,24 @@ fun PoiOverlayHost(
             containerColor = Color(0xFF1E293B),
             dragHandle = { BottomSheetDefaults.DragHandle(color = Color.White.copy(alpha = 0.7f)) }
         ) {
+            if (minPrice != null && cheapestPois.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    IconButton(onClick = { showCheapestOnly = !showCheapestOnly }) {
+                        Icon(
+                            imageVector = Icons.Default.PriceCheck,
+                            contentDescription = "Show Cheapest",
+                            tint = if (showCheapestOnly) MaterialTheme.colorScheme.primary else Color.White
+                        )
+                    }
+                }
+            }
+
             val configuration = LocalConfiguration.current
             val cardHeight = (configuration.screenHeightDp * 0.85f).dp
             LazyRow(
