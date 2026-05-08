@@ -361,8 +361,8 @@ fun MainUI(
     var dashboardSelectedLocation by remember { mutableStateOf<fr.geoking.gaston.api.geocoding.GeocodedPlace?>(null) }
 
     LaunchedEffect(dashboardSelectedLocation) {
-        dashboardSelectedLocation?.let {
-            pendingMapLocation = com.google.android.gms.maps.model.LatLng(it.latitude, it.longitude)
+        pendingMapLocation = dashboardSelectedLocation?.let {
+            com.google.android.gms.maps.model.LatLng(it.latitude, it.longitude)
         }
     }
 
@@ -549,8 +549,7 @@ fun MainUI(
                         communityRepo = mapDeps!!.communityRepo,
                         favoritesRepo = mapDeps!!.favoritesRepo,
                         initialSelectedPoi = pendingMapPoi,
-                        initialCenterLat = pendingMapLocation?.latitude,
-                        initialCenterLon = pendingMapLocation?.longitude
+                        initialCenter = pendingMapLocation
                     )
                 }
                 isPlaystoreDistribution && !showMap -> {
@@ -672,8 +671,7 @@ fun MainUI(
                             communityRepo = mapDeps!!.communityRepo,
                             favoritesRepo = mapDeps!!.favoritesRepo,
                             initialSelectedPoi = pendingMapPoi,
-                            initialCenterLat = pendingMapLocation?.latitude,
-                            initialCenterLon = pendingMapLocation?.longitude
+                            initialCenter = pendingMapLocation
                         )
                     } else {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

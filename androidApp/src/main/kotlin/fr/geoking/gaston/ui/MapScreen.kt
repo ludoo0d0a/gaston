@@ -151,8 +151,7 @@ fun MapScreen(
     communityRepo: CommunityPoiRepository? = null,
     favoritesRepo: FavoritesRepository? = null,
     initialSelectedPoi: Poi? = null,
-    initialCenterLat: Double? = null,
-    initialCenterLon: Double? = null
+    initialCenter: LatLng? = null
 ) {
     BackHandler { onBack() }
 
@@ -191,9 +190,9 @@ fun MapScreen(
         }
     )
 
-    val defaultLat = initialSelectedPoi?.latitude ?: initialCenterLat ?: settings.lastKnownLat ?: 48.8566
-    val defaultLng = initialSelectedPoi?.longitude ?: initialCenterLon ?: settings.lastKnownLon ?: 2.3522
-    val defaultZoom = if (initialSelectedPoi != null || (initialCenterLat != null && initialCenterLon != null)) 15f else 12f
+    val defaultLat = initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: settings.lastKnownLat ?: 48.8566
+    val defaultLng = initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: settings.lastKnownLon ?: 2.3522
+    val defaultZoom = if (initialSelectedPoi != null || initialCenter != null) 15f else 12f
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(defaultLat, defaultLng), defaultZoom)
@@ -207,7 +206,7 @@ fun MapScreen(
     var didInitialCenter by remember { mutableStateOf(false) }
 
     LaunchedEffect(hasLocationPermission) {
-        if (hasLocationPermission && !didInitialCenter && initialSelectedPoi == null) {
+        if (hasLocationPermission && !didInitialCenter && initialSelectedPoi == null && initialCenter == null) {
             val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
             cameraPositionState.position = CameraPosition.fromLatLngZoom(
                 LatLng(lat, lon),

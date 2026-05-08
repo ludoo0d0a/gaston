@@ -101,8 +101,7 @@ fun VectorMapScreen(
     communityRepo: CommunityPoiRepository? = null,
     favoritesRepo: FavoritesRepository? = null,
     initialSelectedPoi: Poi? = null,
-    initialCenterLat: Double? = null,
-    initialCenterLon: Double? = null
+    initialCenter: com.google.android.gms.maps.model.LatLng? = null
 ) {
     BackHandler { onBack() }
 
@@ -144,9 +143,9 @@ fun VectorMapScreen(
     var addPoiInitialLng by remember { mutableStateOf<Double?>(null) }
     var addPoiExistingCommunityId by remember { mutableStateOf<String?>(null) }
 
-    val defaultLat = initialSelectedPoi?.latitude ?: initialCenterLat ?: settings.lastKnownLat ?: 48.8566
-    val defaultLng = initialSelectedPoi?.longitude ?: initialCenterLon ?: settings.lastKnownLon ?: 2.3522
-    val defaultZoom = if (initialSelectedPoi != null || (initialCenterLat != null && initialCenterLon != null)) 15.0 else 12.0
+    val defaultLat = initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: settings.lastKnownLat ?: 48.8566
+    val defaultLng = initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: settings.lastKnownLon ?: 2.3522
+    val defaultZoom = if (initialSelectedPoi != null || initialCenter != null) 15.0 else 12.0
 
     LaunchedEffect(favoritesRepo) {
         if (favoritesRepo != null) {
