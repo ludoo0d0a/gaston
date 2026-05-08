@@ -45,7 +45,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.BuildConfig
-import fr.geoking.gaston.EnergyFilterMode
 import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.effectiveAllowedCategories
@@ -54,6 +53,7 @@ import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.intent.NavDestination
+import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderType

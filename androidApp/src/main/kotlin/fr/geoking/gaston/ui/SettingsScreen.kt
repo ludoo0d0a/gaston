@@ -322,7 +322,7 @@ private fun MapConfig(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            val effectiveEnergyIds = settings.effectiveMapEnergyFilterIds()
+            val selectedEnergyIds = settings.selectedMapEnergyTypes
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -333,12 +333,9 @@ private fun MapConfig(
                     FuelFilterChip(
                         id = id,
                         label = label,
-                        isSelected = effectiveEnergyIds.contains(id),
+                        isSelected = selectedEnergyIds.contains(id),
                         onClick = {
-                            val current = settings.selectedMapEnergyTypes
-                            val keepElectric = current.contains("electric")
-                            val next = if (keepElectric) setOf(id, "electric") else setOf(id)
-                            onUpdate(settings.copy(selectedMapEnergyTypes = next, useVehicleFilter = false))
+                            onUpdate(settings.copy(selectedMapEnergyTypes = setOf(id), useVehicleFilter = false))
                         }
                     )
                 }

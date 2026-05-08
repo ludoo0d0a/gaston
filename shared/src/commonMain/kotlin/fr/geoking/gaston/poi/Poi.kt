@@ -10,6 +10,9 @@ import kotlinx.serialization.Serializable
  * Used by [PoiSearchRequest] and [Poi.poiCategory].
  */
 @Serializable
+enum class EnergyFilterMode { Fuel, Electric, Hybrid }
+
+@Serializable
 enum class PoiCategory {
     /** Fuel / gas stations (Routex, Etalab, GasApi, DataGouv). */
     Gas,
@@ -318,7 +321,29 @@ object MapPoiFilter {
     }
 
     /**
-     * Returns true if [poi] should be shown given [selectedEnergyIds].
+     * Returns true if [poi] should be shown given [mode] and [selectedFuelIds].
+     */
+    fun matchesEnergyFilter(
+        poi: Poi,
+        mode: EnergyFilterMode,
+        selectedFuelIds: Set<String>
+    ): Boolean {
+        val wantElectric = mode == EnergyFilterMode.Electric || mode == EnergyFilterMode.Hybrid
+        val wantFuel = mode == EnergyFilterMode.Fuel || mode == EnergyFilterMode.Hybrid
+
+        return if (poi.isElectric) {
+            wantElectric
+        } else {
+            // If we want fuel, and we have specific fuel filters, we should check if the station matches.
+            // However, the current UX (and the legacy logic) only uses fuel selection to find prices,
+            // not to hide stations that don't have that specific fuel (to avoid empty maps).
+            // So we simply return true if we want fuel.
+            wantFuel
+        }
+    }
+
+    /**
+     * Returns true if [poi] should be shown given [selectedEnergyIds] (legacy).
      */
     fun matchesEnergyFilter(poi: Poi, selectedEnergyIds: Set<String>): Boolean {
         if (selectedEnergyIds.isEmpty()) return true
@@ -326,11 +351,6 @@ object MapPoiFilter {
         val wantElectric = "electric" in selectedEnergyIds
         val wantFuel = selectedEnergyIds.any { it != "electric" }
 
-        // IMPORTANT UX:
-        // - Energy selection is used to choose the category (Gas vs IRVE),
-        //   but should NOT hide stations just because a specific fuel/price is missing.
-        // - Same strategy applies to electric: show IRVE when "electric" is selected,
-        //   even if tariff/price details are unavailable.
         return when {
             poi.isElectric -> wantElectric
             else -> wantFuel
