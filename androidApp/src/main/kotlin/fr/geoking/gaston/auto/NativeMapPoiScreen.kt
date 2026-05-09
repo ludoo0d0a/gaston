@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.car.app.CarContext
+import androidx.car.app.ConstraintManager
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
@@ -144,6 +145,13 @@ class NativeMapPoiScreen(
 
         val currentSettings = settingsManager.settings.value
 
+        val listLimit = try {
+            carContext.getCarService(ConstraintManager::class.java)
+                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+        } catch (_: Exception) {
+            6
+        }
+
         val itemListBuilder = ItemList.Builder()
             .setNoItemsMessage("No POIs found")
 
@@ -175,7 +183,7 @@ class NativeMapPoiScreen(
             pois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
         }
 
-        sortedPois.take(4).forEach { poi ->
+        sortedPois.take(listLimit).forEach { poi ->
             val availability = availabilityByPoiId[poi.id]
             itemListBuilder.addItem(
                 AutoPoiUiHelper.buildPoiRow(

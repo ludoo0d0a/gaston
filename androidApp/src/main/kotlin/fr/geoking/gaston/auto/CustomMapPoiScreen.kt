@@ -21,6 +21,7 @@ import android.graphics.Rect
 import androidx.car.app.SurfaceCallback
 import androidx.car.app.SurfaceContainer
 import androidx.car.app.AppManager
+import androidx.car.app.ConstraintManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import fr.geoking.gaston.poi.PoiProviderType
 import androidx.core.graphics.drawable.IconCompat
@@ -349,21 +350,28 @@ class CustomMapPoiScreen(
 
         val currentSettings = settingsManager.settings.value
 
-        // Build POI rows.
+        // Respect the host's list limit (varies by vehicle/API level, default 6).
+        val listLimit = try {
+            carContext.getCarService(ConstraintManager::class.java)
+                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+        } catch (_: Exception) {
+            6
+        }
+
         val itemListBuilder = ItemList.Builder()
             .setNoItemsMessage("No POIs found")
 
-        // 1) Functional rows
+        // 1) Functional rows (action/navigation controls)
         var functionalRowCount = 5
         itemListBuilder
             .addItem(
-                androidx.car.app.model.Row.Builder()
+                Row.Builder()
                     .setTitle("Zoom In")
                     .setOnClickListener { bumpZoom(1) }
                     .build()
             )
             .addItem(
-                androidx.car.app.model.Row.Builder()
+                Row.Builder()
                     .setTitle("Zoom Out")
                     .setOnClickListener { bumpZoom(-1) }
                     .build()
@@ -383,10 +391,12 @@ class CustomMapPoiScreen(
             currentSettings.selectedMapEnergyTypes.contains("electric") -> "Electric"
             else -> "Fuel"
         }
+        // Navigation rows must be browsable so the host renders the chevron and allows the push.
         itemListBuilder.addItem(
             Row.Builder()
                 .setTitle("Energy")
                 .addText(energyModeLabel)
+                .setIsBrowsable(true)
                 .setOnClickListener {
                     screenManager.push(AutoEnergyMenuScreen(carContext, settingsManager))
                 }
@@ -396,6 +406,7 @@ class CustomMapPoiScreen(
             Row.Builder()
                 .setTitle("More Options")
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
+                .setIsBrowsable(true)
                 .setOnClickListener {
                     screenManager.push(
                         AutoMapMoreOptionsScreen(
@@ -412,12 +423,13 @@ class CustomMapPoiScreen(
 
         // 2) Optional rows
         val hasCommunity = settingsManager.settings.value.isLoggedIn && communityRepo != null
-        if (hasCommunity) {
+        if (hasCommunity && functionalRowCount < listLimit) {
             functionalRowCount++
             itemListBuilder.addItem(
                 Row.Builder()
                     .setTitle("Add POI")
                     .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_add)).build())
+                    .setIsBrowsable(true)
                     .setOnClickListener {
                         lifecycleScope.launch {
                             val loc = LocationHelper.getCurrentLocation(carContext)
@@ -468,7 +480,7 @@ class CustomMapPoiScreen(
             filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
         }
 
-        val capacity = (6 - functionalRowCount).coerceAtLeast(0)
+        val capacity = (listLimit - functionalRowCount).coerceAtLeast(0)
         val limitedPois = sortedPois.take(capacity)
         limitedPois.forEach { poi ->
             val availability = availabilityByPoiId[poi.id]

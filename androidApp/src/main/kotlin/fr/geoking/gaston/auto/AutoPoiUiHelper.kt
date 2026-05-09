@@ -91,10 +91,14 @@ object AutoPoiUiHelper {
             )
             .build()
 
+        // IMAGE_TYPE_LARGE is forbidden when Metadata contains a Place (Car App Library constraint:
+        // "A row must not have both a large image and a place"). Use IMAGE_TYPE_SMALL so that the
+        // marker icon is still visible in the list while the Place metadata works for map pins.
         val rowBuilder = Row.Builder()
             .setTitle(title)
             .setMetadata(Metadata.Builder().setPlace(place).build())
-            .setImage(CarIcon.Builder(IconCompat.createWithBitmap(markerBitmap)).build(), Row.IMAGE_TYPE_LARGE)
+            .setImage(CarIcon.Builder(IconCompat.createWithBitmap(markerBitmap)).build(), Row.IMAGE_TYPE_SMALL)
+            .setIsBrowsable(true)
             .setOnClickListener(onClick)
 
         // PlaceList* templates require DistanceSpan on non-browsable rows; some hosts are strict even
