@@ -17,7 +17,7 @@ import org.koin.core.context.GlobalContext
  * - Row.IMAGE_TYPE_LARGE cannot coexist with Metadata containing a Place.
  * - MapWithContentTemplate ActionStrip: 1–4 actions, each with an icon (no title-only).
  * - ListTemplate inside MapWithContentTemplate: max rows from ConstraintManager (default 6).
- * - Navigation rows must call setIsBrowsable(true).
+ * - Navigation rows must call setBrowsable(true).
  * - MapWithContentTemplate requires MAP_TEMPLATES + ACCESS_SURFACE permissions and minCarApiLevel 7.
  */
 internal fun safeCarTemplate(

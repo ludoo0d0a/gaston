@@ -4,7 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.car.app.CarContext
-import androidx.car.app.ConstraintManager
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip

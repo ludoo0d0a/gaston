@@ -80,7 +80,7 @@ jobs:
           MOBILITEIT_LUXEMBOURG_KEY: ${{ secrets.MOBILITEIT_LUXEMBOURG_KEY }}
           TOMTOM_KEY: ${{ secrets.TOMTOM_KEY }}
         run: |
-          ./gradlew :androidApp:bundleRelease \
+          ./gradlew :androidApp:bundlePlaystoreRelease \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/release.keystore \
             -Pandroid.injected.signing.store.password=${{ secrets.KEY_STORE_PASSWORD }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.ALIAS }} \
@@ -96,7 +96,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: fr.geoking.gaston
-          releaseFiles: androidApp/build/outputs/bundle/release/*.aab
+          releaseFiles: androidApp/build/outputs/bundle/playstoreRelease/*.aab
           tracks: internal
           status: completed
           whatsNewDirectory: .github/play-release-notes

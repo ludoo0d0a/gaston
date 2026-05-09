@@ -98,7 +98,7 @@ object AutoPoiUiHelper {
             .setTitle(title)
             .setMetadata(Metadata.Builder().setPlace(place).build())
             .setImage(CarIcon.Builder(IconCompat.createWithBitmap(markerBitmap)).build(), Row.IMAGE_TYPE_SMALL)
-            .setIsBrowsable(true)
+            .setBrowsable(true)
             .setOnClickListener(onClick)
 
         // PlaceList* templates require DistanceSpan on non-browsable rows; some hosts are strict even

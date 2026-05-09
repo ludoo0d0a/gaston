@@ -21,7 +21,7 @@ import android.graphics.Rect
 import androidx.car.app.SurfaceCallback
 import androidx.car.app.SurfaceContainer
 import androidx.car.app.AppManager
-import androidx.car.app.ConstraintManager
+import androidx.car.app.constraints.ConstraintManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import fr.geoking.gaston.poi.PoiProviderType
 import androidx.core.graphics.drawable.IconCompat
@@ -396,7 +396,7 @@ class CustomMapPoiScreen(
             Row.Builder()
                 .setTitle("Energy")
                 .addText(energyModeLabel)
-                .setIsBrowsable(true)
+                .setBrowsable(true)
                 .setOnClickListener {
                     screenManager.push(AutoEnergyMenuScreen(carContext, settingsManager))
                 }
@@ -406,7 +406,7 @@ class CustomMapPoiScreen(
             Row.Builder()
                 .setTitle("More Options")
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
-                .setIsBrowsable(true)
+                .setBrowsable(true)
                 .setOnClickListener {
                     screenManager.push(
                         AutoMapMoreOptionsScreen(
@@ -429,7 +429,7 @@ class CustomMapPoiScreen(
                 Row.Builder()
                     .setTitle("Add POI")
                     .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_add)).build())
-                    .setIsBrowsable(true)
+                    .setBrowsable(true)
                     .setOnClickListener {
                         lifecycleScope.launch {
                             val loc = LocationHelper.getCurrentLocation(carContext)

@@ -12,12 +12,12 @@ BUILD_TYPE="${1:-release}"
 
 case "$BUILD_TYPE" in
     debug)
-        TASK="assembleDebug"
-        APK_PATH="androidApp/build/outputs/apk/debug/androidApp-debug.apk"
+        TASK="assembleFullDebug"
+        APK_PATH="androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk"
         ;;
     release)
-        TASK="assembleRelease"
-        APK_PATH="androidApp/build/outputs/apk/release/androidApp-release.apk"
+        TASK="assembleFullRelease"
+        APK_PATH="androidApp/build/outputs/apk/full/release/androidApp-full-release.apk"
         ;;
     *)
         echo "❌ Invalid build type: $BUILD_TYPE"

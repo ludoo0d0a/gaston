@@ -104,9 +104,20 @@ configure<ApplicationExtension> {
 
         // Required for Google Play Services Maps (references legacy Apache HTTP classes removed from Android 9+)
         useLibrary("org.apache.http.legacy")
+    }
 
-        // Only a single distribution remains (Play Store).
-        buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "true")
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("full") {
+            dimension = "distribution"
+            // The "full" variant includes more experimental features or categories not allowed by Play Store POI policy.
+            buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "false")
+        }
+        create("playstore") {
+            dimension = "distribution"
+            // The "playstore" variant is restricted to POI category to satisfy Google Play Car App Library requirements.
+            buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "true")
+        }
     }
 
     buildTypes {

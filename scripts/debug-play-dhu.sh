@@ -150,8 +150,8 @@ echo ""
 if [[ "$DO_BUILD" == true ]]; then
   print_header "4. Build & install ($VARIANT)"
 
-  print_info "Running: ./gradlew :${MODULE}:installDebug ..."
-  if ! ./gradlew ":${MODULE}:installDebug" --no-daemon -q; then
+  print_info "Running: ./gradlew :${MODULE}:installFullDebug ..."
+  if ! ./gradlew ":${MODULE}:installFullDebug" --no-daemon -q; then
     print_fail "Build or install failed."
     exit 1
   fi
