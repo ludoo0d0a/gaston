@@ -70,7 +70,8 @@ class CustomMapPoiScreen(
     private val trafficProviderFactory: TrafficProviderFactory? = null,
     private val geocodingClient: GeocodingClient? = null,
     private val communityRepo: CommunityPoiRepository? = null,
-    private val favoritesRepo: FavoritesRepository? = null
+    private val favoritesRepo: FavoritesRepository? = null,
+    private val title: String = "Nearby Stations"
 ) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
 
     private var pois: List<Poi> = emptyList()
@@ -352,8 +353,6 @@ class CustomMapPoiScreen(
             )
         }
         val actionStrip = actionStripBuilder.build()
-
-        val title = "Nearby Stations"
 
         if (isLoading) {
             return@safeCarTemplate MapWithContentTemplate.Builder()

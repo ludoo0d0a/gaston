@@ -66,7 +66,7 @@ class AutoPlaystoreDashboardScreen(
                     settingsManager.setUseVehicleFilter(false)
                     settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
                     settingsManager.setOverpassAmenityTypes(setOf("parking"))
-                    pushMapScreen()
+                    pushMapScreen("Parkings")
                 }
                 .build()
         )
@@ -90,7 +90,7 @@ class AutoPlaystoreDashboardScreen(
                 .setImage(gridIcon(R.drawable.ic_poi_caravan_rounded))
                 .setOnClickListener {
                     settingsManager.setUseVehicleFilter(true)
-                    pushMapScreen()
+                    pushMapScreen("My Custom Car")
                 }
                 .build()
         )
@@ -174,8 +174,9 @@ class AutoPlaystoreDashboardScreen(
             .build()
     }
 
-    private fun pushMapScreen() {
+    private fun pushMapScreen(title: String? = null) {
         val mapDeps = getMapDeps() ?: return
+        val finalTitle = title ?: "Nearby Stations"
         val screen = if (settingsManager.settings.value.carMapMode == CarMapMode.Native) {
             NativeMapPoiScreen(
                 carContext = carContext,
@@ -183,7 +184,8 @@ class AutoPlaystoreDashboardScreen(
                 availabilityProviderFactory = mapDeps.availabilityProviderFactory,
                 settingsManager = settingsManager,
                 communityRepo = mapDeps.communityRepo,
-                favoritesRepo = mapDeps.favoritesRepo
+                favoritesRepo = mapDeps.favoritesRepo,
+                title = finalTitle
             )
         } else {
             CustomMapPoiScreen(
@@ -197,7 +199,8 @@ class AutoPlaystoreDashboardScreen(
                 trafficProviderFactory = mapDeps.trafficProviderFactory,
                 geocodingClient = mapDeps.geocodingClient,
                 communityRepo = mapDeps.communityRepo,
-                favoritesRepo = mapDeps.favoritesRepo
+                favoritesRepo = mapDeps.favoritesRepo,
+                title = finalTitle
             )
         }
         screenManager.push(screen)
