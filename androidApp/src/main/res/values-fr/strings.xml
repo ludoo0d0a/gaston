@@ -2,5 +2,7 @@
 <resources>
     <string name="app_name">Gaston</string>
     <string name="hi_how_can_i_help">Bonjour, comment puis-je vous aider ?</string>
+    <string name="searching_address">Recherche d\'adresse en cours…</string>
+    <string name="planning_route">Planification de l\'itinéraire en cours…</string>
 </resources>
 

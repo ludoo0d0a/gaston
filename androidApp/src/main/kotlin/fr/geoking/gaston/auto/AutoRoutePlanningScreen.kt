@@ -56,6 +56,7 @@ class AutoRoutePlanningScreen(
 
     private var lastError: String? = null
     private var loading: Boolean = false
+    private var loadingMessageResId: Int = R.string.planning_route
     private var stations: List<Poi> = emptyList()
 
     private var computeJob: Job? = null
@@ -170,7 +171,7 @@ class AutoRoutePlanningScreen(
 
     private fun buildResultsTemplate(): Template {
         if (loading) {
-            return MessageTemplate.Builder("Planning route…")
+            return MessageTemplate.Builder(carContext.getString(loadingMessageResId))
                 .setLoading(true)
                 .setHeader(Header.Builder().setTitle("Route").setStartHeaderAction(Action.BACK).build())
                 .build()
@@ -255,6 +256,7 @@ class AutoRoutePlanningScreen(
         computeJob?.cancel()
         computeJob = lifecycleScope.launch {
             loading = true
+            loadingMessageResId = R.string.searching_address
             lastError = null
             stations = emptyList()
             invalidate()
@@ -280,6 +282,9 @@ class AutoRoutePlanningScreen(
                     destLat = dest.latitude
                     destLon = dest.longitude
                 }
+
+                loadingMessageResId = R.string.planning_route
+                invalidate()
 
                 // Warm up: ensure route endpoint is reachable (and fail early with nicer message)
                 val route = routingClient.getRoute(originLatLon.first, originLatLon.second, destLat, destLon)
