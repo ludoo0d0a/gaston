@@ -38,4 +38,4 @@ jobs:
           TOMTOM_KEY: ""
         run: |
           # Build + lint to catch issues early (including 16KB page-size native library alignment).
-          ./gradlew --no-daemon :androidApp:assembleDebug :androidApp:lintDebug :shared:build
+          ./gradlew --no-daemon :androidApp:assembleDebug :androidApp:lintFullDebug :shared:build
