@@ -129,7 +129,7 @@ class AutoDashboardScreen(
                                             .addText("Filtered by vehicle settings")
                                             .setOnClickListener {
                                                 settingsManager.setUseVehicleFilter(true)
-                                                pushMapScreen()
+                                                pushMapScreen("My Custom Car")
                                                 screenManager.pop()
                                             }
                                             .build()
@@ -142,7 +142,7 @@ class AutoDashboardScreen(
                                                 settingsManager.setUseVehicleFilter(false)
                                                 settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
                                                 settingsManager.setOverpassAmenityTypes(setOf("parking"))
-                                                pushMapScreen()
+                                                pushMapScreen("Parkings")
                                                 screenManager.pop()
                                             }
                                             .build()
@@ -190,9 +190,10 @@ class AutoDashboardScreen(
             .build()
     }
 
-    private fun pushMapScreen() {
+    private fun pushMapScreen(title: String? = null) {
         val mapDeps = getMapDeps()
         if (mapDeps != null) {
+            val finalTitle = title ?: "Nearby Stations"
             val screen = if (settingsManager.settings.value.carMapMode == CarMapMode.Native) {
                 NativeMapPoiScreen(
                     carContext = carContext,
@@ -200,7 +201,8 @@ class AutoDashboardScreen(
                     availabilityProviderFactory = mapDeps.availabilityProviderFactory,
                     settingsManager = settingsManager,
                     communityRepo = mapDeps.communityRepo,
-                    favoritesRepo = mapDeps.favoritesRepo
+                    favoritesRepo = mapDeps.favoritesRepo,
+                    title = finalTitle
                 )
             } else {
                 CustomMapPoiScreen(
@@ -214,7 +216,8 @@ class AutoDashboardScreen(
                     trafficProviderFactory = mapDeps.trafficProviderFactory,
                     geocodingClient = mapDeps.geocodingClient,
                     communityRepo = mapDeps.communityRepo,
-                    favoritesRepo = mapDeps.favoritesRepo
+                    favoritesRepo = mapDeps.favoritesRepo,
+                    title = finalTitle
                 )
             }
             screenManager.push(screen)

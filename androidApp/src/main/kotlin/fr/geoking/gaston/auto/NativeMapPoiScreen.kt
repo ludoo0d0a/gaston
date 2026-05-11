@@ -45,7 +45,8 @@ class NativeMapPoiScreen(
     private val availabilityProviderFactory: BorneAvailabilityProviderFactory,
     private val settingsManager: SettingsManager,
     private val communityRepo: CommunityPoiRepository? = null,
-    private val favoritesRepo: FavoritesRepository? = null
+    private val favoritesRepo: FavoritesRepository? = null,
+    private val title: String = "Nearby Stations"
 ) : Screen(carContext), DefaultLifecycleObserver {
 
     private var pois: List<Poi> = emptyList()
@@ -135,7 +136,7 @@ class NativeMapPoiScreen(
         // PlaceListMapTemplate: loading and item list are mutually exclusive (see Builder.build()).
         if (isLoading) {
             return@safeCarTemplate PlaceListMapTemplate.Builder()
-                .setTitle("Nearby Stations")
+                .setTitle(title)
                 .setHeaderAction(Action.BACK)
                 .setActionStrip(actionStrip)
                 .setLoading(true)
@@ -207,7 +208,7 @@ class NativeMapPoiScreen(
         }
 
         PlaceListMapTemplate.Builder()
-            .setTitle("Nearby Stations")
+            .setTitle(title)
             .setHeaderAction(Action.BACK)
             .setActionStrip(actionStrip)
             .setLoading(false)
