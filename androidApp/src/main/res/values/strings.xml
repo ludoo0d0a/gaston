@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name">Gaston</string>
     <string name="hi_how_can_i_help">Hi, how can I help you</string>
+    <string name="searching_address">Searching address…</string>
+    <string name="planning_route">Planning route…</string>
 </resources>
