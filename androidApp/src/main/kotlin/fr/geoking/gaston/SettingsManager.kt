@@ -396,7 +396,8 @@ open class SettingsManager(
         saveSettings(_settings.value.copy(
             useVehicleFilter = false,
             poiProviderSelectionMode = PoiProviderSelectionMode.Auto,
-            mapEnergyMode = mode
+            mapEnergyMode = mode,
+            selectedOverpassAmenityTypes = setOf("toilets", "drinking_water")
         ))
     }
 

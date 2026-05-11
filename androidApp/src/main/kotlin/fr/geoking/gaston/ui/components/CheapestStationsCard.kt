@@ -115,7 +115,12 @@ private fun CheapestStationItem(
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val resId = brandInfo?.iconResId ?: if (poi.isElectric) R.drawable.ic_poi_electric else R.drawable.ic_poi_gas
+        val resId = when {
+            brandInfo != null -> brandInfo.iconResId
+            poi.poiCategory == PoiCategory.Parking -> R.drawable.ic_poi_parking
+            poi.isElectric -> R.drawable.ic_poi_electric
+            else -> R.drawable.ic_poi_gas
+        }
         Icon(
             painter = painterResource(id = resId),
             contentDescription = null,

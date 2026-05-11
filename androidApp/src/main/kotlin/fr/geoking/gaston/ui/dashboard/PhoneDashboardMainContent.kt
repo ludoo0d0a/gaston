@@ -127,6 +127,12 @@ fun PhoneDashboardMainContent(
     onLocationSelected: (GeocodedPlace?) -> Unit,
     onPoiSelected: (Poi) -> Unit
 ) {
+    val isParkingSelected = remember(settings) {
+        settings.poiProviderSelectionMode == fr.geoking.gaston.PoiProviderSelectionMode.Manual &&
+            settings.selectedPoiProviders == setOf(fr.geoking.gaston.poi.PoiProviderType.Overpass) &&
+            settings.selectedOverpassAmenityTypes == setOf("parking")
+    }
+
     val currentEnergyMode = remember(settings) {
         settings.effectiveEnergyFilterMode().toQuickActionType()
     }
@@ -232,6 +238,7 @@ fun PhoneDashboardMainContent(
                 energyFilterIds = energyFilterIds,
                 searchError = searchError,
                 selectedSearchLocation = selectedSearchLocation,
+                isParkingSelected = isParkingSelected,
                 onPoiSelected = onPoiSelected,
                 onOpenMap = onOpenMap
             )
@@ -242,6 +249,7 @@ fun PhoneDashboardMainContent(
                 settings = settings,
                 settingsManager = settingsManager,
                 mapDepsReady = mapDepsReady,
+                isParkingSelected = isParkingSelected,
                 onOpenRoutes = onOpenRoutes
             )
         }
@@ -341,6 +349,7 @@ private fun PhoneDashboardNearbyCheapestSection(
     energyFilterIds: Set<String>,
     searchError: String?,
     selectedSearchLocation: GeocodedPlace?,
+    isParkingSelected: Boolean,
     onPoiSelected: (Poi) -> Unit,
     onOpenMap: (Poi?) -> Unit
 ) {
@@ -352,7 +361,7 @@ private fun PhoneDashboardNearbyCheapestSection(
         ) {
             Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    "Nearby cheapest",
+                    if (isParkingSelected) "Parkings les plus proches" else "Nearby cheapest",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.align(Alignment.Start).padding(bottom = 12.dp)
@@ -361,7 +370,10 @@ private fun PhoneDashboardNearbyCheapestSection(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.height(8.dp))
-                        Text("Searching nearby...", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            if (isParkingSelected) "Recherche de parkings..." else "Searching nearby...",
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 }
             }
@@ -383,10 +395,10 @@ private fun PhoneDashboardNearbyCheapestSection(
             onMapClick = { onOpenMap(null) },
             modifier = cardModifier,
             emptyMessage = searchError,
-            title = if (selectedSearchLocation != null) {
-                "Cheapest near ${cityLabelFromGeocodedPlace(selectedSearchLocation)}"
-            } else {
-                "Nearby cheapest"
+            title = when {
+                isParkingSelected -> "Parkings les plus proches"
+                selectedSearchLocation != null -> "Cheapest near ${cityLabelFromGeocodedPlace(selectedSearchLocation)}"
+                else -> "Nearby cheapest"
             }
         )
     }
@@ -398,25 +410,22 @@ private fun PhoneDashboardParkingRouteRow(
     settings: AppSettings,
     settingsManager: SettingsManager,
     mapDepsReady: Boolean,
+    isParkingSelected: Boolean,
     onOpenRoutes: (NavDestination?) -> Unit
 ) {
-    val isParkingSelected = !settings.useVehicleFilter &&
-        settings.selectedPoiProviders == setOf(PoiProviderType.Overpass) &&
-        settings.selectedOverpassAmenityTypes == setOf("parking")
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Card(
             onClick = {
-                val isSelected = !settings.useVehicleFilter &&
-                    settings.selectedPoiProviders == setOf(PoiProviderType.Overpass) &&
-                    settings.selectedOverpassAmenityTypes == setOf("parking")
-                if (isSelected) {
+                if (isParkingSelected) {
+                    settingsManager.setPoiProviderSelectionMode(fr.geoking.gaston.PoiProviderSelectionMode.Auto)
                     settingsManager.setUseVehicleFilter(true)
                 } else {
                     settingsManager.setUseVehicleFilter(false)
-                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
+                    settingsManager.setPoiProviderSelectionMode(fr.geoking.gaston.PoiProviderSelectionMode.Manual)
+                    settingsManager.setPoiProviderTypes(setOf(fr.geoking.gaston.poi.PoiProviderType.Overpass))
                     settingsManager.setOverpassAmenityTypes(setOf("parking"))
                 }
             },

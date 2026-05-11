@@ -37,6 +37,14 @@ fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
 }
 
 fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
+    // Specialized "Parking only" mode for dashboard
+    if (poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
+        selectedPoiProviders == setOf(fr.geoking.gaston.poi.PoiProviderType.Overpass) &&
+        selectedOverpassAmenityTypes == setOf("parking")
+    ) {
+        return setOf(PoiCategory.Parking)
+    }
+
     val categories = mutableSetOf<PoiCategory>()
 
     // Amenities: strictly based on selection
