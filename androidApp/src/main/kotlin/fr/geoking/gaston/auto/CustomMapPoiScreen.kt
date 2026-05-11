@@ -248,14 +248,19 @@ class CustomMapPoiScreen(
         val builder = Header.Builder()
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
-        if (errors.isNotEmpty()) {
-            builder.addEndHeaderAction(
-                Action.Builder()
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_error_outline)).build())
-                    .setOnClickListener { pushApiErrorsDetailScreen() }
-                    .build()
-            )
-        }
+
+        builder.addEndHeaderAction(
+            Action.Builder()
+                .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_add)).build())
+                .setOnClickListener { bumpZoom(1) }
+                .build()
+        )
+        builder.addEndHeaderAction(
+            Action.Builder()
+                .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_remove)).build())
+                .setOnClickListener { bumpZoom(-1) }
+                .build()
+        )
         return builder
     }
 
@@ -322,9 +327,7 @@ class CustomMapPoiScreen(
         logTag = "CustomMapPoiScreen",
         templateName = "MapWithContentTemplate"
     ) {
-        // With a surface-rendered MapWithContentTemplate, hosts can be strict about the ActionStrip.
-        // Keep it to a single action and move other controls into the list content.
-        val actionStrip = ActionStrip.Builder()
+        val actionStripBuilder = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
                     .setTitle("Home")
@@ -332,7 +335,23 @@ class CustomMapPoiScreen(
                     .setOnClickListener { screenManager.popToRoot() }
                     .build()
             )
-            .build()
+            .addAction(
+                Action.Builder()
+                    .setTitle("Settings")
+                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
+                    .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
+                    .build()
+            )
+
+        if (errors.isNotEmpty()) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_error_outline)).build())
+                    .setOnClickListener { pushApiErrorsDetailScreen() }
+                    .build()
+            )
+        }
+        val actionStrip = actionStripBuilder.build()
 
         val title = "Nearby Stations"
 
@@ -360,87 +379,6 @@ class CustomMapPoiScreen(
 
         val itemListBuilder = ItemList.Builder()
             .setNoItemsMessage("No POIs found")
-
-        // 1) Functional rows (action/navigation controls)
-        var functionalRowCount = 5
-        itemListBuilder
-            .addItem(
-                Row.Builder()
-                    .setTitle("Zoom In")
-                    .setOnClickListener { bumpZoom(1) }
-                    .build()
-            )
-            .addItem(
-                Row.Builder()
-                    .setTitle("Zoom Out")
-                    .setOnClickListener { bumpZoom(-1) }
-                    .build()
-            )
-            .addItem(
-                Row.Builder()
-                    .setTitle(if (sortByPrice) "Sort: Price" else "Sort: Distance")
-                    .setOnClickListener {
-                        sortByPrice = !sortByPrice
-                        invalidate()
-                    }
-                    .build()
-            )
-
-        val energyModeLabel = when {
-            currentSettings.selectedMapEnergyTypes.contains("electric") && (currentSettings.selectedMapEnergyTypes - "electric").isNotEmpty() -> "Hybrid"
-            currentSettings.selectedMapEnergyTypes.contains("electric") -> "Electric"
-            else -> "Fuel"
-        }
-        // Navigation rows must be browsable so the host renders the chevron and allows the push.
-        itemListBuilder.addItem(
-            Row.Builder()
-                .setTitle("Energy")
-                .addText(energyModeLabel)
-                .setBrowsable(true)
-                .setOnClickListener {
-                    screenManager.push(AutoEnergyMenuScreen(carContext, settingsManager))
-                }
-                .build()
-        )
-        itemListBuilder.addItem(
-            Row.Builder()
-                .setTitle("More Options")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
-                .setBrowsable(true)
-                .setOnClickListener {
-                    screenManager.push(
-                        AutoMapMoreOptionsScreen(
-                            carContext = carContext,
-                            settingsManager = settingsManager,
-                            lat = searchLat,
-                            lon = searchLon,
-                            onRecenter = { loadPois() }
-                        )
-                    )
-                }
-                .build()
-        )
-
-        // 2) Optional rows
-        val hasCommunity = settingsManager.settings.value.isLoggedIn && communityRepo != null
-        if (hasCommunity && functionalRowCount < listLimit) {
-            functionalRowCount++
-            itemListBuilder.addItem(
-                Row.Builder()
-                    .setTitle("Add POI")
-                    .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_add)).build())
-                    .setBrowsable(true)
-                    .setOnClickListener {
-                        lifecycleScope.launch {
-                            val loc = LocationHelper.getCurrentLocation(carContext)
-                            val clat = loc?.latitude ?: searchLat
-                            val clon = loc?.longitude ?: searchLon
-                            screenManager.push(AddPoiAutoScreen(carContext, communityRepo, clat, clon) { loadPois() })
-                        }
-                    }
-                    .build()
-            )
-        }
 
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
@@ -480,8 +418,7 @@ class CustomMapPoiScreen(
             filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
         }
 
-        val capacity = (listLimit - functionalRowCount).coerceAtLeast(0)
-        val limitedPois = sortedPois.take(capacity)
+        val limitedPois = sortedPois.take(listLimit)
         limitedPois.forEach { poi ->
             val availability = availabilityByPoiId[poi.id]
             itemListBuilder.addItem(
