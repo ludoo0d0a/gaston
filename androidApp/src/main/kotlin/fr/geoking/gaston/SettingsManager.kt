@@ -85,7 +85,7 @@ data class AppSettings(
     val nswFuelCheckKey: String = "",
     /** NSW FuelCheck API secret (Australia). */
     val nswFuelCheckSecret: String = "",
-    val selectedOverpassAmenityTypes: Set<String> = setOf("toilets", "drinking_water"),
+    val selectedOverpassAmenityTypes: Set<String> = emptySet(),
     val phoneMapEngine: MapEngine = MapEngine.Google,
     val mapTheme: MapTheme = MapTheme.Dark,
     val vehicleType: VehicleType = VehicleType.Car,
@@ -265,7 +265,7 @@ open class SettingsManager(
             nswFuelCheckKey = nswFuelCheckKey,
             nswFuelCheckSecret = nswFuelCheckSecret,
             selectedOverpassAmenityTypes = prefs.getStringSet("overpass_amenity_types", null)?.toSet()
-                ?: setOf("toilets", "drinking_water"),
+                ?: emptySet(),
             phoneMapEngine = phoneMapEngine,
             mapTheme = mapTheme,
             vehicleType = vehicleType,
@@ -382,10 +382,18 @@ open class SettingsManager(
         val filtered = types.filter { it != "electric" }.toSet()
         val currentMode = _settings.value.mapEnergyMode
         val nextMode = if (currentMode == EnergyFilterMode.Electric) EnergyFilterMode.Fuel else currentMode
+
+        // If we were in "Parking only" mode (set by dashboard shortcut), reset to Auto providers and clear amenities.
+        val currentAmenities = _settings.value.selectedOverpassAmenityTypes
+        val nextAmenities = if (currentAmenities == setOf("parking")) emptySet() else currentAmenities
+        val nextProviderMode = if (currentAmenities == setOf("parking")) PoiProviderSelectionMode.Auto else _settings.value.poiProviderSelectionMode
+
         saveSettings(_settings.value.copy(
             selectedMapEnergyTypes = filtered,
             mapEnergyMode = nextMode,
-            useVehicleFilter = false
+            useVehicleFilter = false,
+            selectedOverpassAmenityTypes = nextAmenities,
+            poiProviderSelectionMode = nextProviderMode
         ))
     }
 
@@ -393,10 +401,15 @@ open class SettingsManager(
     open fun setMapEnergyTypes(types: Set<String>) = setSelectedMapEnergyTypes(types)
 
     open fun setEnergyFilterMode(mode: EnergyFilterMode) {
+        // If we were in "Parking only" mode (set by dashboard shortcut), clear amenities.
+        val currentAmenities = _settings.value.selectedOverpassAmenityTypes
+        val nextAmenities = if (currentAmenities == setOf("parking")) emptySet() else currentAmenities
+
         saveSettings(_settings.value.copy(
             useVehicleFilter = false,
             poiProviderSelectionMode = PoiProviderSelectionMode.Auto,
-            mapEnergyMode = mode
+            mapEnergyMode = mode,
+            selectedOverpassAmenityTypes = nextAmenities
         ))
     }
 
@@ -418,10 +431,18 @@ open class SettingsManager(
     open fun setMapPowerLevels(levels: Set<Int>) {
         val currentMode = _settings.value.mapEnergyMode
         val nextMode = if (currentMode == EnergyFilterMode.Fuel) EnergyFilterMode.Electric else currentMode
+
+        // If we were in "Parking only" mode (set by dashboard shortcut), reset to Auto providers and clear amenities.
+        val currentAmenities = _settings.value.selectedOverpassAmenityTypes
+        val nextAmenities = if (currentAmenities == setOf("parking")) emptySet() else currentAmenities
+        val nextProviderMode = if (currentAmenities == setOf("parking")) PoiProviderSelectionMode.Auto else _settings.value.poiProviderSelectionMode
+
         saveSettings(_settings.value.copy(
             mapPowerLevels = levels,
             mapEnergyMode = nextMode,
-            useVehicleFilter = false
+            useVehicleFilter = false,
+            selectedOverpassAmenityTypes = nextAmenities,
+            poiProviderSelectionMode = nextProviderMode
         ))
     }
 

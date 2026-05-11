@@ -11,6 +11,7 @@ import androidx.car.app.model.ItemList
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.CarMapMode
+import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.poi.PoiProviderType
@@ -64,6 +65,7 @@ class AutoPlaystoreDashboardScreen(
                 .setImage(gridIcon(R.drawable.ic_poi_parking_rounded))
                 .setOnClickListener {
                     settingsManager.setUseVehicleFilter(false)
+                    settingsManager.setPoiProviderSelectionMode(PoiProviderSelectionMode.Manual)
                     settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
                     settingsManager.setOverpassAmenityTypes(setOf("parking"))
                     pushMapScreen()
@@ -78,6 +80,10 @@ class AutoPlaystoreDashboardScreen(
                 .setImage(gridIcon(R.drawable.ic_map))
                 .setOnClickListener {
                     settingsManager.setUseVehicleFilter(false)
+                    settingsManager.setPoiProviderSelectionMode(PoiProviderSelectionMode.Auto)
+                    if (settingsManager.settings.value.selectedOverpassAmenityTypes == setOf("parking")) {
+                        settingsManager.setOverpassAmenityTypes(emptySet())
+                    }
                     pushMapScreen()
                 }
                 .build()
@@ -90,6 +96,10 @@ class AutoPlaystoreDashboardScreen(
                 .setImage(gridIcon(R.drawable.ic_poi_caravan_rounded))
                 .setOnClickListener {
                     settingsManager.setUseVehicleFilter(true)
+                    settingsManager.setPoiProviderSelectionMode(PoiProviderSelectionMode.Auto)
+                    if (settingsManager.settings.value.selectedOverpassAmenityTypes == setOf("parking")) {
+                        settingsManager.setOverpassAmenityTypes(emptySet())
+                    }
                     pushMapScreen()
                 }
                 .build()

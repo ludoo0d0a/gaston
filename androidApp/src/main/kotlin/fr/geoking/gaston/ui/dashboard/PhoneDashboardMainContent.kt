@@ -138,9 +138,7 @@ fun PhoneDashboardMainContent(
             icon = Icons.Default.LocalGasStation,
             type = QuickActionType.Fuel,
             onClick = {
-                if (currentEnergyMode != QuickActionType.Fuel) {
-                    settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel)
-                }
+                settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel)
             }
         ),
         DashboardRow(
@@ -149,9 +147,7 @@ fun PhoneDashboardMainContent(
             icon = Icons.Default.EvStation,
             type = QuickActionType.EV,
             onClick = {
-                if (currentEnergyMode != QuickActionType.EV) {
-                    settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric)
-                }
+                settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric)
             }
         ),
         DashboardRow(
@@ -160,9 +156,7 @@ fun PhoneDashboardMainContent(
             icon = Icons.Default.Map,
             type = QuickActionType.Hybrid,
             onClick = {
-                if (currentEnergyMode != QuickActionType.Hybrid) {
-                    settingsManager.setEnergyFilterMode(EnergyFilterMode.Hybrid)
-                }
+                settingsManager.setEnergyFilterMode(EnergyFilterMode.Hybrid)
             }
         )
     )
@@ -414,8 +408,11 @@ private fun PhoneDashboardParkingRouteRow(
                     settings.selectedOverpassAmenityTypes == setOf("parking")
                 if (isSelected) {
                     settingsManager.setUseVehicleFilter(true)
+                    settingsManager.setPoiProviderSelectionMode(PoiProviderSelectionMode.Auto)
+                    settingsManager.setOverpassAmenityTypes(emptySet())
                 } else {
                     settingsManager.setUseVehicleFilter(false)
+                    settingsManager.setPoiProviderSelectionMode(PoiProviderSelectionMode.Manual)
                     settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
                     settingsManager.setOverpassAmenityTypes(setOf("parking"))
                 }

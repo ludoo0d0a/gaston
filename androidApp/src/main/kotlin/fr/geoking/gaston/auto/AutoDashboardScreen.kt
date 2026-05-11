@@ -12,6 +12,7 @@ import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.CarMapMode
+import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.poi.PoiProviderType
@@ -85,6 +86,10 @@ class AutoDashboardScreen(
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
                 .setOnClickListener {
                     settingsManager.setUseVehicleFilter(false)
+                    settingsManager.setPoiProviderSelectionMode(PoiProviderSelectionMode.Auto)
+                    if (settingsManager.settings.value.selectedOverpassAmenityTypes == setOf("parking")) {
+                        settingsManager.setOverpassAmenityTypes(emptySet())
+                    }
                     pushMapScreen()
                 }
                 .build()
@@ -129,6 +134,10 @@ class AutoDashboardScreen(
                                             .addText("Filtered by vehicle settings")
                                             .setOnClickListener {
                                                 settingsManager.setUseVehicleFilter(true)
+                                                settingsManager.setPoiProviderSelectionMode(PoiProviderSelectionMode.Auto)
+                                                if (settingsManager.settings.value.selectedOverpassAmenityTypes == setOf("parking")) {
+                                                    settingsManager.setOverpassAmenityTypes(emptySet())
+                                                }
                                                 pushMapScreen()
                                                 screenManager.pop()
                                             }
@@ -140,6 +149,7 @@ class AutoDashboardScreen(
                                             .addText("Nearby lots")
                                             .setOnClickListener {
                                                 settingsManager.setUseVehicleFilter(false)
+                                                settingsManager.setPoiProviderSelectionMode(PoiProviderSelectionMode.Manual)
                                                 settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
                                                 settingsManager.setOverpassAmenityTypes(setOf("parking"))
                                                 pushMapScreen()
