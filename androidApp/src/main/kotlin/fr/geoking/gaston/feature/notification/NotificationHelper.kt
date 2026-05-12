@@ -40,7 +40,7 @@ class NotificationHelper(private val context: Context) {
     }
 
     @SuppressLint("NotificationPermission") // We gate notify() behind a runtime permission check on Android 13+.
-    fun showBorderCrossingNotification(countryName: String) {
+    fun showConnectivityNotification(title: String, message: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val granted =
                 ContextCompat.checkSelfPermission(
@@ -52,8 +52,8 @@ class NotificationHelper(private val context: Context) {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_map) // Using existing ic_map
-            .setContentTitle("Welcome to $countryName")
-            .setContentText("You have entered a new country.")
+            .setContentTitle(title)
+            .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .build()

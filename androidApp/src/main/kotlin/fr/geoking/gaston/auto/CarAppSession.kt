@@ -20,7 +20,7 @@ import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.api.weather.WeatherProviderFactory
-import fr.geoking.gaston.shared.location.BorderCrossingManager
+import fr.geoking.gaston.shared.location.ConnectivityManager
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.di.MapDeps
@@ -46,47 +46,19 @@ class CarAppSession : Session(), KoinComponent {
     private val settingsManager: SettingsManager by inject()
     private val networkService: NetworkService by inject()
     private val fuelForecastRepository: FuelForecastRepository by inject()
-    private val borderCrossingManager: BorderCrossingManager by inject()
+    private val connectivityManager: ConnectivityManager by inject()
 
     private var cachedMapDeps: MapDeps? = null
 
-    private var lastIsRoaming: Boolean? = null
-
     init {
         lifecycleScope.launch {
-            networkService.status.collectLatest { status ->
-                handleNetworkStatusChange(status)
-            }
-        }
-        lifecycleScope.launch {
-            borderCrossingManager.borderCrossingEvents.collect { event ->
-                val country = event.countryName ?: event.countryCode
-                val alert = Alert.Builder(NETWORK_ALERT_ID, CarText.create("welcome in \"$country\""), 5000)
+            connectivityManager.connectivityEvents.collect { event ->
+                val alert = Alert.Builder(NETWORK_ALERT_ID, CarText.create("${event.title}: ${event.message}"), 5000)
                     .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
                     .build()
 
                 carContext.getCarService(AppManager::class.java).showAlert(alert)
             }
-        }
-    }
-
-    private fun handleNetworkStatusChange(status: NetworkStatus) {
-        val country = status.countryName ?: status.countryCode
-
-        // Roaming change detection
-        if (status.isRoaming != lastIsRoaming) {
-            if (lastIsRoaming != null) {
-                val roamingText = if (status.isRoaming) "on" else "off"
-                val networkName = status.operatorName ?: "Unknown"
-                val text = "you're in \"$country\", roaming :$roamingText, network : \"$networkName\""
-
-                val alert = Alert.Builder(NETWORK_ALERT_ID, CarText.create(text), 5000)
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
-                    .build()
-
-                carContext.getCarService(AppManager::class.java).showAlert(alert)
-            }
-            lastIsRoaming = status.isRoaming
         }
     }
 
