@@ -27,7 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
-import fr.geoking.gaston.shared.location.BorderCrossingManager
+import fr.geoking.gaston.shared.location.ConnectivityManager
 import fr.geoking.gaston.feature.notification.NotificationHelper
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkStatus
@@ -172,7 +172,7 @@ class MainActivity : ComponentActivity() {
             android.util.Log.d("MainActivity", "Dependencies resolved successfully.")
 
             android.util.Log.d("MainActivity", "Calling setContent...")
-            val borderCrossingManager: BorderCrossingManager = get()
+            val connectivityManager: ConnectivityManager = get()
             val notificationHelper: NotificationHelper = get()
 
             installMainComposeContent(
@@ -182,7 +182,7 @@ class MainActivity : ComponentActivity() {
                 networkService = networkService,
                 fuelForecastRepository = fuelForecastRepository,
                 isPlaystoreDistribution = BuildConfig.IS_PLAYSTORE_DISTRIBUTION,
-                borderCrossingManager = borderCrossingManager,
+                connectivityManager = connectivityManager,
                 notificationHelper = notificationHelper
             )
             android.util.Log.d("MainActivity", "setContent called successfully.")
@@ -207,7 +207,7 @@ class MainActivity : ComponentActivity() {
         networkService: NetworkService,
         fuelForecastRepository: FuelForecastRepository,
         isPlaystoreDistribution: Boolean,
-        borderCrossingManager: BorderCrossingManager,
+        connectivityManager: ConnectivityManager,
         notificationHelper: NotificationHelper
     ) {
         try {
@@ -225,7 +225,7 @@ class MainActivity : ComponentActivity() {
                     pendingNavDestination = pendingNavDestination,
                     pendingLibreMapLab = pendingLibreMapLab,
                     isPlaystoreDistribution = isPlaystoreDistribution,
-                    borderCrossingManager = borderCrossingManager,
+                    connectivityManager = connectivityManager,
                     notificationHelper = notificationHelper
                 )
             }
@@ -259,14 +259,14 @@ private fun MainActivityComposeRoot(
     pendingNavDestination: MutableStateFlow<NavDestination?>,
     pendingLibreMapLab: MutableStateFlow<Boolean>,
     isPlaystoreDistribution: Boolean,
-    borderCrossingManager: BorderCrossingManager,
+    connectivityManager: ConnectivityManager,
     notificationHelper: NotificationHelper
 ) {
     android.util.Log.d("MainActivity", "Compose setContent block running")
 
     LaunchedEffect(Unit) {
-        borderCrossingManager.borderCrossingEvents.collect { event ->
-            notificationHelper.showBorderCrossingNotification(event.countryName ?: event.countryCode)
+        connectivityManager.connectivityEvents.collect { event ->
+            notificationHelper.showConnectivityNotification(event.title, event.message)
         }
     }
     val settings by settingsManager.settings.collectAsState()
