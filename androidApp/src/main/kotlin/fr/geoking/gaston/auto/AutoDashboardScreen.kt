@@ -85,6 +85,7 @@ class AutoDashboardScreen(
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
                 .setOnClickListener {
                     settingsManager.setUseVehicleFilter(false)
+                    settingsManager.setOverpassAmenityTypes(emptySet())
                     pushMapScreen()
                 }
                 .build()
