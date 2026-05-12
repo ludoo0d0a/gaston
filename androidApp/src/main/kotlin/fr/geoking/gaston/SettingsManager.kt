@@ -85,7 +85,7 @@ data class AppSettings(
     val nswFuelCheckKey: String = "",
     /** NSW FuelCheck API secret (Australia). */
     val nswFuelCheckSecret: String = "",
-    val selectedOverpassAmenityTypes: Set<String> = setOf("toilets", "drinking_water"),
+    val selectedOverpassAmenityTypes: Set<String> = emptySet(),
     val phoneMapEngine: MapEngine = MapEngine.Google,
     val mapTheme: MapTheme = MapTheme.Dark,
     val vehicleType: VehicleType = VehicleType.Car,
@@ -265,7 +265,7 @@ open class SettingsManager(
             nswFuelCheckKey = nswFuelCheckKey,
             nswFuelCheckSecret = nswFuelCheckSecret,
             selectedOverpassAmenityTypes = prefs.getStringSet("overpass_amenity_types", null)?.toSet()
-                ?: setOf("toilets", "drinking_water"),
+                ?: emptySet(),
             phoneMapEngine = phoneMapEngine,
             mapTheme = mapTheme,
             vehicleType = vehicleType,
@@ -397,7 +397,7 @@ open class SettingsManager(
             useVehicleFilter = false,
             poiProviderSelectionMode = PoiProviderSelectionMode.Auto,
             mapEnergyMode = mode,
-            selectedOverpassAmenityTypes = setOf("toilets", "drinking_water")
+            selectedOverpassAmenityTypes = emptySet()
         ))
     }
 

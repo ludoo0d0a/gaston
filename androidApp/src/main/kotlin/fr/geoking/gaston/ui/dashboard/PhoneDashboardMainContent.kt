@@ -422,6 +422,7 @@ private fun PhoneDashboardParkingRouteRow(
                 if (isParkingSelected) {
                     settingsManager.setPoiProviderSelectionMode(fr.geoking.gaston.PoiProviderSelectionMode.Auto)
                     settingsManager.setUseVehicleFilter(true)
+                    settingsManager.setOverpassAmenityTypes(emptySet())
                 } else {
                     settingsManager.setUseVehicleFilter(false)
                     settingsManager.setPoiProviderSelectionMode(fr.geoking.gaston.PoiProviderSelectionMode.Manual)
