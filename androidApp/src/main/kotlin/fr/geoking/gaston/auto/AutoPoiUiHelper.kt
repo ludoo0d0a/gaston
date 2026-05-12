@@ -15,6 +15,7 @@ import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.R
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.map.MarkerStyle
 
@@ -36,21 +37,13 @@ object AutoPoiUiHelper {
     }
 
     fun buildPlace(carContext: CarContext, poi: Poi): Place {
-        val markerBitmap = PoiMarkerHelper.getMarkerBitmap(
-            context = carContext,
-            poi = poi,
-            effectiveEnergyTypes = emptySet(), // No easy access to settings here, using default
-            effectivePowerLevels = emptySet(),
-            isSelected = false,
-            sizePx = 72,
-            availability = null,
-            markerStyle = MarkerStyle.Circle
-        )
+        val brandInfo = BrandHelper.getBrandInfo(poi.brand)
+        val iconResId = PoiMarkerHelper.headDrawableResId(poi, brandInfo)
         return Place.Builder(CarLocation.create(poi.latitude, poi.longitude))
             .setMarker(
                 PlaceMarker.Builder()
                     .setIcon(
-                        CarIcon.Builder(IconCompat.createWithBitmap(markerBitmap)).build(),
+                        CarIcon.Builder(IconCompat.createWithResource(carContext, iconResId)).build(),
                         PlaceMarker.TYPE_ICON
                     )
                     .build()
@@ -68,25 +61,14 @@ object AutoPoiUiHelper {
         onClick: () -> Unit
     ): Row {
         val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
-        val address = poi.addressLocal?.takeIf { it.isNotBlank() } ?: poi.address.ifBlank { "${poi.latitude}, ${poi.longitude}" }
-        val source = "[Source: ${poi.source ?: "Unknown"}]"
-        val markerBitmap = PoiMarkerHelper.getMarkerBitmap(
-            context = carContext,
-            poi = poi,
-            effectiveEnergyTypes = effectiveEnergyTypes,
-            effectivePowerLevels = effectivePowerLevels,
-            isSelected = false,
-            sizePx = 72,
-            availability = availability,
-            markerStyle = MarkerStyle.Circle
-        )
+        val brandInfo = BrandHelper.getBrandInfo(poi.brand)
+        val iconResId = PoiMarkerHelper.headDrawableResId(poi, brandInfo)
+        val carIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, iconResId)).build()
+
         val place = Place.Builder(CarLocation.create(poi.latitude, poi.longitude))
             .setMarker(
                 PlaceMarker.Builder()
-                    .setIcon(
-                        CarIcon.Builder(IconCompat.createWithBitmap(markerBitmap)).build(),
-                        PlaceMarker.TYPE_ICON
-                    )
+                    .setIcon(carIcon, PlaceMarker.TYPE_ICON)
                     .build()
             )
             .build()
@@ -97,9 +79,11 @@ object AutoPoiUiHelper {
         val rowBuilder = Row.Builder()
             .setTitle(title)
             .setMetadata(Metadata.Builder().setPlace(place).build())
-            .setImage(CarIcon.Builder(IconCompat.createWithBitmap(markerBitmap)).build(), Row.IMAGE_TYPE_SMALL)
+            .setImage(carIcon, Row.IMAGE_TYPE_SMALL)
             .setBrowsable(true)
             .setOnClickListener(onClick)
+
+        val label = PoiMarkerHelper.getPoiLabel(poi, effectiveEnergyTypes, effectivePowerLevels)
 
         // PlaceList* templates require DistanceSpan on non-browsable rows; some hosts are strict even
         // when rows are browsable. Including a DistanceSpan makes the row universally valid.
@@ -112,12 +96,12 @@ object AutoPoiUiHelper {
                 Distance.create(meters, Distance.UNIT_METERS)
             }
             val interpunct = "\u00b7"
-            val s = SpannableString("  $interpunct $address")
+            val text = if (label != null) "  $interpunct $label" else " "
+            val s = SpannableString(text)
             s.setSpan(DistanceSpan.create(distance), 0, 1, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
             rowBuilder.addText(s)
-            rowBuilder.addText(source)
-        } else {
-            rowBuilder.addText("$address $source")
+        } else if (label != null) {
+            rowBuilder.addText(label)
         }
 
         return rowBuilder.build()
