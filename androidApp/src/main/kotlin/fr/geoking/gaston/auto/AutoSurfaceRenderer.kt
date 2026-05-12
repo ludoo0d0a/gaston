@@ -11,6 +11,7 @@ import android.util.Log
 import android.util.LruCache
 import android.view.Surface
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import java.net.HttpURLConnection
@@ -153,14 +154,9 @@ class AutoSurfaceRenderer(
             val drawX = ((tileX - centerX) * tileSize + centerPxX).toFloat()
             val drawY = ((tileY - centerY) * tileSize + centerPxY).toFloat()
 
-            val bitmap = PoiMarkerHelper.getMarkerBitmap(
-                context = context,
-                poi = poi,
-                effectiveEnergyTypes = effectiveEnergyTypes,
-                effectivePowerLevels = effectivePowerLevels,
-                sizePx = markerWidthPx,
-                markerStyle = MarkerStyle.Circle
-            )
+            val brandInfo = BrandHelper.getBrandInfo(poi.brand)
+            val iconResId = PoiMarkerHelper.headDrawableResId(poi, brandInfo)
+            val bitmap = PoiMarkerHelper.vectorToBitmapCached(context, iconResId, markerWidthPx) ?: return@forEach
 
             val bw = bitmap.width.toFloat()
             val bh = bitmap.height.toFloat()
@@ -169,8 +165,8 @@ class AutoSurfaceRenderer(
                 return@forEach
             }
 
-            // Pin tip at (drawX, drawY): bottom-center of bitmap aligned to POI.
-            canvas.drawBitmap(bitmap, drawX - bw / 2f, drawY - bh, null)
+            // Draw bitmap centered on POI.
+            canvas.drawBitmap(bitmap, drawX - bw / 2f, drawY - bh / 2f, null)
         }
     }
 

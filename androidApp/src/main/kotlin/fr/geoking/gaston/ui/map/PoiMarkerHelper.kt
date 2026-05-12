@@ -320,7 +320,7 @@ object PoiMarkerHelper {
     /**
      * Layer-list drawables with built-in disc ([BrandHelper.BrandInfo.roundedIconResId] or [ic_poi_*_rounded]).
      */
-    private fun headDrawableResId(poi: Poi, brandInfo: BrandHelper.BrandInfo?): Int {
+    internal fun headDrawableResId(poi: Poi, brandInfo: BrandHelper.BrandInfo?): Int {
         if (brandInfo != null) return brandInfo.roundedIconResId
         return when (poi.poiCategory) {
             PoiCategory.Toilet -> R.drawable.ic_poi_toilet_rounded
@@ -335,7 +335,7 @@ object PoiMarkerHelper {
         }
     }
 
-    private fun vectorToBitmapCached(context: Context, drawableId: Int, size: Int): Bitmap? {
+    internal fun vectorToBitmapCached(context: Context, drawableId: Int, size: Int): Bitmap? {
         val bucket = (size + 7) / 8 * 8
         val key = "$drawableId-$bucket"
         synchronized(vectorRasterCache) {
