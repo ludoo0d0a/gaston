@@ -46,42 +46,7 @@ class AutoDashboardScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Search")
-                .addText("Search for gas or EV stations by name/brand")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_search)).build())
-                .setOnClickListener {
-                    val mapDeps = getMapDeps()
-                    if (mapDeps != null) {
-                        screenManager.push(
-                            AutoPoiSearchScreen(
-                                carContext = carContext,
-                                poiProvider = mapDeps.poiProvider,
-                                settingsManager = settingsManager,
-                                availabilityProviderFactory = mapDeps.availabilityProviderFactory
-                            )
-                        )
-                    }
-                }
-                .build()
-        )
-
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle("Fuel price outlook")
-                .addText("Local estimate from market + nearby pumps")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
-                .setOnClickListener {
-                    screenManager.push(
-                        AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository)
-                    )
-                }
-                .build()
-        )
-
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle("Map")
-                .addText("Nearby gas/EV stations")
+                .setTitle("Stations")
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
                 .setOnClickListener {
                     settingsManager.setUseVehicleFilter(false)
@@ -93,8 +58,43 @@ class AutoDashboardScreen(
 
         listBuilder.addItem(
             Row.Builder()
+                .setTitle("My Stations")
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_car_rounded)).build())
+                .setOnClickListener {
+                    settingsManager.setUseVehicleFilter(true)
+                    pushMapScreen("My Custom Car")
+                }
+                .build()
+        )
+
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle("Parking")
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_poi_parking_rounded)).build())
+                .setOnClickListener {
+                    settingsManager.setUseVehicleFilter(false)
+                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
+                    settingsManager.setOverpassAmenityTypes(setOf("parking"))
+                    pushMapScreen("Parkings")
+                }
+                .build()
+        )
+
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle("Fuel price outlook")
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
+                .setOnClickListener {
+                    screenManager.push(
+                        AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository)
+                    )
+                }
+                .build()
+        )
+
+        listBuilder.addItem(
+            Row.Builder()
                 .setTitle("Routes")
-                .addText("Plan your journey")
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_swap_horiz)).build())
                 .setOnClickListener {
                     val mapDeps = getMapDeps()
@@ -117,37 +117,12 @@ class AutoDashboardScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle("More Options")
-                .addText("Settings, Network, Lab, Parkings")
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
                 .setOnClickListener {
                     screenManager.push(
                         object : Screen(carContext) {
                             override fun onGetTemplate(): Template {
                                 val moreList = ItemList.Builder()
-                                    .addItem(
-                                        Row.Builder()
-                                            .setTitle("POI Map (Vehicle)")
-                                            .addText("Filtered by vehicle settings")
-                                            .setOnClickListener {
-                                                settingsManager.setUseVehicleFilter(true)
-                                                pushMapScreen("My Custom Car")
-                                                screenManager.pop()
-                                            }
-                                            .build()
-                                    )
-                                    .addItem(
-                                        Row.Builder()
-                                            .setTitle("Parkings")
-                                            .addText("Nearby lots")
-                                            .setOnClickListener {
-                                                settingsManager.setUseVehicleFilter(false)
-                                                settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
-                                                settingsManager.setOverpassAmenityTypes(setOf("parking"))
-                                                pushMapScreen("Parkings")
-                                                screenManager.pop()
-                                            }
-                                            .build()
-                                    )
                                     .addItem(
                                         Row.Builder()
                                             .setTitle("Network & Location")

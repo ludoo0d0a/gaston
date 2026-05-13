@@ -38,29 +38,29 @@ class AutoPlaystoreDashboardScreen(
 
         grid.addItem(
             GridItem.Builder()
-                .setTitle("Search")
-                .setText("Name or brand")
-                .setImage(gridIcon(R.drawable.ic_search))
+                .setTitle("Stations")
+                .setImage(gridIcon(R.drawable.ic_map))
                 .setOnClickListener {
-                    val mapDeps = getMapDeps()
-                    if (mapDeps != null) {
-                        screenManager.push(
-                            AutoPoiSearchScreen(
-                                carContext = carContext,
-                                poiProvider = mapDeps.poiProvider,
-                                settingsManager = settingsManager,
-                                availabilityProviderFactory = mapDeps.availabilityProviderFactory
-                            )
-                        )
-                    }
+                    settingsManager.setUseVehicleFilter(false)
+                    pushMapScreen()
                 }
                 .build()
         )
 
         grid.addItem(
             GridItem.Builder()
-                .setTitle("Parkings")
-                .setText("Nearby lots")
+                .setTitle("My Stations")
+                .setImage(gridIcon(R.drawable.ic_car_rounded))
+                .setOnClickListener {
+                    settingsManager.setUseVehicleFilter(true)
+                    pushMapScreen("My Custom Car")
+                }
+                .build()
+        )
+
+        grid.addItem(
+            GridItem.Builder()
+                .setTitle("Parking")
                 .setImage(gridIcon(R.drawable.ic_poi_parking_rounded))
                 .setOnClickListener {
                     settingsManager.setUseVehicleFilter(false)
@@ -73,32 +73,7 @@ class AutoPlaystoreDashboardScreen(
 
         grid.addItem(
             GridItem.Builder()
-                .setTitle("Map")
-                .setText("All filters")
-                .setImage(gridIcon(R.drawable.ic_map))
-                .setOnClickListener {
-                    settingsManager.setUseVehicleFilter(false)
-                    pushMapScreen()
-                }
-                .build()
-        )
-
-        grid.addItem(
-            GridItem.Builder()
-                .setTitle("POI Map")
-                .setText("Stations near me")
-                .setImage(gridIcon(R.drawable.ic_poi_caravan_rounded))
-                .setOnClickListener {
-                    settingsManager.setUseVehicleFilter(true)
-                    pushMapScreen("My Custom Car")
-                }
-                .build()
-        )
-
-        grid.addItem(
-            GridItem.Builder()
                 .setTitle("Fuel outlook")
-                .setText("Next days estimate")
                 .setImage(gridIcon(R.drawable.ic_poi_gas_rounded))
                 .setOnClickListener {
                     screenManager.push(
@@ -111,7 +86,6 @@ class AutoPlaystoreDashboardScreen(
         grid.addItem(
             GridItem.Builder()
                 .setTitle("Routes")
-                .setText("Plan journey")
                 .setImage(gridIcon(R.drawable.ic_swap_horiz))
                 .setOnClickListener {
                     val mapDeps = getMapDeps() ?: return@setOnClickListener
@@ -132,7 +106,6 @@ class AutoPlaystoreDashboardScreen(
         grid.addItem(
             GridItem.Builder()
                 .setTitle("Template lab")
-                .setText("Try templates & maps")
                 .setImage(gridIcon(R.mipmap.ic_launcher))
                 .setOnClickListener {
                     screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps))
@@ -143,7 +116,6 @@ class AutoPlaystoreDashboardScreen(
         grid.addItem(
             GridItem.Builder()
                 .setTitle("Network & GPS")
-                .setText("Diagnostics")
                 .setImage(gridIcon(R.drawable.ic_poi_radar_rounded))
                 .setOnClickListener {
                     screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService))
@@ -154,7 +126,6 @@ class AutoPlaystoreDashboardScreen(
         grid.addItem(
             GridItem.Builder()
                 .setTitle("Map settings")
-                .setText("Sources & vehicle")
                 .setImage(gridIcon(R.drawable.ic_settings))
                 .setOnClickListener {
                     screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
