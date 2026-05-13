@@ -21,6 +21,16 @@ class AutoSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
+                .setTitle("App theme")
+                .addText("Current: ${settingsManager.settings.value.uiThemeMode.name}")
+                .setOnClickListener {
+                    screenManager.push(AutoThemeSelectionScreen(carContext, settingsManager))
+                }
+                .build()
+        )
+
+        listBuilder.addItem(
+            Row.Builder()
                 .setTitle("Download toll data (OpenTollData)")
                 .addText("French highway toll estimation")
                 .setOnClickListener {

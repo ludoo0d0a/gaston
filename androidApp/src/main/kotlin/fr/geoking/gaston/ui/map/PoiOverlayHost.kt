@@ -227,8 +227,8 @@ fun PoiOverlayHost(
             },
             sheetState = sheetState,
             sheetGesturesEnabled = true,
-            containerColor = Color(0xFF1E293B),
-            dragHandle = { BottomSheetDefaults.DragHandle(color = Color.White.copy(alpha = 0.7f)) }
+            containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
             if (minPrice != null && cheapestPois.isNotEmpty()) {
                 Row(
@@ -242,7 +242,7 @@ fun PoiOverlayHost(
                         Icon(
                             imageVector = Icons.Default.PriceCheck,
                             contentDescription = "Show Cheapest",
-                            tint = if (showCheapestOnly) MaterialTheme.colorScheme.primary else Color.White
+                            tint = if (showCheapestOnly) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

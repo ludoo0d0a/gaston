@@ -19,24 +19,31 @@ import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.car.app.navigation.model.MapWithContentTemplate
+import androidx.car.app.constraints.ConstraintManager
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
+import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.ThemeMode
 import fr.geoking.gaston.feature.location.LocationHelper
 import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 /**
  * Android Auto template lab: map surface + zoom controls for exercising the raster pipeline.
  * Phone VectorMapScreen uses MapLibre + OpenFreeMap; "Open MapLibre on phone" starts the host app with
  * `gaston://map/libremap` (switches engine to MapLibre and opens the map).
  */
-class AutoLibreMapLabScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
+class AutoLibreMapLabScreen(carContext: CarContext) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver, KoinComponent {
 
+    private val settingsManager: SettingsManager by inject()
     private var searchLat = 48.8566
     private var searchLon = 2.3522
     private var zoom = 12
     private var surfaceRenderer: AutoSurfaceRenderer? = null
+    private var themeCollectionJob: kotlinx.coroutines.Job? = null
     private var isLoading = true
 
     init {
@@ -75,6 +82,7 @@ class AutoLibreMapLabScreen(carContext: CarContext) : Screen(carContext), Surfac
 
     override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
         surfaceRenderer?.stop()
+        themeCollectionJob?.cancel()
         val surface = surfaceContainer.surface
         if (surface == null) {
             Log.w("AutoLibreMapLabScreen", "SurfaceContainer.surface is null; skipping renderer start")
@@ -86,27 +94,35 @@ class AutoLibreMapLabScreen(carContext: CarContext) : Screen(carContext), Surfac
             surfaceRenderer = null
             return
         }
-        // Carto Voyager raster — visually distinct from the OSM tiles used by [CustomMapPoiScreen].
-        val cartoVoyager: (Int, Int, Int) -> String = { z, x, y ->
-            "https://a.basemaps.cartocdn.com/rastertiles/voyager/$z/$x/$y.png"
-        }
         surfaceRenderer = AutoSurfaceRenderer(
             carContext,
             surface,
             surfaceContainer.width,
-            surfaceContainer.height,
-            tileUrl = cartoVoyager
+            surfaceContainer.height
         ).apply {
             updateLocation(searchLat, searchLon, zoom)
             updateUserLocation(searchLat, searchLon)
             updatePois(emptyList(), emptySet(), emptySet())
             start()
         }
+
+        themeCollectionJob = lifecycleScope.launch {
+            settingsManager.settings.collect { settings ->
+                val dark = when (settings.uiThemeMode) {
+                    ThemeMode.Dark -> true
+                    ThemeMode.Light -> false
+                    ThemeMode.System -> carContext.isDarkMode
+                }
+                val url = if (dark) "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png" else "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
+                surfaceRenderer?.setTileUrlTemplate(url)
+            }
+        }
     }
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
         surfaceRenderer?.stop()
         surfaceRenderer = null
+        themeCollectionJob?.cancel()
     }
 
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {

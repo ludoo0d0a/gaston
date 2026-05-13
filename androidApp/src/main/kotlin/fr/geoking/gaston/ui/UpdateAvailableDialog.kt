@@ -23,10 +23,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
-private val dialogSurfaceColor = Color(0xFF1E293B)
-
 /**
- * Dialog shown when a new app update is available. Matches app style (dark surface, white text).
+ * Dialog shown when a new app update is available. Matches app style.
  * Cancel dismisses; Update starts the in-app update flow.
  */
 @Composable
@@ -43,7 +41,8 @@ fun UpdateAvailableDialog(
         )
     ) {
         Surface(
-            color = dialogSurfaceColor,
+            color = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
             shape = MaterialTheme.shapes.large
         ) {
             Column(
@@ -53,14 +52,13 @@ fun UpdateAvailableDialog(
             ) {
                 Text(
                     text = "Update available",
-                    color = Color.White,
                     fontSize = 20.sp,
                     style = MaterialTheme.typography.titleLarge
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "A new version of gaston is available. Update now to get the latest features and improvements.",
-                    color = Color.White.copy(alpha = 0.9f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                     fontSize = 14.sp,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Start
@@ -72,7 +70,7 @@ fun UpdateAvailableDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onCancel) {
-                        Text("Cancel", color = Color.White.copy(alpha = 0.8f))
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
                     }
                     Spacer(modifier = Modifier.padding(8.dp))
                     Button(onClick = onUpdate) {

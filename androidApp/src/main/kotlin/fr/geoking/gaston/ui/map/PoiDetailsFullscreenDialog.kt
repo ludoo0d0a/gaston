@@ -83,17 +83,16 @@ fun PoiDetailsFullscreenDialog(
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = Color(0xFF1E293B)
+            color = MaterialTheme.colorScheme.background
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 TopAppBar(
-                    title = { Text(poi.name.takeIf { it.isNotBlank() } ?: "Station details", color = Color.White) },
+                    title = { Text(poi.name.takeIf { it.isNotBlank() } ?: "Station details") },
                     navigationIcon = {
                         IconButton(onClick = onDismiss) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Close",
-                                tint = Color.White
+                                contentDescription = "Close"
                             )
                         }
                     },
@@ -103,7 +102,7 @@ fun PoiDetailsFullscreenDialog(
                                 Icon(
                                     imageVector = if (isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
                                     contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                                    tint = if (isFavorite) Color(0xFFFACC15) else Color.White
+                                    tint = if (isFavorite) Color(0xFFFACC15) else MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -111,8 +110,7 @@ fun PoiDetailsFullscreenDialog(
                             IconButton(onClick = navigate) {
                                 Icon(
                                     imageVector = Icons.Default.Directions,
-                                    contentDescription = "Navigate",
-                                    tint = Color.White
+                                    contentDescription = "Navigate"
                                 )
                             }
                         }
@@ -120,13 +118,17 @@ fun PoiDetailsFullscreenDialog(
                             IconButton(onClick = { it(poi) }) {
                                 Icon(
                                     imageVector = Icons.Default.Map,
-                                    contentDescription = "Show on Map",
-                                    tint = Color.White
+                                    contentDescription = "Show on Map"
                                 )
                             }
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0F172A))
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                        actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
                 SelectionContainer {
                     Column(
@@ -138,16 +140,16 @@ fun PoiDetailsFullscreenDialog(
                         // Header Info
                         Text(
                             text = poi.name.ifBlank { "Station" },
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
                         brandInfo?.let {
-                            Text(it.displayName, color = Color.White.copy(alpha = 0.7f), fontSize = 16.sp)
+                            Text(it.displayName, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         addressLines.forEach { line ->
-                            Text(line, color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
+                            Text(line, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                         }
 
                         if (!poi.isElectric && poi.priceRating != null) {
@@ -181,7 +183,7 @@ fun PoiDetailsFullscreenDialog(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = ratingLabel,
-                                    color = Color.White.copy(alpha = 0.7f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 13.sp
                                 )
                             }
@@ -201,7 +203,7 @@ fun PoiDetailsFullscreenDialog(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = info,
-                                    color = Color.White.copy(alpha = 0.7f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 13.sp
                                 )
                             }
@@ -221,7 +223,7 @@ fun PoiDetailsFullscreenDialog(
                                         ) {
                                             Text(
                                                 text = fp.fuelName,
-                                                color = matchColor ?: Color.White.copy(alpha = 0.9f),
+                                                color = matchColor ?: MaterialTheme.colorScheme.onSurface,
                                                 fontSize = 14.sp
                                             )
                                             Text(
@@ -240,7 +242,7 @@ fun PoiDetailsFullscreenDialog(
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Text(
                                         text = "Last updated ${DateTimeUtils.formatRelativeTime(timestamp)}",
-                                        color = Color.White.copy(alpha = 0.6f),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 12.sp,
                                         modifier = Modifier.align(Alignment.End)
                                     )
@@ -333,7 +335,7 @@ fun PoiDetailsFullscreenDialog(
                             if (d.isFastFood) {
                                 Text(
                                     text = "Fast food",
-                                    color = Color.White.copy(alpha = 0.9f),
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium
                                 )
@@ -396,7 +398,7 @@ fun PoiDetailsFullscreenDialog(
                             if (details.openingHoursFuel.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 details.openingHoursFuel.forEach { line ->
-                                    Text(line, color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+                                    Text(line, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                                 }
                             }
                         }
@@ -412,13 +414,13 @@ fun PoiDetailsFullscreenDialog(
                                 ) {
                                     Text(
                                         text = "• $s",
-                                        color = Color.White.copy(alpha = 0.9f),
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         fontSize = 14.sp
                                     )
                                     if (updateTime != null) {
                                         Text(
                                             text = DateTimeUtils.formatRelativeTime(updateTime),
-                                            color = Color.White.copy(alpha = 0.6f),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontSize = 12.sp
                                         )
                                     }
@@ -437,11 +439,11 @@ fun PoiDetailsFullscreenDialog(
 @Composable
 private fun SectionHeader(title: String) {
     Spacer(modifier = Modifier.height(24.dp))
-    HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
+    HorizontalDivider()
     Spacer(modifier = Modifier.height(12.dp))
     Text(
         text = title,
-        color = Color.White,
+        color = MaterialTheme.colorScheme.onSurface,
         fontSize = 16.sp,
         fontWeight = FontWeight.SemiBold
     )
