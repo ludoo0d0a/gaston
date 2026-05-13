@@ -725,24 +725,27 @@ private fun AppConfig(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         // Theme
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Dark theme", style = MaterialTheme.typography.titleSmall)
-                Text(
-                    "Also applies to maps for night driving",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        Column {
+            Text(
+                "App theme",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ThemeMode.entries.forEach { mode ->
+                    FilterChip(
+                        selected = settings.uiThemeMode == mode,
+                        onClick = { onUpdate(settings.copy(uiThemeMode = mode)) },
+                        label = { Text(mode.name) },
+                    )
+                }
             }
-            Switch(
-                checked = settings.uiThemeMode == ThemeMode.Dark,
-                onCheckedChange = { enabled ->
-                    onUpdate(settings.copy(uiThemeMode = if (enabled) ThemeMode.Dark else ThemeMode.Light))
-                },
+            Text(
+                "Also applies to maps for night driving",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
 

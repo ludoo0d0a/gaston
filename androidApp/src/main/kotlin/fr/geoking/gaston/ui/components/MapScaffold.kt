@@ -48,13 +48,12 @@ fun MapScaffold(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(title, color = Color.White) },
+                title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
+                            contentDescription = "Back"
                         )
                     }
                 },
@@ -64,8 +63,7 @@ fun MapScaffold(
                             IconButton(onClick = { navMenuExpanded = true }) {
                                 Icon(
                                     imageVector = Icons.Default.Directions,
-                                    contentDescription = "Navigation",
-                                    tint = Color.White
+                                    contentDescription = "Navigation"
                                 )
                             }
                             DropdownMenu(
@@ -109,29 +107,29 @@ fun MapScaffold(
                     IconButton(onClick = onRefresh) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh map",
-                            tint = Color.White
+                            contentDescription = "Refresh map"
                         )
                     }
 
                     IconButton(onClick = onShowSources) {
                         Icon(
                             imageVector = Icons.Default.Hub,
-                            contentDescription = "Data sources",
-                            tint = Color.White
+                            contentDescription = "Data sources"
                         )
                     }
 
                     IconButton(onClick = onShowSettings) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Map settings",
-                            tint = Color.White
+                            contentDescription = "Map settings"
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0F172A)
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },

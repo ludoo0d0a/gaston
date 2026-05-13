@@ -217,13 +217,13 @@ fun RoutePlanningScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1E293B),
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        containerColor = Color(0xFF0F172A),
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showAds) {
                 AdMobBanner(
@@ -239,7 +239,7 @@ fun RoutePlanningScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("Origin", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
+            Text("Origin", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -252,7 +252,7 @@ fun RoutePlanningScreen(
                 Spacer(Modifier.width(12.dp))
                 Text(
                     if (useCurrentLocationAsOrigin) "Use my current location" else "Enter an address / city",
-                    color = Color.White.copy(alpha = 0.9f)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             if (!useCurrentLocationAsOrigin) {
@@ -298,7 +298,7 @@ fun RoutePlanningScreen(
                         ) {
                             Card(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 elevation = CardDefaults.cardElevation(8.dp)
                             ) {
                                 LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
@@ -326,7 +326,7 @@ fun RoutePlanningScreen(
                                             Spacer(Modifier.width(12.dp))
                                             Text(
                                                 text = suggestion.label,
-                                                color = Color.White,
+                                                color = MaterialTheme.colorScheme.onSurface,
                                                 modifier = Modifier.weight(1f)
                                             )
                                             if (!isFavorite && (isHistory || suggestion.latitude != 0.0)) {
@@ -365,7 +365,7 @@ fun RoutePlanningScreen(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Destination", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
+            Text("Destination", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             Spacer(modifier = Modifier.height(4.dp))
             Box {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -415,7 +415,7 @@ fun RoutePlanningScreen(
                     ) {
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             elevation = CardDefaults.cardElevation(8.dp)
                         ) {
                             LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
@@ -443,7 +443,7 @@ fun RoutePlanningScreen(
                                         Spacer(Modifier.width(12.dp))
                                         Text(
                                             text = suggestion.label,
-                                            color = Color.White,
+                                            color = MaterialTheme.colorScheme.onSurface,
                                             modifier = Modifier.weight(1f)
                                         )
                                         if (!isFavorite && (isHistory || suggestion.latitude != 0.0)) {
@@ -523,7 +523,7 @@ fun RoutePlanningScreen(
                 tollEstimate?.let { toll ->
                     Text(
                         "Estimated toll: €%.2f".format(toll.amountEur),
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -532,7 +532,7 @@ fun RoutePlanningScreen(
                     val roadSummary = info.events.map { it.roadRef }.distinct().sorted().joinToString(", ")
                     Text(
                         "Traffic (${info.providerId}): ${info.events.size} events on $roadSummary",
-                        color = Color.White.copy(alpha = 0.8f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -639,7 +639,7 @@ fun RoutePlanningScreen(
                     "Stations along route (${filteredStations.size})"
                 }
                 val listState = rememberLazyListState()
-                Text(title, color = Color.White, style = MaterialTheme.typography.titleMedium)
+                Text(title, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (recommendations.isNotEmpty()) {
@@ -649,7 +649,7 @@ fun RoutePlanningScreen(
                         items(recommendations) { poi ->
                             val scope = rememberCoroutineScope()
                             Card(
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF475569)),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
                                 modifier = Modifier.width(200.dp).clickable {
                                     val index = filteredStations.indexOfFirst { it.id == poi.id }
                                     if (index >= 0) {
@@ -658,7 +658,7 @@ fun RoutePlanningScreen(
                                 }
                             ) {
                                 Column(modifier = Modifier.padding(8.dp)) {
-                                    Text(poi.name, color = Color.White, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                                    Text(poi.name, color = MaterialTheme.colorScheme.onSecondaryContainer, style = MaterialTheme.typography.bodySmall, maxLines = 1)
                                     val price = poi.fuelPrices?.minByOrNull { it.price }?.price
                                     if (price != null) {
                                         Text("€%.2f".format(price), color = Color(0xFFFACC15), fontWeight = FontWeight.Bold)
@@ -688,7 +688,7 @@ fun RoutePlanningScreen(
                         val isCheapest = minPrice != null && poi.fuelPrices?.any { !it.outOfStock && fr.geoking.gaston.poi.MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest && it.price == minPrice } == true
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isCheapest) Color(0xFF1E3A8A) else Color(0xFF334155)
+                                containerColor = if (isCheapest) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
                             ),
                             modifier = Modifier.fillMaxWidth(),
                             border = if (isCheapest) androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFFACC15)) else null
@@ -701,7 +701,7 @@ fun RoutePlanningScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(poi.name.ifBlank { poi.address }, color = Color.White, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                        Text(poi.name.ifBlank { poi.address }, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                                         if (isCheapest) {
                                             Surface(
                                                 color = Color(0xFFFACC15),
@@ -718,7 +718,7 @@ fun RoutePlanningScreen(
                                             }
                                         }
                                     }
-                                    Text(poi.address, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
+                                    Text(poi.address, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
 
                                     val energyTypes = settings.effectiveMapEnergyFilterIds()
                                     val powerLevels = settings.effectiveIrvePowerLevels()
@@ -738,7 +738,7 @@ fun RoutePlanningScreen(
                                             fontWeight = FontWeight.Bold
                                         )
                                     } else if (poi.powerKw != null) {
-                                        Text("${poi.powerKw} kW", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelSmall)
+                                        Text("${poi.powerKw} kW", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                                     }
                                 }
                                 IconButton(

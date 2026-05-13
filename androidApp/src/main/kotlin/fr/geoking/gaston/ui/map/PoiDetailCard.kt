@@ -88,7 +88,7 @@ fun PoiDetailCard(
             ) {
                 Text(
                     text = fp.fuelName,
-                    color = matchColor ?: Color.White.copy(alpha = 0.85f),
+                    color = matchColor ?: MaterialTheme.colorScheme.onSurface,
                     fontSize = 12.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -98,7 +98,7 @@ fun PoiDetailCard(
                     if (updatedAt != null) {
                         Text(
                             text = fr.geoking.gaston.shared.datetime.DateTimeUtils.formatRelativeTime(updatedAt),
-                            color = Color.White.copy(alpha = 0.4f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             fontSize = 10.sp,
                             modifier = Modifier.padding(end = 8.dp)
                         )
@@ -117,7 +117,9 @@ fun PoiDetailCard(
     Card(
         modifier = modifier
             .defaultMinSize(minHeight = 200.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isSelected) Color(0xFF475569) else Color(0xFF334155)),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface
+        ),
         shape = MaterialTheme.shapes.large
     ) {
         Column(
@@ -140,13 +142,13 @@ fun PoiDetailCard(
                         painter = painterResource(id = resId),
                         contentDescription = brandInfo?.displayName ?: if (poi.isElectric) "Charging station" else "Gas station",
                         modifier = Modifier.size(32.dp),
-                        tint = if (brandInfo != null) Color.Unspecified else Color.White
+                        tint = if (brandInfo != null) Color.Unspecified else MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = displayTitle,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
@@ -156,7 +158,7 @@ fun PoiDetailCard(
                             if (isGenericName || !displayTitle.startsWith(info.displayName, ignoreCase = true)) {
                                 Text(
                                     text = info.displayName,
-                                    color = Color.White.copy(alpha = 0.75f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 12.sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -176,7 +178,7 @@ fun PoiDetailCard(
                             if (info.isNotBlank()) {
                                 Text(
                                     text = info,
-                                    color = Color.White.copy(alpha = 0.7f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 11.sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -204,7 +206,7 @@ fun PoiDetailCard(
                         Icon(
                             imageVector = Icons.Default.Directions,
                             contentDescription = "Navigate",
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -220,14 +222,14 @@ fun PoiDetailCard(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = Color.White.copy(alpha = 0.6f)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         addressLines.take(2).forEach { line ->
                             Text(
                                 text = line,
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 13.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -238,7 +240,7 @@ fun PoiDetailCard(
 
                 if (isSelected) {
                     Spacer(modifier = Modifier.height(6.dp))
-                    HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
+                    HorizontalDivider()
                     Spacer(modifier = Modifier.height(6.dp))
 
                     // Compact “show everything we have” summary for merged POIs.
@@ -256,7 +258,7 @@ fun PoiDetailCard(
                                 } else {
                                     Text(
                                         text = "No fuel price details available",
-                                        color = Color.White.copy(alpha = 0.7f),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 12.sp
                                     )
                                 }
@@ -283,7 +285,7 @@ fun PoiDetailCard(
                                 if (connectors.isNotEmpty()) {
                                     Text(
                                         text = "Connectors: " + connectors.joinToString(", ") { BrandHelper.connectorTypeLabel(it) },
-                                        color = Color.White.copy(alpha = 0.7f),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 11.sp,
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis
@@ -328,7 +330,7 @@ fun PoiDetailCard(
                                     if (flags.isNotBlank()) {
                                         Text(
                                             text = flags,
-                                            color = Color.White.copy(alpha = 0.7f),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             fontSize = 11.sp,
                                             maxLines = 2,
                                             overflow = TextOverflow.Ellipsis

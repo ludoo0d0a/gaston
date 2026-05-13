@@ -44,8 +44,7 @@ fun AddPoiSheet(
                     existingCommunityId != null -> "Edit POI"
                     linkedOfficialId != null -> "Suggest correction"
                     else -> "Add POI"
-                },
-                color = Color.White
+                }
             )
         },
         text = {
@@ -58,38 +57,22 @@ fun AddPoiSheet(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name", color = Color.White.copy(alpha = 0.8f)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color.White.copy(alpha = 0.5f),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color.White.copy(alpha = 0.7f)
-                    )
+                    label = { Text("Name") },
+                    modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = address,
                     onValueChange = { address = it },
-                    label = { Text("Address", color = Color.White.copy(alpha = 0.8f)) },
+                    label = { Text("Address") },
                     modifier = Modifier.fillMaxWidth(),
-                    minLines = 2,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color.White.copy(alpha = 0.5f),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color.White.copy(alpha = 0.7f)
-                    )
+                    minLines = 2
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                 ) {
-                    Text("Type", color = Color.White.copy(alpha = 0.9f))
+                    Text("Type")
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
                             selected = !isElectric,
@@ -107,16 +90,8 @@ fun AddPoiSheet(
                     OutlinedTextField(
                         value = powerKw,
                         onValueChange = { powerKw = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Power (kW)", color = Color.White.copy(alpha = 0.8f)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Color.White.copy(alpha = 0.5f),
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-                            focusedLabelColor = Color.White,
-                            unfocusedLabelColor = Color.White.copy(alpha = 0.7f)
-                        )
+                        label = { Text("Power (kW)") },
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -153,14 +128,13 @@ fun AddPoiSheet(
                     }
                 }
             ) {
-                Text("Save", color = Color(0xFF22C55E))
+                Text("Save")
             }
         },
         dismissButton = {
             IconButton(onClick = onDismiss) {
-                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                Icon(Icons.Default.Close, contentDescription = "Close")
             }
-        },
-        containerColor = Color(0xFF1E293B)
+        }
     )
 }

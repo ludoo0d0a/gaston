@@ -33,10 +33,8 @@ class AutoSurfaceRenderer(
     private val height: Int,
     initialLat: Double = 48.8566,
     initialLon: Double = 2.3522,
-    /** XYZ raster tile URL; default is OSM. Lab screens may pass another template for contrast. */
-    private val tileUrl: (z: Int, x: Int, y: Int) -> String = { z, x, y ->
-        "https://tile.openstreetmap.org/$z/$x/$y.png"
-    }
+    /** XYZ raster tile URL template with {z}, {x}, {y} placeholders. */
+    private var tileUrlTemplate: String = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 ) {
     @Volatile
     private var running = true
@@ -81,6 +79,15 @@ class AutoSurfaceRenderer(
         lat = newLat
         lon = newLon
         zoom = newZoom
+    }
+
+    fun setTileUrlTemplate(template: String) {
+        if (tileUrlTemplate != template) {
+            tileUrlTemplate = template
+            synchronized(tileCache) {
+                tileCache.evictAll()
+            }
+        }
     }
 
     fun updateUserLocation(newLat: Double, newLon: Double) {
@@ -208,7 +215,11 @@ class AutoSurfaceRenderer(
         if (pendingRequests.add(key)) {
             executor.submit {
                 try {
-                    val url = URL(tileUrl(z, x, y))
+                    val urlString = tileUrlTemplate
+                        .replace("{z}", z.toString())
+                        .replace("{x}", x.toString())
+                        .replace("{y}", y.toString())
+                    val url = URL(urlString)
                     val connection = url.openConnection() as HttpURLConnection
                     connection.setRequestProperty("User-Agent", "gaston-Android-Auto/1.0")
                     connection.connectTimeout = 5000

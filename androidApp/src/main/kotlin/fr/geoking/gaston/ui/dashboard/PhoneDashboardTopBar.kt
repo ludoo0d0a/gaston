@@ -47,14 +47,14 @@ fun PhoneDashboardTopBar(
                 if (settings.isPremium) {
                     Spacer(Modifier.width(8.dp))
                     Surface(
-                        color = Color(0xFFFACC15),
+                        color = MaterialTheme.colorScheme.secondary,
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
                             "PREMIUM",
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.Black,
+                            color = MaterialTheme.colorScheme.onSecondary,
                             fontWeight = FontWeight.Bold
                         )
                     }

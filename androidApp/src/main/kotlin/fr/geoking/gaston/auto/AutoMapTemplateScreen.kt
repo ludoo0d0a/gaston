@@ -22,6 +22,7 @@ import fr.geoking.gaston.R
 
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.ThemeMode
 import fr.geoking.gaston.feature.location.LocationHelper
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
@@ -31,6 +32,7 @@ class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), Surfac
 
     private val settingsManager: SettingsManager by inject()
     private var surfaceRenderer: AutoSurfaceRenderer? = null
+    private var themeCollectionJob: kotlinx.coroutines.Job? = null
     private var lat = settingsManager.settings.value.lastKnownLat ?: 48.8566
     private var lon = settingsManager.settings.value.lastKnownLon ?: 2.3522
     private var zoom = 14
@@ -41,6 +43,7 @@ class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), Surfac
 
     override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
         surfaceRenderer?.stop()
+        themeCollectionJob?.cancel()
         val surface = surfaceContainer.surface
         if (surface == null) {
             surfaceRenderer = null
@@ -51,19 +54,27 @@ class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), Surfac
             surfaceRenderer = null
             return
         }
-        val osmUrl: (Int, Int, Int) -> String = { z, x, y ->
-            "https://tile.openstreetmap.org/$z/$x/$y.png"
-        }
         surfaceRenderer = AutoSurfaceRenderer(
             carContext,
             surface,
             surfaceContainer.width,
-            surfaceContainer.height,
-            tileUrl = osmUrl
+            surfaceContainer.height
         ).apply {
             updateLocation(lat, lon, zoom)
             updateUserLocation(lat, lon)
             start()
+        }
+
+        themeCollectionJob = lifecycleScope.launch {
+            settingsManager.settings.collect { settings ->
+                val dark = when (settings.uiThemeMode) {
+                    ThemeMode.Dark -> true
+                    ThemeMode.Light -> false
+                    ThemeMode.System -> carContext.isDarkMode
+                }
+                val url = if (dark) "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png" else "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                surfaceRenderer?.setTileUrlTemplate(url)
+            }
         }
 
         lifecycleScope.launch {
@@ -72,12 +83,14 @@ class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), Surfac
             lon = newLon
             surfaceRenderer?.updateLocation(lat, lon, zoom)
             surfaceRenderer?.updateUserLocation(lat, lon)
+
         }
     }
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
         surfaceRenderer?.stop()
         surfaceRenderer = null
+        themeCollectionJob?.cancel()
     }
 
     override fun onStart(owner: LifecycleOwner) {

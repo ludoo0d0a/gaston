@@ -30,6 +30,7 @@ import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.FuelCard
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.ThemeMode
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.VehicleType
 import fr.geoking.gaston.poi.MapPoiFilter
@@ -86,6 +87,7 @@ class CustomMapPoiScreen(
     private var currentVisibleArea: Rect? = null
 
     private var surfaceRenderer: AutoSurfaceRenderer? = null
+    private var themeCollectionJob: kotlinx.coroutines.Job? = null
 
     /** Last resolved search center; combined with settings so auto mode reloads when the vehicle moves across regions. */
     private val searchCenterFlow = MutableStateFlow(searchLat to searchLon)
@@ -268,6 +270,7 @@ class CustomMapPoiScreen(
     override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
         Log.d("CustomMapPoiScreen", "onSurfaceAvailable")
         surfaceRenderer?.stop()
+        themeCollectionJob?.cancel()
         val surface = surfaceContainer.surface
         if (surface == null) {
             // Some head units/emulators can report an available container before the Surface is ready.
@@ -294,6 +297,18 @@ class CustomMapPoiScreen(
             )
             start()
         }
+
+        themeCollectionJob = lifecycleScope.launch {
+            settingsManager.settings.collect { settings ->
+                val dark = when (settings.uiThemeMode) {
+                    ThemeMode.Dark -> true
+                    ThemeMode.Light -> false
+                    ThemeMode.System -> carContext.isDarkMode
+                }
+                val url = if (dark) "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png" else "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                surfaceRenderer?.setTileUrlTemplate(url)
+            }
+        }
     }
 
     override fun onVisibleAreaChanged(visibleArea: Rect) {
@@ -306,6 +321,7 @@ class CustomMapPoiScreen(
         Log.d("CustomMapPoiScreen", "onSurfaceDestroyed")
         surfaceRenderer?.stop()
         surfaceRenderer = null
+        themeCollectionJob?.cancel()
     }
 
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {

@@ -434,14 +434,13 @@ fun MainUI(
     val fallbackUpdateFlow = remember { MutableStateFlow<AppUpdateInfo?>(null) }
     val updateAvailable by (inAppUpdateHelper?.updateAvailable ?: fallbackUpdateFlow).collectAsState(initial = null)
 
-    if (updateAvailable != null) {
-        UpdateAvailableDialog(
-            onCancel = { inAppUpdateHelper?.dismissUpdate() },
-            onUpdate = { updateAvailable?.let { onStartUpdate(it) } }
-        )
-    }
-
     GastonTheme(themeMode = settings.uiThemeMode) {
+        if (updateAvailable != null) {
+            UpdateAvailableDialog(
+                onCancel = { inAppUpdateHelper?.dismissUpdate() },
+                onUpdate = { updateAvailable?.let { onStartUpdate(it) } }
+            )
+        }
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             when {
                 showNetworkDiagnostics -> {
@@ -693,8 +692,7 @@ fun MainUI(
                     )
                 }
                 else -> {
-                    GastonTheme(themeMode = settings.uiThemeMode) {
-                        PhoneDashboardScreen(
+                    PhoneDashboardScreen(
                             settingsManager = settingsManager,
                             poiProvider = mapDeps?.poiProvider,
                             favoritesRepo = mapDeps?.favoritesRepo,
@@ -738,7 +736,7 @@ fun MainUI(
 private fun StartupErrorContent(error: Throwable) {
     val message = error.message ?: error.toString()
     val fullDetail = buildStartupErrorDetail(error)
-    GastonTheme {
+    GastonTheme(themeMode = ThemeMode.System) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Box(Modifier.fillMaxSize().padding(24.dp)) {
                 Column(
