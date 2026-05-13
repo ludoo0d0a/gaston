@@ -268,8 +268,7 @@ fun PhoneDashboardScreen(
             PhoneDashboardMainContent(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(padding),
                 geocodingClient = geocodingClient,
                 hasLocationPermission = hasLocationPermission,
                 userLat = userLat,

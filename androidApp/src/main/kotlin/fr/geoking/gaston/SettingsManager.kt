@@ -401,6 +401,23 @@ open class SettingsManager(
         ))
     }
 
+    open fun setMyCarMode() {
+        saveSettings(_settings.value.copy(
+            useVehicleFilter = true,
+            poiProviderSelectionMode = PoiProviderSelectionMode.Auto,
+            selectedOverpassAmenityTypes = emptySet()
+        ))
+    }
+
+    open fun setOtherMode() {
+        saveSettings(_settings.value.copy(
+            useVehicleFilter = false,
+            poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+            selectedPoiProviders = setOf(PoiProviderType.Overpass),
+            selectedOverpassAmenityTypes = setOf("parking")
+        ))
+    }
+
     open fun setMapEnseigneType(type: String) {
         saveSettings(_settings.value.copy(mapEnseigneType = type))
     }
