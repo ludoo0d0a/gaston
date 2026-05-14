@@ -5,6 +5,7 @@ import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.effectiveProviders
 import fr.geoking.gaston.effectiveAllowedCategories
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.VehicleType
 import fr.geoking.gaston.parking.ParkingRegion
 import fr.geoking.gaston.api.openvan.OpenVanCampClient
@@ -317,8 +318,13 @@ class SelectorPoiProvider(
         var finalEnriched = listOf<Poi>()
 
         val categories = settings.effectiveAllowedCategories()
+        val effectiveCategories = if (settings.poiProviderSelectionMode == PoiProviderSelectionMode.Auto) {
+            categories + setOf(PoiCategory.Gas, PoiCategory.Irve)
+        } else {
+            categories
+        }
 
-        val effectiveRequest = request.copy(categories = categories, skipFilters = true)
+        val effectiveRequest = request.copy(categories = effectiveCategories, skipFilters = true)
 
         coroutineScope {
             providers.forEach { providerType ->
@@ -538,8 +544,13 @@ class SelectorPoiProvider(
         val errors = mutableListOf<PoiProviderError>()
 
         val categories = settings.effectiveAllowedCategories()
+        val effectiveCategories = if (settings.poiProviderSelectionMode == PoiProviderSelectionMode.Auto) {
+            categories + setOf(PoiCategory.Gas, PoiCategory.Irve)
+        } else {
+            categories
+        }
 
-        val effectiveRequest = request.copy(categories = categories, skipFilters = true)
+        val effectiveRequest = request.copy(categories = effectiveCategories, skipFilters = true)
 
         providers.forEach { providerType ->
             val activeProvider = getProvider(providerType)

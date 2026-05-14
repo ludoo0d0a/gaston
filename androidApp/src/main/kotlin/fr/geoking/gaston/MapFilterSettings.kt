@@ -142,14 +142,12 @@ fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Se
         selectedPoiProviders
     } else {
         if (countryCodes.isNotEmpty()) {
-            val mode = effectiveEnergyFilterMode()
-            val wantElectric = mode == EnergyFilterMode.Electric || mode == EnergyFilterMode.Hybrid
-            val wantFuel = mode == EnergyFilterMode.Fuel || mode == EnergyFilterMode.Hybrid
-
+            // Always fetch both fuel and electric providers in Auto mode to ensure
+            // cache stability when toggling energy filters in the UI.
             autoProvidersForCountries(
                 countryCodes = countryCodes,
-                wantFuel = wantFuel,
-                wantElectric = wantElectric,
+                wantFuel = true,
+                wantElectric = true,
                 fallbackManual = selectedPoiProviders
             )
         } else {
