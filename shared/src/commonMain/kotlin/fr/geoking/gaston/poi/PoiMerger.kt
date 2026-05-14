@@ -177,7 +177,20 @@ object PoiMerger {
 
     private fun mergeTwo(existing: Poi, incoming: Poi): Poi {
         val mergedIsElectric = existing.isElectric || incoming.isElectric
-        val mergedPoiCategory = existing.poiCategory ?: incoming.poiCategory ?: if (mergedIsElectric) PoiCategory.Irve else PoiCategory.Gas
+
+        // Priority to Gas/Irve for visual identity (branding, icon).
+        // If any merged POI is a station, the primary category MUST be Gas or Irve.
+        val mergedPoiCategory = when {
+            existing.poiCategory == PoiCategory.Gas || incoming.poiCategory == PoiCategory.Gas -> PoiCategory.Gas
+            existing.poiCategory == PoiCategory.Irve || incoming.poiCategory == PoiCategory.Irve -> PoiCategory.Irve
+            else -> existing.poiCategory ?: incoming.poiCategory ?: if (mergedIsElectric) PoiCategory.Irve else PoiCategory.Gas
+        }
+
+        // All other categories (from both POIs and their extras) are collected into extraCategories.
+        val mergedExtraCategories = (
+            (existing.extraCategories + (existing.poiCategory?.let { setOf(it) } ?: emptySet())) +
+            (incoming.extraCategories + (incoming.poiCategory?.let { setOf(it) } ?: emptySet()))
+        ).filter { it != mergedPoiCategory }.toSet()
 
         val mergedFuelPrices = mergeFuelPrices(existing.fuelPrices, incoming.fuelPrices)
 
@@ -206,6 +219,7 @@ object PoiMerger {
             // They are already close (see isSamePoi).
             isElectric = mergedIsElectric,
             poiCategory = mergedPoiCategory,
+            extraCategories = mergedExtraCategories,
             fuelPrices = mergedFuelPrices,
             isClosed = mergedIsClosed,
             irveDetails = mergedIrveDetails,

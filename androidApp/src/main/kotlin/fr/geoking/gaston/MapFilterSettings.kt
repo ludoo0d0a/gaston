@@ -20,6 +20,11 @@ fun AppSettings.effectiveEnergyFilterMode(): EnergyFilterMode {
     }
 }
 
+/** True when the user explicitly selected "Other" (amenities) mode. */
+fun AppSettings.isOtherModeActive(): Boolean =
+    poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
+        selectedPoiProviders == setOf(PoiProviderType.Overpass)
+
 fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
     "toilets" -> PoiCategory.Toilet
     "drinking_water" -> PoiCategory.DrinkingWater
@@ -37,18 +42,15 @@ fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
 }
 
 fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
-    // Specialized "Parking only" mode for dashboard
-    if (poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
-        selectedPoiProviders == setOf(fr.geoking.gaston.poi.PoiProviderType.Overpass) &&
-        selectedOverpassAmenityTypes == setOf("parking")
-    ) {
-        return setOf(PoiCategory.Parking)
-    }
-
     val categories = mutableSetOf<PoiCategory>()
 
     // Amenities: strictly based on selection
     selectedOverpassAmenityTypes.mapNotNullTo(categories) { categoryFromAmenityId(it) }
+
+    // In "Other" mode, we ONLY want the selected amenities.
+    if (isOtherModeActive()) {
+        return categories
+    }
 
     // Energy: Gas/Irve
     val mode = effectiveEnergyFilterMode()
@@ -188,6 +190,12 @@ fun AppSettings.effectiveProvidersAt(latitude: Double, longitude: Double): Set<P
 fun Set<PoiProviderType>.isOnlyOverpass(): Boolean =
     isNotEmpty() && all { it == PoiProviderType.Overpass }
 
+fun Poi.matchesAnyCategory(allowed: Set<PoiCategory>): Boolean {
+    val primary = poiCategory ?: if (isElectric) PoiCategory.Irve else PoiCategory.Gas
+    if (primary in allowed) return true
+    return extraCategories.any { it in allowed }
+}
+
 /**
  * Energy / brand / IRVE filters for station POIs. When [skipWhenOnlyOverpass] is true and
  * [providers] is only Overpass, returns [pois] unchanged (OSM amenity results).
@@ -204,9 +212,13 @@ object StationMapFilters {
 
         // Filter by allowed categories (strictly based on settings)
         val allowedCategories = settings.effectiveAllowedCategories()
-        result = result.filter { poi ->
-            val cat = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
-            cat in allowedCategories
+        result = result.filter { it.matchesAnyCategory(allowedCategories) }
+
+        // In "Other" mode, we've already filtered by the selected amenities.
+        // We skip energy-specific filtering to allow display of stations that are also amenities
+        // (the merger logic will later ensure they show brand info if available).
+        if (settings.isOtherModeActive()) {
+            return result
         }
 
         if (skipWhenOnlyOverpass && providers.isOnlyOverpass()) return result
