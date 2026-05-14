@@ -179,8 +179,13 @@ fun RoutePlanningScreen(
         if (originQuery.length > 2) {
             delay(500)
             try {
-                val remote = geocodingClient.geocode(originQuery, limit = 5)
-                val newSuggestions = (historyMatches + remote).distinctBy { it.label }
+                val remote = geocodingClient.geocode(
+                    originQuery,
+                    limit = 5,
+                    biasLatitude = settings.lastKnownLat,
+                    biasLongitude = settings.lastKnownLon
+                )
+                val newSuggestions = (favoriteMatches + historyMatches + remote).distinctBy { it.label }
                 originSuggestions = newSuggestions
             } catch (e: Exception) {
                 // Ignore geocoding errors for autocomplete
@@ -199,8 +204,13 @@ fun RoutePlanningScreen(
         if (destQuery.length > 2) {
             delay(500)
             try {
-                val remote = geocodingClient.geocode(destQuery, limit = 5)
-                val newSuggestions = (historyMatches + remote).distinctBy { it.label }
+                val remote = geocodingClient.geocode(
+                    destQuery,
+                    limit = 5,
+                    biasLatitude = settings.lastKnownLat,
+                    biasLongitude = settings.lastKnownLon
+                )
+                val newSuggestions = (favoriteMatches + historyMatches + remote).distinctBy { it.label }
                 destSuggestions = newSuggestions
             } catch (e: Exception) {
                 // Ignore
