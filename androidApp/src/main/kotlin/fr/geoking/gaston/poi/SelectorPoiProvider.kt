@@ -4,6 +4,7 @@ import android.util.Log
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.effectiveProviders
 import fr.geoking.gaston.effectiveAllowedCategories
+import fr.geoking.gaston.isOtherModeActive
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.VehicleType
 import fr.geoking.gaston.parking.ParkingRegion
@@ -318,6 +319,12 @@ class SelectorPoiProvider(
 
         val categories = settings.effectiveAllowedCategories()
 
+        // In "Other" mode, if no amenities are selected, we don't display anything.
+        if (settings.isOtherModeActive() && categories.isEmpty()) {
+            send(PoiSearchResult())
+            return@channelFlow
+        }
+
         val effectiveRequest = request.copy(categories = categories, skipFilters = true)
 
         coroutineScope {
@@ -538,6 +545,11 @@ class SelectorPoiProvider(
         val errors = mutableListOf<PoiProviderError>()
 
         val categories = settings.effectiveAllowedCategories()
+
+        // In "Other" mode, if no amenities are selected, we don't display anything.
+        if (settings.isOtherModeActive() && categories.isEmpty()) {
+            return PoiSearchResult()
+        }
 
         val effectiveRequest = request.copy(categories = categories, skipFilters = true)
 

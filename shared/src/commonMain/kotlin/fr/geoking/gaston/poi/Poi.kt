@@ -241,6 +241,8 @@ data class Poi(
     val fuelPrices: List<FuelPrice>? = null,
     /** Site name (e.g. Routex site_name) for title. */
     val siteName: String? = null,
+    /** Additional categories for this POI (e.g. when a gas station is also a parking). */
+    val extraCategories: Set<PoiCategory> = emptySet(),
     val isClosed: Boolean = false,
     /** Price consistency rating (0.0 to 10.0). */
     val priceRating: Double? = null,
