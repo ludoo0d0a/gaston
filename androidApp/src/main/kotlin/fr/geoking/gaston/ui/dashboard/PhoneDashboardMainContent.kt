@@ -199,6 +199,7 @@ fun PhoneDashboardMainContent(
                 searchError = searchError,
                 selectedSearchLocation = selectedSearchLocation,
                 currentMode = currentMode,
+                settings = settings,
                 onPoiSelected = onPoiSelected,
                 onOpenMap = onOpenMap
             )
@@ -450,6 +451,7 @@ private fun PhoneDashboardNearbyCheapestSection(
     searchError: String?,
     selectedSearchLocation: GeocodedPlace?,
     currentMode: DashboardMode,
+    settings: AppSettings,
     onPoiSelected: (Poi) -> Unit,
     onOpenMap: (Poi?) -> Unit
 ) {
