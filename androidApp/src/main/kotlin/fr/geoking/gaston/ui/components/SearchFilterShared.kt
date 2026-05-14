@@ -82,47 +82,47 @@ fun SearchModeSelector(
         SearchRow(
             title = "Autre",
             subtitle = "Other",
-            icon = Icons.Default.Map,
+            icon = Icons.Default.Place,
             mode = SearchMode.Other,
             onClick = { settingsManager.setOtherMode() }
         )
     )
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
+        shape = MaterialTheme.shapes.extraLarge,
+        modifier = modifier.fillMaxWidth()
     ) {
-        quickActions.forEach { action ->
-            val isSelected = action.mode == currentMode
-            Card(
-                onClick = action.onClick,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
-                ),
-                shape = MaterialTheme.shapes.extraLarge,
-                elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 1.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+        Row(
+            modifier = Modifier.padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            quickActions.forEach { action ->
+                val isSelected = action.mode == currentMode
+                Surface(
+                    onClick = action.onClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    shape = MaterialTheme.shapes.extraLarge
                 ) {
-                    Icon(
-                        imageVector = action.icon,
-                        contentDescription = null,
-                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    if (isSelected) {
-                        Spacer(Modifier.width(6.dp))
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = action.icon,
+                            contentDescription = null,
+                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
                         Text(
                             text = action.title,
-                            style = MaterialTheme.typography.labelLarge,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
