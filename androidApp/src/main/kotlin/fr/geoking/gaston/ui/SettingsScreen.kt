@@ -17,9 +17,19 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.EvStation
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -1387,6 +1397,7 @@ private fun GoogleAccount(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun VehicleConfig(
     settings: AppSettings,
@@ -1396,128 +1407,218 @@ private fun VehicleConfig(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        ConfigTextField("Brand", settings.vehicleBrand) { onUpdate(settings.copy(vehicleBrand = it)) }
-        ConfigTextField("Model", settings.vehicleModel) { onUpdate(settings.copy(vehicleModel = it)) }
-
-        if (settings.vehicleEnergy == "gas" || settings.vehicleEnergy == "hybrid") {
-            ConfigTextField(
-                label = "Tank capacity (Liters)",
-                value = settings.gasTankCapacityLiters?.toString() ?: ""
-            ) { onUpdate(settings.copy(gasTankCapacityLiters = it.toFloatOrNull())) }
-            ConfigTextField(
-                label = "Fuel consumption (L/100km)",
-                value = settings.gasConsumptionLper100km?.toString() ?: ""
-            ) { onUpdate(settings.copy(gasConsumptionLper100km = it.toFloatOrNull())) }
-        }
-
-        if (settings.vehicleEnergy == "electric" || settings.vehicleEnergy == "hybrid") {
-            ConfigTextField(
-                label = "Battery capacity (kWh)",
-                value = settings.batteryCapacityKwh?.toString() ?: ""
-            ) { onUpdate(settings.copy(batteryCapacityKwh = it.toFloatOrNull())) }
-            ConfigTextField(
-                label = "Electric range (km)",
-                value = settings.evRangeKm.toString()
-            ) { onUpdate(settings.copy(evRangeKm = it.toIntOrNull() ?: 300)) }
-            ConfigTextField(
-                label = "Electric consumption (kWh/100km)",
-                value = settings.evConsumptionKwhPer100km?.toString() ?: ""
-            ) { onUpdate(settings.copy(evConsumptionKwhPer100km = it.toFloatOrNull())) }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            "Energy type",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            FilterChip(
-                selected = settings.vehicleEnergy == "gas",
-                onClick = { onUpdate(settings.copy(vehicleEnergy = "gas")) },
-                label = { Text("Gas") },
-            )
-            FilterChip(
-                selected = settings.vehicleEnergy == "electric",
-                onClick = { onUpdate(settings.copy(vehicleEnergy = "electric")) },
-                label = { Text("Electric") },
-            )
-            FilterChip(
-                selected = settings.vehicleEnergy == "hybrid",
-                onClick = { onUpdate(settings.copy(vehicleEnergy = "hybrid")) },
-                label = { Text("Hybrid") },
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-        if (settings.vehicleEnergy == "gas" || settings.vehicleEnergy == "hybrid") {
+        // Energy Type Selection (At the top)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                "Preferred gas types",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 8.dp)
+                "Energy type",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
             )
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
-                    FuelFilterChip(
-                        id = id,
-                        label = label,
-                        isSelected = settings.vehicleGasTypes.contains(id),
-                        onClick = {
-                            val newTypes = if (settings.vehicleGasTypes.contains(id)) settings.vehicleGasTypes - id else settings.vehicleGasTypes + id
-                            onUpdate(settings.copy(vehicleGasTypes = newTypes))
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                "Fuel card",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            FuelCard.entries.forEach { card ->
-                SelectionItem(
-                    label = card.name,
-                    isSelected = settings.fuelCard == card,
-                    onSelect = { onUpdate(settings.copy(fuelCard = card)) }
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                val energyOptions = listOf(
+                    Triple("gas", "Gas", Icons.Default.LocalGasStation),
+                    Triple("electric", "Electric", Icons.Default.EvStation),
+                    Triple("hybrid", "Hybrid", Icons.Default.Bolt)
                 )
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-
-        if (settings.vehicleEnergy == "electric" || settings.vehicleEnergy == "hybrid") {
-            Text(
-                "Preferred power range",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                MAP_IRVE_POWER_OPTIONS.forEach { (id, label) ->
-                    PowerFilterChip(
-                        kw = id,
-                        label = label,
-                        isSelected = settings.vehiclePowerLevels.contains(id),
-                        onClick = {
-                            val newLevels = if (settings.vehiclePowerLevels.contains(id)) settings.vehiclePowerLevels - id else settings.vehiclePowerLevels + id
-                            onUpdate(settings.copy(vehiclePowerLevels = newLevels))
+                energyOptions.forEachIndexed { index, (id, label, icon) ->
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = energyOptions.size),
+                        onClick = { onUpdate(settings.copy(vehicleEnergy = id)) },
+                        selected = settings.vehicleEnergy == id,
+                        icon = {
+                            SegmentedButtonDefaults.Icon(active = settings.vehicleEnergy == id) {
+                                Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                            }
                         }
-                    )
+                    ) {
+                        Text(label, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }
+
+        // Identity Card
+        ElevatedCard(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "Identity",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ConfigTextField(
+                        label = "Brand",
+                        value = settings.vehicleBrand,
+                        modifier = Modifier.weight(1f),
+                        leadingIcon = Icons.Default.Badge
+                    ) { onUpdate(settings.copy(vehicleBrand = it)) }
+
+                    ConfigTextField(
+                        label = "Model",
+                        value = settings.vehicleModel,
+                        modifier = Modifier.weight(1f),
+                        leadingIcon = Icons.Default.DirectionsCar
+                    ) { onUpdate(settings.copy(vehicleModel = it)) }
+                }
+            }
+        }
+
+        // Specifications Card
+        ElevatedCard(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "Specifications",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold
+                )
+
+                if (settings.vehicleEnergy == "gas" || settings.vehicleEnergy == "hybrid") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ConfigTextField(
+                            label = "Tank (L)",
+                            value = settings.gasTankCapacityLiters?.toString() ?: "",
+                            modifier = Modifier.weight(1f),
+                            leadingIcon = Icons.Default.Settings,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        ) { onUpdate(settings.copy(gasTankCapacityLiters = it.toFloatOrNull())) }
+
+                        ConfigTextField(
+                            label = "L/100km",
+                            value = settings.gasConsumptionLper100km?.toString() ?: "",
+                            modifier = Modifier.weight(1f),
+                            leadingIcon = Icons.Default.LocalGasStation,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        ) { onUpdate(settings.copy(gasConsumptionLper100km = it.toFloatOrNull())) }
+                    }
+                }
+
+                if (settings.vehicleEnergy == "electric" || settings.vehicleEnergy == "hybrid") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ConfigTextField(
+                            label = "Battery (kWh)",
+                            value = settings.batteryCapacityKwh?.toString() ?: "",
+                            modifier = Modifier.weight(1f),
+                            leadingIcon = Icons.Default.Bolt,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        ) { onUpdate(settings.copy(batteryCapacityKwh = it.toFloatOrNull())) }
+
+                        ConfigTextField(
+                            label = "Range (km)",
+                            value = settings.evRangeKm.toString(),
+                            modifier = Modifier.weight(1f),
+                            leadingIcon = Icons.Default.Straighten,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        ) { onUpdate(settings.copy(evRangeKm = it.toIntOrNull() ?: 300)) }
+                    }
+                    ConfigTextField(
+                        label = "Electric consumption (kWh/100km)",
+                        value = settings.evConsumptionKwhPer100km?.toString() ?: "",
+                        leadingIcon = Icons.Default.EvStation,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    ) { onUpdate(settings.copy(evConsumptionKwhPer100km = it.toFloatOrNull())) }
+                }
+            }
+        }
+
+        // Preferences Card
+        ElevatedCard(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    "Preferences",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold
+                )
+
+                if (settings.vehicleEnergy == "gas" || settings.vehicleEnergy == "hybrid") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Preferred gas types", style = MaterialTheme.typography.labelMedium)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
+                                FuelFilterChip(
+                                    id = id,
+                                    label = label,
+                                    isSelected = settings.vehicleGasTypes.contains(id),
+                                    onClick = {
+                                        val newTypes = if (settings.vehicleGasTypes.contains(id)) settings.vehicleGasTypes - id else settings.vehicleGasTypes + id
+                                        onUpdate(settings.copy(vehicleGasTypes = newTypes))
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Fuel card", style = MaterialTheme.typography.labelMedium)
+                        Column(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        ) {
+                            FuelCard.entries.forEach { card ->
+                                SelectionItem(
+                                    label = card.name,
+                                    isSelected = settings.fuelCard == card,
+                                    onSelect = { onUpdate(settings.copy(fuelCard = card)) }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (settings.vehicleEnergy == "electric" || settings.vehicleEnergy == "hybrid") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Preferred power range", style = MaterialTheme.typography.labelMedium)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            MAP_IRVE_POWER_OPTIONS.forEach { (id, label) ->
+                                PowerFilterChip(
+                                    kw = id,
+                                    label = label,
+                                    isSelected = settings.vehiclePowerLevels.contains(id),
+                                    onClick = {
+                                        val newLevels = if (settings.vehiclePowerLevels.contains(id)) settings.vehiclePowerLevels - id else settings.vehiclePowerLevels + id
+                                        onUpdate(settings.copy(vehiclePowerLevels = newLevels))
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
@@ -1566,23 +1667,22 @@ private fun ApiKeyHelpLink(
 private fun ConfigTextField(
     label: String,
     value: String,
+    modifier: Modifier = Modifier,
+    leadingIcon: ImageVector? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     onValueChange: (String) -> Unit
 ) {
-    Column(modifier = Modifier.padding(vertical = 12.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            textStyle = androidx.compose.ui.text.TextStyle(color = MaterialTheme.colorScheme.onSurface),
-            shape = RoundedCornerShape(12.dp)
-        )
-    }
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier.fillMaxWidth(),
+        label = { Text(label) },
+        leadingIcon = leadingIcon?.let { { Icon(it, contentDescription = null) } },
+        keyboardOptions = keyboardOptions,
+        textStyle = MaterialTheme.typography.bodyMedium,
+        shape = RoundedCornerShape(12.dp),
+        singleLine = true
+    )
 }
 
 @Composable
