@@ -512,11 +512,22 @@ fun MainUI(
                         poiProvider = mapDeps!!.poiProvider,
                         geocodingClient = mapDeps!!.geocodingClient,
                         settingsManager = settingsManager,
-                        onBack = { showRoutePlanning = false; initialNavDestination = null },
+                        onBack = {
+                            showMap = false
+                            showRoutePlanning = false
+                            initialNavDestination = null
+                            pendingMapPoi = null
+                            pendingMapLocation = null
+                        },
                         onShowOnMap = { route, pois ->
                             routeForDirections = route
                             stationsForDirections = pois
                             showDirectionsMap = true
+                        },
+                        onSearchAtLocation = { lat, lon ->
+                            pendingMapLocation = com.google.android.gms.maps.model.LatLng(lat, lon)
+                            showRoutePlanning = false
+                            showMap = true
                         },
                         initialDestination = initialNavDestination,
                         showAds = isPlaystoreDistribution
@@ -635,7 +646,13 @@ fun MainUI(
                         poiProvider = mapDeps!!.poiProvider,
                         geocodingClient = mapDeps!!.geocodingClient,
                         settingsManager = settingsManager,
-                        onBack = { showRoutePlanning = false; initialNavDestination = null },
+                        onBack = {
+                            showMap = false
+                            showRoutePlanning = false
+                            initialNavDestination = null
+                            pendingMapPoi = null
+                            pendingMapLocation = null
+                        },
                         onShowOnMap = { route, pois ->
                             routeForDirections = route
                             stationsForDirections = pois
