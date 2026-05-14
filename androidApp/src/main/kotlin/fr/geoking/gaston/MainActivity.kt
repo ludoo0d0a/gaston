@@ -730,7 +730,6 @@ fun MainUI(
             }
         }
     }
-}
 
 @Composable
 private fun StartupErrorContent(error: Throwable) {
