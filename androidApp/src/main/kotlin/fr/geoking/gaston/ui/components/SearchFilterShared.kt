@@ -23,6 +23,7 @@ import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.ui.*
+import fr.geoking.gaston.ui.map.AmenityIconCatalog
 
 enum class SearchMode { Fuel, EV, MyCar, Other }
 
@@ -250,7 +251,14 @@ fun SearchCategorySelector(
                                 val next = if (isSelected) current - id else current + id
                                 settingsManager.setOverpassAmenityTypes(next)
                             },
-                            label = { Text(label) }
+                            label = { Text(label) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = AmenityIconCatalog.iconForOsmId(id),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         )
                     }
                 }

@@ -15,6 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.EvStation
+import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -1439,16 +1442,37 @@ private fun VehicleConfig(
                 selected = settings.vehicleEnergy == "gas",
                 onClick = { onUpdate(settings.copy(vehicleEnergy = "gas")) },
                 label = { Text("Gas") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.LocalGasStation,
+                        null,
+                        Modifier.size(18.dp)
+                    )
+                }
             )
             FilterChip(
                 selected = settings.vehicleEnergy == "electric",
                 onClick = { onUpdate(settings.copy(vehicleEnergy = "electric")) },
                 label = { Text("Electric") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.EvStation,
+                        null,
+                        Modifier.size(18.dp)
+                    )
+                }
             )
             FilterChip(
                 selected = settings.vehicleEnergy == "hybrid",
                 onClick = { onUpdate(settings.copy(vehicleEnergy = "hybrid")) },
                 label = { Text("Hybrid") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.DirectionsCar,
+                        null,
+                        Modifier.size(18.dp)
+                    )
+                }
             )
         }
 

@@ -5,6 +5,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.EvStation
+import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -77,12 +79,26 @@ fun AddPoiSheet(
                         FilterChip(
                             selected = !isElectric,
                             onClick = { isElectric = false },
-                            label = { Text("Gas") }
+                            label = { Text("Gas") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.LocalGasStation,
+                                    null,
+                                    Modifier.size(18.dp)
+                                )
+                            }
                         )
                         FilterChip(
                             selected = isElectric,
                             onClick = { isElectric = true },
-                            label = { Text("IRVE") }
+                            label = { Text("IRVE") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.EvStation,
+                                    null,
+                                    Modifier.size(18.dp)
+                                )
+                            }
                         )
                     }
                 }

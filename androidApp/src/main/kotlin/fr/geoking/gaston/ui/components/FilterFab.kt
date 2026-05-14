@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -151,6 +152,13 @@ fun FilterFab(
                             selected = showFavoritesOnly,
                             onClick = { onShowFavoritesOnlyChange(!showFavoritesOnly) },
                             label = { Text("My favorites") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Star,
+                                    null,
+                                    Modifier.size(18.dp)
+                                )
+                            },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primary,
                                 selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
