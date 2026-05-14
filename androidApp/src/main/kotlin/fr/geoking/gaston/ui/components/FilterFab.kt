@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.*
-import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.anyProvidesFuel
@@ -47,14 +46,7 @@ fun FilterFab(
     var showSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
 
-    // Mode: 0 for Fuel, 1 for Electric, 2 for Hybrid
-    val filterMode = remember(settings) {
-        when (settings.effectiveEnergyFilterMode()) {
-            EnergyFilterMode.Fuel -> 0
-            EnergyFilterMode.Electric -> 1
-            EnergyFilterMode.Hybrid -> 2
-        }
-    }
+    val currentSearchMode = rememberSearchMode(settings)
 
     val filterBarProviders = remember(settings, mapCenterLatitude, mapCenterLongitude) {
         when {
@@ -68,18 +60,18 @@ fun FilterFab(
     val effectivePowerLevels = settings.effectiveIrvePowerLevels()
 
     val favoritesFilterActive = favoritesFilterEnabled && showFavoritesOnly
-    val activeFilterCount = remember(settings, filterMode, favoritesFilterActive, effectiveEnergyIds, effectivePowerLevels) {
+    val activeFilterCount = remember(settings, currentSearchMode, favoritesFilterActive, effectiveEnergyIds, effectivePowerLevels) {
         val favCount = if (favoritesFilterActive) 1 else 0
         val amenityCount = if (settings.selectedOverpassAmenityTypes.isNotEmpty()) 1 else 0
 
         if (settings.useVehicleFilter) return@remember 1 + favCount + amenityCount
 
-        val fuelFilters = if (filterMode == 0 || filterMode == 2) {
+        val fuelFilters = if (currentSearchMode == SearchMode.Fuel) {
             val energyFilter = if (effectiveEnergyIds.any { it != "electric" }) 1 else 0
             energyFilter
         } else 0
 
-        val elecFilters = if (filterMode == 1 || filterMode == 2) {
+        val elecFilters = if (currentSearchMode == SearchMode.EV) {
             val powerFilter = if (effectivePowerLevels.isNotEmpty()) 1 else 0
             val connectorFilter = if (settings.selectedMapConnectorTypes.isNotEmpty()) 1 else 0
             powerFilter + connectorFilter
@@ -155,60 +147,11 @@ fun FilterFab(
                     )
                 }
 
-                SingleChoiceSegmentedButtonRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 24.dp)
-                ) {
-                    SegmentedButton(
-                        selected = filterMode == 0,
-                        onClick = {
-                            if (filterMode != 0) {
-                                settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel)
-                            }
-                        },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3),
-                        label = { Text("Fuel") },
-                        colors = SegmentedButtonDefaults.colors(
-                            activeContainerColor = MaterialTheme.colorScheme.primary,
-                            activeContentColor = MaterialTheme.colorScheme.onPrimary,
-                            inactiveContainerColor = Color(0xFF334155),
-                            inactiveContentColor = Color.White
-                        )
-                    )
-                    SegmentedButton(
-                        selected = filterMode == 1,
-                        onClick = {
-                            if (filterMode != 1) {
-                                settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric)
-                            }
-                        },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
-                        label = { Text("Electric") },
-                        colors = SegmentedButtonDefaults.colors(
-                            activeContainerColor = MaterialTheme.colorScheme.primary,
-                            activeContentColor = MaterialTheme.colorScheme.onPrimary,
-                            inactiveContainerColor = Color(0xFF334155),
-                            inactiveContentColor = Color.White
-                        )
-                    )
-                    SegmentedButton(
-                        selected = filterMode == 2,
-                        onClick = {
-                            if (filterMode != 2) {
-                                settingsManager.setEnergyFilterMode(EnergyFilterMode.Hybrid)
-                            }
-                        },
-                        shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
-                        label = { Text("Hybrid") },
-                        colors = SegmentedButtonDefaults.colors(
-                            activeContainerColor = MaterialTheme.colorScheme.primary,
-                            activeContentColor = MaterialTheme.colorScheme.onPrimary,
-                            inactiveContainerColor = Color(0xFF334155),
-                            inactiveContentColor = Color.White
-                        )
-                    )
-                }
+                SearchModeSelector(
+                    currentMode = currentSearchMode,
+                    settingsManager = settingsManager,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
 
                 if (favoritesFilterEnabled && onShowFavoritesOnlyChange != null) {
                     FilterSectionTitle("Favorites")
@@ -253,11 +196,11 @@ fun FilterFab(
                     }
                     Spacer(modifier = Modifier.height(24.dp))
                 } else {
-                    if (filterMode == 0 || filterMode == 2) {
+                    if (currentSearchMode == SearchMode.Fuel) {
                         FuelFilters(settingsManager, filterBarProviders)
                         Spacer(modifier = Modifier.height(24.dp))
                     }
-                    if (filterMode == 1 || filterMode == 2) {
+                    if (currentSearchMode == SearchMode.EV) {
                         ElectricFilters(settingsManager, filterBarProviders)
                         Spacer(modifier = Modifier.height(24.dp))
                     }
