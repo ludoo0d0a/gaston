@@ -78,6 +78,7 @@ import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.community.isCommunityPoiId
 import fr.geoking.gaston.ui.components.MapScaffold
 import fr.geoking.gaston.premium.BillingManager
+import fr.geoking.gaston.ui.components.*
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import fr.geoking.gaston.ui.ColorHelper
 import fr.geoking.gaston.ui.map.AddPoiSheet
@@ -301,6 +302,8 @@ fun MapScreen(
         return
     }
 
+    val currentSearchMode = rememberSearchMode(settings)
+
     MapScaffold(
         title = "Gas Stations",
         settingsManager = settingsManager,
@@ -342,6 +345,28 @@ fun MapScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SearchModeSelector(
+                    currentMode = currentSearchMode,
+                    settingsManager = settingsManager
+                )
+                SearchCategorySelector(
+                    currentMode = currentSearchMode,
+                    settings = settings,
+                    settingsManager = settingsManager,
+                    onOpenSettings = { pages ->
+                        initialSettingsPage = pages?.firstOrNull() ?: SettingsScreenPage.MapConfig
+                        showMapSettings = true
+                    }
+                )
+            }
+
             mapData.mapErrorMessage?.let { msg ->
                 val onCopy = rememberErrorClipboardCopyHandler(msg)
                 MapErrorBanner(

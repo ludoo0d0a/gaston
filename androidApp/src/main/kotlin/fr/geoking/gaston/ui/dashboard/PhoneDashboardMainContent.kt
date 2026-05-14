@@ -54,32 +54,16 @@ import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.api.geocoding.GeocodingClient
-import fr.geoking.gaston.effectiveEnergyFilterMode
-import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.intent.NavDestination
-import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
-import fr.geoking.gaston.ui.MAP_ENERGY_OPTIONS
-import fr.geoking.gaston.ui.MAP_IRVE_POWER_OPTIONS
-import fr.geoking.gaston.ui.OVERPASS_AMENITY_OPTIONS
 import fr.geoking.gaston.ui.SettingsScreenPage
-import fr.geoking.gaston.ui.components.CheapestStationsCard
-import fr.geoking.gaston.ui.components.FuelFilterChip
-import fr.geoking.gaston.ui.components.PowerFilterChip
+import fr.geoking.gaston.ui.components.*
 
-private enum class DashboardMode { Fuel, EV, MyCar, Other }
-
-private data class DashboardRow(
-    val title: String,
-    val subtitle: String,
-    val icon: ImageVector,
-    val onClick: () -> Unit,
-    val enabled: Boolean = true,
-    val mode: DashboardMode? = null
-)
+private typealias DashboardMode = SearchMode
+private typealias DashboardRow = SearchRow
 
 private fun cityLabelFromGeocodedPlace(place: GeocodedPlace): String {
     val raw = place.label.trim()
@@ -119,50 +103,7 @@ fun PhoneDashboardMainContent(
     onLocationSelected: (GeocodedPlace?) -> Unit,
     onPoiSelected: (Poi) -> Unit
 ) {
-    val isOtherSelected = remember(settings) {
-        settings.poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
-            settings.selectedPoiProviders == setOf(PoiProviderType.Overpass)
-    }
-
-    val currentMode = remember(settings) {
-        when {
-            isOtherSelected -> DashboardMode.Other
-            settings.useVehicleFilter -> DashboardMode.MyCar
-            settings.effectiveEnergyFilterMode() == EnergyFilterMode.Electric -> DashboardMode.EV
-            else -> DashboardMode.Fuel
-        }
-    }
-
-    val quickActions = listOf(
-        DashboardRow(
-            title = "Essence",
-            subtitle = "Fuel",
-            icon = Icons.Default.LocalGasStation,
-            mode = DashboardMode.Fuel,
-            onClick = { settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel) }
-        ),
-        DashboardRow(
-            title = "Électrique",
-            subtitle = "EV",
-            icon = Icons.Default.EvStation,
-            mode = DashboardMode.EV,
-            onClick = { settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric) }
-        ),
-        DashboardRow(
-            title = "Ma voiture",
-            subtitle = "My car",
-            icon = Icons.Default.DirectionsCar,
-            mode = DashboardMode.MyCar,
-            onClick = { settingsManager.setMyCarMode() }
-        ),
-        DashboardRow(
-            title = "Autre",
-            subtitle = "Other",
-            icon = Icons.Default.Map,
-            mode = DashboardMode.Other,
-            onClick = { settingsManager.setOtherMode() }
-        )
-    )
+    val currentMode = rememberSearchMode(settings)
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -171,14 +112,14 @@ fun PhoneDashboardMainContent(
         item { Spacer(Modifier.height(8.dp)) }
 
         item {
-            PhoneDashboardQuickModeRow(
+            SearchModeSelector(
                 currentMode = currentMode,
-                quickActions = quickActions
+                settingsManager = settingsManager
             )
         }
 
         item {
-            DashboardCategorySelector(
+            SearchCategorySelector(
                 currentMode = currentMode,
                 settings = settings,
                 settingsManager = settingsManager,
@@ -264,179 +205,6 @@ fun PhoneDashboardMainContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PhoneDashboardQuickModeRow(
-    currentMode: DashboardMode,
-    quickActions: List<DashboardRow>
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        quickActions.forEach { action ->
-            val isSelected = action.mode == currentMode
-            Card(
-                onClick = action.onClick,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
-                ),
-                shape = MaterialTheme.shapes.extraLarge,
-                elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 1.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = action.icon,
-                        contentDescription = null,
-                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    if (isSelected) {
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = action.title,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DashboardCategorySelector(
-    currentMode: DashboardMode,
-    settings: AppSettings,
-    settingsManager: SettingsManager,
-    onOpenSettings: (List<SettingsScreenPage>?) -> Unit
-) {
-    when (currentMode) {
-        DashboardMode.Fuel -> {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                val fuels = MAP_ENERGY_OPTIONS.filter { it.first != "electric" }
-                items(fuels.size) { index ->
-                    val (id, label) = fuels[index]
-                    FuelFilterChip(
-                        id = id,
-                        label = label,
-                        isSelected = settings.selectedMapEnergyTypes.contains(id),
-                        onClick = { settingsManager.setMapEnergyTypes(setOf(id)) }
-                    )
-                }
-            }
-        }
-        DashboardMode.EV -> {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(MAP_IRVE_POWER_OPTIONS.size) { index ->
-                    val (kw, label) = MAP_IRVE_POWER_OPTIONS[index]
-                    PowerFilterChip(
-                        kw = kw,
-                        label = label,
-                        isSelected = settings.effectiveIrvePowerLevels().contains(kw),
-                        onClick = { settingsManager.setMapPowerLevels(setOf(kw)) }
-                    )
-                }
-            }
-        }
-        DashboardMode.MyCar -> {
-            if (settings.vehicleBrand.isEmpty()) {
-                Card(
-                    onClick = { onOpenSettings(listOf(SettingsScreenPage.VehicleConfig)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE0E7FF)), // Light Indigo
-                    shape = MaterialTheme.shapes.large
-                ) {
-                    Row(
-                        modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(Color.White, MaterialTheme.shapes.medium),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.DirectionsCar,
-                                contentDescription = null,
-                                tint = Color(0xFF4338CA),
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        Spacer(Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "Aucun profil voiture",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1E1B4B)
-                            )
-                            Text(
-                                "Touchez pour configurer",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF4338CA)
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = Color(0xFF4338CA)
-                        )
-                    }
-                }
-            } else {
-                // Configured car: show a simple row with summary or settings access
-                FilterChip(
-                    selected = true,
-                    onClick = { onOpenSettings(listOf(SettingsScreenPage.VehicleConfig)) },
-                    label = { Text("${settings.vehicleBrand} ${settings.vehicleModel}") },
-                    leadingIcon = { Icon(Icons.Default.DirectionsCar, null, Modifier.size(18.dp)) }
-                )
-            }
-        }
-        DashboardMode.Other -> {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                // Ensure parking is first
-                val sortedAmenities = OVERPASS_AMENITY_OPTIONS.sortedBy { if (it.first == "parking") 0 else 1 }
-                items(sortedAmenities.size) { index ->
-                    val (id, label) = sortedAmenities[index]
-                    val isSelected = settings.selectedOverpassAmenityTypes.contains(id)
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                            val current = settings.selectedOverpassAmenityTypes
-                            val next = if (isSelected) current - id else current + id
-                            settingsManager.setOverpassAmenityTypes(next)
-                        },
-                        label = { Text(label) }
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun PhoneDashboardNearbyCheapestSection(
