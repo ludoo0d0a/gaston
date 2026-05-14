@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Place
@@ -41,11 +42,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -264,31 +267,55 @@ fun RoutePlanningScreen(
                             originQuery = it.take(120)
                             selectedOrigin = null
                         },
-                        label = { Text("Origin address or city") },
+                        placeholder = { Text("Origin address or city") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         modifier = Modifier.fillMaxWidth()
                             .onFocusChanged { originFocused = it.isFocused }
                             .onSizeChanged { originFieldHeight = it.height },
+                        shape = RoundedCornerShape(24.dp),
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Place,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
                         trailingIcon = {
-                            val place = selectedOrigin
-                            if (place != null) {
-                                val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
-                                IconButton(onClick = {
-                                    if (settings.isPremium) {
-                                        settingsManager.toggleFavoriteLocation(place)
-                                    } else {
-                                        showPaywallForFavorite = true
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (originQuery.isNotEmpty()) {
+                                    IconButton(onClick = {
+                                        originQuery = ""
+                                        selectedOrigin = null
+                                    }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Clear")
                                     }
-                                }) {
-                                    Icon(
-                                        imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                                        contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                                        tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.4f)
-                                    )
+                                }
+                                val place = selectedOrigin
+                                if (place != null) {
+                                    val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
+                                    IconButton(onClick = {
+                                        if (settings.isPremium) {
+                                            settingsManager.toggleFavoriteLocation(place)
+                                        } else {
+                                            showPaywallForFavorite = true
+                                        }
+                                    }) {
+                                        Icon(
+                                            imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                                            contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                                            tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.4f)
+                                        )
+                                    }
                                 }
                             }
-                        }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = Color.Transparent,
+                        )
                     )
                     if (originFocused && originSuggestions.isNotEmpty()) {
                         Popup(
@@ -368,45 +395,67 @@ fun RoutePlanningScreen(
             Text("Destination", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             Spacer(modifier = Modifier.height(4.dp))
             Box {
-                Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = destQuery,
                     onValueChange = {
                         destQuery = it.take(120)
                         selectedDest = null
                     },
-                    label = { Text("Destination address or city") },
+                    placeholder = { Text("Destination address or city") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                         .onFocusChanged { destFocused = it.isFocused }
                         .onSizeChanged { destFieldHeight = it.height },
+                    shape = RoundedCornerShape(24.dp),
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Directions,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
                     trailingIcon = {
-                        val place = selectedDest
-                        if (place != null) {
-                            val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
-                            IconButton(onClick = {
-                                if (settings.isPremium) {
-                                    settingsManager.toggleFavoriteLocation(place)
-                                } else {
-                                    showPaywallForFavorite = true
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (destQuery.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    destQuery = ""
+                                    selectedDest = null
+                                }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear")
                                 }
-                            }) {
-                                Icon(
-                                    imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                                    tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.4f)
-                                )
+                            }
+                            val place = selectedDest
+                            if (place != null) {
+                                val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
+                                IconButton(onClick = {
+                                    if (settings.isPremium) {
+                                        settingsManager.toggleFavoriteLocation(place)
+                                    } else {
+                                        showPaywallForFavorite = true
+                                    }
+                                }) {
+                                    Icon(
+                                        imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                                        contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                                        tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.4f)
+                                    )
+                                }
+                                if (onSearchAtLocation != null) {
+                                    IconButton(onClick = { onSearchAtLocation(place.latitude, place.longitude) }) {
+                                        Icon(Icons.Default.Place, contentDescription = "Search at destination", tint = Color.White)
+                                    }
+                                }
                             }
                         }
-                    }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                    )
                 )
-                if (selectedDest != null && onSearchAtLocation != null) {
-                    IconButton(onClick = { onSearchAtLocation(selectedDest!!.latitude, selectedDest!!.longitude) }) {
-                        Icon(Icons.Default.Place, contentDescription = "Search at destination", tint = Color.White)
-                    }
-                }
-                }
                 if (destFocused && destSuggestions.isNotEmpty()) {
                     Popup(
                         onDismissRequest = { destFocused = false },
