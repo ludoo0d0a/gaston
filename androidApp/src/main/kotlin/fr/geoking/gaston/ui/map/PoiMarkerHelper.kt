@@ -28,6 +28,7 @@ object PoiMarkerHelper {
         synchronized(vectorRasterCache) {
             vectorRasterCache.evictAll()
         }
+        AmenityIconCatalog.clearCache()
     }
 
     /** Bump when marker layout changes so [cache] entries are not stale. */
@@ -57,12 +58,14 @@ object PoiMarkerHelper {
         }
         val label = getPoiLabel(poi, effectiveEnergyTypes, effectivePowerLevels)
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
-        val headDrawableId = headDrawableResId(poi, brandInfo)
+        val amenityStyle = if (brandInfo == null) AmenityIconCatalog.styleForCategory(poi.poiCategory) else null
+        val headDrawableId = if (amenityStyle == null) headDrawableResId(poi, brandInfo) else 0
         val category = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
         val categoryColor = getPoiColor(poi, category, effectiveEnergyTypes, effectivePowerLevels)
 
         val availKey = availability?.let { "${it.availableCount}/${it.totalCount}" } ?: "na"
-        val cacheKey = "${poi.id}_${label}_${headDrawableId}_${categoryColor}_${isSelected}_${isCheapest}_${sizePx}_${availKey}_$MARKER_LAYOUT_CACHE_TAG"
+        val headKey = if (amenityStyle != null) "amenity_${System.identityHashCode(amenityStyle.icon)}_${amenityStyle.glyphArgb}" else headDrawableId.toString()
+        val cacheKey = "${poi.id}_${label}_${headKey}_${categoryColor}_${isSelected}_${isCheapest}_${sizePx}_${availKey}_$MARKER_LAYOUT_CACHE_TAG"
         synchronized(cache) {
             cache.get(cacheKey)?.let { return it }
         }
@@ -149,7 +152,11 @@ object PoiMarkerHelper {
 
         // 2) Pin head: *_rounded / brand roundedIconResId already include ic_poi_background_circle — no extra drawCircle.
         val headSizePx = (2f * circleR).toInt().coerceAtLeast(16)
-        val headBitmap = vectorToBitmapCached(context, headDrawableId, headSizePx)
+        val headBitmap = if (amenityStyle != null) {
+            AmenityIconCatalog.headBitmap(amenityStyle, headSizePx)
+        } else {
+            vectorToBitmapCached(context, headDrawableId, headSizePx)
+        }
         if (headBitmap != null) {
             val left = circleCx - headBitmap.width / 2f
             val top = circleCy - headBitmap.height / 2f

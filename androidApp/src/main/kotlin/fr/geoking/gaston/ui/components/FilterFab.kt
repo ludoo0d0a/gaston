@@ -5,30 +5,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Forest
-import androidx.compose.material.icons.filled.LocalParking
-import androidx.compose.material.icons.filled.LocalShipping
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Landscape
-import androidx.compose.material.icons.filled.OutdoorGrill
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.WaterDrop
-import androidx.compose.material.icons.filled.Wc
-import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.*
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.anyProvidesFuel
 import fr.geoking.gaston.ui.*
+import fr.geoking.gaston.ui.map.AmenityIconCatalog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -223,7 +211,7 @@ private fun AmenityFilters(settingsManager: SettingsManager) {
     ) {
         OVERPASS_AMENITY_OPTIONS.forEach { (id, label) ->
             val isSelected = settings.selectedOverpassAmenityTypes.contains(id)
-            val icon = remember(id) { amenityIcon(id) }
+            val icon = remember(id) { AmenityIconCatalog.iconForOsmId(id) }
             FilterChip(
                 selected = isSelected,
                 onClick = {
@@ -358,24 +346,6 @@ private fun FilterSectionTitle(title: String) {
         color = Color.White.copy(alpha = 0.7f),
         modifier = Modifier.padding(bottom = 8.dp)
     )
-}
-
-private fun amenityIcon(id: String): ImageVector = when (id) {
-    "parking" -> Icons.Filled.LocalParking
-    "toilets" -> Icons.Filled.Wc
-    "drinking_water" -> Icons.Filled.WaterDrop
-    "truck_stop" -> Icons.Filled.LocalShipping
-    "camp_site" -> Icons.Filled.Landscape
-    // Requested: "Aire CC" should be a tree icon
-    "caravan_site" -> Icons.Filled.Forest
-    "picnic_site" -> Icons.Filled.OutdoorGrill
-    "rest_area" -> Icons.Filled.Forest
-    "restaurant" -> Icons.Filled.Restaurant
-    "fast_food" -> Icons.Filled.Fastfood
-    "speed_camera" -> Icons.Filled.Speed
-    // Requested: viewpoint should be “jumelles” (closest Material icon)
-    "viewpoint" -> Icons.Filled.Visibility
-    else -> Icons.Filled.LocationOn
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
