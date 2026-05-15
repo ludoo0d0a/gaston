@@ -317,15 +317,20 @@ class SelectorPoiProvider(
         val errors = mutableListOf<PoiProviderError>()
         var finalEnriched = listOf<Poi>()
 
-        val categories = settings.effectiveAllowedCategories()
+        val categoriesToFetch = if (settings.isOtherModeActive()) {
+            settings.effectiveAllowedCategories()
+        } else {
+            // Always fetch both Gas and Irve to pre-populate cache for mode toggling
+            settings.effectiveAllowedCategories() + setOf(PoiCategory.Gas, PoiCategory.Irve)
+        }
 
         // In "Other" mode, if no amenities are selected, we don't display anything.
-        if (settings.isOtherModeActive() && categories.isEmpty()) {
+        if (settings.isOtherModeActive() && categoriesToFetch.isEmpty()) {
             send(PoiSearchResult())
             return@channelFlow
         }
 
-        val effectiveRequest = request.copy(categories = categories, skipFilters = true)
+        val effectiveRequest = request.copy(categories = categoriesToFetch, skipFilters = true)
 
         coroutineScope {
             providers.forEach { providerType ->
@@ -342,7 +347,7 @@ class SelectorPoiProvider(
                         allPois.addAll(searchResult.pois)
                         errors.addAll(searchResult.errors)
 
-                        if (providerType == PoiProviderType.Overpass && PoiCategory.CaravanSite in categories && dataGouvCamping != null) {
+                        if (providerType == PoiProviderType.Overpass && PoiCategory.CaravanSite in categoriesToFetch && dataGouvCamping != null) {
                             try {
                                 val extra = dataGouvCamping.search(effectiveRequest)
                                 allPois.addAll(extra)
@@ -544,14 +549,19 @@ class SelectorPoiProvider(
         val allPois = mutableListOf<Poi>()
         val errors = mutableListOf<PoiProviderError>()
 
-        val categories = settings.effectiveAllowedCategories()
+        val categoriesToFetch = if (settings.isOtherModeActive()) {
+            settings.effectiveAllowedCategories()
+        } else {
+            // Always fetch both Gas and Irve to pre-populate cache for mode toggling
+            settings.effectiveAllowedCategories() + setOf(PoiCategory.Gas, PoiCategory.Irve)
+        }
 
         // In "Other" mode, if no amenities are selected, we don't display anything.
-        if (settings.isOtherModeActive() && categories.isEmpty()) {
+        if (settings.isOtherModeActive() && categoriesToFetch.isEmpty()) {
             return PoiSearchResult()
         }
 
-        val effectiveRequest = request.copy(categories = categories, skipFilters = true)
+        val effectiveRequest = request.copy(categories = categoriesToFetch, skipFilters = true)
 
         providers.forEach { providerType ->
             val activeProvider = getProvider(providerType)
@@ -564,7 +574,7 @@ class SelectorPoiProvider(
             allPois.addAll(searchResult.pois)
             errors.addAll(searchResult.errors)
 
-            if (providerType == PoiProviderType.Overpass && PoiCategory.CaravanSite in categories && dataGouvCamping != null) {
+            if (providerType == PoiProviderType.Overpass && PoiCategory.CaravanSite in categoriesToFetch && dataGouvCamping != null) {
                 try {
                     val extra = dataGouvCamping.search(effectiveRequest)
                     allPois.addAll(extra)
@@ -642,7 +652,7 @@ class SelectorPoiProvider(
         }
 
         val result = applyPostFilters(cachedPois, request, providers)
-        Log.d("SelectorPoiProvider", "search providers=$providers categories=$categories skipFilters=${request.skipFilters} -> ${result.size} pois")
+        Log.d("SelectorPoiProvider", "search providers=$providers categories=$categoriesToFetch skipFilters=${request.skipFilters} -> ${result.size} pois")
         return PoiSearchResult(pois = result, errors = errors)
     }
 
