@@ -9,6 +9,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,8 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.StationMapFilters
+import fr.geoking.gaston.VehicleType
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.community.FavoritesRepository
@@ -33,6 +36,7 @@ import fr.geoking.gaston.intent.NavDestination
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
@@ -48,6 +52,24 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+/**
+ * Inputs that change WHAT is fetched (which providers, which categories).
+ *
+ * Note: `mapEnergyMode`, `selectedMapEnergyTypes`, `mapPowerLevels`,
+ * `vehicleEnergy`, `fuelCard`, `selectedMapConnectorTypes`, etc. are
+ * deliberately excluded. They only affect post-fetch filtering and are
+ * applied locally in `derivedStateOf` below, so toggling them re-renders
+ * the "Nearest stations" widget instantly from the cached raw POIs.
+ */
+private data class FetchKey(
+    val selectedLocation: GeocodedPlace?,
+    val providerMode: PoiProviderSelectionMode,
+    val selectedProviders: Set<PoiProviderType>,
+    val overpassAmenities: Set<String>,
+    val useVehicleFilter: Boolean,
+    val vehicleType: VehicleType
+)
 
 @OptIn(ExperimentalMaterial3Api::class, kotlinx.coroutines.FlowPreview::class)
 @Composable
@@ -83,7 +105,10 @@ fun PhoneDashboardScreen(
         }
     }
 
-    var nearbyPois by remember { mutableStateOf<List<Poi>>(emptyList()) }
+    // Raw POIs from the last successful fetch (unfiltered, untrimmed).
+    // Kept across energy/fuel filter toggles so we can re-derive the displayed
+    // list locally without hitting the network or the SelectorPoiProvider cache.
+    var rawNearbyPois by remember { mutableStateOf<List<Poi>>(emptyList()) }
     var isLoadingPois by remember { mutableStateOf(false) }
     var searchError by remember { mutableStateOf<String?>(null) }
     var userLat by remember { mutableStateOf<Double?>(null) }
@@ -115,23 +140,28 @@ fun PhoneDashboardScreen(
         }
     }
 
+    // Fetch raw POIs. The trigger keys only include inputs that change WHAT
+    // is fetched from the network / underlying cache (location, provider mode,
+    // and category-affecting settings). Filter-only settings (energy mode,
+    // fuel-type chips, power chips, fuel card, vehicle energy, etc.) are NOT
+    // keys here so toggling them doesn't re-fetch — `nearbyPois` is derived
+    // locally below from `rawNearbyPois`.
     LaunchedEffect(poiProvider, hasLocationPermission, selectedSearchLocation) {
         if (poiProvider == null) return@LaunchedEffect
 
         snapshotFlow {
-            listOf(
-                settings.effectiveMapEnergyFilterIds(),
-                settings,
-                settings.useVehicleFilter,
-                selectedSearchLocation
+            FetchKey(
+                selectedLocation = selectedSearchLocation,
+                providerMode = settings.poiProviderSelectionMode,
+                selectedProviders = settings.selectedPoiProviders,
+                overpassAmenities = settings.selectedOverpassAmenityTypes,
+                useVehicleFilter = settings.useVehicleFilter,
+                vehicleType = settings.vehicleType
             )
         }
             .debounce(300)
-            .collectLatest { params ->
-                @Suppress("UNCHECKED_CAST")
-                val currentEnergyIds = params[0] as Set<String>
-                val settingsSnapshot = params[1] as fr.geoking.gaston.AppSettings
-                val selectedLoc = params[3] as GeocodedPlace?
+            .collectLatest { key ->
+                val selectedLoc = key.selectedLocation
                 isLoadingPois = true
                 searchError = null
 
@@ -146,7 +176,7 @@ fun PhoneDashboardScreen(
                     baseLat = loc?.latitude
                     baseLon = loc?.longitude
                 } else {
-                    nearbyPois = emptyList()
+                    rawNearbyPois = emptyList()
                     searchError = "Location permission is required to find nearby stations."
                     isLoadingPois = false
                     return@collectLatest
@@ -155,10 +185,9 @@ fun PhoneDashboardScreen(
                 if (baseLat != null && baseLon != null) {
                     userLat = baseLat
                     userLon = baseLon
-                    val currentProviders = settingsSnapshot.effectiveProvidersAt(baseLat, baseLon)
 
                     try {
-                        val results = poiProvider.search(
+                        rawNearbyPois = poiProvider.search(
                             PoiSearchRequest(
                                 latitude = baseLat,
                                 longitude = baseLon,
@@ -166,44 +195,56 @@ fun PhoneDashboardScreen(
                                 skipFilters = true
                             )
                         )
-
-                        val filteredResults = StationMapFilters.apply(
-                            settings = settingsSnapshot,
-                            pois = results,
-                            providers = currentProviders,
-                            skipWhenOnlyOverpass = true
-                        )
-
-                        val fuelIds = currentEnergyIds - "electric"
-
-                        nearbyPois = filteredResults
-                            .sortedWith { a, b ->
-                                val pricesA = if (fuelIds.isEmpty()) a.fuelPrices else a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                                val pricesB = if (fuelIds.isEmpty()) b.fuelPrices else b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-
-                                val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
-                                val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
-
-                                if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
-                                    priceA.compareTo(priceB)
-                                } else {
-                                    val distA = approxDistanceKm(baseLat, baseLon, a.latitude, a.longitude)
-                                    val distB = approxDistanceKm(baseLat, baseLon, b.latitude, b.longitude)
-                                    distA.compareTo(distB)
-                                }
-                            }
-                            .take(5)
                     } catch (e: Exception) {
                         android.util.Log.e("PhoneDashboardScreen", "Failed to fetch nearby POIs", e)
                         searchError = "Unable to fetch nearby stations. Please check your connection."
-                        nearbyPois = emptyList()
+                        rawNearbyPois = emptyList()
                     }
                 } else {
                     searchError = "Unable to determine your location."
-                    nearbyPois = emptyList()
+                    rawNearbyPois = emptyList()
                 }
                 isLoadingPois = false
             }
+    }
+
+    // Re-derive the visible list locally on every settings change (energy
+    // mode, fuel type, power level, brand, etc.). Synchronous, no network,
+    // no debounce — toggling Fuel/EV or fuel chips updates the widget
+    // instantly using the already-cached `rawNearbyPois`.
+    val nearbyPois by remember {
+        derivedStateOf {
+            val baseLat = userLat
+            val baseLon = userLon
+            if (baseLat == null || baseLon == null || rawNearbyPois.isEmpty()) {
+                return@derivedStateOf emptyList<Poi>()
+            }
+            val currentProviders = settings.effectiveProvidersAt(baseLat, baseLon)
+            val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+
+            StationMapFilters.apply(
+                settings = settings,
+                pois = rawNearbyPois,
+                providers = currentProviders,
+                skipWhenOnlyOverpass = true
+            )
+                .sortedWith { a, b ->
+                    val pricesA = if (fuelIds.isEmpty()) a.fuelPrices else a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                    val pricesB = if (fuelIds.isEmpty()) b.fuelPrices else b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+
+                    val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
+                    val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
+
+                    if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
+                        priceA.compareTo(priceB)
+                    } else {
+                        val distA = approxDistanceKm(baseLat, baseLon, a.latitude, a.longitude)
+                        val distB = approxDistanceKm(baseLat, baseLon, b.latitude, b.longitude)
+                        distA.compareTo(distB)
+                    }
+                }
+                .take(5)
+        }
     }
 
     LaunchedEffect(userLat, userLon, energyFilterIds, hasLocationPermission, fuelForecastRepository) {
