@@ -95,22 +95,10 @@ class AutoDashboardScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Routes")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_swap_horiz)).build())
+                .setTitle("Emergency")
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_sos_rounded)).build())
                 .setOnClickListener {
-                    val mapDeps = getMapDeps()
-                    if (mapDeps != null) {
-                        screenManager.push(
-                            AutoRoutePlanningScreen(
-                                carContext = carContext,
-                                routePlanner = mapDeps.routePlanner,
-                                routingClient = mapDeps.routingClient,
-                                poiProvider = mapDeps.poiProvider,
-                                geocodingClient = mapDeps.geocodingClient,
-                                settingsManager = settingsManager
-                            )
-                        )
-                    }
+                    screenManager.push(AutoEmergencyScreen(carContext, networkService))
                 }
                 .build()
         )
@@ -124,6 +112,27 @@ class AutoDashboardScreen(
                         object : Screen(carContext) {
                             override fun onGetTemplate(): Template {
                                 val moreList = ItemList.Builder()
+                                    .addItem(
+                                        Row.Builder()
+                                            .setTitle("Routes")
+                                            .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_swap_horiz)).build())
+                                            .setOnClickListener {
+                                                val mapDeps = getMapDeps()
+                                                if (mapDeps != null) {
+                                                    screenManager.push(
+                                                        AutoRoutePlanningScreen(
+                                                            carContext = carContext,
+                                                            routePlanner = mapDeps.routePlanner,
+                                                            routingClient = mapDeps.routingClient,
+                                                            poiProvider = mapDeps.poiProvider,
+                                                            geocodingClient = mapDeps.geocodingClient,
+                                                            settingsManager = settingsManager
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                            .build()
+                                    )
                                     .addItem(
                                         Row.Builder()
                                             .setTitle("Fuel outlook")

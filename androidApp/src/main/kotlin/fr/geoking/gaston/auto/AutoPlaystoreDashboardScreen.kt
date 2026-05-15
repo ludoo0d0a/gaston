@@ -89,20 +89,10 @@ class AutoPlaystoreDashboardScreen(
 
         grid.addItem(
             GridItem.Builder()
-                .setTitle("Routes")
-                .setImage(gridIcon(R.drawable.ic_swap_horiz))
+                .setTitle("Emergency")
+                .setImage(gridIcon(R.drawable.ic_sos_rounded))
                 .setOnClickListener {
-                    val mapDeps = getMapDeps() ?: return@setOnClickListener
-                    screenManager.push(
-                        AutoRoutePlanningScreen(
-                            carContext = carContext,
-                            routePlanner = mapDeps.routePlanner,
-                            routingClient = mapDeps.routingClient,
-                            poiProvider = mapDeps.poiProvider,
-                            geocodingClient = mapDeps.geocodingClient,
-                            settingsManager = settingsManager
-                        )
-                    )
+                    screenManager.push(AutoEmergencyScreen(carContext, networkService))
                 }
                 .build()
         )
@@ -116,6 +106,25 @@ class AutoPlaystoreDashboardScreen(
                         object : Screen(carContext) {
                             override fun onGetTemplate(): Template {
                                 val moreList = ItemList.Builder()
+                                    .addItem(
+                                        Row.Builder()
+                                            .setTitle("Routes")
+                                            .setImage(gridIcon(R.drawable.ic_swap_horiz))
+                                            .setOnClickListener {
+                                                val mapDeps = getMapDeps() ?: return@setOnClickListener
+                                                screenManager.push(
+                                                    AutoRoutePlanningScreen(
+                                                        carContext = carContext,
+                                                        routePlanner = mapDeps.routePlanner,
+                                                        routingClient = mapDeps.routingClient,
+                                                        poiProvider = mapDeps.poiProvider,
+                                                        geocodingClient = mapDeps.geocodingClient,
+                                                        settingsManager = settingsManager
+                                                    )
+                                                )
+                                            }
+                                            .build()
+                                    )
                                     .addItem(
                                         Row.Builder()
                                             .setTitle("Fuel outlook")
