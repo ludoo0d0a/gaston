@@ -28,6 +28,25 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Write google-services.json (optional)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          # Optional in PR builds: if the secret isn't available (e.g. PR from a fork),
+          # the build still works because androidApp/build.gradle.kts only applies the
+          # Google Services plugin when the file exists.
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > androidApp/google-services.json
+            if jq -e . androidApp/google-services.json >/dev/null 2>&1; then
+              echo "google-services.json written ($(wc -c < androidApp/google-services.json) bytes)"
+            else
+              echo "::warning::GOOGLE_SERVICES_JSON did not contain valid JSON; building without Firebase."
+              rm -f androidApp/google-services.json
+            fi
+          else
+            echo "GOOGLE_SERVICES_JSON not set; building without Firebase."
+          fi
+
       - name: Build
         env:
           # Some modules expect these to exist at build time; keep them empty for CI.

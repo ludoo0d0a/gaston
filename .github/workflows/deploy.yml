@@ -72,6 +72,21 @@ jobs:
           fi
           echo "Keystore decoded successfully ($(wc -c < release.keystore) bytes)"
 
+      - name: Write google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "::error::GOOGLE_SERVICES_JSON secret is missing. Paste the contents of androidApp/google-services.json (downloaded from Firebase) into a GitHub Actions secret (see docs/GOOGLE_PLAY_MIGRATION.md §4)."
+            exit 1
+          fi
+          printf '%s' "$GOOGLE_SERVICES_JSON" > androidApp/google-services.json
+          if ! jq -e . androidApp/google-services.json >/dev/null 2>&1; then
+            echo "::error::GOOGLE_SERVICES_JSON does not contain valid JSON."
+            exit 1
+          fi
+          echo "google-services.json written ($(wc -c < androidApp/google-services.json) bytes)"
+
       - name: Build and sign with Gradle
         env:
           GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
