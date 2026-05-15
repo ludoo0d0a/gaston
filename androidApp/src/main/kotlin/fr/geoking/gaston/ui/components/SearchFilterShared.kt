@@ -73,7 +73,7 @@ fun SearchModeSelector(
         SearchRow(
             title = stringResource(R.string.search_mode_ev),
             subtitle = "EV",
-            iconResId = R.drawable.ic_car_rounded,
+            iconResId = R.drawable.ic_poi_electric,
             mode = SearchMode.EV,
             onClick = { settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric) }
         ),
