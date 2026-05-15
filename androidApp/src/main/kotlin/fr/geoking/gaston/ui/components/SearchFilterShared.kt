@@ -12,6 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import fr.geoking.gaston.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -30,7 +33,8 @@ enum class SearchMode { Fuel, EV, MyCar, Other }
 data class SearchRow(
     val title: String,
     val subtitle: String,
-    val icon: ImageVector,
+    val icon: ImageVector? = null,
+    val iconResId: Int? = null,
     val onClick: () -> Unit,
     val enabled: Boolean = true,
     val mode: SearchMode? = null
@@ -60,30 +64,30 @@ fun SearchModeSelector(
 ) {
     val quickActions = listOf(
         SearchRow(
-            title = "Essence",
+            title = stringResource(R.string.search_mode_fuel),
             subtitle = "Fuel",
-            icon = Icons.Default.LocalGasStation,
+            iconResId = R.drawable.ic_poi_gas,
             mode = SearchMode.Fuel,
             onClick = { settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel) }
         ),
         SearchRow(
-            title = "Électrique",
+            title = stringResource(R.string.search_mode_ev),
             subtitle = "EV",
-            icon = Icons.Default.EvStation,
+            iconResId = R.drawable.ic_car_rounded,
             mode = SearchMode.EV,
             onClick = { settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric) }
         ),
         SearchRow(
-            title = "Ma voiture",
+            title = stringResource(R.string.search_mode_my_car),
             subtitle = "My car",
-            icon = Icons.Default.DirectionsCar,
+            iconResId = R.drawable.ic_directions_car,
             mode = SearchMode.MyCar,
             onClick = { settingsManager.setMyCarMode() }
         ),
         SearchRow(
-            title = "Autre",
+            title = stringResource(R.string.search_mode_other),
             subtitle = "Other",
-            icon = Icons.Default.Place,
+            iconResId = R.drawable.ic_waypoint,
             mode = SearchMode.Other,
             onClick = { settingsManager.setOtherMode() }
         )
@@ -113,12 +117,21 @@ fun SearchModeSelector(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = action.icon,
-                            contentDescription = null,
-                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        if (action.iconResId != null) {
+                            Icon(
+                                painter = painterResource(action.iconResId),
+                                contentDescription = null,
+                                tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        } else if (action.icon != null) {
+                            Icon(
+                                imageVector = action.icon,
+                                contentDescription = null,
+                                tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                         Text(
                             text = action.title,
                             style = MaterialTheme.typography.labelSmall,
@@ -197,7 +210,7 @@ fun SearchCategorySelector(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.DirectionsCar,
+                                    painter = painterResource(R.drawable.ic_directions_car),
                                     contentDescription = null,
                                     tint = Color(0xFF4338CA),
                                     modifier = Modifier.size(24.dp)
@@ -230,7 +243,7 @@ fun SearchCategorySelector(
                         selected = true,
                         onClick = { onOpenSettings(listOf(SettingsScreenPage.VehicleConfig)) },
                         label = { Text("${settings.vehicleBrand} ${settings.vehicleModel}") },
-                        leadingIcon = { Icon(Icons.Default.DirectionsCar, null, Modifier.size(18.dp)) }
+                        leadingIcon = { Icon(painterResource(R.drawable.ic_directions_car), null, Modifier.size(18.dp)) }
                     )
                 }
             }

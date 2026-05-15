@@ -4,4 +4,8 @@
     <string name="hi_how_can_i_help">Hi, how can I help you</string>
     <string name="searching_address">Searching address…</string>
     <string name="planning_route">Planning route…</string>
+    <string name="search_mode_fuel">Fuel</string>
+    <string name="search_mode_ev">EV</string>
+    <string name="search_mode_my_car">My car</string>
+    <string name="search_mode_other">Other</string>
 </resources>

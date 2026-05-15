@@ -8,11 +8,14 @@ import androidx.car.app.model.GridItem
 import androidx.car.app.model.GridTemplate
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.repository.FuelForecastRepository
@@ -36,49 +39,50 @@ class AutoPlaystoreDashboardScreen(
 
         val grid = ItemList.Builder()
 
+        val fuelTitle = carContext.getString(R.string.search_mode_fuel)
         grid.addItem(
             GridItem.Builder()
-                .setTitle("Stations")
-                .setImage(gridIcon(R.drawable.ic_map))
-                .setOnClickListener {
-                    settingsManager.setUseVehicleFilter(false)
-                    pushMapScreen()
-                }
-                .build()
-        )
-
-        grid.addItem(
-            GridItem.Builder()
-                .setTitle("My Stations")
-                .setImage(gridIcon(R.drawable.ic_car_rounded))
-                .setOnClickListener {
-                    settingsManager.setUseVehicleFilter(true)
-                    pushMapScreen("My Custom Car")
-                }
-                .build()
-        )
-
-        grid.addItem(
-            GridItem.Builder()
-                .setTitle("Parking")
-                .setImage(gridIcon(R.drawable.ic_poi_parking_rounded))
-                .setOnClickListener {
-                    settingsManager.setUseVehicleFilter(false)
-                    settingsManager.setPoiProviderTypes(setOf(PoiProviderType.Overpass))
-                    settingsManager.setOverpassAmenityTypes(setOf("parking"))
-                    pushMapScreen("Parkings")
-                }
-                .build()
-        )
-
-        grid.addItem(
-            GridItem.Builder()
-                .setTitle("Fuel outlook")
+                .setTitle(fuelTitle)
                 .setImage(gridIcon(R.drawable.ic_poi_gas_rounded))
                 .setOnClickListener {
-                    screenManager.push(
-                        AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository)
-                    )
+                    settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel)
+                    pushMapScreen(fuelTitle)
+                }
+                .build()
+        )
+
+        val evTitle = carContext.getString(R.string.search_mode_ev)
+        grid.addItem(
+            GridItem.Builder()
+                .setTitle(evTitle)
+                .setImage(gridIcon(R.drawable.ic_car_rounded))
+                .setOnClickListener {
+                    settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric)
+                    pushMapScreen(evTitle)
+                }
+                .build()
+        )
+
+        val myCarTitle = carContext.getString(R.string.search_mode_my_car)
+        grid.addItem(
+            GridItem.Builder()
+                .setTitle(myCarTitle)
+                .setImage(gridIcon(R.drawable.ic_directions_car_rounded))
+                .setOnClickListener {
+                    settingsManager.setMyCarMode()
+                    pushMapScreen(myCarTitle)
+                }
+                .build()
+        )
+
+        val otherTitle = carContext.getString(R.string.search_mode_other)
+        grid.addItem(
+            GridItem.Builder()
+                .setTitle(otherTitle)
+                .setImage(gridIcon(R.drawable.ic_waypoint_rounded))
+                .setOnClickListener {
+                    settingsManager.setOtherMode()
+                    pushMapScreen(otherTitle)
                 }
                 .build()
         )
@@ -105,30 +109,58 @@ class AutoPlaystoreDashboardScreen(
 
         grid.addItem(
             GridItem.Builder()
-                .setTitle("Template lab")
-                .setImage(gridIcon(R.mipmap.ic_launcher))
-                .setOnClickListener {
-                    screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps))
-                }
-                .build()
-        )
-
-        grid.addItem(
-            GridItem.Builder()
-                .setTitle("Network & GPS")
-                .setImage(gridIcon(R.drawable.ic_poi_radar_rounded))
-                .setOnClickListener {
-                    screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService))
-                }
-                .build()
-        )
-
-        grid.addItem(
-            GridItem.Builder()
-                .setTitle("Map settings")
+                .setTitle("More")
                 .setImage(gridIcon(R.drawable.ic_settings))
                 .setOnClickListener {
-                    screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
+                    screenManager.push(
+                        object : Screen(carContext) {
+                            override fun onGetTemplate(): Template {
+                                val moreList = ItemList.Builder()
+                                    .addItem(
+                                        Row.Builder()
+                                            .setTitle("Fuel outlook")
+                                            .setImage(gridIcon(R.drawable.ic_poi_gas_rounded))
+                                            .setOnClickListener {
+                                                screenManager.push(AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository))
+                                            }
+                                            .build()
+                                    )
+                                    .addItem(
+                                        Row.Builder()
+                                            .setTitle("Network & GPS")
+                                            .setImage(gridIcon(R.drawable.ic_poi_radar_rounded))
+                                            .setOnClickListener {
+                                                screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService))
+                                            }
+                                            .build()
+                                    )
+                                    .addItem(
+                                        Row.Builder()
+                                            .setTitle("Map settings")
+                                            .setImage(gridIcon(R.drawable.ic_settings))
+                                            .setOnClickListener {
+                                                screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
+                                            }
+                                            .build()
+                                    )
+                                    .addItem(
+                                        Row.Builder()
+                                            .setTitle("Template lab")
+                                            .setImage(gridIcon(R.mipmap.ic_launcher))
+                                            .setOnClickListener {
+                                                screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps))
+                                            }
+                                            .build()
+                                    )
+                                    .build()
+
+                                return ListTemplate.Builder()
+                                    .setHeader(Header.Builder().setTitle("More").setStartHeaderAction(Action.BACK).build())
+                                    .setSingleList(moreList)
+                                    .build()
+                            }
+                        }
+                    )
                 }
                 .build()
         )
