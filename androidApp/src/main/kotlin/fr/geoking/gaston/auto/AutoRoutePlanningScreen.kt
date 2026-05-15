@@ -20,6 +20,7 @@ import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
@@ -58,6 +59,10 @@ class AutoRoutePlanningScreen(
     private var loading: Boolean = false
     private var loadingMessageResId: Int = R.string.planning_route
     private var stations: List<Poi> = emptyList()
+
+    private var originSuggestions: List<GeocodedPlace> = emptyList()
+    private var destinationSuggestions: List<GeocodedPlace> = emptyList()
+    private var suggestionJob: Job? = null
 
     private var computeJob: Job? = null
 
@@ -109,6 +114,42 @@ class AutoRoutePlanningScreen(
         }
     }
 
+    private fun fetchSuggestions(query: String, isOrigin: Boolean) {
+        suggestionJob?.cancel()
+        if (query.isBlank()) {
+            if (isOrigin) originSuggestions = emptyList() else destinationSuggestions = emptyList()
+            invalidate()
+            return
+        }
+
+        val settings = settingsManager.settings.value
+        val historyMatches = settings.routeHistory.filter { it.label.contains(query, ignoreCase = true) }
+        val favoriteMatches = settings.favoriteLocations.filter { it.label.contains(query, ignoreCase = true) }
+        val local = (favoriteMatches + historyMatches).distinctBy { it.label }
+
+        if (isOrigin) originSuggestions = local else destinationSuggestions = local
+        invalidate()
+
+        if (query.length > 2) {
+            suggestionJob = lifecycleScope.launch {
+                kotlinx.coroutines.delay(500)
+                try {
+                    val remote = geocodingClient.geocode(
+                        query,
+                        limit = 5,
+                        biasLatitude = settings.lastKnownLat,
+                        biasLongitude = settings.lastKnownLon
+                    )
+                    val merged = (favoriteMatches + historyMatches + remote).distinctBy { it.label }
+                    if (isOrigin) originSuggestions = merged else destinationSuggestions = merged
+                    invalidate()
+                } catch (e: Exception) {
+                    // Ignore
+                }
+            }
+        }
+    }
+
     private fun buildSearchTemplate(
         title: String,
         hint: String,
@@ -130,6 +171,7 @@ class AutoRoutePlanningScreen(
         val builder = SearchTemplate.Builder(object : SearchTemplate.SearchCallback {
             override fun onSearchTextChanged(searchText: String) {
                 onQueryChange(searchText)
+                fetchSuggestions(searchText, step == Step.ORIGIN)
             }
 
             override fun onSearchSubmitted(searchText: String) {
@@ -143,7 +185,39 @@ class AutoRoutePlanningScreen(
             .setInitialSearchText(query)
             .setActionStrip(actionStrip)
 
-        if (showSkipToCurrentLocation) {
+        val suggestions = if (step == Step.ORIGIN) originSuggestions else destinationSuggestions
+        if (query.isNotBlank() && suggestions.isNotEmpty()) {
+            val listBuilder = ItemList.Builder()
+            val settings = settingsManager.settings.value
+            suggestions.take(6).forEach { suggestion ->
+                val isHistory = settings.routeHistory.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
+                val isFavorite = settings.favoriteLocations.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
+
+                listBuilder.addItem(
+                    Row.Builder()
+                        .setTitle(suggestion.label)
+                        .setImage(CarIcon.Builder(IconCompat.createWithResource(
+                            carContext,
+                            if (isHistory || isFavorite) R.drawable.ic_history else R.drawable.ic_map
+                        )).build())
+                        .setOnClickListener {
+                            if (step == Step.ORIGIN) {
+                                originQuery = suggestion.label
+                                originSuggestions = emptyList()
+                                step = Step.DESTINATION
+                            } else {
+                                destinationQuery = suggestion.label
+                                destinationSuggestions = emptyList()
+                                step = Step.RESULTS
+                                compute()
+                            }
+                            invalidate()
+                        }
+                        .build()
+                )
+            }
+            builder.setItemList(listBuilder.build())
+        } else if (showSkipToCurrentLocation) {
             builder.setItemList(
                 ItemList.Builder()
                     .addItem(
@@ -151,6 +225,7 @@ class AutoRoutePlanningScreen(
                             .setTitle("Use current location")
                             .setOnClickListener {
                                 originQuery = ""
+                                originSuggestions = emptyList()
                                 step = Step.DESTINATION
                                 invalidate()
                             }
