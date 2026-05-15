@@ -12,10 +12,8 @@ ktor = "3.4.2"
 coroutines = "1.10.2"
 koin = "4.2.0"
 kermit = "2.1.0"
-llamatik-library = "0.18.0"
 junit-jupiter = "6.0.3"
 media3 = "1.10.0"
-guava = "33.5.0-android"
 maps-compose = "8.2.2"
 maplibre-android = "13.0.1"
 httpclient-android = "4.3.5.1"
@@ -27,11 +25,9 @@ androidx-credentials = "1.5.0"
 googleid = "1.2.0"
 androidx-room = "2.8.4"
 coil = "3.4.0"
-litertlm-android = "0.10.0"
 androidx-work = "2.10.0"
 coreKtx = "1.18.0"
 robolectric = "4.16.1"
-voskAndroid = "0.3.75"
 firebase-bom = "33.10.0"
 revenuecat = "2.10.2+17.55.1"
 
@@ -70,13 +66,11 @@ koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
-library = { module = "com.llamatik:library", version.ref = "llamatik-library" }
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }
 maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre-android" }
 httpclient-android = { module = "org.apache.httpcomponents:httpclient-android", version.ref = "httpclient-android" }
 media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
 media3-common = { module = "androidx.media3:media3-common", version.ref = "media3" }
-guava = { module = "com.google.guava:guava", version.ref = "guava" }
 play-app-update = { module = "com.google.android.play:app-update", version.ref = "play-app-update" }
 play-app-update-ktx = { module = "com.google.android.play:app-update-ktx", version.ref = "play-app-update" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
@@ -89,14 +83,12 @@ androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "androidx
 androidx-room-ksp = { module = "androidx.room:room-compiler", version.ref = "androidx-room" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
-litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm-android" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
-vosk-android = { module = "com.alphacephei:vosk-android", version.ref = "voskAndroid" }
 revenuecat-purchases = { module = "com.revenuecat.purchases:purchases-kmp-core", version.ref = "revenuecat" }
 revenuecat-purchases-ui = { module = "com.revenuecat.purchases:purchases-kmp-ui", version.ref = "revenuecat" }
 
