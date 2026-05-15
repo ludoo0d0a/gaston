@@ -4,5 +4,9 @@
     <string name="hi_how_can_i_help">Bonjour, comment puis-je vous aider ?</string>
     <string name="searching_address">Recherche d\'adresse en cours…</string>
     <string name="planning_route">Planification de l\'itinéraire en cours…</string>
+    <string name="search_mode_fuel">Essence</string>
+    <string name="search_mode_ev">Électrique</string>
+    <string name="search_mode_my_car">Ma voiture</string>
+    <string name="search_mode_other">Autre</string>
 </resources>
 
