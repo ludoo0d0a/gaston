@@ -80,8 +80,6 @@
 # ---------------------------------------------------------------------------
 # Vosk (reconnaissance vocale offline)
 # ---------------------------------------------------------------------------
--keep class org.vosk.** { *; }
--dontwarn org.vosk.**
 
 # ---------------------------------------------------------------------------
 # Google Play Services / Maps
@@ -93,14 +91,10 @@
 # ---------------------------------------------------------------------------
 # Llamatik / Embedded LLM (si utilisé)
 # ---------------------------------------------------------------------------
--keep class com.llamatik.** { *; }
--dontwarn com.llamatik.**
 
 # ---------------------------------------------------------------------------
 # Google AI Edge LiteRT-LM (on-device GenAI)
 # ---------------------------------------------------------------------------
--keep class com.google.ai.edge.litertlm.** { *; }
--dontwarn com.google.ai.edge.litertlm.**
 
 # ---------------------------------------------------------------------------
 # Google Auth / Credentials
@@ -108,3 +102,8 @@
 -keep class com.google.android.libraries.identity.googleid.** { *; }
 -keep class androidx.credentials.** { *; }
 -dontwarn androidx.credentials.**
+
+# ---------------------------------------------------------------------------
+# RevenueCat
+# ---------------------------------------------------------------------------
+-keep class com.revenuecat.purchases.** { *; }

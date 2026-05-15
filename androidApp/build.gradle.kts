@@ -26,6 +26,9 @@ configure<ApplicationExtension> {
     defaultConfig {
         applicationId = "fr.geoking.gaston"
         minSdk = 26
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
         targetSdk = 35
         val ciRunNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
         val ciRunAttempt = System.getenv("GITHUB_RUN_ATTEMPT")?.toIntOrNull() ?: 1
@@ -233,7 +236,6 @@ dependencies {
     // Media3 for Dashboard Tile
     implementation(libs.media3.session)
     implementation(libs.media3.common)
-    implementation(libs.guava)
 
     // Ktor
     implementation(libs.ktor.client.core)
