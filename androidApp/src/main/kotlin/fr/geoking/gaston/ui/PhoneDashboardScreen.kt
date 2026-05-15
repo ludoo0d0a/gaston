@@ -216,7 +216,8 @@ fun PhoneDashboardScreen(
         derivedStateOf {
             val baseLat = userLat
             val baseLon = userLon
-            if (baseLat == null || baseLon == null || rawNearbyPois.isEmpty()) {
+            val rawPois = rawNearbyPois
+            if (baseLat == null || baseLon == null || rawPois.isEmpty()) {
                 return@derivedStateOf emptyList<Poi>()
             }
             val currentProviders = settings.effectiveProvidersAt(baseLat, baseLon)
@@ -224,7 +225,7 @@ fun PhoneDashboardScreen(
 
             StationMapFilters.apply(
                 settings = settings,
-                pois = rawNearbyPois,
+                pois = rawPois,
                 providers = currentProviders,
                 skipWhenOnlyOverpass = true
             )

@@ -134,15 +134,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         android.util.Log.d("MainActivity", "onCreate start")
 
-        val billingManager: fr.geoking.gaston.premium.BillingManager = get()
-        val settingsManager: SettingsManager = get()
-        lifecycleScope.launch {
-            billingManager.refreshStatus()
-            billingManager.isPremium.collect { isPremium ->
-                settingsManager.setPremium(isPremium)
-            }
-        }
-
         val appError = GastonApplication.initError
         if (appError != null) {
             android.util.Log.e("MainActivity", "Showing startup error (Koin failed)", appError)
@@ -152,6 +143,15 @@ class MainActivity : ComponentActivity() {
                 android.util.Log.e("MainActivity", "setContent failed for StartupErrorContent", ce)
             }
             return
+        }
+
+        val billingManager: fr.geoking.gaston.premium.BillingManager = get()
+        val settingsManager: SettingsManager = get()
+        lifecycleScope.launch {
+            billingManager.refreshStatus()
+            billingManager.isPremium.collect { isPremium ->
+                settingsManager.setPremium(isPremium)
+            }
         }
 
         handleIntent(intent)

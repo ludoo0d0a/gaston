@@ -210,28 +210,29 @@ val appModule = module {
     single { FuelForecastRepository(http = get(), db = get()) }
 
     single<AppDatabase> {
-        fun buildAndValidate(builder: androidx.room.RoomDatabase.Builder<AppDatabase>): AppDatabase {
-            val db = builder.fallbackToDestructiveMigration(dropAllTables = true).build()
-            db.openHelper.writableDatabase.query("SELECT 1").close()
-            return db
+        fun buildAndValidate(builder: androidx.room.RoomDatabase.Builder<AppDatabase>): AppDatabase? {
+            return try {
+                val db = builder.fallbackToDestructiveMigration(dropAllTables = true).build()
+                db.openHelper.writableDatabase.query("SELECT 1").close()
+                db
+            } catch (e: Throwable) {
+                android.util.Log.e("AppModule", "Database build/validation failed", e)
+                null
+            }
         }
 
-        try {
-            android.util.Log.d("AppModule", "Building persistent Room database...")
+        android.util.Log.d("AppModule", "Building persistent Room database...")
+        val persistentDb = buildAndValidate(
+            Room.databaseBuilder(androidContext(), AppDatabase::class.java, "gaston-db")
+        )
+
+        if (persistentDb != null) {
+            persistentDb
+        } else {
+            android.util.Log.w("AppModule", "Persistent DB failed. Falling back to in-memory.")
             buildAndValidate(
-                Room.databaseBuilder(androidContext(), AppDatabase::class.java, "gaston-db")
-            )
-        } catch (e: Throwable) {
-            android.util.Log.e("AppModule", "Persistent DB failed. Falling back to in-memory. Error: ${e.stackTraceToString()}", e)
-            try {
-                android.util.Log.d("AppModule", "Building in-memory Room database...")
-                buildAndValidate(
-                    Room.inMemoryDatabaseBuilder(androidContext(), AppDatabase::class.java)
-                )
-            } catch (inner: Throwable) {
-                android.util.Log.e("AppModule", "In-memory DB also failed. Error: ${inner.stackTraceToString()}", inner)
-                throw inner
-            }
+                Room.inMemoryDatabaseBuilder(androidContext(), AppDatabase::class.java)
+            ) ?: throw IllegalStateException("Both persistent and in-memory databases failed to initialize")
         }
     }
 }
