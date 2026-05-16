@@ -11,7 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import fr.geoking.gaston.R
 import fr.geoking.gaston.*
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
@@ -74,7 +76,7 @@ fun FilterFab(
         icon = { Icon(Icons.Default.FilterList, contentDescription = null) },
         text = {
             Text(
-                if (activeFilterCount > 0) "Filters ($activeFilterCount)" else "Filters"
+                if (activeFilterCount > 0) stringResource(R.string.filters_with_count, activeFilterCount) else stringResource(R.string.filters)
             )
         },
         containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -110,13 +112,13 @@ fun FilterFab(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Search Filters",
+                        stringResource(R.string.search_filters),
                         style = MaterialTheme.typography.titleLarge,
                         color = Color.White
                     )
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("For my car", color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.for_my_car), color = Color.White, style = MaterialTheme.typography.bodyMedium)
                         Switch(
                             checked = settings.useVehicleFilter,
                             onCheckedChange = { settingsManager.setUseVehicleFilter(it) },
@@ -143,7 +145,7 @@ fun FilterFab(
                 )
 
                 if (favoritesFilterEnabled && onShowFavoritesOnlyChange != null) {
-                    FilterSectionTitle("Favorites")
+                    FilterSectionTitle(stringResource(R.string.filter_section_favorites))
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -151,7 +153,7 @@ fun FilterFab(
                         FilterChip(
                             selected = showFavoritesOnly,
                             onClick = { onShowFavoritesOnlyChange(!showFavoritesOnly) },
-                            label = { Text("My favorites") },
+                            label = { Text(stringResource(R.string.filter_chip_my_favorites)) },
                             leadingIcon = {
                                 Icon(
                                     Icons.Default.Star,
@@ -179,13 +181,12 @@ fun FilterFab(
                 if (settings.useVehicleFilter) {
                     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
                         val energyLabel = when (settings.vehicleEnergy) {
-                            "electric" -> "Electric"
-                            "hybrid" -> "Gas & Electric"
-                            else -> "Fuel"
+                            "electric" -> stringResource(R.string.vehicle_energy_electric)
+                            "hybrid" -> stringResource(R.string.vehicle_energy_hybrid)
+                            else -> stringResource(R.string.vehicle_energy_fuel)
                         }
                         Text(
-                            "Vehicle filters active: $energyLabel\n" +
-                            "Using your car's predefined preferences.",
+                            stringResource(R.string.vehicle_filters_active, energyLabel),
                             color = Color.White.copy(alpha = 0.7f),
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -212,12 +213,12 @@ fun FilterFab(
 private fun AmenityFilters(settingsManager: SettingsManager) {
     val settings by settingsManager.settings.collectAsState()
 
-    FilterSectionTitle("Amenities (Overpass)")
+    FilterSectionTitle(stringResource(R.string.filter_section_amenities))
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        OVERPASS_AMENITY_OPTIONS.forEach { (id, label) ->
+        OVERPASS_AMENITY_OPTIONS.forEach { (id, resId) ->
             val isSelected = settings.selectedOverpassAmenityTypes.contains(id)
             val icon = remember(id) { AmenityIconCatalog.iconForOsmId(id) }
             FilterChip(
@@ -230,7 +231,7 @@ private fun AmenityFilters(settingsManager: SettingsManager) {
                     }
                     settingsManager.setOverpassAmenityTypes(next)
                 },
-                label = { Text(label) },
+                label = { Text(stringResource(resId)) },
                 leadingIcon = {
                     Icon(
                         imageVector = icon,
@@ -262,7 +263,7 @@ private fun FuelFilters(settingsManager: SettingsManager, providers: Set<PoiProv
 
     if (providers.anyProvidesFuel()) {
         val selectedEnergyIds = settings.selectedMapEnergyTypes
-        FilterSectionTitle("Fuel Types")
+        FilterSectionTitle(stringResource(R.string.filter_section_fuel_types))
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -291,7 +292,7 @@ private fun ElectricFilters(settingsManager: SettingsManager, providers: Set<Poi
 
     if (providers.anyProvidesElectric()) {
         val effectivePowerLevels = settings.effectiveIrvePowerLevels()
-        FilterSectionTitle("Power Range")
+        FilterSectionTitle(stringResource(R.string.filter_section_power_range))
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -314,7 +315,7 @@ private fun ElectricFilters(settingsManager: SettingsManager, providers: Set<Poi
         Spacer(modifier = Modifier.height(24.dp))
     }
 
-    FilterSectionTitle("Connectors")
+    FilterSectionTitle(stringResource(R.string.filter_section_connectors))
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)

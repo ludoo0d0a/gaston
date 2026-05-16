@@ -219,13 +219,13 @@ fun SearchCategorySelector(
                             Spacer(Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    "Aucun profil voiture",
+                                    stringResource(R.string.no_vehicle_profile),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF1E1B4B)
                                 )
                                 Text(
-                                    "Touchez pour configurer",
+                                    stringResource(R.string.tap_to_configure),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Color(0xFF4338CA)
                                 )
@@ -255,7 +255,7 @@ fun SearchCategorySelector(
                     // Ensure parking is first
                     val sortedAmenities = OVERPASS_AMENITY_OPTIONS.sortedBy { if (it.first == "parking") 0 else 1 }
                     items(sortedAmenities.size) { index ->
-                        val (id, label) = sortedAmenities[index]
+                        val (id, resId) = sortedAmenities[index]
                         val isSelected = settings.selectedOverpassAmenityTypes.contains(id)
                         FilterChip(
                             selected = isSelected,
@@ -264,7 +264,7 @@ fun SearchCategorySelector(
                                 val next = if (isSelected) current - id else current + id
                                 settingsManager.setOverpassAmenityTypes(next)
                             },
-                            label = { Text(label) },
+                            label = { Text(stringResource(resId)) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = AmenityIconCatalog.iconForOsmId(id),

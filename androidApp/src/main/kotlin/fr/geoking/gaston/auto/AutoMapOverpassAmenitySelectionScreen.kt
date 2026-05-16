@@ -15,11 +15,11 @@ class AutoMapOverpassAmenitySelectionScreen(
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
 
-        OVERPASS_AMENITY_OPTIONS.forEach { (id, label) ->
+        OVERPASS_AMENITY_OPTIONS.forEach { (id, resId) ->
             val isSelected = settings.selectedOverpassAmenityTypes.contains(id)
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle(label)
+                    .setTitle(carContext.getString(resId))
                     .addText(if (isSelected) "Enabled" else "Disabled")
                     .setToggle(
                         Toggle.Builder { checked ->

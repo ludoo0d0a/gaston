@@ -8,5 +8,57 @@
     <string name="search_mode_ev">Électrique</string>
     <string name="search_mode_my_car">Ma voiture</string>
     <string name="search_mode_other">Autre</string>
-</resources>
 
+    <string name="amenity_toilets">Toilettes</string>
+    <string name="amenity_drinking_water">Eau</string>
+    <string name="amenity_camp_site">Camping</string>
+    <string name="amenity_caravan_site">Aire de caravanes</string>
+    <string name="amenity_picnic_site">Aire de pique-nique</string>
+    <string name="amenity_truck_stop">Aire de poids lourds</string>
+    <string name="amenity_rest_area">Aire de repos</string>
+    <string name="amenity_restaurant">Restaurant</string>
+    <string name="amenity_fast_food">Restauration rapide</string>
+    <string name="amenity_speed_camera">Radar</string>
+    <string name="amenity_parking">Parking</string>
+    <string name="amenity_viewpoint">Point de vue</string>
+
+    <string name="filters">Filtres</string>
+    <string name="filters_with_count">Filtres (%1$d)</string>
+    <string name="search_filters">Filtres de recherche</string>
+    <string name="for_my_car">Pour ma voiture</string>
+    <string name="navigate">Naviguer</string>
+    <string name="connectors_label">Connecteurs : %1$s</string>
+    <string name="no_fuel_price_details">Aucun détail de prix disponible</string>
+    <string name="gas_station">Station-service</string>
+    <string name="charging_station">Borne de recharge</string>
+    <string name="highway">Autoroute</string>
+
+    <string name="amenity_24h">24h</string>
+    <string name="amenity_shop">Boutique</string>
+    <string name="amenity_car_wash">Lavage auto</string>
+    <string name="amenity_showers">Douches</string>
+
+    <string name="filter_section_favorites">Favoris</string>
+    <string name="filter_chip_my_favorites">Mes favoris</string>
+    <string name="filter_section_fuel_types">Carburants</string>
+    <string name="filter_section_power_range">Puissance</string>
+    <string name="filter_section_connectors">Connecteurs</string>
+    <string name="filter_section_amenities">Commodités (Overpass)</string>
+    <string name="vehicle_filters_active">Filtres du véhicule actifs : %1$s\nUtilisation des préférences de votre voiture.</string>
+    <string name="vehicle_energy_electric">Électrique</string>
+    <string name="vehicle_energy_hybrid">Essence &amp; Électrique</string>
+    <string name="vehicle_energy_fuel">Carburant</string>
+
+    <string name="no_vehicle_profile">Aucun profil voiture</string>
+    <string name="tap_to_configure">Touchez pour configurer</string>
+
+    <plurals name="points_count">
+        <item quantity="one">1 point</item>
+        <item quantity="other">%1$d points</item>
+    </plurals>
+
+    <plurals name="available_count">
+        <item quantity="one">%1$d/%2$d libre</item>
+        <item quantity="other">%1$d/%2$d libres</item>
+    </plurals>
+</resources>
