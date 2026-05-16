@@ -157,22 +157,10 @@ fun PhoneDashboardMainContent(
                     enabled = mapDepsReady
                 ),
                 DashboardRow(
-                    title = "Paramètres",
-                    subtitle = "Settings",
-                    icon = Icons.Default.Settings,
-                    onClick = { onOpenSettings(null) }
-                ),
-                DashboardRow(
                     title = "Réseau",
                     subtitle = "Network",
                     icon = Icons.Default.SignalCellular4Bar,
                     onClick = onOpenNetworkDiagnostics
-                ),
-                DashboardRow(
-                    title = "Infos",
-                    subtitle = "About",
-                    icon = Icons.Default.Info,
-                    onClick = { onOpenSettings(listOf(SettingsScreenPage.About)) }
                 )
             )
             PhoneDashboardOtherActionsGrid(otherActions = gridActions)

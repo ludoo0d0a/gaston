@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.vector.toPath
 import fr.geoking.gaston.poi.PoiCategory
 
 /**
- * Single source of truth for amenity icons. Both the filter chip selector ([fr.geoking.gaston.ui.components.FilterFab])
+ * Single source of truth for amenity icons. The filter chip selector
  * and the map waypoint markers ([PoiMarkerHelper]) read from this catalog so the user sees the
  * same glyph in both places.
  */
@@ -40,7 +40,6 @@ object AmenityIconCatalog {
 
     /**
      * Mapping by OSM amenity id used by the filter chip selector (e.g. "toilets", "parking").
-     * Keep in sync with [fr.geoking.gaston.ui.OVERPASS_AMENITY_OPTIONS].
      */
     fun iconForOsmId(id: String): ImageVector = when (id) {
         "parking" -> Icons.Rounded.LocalParking

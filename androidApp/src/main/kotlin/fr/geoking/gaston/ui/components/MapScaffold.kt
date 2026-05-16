@@ -133,23 +133,6 @@ fun MapScaffold(
                 )
             )
         },
-        floatingActionButton = {
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (onShowFavoritesOnlyChange != null) {
-                    FilterFab(
-                        settingsManager = settingsManager,
-                        mapCenterLatitude = mapCenterLatitude,
-                        mapCenterLongitude = mapCenterLongitude,
-                        favoritesFilterEnabled = favoritesFilterEnabled,
-                        showFavoritesOnly = showFavoritesOnly,
-                        onShowFavoritesOnlyChange = onShowFavoritesOnlyChange
-                    )
-                }
-            }
-        },
         bottomBar = {
             if (showAds) {
                 AdMobBanner(
