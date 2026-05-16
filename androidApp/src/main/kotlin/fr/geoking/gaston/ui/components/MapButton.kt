@@ -2,6 +2,7 @@ package fr.geoking.gaston.ui.components
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,7 +19,7 @@ fun MapButton(
         Icon(
             painter = painterResource(id = R.drawable.ic_map),
             contentDescription = "Open Map",
-            tint = Color.White.copy(alpha = 0.7f)
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
     }
 }

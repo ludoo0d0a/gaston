@@ -92,13 +92,13 @@ private fun DebugLogOverlayContent() {
                                     CacheManager.clearAllCaches(context)
                                 }
                             }) {
-                                Icon(Icons.Default.CleaningServices, "Clear Cache", tint = Color.White)
+                                Icon(Icons.Default.CleaningServices, "Clear Cache", tint = MaterialTheme.colorScheme.onSurface)
                             }
                             IconButton(onClick = { DebugLogStore.clearLogs() }) {
-                                Icon(Icons.Default.Delete, "Clear Logs", tint = Color.White)
+                                Icon(Icons.Default.Delete, "Clear Logs", tint = MaterialTheme.colorScheme.onSurface)
                             }
                             IconButton(onClick = { isExpanded = false }) {
-                                Icon(Icons.Default.Close, "Close", tint = Color.White)
+                                Icon(Icons.Default.Close, "Close", tint = MaterialTheme.colorScheme.onSurface)
                             }
                         }
                     }

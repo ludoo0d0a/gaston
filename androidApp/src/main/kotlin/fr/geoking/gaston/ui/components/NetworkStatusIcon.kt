@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.SignalCellularOff
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -64,7 +65,7 @@ fun NetworkStatusIcon(
         Icon(
             imageVector = icon,
             contentDescription = "Network Status",
-            tint = Color.White.copy(alpha = 0.9f),
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
             modifier = Modifier.size(14.dp)
         )
 
