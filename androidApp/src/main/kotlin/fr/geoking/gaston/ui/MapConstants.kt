@@ -1,20 +1,21 @@
 package fr.geoking.gaston.ui
 
+import fr.geoking.gaston.R
 import fr.geoking.gaston.VehicleType
 
 val OVERPASS_AMENITY_OPTIONS = listOf(
-    "toilets" to "Toilettes",
-    "drinking_water" to "Eau",
-    "camp_site" to "Camping",
-    "caravan_site" to "Aire de caravanes",
-    "picnic_site" to "Aire de pique-nique",
-    "truck_stop" to "Aire de poids lourds",
-    "rest_area" to "Aire de repos",
-    "restaurant" to "Restaurant",
-    "fast_food" to "Restauration rapide",
-    "speed_camera" to "Radar",
-    "parking" to "Parking",
-    "viewpoint" to "Point de vue"
+    "toilets" to R.string.amenity_toilets,
+    "drinking_water" to R.string.amenity_drinking_water,
+    "camp_site" to R.string.amenity_camp_site,
+    "caravan_site" to R.string.amenity_caravan_site,
+    "picnic_site" to R.string.amenity_picnic_site,
+    "truck_stop" to R.string.amenity_truck_stop,
+    "rest_area" to R.string.amenity_rest_area,
+    "restaurant" to R.string.amenity_restaurant,
+    "fast_food" to R.string.amenity_fast_food,
+    "speed_camera" to R.string.amenity_speed_camera,
+    "parking" to R.string.amenity_parking,
+    "viewpoint" to R.string.amenity_viewpoint
 )
 
 val VEHICLE_TYPE_OPTIONS = listOf(

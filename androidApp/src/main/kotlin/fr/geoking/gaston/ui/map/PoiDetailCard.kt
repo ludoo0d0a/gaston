@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -52,7 +54,8 @@ fun PoiDetailCard(
     val rawSiteName = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name
     val isGenericName = rawSiteName.isBlank() ||
         rawSiteName.equals("Gas station", ignoreCase = true) ||
-        rawSiteName.equals("Station", ignoreCase = true)
+        rawSiteName.equals("Station", ignoreCase = true) ||
+        rawSiteName.equals(stringResource(R.string.gas_station), ignoreCase = true)
     val brandInfo = BrandHelper.getBrandInfo(poi.brand)
     val locationSummary = buildList {
         listOf(poi.townLocal, poi.postcode).filter { !it.isNullOrBlank() }.joinToString(", ").takeIf { it.isNotBlank() }?.let { add(it) }
@@ -140,7 +143,7 @@ fun PoiDetailCard(
                     val resId = brandInfo?.iconResId ?: if (poi.isElectric) R.drawable.ic_poi_electric else R.drawable.ic_poi_gas
                     Icon(
                         painter = painterResource(id = resId),
-                        contentDescription = brandInfo?.displayName ?: if (poi.isElectric) "Charging station" else "Gas station",
+                        contentDescription = brandInfo?.displayName ?: if (poi.isElectric) stringResource(R.string.charging_station) else stringResource(R.string.gas_station),
                         modifier = Modifier.size(32.dp),
                         tint = if (brandInfo != null) Color.Unspecified else MaterialTheme.colorScheme.onSurface
                     )
@@ -167,12 +170,12 @@ fun PoiDetailCard(
                         }
                         if (poi.isElectric) {
                             val info = listOfNotNull(
-                                if (poi.isOnHighway) "Autoroute" else null,
+                                if (poi.isOnHighway) stringResource(R.string.highway) else null,
                                 poi.chargePointCount?.let { n ->
-                                    if (n == 1) "1 point" else "$n points"
+                                    pluralStringResource(R.plurals.points_count, n, n)
                                 },
                                 availabilitySummary?.let { s ->
-                                    "${s.availableCount}/${s.totalCount} libres"
+                                    pluralStringResource(R.plurals.available_count, s.availableCount, s.availableCount, s.totalCount)
                                 }
                             ).joinToString(" • ")
                             if (info.isNotBlank()) {
@@ -205,7 +208,7 @@ fun PoiDetailCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Directions,
-                            contentDescription = "Navigate",
+                            contentDescription = stringResource(R.string.navigate),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
                         )
@@ -257,7 +260,7 @@ fun PoiDetailCard(
                                     FuelPricesCompactList(prices)
                                 } else {
                                     Text(
-                                        text = "No fuel price details available",
+                                        text = stringResource(R.string.no_fuel_price_details),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 12.sp
                                     )
@@ -267,7 +270,7 @@ fun PoiDetailCard(
                                 val line = listOfNotNull(
                                     poi.operator?.takeIf { it.isNotBlank() },
                                     poi.powerKw?.let { "${it.roundToInt()} kW" },
-                                    poi.chargePointCount?.let { n -> if (n == 1) "1 point" else "$n points" },
+                                    poi.chargePointCount?.let { n -> pluralStringResource(R.plurals.points_count, n, n) },
                                 ).joinToString(" • ")
                                 if (line.isNotBlank()) {
                                     val powerKw = poi.powerKw
@@ -284,7 +287,7 @@ fun PoiDetailCard(
                                 val connectors = poi.irveDetails?.connectorTypes.orEmpty().sorted()
                                 if (connectors.isNotEmpty()) {
                                     Text(
-                                        text = "Connectors: " + connectors.joinToString(", ") { BrandHelper.connectorTypeLabel(it) },
+                                        text = stringResource(R.string.connectors_label, connectors.joinToString(", ") { BrandHelper.connectorTypeLabel(it) }),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 11.sp,
                                         maxLines = 2,
@@ -304,7 +307,7 @@ fun PoiDetailCard(
                                 // For non fuel/IRVE categories, show whatever extra info we have.
                                 poi.restaurantDetails?.let { d ->
                                     val r = listOfNotNull(
-                                        if (d.isFastFood) "Fast food" else null,
+                                        if (d.isFastFood) stringResource(R.string.amenity_fast_food) else null,
                                         d.brand?.takeIf { it.isNotBlank() },
                                         d.cuisine?.takeIf { it.isNotBlank() }
                                     ).joinToString(" • ")
@@ -320,12 +323,12 @@ fun PoiDetailCard(
                                 }
                                 poi.amenities?.let { d ->
                                     val flags = listOfNotNull(
-                                        if (d.open24h == true) "24h" else null,
-                                        if (d.restaurant == true) "Restaurant" else null,
-                                        if (d.shop == true) "Shop" else null,
-                                        if (d.toilets == true) "Toilets" else null,
-                                        if (d.carWash == true) "Car wash" else null,
-                                        if (d.showers == true) "Showers" else null,
+                                        if (d.open24h == true) stringResource(R.string.amenity_24h) else null,
+                                        if (d.restaurant == true) stringResource(R.string.amenity_restaurant) else null,
+                                        if (d.shop == true) stringResource(R.string.amenity_shop) else null,
+                                        if (d.toilets == true) stringResource(R.string.amenity_toilets) else null,
+                                        if (d.carWash == true) stringResource(R.string.amenity_car_wash) else null,
+                                        if (d.showers == true) stringResource(R.string.amenity_showers) else null,
                                     ).joinToString(" • ")
                                     if (flags.isNotBlank()) {
                                         Text(
