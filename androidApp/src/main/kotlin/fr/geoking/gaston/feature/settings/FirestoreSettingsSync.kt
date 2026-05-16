@@ -82,7 +82,8 @@ class FirestoreSettingsSync(
             "carMapMode" to s.carMapMode.name,
             "mobiliteitLuxembourgKey" to s.mobiliteitLuxembourgKey,
             "isPremium" to s.isPremium,
-            "favoriteLocations" to s.favoriteLocations.map { mapOf("label" to it.label, "latitude" to it.latitude, "longitude" to it.longitude) }
+            "favoriteLocations" to s.favoriteLocations.map { mapOf("label" to it.label, "latitude" to it.latitude, "longitude" to it.longitude) },
+            "lastAcceptedDisclaimerVersion" to s.lastAcceptedDisclaimerVersion
         )
     }
 
@@ -143,7 +144,8 @@ class FirestoreSettingsSync(
             carMapMode = pick(local.carMapMode, remote["carMapMode"], default.carMapMode) { parseEnum(it, CarMapMode::class.java) },
             mobiliteitLuxembourgKey = pick(local.mobiliteitLuxembourgKey, remote["mobiliteitLuxembourgKey"], default.mobiliteitLuxembourgKey, ::parseString),
             isPremium = pick(local.isPremium, remote["isPremium"], default.isPremium, ::parseBoolean),
-            favoriteLocations = pick(local.favoriteLocations, remote["favoriteLocations"], default.favoriteLocations, ::parseGeocodedPlaceList)
+            favoriteLocations = pick(local.favoriteLocations, remote["favoriteLocations"], default.favoriteLocations, ::parseGeocodedPlaceList),
+            lastAcceptedDisclaimerVersion = pick(local.lastAcceptedDisclaimerVersion, remote["lastAcceptedDisclaimerVersion"], default.lastAcceptedDisclaimerVersion, ::parseInt)
         )
     }
 }

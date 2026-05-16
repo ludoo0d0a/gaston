@@ -100,7 +100,8 @@ data class AppSettings(
     val routeStationSearchRadiusMeters: Int = 2000,
     val filterOnlyHighwayStations: Boolean = false,
     val lastKnownLat: Double? = null,
-    val lastKnownLon: Double? = null
+    val lastKnownLon: Double? = null,
+    val lastAcceptedDisclaimerVersion: Int = 0
 )
 
 open class SettingsManager(
@@ -280,7 +281,8 @@ open class SettingsManager(
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
             filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false),
             lastKnownLat = prefs.getString("last_known_lat", null)?.toDoubleOrNull(),
-            lastKnownLon = prefs.getString("last_known_lon", null)?.toDoubleOrNull()
+            lastKnownLon = prefs.getString("last_known_lon", null)?.toDoubleOrNull(),
+            lastAcceptedDisclaimerVersion = prefs.getInt("last_accepted_disclaimer_version", 0)
         )
     }
 
@@ -342,6 +344,7 @@ open class SettingsManager(
             .putBoolean("filter_only_highway", settings.filterOnlyHighwayStations)
             .putString("last_known_lat", settings.lastKnownLat?.toString())
             .putString("last_known_lon", settings.lastKnownLon?.toString())
+            .putInt("last_accepted_disclaimer_version", settings.lastAcceptedDisclaimerVersion)
             .apply()
 
         if (upload) {
