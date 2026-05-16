@@ -314,7 +314,7 @@ fun RoutePlanningScreen(
                                         Icon(
                                             imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                                             contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                                            tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.4f)
+                                                tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                                         )
                                     }
                                 }
@@ -357,7 +357,7 @@ fun RoutePlanningScreen(
                                                     else -> Icons.Default.Place
                                                 },
                                                 contentDescription = null,
-                                                tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.6f),
+                                                tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                                 modifier = Modifier.size(18.dp)
                                             )
                                             Spacer(Modifier.width(12.dp))
@@ -377,7 +377,7 @@ fun RoutePlanningScreen(
                                                     },
                                                     modifier = Modifier.size(24.dp)
                                                 ) {
-                                                    Icon(Icons.Default.StarBorder, contentDescription = "Add to favorites", tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
+                                                    Icon(Icons.Default.StarBorder, contentDescription = "Add to favorites", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
                                                 }
                                             } else if (isFavorite) {
                                                 IconButton(
@@ -390,7 +390,7 @@ fun RoutePlanningScreen(
                                                     },
                                                     modifier = Modifier.size(24.dp)
                                                 ) {
-                                                    Icon(Icons.Default.Star, contentDescription = "Remove from favorites", tint = Color(0xFFFACC15), modifier = Modifier.size(16.dp))
+                                                    Icon(Icons.Default.Star, contentDescription = "Remove from favorites", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
                                                 }
                                             }
                                         }
@@ -448,12 +448,12 @@ fun RoutePlanningScreen(
                                     Icon(
                                         imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                                         contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                                        tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.4f)
+                                        tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                                     )
                                 }
                                 if (onSearchAtLocation != null) {
                                     IconButton(onClick = { onSearchAtLocation(place.latitude, place.longitude) }) {
-                                        Icon(Icons.Default.Place, contentDescription = "Search at destination", tint = Color.White)
+                                        Icon(Icons.Default.Place, contentDescription = "Search at destination", tint = MaterialTheme.colorScheme.onSurface)
                                     }
                                 }
                             }
@@ -496,7 +496,7 @@ fun RoutePlanningScreen(
                                                 else -> Icons.Default.Place
                                             },
                                             contentDescription = null,
-                                            tint = if (isFavorite) Color(0xFFFACC15) else Color.White.copy(alpha = 0.6f),
+                                            tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                             modifier = Modifier.size(18.dp)
                                         )
                                         Spacer(Modifier.width(12.dp))
@@ -516,7 +516,7 @@ fun RoutePlanningScreen(
                                                 },
                                                 modifier = Modifier.size(24.dp)
                                             ) {
-                                                Icon(Icons.Default.StarBorder, contentDescription = "Add to favorites", tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
+                                                Icon(Icons.Default.StarBorder, contentDescription = "Add to favorites", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
                                             }
                                         } else if (isFavorite) {
                                             IconButton(
@@ -529,7 +529,7 @@ fun RoutePlanningScreen(
                                                 },
                                                 modifier = Modifier.size(24.dp)
                                             ) {
-                                                Icon(Icons.Default.Star, contentDescription = "Remove from favorites", tint = Color(0xFFFACC15), modifier = Modifier.size(16.dp))
+                                                Icon(Icons.Default.Star, contentDescription = "Remove from favorites", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
                                             }
                                         }
                                     }
@@ -573,7 +573,7 @@ fun RoutePlanningScreen(
 
             if (loading) {
                 Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color.White)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
 
@@ -702,7 +702,7 @@ fun RoutePlanningScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (recommendations.isNotEmpty()) {
-                    Text("Recommended stops", color = Color(0xFFFACC15), style = MaterialTheme.typography.labelLarge)
+                    Text("Recommended stops", color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.labelLarge)
                     Spacer(modifier = Modifier.height(4.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(recommendations) { poi ->
@@ -720,7 +720,7 @@ fun RoutePlanningScreen(
                                     Text(poi.name, color = MaterialTheme.colorScheme.onSecondaryContainer, style = MaterialTheme.typography.bodySmall, maxLines = 1)
                                     val price = poi.fuelPrices?.minByOrNull { it.price }?.price
                                     if (price != null) {
-                                        Text("€%.2f".format(price), color = Color(0xFFFACC15), fontWeight = FontWeight.Bold)
+                                        Text("€%.2f".format(price), color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -750,7 +750,7 @@ fun RoutePlanningScreen(
                                 containerColor = if (isCheapest) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
                             ),
                             modifier = Modifier.fillMaxWidth(),
-                            border = if (isCheapest) androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFFACC15)) else null
+                            border = if (isCheapest) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.secondary) else null
                         ) {
                             Row(
                                 modifier = Modifier
@@ -763,7 +763,7 @@ fun RoutePlanningScreen(
                                         Text(poi.name.ifBlank { poi.address }, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                                         if (isCheapest) {
                                             Surface(
-                                                color = Color(0xFFFACC15),
+                                                color = MaterialTheme.colorScheme.secondary,
                                                 shape = MaterialTheme.shapes.extraSmall,
                                                 modifier = Modifier.padding(start = 4.dp)
                                             ) {
@@ -771,7 +771,7 @@ fun RoutePlanningScreen(
                                                     "CHEAPEST",
                                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                                                     style = MaterialTheme.typography.labelSmall,
-                                                    color = Color.Black,
+                                                    color = MaterialTheme.colorScheme.onSecondary,
                                                     fontWeight = FontWeight.Bold
                                                 )
                                             }
@@ -806,7 +806,7 @@ fun RoutePlanningScreen(
                                         context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                                     }
                                 ) {
-                                    Icon(Icons.Default.Directions, contentDescription = "Navigate", tint = Color.White)
+                                    Icon(Icons.Default.Directions, contentDescription = "Navigate", tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         }

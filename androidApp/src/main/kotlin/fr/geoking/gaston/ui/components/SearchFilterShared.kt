@@ -196,7 +196,7 @@ fun SearchCategorySelector(
                     Card(
                         onClick = { onOpenSettings(listOf(SettingsScreenPage.VehicleConfig)) },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0E7FF)), // Light Indigo
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                         shape = MaterialTheme.shapes.large
                     ) {
                         Row(
@@ -206,13 +206,13 @@ fun SearchCategorySelector(
                             Box(
                                 modifier = Modifier
                                     .size(48.dp)
-                                    .background(Color.White, MaterialTheme.shapes.medium),
+                                    .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_directions_car),
                                     contentDescription = null,
-                                    tint = Color(0xFF4338CA),
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -222,18 +222,18 @@ fun SearchCategorySelector(
                                     stringResource(R.string.no_vehicle_profile),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1E1B4B)
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                                 Text(
                                     stringResource(R.string.tap_to_configure),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Color(0xFF4338CA)
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
-                                tint = Color(0xFF4338CA)
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
