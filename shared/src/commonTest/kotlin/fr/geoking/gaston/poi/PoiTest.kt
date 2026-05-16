@@ -50,4 +50,46 @@ class PoiTest {
         assertTrue(MapPoiFilter.matchesEnergyFilter(gasPoi, emptySet()), "Should show gas with empty filters")
         assertTrue(MapPoiFilter.matchesEnergyFilter(elecPoi, emptySet()), "Should show elec with empty filters")
     }
+
+    @Test
+    fun matchesEnergyFilter_keepsGasStationWithoutPrices() {
+        val gasPoiNoPrices = Poi(
+            "1", "No Price Gas", "Address", 0.0, 0.0,
+            isElectric = false,
+            fuelPrices = null
+        )
+
+        // EnergyFilterMode.Fuel should keep the station even without prices
+        assertTrue(
+            MapPoiFilter.matchesEnergyFilter(gasPoiNoPrices, EnergyFilterMode.Fuel, setOf("gazole")),
+            "Should keep gas station without prices when fuel mode is active"
+        )
+
+        // Hybrid mode should also keep it
+        assertTrue(
+            MapPoiFilter.matchesEnergyFilter(gasPoiNoPrices, EnergyFilterMode.Hybrid, setOf("gazole")),
+            "Should keep gas station without prices when hybrid mode is active"
+        )
+    }
+
+    @Test
+    fun matchesEnergyFilter_hidesGasStationWithOnlyMismatchedFuel() {
+        val gasPoiSp98Only = Poi(
+            "1", "SP98 Gas", "Address", 0.0, 0.0,
+            isElectric = false,
+            fuelPrices = listOf(FuelPrice("SP98", 1.90))
+        )
+
+        // If we only want Gazole, hide the SP98 station
+        assertTrue(
+            !MapPoiFilter.matchesEnergyFilter(gasPoiSp98Only, EnergyFilterMode.Fuel, setOf("gazole")),
+            "Should hide gas station with only mismatched fuel prices"
+        )
+
+        // If we want SP98, show it
+        assertTrue(
+            MapPoiFilter.matchesEnergyFilter(gasPoiSp98Only, EnergyFilterMode.Fuel, setOf("sp98")),
+            "Should show gas station with matching fuel prices"
+        )
+    }
 }

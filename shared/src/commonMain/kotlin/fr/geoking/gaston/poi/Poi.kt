@@ -336,11 +336,20 @@ object MapPoiFilter {
         return if (poi.isElectric) {
             wantElectric
         } else {
-            // If we want fuel, and we have specific fuel filters, we should check if the station matches.
-            // However, the current UX (and the legacy logic) only uses fuel selection to find prices,
-            // not to hide stations that don't have that specific fuel (to avoid empty maps).
-            // So we simply return true if we want fuel.
-            wantFuel
+            if (!wantFuel) return false
+
+            // If we have specific fuel filters, hide stations that have ONLY non-matching fuels.
+            // However, don't hide stations that don't have any price information (to avoid empty maps).
+            if (selectedFuelIds.isNotEmpty()) {
+                val prices = poi.fuelPrices
+                if (!prices.isNullOrEmpty()) {
+                    val stationFuelIds = prices.mapNotNull { fuelNameToId(it.fuelName) }.toSet()
+                    if (stationFuelIds.intersect(selectedFuelIds).isEmpty()) {
+                        return false
+                    }
+                }
+            }
+            true
         }
     }
 
@@ -353,9 +362,21 @@ object MapPoiFilter {
         val wantElectric = "electric" in selectedEnergyIds
         val wantFuel = selectedEnergyIds.any { it != "electric" }
 
-        return when {
-            poi.isElectric -> wantElectric
-            else -> wantFuel
+        return if (poi.isElectric) {
+            wantElectric
+        } else {
+            if (!wantFuel) return false
+            val fuelFilters = selectedEnergyIds.filter { it != "electric" }.toSet()
+            if (fuelFilters.isNotEmpty()) {
+                val prices = poi.fuelPrices
+                if (!prices.isNullOrEmpty()) {
+                    val stationFuelIds = prices.mapNotNull { fuelNameToId(it.fuelName) }.toSet()
+                    if (stationFuelIds.intersect(fuelFilters).isEmpty()) {
+                        return false
+                    }
+                }
+            }
+            true
         }
     }
 
