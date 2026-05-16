@@ -75,6 +75,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import fr.geoking.gaston.ui.components.DisclaimerDialog
 
 class MainActivity : ComponentActivity() {
 
@@ -279,6 +280,14 @@ private fun MainActivityComposeRoot(
         if (settings.isLoggedIn) {
             settingsManager.triggerPullAndMerge()
         }
+    }
+
+    if (settings.lastAcceptedDisclaimerVersion < BuildConfig.VERSION_CODE) {
+        DisclaimerDialog(
+            onAccept = {
+                settingsManager.saveSettings(settings.copy(lastAcceptedDisclaimerVersion = BuildConfig.VERSION_CODE))
+            }
+        )
     }
 
     val context = LocalContext.current

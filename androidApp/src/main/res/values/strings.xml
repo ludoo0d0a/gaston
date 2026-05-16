@@ -61,4 +61,9 @@
         <item quantity="one">%1$d/%2$d available</item>
         <item quantity="other">%1$d/%2$d available</item>
     </plurals>
+
+    <string name="disclaimer_title">Legal Disclaimer</string>
+    <string name="disclaimer_content">Gaston is a data aggregator. We do not store, control, or guarantee the quality, accuracy, or timeliness of the data provided by third-party sources. Gaston is not responsible for any errors or omissions in prices, locations, status, or any other information displayed.</string>
+    <string name="disclaimer_accept">I Accept</string>
+    <string name="about_view_disclaimer">Legal Disclaimer</string>
 </resources>

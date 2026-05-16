@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
@@ -39,6 +40,7 @@ import fr.geoking.gaston.MapEngine
 import fr.geoking.gaston.MapTheme
 import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.R
 import fr.geoking.gaston.ThemeMode
 import fr.geoking.gaston.feature.auth.GoogleAuthManager
 import fr.geoking.gaston.poi.PoiProviderType
@@ -48,6 +50,7 @@ import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.poi.FuelPriceRegistry
 import fr.geoking.gaston.shared.diagnostics.DetailedError
+import fr.geoking.gaston.ui.components.DisclaimerDialog
 import fr.geoking.gaston.ui.components.FuelFilterChip
 import fr.geoking.gaston.ui.components.PowerFilterChip
 import kotlinx.coroutines.Dispatchers
@@ -121,6 +124,11 @@ fun SettingsScreen(
     val current by settingsManager.settings.collectAsState()
     var screenStack by remember { mutableStateOf(listOf(SettingsScreenPage.Main)) }
     val currentScreen = screenStack.last()
+    var showDisclaimer by remember { mutableStateOf(false) }
+
+    if (showDisclaimer) {
+        DisclaimerDialog(onAccept = { showDisclaimer = false })
+    }
 
     LaunchedEffect(initialScreenStack) {
         val stack = initialScreenStack
@@ -198,7 +206,7 @@ fun SettingsScreen(
                     onUpdate = { save(settingsManager, it) }
                 )
                 SettingsScreenPage.ErrorLog -> ErrorLog(errorLog)
-                SettingsScreenPage.About -> AboutContent()
+                SettingsScreenPage.About -> AboutContent(onShowDisclaimer = { showDisclaimer = true })
                 SettingsScreenPage.GoogleAccount -> GoogleAccount(
                     settings = current,
                     settingsManager = settingsManager,
@@ -1128,7 +1136,9 @@ private fun TollDataSection(
 }
 
 @Composable
-private fun AboutContent() {
+private fun AboutContent(
+    onShowDisclaimer: () -> Unit
+) {
     val context = LocalContext.current
     Column(
         modifier = Modifier
@@ -1146,6 +1156,11 @@ private fun AboutContent() {
         AboutRow("Version name", BuildConfig.VERSION_NAME)
         AboutRow("Version code", BuildConfig.VERSION_CODE.toString())
         AboutRow("Build date", BuildConfig.BUILD_DATE)
+        Spacer(modifier = Modifier.height(16.dp))
+        AboutRowClickable(
+            label = stringResource(id = R.string.about_view_disclaimer),
+            onClick = onShowDisclaimer
+        )
         Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = "Used APIs & services",
@@ -1231,6 +1246,30 @@ private fun AboutApiRow(
             imageVector = Icons.AutoMirrored.Filled.OpenInNew,
             contentDescription = "Open website",
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+private fun AboutRowClickable(label: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(20.dp)
         )
     }
