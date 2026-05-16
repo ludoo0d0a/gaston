@@ -103,8 +103,9 @@ fun AppSettings.effectiveFuelBrandFilterIds(): Set<String> {
     val useVehicle = useVehicleFilter || (mapBrands.isEmpty() && vehicleBrand.isNotEmpty())
     return if (useVehicle) {
         if (fuelCard == FuelCard.Routex && (vehicleEnergy == "gas" || vehicleEnergy == "hybrid")) {
-            // Official Routex alliance partners and common partners
-            setOf("esso", "eni", "total", "shell", "aral", "totalenergies", "bp", "omv", "circle k", "texaco", "g&v", "avia")
+            // When Routex card is active, we rely on the RoutexProvider and source filtering.
+            // Returning an empty set here prevents over-filtering by brand name (which can be inconsistent).
+            emptySet()
         } else {
             emptySet()
         }
@@ -140,6 +141,10 @@ fun AppSettings.effectiveIrveOperatorFilter(): Set<String> {
  * When [countryCodes] is empty, falls back to [selectedPoiProviders] (manual override).
  */
 fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Set<PoiProviderType> {
+    if (useVehicleFilter && fuelCard == FuelCard.Routex) {
+        return setOf(PoiProviderType.Routex, PoiProviderType.Overpass)
+    }
+
     val base = if (poiProviderSelectionMode == PoiProviderSelectionMode.Manual) {
         selectedPoiProviders
     } else {
@@ -259,6 +264,14 @@ object StationMapFilters {
         // Filter by highway (autoroute)
         if (settings.filterOnlyHighwayStations) {
             result = result.filter { it.isOnHighway }
+        }
+
+        // Fuel card: Routex only
+        if (settings.useVehicleFilter && settings.fuelCard == FuelCard.Routex) {
+            result = result.filter { poi ->
+                val isEnergy = poi.poiCategory == PoiCategory.Gas || poi.poiCategory == PoiCategory.Irve || poi.isElectric
+                !isEnergy || (poi.source?.contains("Routex", ignoreCase = true) == true)
+            }
         }
 
         // Brand filter remains active as it's often used to find specific networks or for fuel card compatibility.
