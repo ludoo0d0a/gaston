@@ -119,7 +119,8 @@ fun SettingsScreen(
     errorLog: List<DetailedError>,
     onDismiss: () -> Unit,
     initialScreenStack: List<SettingsScreenPage>? = null,
-    onInitialRouteConsumed: () -> Unit = {}
+    onInitialRouteConsumed: () -> Unit = {},
+    onClearErrorLog: () -> Unit = {}
 ) {
     val current by settingsManager.settings.collectAsState()
     var screenStack by remember { mutableStateOf(listOf(SettingsScreenPage.Main)) }
@@ -205,7 +206,10 @@ fun SettingsScreen(
                     settings = current,
                     onUpdate = { save(settingsManager, it) }
                 )
-                SettingsScreenPage.ErrorLog -> ErrorLog(errorLog)
+                SettingsScreenPage.ErrorLog -> ErrorLog(
+                    errorLog = errorLog,
+                    onClear = onClearErrorLog
+                )
                 SettingsScreenPage.About -> AboutContent(onShowDisclaimer = { showDisclaimer = true })
                 SettingsScreenPage.GoogleAccount -> GoogleAccount(
                     settings = current,
@@ -1758,11 +1762,38 @@ private fun ConfigTextField(
 }
 
 @Composable
-private fun ErrorLog(errorLog: List<DetailedError>) {
+private fun ErrorLog(
+    errorLog: List<DetailedError>,
+    onClear: () -> Unit
+) {
     val scrollState = rememberScrollState()
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val reversedLog = remember(errorLog) { errorLog.reversed() }
+    var showClearConfirm by remember { mutableStateOf(false) }
+
+    if (showClearConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirm = false },
+            title = { Text("Clear Error Log") },
+            text = { Text("Are you sure you want to clear all recorded errors?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onClear()
+                        showClearConfirm = false
+                    }
+                ) {
+                    Text("Clear", color = Color(0xFFFF6B6B))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     SelectionContainer {
         Column(
@@ -1774,24 +1805,39 @@ private fun ErrorLog(errorLog: List<DetailedError>) {
             if (reversedLog.isEmpty()) {
                 Text("No errors recorded", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
-                Button(
-                    onClick = {
-                        val allErrors = reversedLog.joinToString("\n\n") { error ->
-                            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(error.timestamp))
-                            val httpCode = error.httpCode?.let { "HTTP $it" } ?: "Generic"
-                            "[$timestamp] $httpCode\n${error.message}"
-                        }
-                        scope.launch {
-                            clipboard.setClipEntry(androidx.compose.ui.platform.ClipEntry(android.content.ClipData.newPlainText("", allErrors)))
-                        }
-                    },
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Copy All Logs")
+                    Button(
+                        onClick = {
+                            val allErrors = reversedLog.joinToString("\n\n") { error ->
+                                val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(error.timestamp))
+                                val httpCode = error.httpCode?.let { "HTTP $it" } ?: "Generic"
+                                "[$timestamp] $httpCode\n${error.message}"
+                            }
+                            scope.launch {
+                                clipboard.setClipEntry(androidx.compose.ui.platform.ClipEntry(android.content.ClipData.newPlainText("", allErrors)))
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Copy All")
+                    }
+
+                    OutlinedButton(
+                        onClick = { showClearConfirm = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B6B))
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Clear Logs")
+                    }
                 }
 
                 reversedLog.forEach { error ->

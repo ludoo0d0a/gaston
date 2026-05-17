@@ -298,7 +298,8 @@ fun MapScreen(
             authManager = authManager,
             errorLog = errorLog,
             onDismiss = { showMapSettings = false },
-            initialScreenStack = listOf(initialSettingsPage)
+            initialScreenStack = listOf(initialSettingsPage),
+            onClearErrorLog = { diagnostics.clearErrors() }
         )
         return
     }
