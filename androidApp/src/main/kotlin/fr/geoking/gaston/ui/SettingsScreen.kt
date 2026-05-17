@@ -72,6 +72,7 @@ enum class SettingsScreenPage {
     VehicleConfig,
     MapConfig,
     Sources,
+    Theme,
     App,
     About
 }
@@ -161,6 +162,7 @@ fun SettingsScreen(
                             SettingsScreenPage.VehicleConfig -> "Vehicle"
                             SettingsScreenPage.MapConfig -> "Map"
                             SettingsScreenPage.Sources -> "Sources"
+                            SettingsScreenPage.Theme -> "Theme"
                             SettingsScreenPage.App -> "App"
                         }
                     )
@@ -222,6 +224,10 @@ fun SettingsScreen(
                     onUpdate = { save(settingsManager, it) }
                 )
                 SettingsScreenPage.Sources -> SourcesConfig(
+                    settings = current,
+                    onUpdate = { save(settingsManager, it) }
+                )
+                SettingsScreenPage.Theme -> ThemeConfig(
                     settings = current,
                     onUpdate = { save(settingsManager, it) }
                 )
@@ -725,7 +731,7 @@ private fun SourcesConfig(
 }
 
 @Composable
-private fun AppConfig(
+private fun ThemeConfig(
     settings: AppSettings,
     onUpdate: (AppSettings) -> Unit
 ) {
@@ -736,7 +742,6 @@ private fun AppConfig(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Theme
         Column {
             Text(
                 "App theme",
@@ -760,7 +765,21 @@ private fun AppConfig(
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
+    }
+}
 
+@Composable
+private fun AppConfig(
+    settings: AppSettings,
+    onUpdate: (AppSettings) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
         Column {
             Text(
                 "API keys (optional)",
@@ -998,6 +1017,11 @@ private fun MainMenu(
                     label = "Error log",
                     value = "View recent errors",
                     onClick = { onNavigate(SettingsScreenPage.ErrorLog) }
+                )
+                SettingsItem(
+                    label = "Theme",
+                    value = settings.uiThemeMode.name,
+                    onClick = { onNavigate(SettingsScreenPage.Theme) }
                 )
                 SettingsItem(
                     label = "App",
