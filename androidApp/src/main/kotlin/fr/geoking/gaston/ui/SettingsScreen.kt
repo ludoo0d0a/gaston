@@ -1432,6 +1432,42 @@ private fun VehicleConfig(
     settings: AppSettings,
     onUpdate: (AppSettings) -> Unit
 ) {
+    var gasConsumptionText by remember { mutableStateOf(settings.gasConsumptionLper100km?.toString() ?: "") }
+    var evConsumptionText by remember { mutableStateOf(settings.evConsumptionKwhPer100km?.toString() ?: "") }
+
+    LaunchedEffect(settings.gasConsumptionLper100km) {
+        val next = settings.gasConsumptionLper100km?.toString() ?: ""
+        if (next != gasConsumptionText && next.replace(',', '.') != gasConsumptionText.replace(',', '.')) {
+            gasConsumptionText = next
+        }
+    }
+
+    LaunchedEffect(settings.evConsumptionKwhPer100km) {
+        val next = settings.evConsumptionKwhPer100km?.toString() ?: ""
+        if (next != evConsumptionText && next.replace(',', '.') != evConsumptionText.replace(',', '.')) {
+            evConsumptionText = next
+        }
+    }
+
+    fun handleConsumptionInput(input: String, onTextUpdate: (String) -> Unit, onValueUpdate: (Float?) -> Unit) {
+        val normalized = input.replace(',', '.')
+        if (normalized.isEmpty()) {
+            onTextUpdate("")
+            onValueUpdate(null)
+            return
+        }
+
+        // Regex for 1-2 digits, optional dot/comma, optional 1 digit
+        val regex = Regex("""^(\d{0,2})([.,]\d{0,1})?$""")
+        if (regex.matches(input)) {
+            onTextUpdate(input)
+            val value = normalized.toFloatOrNull()
+            if (value != null && value >= 1.0f && value <= 99.0f) {
+                onValueUpdate(value)
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1522,11 +1558,17 @@ private fun VehicleConfig(
 
                         ConfigTextField(
                             label = "L/100km",
-                            value = settings.gasConsumptionLper100km?.toString() ?: "",
+                            value = gasConsumptionText,
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.Speed,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                        ) { onUpdate(settings.copy(gasConsumptionLper100km = it.toFloatOrNull())) }
+                        ) { input ->
+                            handleConsumptionInput(
+                                input = input,
+                                onTextUpdate = { gasConsumptionText = it },
+                                onValueUpdate = { onUpdate(settings.copy(gasConsumptionLper100km = it)) }
+                            )
+                        }
                     }
                 }
 
@@ -1553,10 +1595,16 @@ private fun VehicleConfig(
                     }
                     ConfigTextField(
                         label = "Consumption (kWh/100km)",
-                        value = settings.evConsumptionKwhPer100km?.toString() ?: "",
+                        value = evConsumptionText,
                         leadingIcon = Icons.Default.Bolt,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                    ) { onUpdate(settings.copy(evConsumptionKwhPer100km = it.toFloatOrNull())) }
+                    ) { input ->
+                        handleConsumptionInput(
+                            input = input,
+                            onTextUpdate = { evConsumptionText = it },
+                            onValueUpdate = { onUpdate(settings.copy(evConsumptionKwhPer100km = it)) }
+                        )
+                    }
                 }
             }
         }

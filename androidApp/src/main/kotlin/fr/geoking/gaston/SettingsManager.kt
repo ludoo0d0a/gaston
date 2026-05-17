@@ -2,6 +2,7 @@ package fr.geoking.gaston
 
 import android.content.Context
 import android.content.SharedPreferences
+import kotlin.math.roundToInt
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.feature.settings.FirestoreSettingsSync
 import fr.geoking.gaston.poi.EnergyFilterMode
@@ -256,10 +257,10 @@ open class SettingsManager(
             mapTrafficEnabled = prefs.getBoolean("map_traffic_enabled", false),
             debugLoggingEnabled = prefs.getBoolean("debug_logging_enabled", false),
             evRangeKm = prefs.getInt("ev_range_km", DEFAULT_EV_RANGE_KM),
-            evConsumptionKwhPer100km = prefs.getString("ev_consumption_kwh_per_100km", null)?.toFloatOrNull(),
+            evConsumptionKwhPer100km = sanitizeConsumption(prefs.getString("ev_consumption_kwh_per_100km", null)?.toFloatOrNull()),
             batteryCapacityKwh = prefs.getString("battery_capacity_kwh", null)?.toFloatOrNull(),
             gasTankCapacityLiters = prefs.getString("gas_tank_capacity_liters", null)?.toFloatOrNull(),
-            gasConsumptionLper100km = prefs.getString("gas_consumption_l_per_100km", null)?.toFloatOrNull(),
+            gasConsumptionLper100km = sanitizeConsumption(prefs.getString("gas_consumption_l_per_100km", null)?.toFloatOrNull()),
             openChargeMapKey = openChargeMapKey,
             ecoMovementKey = ecoMovementKey,
             fuelpricesDkKey = fuelpricesDkKey,
@@ -296,9 +297,13 @@ open class SettingsManager(
     }
 
     private fun saveSettingsInternal(settings: AppSettings, upload: Boolean) {
-        _settings.value = settings
+        val sanitized = settings.copy(
+            evConsumptionKwhPer100km = sanitizeConsumption(settings.evConsumptionKwhPer100km),
+            gasConsumptionLper100km = sanitizeConsumption(settings.gasConsumptionLper100km)
+        )
+        _settings.value = sanitized
         prefs.edit()
-            .putString("ui_theme_mode", settings.uiThemeMode.name)
+            .putString("ui_theme_mode", sanitized.uiThemeMode.name)
             .putString("vehicle_brand", settings.vehicleBrand)
             .putString("vehicle_model", settings.vehicleModel)
             .putString("vehicle_energy", settings.vehicleEnergy)
@@ -318,11 +323,11 @@ open class SettingsManager(
             .putStringSet("map_connector_types", settings.selectedMapConnectorTypes)
             .putBoolean("map_traffic_enabled", settings.mapTrafficEnabled)
             .putBoolean("debug_logging_enabled", settings.debugLoggingEnabled)
-            .putInt("ev_range_km", settings.evRangeKm)
-            .putString("ev_consumption_kwh_per_100km", settings.evConsumptionKwhPer100km?.toString())
-            .putString("battery_capacity_kwh", settings.batteryCapacityKwh?.toString())
-            .putString("gas_tank_capacity_liters", settings.gasTankCapacityLiters?.toString())
-            .putString("gas_consumption_l_per_100km", settings.gasConsumptionLper100km?.toString())
+            .putInt("ev_range_km", sanitized.evRangeKm)
+            .putString("ev_consumption_kwh_per_100km", sanitized.evConsumptionKwhPer100km?.toString())
+            .putString("battery_capacity_kwh", sanitized.batteryCapacityKwh?.toString())
+            .putString("gas_tank_capacity_liters", sanitized.gasTankCapacityLiters?.toString())
+            .putString("gas_consumption_l_per_100km", sanitized.gasConsumptionLper100km?.toString())
             .putString("openchargemap_key", settings.openChargeMapKey)
             .putString("eco_movement_key", settings.ecoMovementKey)
             .putString("fuelprices_dk_key", settings.fuelpricesDkKey)
@@ -333,22 +338,22 @@ open class SettingsManager(
             .putString("map_theme", settings.mapTheme.name)
             .putString("vehicle_type", settings.vehicleType.name)
             .putString("car_map_mode", settings.carMapMode.name)
-            .putString("google_user_name", settings.googleUserName)
-            .putBoolean("is_logged_in", settings.isLoggedIn)
-            .putString("toll_data_path", settings.tollDataPath)
-            .putString("mobiliteit_luxembourg_key", settings.mobiliteitLuxembourgKey)
-            .putString("route_history", Json.encodeToString(settings.routeHistory))
-            .putString("favorite_locations", Json.encodeToString(settings.favoriteLocations))
-            .putBoolean("is_premium", settings.isPremium)
-            .putInt("route_station_radius_m", settings.routeStationSearchRadiusMeters)
-            .putBoolean("filter_only_highway", settings.filterOnlyHighwayStations)
-            .putString("last_known_lat", settings.lastKnownLat?.toString())
-            .putString("last_known_lon", settings.lastKnownLon?.toString())
-            .putInt("last_accepted_disclaimer_version", settings.lastAcceptedDisclaimerVersion)
+            .putString("google_user_name", sanitized.googleUserName)
+            .putBoolean("is_logged_in", sanitized.isLoggedIn)
+            .putString("toll_data_path", sanitized.tollDataPath)
+            .putString("mobiliteit_luxembourg_key", sanitized.mobiliteitLuxembourgKey)
+            .putString("route_history", Json.encodeToString(sanitized.routeHistory))
+            .putString("favorite_locations", Json.encodeToString(sanitized.favoriteLocations))
+            .putBoolean("is_premium", sanitized.isPremium)
+            .putInt("route_station_radius_m", sanitized.routeStationSearchRadiusMeters)
+            .putBoolean("filter_only_highway", sanitized.filterOnlyHighwayStations)
+            .putString("last_known_lat", sanitized.lastKnownLat?.toString())
+            .putString("last_known_lon", sanitized.lastKnownLon?.toString())
+            .putInt("last_accepted_disclaimer_version", sanitized.lastAcceptedDisclaimerVersion)
             .apply()
 
         if (upload) {
-            scope.launch { firestoreSync?.uploadSettings(settings) }
+            scope.launch { firestoreSync?.uploadSettings(sanitized) }
         }
     }
 
@@ -465,8 +470,14 @@ open class SettingsManager(
         saveSettings(_settings.value.copy(evRangeKm = km))
     }
 
+    private fun sanitizeConsumption(value: Float?): Float? {
+        if (value == null) return null
+        val rounded = (value * 10).roundToInt() / 10f
+        return rounded.coerceIn(1.0f, 99.0f)
+    }
+
     open fun setEvConsumptionKwhPer100km(value: Float?) {
-        saveSettings(_settings.value.copy(evConsumptionKwhPer100km = value))
+        saveSettings(_settings.value.copy(evConsumptionKwhPer100km = sanitizeConsumption(value)))
     }
 
     open fun setBatteryCapacityKwh(value: Float?) {
@@ -486,7 +497,7 @@ open class SettingsManager(
     }
 
     open fun setGasConsumptionLper100km(value: Float?) {
-        saveSettings(_settings.value.copy(gasConsumptionLper100km = value))
+        saveSettings(_settings.value.copy(gasConsumptionLper100km = sanitizeConsumption(value)))
     }
 
     open fun setRouteStationSearchRadiusMeters(value: Int) {
