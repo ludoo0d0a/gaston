@@ -20,10 +20,10 @@ val PlaystoreHomeLightScheme = lightColorScheme(
     onSecondaryContainer = Color(0xFF7C2D12),
     tertiary = Color(0xFF3B82F6),
     onTertiary = Color.White,
-    surface = Color(0xFFFFFBF3),
+    surface = Color(0xFFF1F5F9),
     onSurface = Color(0xFF0F172A),
-    surfaceContainerHighest = Color(0xFFF3EEDB),
-    background = Color(0xFFFFFDF5),
+    surfaceContainerHighest = Color(0xFFE2E8F0),
+    background = Color(0xFFF8FAFC),
     onBackground = Color(0xFF0F172A)
 )
 
@@ -31,19 +31,19 @@ val PlaystoreHomeLightScheme = lightColorScheme(
 val PlaystoreHomeDarkScheme = darkColorScheme(
     primary = Color(0xFF93C5FD),
     onPrimary = Color(0xFF1E3A8A),
-    primaryContainer = Color(0xFF1E40AF),
-    onPrimaryContainer = Color(0xFFDBEAFE),
+    primaryContainer = Color(0xFF3B82F6),
+    onPrimaryContainer = Color.White,
     secondary = Color(0xFFFDBA74),
     onSecondary = Color(0xFF7C2D12),
     secondaryContainer = Color(0xFF9A3412),
     onSecondaryContainer = Color(0xFFFFEDD5),
     tertiary = Color(0xFF60A5FA),
     onTertiary = Color(0xFF1E3A8A),
-    surface = Color(0xFF0F2418),
+    surface = Color(0xFF1E293B),
     onSurface = Color(0xFFF8FAFC),
-    surfaceContainerHighest = Color(0xFF14301F),
-    background = Color(0xFF0B1A12),
-    onBackground = Color(0xFFF2F7F2)
+    surfaceContainerHighest = Color(0xFF334155),
+    background = Color(0xFF0F172A),
+    onBackground = Color(0xFFF1F5F9)
 )
 
 @Composable

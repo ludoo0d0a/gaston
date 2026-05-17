@@ -79,6 +79,9 @@ fun PhoneDashboardTopBar(
             IconButton(onClick = onOpenFavorites) {
                 Icon(Icons.Default.Star, contentDescription = "Favorites")
             }
+            IconButton(onClick = onOpenSettings) {
+                Icon(Icons.Default.Settings, contentDescription = "Settings")
+            }
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
