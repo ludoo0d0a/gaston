@@ -315,68 +315,6 @@ private fun MapConfig(
             )
         }
 
-        // Map Filters
-        Column {
-            Text(
-                "Map filters",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            Text(
-                "Fuel types",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            val selectedEnergyIds = settings.selectedMapEnergyTypes
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                maxLines = 2,
-            ) {
-                MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
-                    FuelFilterChip(
-                        id = id,
-                        label = label,
-                        isSelected = selectedEnergyIds.contains(id),
-                        onClick = {
-                            onUpdate(settings.copy(selectedMapEnergyTypes = setOf(id), useVehicleFilter = false))
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                "Power levels",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            val effectivePowerLevels = settings.effectiveIrvePowerLevels()
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                maxLines = 2,
-            ) {
-                MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
-                    PowerFilterChip(
-                        kw = kw,
-                        label = label,
-                        isSelected = effectivePowerLevels.contains(kw),
-                        onClick = {
-                            val next = setOf(kw)
-                            onUpdate(settings.copy(mapPowerLevels = next, useVehicleFilter = false))
-                        }
-                    )
-                }
-            }
-        }
-
         // Itinerary
         Column {
             Text(
@@ -969,7 +907,7 @@ private fun MainMenu(
                 )
                 SettingsItem(
                     label = "Map",
-                    value = "Traffic, filters",
+                    value = "Engine, traffic, itinerary",
                     onClick = { onNavigate(SettingsScreenPage.MapConfig) }
                 )
                 SettingsItem(
