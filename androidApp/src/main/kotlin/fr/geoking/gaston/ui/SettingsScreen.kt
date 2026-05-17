@@ -66,7 +66,6 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class SettingsScreenPage {
     Main,
-    GoogleAccount,
     TollData,
     ErrorLog,
     VehicleConfig,
@@ -158,7 +157,6 @@ fun SettingsScreen(
                             SettingsScreenPage.TollData -> "Highway toll"
                             SettingsScreenPage.ErrorLog -> "Error log"
                             SettingsScreenPage.About -> "About"
-                            SettingsScreenPage.GoogleAccount -> "Google account"
                             SettingsScreenPage.VehicleConfig -> "Vehicle"
                             SettingsScreenPage.MapConfig -> "Map"
                             SettingsScreenPage.Sources -> "Sources"
@@ -213,12 +211,6 @@ fun SettingsScreen(
                     onClear = onClearErrorLog
                 )
                 SettingsScreenPage.About -> AboutContent(onShowDisclaimer = { showDisclaimer = true })
-                SettingsScreenPage.GoogleAccount -> GoogleAccount(
-                    settings = current,
-                    settingsManager = settingsManager,
-                    authManager = authManager,
-                    firebaseAuth = try { com.google.firebase.auth.FirebaseAuth.getInstance() } catch (e: Exception) { null }
-                )
                 SettingsScreenPage.MapConfig -> MapConfig(
                     settings = current,
                     onUpdate = { save(settingsManager, it) }
@@ -1004,11 +996,6 @@ private fun MainMenu(
                     onClick = { onNavigate(SettingsScreenPage.Sources) }
                 )
                 SettingsItem(
-                    label = "Google account",
-                    value = settings.googleUserName ?: "Not connected",
-                    onClick = { onNavigate(SettingsScreenPage.GoogleAccount) }
-                )
-                SettingsItem(
                     label = "Highway toll",
                     value = if (!settings.tollDataPath.isNullOrBlank()) "Downloaded" else "Not downloaded",
                     onClick = { onNavigate(SettingsScreenPage.TollData) }
@@ -1385,72 +1372,6 @@ private fun SelectionItem(
             thickness = 0.5.dp,
             color = MaterialTheme.colorScheme.outlineVariant
         )
-    }
-}
-
-@Composable
-private fun GoogleAccount(
-    settings: AppSettings,
-    settingsManager: SettingsManager,
-    authManager: GoogleAuthManager?,
-    firebaseAuth: com.google.firebase.auth.FirebaseAuth?
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (authManager == null) {
-            Text("Authentication is currently unavailable.", color = MaterialTheme.colorScheme.onSurface)
-        } else {
-            val firebaseUser = remember { firebaseAuth?.currentUser }
-            if (settings.googleUserName != null || firebaseUser != null) {
-                Text(
-                    "Connected as ${settings.googleUserName ?: firebaseUser?.displayName ?: "User"}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        authManager.signOut { success ->
-                            if (!success) {
-                                android.util.Log.e("GoogleAuth", "Sign-out failed")
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Logout")
-                }
-            } else {
-                Text(
-                    "Sign in to personalize your experience.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 24.dp)
-                )
-                Button(
-                    onClick = {
-                        scope.launch {
-                            authManager.signIn(context) { success, error ->
-                                if (!success) {
-                                    android.util.Log.e("GoogleAuth", "Sign-in failed: ${error ?: "Unknown error"}")
-                                }
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Sign in with Google")
-                }
-            }
-        }
     }
 }
 
