@@ -474,7 +474,8 @@ fun MainUI(
                         errorLog = errorLog,
                         onDismiss = { showPlaystoreSettings = false },
                         initialScreenStack = playstoreSettingsInitialStack,
-                        onInitialRouteConsumed = { playstoreSettingsInitialStack = null }
+                        onInitialRouteConsumed = { playstoreSettingsInitialStack = null },
+                        onClearErrorLog = { diagnostics.clearErrors() }
                     )
                 }
                 isPlaystoreDistribution && showFuelForecast -> {
@@ -616,7 +617,8 @@ fun MainUI(
                         errorLog = errorLog,
                         onDismiss = { showSettings = false },
                         initialScreenStack = settingsInitialStack,
-                        onInitialRouteConsumed = { settingsInitialStack = null }
+                        onInitialRouteConsumed = { settingsInitialStack = null },
+                        onClearErrorLog = { diagnostics.clearErrors() }
                     )
                 }
                 showDirectionsMap && mapDeps != null -> {
