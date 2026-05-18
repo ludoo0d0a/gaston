@@ -4,11 +4,13 @@ import android.util.Log
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
@@ -49,7 +51,7 @@ class AutoDashboardScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(fuelTitle)
-                .setImage(carContext.dashboardFuelIcon())
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_poi_gas_rounded)).build())
                 .setOnClickListener {
                     settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel)
                     pushMapScreen(fuelTitle)
@@ -61,7 +63,7 @@ class AutoDashboardScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(evTitle)
-                .setImage(carContext.dashboardEvIcon())
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_car_rounded)).build())
                 .setOnClickListener {
                     settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric)
                     pushMapScreen(evTitle)
@@ -73,7 +75,7 @@ class AutoDashboardScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(myCarTitle)
-                .setImage(carContext.dashboardMyCarIcon())
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_directions_car_rounded)).build())
                 .setOnClickListener {
                     settingsManager.setMyCarMode()
                     pushMapScreen(myCarTitle)
@@ -85,7 +87,7 @@ class AutoDashboardScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(otherTitle)
-                .setImage(carContext.dashboardOtherIcon())
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_waypoint_rounded)).build())
                 .setOnClickListener {
                     settingsManager.setOtherMode()
                     pushMapScreen(otherTitle)
@@ -96,7 +98,7 @@ class AutoDashboardScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.dashboard_routes))
-                .setImage(carContext.dashboardRoutesIcon())
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_swap_horiz)).build())
                 .setOnClickListener {
                     val mapDeps = getMapDeps()
                     if (mapDeps != null) {
@@ -118,7 +120,7 @@ class AutoDashboardScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.dashboard_network))
-                .setImage(carContext.dashboardNetworkIcon())
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_poi_radar_rounded)).build())
                 .setOnClickListener { screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService)) }
                 .build()
         )
@@ -126,7 +128,7 @@ class AutoDashboardScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle("Emergency")
-                .setImage(carContext.dashboardEmergencyIcon())
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_sos_rounded)).build())
                 .setOnClickListener {
                     screenManager.push(AutoEmergencyScreen(carContext, networkService, connectivityManager))
                 }
@@ -136,7 +138,7 @@ class AutoDashboardScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle("More Options")
-                .setImage(carContext.dashboardSettingsIcon())
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
                 .setOnClickListener {
                     screenManager.push(
                         object : Screen(carContext) {
@@ -145,7 +147,7 @@ class AutoDashboardScreen(
                                     .addItem(
                                         Row.Builder()
                                             .setTitle("Fuel outlook")
-                                            .setImage(carContext.dashboardFuelIcon())
+                                            .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_poi_gas_rounded)).build())
                                             .setOnClickListener {
                                                 screenManager.push(
                                                     AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository)
@@ -156,14 +158,14 @@ class AutoDashboardScreen(
                                     .addItem(
                                         Row.Builder()
                                             .setTitle("Template lab")
-                                            .setImage(carContext.carIconUntinted(R.mipmap.ic_launcher))
+                                            .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.mipmap.ic_launcher)).build())
                                             .setOnClickListener { screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps)) }
                                             .build()
                                     )
                                     .addItem(
                                         Row.Builder()
                                             .setTitle("Settings")
-                                            .setImage(carContext.dashboardSettingsIcon())
+                                            .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
                                             .setOnClickListener { screenManager.push(AutoSettingsScreen(carContext, settingsManager)) }
                                             .build()
                                     )
