@@ -12,7 +12,6 @@ import android.util.LruCache
 import android.view.Surface
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.BrandHelper
-import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import java.net.HttpURLConnection
 import java.net.URL
@@ -25,6 +24,7 @@ import kotlin.math.*
  * Map renderer for Android Auto surface using OpenStreetMap tiles.
  *
  * It uses an LRU cache for bitmaps and a fixed thread pool to fetch tiles efficiently.
+ * Supports north-up and heading-up via [setMapOrientation].
  */
 class AutoSurfaceRenderer(
     private val context: Context,
@@ -44,6 +44,11 @@ class AutoSurfaceRenderer(
     private var userLat: Double? = null
     private var userLon: Double? = null
     private var visibleArea: Rect? = null
+    private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
+    private var headingDegrees: Float = 0f
+
+    private val mapBearingDegrees: Float
+        get() = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
 
     private val centerPxX: Double
         get() = visibleArea?.let { (it.left + it.right) / 2.0 } ?: (width / 2.0)
@@ -81,6 +86,15 @@ class AutoSurfaceRenderer(
         zoom = newZoom
     }
 
+    fun setMapOrientation(mode: MapOrientationMode, headingDegrees: Float = this.headingDegrees) {
+        orientationMode = mode
+        this.headingDegrees = AutoMapHeading.normalizeDegrees(headingDegrees)
+    }
+
+    fun updateHeading(headingDegrees: Float) {
+        this.headingDegrees = AutoMapHeading.normalizeDegrees(headingDegrees)
+    }
+
     fun setTileUrlTemplate(template: String) {
         if (tileUrlTemplate != template) {
             tileUrlTemplate = template
@@ -113,9 +127,20 @@ class AutoSurfaceRenderer(
         while (running) {
             val canvas = try { surface.lockCanvas(null) } catch (_: Exception) { null } ?: break
             try {
-                drawMap(canvas)
+                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backgroundPaint)
+                val bearing = mapBearingDegrees
+                val cx = centerPxX.toFloat()
+                val cy = centerPxY.toFloat()
+                if (bearing != 0f) {
+                    canvas.save()
+                    canvas.rotate(-bearing, cx, cy)
+                }
+                drawMapTiles(canvas)
                 drawPois(canvas)
                 drawUserLocation(canvas)
+                if (bearing != 0f) {
+                    canvas.restore()
+                }
             } finally {
                 try { surface.unlockCanvasAndPost(canvas) } catch (_: Exception) {}
             }
@@ -123,17 +148,24 @@ class AutoSurfaceRenderer(
         }
     }
 
-    private fun drawMap(canvas: Canvas) {
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backgroundPaint)
+    /** Half-extent in pixels used to fetch tiles (larger when rotated). */
+    private fun tileFetchRadiusPx(): Double {
+        if (mapBearingDegrees == 0f) {
+            return max(centerPxX, width - centerPxX).coerceAtLeast(max(centerPxY, height - centerPxY))
+        }
+        return hypot(width.toDouble(), height.toDouble()) / 2.0
+    }
 
+    private fun drawMapTiles(canvas: Canvas) {
         val tileSize = 256
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
+        val radiusPx = tileFetchRadiusPx()
 
-        val startTileX = floor(centerX - centerPxX / tileSize).toInt()
-        val endTileX = ceil(centerX + (width - centerPxX) / tileSize).toInt()
-        val startTileY = floor(centerY - centerPxY / tileSize).toInt()
-        val endTileY = ceil(centerY + (height - centerPxY) / tileSize).toInt()
+        val startTileX = floor(centerX - radiusPx / tileSize).toInt()
+        val endTileX = ceil(centerX + radiusPx / tileSize).toInt()
+        val startTileY = floor(centerY - radiusPx / tileSize).toInt()
+        val endTileY = ceil(centerY + radiusPx / tileSize).toInt()
 
         for (x in startTileX..endTileX) {
             for (y in startTileY..endTileY) {
@@ -172,7 +204,6 @@ class AutoSurfaceRenderer(
                 return@forEach
             }
 
-            // Draw bitmap centered on POI.
             canvas.drawBitmap(bitmap, drawX - bw / 2f, drawY - bh / 2f, null)
         }
     }
@@ -204,6 +235,18 @@ class AutoSurfaceRenderer(
 
         canvas.drawCircle(drawX, drawY, radius, paint)
         canvas.drawCircle(drawX, drawY, radius, strokePaint)
+
+        if (orientationMode == MapOrientationMode.HeadingUp) {
+            val tipLen = radius * 2.2f
+            val headingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.RED
+                style = Paint.Style.STROKE
+                strokeWidth = 5f
+                strokeCap = Paint.Cap.ROUND
+            }
+            // Inside the rotated canvas, forward is toward the top of the screen.
+            canvas.drawLine(drawX, drawY, drawX, drawY - tipLen, headingPaint)
+        }
     }
 
     private fun getTile(x: Int, y: Int, z: Int): Bitmap? {

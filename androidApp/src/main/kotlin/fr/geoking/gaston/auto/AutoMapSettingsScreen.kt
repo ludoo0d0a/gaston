@@ -56,7 +56,14 @@ class AutoMapSettingsScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle("Map Mode")
-                .addText("Current: ${settings.carMapMode.name}" + if (settings.carMapMode == CarMapMode.Custom) " (Warning: may not be compliant with POI category)" else "")
+                .addText(
+                    "Current: ${settings.carMapMode.name}" +
+                        if (settings.carMapMode == CarMapMode.Custom) {
+                            " — north/heading toggle on map header (may not be POI-category compliant)"
+                        } else {
+                            " — map orientation is host-controlled (north-up)"
+                        }
+                )
                 .setOnClickListener {
                     val nextMode = if (settings.carMapMode == CarMapMode.Native) CarMapMode.Custom else CarMapMode.Native
                     settingsManager.setCarMapMode(nextMode)

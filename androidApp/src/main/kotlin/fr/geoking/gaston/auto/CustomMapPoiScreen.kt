@@ -9,7 +9,6 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
-import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.MessageTemplate
@@ -24,7 +23,6 @@ import androidx.car.app.AppManager
 import androidx.car.app.constraints.ConstraintManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import fr.geoking.gaston.poi.PoiProviderType
-import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.FuelCard
@@ -51,6 +49,9 @@ import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.shared.location.approxDistanceKm
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import fr.geoking.gaston.toll.TollCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -60,6 +61,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
+/**
+ * POI map with a custom OSM surface renderer. Supports north-up and heading-up orientation
+ * via header controls (native [NativeMapPoiScreen] cannot rotate — host-controlled map).
+ */
 class CustomMapPoiScreen(
     carContext: CarContext,
     private val poiProvider: PoiProvider,
@@ -88,6 +93,9 @@ class CustomMapPoiScreen(
 
     private var surfaceRenderer: AutoSurfaceRenderer? = null
     private var themeCollectionJob: kotlinx.coroutines.Job? = null
+    private var headingUpdateJob: Job? = null
+    private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
+    private var lastKnownBearingDegrees: Float = 0f
 
     /** Last resolved search center; combined with settings so auto mode reloads when the vehicle moves across regions. */
     private val searchCenterFlow = MutableStateFlow(searchLat to searchLon)
@@ -164,14 +172,22 @@ class CustomMapPoiScreen(
             isLoading = true
             invalidate()
 
-            val (lat, lon) = LocationHelper.getInitialLocation(carContext, settingsManager)
+            val location = LocationHelper.getCurrentLocation(carContext)
+            val (lat, lon) = if (location != null) {
+                settingsManager.saveLastKnownLocation(location.latitude, location.longitude)
+                location.latitude to location.longitude
+            } else {
+                LocationHelper.getInitialLocation(carContext, settingsManager)
+            }
 
             searchLat = lat
             searchLon = lon
             searchCenterFlow.value = lat to lon
-            Log.d("CustomMapPoiScreen", "loadPois search center lat=$lat lon=$lon")
+            lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+            Log.d("CustomMapPoiScreen", "loadPois search center lat=$lat lon=$lon bearing=$lastKnownBearingDegrees")
 
             surfaceRenderer?.updateUserLocation(searchLat, searchLon)
+            applyMapOrientationToRenderer()
 
             try {
                 val settings = settingsManager.settings.value
@@ -252,19 +268,98 @@ class CustomMapPoiScreen(
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
 
+        val compassTitle = if (orientationMode == MapOrientationMode.NorthUp) {
+            "Heading up"
+        } else {
+            "North up"
+        }
         builder.addEndHeaderAction(
             Action.Builder()
-                .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_add)).build())
+                .setTitle(compassTitle)
+                .setIcon(carContext.actionCompassIcon())
+                .setOnClickListener { toggleMapOrientation() }
+                .build()
+        )
+        builder.addEndHeaderAction(
+            Action.Builder()
+                .setTitle("Recenter")
+                .setIcon(carContext.actionRecenterIcon())
+                .setOnClickListener { recenterMap() }
+                .build()
+        )
+        builder.addEndHeaderAction(
+            Action.Builder()
+                .setIcon(carContext.actionZoomInIcon())
                 .setOnClickListener { bumpZoom(1) }
                 .build()
         )
         builder.addEndHeaderAction(
             Action.Builder()
-                .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_remove)).build())
+                .setIcon(carContext.actionZoomOutIcon())
                 .setOnClickListener { bumpZoom(-1) }
                 .build()
         )
         return builder
+    }
+
+    private fun applyMapOrientationToRenderer() {
+        surfaceRenderer?.setMapOrientation(orientationMode, lastKnownBearingDegrees)
+    }
+
+    private fun toggleMapOrientation() {
+        orientationMode = when (orientationMode) {
+            MapOrientationMode.NorthUp -> MapOrientationMode.HeadingUp
+            MapOrientationMode.HeadingUp -> MapOrientationMode.NorthUp
+        }
+        applyMapOrientationToRenderer()
+        if (orientationMode == MapOrientationMode.HeadingUp) {
+            lifecycleScope.launch { refreshHeadingFromLocation() }
+            startHeadingUpdates()
+        } else {
+            stopHeadingUpdates()
+        }
+        invalidate()
+    }
+
+    private fun recenterMap() {
+        lifecycleScope.launch {
+            val location = LocationHelper.getCurrentLocation(carContext)
+            if (location != null) {
+                searchLat = location.latitude
+                searchLon = location.longitude
+                settingsManager.saveLastKnownLocation(location.latitude, location.longitude)
+                searchCenterFlow.value = searchLat to searchLon
+                lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+                surfaceRenderer?.updateLocation(searchLat, searchLon, zoom)
+                surfaceRenderer?.updateUserLocation(searchLat, searchLon)
+                applyMapOrientationToRenderer()
+            }
+            loadPois()
+        }
+    }
+
+    private fun startHeadingUpdates() {
+        stopHeadingUpdates()
+        headingUpdateJob = lifecycleScope.launch {
+            while (isActive && orientationMode == MapOrientationMode.HeadingUp) {
+                delay(2_000)
+                refreshHeadingFromLocation()
+            }
+        }
+    }
+
+    private fun stopHeadingUpdates() {
+        headingUpdateJob?.cancel()
+        headingUpdateJob = null
+    }
+
+    private suspend fun refreshHeadingFromLocation() {
+        val location = LocationHelper.getCurrentLocation(carContext, timeoutMs = 2_000L)
+        if (location != null) {
+            lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+            surfaceRenderer?.updateUserLocation(location.latitude, location.longitude)
+            applyMapOrientationToRenderer()
+        }
     }
 
     override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
@@ -295,7 +390,11 @@ class CustomMapPoiScreen(
                 effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
                 effectivePowerLevels = settings.effectiveIrvePowerLevels()
             )
+            setMapOrientation(orientationMode, lastKnownBearingDegrees)
             start()
+        }
+        if (orientationMode == MapOrientationMode.HeadingUp) {
+            startHeadingUpdates()
         }
 
         themeCollectionJob = lifecycleScope.launch {
@@ -319,6 +418,7 @@ class CustomMapPoiScreen(
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
         Log.d("CustomMapPoiScreen", "onSurfaceDestroyed")
+        stopHeadingUpdates()
         surfaceRenderer?.stop()
         surfaceRenderer = null
         themeCollectionJob?.cancel()
@@ -329,6 +429,7 @@ class CustomMapPoiScreen(
     }
 
     override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
+        stopHeadingUpdates()
         surfaceRenderer?.stop()
         surfaceRenderer = null
     }
@@ -348,14 +449,14 @@ class CustomMapPoiScreen(
             .addAction(
                 Action.Builder()
                     .setTitle("Home")
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_home)).build())
+                    .setIcon(carContext.actionHomeIcon())
                     .setOnClickListener { screenManager.popToRoot() }
                     .build()
             )
             .addAction(
                 Action.Builder()
                     .setTitle("Settings")
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
+                    .setIcon(carContext.actionSettingsIcon())
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
                     .build()
             )
@@ -363,7 +464,7 @@ class CustomMapPoiScreen(
         if (errors.isNotEmpty()) {
             actionStripBuilder.addAction(
                 Action.Builder()
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_error_outline)).build())
+                    .setIcon(carContext.actionErrorIcon())
                     .setOnClickListener { pushApiErrorsDetailScreen() }
                     .build()
             )
@@ -401,6 +502,7 @@ class CustomMapPoiScreen(
 
         surfaceRenderer?.let { renderer ->
             renderer.updateLocation(searchLat, searchLon, zoom)
+            renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
             renderer.updatePois(
                 newPois = filteredPois,
                 effectiveEnergyTypes = effectiveEnergies,

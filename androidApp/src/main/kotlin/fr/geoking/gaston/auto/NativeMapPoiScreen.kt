@@ -11,12 +11,10 @@ import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarLocation
 import androidx.car.app.model.ItemList
-import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Place
 import androidx.car.app.model.PlaceMarker
 import androidx.car.app.model.Template
 import androidx.car.app.model.PlaceListMapTemplate
-import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
@@ -39,6 +37,12 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
+/**
+ * POI map using the host-rendered [PlaceListMapTemplate] (Google Maps on Android Auto).
+ *
+ * Map camera orientation (north-up vs heading-up), zoom, and bearing are controlled by the
+ * host — the app cannot rotate this map. Use [CustomMapPoiScreen] for north-up / heading-up toggle.
+ */
 class NativeMapPoiScreen(
     carContext: CarContext,
     private val poiProvider: PoiProvider,
@@ -107,13 +111,13 @@ class NativeMapPoiScreen(
             .addAction(
                 Action.Builder()
                     .setTitle("Home")
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_home)).build())
+                    .setIcon(carContext.actionHomeIcon())
                     .setOnClickListener { screenManager.popToRoot() }
                     .build()
             )
             .addAction(
                 Action.Builder()
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
+                    .setIcon(carContext.actionSettingsIcon())
                     .setOnClickListener {
                         screenManager.push(
                             AutoMapMoreOptionsScreen(
