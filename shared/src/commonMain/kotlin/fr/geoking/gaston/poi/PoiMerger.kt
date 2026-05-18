@@ -72,6 +72,21 @@ object PoiMerger {
         return merged
     }
 
+    /**
+     * Incremental merge into a map: uses the station ID for fast lookup and falls back to
+     * proximity matching.
+     */
+    fun mergeInto(existing: MutableMap<String, Poi>, incoming: List<Poi>) {
+        for (poi in incoming) {
+            val match = existing[poi.id] ?: existing.values.find { isSamePoi(it, poi) }
+            if (match != null) {
+                existing[match.id] = mergeTwo(match, poi)
+            } else {
+                existing[poi.id] = poi
+            }
+        }
+    }
+
     private fun isSamePoi(a: Poi, b: Poi): Boolean {
         if (a.id == b.id) return true
 

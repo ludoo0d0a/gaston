@@ -1,6 +1,7 @@
 package fr.geoking.gaston.poi
 
 import android.util.Log
+import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.effectiveProviders
 import fr.geoking.gaston.effectiveAllowedCategories
@@ -90,13 +91,22 @@ class SelectorPoiProvider(
 
     private val hybridProvider by lazy { HybridPoiProvider(dataGouv, dataGouvElec) }
 
-    private var cachedPois = listOf<Poi>()
+    private val cachedPois = mutableMapOf<String, Poi>()
     private val poiSeenAtMs = mutableMapOf<String, Long>()
     private val loadedRegions = mutableListOf<LoadedPoiRegion>()
     private var lastCacheKey: String? = null
     private var lastCleanupAtMs: Long = 0
     private val cacheLock = Any()
     private val flowMutex = Mutex()
+
+    private fun getCategoriesToFetch(settings: AppSettings): Set<PoiCategory> {
+        return if (settings.isOtherModeActive()) {
+            settings.effectiveAllowedCategories()
+        } else {
+            // Always fetch both Gas and Irve to pre-populate cache for mode toggling
+            settings.effectiveAllowedCategories() + setOf(PoiCategory.Gas, PoiCategory.Irve)
+        }
+    }
 
     private fun getCountryCodes(
         latitude: Double,
@@ -220,13 +230,11 @@ class SelectorPoiProvider(
             return@channelFlow
         }
 
+        val categoriesToFetch = getCategoriesToFetch(settings)
+
         val poiFetchKey = buildString {
             append(providers.sortedBy { it.name }.joinToString(",") { it.name })
-            append("|vehicleFilter=").append(settings.useVehicleFilter)
-            append("|fuelCard=").append(settings.fuelCard)
-            append("|vehicleType=").append(settings.vehicleType)
-            append("|vehicleEnergy=").append(settings.vehicleEnergy)
-            append("|overpassAmenities=").append(settings.selectedOverpassAmenityTypes.sorted().joinToString(","))
+            append("|categories=").append(categoriesToFetch.map { it.name }.sorted().joinToString(","))
         }
 
         val nowMs = System.currentTimeMillis()
@@ -239,8 +247,6 @@ class SelectorPoiProvider(
         val alreadyCoveredResult = synchronized(cacheLock) {
             if (lastCacheKey != poiFetchKey) {
                 loadedRegions.clear()
-                cachedPois = emptyList()
-                poiSeenAtMs.clear()
                 lastCacheKey = poiFetchKey
             }
 
@@ -253,7 +259,7 @@ class SelectorPoiProvider(
                     .toSet()
                 if (expiredPoiIds.isNotEmpty()) {
                     poiSeenAtMs.keys.removeAll(expiredPoiIds)
-                    cachedPois = cachedPois.filterNot { it.id in expiredPoiIds }
+                    expiredPoiIds.forEach { cachedPois.remove(it) }
                 }
             }
 
@@ -269,7 +275,7 @@ class SelectorPoiProvider(
 
             if (viewportCovered) {
                 isFromMemory = true
-                PoiSearchResult(pois = applyPostFilters(cachedPois, request, providers))
+                PoiSearchResult(pois = applyPostFilters(cachedPois.values.toList(), request, providers))
             } else null
         }
 
@@ -298,11 +304,12 @@ class SelectorPoiProvider(
             }
 
             if (dbPois.isNotEmpty()) {
-                synchronized(cacheLock) {
-                    cachedPois = PoiMerger.mergeInto(cachedPois, dbPois)
+                val dbResultPois = synchronized(cacheLock) {
+                    PoiMerger.mergeInto(cachedPois, dbPois)
                     dbPois.forEach { poiSeenAtMs[it.id] = nowMs }
+                    cachedPois.values.toList()
                 }
-                currentAlreadyCoveredResult = PoiSearchResult(pois = applyPostFilters(cachedPois, request, providers))
+                currentAlreadyCoveredResult = PoiSearchResult(pois = applyPostFilters(dbResultPois, request, providers))
             }
         }
 
@@ -316,13 +323,6 @@ class SelectorPoiProvider(
         val allPois = mutableListOf<Poi>()
         val errors = mutableListOf<PoiProviderError>()
         var finalEnriched = listOf<Poi>()
-
-        val categoriesToFetch = if (settings.isOtherModeActive()) {
-            settings.effectiveAllowedCategories()
-        } else {
-            // Always fetch both Gas and Irve to pre-populate cache for mode toggling
-            settings.effectiveAllowedCategories() + setOf(PoiCategory.Gas, PoiCategory.Irve)
-        }
 
         // In "Other" mode, if no amenities are selected, we don't display anything.
         if (settings.isOtherModeActive() && categoriesToFetch.isEmpty()) {
@@ -368,9 +368,9 @@ class SelectorPoiProvider(
                         finalEnriched = rated
 
                         val resultToEmit = synchronized(cacheLock) {
-                            cachedPois = PoiMerger.mergeInto(cachedPois, enriched)
+                            PoiMerger.mergeInto(cachedPois, enriched)
                             enriched.forEach { poiSeenAtMs[it.id] = nowMs }
-                            PoiSearchResult(pois = applyPostFilters(cachedPois, request, providers), errors = errors.toList())
+                            PoiSearchResult(pois = applyPostFilters(cachedPois.values.toList(), request, providers), errors = errors.toList())
                         }
                         send(resultToEmit)
                     }
@@ -383,7 +383,7 @@ class SelectorPoiProvider(
         synchronized(cacheLock) {
             // Already merged in loop, just refresh timestamps for the final set
             finalEnriched.forEach { poiSeenAtMs[it.id] = mergedNow }
-            cachedPois.forEach { p ->
+            cachedPois.values.forEach { p ->
                 if (poiSeenAtMs[p.id] == null) poiSeenAtMs[p.id] = mergedNow
             }
 
@@ -404,15 +404,18 @@ class SelectorPoiProvider(
             }
 
             if (cachedPois.size > maxPoisInCache) {
-                cachedPois = cachedPois
+                val toRemove = cachedPois.values
                     .asSequence()
-                    .map { p -> p to approxDistanceKm(request.latitude, request.longitude, p.latitude, p.longitude) }
-                    .sortedBy { it.second }
-                    .take(maxPoisInCache)
+                    .map { p -> p.id to approxDistanceKm(request.latitude, request.longitude, p.latitude, p.longitude) }
+                    .sortedByDescending { it.second }
+                    .take(cachedPois.size - maxPoisInCache)
                     .map { it.first }
                     .toList()
-                val keepIds = cachedPois.map { it.id }.toSet()
-                poiSeenAtMs.keys.retainAll(keepIds)
+
+                toRemove.forEach {
+                    cachedPois.remove(it)
+                    poiSeenAtMs.remove(it)
+                }
             }
         }
 
@@ -464,13 +467,11 @@ class SelectorPoiProvider(
 
         if (providers.isEmpty()) return PoiSearchResult()
 
+        val categoriesToFetch = getCategoriesToFetch(settings)
+
         val poiFetchKey = buildString {
             append(providers.sortedBy { it.name }.joinToString(",") { it.name })
-            append("|vehicleFilter=").append(settings.useVehicleFilter)
-            append("|fuelCard=").append(settings.fuelCard)
-            append("|vehicleType=").append(settings.vehicleType)
-            append("|vehicleEnergy=").append(settings.vehicleEnergy)
-            append("|overpassAmenities=").append(settings.selectedOverpassAmenityTypes.sorted().joinToString(","))
+            append("|categories=").append(categoriesToFetch.map { it.name }.sorted().joinToString(","))
         }
 
         val nowMs = System.currentTimeMillis()
@@ -482,8 +483,6 @@ class SelectorPoiProvider(
         val cachedResult = synchronized(cacheLock) {
             if (lastCacheKey != poiFetchKey) {
                 loadedRegions.clear()
-                cachedPois = emptyList()
-                poiSeenAtMs.clear()
                 lastCacheKey = poiFetchKey
             }
 
@@ -496,7 +495,7 @@ class SelectorPoiProvider(
                     .toSet()
                 if (expiredPoiIds.isNotEmpty()) {
                     poiSeenAtMs.keys.removeAll(expiredPoiIds)
-                    cachedPois = cachedPois.filterNot { it.id in expiredPoiIds }
+                    expiredPoiIds.forEach { cachedPois.remove(it) }
                 }
             }
 
@@ -511,7 +510,7 @@ class SelectorPoiProvider(
             }
 
             if (viewportCovered) {
-                PoiSearchResult(pois = applyPostFilters(cachedPois, request, providers))
+                PoiSearchResult(pois = applyPostFilters(cachedPois.values.toList(), request, providers))
             } else null
         }
 
@@ -541,20 +540,13 @@ class SelectorPoiProvider(
 
         if (dbPois.isNotEmpty()) {
             synchronized(cacheLock) {
-                cachedPois = PoiMerger.mergeInto(cachedPois, dbPois)
+                PoiMerger.mergeInto(cachedPois, dbPois)
                 dbPois.forEach { poiSeenAtMs[it.id] = nowMs }
             }
         }
 
         val allPois = mutableListOf<Poi>()
         val errors = mutableListOf<PoiProviderError>()
-
-        val categoriesToFetch = if (settings.isOtherModeActive()) {
-            settings.effectiveAllowedCategories()
-        } else {
-            // Always fetch both Gas and Irve to pre-populate cache for mode toggling
-            settings.effectiveAllowedCategories() + setOf(PoiCategory.Gas, PoiCategory.Irve)
-        }
 
         // In "Other" mode, if no amenities are selected, we don't display anything.
         if (settings.isOtherModeActive() && categoriesToFetch.isEmpty()) {
@@ -596,9 +588,9 @@ class SelectorPoiProvider(
 
         val mergedNow = System.currentTimeMillis()
         synchronized(cacheLock) {
-            cachedPois = PoiMerger.mergeInto(cachedPois, rated)
+            PoiMerger.mergeInto(cachedPois, rated)
             rated.forEach { poiSeenAtMs[it.id] = mergedNow }
-            cachedPois.forEach { p ->
+            cachedPois.values.forEach { p ->
                 if (poiSeenAtMs[p.id] == null) poiSeenAtMs[p.id] = mergedNow
             }
 
@@ -621,15 +613,18 @@ class SelectorPoiProvider(
 
             // Keep the POI cache bounded: keep closest POIs to current center.
             if (cachedPois.size > maxPoisInCache) {
-                cachedPois = cachedPois
+                val toRemove = cachedPois.values
                     .asSequence()
-                    .map { p -> p to approxDistanceKm(request.latitude, request.longitude, p.latitude, p.longitude) }
-                    .sortedBy { it.second }
-                    .take(maxPoisInCache)
+                    .map { p -> p.id to approxDistanceKm(request.latitude, request.longitude, p.latitude, p.longitude) }
+                    .sortedByDescending { it.second }
+                    .take(cachedPois.size - maxPoisInCache)
                     .map { it.first }
                     .toList()
-                val keepIds = cachedPois.map { it.id }.toSet()
-                poiSeenAtMs.keys.retainAll(keepIds)
+
+                toRemove.forEach {
+                    cachedPois.remove(it)
+                    poiSeenAtMs.remove(it)
+                }
             }
         }
 
@@ -651,7 +646,8 @@ class SelectorPoiProvider(
             Log.e("SelectorPoiProvider", "Failed to persist POIs", e)
         }
 
-        val result = applyPostFilters(cachedPois, request, providers)
+        val finalPois = synchronized(cacheLock) { cachedPois.values.toList() }
+        val result = applyPostFilters(finalPois, request, providers)
         Log.d("SelectorPoiProvider", "search providers=$providers categories=$categoriesToFetch skipFilters=${request.skipFilters} -> ${result.size} pois")
         return PoiSearchResult(pois = result, errors = errors)
     }
@@ -676,7 +672,7 @@ class SelectorPoiProvider(
     override fun clearCache() {
         synchronized(cacheLock) {
             loadedRegions.clear()
-            cachedPois = emptyList()
+            cachedPois.clear()
             poiSeenAtMs.clear()
         }
         routex.clearCache()
