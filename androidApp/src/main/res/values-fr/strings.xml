@@ -8,6 +8,8 @@
     <string name="search_mode_ev">Électrique</string>
     <string name="search_mode_my_car">Ma voiture</string>
     <string name="search_mode_other">Autre</string>
+    <string name="dashboard_routes">Itinéraire</string>
+    <string name="dashboard_network">Réseau</string>
 
     <string name="amenity_toilets">Toilettes</string>
     <string name="amenity_drinking_water">Eau</string>

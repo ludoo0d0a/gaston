@@ -89,6 +89,36 @@ class AutoPlaystoreDashboardScreen(
 
         grid.addItem(
             GridItem.Builder()
+                .setTitle(carContext.getString(R.string.dashboard_routes))
+                .setImage(gridIcon(R.drawable.ic_swap_horiz))
+                .setOnClickListener {
+                    val mapDeps = getMapDeps() ?: return@setOnClickListener
+                    screenManager.push(
+                        AutoRoutePlanningScreen(
+                            carContext = carContext,
+                            routePlanner = mapDeps.routePlanner,
+                            routingClient = mapDeps.routingClient,
+                            poiProvider = mapDeps.poiProvider,
+                            geocodingClient = mapDeps.geocodingClient,
+                            settingsManager = settingsManager
+                        )
+                    )
+                }
+                .build()
+        )
+
+        grid.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.dashboard_network))
+                .setImage(gridIcon(R.drawable.ic_poi_radar_rounded))
+                .setOnClickListener {
+                    screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService))
+                }
+                .build()
+        )
+
+        grid.addItem(
+            GridItem.Builder()
                 .setTitle("Emergency")
                 .setImage(gridIcon(R.drawable.ic_sos_rounded))
                 .setOnClickListener {
@@ -108,38 +138,10 @@ class AutoPlaystoreDashboardScreen(
                                 val moreList = ItemList.Builder()
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Routes")
-                                            .setImage(gridIcon(R.drawable.ic_swap_horiz))
-                                            .setOnClickListener {
-                                                val mapDeps = getMapDeps() ?: return@setOnClickListener
-                                                screenManager.push(
-                                                    AutoRoutePlanningScreen(
-                                                        carContext = carContext,
-                                                        routePlanner = mapDeps.routePlanner,
-                                                        routingClient = mapDeps.routingClient,
-                                                        poiProvider = mapDeps.poiProvider,
-                                                        geocodingClient = mapDeps.geocodingClient,
-                                                        settingsManager = settingsManager
-                                                    )
-                                                )
-                                            }
-                                            .build()
-                                    )
-                                    .addItem(
-                                        Row.Builder()
                                             .setTitle("Fuel outlook")
                                             .setImage(gridIcon(R.drawable.ic_poi_gas_rounded))
                                             .setOnClickListener {
                                                 screenManager.push(AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository))
-                                            }
-                                            .build()
-                                    )
-                                    .addItem(
-                                        Row.Builder()
-                                            .setTitle("Network & GPS")
-                                            .setImage(gridIcon(R.drawable.ic_poi_radar_rounded))
-                                            .setOnClickListener {
-                                                screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService))
                                             }
                                             .build()
                                     )
