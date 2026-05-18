@@ -9,8 +9,8 @@ import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Header
-import androidx.car.app.model.ItemList
-import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.Pane
+import androidx.car.app.model.PaneTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.core.graphics.drawable.IconCompat
@@ -104,37 +104,62 @@ class AutoNetworkLocationInfoScreen(
         return sb.toString()
     }
 
-    override fun onGetTemplate(): Template {
-        val listBuilder = ItemList.Builder()
+    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoNetworkInfo", "AutoNetworkLocationInfoScreen") {
+        val paneBuilder = Pane.Builder()
 
-        // Network info
-        listBuilder.addItem(
+        // Row 1: Connection Status & Network Type
+        val connectionStatus = if (networkStatus.isConnected) "Connected" else "Disconnected"
+        val networkTypeLabel = networkStatus.networkType.toReadableString()
+        val signalBars = when (networkStatus.signalLevel) {
+            1 -> "▂   "
+            2 -> "▂▄  "
+            3 -> "▂▄▆ "
+            4 -> "▂▄▆█"
+            else -> "    "
+        }
+
+        paneBuilder.addRow(
             Row.Builder()
-                .setTitle("Network: ${if (networkStatus.isConnected) "Connected" else "Disconnected"}")
-                .addText("Type: ${networkStatus.networkType.toReadableString()} | Operator: ${networkStatus.operatorName ?: "Unknown"}")
-                .addText("Country: ${networkStatus.countryName ?: networkStatus.countryCode ?: "Unknown"} | Roaming: ${if (networkStatus.isRoaming) "Yes" else "No"}")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_speaker)).build())
+                .setTitle("$connectionStatus • $networkTypeLabel")
+                .addText("Signal: $signalBars")
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_swap_horiz)).build())
                 .build()
         )
 
-        // Location info
-        val locationRow = Row.Builder()
-            .setTitle("Current Location")
-        if (isLoadingLocation) {
-            locationRow.addText("Loading coordinates...")
-        } else {
-            locationRow.addText("Lat: ${String.format("%.6f", latitude)}, Lon: ${String.format("%.6f", longitude)}")
-            if (isGeocoding && locationAddress == "Searching address...") {
-                locationRow.addText("Searching address...")
-            } else {
-                locationRow.addText(locationAddress)
-            }
-        }
-        locationRow.setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
-        listBuilder.addItem(locationRow.build())
+        // Row 2: Operator & Country
+        val operator = networkStatus.operatorName ?: "Unknown"
+        val country = networkStatus.countryName ?: networkStatus.countryCode ?: "Unknown"
+        val roamingText = if (networkStatus.isRoaming) " • Roaming" else ""
 
-        return ListTemplate.Builder()
-            .setSingleList(listBuilder.build())
+        paneBuilder.addRow(
+            Row.Builder()
+                .setTitle("$operator • $country$roamingText")
+                .build()
+        )
+
+        // Row 3: Address
+        val addressTitle = if (isGeocoding && locationAddress == "Searching address...") "Searching address..." else locationAddress
+        paneBuilder.addRow(
+            Row.Builder()
+                .setTitle(addressTitle)
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
+                .build()
+        )
+
+        // Row 4: Coordinates
+        val coordsText = if (isLoadingLocation) {
+            "Loading..."
+        } else {
+            "${String.format("%.6f", latitude)}, ${String.format("%.6f", longitude)}"
+        }
+        paneBuilder.addRow(
+            Row.Builder()
+                .setTitle(coordsText)
+                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_waypoint_rounded)).build())
+                .build()
+        )
+
+        return@safeCarTemplate PaneTemplate.Builder(paneBuilder.build())
             .setHeader(
                 Header.Builder()
                     .setTitle("Network & Location Info")
