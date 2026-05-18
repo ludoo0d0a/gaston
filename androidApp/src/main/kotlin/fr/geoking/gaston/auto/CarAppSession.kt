@@ -141,6 +141,7 @@ class CarAppSession : Session(), KoinComponent {
                     settingsManager = settingsManager,
                     networkService = networkService,
                     fuelForecastRepository = fuelForecastRepository,
+                    connectivityManager = connectivityManager,
                     getMapDeps = this::getMapDeps
                 )
             } else {
@@ -149,6 +150,7 @@ class CarAppSession : Session(), KoinComponent {
                     settingsManager = settingsManager,
                     networkService = networkService,
                     fuelForecastRepository = fuelForecastRepository,
+                    connectivityManager = connectivityManager,
                     getMapDeps = this::getMapDeps
                 )
             }
