@@ -83,7 +83,6 @@ fun rememberMapDataState(
     cameraFlow: Flow<MapCameraSample>,
     mapWidthPx: Int,
     mapHeightPx: Int,
-    selectedPoi: Poi?,
     isLocationPermissionGranted: Boolean,
     requestLocationPermission: () -> Unit
 ): Pair<MapDataState, MapDataActions> {
@@ -136,7 +135,7 @@ fun rememberMapDataState(
         }
 
         cameraFlow.collectLatest { sample ->
-            if (isErrorPaused || selectedPoi != null) return@collectLatest
+            if (isErrorPaused) return@collectLatest
 
             val centerLat = sample.centerLat
             val centerLng = sample.centerLon

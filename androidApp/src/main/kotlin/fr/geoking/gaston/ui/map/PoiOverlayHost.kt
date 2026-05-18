@@ -114,9 +114,10 @@ fun PoiOverlayHost(
     LaunchedEffect(selectedPoi, poisForOverlay, favoriteIds) {
         val sel = selectedPoi
         if (sel != null) {
-            if (frozenPoisForSheet.isEmpty()) {
-                val currentPois = poisForOverlay
-
+            val currentPois = poisForOverlay
+            val shouldRebuild =
+                frozenPoisForSheet.isEmpty() || currentPois.size > frozenPoisForSheet.size
+            if (shouldRebuild) {
                 val others = currentPois.filter { it.id != sel.id }.toMutableList()
                 val sorted = mutableListOf(sel)
 

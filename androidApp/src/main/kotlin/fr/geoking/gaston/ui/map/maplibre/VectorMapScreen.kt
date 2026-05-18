@@ -197,7 +197,6 @@ fun VectorMapScreen(
         cameraFlow = cameraFlow,
         mapWidthPx = mapSizePx.width,
         mapHeightPx = mapSizePx.height,
-        selectedPoi = selectedPoi,
         isLocationPermissionGranted = hasLocationPermission,
         requestLocationPermission = { launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
     )

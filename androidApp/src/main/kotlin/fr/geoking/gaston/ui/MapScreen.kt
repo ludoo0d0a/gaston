@@ -96,8 +96,6 @@ import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProvidersAt
-import fr.geoking.gaston.shared.location.approxDistanceKm
-import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -172,7 +170,6 @@ fun MapScreen(
     var addPoiExistingCommunityId by remember { mutableStateOf<String?>(null) }
     var showFavoritesOnly by remember { mutableStateOf(false) }
     var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var frozenPoisForSheet by remember { mutableStateOf<List<Poi>>(emptyList()) }
     val billingManager = org.koin.compose.koinInject<fr.geoking.gaston.premium.BillingManager>()
     var showPaywallForFavorite by remember { mutableStateOf(false) }
 
@@ -248,7 +245,6 @@ fun MapScreen(
         cameraFlow = cameraFlow,
         mapWidthPx = mapSizePx.width,
         mapHeightPx = mapSizePx.height,
-        selectedPoi = selectedPoi,
         isLocationPermissionGranted = hasLocationPermission,
         requestLocationPermission = { launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
     )
@@ -260,36 +256,6 @@ fun MapScreen(
             providers = effectiveProviders,
             skipWhenOnlyOverpass = true
         )
-    }
-
-    LaunchedEffect(selectedPoi, poisInView) {
-        if (selectedPoi != null) {
-            if (frozenPoisForSheet.isEmpty()) {
-                val currentPois = if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
-                    poisInView.filter { it.id in favoriteIds }
-                } else {
-                    poisInView
-                }
-
-                val sel = selectedPoi!!
-                val others = currentPois.filter { it.id != sel.id }.toMutableList()
-                val sorted = mutableListOf(sel)
-
-                var current = sel
-                while (others.isNotEmpty()) {
-                    val next = others.minBy { p ->
-                        approxDistanceKm(current.latitude, current.longitude, p.latitude, p.longitude)
-                    }
-                    sorted.add(next)
-                    others.remove(next)
-                    current = next
-                }
-
-                frozenPoisForSheet = sorted
-            }
-        } else {
-            frozenPoisForSheet = emptyList()
-        }
     }
 
     if (showMapSettings) {
@@ -448,9 +414,7 @@ fun MapScreen(
                     val effectiveEnergies = settings.effectiveMapEnergyFilterIds()
                     val effectivePowerLevels = settings.effectiveIrvePowerLevels()
 
-                    val poisToShow = if (frozenPoisForSheet.isNotEmpty()) {
-                        frozenPoisForSheet
-                    } else if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
+                    val poisToShow = if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
                         poisInView.filter { it.id in favoriteIds }
                     } else {
                         poisInView
