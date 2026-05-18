@@ -6,6 +6,7 @@ import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.shared.logging.log
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -28,10 +29,14 @@ class DrivstoffAppenProvider(
     /** ISO-2 suffix for display in addresses (e.g. "NO", "SE"). */
     private val countryIso2: String = "NO",
     private val radiusKm: Int = 10,
-    private val limit: Int = 150,
+    private val limit: Int = 100,
 ) : PoiProvider {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        explicitNulls = false
+    }
 
     override fun supportedCategories(): Set<PoiCategory> = setOf(PoiCategory.Gas)
 
@@ -40,10 +45,21 @@ class DrivstoffAppenProvider(
             ?.let { radiusKmFromMapViewport(latitude, longitude, it.zoom, it.mapWidthPx, it.mapHeightPx).coerceIn(1, 100) }
             ?: radiusKm
 
+        val effectiveLimit = limit.coerceAtMost(100)
         val url =
-            "https://backend.drivstoffapp.no/stations/fuel/nearby?lat=$latitude&lng=$longitude&radius=$effectiveRadiusKm&limit=$limit&sort_by=distance&countries=$country"
-        val body = try { client.get(url).bodyAsText() } catch (_: Exception) { return emptyList() }
-        val stations = try { json.decodeFromString<List<FuelStation>>(body) } catch (_: Exception) { return emptyList() }
+            "https://backend.drivstoffapp.no/stations/fuel/nearby?lat=$latitude&lng=$longitude&radius=$effectiveRadiusKm&limit=$effectiveLimit&sort_by=distance&countries=$country"
+        val body = try {
+            client.get(url).bodyAsText()
+        } catch (_: Exception) {
+            return emptyList()
+        }
+        if (body.isBlank() || body.trim() == "[]") return emptyList()
+        val stations = try {
+            json.decodeFromString<List<FuelStation>>(body)
+        } catch (e: Exception) {
+            log.w(e) { "DrivstoffAppen JSON decode failed (body ${body.length} chars)" }
+            return emptyList()
+        }
 
         return withContext(Dispatchers.Default) {
             stations.mapNotNull { it.toPoiOrNull() }
@@ -52,8 +68,8 @@ class DrivstoffAppenProvider(
 
     private fun FuelStation.toPoiOrNull(): Poi? {
         val loc = location ?: return null
-        val lat = loc.lat ?: return null
-        val lon = loc.lng ?: return null
+        val lat = loc.lat ?: loc.latitude ?: return null
+        val lon = loc.lng ?: loc.longitude ?: return null
         val updatedAt = prices?.lastUpdated
 
         val fuelPrices = buildList {
@@ -105,6 +121,8 @@ private data class FuelStation(
 private data class StationLocation(
     @SerialName("lat") val lat: Double? = null,
     @SerialName("lng") val lng: Double? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 @Serializable

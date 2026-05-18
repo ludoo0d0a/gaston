@@ -61,10 +61,20 @@ class SpainMineturProvider(
 
         // Spain is large, and this API returns ALL stations if we call the main endpoint.
         // To avoid repeated 5MB downloads, we cache the result in-memory for the session.
-        val response = try {
-            client.get("https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/")
+        val url =
+            "https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/"
+        var response = try {
+            client.get(url)
         } catch (e: Exception) {
             return@withLock emptyList()
+        }
+        if (response.status.value == 503) {
+            kotlinx.coroutines.delay(2_000)
+            response = try {
+                client.get(url)
+            } catch (e: Exception) {
+                return@withLock emptyList()
+            }
         }
 
         val body = response.bodyAsText()

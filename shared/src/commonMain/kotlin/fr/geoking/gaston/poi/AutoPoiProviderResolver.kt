@@ -69,4 +69,3 @@ fun autoProvidersForCountries(
     // If we failed to resolve anything (shouldn't happen), fall back to manual selection.
     return resolved.ifEmpty { fallbackManual }
 }
-

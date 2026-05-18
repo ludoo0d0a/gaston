@@ -1,0 +1,56 @@
+name: Station load integration tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly on Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+  push:
+    branches:
+      - main
+    paths:
+      - "shared/src/commonMain/kotlin/fr/geoking/gaston/api/**"
+      - "shared/src/commonMain/kotlin/fr/geoking/gaston/poi/AutoPoiProviderResolver.kt"
+      - "shared/src/commonMain/kotlin/fr/geoking/gaston/poi/AutoModeCountryProbes.kt"
+      - "shared/src/commonTest/kotlin/fr/geoking/gaston/integration/**"
+      - "shared/src/commonTest/kotlin/fr/geoking/gaston/poi/AutoModeCountryProbesTest.kt"
+      - ".github/workflows/station-load-integration.yml"
+
+concurrency:
+  group: station-load-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  station-load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run country station load integration tests
+        env:
+          RUN_REAL_API_TESTS: "1"
+          FUELPRICES_DK_KEY: ${{ secrets.FUELPRICES_DK_KEY }}
+        run: |
+          ./gradlew --no-daemon :shared:testAndroidHostTest \
+            -PrunRealApiTests=true \
+            --tests "fr.geoking.gaston.integration.CountryStationLoadRealApiTests"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Station load integration" >> "$GITHUB_STEP_SUMMARY"
+          echo "Live HTTP checks for auto-mode fuel providers in all supported countries (see \`AutoModeCountryProbes\`)." >> "$GITHUB_STEP_SUMMARY"

@@ -99,6 +99,7 @@ kotlin {
             implementation(libs.compose.runtime)
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.ktor.client.okhttp)
             implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
         }
     }
