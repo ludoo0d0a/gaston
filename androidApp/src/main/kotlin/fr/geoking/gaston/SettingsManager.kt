@@ -87,6 +87,8 @@ data class AppSettings(
     /** NSW FuelCheck API secret (Australia). */
     val nswFuelCheckSecret: String = "",
     val selectedOverpassAmenityTypes: Set<String> = emptySet(),
+    /** Amenities to keep fetching in the background after the user leaves Other mode (cache warming). */
+    val cacheWarmAmenityTypes: Set<String> = emptySet(),
     val phoneMapEngine: MapEngine = MapEngine.Google,
     val mapTheme: MapTheme = MapTheme.Dark,
     val vehicleType: VehicleType = VehicleType.Car,
@@ -98,7 +100,12 @@ data class AppSettings(
     val routeHistory: List<GeocodedPlace> = emptyList(),
     val favoriteLocations: List<GeocodedPlace> = emptyList(),
     val isPremium: Boolean = false,
+    /** Dev/test override: unlock premium features without a subscription. */
+    val devSimulatePremium: Boolean = false,
     val routeStationSearchRadiusMeters: Int = 2000,
+) {
+    val hasPremiumFeatures: Boolean get() = isPremium || devSimulatePremium
+}
     val filterOnlyHighwayStations: Boolean = false,
     val lastKnownLat: Double? = null,
     val lastKnownLon: Double? = null,
@@ -268,6 +275,8 @@ open class SettingsManager(
             nswFuelCheckSecret = nswFuelCheckSecret,
             selectedOverpassAmenityTypes = prefs.getStringSet("overpass_amenity_types", null)?.toSet()
                 ?: emptySet(),
+            cacheWarmAmenityTypes = prefs.getStringSet("cache_warm_amenity_types", null)?.toSet()
+                ?: emptySet(),
             phoneMapEngine = phoneMapEngine,
             mapTheme = mapTheme,
             vehicleType = vehicleType,
@@ -334,6 +343,7 @@ open class SettingsManager(
             .putString("nsw_fuelcheck_key", settings.nswFuelCheckKey)
             .putString("nsw_fuelcheck_secret", settings.nswFuelCheckSecret)
             .putStringSet("overpass_amenity_types", settings.selectedOverpassAmenityTypes)
+            .putStringSet("cache_warm_amenity_types", settings.cacheWarmAmenityTypes)
             .putString("phone_map_engine", settings.phoneMapEngine.name)
             .putString("map_theme", settings.mapTheme.name)
             .putString("vehicle_type", settings.vehicleType.name)
@@ -401,29 +411,61 @@ open class SettingsManager(
     open fun setMapEnergyTypes(types: Set<String>) = setSelectedMapEnergyTypes(types)
 
     open fun setEnergyFilterMode(mode: EnergyFilterMode) {
-        saveSettings(_settings.value.copy(
-            useVehicleFilter = false,
-            poiProviderSelectionMode = PoiProviderSelectionMode.Auto,
-            mapEnergyMode = mode,
-            selectedOverpassAmenityTypes = emptySet()
-        ))
+        val current = _settings.value
+        val leavingOther = current.poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
+            current.selectedPoiProviders == setOf(PoiProviderType.Overpass)
+        saveSettings(
+            current.copy(
+                useVehicleFilter = false,
+                poiProviderSelectionMode = if (leavingOther) {
+                    PoiProviderSelectionMode.Auto
+                } else {
+                    current.poiProviderSelectionMode
+                },
+                mapEnergyMode = mode,
+                selectedOverpassAmenityTypes = if (leavingOther) emptySet() else current.selectedOverpassAmenityTypes,
+                cacheWarmAmenityTypes = if (leavingOther) {
+                    current.cacheWarmAmenityTypes + current.selectedOverpassAmenityTypes
+                } else {
+                    current.cacheWarmAmenityTypes
+                },
+            )
+        )
     }
 
     open fun setMyCarMode() {
-        saveSettings(_settings.value.copy(
-            useVehicleFilter = true,
-            poiProviderSelectionMode = PoiProviderSelectionMode.Auto,
-            selectedOverpassAmenityTypes = emptySet()
-        ))
+        val current = _settings.value
+        val leavingOther = current.poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
+            current.selectedPoiProviders == setOf(PoiProviderType.Overpass)
+        saveSettings(
+            current.copy(
+                useVehicleFilter = true,
+                poiProviderSelectionMode = if (leavingOther) {
+                    PoiProviderSelectionMode.Auto
+                } else {
+                    current.poiProviderSelectionMode
+                },
+                selectedOverpassAmenityTypes = if (leavingOther) emptySet() else current.selectedOverpassAmenityTypes,
+                cacheWarmAmenityTypes = if (leavingOther) {
+                    current.cacheWarmAmenityTypes + current.selectedOverpassAmenityTypes
+                } else {
+                    current.cacheWarmAmenityTypes
+                },
+            )
+        )
     }
 
     open fun setOtherMode() {
-        saveSettings(_settings.value.copy(
-            useVehicleFilter = false,
-            poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
-            selectedPoiProviders = setOf(PoiProviderType.Overpass),
-            selectedOverpassAmenityTypes = setOf("parking")
-        ))
+        val current = _settings.value
+        saveSettings(
+            current.copy(
+                useVehicleFilter = false,
+                poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+                selectedPoiProviders = setOf(PoiProviderType.Overpass),
+                selectedOverpassAmenityTypes = setOf("parking"),
+                cacheWarmAmenityTypes = current.cacheWarmAmenityTypes + "parking",
+            )
+        )
     }
 
     open fun setMapEnseigneType(type: String) {
@@ -525,7 +567,13 @@ open class SettingsManager(
     }
 
     open fun setOverpassAmenityTypes(types: Set<String>) {
-        saveSettings(_settings.value.copy(selectedOverpassAmenityTypes = types))
+        val current = _settings.value
+        saveSettings(
+            current.copy(
+                selectedOverpassAmenityTypes = types,
+                cacheWarmAmenityTypes = current.cacheWarmAmenityTypes + types,
+            )
+        )
     }
 
     open fun togglePoiProviderType(type: PoiProviderType) {

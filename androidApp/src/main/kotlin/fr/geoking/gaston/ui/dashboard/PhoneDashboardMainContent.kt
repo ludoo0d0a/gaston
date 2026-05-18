@@ -224,7 +224,7 @@ private fun PhoneDashboardNearbyCheapestSection(
         }
     }
 
-    if (isLoadingPois && showLoaderByDelay) {
+    if (isLoadingPois && showLoaderByDelay && nearbyPois.isEmpty()) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),

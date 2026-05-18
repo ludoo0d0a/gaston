@@ -49,6 +49,7 @@ import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -65,10 +66,10 @@ import kotlinx.coroutines.withContext
 private data class FetchKey(
     val selectedLocation: GeocodedPlace?,
     val providerMode: PoiProviderSelectionMode,
-    val selectedProviders: Set<PoiProviderType>,
-    val overpassAmenities: Set<String>,
+    val effectiveProviders: Set<PoiProviderType>,
+    val amenityFetchUnion: Set<String>,
     val useVehicleFilter: Boolean,
-    val vehicleType: VehicleType
+    val vehicleType: VehicleType,
 )
 
 @OptIn(ExperimentalMaterial3Api::class, kotlinx.coroutines.FlowPreview::class)
@@ -150,19 +151,31 @@ fun PhoneDashboardScreen(
         if (poiProvider == null) return@LaunchedEffect
 
         snapshotFlow {
+            val loc = selectedSearchLocation
+            val lat = loc?.latitude ?: userLat
+            val lon = loc?.longitude ?: userLon
+            val effectiveProviders = if (lat != null && lon != null) {
+                settings.effectiveProvidersAt(lat, lon)
+            } else {
+                settings.effectiveProviders()
+            }
             FetchKey(
                 selectedLocation = selectedSearchLocation,
                 providerMode = settings.poiProviderSelectionMode,
-                selectedProviders = settings.selectedPoiProviders,
-                overpassAmenities = settings.selectedOverpassAmenityTypes,
+                effectiveProviders = effectiveProviders,
+                amenityFetchUnion = settings.selectedOverpassAmenityTypes + settings.cacheWarmAmenityTypes,
                 useVehicleFilter = settings.useVehicleFilter,
-                vehicleType = settings.vehicleType
+                vehicleType = settings.vehicleType,
             )
         }
+            .distinctUntilChanged()
             .debounce(300)
             .collectLatest { key ->
                 val selectedLoc = key.selectedLocation
-                isLoadingPois = true
+                val showLoadingIndicator = rawNearbyPois.isEmpty()
+                if (showLoadingIndicator) {
+                    isLoadingPois = true
+                }
                 searchError = null
 
                 val baseLat: Double?
@@ -204,7 +217,9 @@ fun PhoneDashboardScreen(
                     searchError = "Unable to determine your location."
                     rawNearbyPois = emptyList()
                 }
-                isLoadingPois = false
+                if (showLoadingIndicator) {
+                    isLoadingPois = false
+                }
             }
     }
 
