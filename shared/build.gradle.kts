@@ -100,6 +100,8 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
             implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
         }
     }

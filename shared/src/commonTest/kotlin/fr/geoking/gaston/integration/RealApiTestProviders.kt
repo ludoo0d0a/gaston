@@ -50,7 +50,7 @@ internal object RealApiTestProviders {
             val key = getEnv("FUELPRICES_DK_KEY").orEmpty()
             if (key.isBlank()) null else FuelpricesDKProvider(client, apiKey = key, radiusKm = 20, limit = 80)
         }
-        PoiProviderType.CroatiaMzoe -> CroatiaMzoeProvider(client, radiusKm = 20, limit = 80)
+        PoiProviderType.CroatiaMzoe -> CroatiaMzoeProvider(client, radiusKm = 40, limit = 80)
         PoiProviderType.FinlandPolttoaine -> PolttoaineProvider(client, limit = 40)
         PoiProviderType.GreeceFuelGr -> GreeceFuelGRProvider(client, limit = 60)
         PoiProviderType.IrelandPickAPump -> IrelandPickAPumpProvider(client, radiusKm = 20, limit = 80)

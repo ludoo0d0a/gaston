@@ -54,3 +54,5 @@ jobs:
         run: |
           echo "### Station load integration" >> "$GITHUB_STEP_SUMMARY"
           echo "Live HTTP checks for auto-mode fuel providers in all supported countries (see \`AutoModeCountryProbes\`)." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Optional secret \`FUELPRICES_DK_KEY\` enables the Denmark probe. Probes marked \`skipIfEmpty\` (SE, IE, AR, ES) are reported as skipped when upstream APIs return no data, not as hard failures." >> "$GITHUB_STEP_SUMMARY"

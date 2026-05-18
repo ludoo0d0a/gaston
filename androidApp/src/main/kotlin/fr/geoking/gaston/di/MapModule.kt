@@ -119,10 +119,10 @@ val mapModule = module {
         GorivaSiProvider(get(), radiusKm = 15, limit = 200)
     }
     single<PoiProvider>(named("drivstoffappen")) {
-        DrivstoffAppenProvider(get(), country = "Norway", countryIso2 = "NO", radiusKm = 20, limit = 150)
+        DrivstoffAppenProvider(get(), country = "Norway", countryIso2 = "NO", radiusKm = 20, limit = 100)
     }
     single<PoiProvider>(named("drivstoffappen_se")) {
-        DrivstoffAppenProvider(get(), country = "Sweden", countryIso2 = "SE", radiusKm = 20, limit = 150)
+        DrivstoffAppenProvider(get(), country = "Sweden", countryIso2 = "SE", radiusKm = 20, limit = 100)
     }
     single<PoiProvider>(named("portugaldgeg")) {
         PortugalDgegProvider(get())

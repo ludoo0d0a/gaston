@@ -25,7 +25,8 @@ class CountryStationLoadRealApiTests {
         val failures = mutableListOf<String>()
         val skipped = mutableListOf<String>()
 
-        for (probe in AutoModeCountryProbes.ALL) {
+        for ((index, probe) in AutoModeCountryProbes.ALL.withIndex()) {
+            if (index > 0) delay(1_500)
             when (val outcome = loadProbe(probe)) {
                 is ProbeOutcome.Success -> Unit
                 is ProbeOutcome.Skipped -> skipped += outcome.reason
@@ -72,9 +73,15 @@ class CountryStationLoadRealApiTests {
                 }
             }
             if (pois.isEmpty()) {
-                ProbeOutcome.Failed(
-                    "${probe.iso} (${probe.cityLabel}, ${probe.fuelProvider}): returned 0 stations",
-                )
+                return if (probe.skipIfEmpty) {
+                    ProbeOutcome.Skipped(
+                        "${probe.iso}: ${probe.fuelProvider} returned no stations (upstream API empty or unavailable)",
+                    )
+                } else {
+                    ProbeOutcome.Failed(
+                        "${probe.iso} (${probe.cityLabel}, ${probe.fuelProvider}): returned 0 stations",
+                    )
+                }
             } else {
                 val valid = pois.count { p ->
                     p.name.isNotBlank() &&

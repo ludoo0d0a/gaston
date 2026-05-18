@@ -68,8 +68,10 @@ class SpainMineturProvider(
         } catch (e: Exception) {
             return@withLock emptyList()
         }
-        if (response.status.value == 503) {
-            kotlinx.coroutines.delay(2_000)
+        var attempts = 0
+        while (response.status.value == 503 && attempts < 3) {
+            kotlinx.coroutines.delay(5_000)
+            attempts++
             response = try {
                 client.get(url)
             } catch (e: Exception) {

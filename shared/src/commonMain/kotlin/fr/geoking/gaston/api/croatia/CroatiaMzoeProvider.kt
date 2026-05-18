@@ -66,8 +66,8 @@ class CroatiaMzoeProvider(
 
                     Poi(
                         id = "mzoe:${s.id}",
-                        name = s.naziv.trim(),
-                        address = s.adresa.trim(),
+                        name = s.naziv?.trim().orEmpty().ifBlank { "Gas station" },
+                        address = s.adresa?.trim().orEmpty(),
                         latitude = s.long,
                         longitude = s.lat,
                         brand = brand,

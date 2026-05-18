@@ -1,10 +1,12 @@
 package fr.geoking.gaston.api.croatia
 
+import fr.geoking.gaston.api.common.StringOrDoubleSerializer
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsText
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 @Serializable
 data class MZOEData(
@@ -16,10 +18,12 @@ data class MZOEData(
 @Serializable
 data class MZOEStation(
     val id: Int,
-    val naziv: String,
-    val adresa: String,
-    val mjesto: String,
+    val naziv: String? = null,
+    val adresa: String? = null,
+    val mjesto: String? = null,
+    @Serializable(with = StringOrDoubleSerializer::class)
     val lat: Double, // Longitude (API bug)
+    @Serializable(with = StringOrDoubleSerializer::class)
     val long: Double, // Latitude (API bug)
     val obveznik_id: Int,
     val cjenici: List<MZOECjenik>
@@ -28,14 +32,14 @@ data class MZOEStation(
 @Serializable
 data class MZOEGorivo(
     val id: Int,
-    val naziv: String,
+    val naziv: String? = null,
     val vrsta_goriva_id: Int? = null
 )
 
 @Serializable
 data class MZOEObveznik(
     val id: Int,
-    val naziv: String
+    val naziv: String? = null
 )
 
 @Serializable
@@ -46,12 +50,16 @@ data class MZOECjenik(
 
 class CroatiaMzoeClient(private val client: HttpClient) {
     private val dataUrl = "https://mzoe-gor.hr/data.json"
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     suspend fun fetchData(): MZOEData {
-        val response = client.get(dataUrl) {
+        val text = client.get(dataUrl) {
             header("Accept", "application/json")
             header("User-Agent", "Gaston/1.0")
-        }
-        return response.body<MZOEData>()
+        }.bodyAsText()
+        return json.decodeFromString(text)
     }
 }
