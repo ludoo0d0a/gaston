@@ -21,7 +21,7 @@ import kotlinx.serialization.json.Json
  */
 class GermanyTankerkoenigProvider(
     private val client: HttpClient,
-    private val apiKey: String = "00000000-0000-0000-0000-000000000002", // Default demo key
+    private val apiKey: String,
     private val radiusKm: Int = 10,
     private val limit: Int = 50
 ) : PoiProvider {

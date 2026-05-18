@@ -160,7 +160,13 @@ val mapModule = module {
         MoldovaAnreProvider(get(), radiusKm = 20, limit = 80)
     }
     single<PoiProvider>(named("romaniapeco")) {
-        RomaniaPecoProvider(get(), radiusKm = 20, limit = 80)
+        RomaniaPecoProvider(
+            get(),
+            applicationId = BuildConfig.ROMANIA_PECO_APPLICATION_ID,
+            clientKey = BuildConfig.ROMANIA_PECO_CLIENT_KEY,
+            radiusKm = 20,
+            limit = 80,
+        )
     }
     single<PoiProvider>(named("serbianis")) {
         SerbiaNisProvider(get(), radiusKm = 20, limit = 80)

@@ -22,8 +22,11 @@ Use these names in `local.properties` or set the same name as an env var (e.g. f
 | `OPENCHARGEMAP_KEY` | Optional Open Charge Map API key (if you enable that provider). |
 | `MOBILITEIT_LUXEMBOURG_KEY` | Optional API key for Luxembourg mobiliteit.lu (if used). |
 | `TOMTOM_KEY` | Optional TomTom key (only if a TomTom provider is enabled). |
-| `CHARGY_API_KEY` | Optional API key for Luxembourg Chargy (if used). Defaults to public key. |
-| `GERMANY_TANKERKOENIG_KEY` | Optional API key for Germany Tankerkoenig. Defaults to demo key. |
+| `CHARGY_API_KEY` | Optional API key for Luxembourg Chargy (if used). |
+| `GERMANY_TANKERKOENIG_KEY` | Optional API key for Germany Tankerkoenig (public demo key: `00000000-0000-0000-0000-000000000002`). |
+| `FASTNED_UK_KEY` | Fastned UK OCPI API key (required for Fastned provider). |
+| `ROMANIA_PECO_APPLICATION_ID` | Parse application id for Peco Online (Romania). |
+| `ROMANIA_PECO_CLIENT_KEY` | Parse client key for Peco Online (Romania). |
 
 Keys are read at **build time** in this order: `local.properties` then environment variables. In CI, set env vars on the step that runs Gradle (e.g. `env:` in the build job).
 

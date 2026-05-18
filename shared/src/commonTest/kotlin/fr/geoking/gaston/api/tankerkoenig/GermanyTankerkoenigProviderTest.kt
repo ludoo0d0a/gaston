@@ -48,7 +48,7 @@ class GermanyTankerkoenigProviderTest {
             )
         }
         val client = HttpClient(engine)
-        val provider = GermanyTankerkoenigProvider(client)
+        val provider = GermanyTankerkoenigProvider(client, apiKey = "demo-test-key")
 
         val pois = provider.getGasStations(52.52, 13.40)
 

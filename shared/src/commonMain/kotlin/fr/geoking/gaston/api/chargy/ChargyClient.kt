@@ -9,14 +9,15 @@ import io.ktor.http.HttpHeaders
 
 /**
  * Client for Chargy Luxembourg KML real-time feed.
- * No API key required (uses a public one for now).
+ * [apiKey] is injected at runtime (e.g. via `CHARGY_API_KEY` in local.properties).
  */
 class ChargyClient(
     private val client: HttpClient,
-    private val apiKey: String = "486ac6e4-93b8-4369-9c6a-28f7c4e1a81f",
+    private val apiKey: String,
     private val baseUrl: String = "https://my.chargy.lu/b2bev-external-services/resources/kml"
 ) {
     suspend fun getStations(): List<ChargyStation> {
+        if (apiKey.isBlank()) return emptyList()
         val url = "$baseUrl?API-KEY=$apiKey"
         val response = client.get(url) {
             // Explicitly set Accept header to avoid 406 Not Acceptable

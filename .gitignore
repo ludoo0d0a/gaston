@@ -1,5 +1,6 @@
 ## Local machine / Gradle
 .gradle/
+.kotlin/
 **/build/
 *.iml
 .idea/

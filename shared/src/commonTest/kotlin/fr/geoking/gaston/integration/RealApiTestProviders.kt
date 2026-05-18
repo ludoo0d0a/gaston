@@ -55,12 +55,20 @@ internal object RealApiTestProviders {
         PoiProviderType.GreeceFuelGr -> GreeceFuelGRProvider(client, limit = 60)
         PoiProviderType.IrelandPickAPump -> IrelandPickAPumpProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.MoldovaAnre -> MoldovaAnreProvider(client, radiusKm = 20, limit = 80)
-        PoiProviderType.RomaniaPeco -> RomaniaPecoProvider(client, radiusKm = 20, limit = 80)
+        PoiProviderType.RomaniaPeco -> {
+            val appId = getEnv("ROMANIA_PECO_APPLICATION_ID").orEmpty()
+            val clientKey = getEnv("ROMANIA_PECO_CLIENT_KEY").orEmpty()
+            if (appId.isBlank() || clientKey.isBlank()) null
+            else RomaniaPecoProvider(client, applicationId = appId, clientKey = clientKey, radiusKm = 20, limit = 80)
+        }
         PoiProviderType.SerbiaNis -> SerbiaNisProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.MexicoCre -> MexicoCREProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.ArgentinaEnergia -> ArgentinaEnergiaProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.SpainMinetur -> SpainMineturProvider(client, radiusKm = 100)
-        PoiProviderType.GermanyTankerkoenig -> GermanyTankerkoenigProvider(client)
+        PoiProviderType.GermanyTankerkoenig -> {
+            val key = getEnv("GERMANY_TANKERKOENIG_KEY").orEmpty()
+            if (key.isBlank()) null else GermanyTankerkoenigProvider(client, apiKey = key)
+        }
         PoiProviderType.AustriaEControl -> AustriaEControlProvider(client)
         PoiProviderType.BelgiumOfficial -> BelgiumOfficialProvider(
             belgiumClient = BelgiumPetrolPricesClient(client),

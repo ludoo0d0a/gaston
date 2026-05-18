@@ -31,15 +31,24 @@ data class PecoStation(
     val AdBlue: Double? = null
 )
 
-class RomaniaPecoClient(private val client: HttpClient) {
+class RomaniaPecoClient(
+    private val client: HttpClient,
+    private val applicationId: String,
+    private val clientKey: String,
+) {
     private val apiUrl = "https://pg-app-hnf14cfy2xb2v9x9eueuchcd2xyetd.scalabl.cloud/1/classes/farapret3"
-    private val parseHeaders = mapOf(
-        "X-Parse-Application-Id" to "YueWcf0orjSz3IQmaT8yBNDTM5POP0mOU6EDyE3U",
-        "X-Parse-Client-Key" to "ctPx9Ahrz9aaXhEvN0oWCzlX8FHX1cv3r7vZwxH8",
-        "User-Agent" to "Parse Android SDK API Level 34"
-    )
+
+    private fun parseHeaders(): Map<String, String>? {
+        if (applicationId.isBlank() || clientKey.isBlank()) return null
+        return mapOf(
+            "X-Parse-Application-Id" to applicationId,
+            "X-Parse-Client-Key" to clientKey,
+            "User-Agent" to "Parse Android SDK API Level 34",
+        )
+    }
 
     suspend fun fetchAllStations(): List<PecoStation> {
+        val headers = parseHeaders() ?: return emptyList()
         val stations = mutableListOf<PecoStation>()
         val limit = 1000
         var skip = 0
@@ -49,7 +58,7 @@ class RomaniaPecoClient(private val client: HttpClient) {
         while (true) {
             val url = "$apiUrl?limit=$limit&skip=$skip&where=$where"
             val response = client.get(url) {
-                parseHeaders.forEach { (k, v) -> header(k, v) }
+                headers.forEach { (k, v) -> header(k, v) }
                 header("Accept", "application/json")
             }
             val data = response.body<ParseResponse>()

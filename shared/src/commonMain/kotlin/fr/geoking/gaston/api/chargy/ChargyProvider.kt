@@ -20,7 +20,7 @@ import kotlin.math.sqrt
  */
 class ChargyProvider(
     private val client: HttpClient,
-    private val apiKey: String = "486ac6e4-93b8-4369-9c6a-28f7c4e1a81f",
+    private val apiKey: String,
     private val radiusKm: Int = 10,
     private val limit: Int = 50
 ) : PoiProvider {

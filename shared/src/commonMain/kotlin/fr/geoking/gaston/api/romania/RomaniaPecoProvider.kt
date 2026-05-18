@@ -14,11 +14,13 @@ import kotlinx.coroutines.withContext
 
 class RomaniaPecoProvider(
     client: HttpClient,
+    applicationId: String,
+    clientKey: String,
     private val radiusKm: Int = 20,
-    private val limit: Int = 50
+    private val limit: Int = 50,
 ) : PoiProvider {
 
-    private val pecoClient = RomaniaPecoClient(client)
+    private val pecoClient = RomaniaPecoClient(client, applicationId, clientKey)
     private val mutex = Mutex()
     private var cachedStations: List<PecoStation>? = null
 
