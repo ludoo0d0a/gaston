@@ -252,12 +252,16 @@ object PoiMarkerHelper {
         val hasAnyIrveFilter = hasElectricInFilter || hasPowerFilter
 
         // Priority 1: Fuel
-        if (hasFuelFilter && (category == PoiCategory.Gas || isHybrid)) {
+        if (category == PoiCategory.Gas || (isHybrid && (hasFuelFilter || !hasAnyIrveFilter))) {
             val prices = poi.fuelPrices
             if (!prices.isNullOrEmpty()) {
-                val matchingPrices = prices.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                val matchingPrices = if (hasFuelFilter) {
+                    prices.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                } else {
+                    prices.filter { !it.outOfStock }
+                }
                 val bestPrice = matchingPrices.minByOrNull { it.price }?.price
-                if (bestPrice != null) return "€%.2f".format(bestPrice)
+                if (bestPrice != null) return "€%.3f".format(bestPrice)
             }
         }
 

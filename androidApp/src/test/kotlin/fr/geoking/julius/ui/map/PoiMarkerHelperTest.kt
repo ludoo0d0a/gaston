@@ -10,7 +10,7 @@ import org.junit.Test
 class PoiMarkerHelperTest {
 
     @Test
-    fun `getPoiLabel returns null for Gas station when no fuel filters are selected`() {
+    fun `getPoiLabel returns price for Gas station even when no fuel filters are selected`() {
         val poi = Poi(
             id = "1",
             name = "Station 1",
@@ -20,7 +20,7 @@ class PoiMarkerHelperTest {
             fuelPrices = listOf(FuelPrice("Gazole", 1.80), FuelPrice("SP98", 1.95))
         )
         val label = PoiMarkerHelper.getPoiLabel(poi, emptySet(), emptySet())
-        assertNull("Label should be null when no fuel filter is selected", label)
+        assertEquals("€1.800", label)
     }
 
     @Test
@@ -34,7 +34,7 @@ class PoiMarkerHelperTest {
             fuelPrices = listOf(FuelPrice("sp95", 1.50))
         )
         val label = PoiMarkerHelper.getPoiLabel(poi, setOf("sp95"), emptySet())
-        assertEquals("€1.50", label)
+        assertEquals("€1.500", label)
     }
 
     @Test
@@ -48,7 +48,7 @@ class PoiMarkerHelperTest {
             fuelPrices = listOf(FuelPrice("Gazole", 1.80), FuelPrice("sp95", 1.70))
         )
         val label = PoiMarkerHelper.getPoiLabel(poi, setOf("gazole", "sp95"), emptySet())
-        assertEquals("€1.70", label)
+        assertEquals("€1.700", label)
     }
 
     @Test
@@ -62,7 +62,7 @@ class PoiMarkerHelperTest {
             fuelPrices = listOf(FuelPrice("Gazole", 1.60, outOfStock = true), FuelPrice("sp95", 1.70))
         )
         val label = PoiMarkerHelper.getPoiLabel(poi, setOf("gazole", "sp95"), emptySet())
-        assertEquals("€1.70", label)
+        assertEquals("€1.700", label)
     }
 
     @Test
@@ -123,16 +123,16 @@ class PoiMarkerHelperTest {
             fuelPrices = listOf(FuelPrice("sp95", 1.50))
         )
 
-        // No filters -> null (hybrid stations only show labels when a filter is active to avoid Gas/IRVE ambiguity)
-        assertNull(PoiMarkerHelper.getPoiLabel(hybridPoi, emptySet(), emptySet()))
+        // No filters -> fuel price (Priority 1) - UPDATED BEHAVIOR
+        assertEquals("€1.500", PoiMarkerHelper.getPoiLabel(hybridPoi, emptySet(), emptySet()))
 
         // Only fuel filter -> fuel price
-        assertEquals("€1.50", PoiMarkerHelper.getPoiLabel(hybridPoi, setOf("sp95"), emptySet()))
+        assertEquals("€1.500", PoiMarkerHelper.getPoiLabel(hybridPoi, setOf("sp95"), emptySet()))
 
         // Only electric filter -> power
         assertEquals("50kW", PoiMarkerHelper.getPoiLabel(hybridPoi, setOf("electric"), emptySet()))
 
         // Both filters -> fuel price (Priority 1)
-        assertEquals("€1.50", PoiMarkerHelper.getPoiLabel(hybridPoi, setOf("sp95", "electric"), emptySet()))
+        assertEquals("€1.500", PoiMarkerHelper.getPoiLabel(hybridPoi, setOf("sp95", "electric"), emptySet()))
     }
 }
