@@ -33,7 +33,9 @@ import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.VehicleType
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.PoiSearchRequest
+import fr.geoking.gaston.poi.PoiSearchResult
 import fr.geoking.gaston.poi.PoiProviderError
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
@@ -87,9 +89,11 @@ class CustomMapPoiScreen(
     private var isLoading = true
     private var searchLat: Double = settingsManager.settings.value.lastKnownLat ?: 48.8566
     private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
-    private var zoom: Int = 13
+    private var zoom: Int = AutoMapCamera.DEFAULT_ZOOM
     private var sortByPrice: Boolean = false
     private var currentVisibleArea: Rect? = null
+    private var mapWidthPx: Int = 800
+    private var mapHeightPx: Int = 480
 
     private var surfaceRenderer: AutoSurfaceRenderer? = null
     private var themeCollectionJob: kotlinx.coroutines.Job? = null
@@ -167,6 +171,69 @@ class CustomMapPoiScreen(
         )
     }
 
+    private fun mapFitSizePx(): Pair<Int, Int> {
+        val area = currentVisibleArea
+        return if (area != null && area.width() > 0 && area.height() > 0) {
+            area.width() to area.height()
+        } else {
+            mapWidthPx to mapHeightPx
+        }
+    }
+
+    private fun applyCameraForStations(userLat: Double, userLon: Double, stations: List<Poi>, searchZoom: Int) {
+        val (fitW, fitH) = mapFitSizePx()
+        val camera = AutoMapCamera.fitToUserAndStations(
+            userLat = userLat,
+            userLon = userLon,
+            stations = stations,
+            mapWidthPx = fitW,
+            mapHeightPx = fitH,
+            fallbackZoom = searchZoom,
+        )
+        searchLat = camera.centerLat
+        searchLon = camera.centerLon
+        zoom = camera.zoom
+    }
+
+    private suspend fun searchPoisWithZoomOut(
+        userLat: Double,
+        userLon: Double,
+        settings: AppSettings,
+    ): Pair<List<Poi>, List<PoiProviderError>> {
+        val (fitW, fitH) = mapFitSizePx()
+        var lastResult = PoiSearchResult()
+        var lastFiltered = emptyList<Poi>()
+        var lastSearchZoom = AutoMapCamera.DEFAULT_ZOOM
+
+        for (searchZoom in AutoMapCamera.searchZoomLevels()) {
+            lastSearchZoom = searchZoom
+            val viewport = MapViewport(
+                zoom = searchZoom.toFloat(),
+                mapWidthPx = fitW.coerceAtLeast(1),
+                mapHeightPx = fitH.coerceAtLeast(1),
+            )
+            lastResult = poiProvider.searchResult(
+                PoiSearchRequest(
+                    latitude = userLat,
+                    longitude = userLon,
+                    viewport = viewport,
+                    categories = emptySet(),
+                    skipFilters = true,
+                )
+            )
+            lastFiltered = StationMapFilters.apply(
+                settings = settings,
+                pois = lastResult.pois,
+                providers = settings.effectiveProvidersAt(userLat, userLon),
+                skipWhenOnlyOverpass = true,
+            )
+            if (lastFiltered.isNotEmpty()) break
+        }
+
+        applyCameraForStations(userLat, userLon, lastFiltered, lastSearchZoom)
+        return lastResult.pois to lastResult.errors
+    }
+
     private fun loadPois() {
         lifecycleScope.launch {
             isLoading = true
@@ -191,14 +258,14 @@ class CustomMapPoiScreen(
 
             try {
                 val settings = settingsManager.settings.value
-                val result = poiProvider.searchResult(PoiSearchRequest(lat, lon, null, emptySet(), skipFilters = true))
-                pois = result.pois
-                errors = result.errors
+                val (loadedPois, loadedErrors) = searchPoisWithZoomOut(lat, lon, settings)
+                pois = loadedPois
+                errors = loadedErrors
 
                 val filteredPois = getFilteredPois(settings)
                 surfaceRenderer?.let { renderer ->
-                    renderer.updateLocation(searchLat, searchLon)
-                    renderer.updateUserLocation(searchLat, searchLon)
+                    renderer.updateLocation(searchLat, searchLon, zoom)
+                    renderer.updateUserLocation(lat, lon)
                     renderer.updatePois(
                         newPois = filteredPois,
                         effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
@@ -206,7 +273,10 @@ class CustomMapPoiScreen(
                     )
                 }
 
-                Log.d("CustomMapPoiScreen", "pois loaded: ${pois.size}, errors: ${errors.size}")
+                Log.d(
+                    "CustomMapPoiScreen",
+                    "pois loaded: ${pois.size} filtered=${filteredPois.size} zoom=$zoom center=$searchLat,$searchLon errors=${errors.size}"
+                )
                 favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
                 val provider = availabilityProviderFactory.getProvider(lat, lon)
                 if (provider != null) {
@@ -374,6 +444,8 @@ class CustomMapPoiScreen(
             surfaceRenderer = null
             return
         }
+        mapWidthPx = surfaceContainer.width
+        mapHeightPx = surfaceContainer.height
         surfaceRenderer = AutoSurfaceRenderer(
             carContext,
             surface,
@@ -414,6 +486,15 @@ class CustomMapPoiScreen(
         Log.d("CustomMapPoiScreen", "onVisibleAreaChanged: $visibleArea")
         currentVisibleArea = visibleArea
         surfaceRenderer?.updateVisibleArea(visibleArea)
+        if (!isLoading) {
+            val settings = settingsManager.settings.value
+            val filteredPois = getFilteredPois(settings)
+            if (filteredPois.isNotEmpty()) {
+                val (userLat, userLon) = searchCenterFlow.value
+                applyCameraForStations(userLat, userLon, filteredPois, zoom)
+                surfaceRenderer?.updateLocation(searchLat, searchLon, zoom)
+            }
+        }
     }
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
