@@ -8,6 +8,8 @@
     <string name="search_mode_ev">EV</string>
     <string name="search_mode_my_car">My car</string>
     <string name="search_mode_other">Other</string>
+    <string name="dashboard_routes">Routes</string>
+    <string name="dashboard_network">Network</string>
 
     <string name="amenity_toilets">Toilets</string>
     <string name="amenity_drinking_water">Drinking water</string>
