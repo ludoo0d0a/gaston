@@ -19,6 +19,7 @@ import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.repository.FuelForecastRepository
+import fr.geoking.gaston.shared.location.ConnectivityManager
 import fr.geoking.gaston.shared.network.NetworkService
 
 /**
@@ -30,6 +31,7 @@ class AutoPlaystoreDashboardScreen(
     private val settingsManager: SettingsManager,
     private val networkService: NetworkService,
     private val fuelForecastRepository: FuelForecastRepository,
+    private val connectivityManager: ConnectivityManager,
     private val getMapDeps: () -> MapDeps?
 ) : Screen(carContext) {
 
@@ -122,7 +124,7 @@ class AutoPlaystoreDashboardScreen(
                 .setTitle("Emergency")
                 .setImage(gridIcon(R.drawable.ic_sos_rounded))
                 .setOnClickListener {
-                    screenManager.push(AutoEmergencyScreen(carContext, networkService))
+                    screenManager.push(AutoEmergencyScreen(carContext, networkService, connectivityManager))
                 }
                 .build()
         )

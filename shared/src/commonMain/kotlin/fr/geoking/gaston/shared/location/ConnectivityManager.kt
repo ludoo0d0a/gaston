@@ -40,6 +40,18 @@ class ConnectivityManager(
         }
     }
 
+    fun triggerManualBorderEvent() {
+        scope.launch {
+            emitWelcomeEvent(networkService.status.value)
+        }
+    }
+
+    private suspend fun emitWelcomeEvent(status: NetworkStatus) {
+        val country = status.countryName ?: status.countryCode ?: "Unknown"
+        val message = if (status.isRoaming) "roaming" else "ok again"
+        emitEvent(status, "Welcome to $country", message)
+    }
+
     private suspend fun handleStatusChange(status: NetworkStatus) {
         val last = lastStatus ?: return // Skip first emission to avoid noise on app start
 
@@ -58,9 +70,7 @@ class ConnectivityManager(
 
         // 2. Country change (Border crossing)
         if (status.countryCode != null && last.countryCode != null && status.countryCode != last.countryCode) {
-            val country = status.countryName ?: status.countryCode
-            val message = if (status.isRoaming) "roaming" else "ok again"
-            emitEvent(status, "Welcome to $country", message)
+            emitWelcomeEvent(status)
             return
         }
 

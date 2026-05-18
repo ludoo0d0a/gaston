@@ -23,6 +23,7 @@ import fr.geoking.gaston.feature.emergency.EmergencyCategory
 import fr.geoking.gaston.feature.emergency.EmergencyContact
 import fr.geoking.gaston.feature.emergency.EmergencyContactRegistry
 import fr.geoking.gaston.feature.location.LocationHelper
+import fr.geoking.gaston.shared.location.ConnectivityManager
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkStatus
 import kotlinx.coroutines.flow.collectLatest
@@ -32,7 +33,8 @@ import java.util.Locale
 
 class AutoEmergencyScreen(
     carContext: CarContext,
-    private val networkService: NetworkService
+    private val networkService: NetworkService,
+    private val connectivityManager: ConnectivityManager
 ) : Screen(carContext) {
 
     private var networkStatus: NetworkStatus = networkService.status.value
@@ -155,6 +157,12 @@ class AutoEmergencyScreen(
                 Header.Builder()
                     .setTitle("Emergency")
                     .setStartHeaderAction(Action.BACK)
+                    .addEndHeaderAction(
+                        Action.Builder()
+                            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_notifications)).build())
+                            .setOnClickListener { connectivityManager.triggerManualBorderEvent() }
+                            .build()
+                    )
                     .addEndHeaderAction(
                         Action.Builder()
                             .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_history)).build())
