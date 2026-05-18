@@ -64,8 +64,8 @@
         <item quantity="other">%1$d/%2$d libres</item>
     </plurals>
 
-    <string name="disclaimer_title">Avis juridique</string>
+    <string name="disclaimer_title">Information</string>
     <string name="disclaimer_content">Gaston est un agrégateur de données. Nous ne stockons, ne contrôlons ni ne garantissons la qualité, l\'exactitude ou la mise à jour des données fournies par des sources tierces. Gaston n\'est pas responsable des erreurs ou omissions concernant les prix, les emplacements, l\'état ou toute autre information affichée.</string>
     <string name="disclaimer_accept">J\'accepte</string>
-    <string name="about_view_disclaimer">Avis juridique</string>
+    <string name="about_view_disclaimer">Information</string>
 </resources>
