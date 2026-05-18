@@ -3,13 +3,10 @@ package fr.geoking.gaston.integration
 import fr.geoking.gaston.poi.AutoModeCountryProbes
 import fr.geoking.gaston.poi.CountryStationProbe
 import fr.geoking.gaston.poi.Poi
-import fr.geoking.gaston.poi.PoiProviderType
-import fr.geoking.gaston.shared.platform.getEnv
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
-import kotlin.test.assertTrue
 import kotlin.test.fail
 
 /**
@@ -54,15 +51,13 @@ class CountryStationLoadRealApiTests {
     }
 
     private suspend fun loadProbe(probe: CountryStationProbe): ProbeOutcome {
-        if (probe.fuelProvider == PoiProviderType.DenmarkFuelpricesDk &&
-            getEnv("FUELPRICES_DK_KEY").isNullOrBlank()
-        ) {
-            return ProbeOutcome.Skipped(
-                "${probe.iso}: Denmark (FUELPRICES_DK_KEY not set)",
+        val provider = try {
+            RealApiTestProviders.create(client, probe)
+        } catch (e: MissingIntegrationTestEnvException) {
+            return ProbeOutcome.Failed(
+                "${probe.iso} (${probe.fuelProvider}): ${e.message}",
             )
         }
-
-        val provider = RealApiTestProviders.create(client, probe)
             ?: return ProbeOutcome.Skipped("${probe.iso}: no provider factory for ${probe.fuelProvider}")
 
         return try {

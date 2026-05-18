@@ -28,7 +28,6 @@ import fr.geoking.gaston.api.uk.UkCmaFuelProvider
 import fr.geoking.gaston.poi.CountryStationProbe
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.poi.PoiProviderType
-import fr.geoking.gaston.shared.platform.getEnv
 import io.ktor.client.HttpClient
 
 internal object RealApiTestProviders {
@@ -47,8 +46,8 @@ internal object RealApiTestProviders {
         PoiProviderType.PortugalDgeg -> PortugalDgegProvider(client)
         PoiProviderType.NetherlandsAnwb -> NetherlandsAnwbProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.DenmarkFuelpricesDk -> {
-            val key = getEnv("FUELPRICES_DK_KEY").orEmpty()
-            if (key.isBlank()) null else FuelpricesDKProvider(client, apiKey = key, radiusKm = 20, limit = 80)
+            val key = requireIntegrationEnv("FUELPRICES_DK_KEY", "Denmark fuelprices.dk API")
+            FuelpricesDKProvider(client, apiKey = key, radiusKm = 20, limit = 80)
         }
         PoiProviderType.CroatiaMzoe -> CroatiaMzoeProvider(client, radiusKm = 40, limit = 80)
         PoiProviderType.FinlandPolttoaine -> PolttoaineProvider(client, limit = 40)
@@ -56,18 +55,25 @@ internal object RealApiTestProviders {
         PoiProviderType.IrelandPickAPump -> IrelandPickAPumpProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.MoldovaAnre -> MoldovaAnreProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.RomaniaPeco -> {
-            val appId = getEnv("ROMANIA_PECO_APPLICATION_ID").orEmpty()
-            val clientKey = getEnv("ROMANIA_PECO_CLIENT_KEY").orEmpty()
-            if (appId.isBlank() || clientKey.isBlank()) null
-            else RomaniaPecoProvider(client, applicationId = appId, clientKey = clientKey, radiusKm = 20, limit = 80)
+            val keys = requireIntegrationEnvs(
+                "ROMANIA_PECO_APPLICATION_ID" to "Romania Peco Parse application id",
+                "ROMANIA_PECO_CLIENT_KEY" to "Romania Peco Parse client key",
+            )
+            RomaniaPecoProvider(
+                client,
+                applicationId = keys.getValue("ROMANIA_PECO_APPLICATION_ID"),
+                clientKey = keys.getValue("ROMANIA_PECO_CLIENT_KEY"),
+                radiusKm = 20,
+                limit = 80,
+            )
         }
         PoiProviderType.SerbiaNis -> SerbiaNisProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.MexicoCre -> MexicoCREProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.ArgentinaEnergia -> ArgentinaEnergiaProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.SpainMinetur -> SpainMineturProvider(client, radiusKm = 100)
         PoiProviderType.GermanyTankerkoenig -> {
-            val key = getEnv("GERMANY_TANKERKOENIG_KEY").orEmpty()
-            if (key.isBlank()) null else GermanyTankerkoenigProvider(client, apiKey = key)
+            val key = requireIntegrationEnv("GERMANY_TANKERKOENIG_KEY", "Germany Tankerkoenig API")
+            GermanyTankerkoenigProvider(client, apiKey = key)
         }
         PoiProviderType.AustriaEControl -> AustriaEControlProvider(client)
         PoiProviderType.BelgiumOfficial -> BelgiumOfficialProvider(

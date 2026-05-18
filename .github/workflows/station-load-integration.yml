@@ -44,6 +44,9 @@ jobs:
         env:
           RUN_REAL_API_TESTS: "1"
           FUELPRICES_DK_KEY: ${{ secrets.FUELPRICES_DK_KEY }}
+          GERMANY_TANKERKOENIG_KEY: ${{ secrets.GERMANY_TANKERKOENIG_KEY }}
+          ROMANIA_PECO_APPLICATION_ID: ${{ secrets.ROMANIA_PECO_APPLICATION_ID }}
+          ROMANIA_PECO_CLIENT_KEY: ${{ secrets.ROMANIA_PECO_CLIENT_KEY }}
         run: |
           ./gradlew --no-daemon :shared:testAndroidHostTest \
             -PrunRealApiTests=true \
@@ -55,4 +58,5 @@ jobs:
           echo "### Station load integration" >> "$GITHUB_STEP_SUMMARY"
           echo "Live HTTP checks for auto-mode fuel providers in all supported countries (see \`AutoModeCountryProbes\`)." >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Optional secret \`FUELPRICES_DK_KEY\` enables the Denmark probe. Probes marked \`skipIfEmpty\` (SE, IE, AR, ES) are reported as skipped when upstream APIs return no data, not as hard failures." >> "$GITHUB_STEP_SUMMARY"
+          echo "Required secrets for key-gated probes: \`FUELPRICES_DK_KEY\`, \`GERMANY_TANKERKOENIG_KEY\`, \`ROMANIA_PECO_APPLICATION_ID\`, \`ROMANIA_PECO_CLIENT_KEY\` (tests fail with an explicit env key name if missing)." >> "$GITHUB_STEP_SUMMARY"
+          echo "Probes marked \`skipIfEmpty\` (SE, IE, AR, ES) are skipped when upstream APIs return no data, not as hard failures." >> "$GITHUB_STEP_SUMMARY"
