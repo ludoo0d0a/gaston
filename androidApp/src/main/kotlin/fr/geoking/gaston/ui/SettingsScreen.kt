@@ -317,6 +317,27 @@ private fun MapConfig(
             )
         }
 
+        if (BuildConfig.DEBUG) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Simulate premium", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "Unlock favorites, price estimation, and no ads",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = settings.devSimulatePremium,
+                    onCheckedChange = { onUpdate(settings.copy(devSimulatePremium = it)) },
+                )
+            }
+        }
+
         // Itinerary
         Column {
             Text(
@@ -832,7 +853,7 @@ private fun MainMenu(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (settings.isPremium) {
+            if (settings.hasPremiumFeatures) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF1E3A8A)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -855,8 +876,16 @@ private fun MainMenu(
                         }
                         Spacer(Modifier.width(16.dp))
                         Column {
-                            Text("Premium Active", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("Thank you for supporting Gaston!", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+                            val title = when {
+                                settings.isPremium -> "Premium Active"
+                                else -> "Premium (simulated)"
+                            }
+                            val subtitle = when {
+                                settings.isPremium -> "Thank you for supporting Gaston!"
+                                else -> "Dev/test override — disable in Map settings"
+                            }
+                            Text(title, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
                         }
                     }
                 }

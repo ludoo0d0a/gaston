@@ -145,7 +145,7 @@ fun RoutePlanningScreen(
     val scope = rememberCoroutineScope()
     var showPaywallForFavorite by remember { mutableStateOf(false) }
 
-    if (showPaywallForFavorite && !settings.isPremium) {
+    if (showPaywallForFavorite && !settings.hasPremiumFeatures) {
         PremiumPaywallPopup(
             billingManager = billingManager,
             onDismiss = { showPaywallForFavorite = false },
@@ -305,7 +305,7 @@ fun RoutePlanningScreen(
                                 if (place != null) {
                                     val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
                                     IconButton(onClick = {
-                                        if (settings.isPremium) {
+                                        if (settings.hasPremiumFeatures) {
                                             settingsManager.toggleFavoriteLocation(place)
                                         } else {
                                             showPaywallForFavorite = true
@@ -369,7 +369,7 @@ fun RoutePlanningScreen(
                                             if (!isFavorite && (isHistory || suggestion.latitude != 0.0)) {
                                                 IconButton(
                                                     onClick = {
-                                                        if (settings.isPremium) {
+                                                        if (settings.hasPremiumFeatures) {
                                                             settingsManager.toggleFavoriteLocation(suggestion)
                                                         } else {
                                                             showPaywallForFavorite = true
@@ -382,7 +382,7 @@ fun RoutePlanningScreen(
                                             } else if (isFavorite) {
                                                 IconButton(
                                                     onClick = {
-                                                        if (settings.isPremium) {
+                                                        if (settings.hasPremiumFeatures) {
                                                             settingsManager.toggleFavoriteLocation(suggestion)
                                                         } else {
                                                             showPaywallForFavorite = true
@@ -439,7 +439,7 @@ fun RoutePlanningScreen(
                             if (place != null) {
                                 val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
                                 IconButton(onClick = {
-                                    if (settings.isPremium) {
+                                    if (settings.hasPremiumFeatures) {
                                         settingsManager.toggleFavoriteLocation(place)
                                     } else {
                                         showPaywallForFavorite = true
@@ -508,7 +508,7 @@ fun RoutePlanningScreen(
                                         if (!isFavorite && (isHistory || suggestion.latitude != 0.0)) {
                                             IconButton(
                                                 onClick = {
-                                                    if (settings.isPremium) {
+                                                    if (settings.hasPremiumFeatures) {
                                                         settingsManager.toggleFavoriteLocation(suggestion)
                                                     } else {
                                                         showPaywallForFavorite = true
@@ -521,7 +521,7 @@ fun RoutePlanningScreen(
                                         } else if (isFavorite) {
                                             IconButton(
                                                 onClick = {
-                                                    if (settings.isPremium) {
+                                                    if (settings.hasPremiumFeatures) {
                                                         settingsManager.toggleFavoriteLocation(suggestion)
                                                     } else {
                                                         showPaywallForFavorite = true

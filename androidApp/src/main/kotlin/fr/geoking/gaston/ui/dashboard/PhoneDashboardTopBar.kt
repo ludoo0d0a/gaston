@@ -44,7 +44,7 @@ fun PhoneDashboardTopBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Gaston")
-                if (settings.isPremium) {
+                if (settings.hasPremiumFeatures) {
                     Spacer(Modifier.width(8.dp))
                     Surface(
                         color = MaterialTheme.colorScheme.secondary,

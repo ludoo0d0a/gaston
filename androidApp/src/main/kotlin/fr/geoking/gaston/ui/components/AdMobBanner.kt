@@ -27,7 +27,7 @@ fun AdMobBanner(
     val settingsManager = koinInject<SettingsManager>()
     val settings by settingsManager.settings.collectAsState()
 
-    if (settings.isPremium) return
+    if (settings.hasPremiumFeatures) return
 
     val context = LocalContext.current
     val adRequest = remember { AdRequest.Builder().build() }

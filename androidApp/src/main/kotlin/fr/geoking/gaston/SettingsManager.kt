@@ -103,14 +103,13 @@ data class AppSettings(
     /** Dev/test override: unlock premium features without a subscription. */
     val devSimulatePremium: Boolean = false,
     val routeStationSearchRadiusMeters: Int = 2000,
-) {
-    val hasPremiumFeatures: Boolean get() = isPremium || devSimulatePremium
-}
     val filterOnlyHighwayStations: Boolean = false,
     val lastKnownLat: Double? = null,
     val lastKnownLon: Double? = null,
-    val lastAcceptedDisclaimerVersion: Int = 0
-)
+    val lastAcceptedDisclaimerVersion: Int = 0,
+) {
+    val hasPremiumFeatures: Boolean get() = isPremium || devSimulatePremium
+}
 
 open class SettingsManager(
     context: Context,
@@ -288,6 +287,7 @@ open class SettingsManager(
             routeHistory = routeHistory,
             favoriteLocations = favoriteLocations,
             isPremium = prefs.getBoolean("is_premium", false),
+            devSimulatePremium = prefs.getBoolean("dev_simulate_premium", false),
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
             filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false),
             lastKnownLat = prefs.getString("last_known_lat", null)?.toDoubleOrNull(),
@@ -355,6 +355,7 @@ open class SettingsManager(
             .putString("route_history", Json.encodeToString(sanitized.routeHistory))
             .putString("favorite_locations", Json.encodeToString(sanitized.favoriteLocations))
             .putBoolean("is_premium", sanitized.isPremium)
+            .putBoolean("dev_simulate_premium", sanitized.devSimulatePremium)
             .putInt("route_station_radius_m", sanitized.routeStationSearchRadiusMeters)
             .putBoolean("filter_only_highway", sanitized.filterOnlyHighwayStations)
             .putString("last_known_lat", sanitized.lastKnownLat?.toString())
@@ -563,6 +564,12 @@ open class SettingsManager(
     open fun setPremium(premium: Boolean) {
         if (_settings.value.isPremium != premium) {
             saveSettings(_settings.value.copy(isPremium = premium))
+        }
+    }
+
+    open fun setDevSimulatePremium(enabled: Boolean) {
+        if (_settings.value.devSimulatePremium != enabled) {
+            saveSettings(_settings.value.copy(devSimulatePremium = enabled))
         }
     }
 

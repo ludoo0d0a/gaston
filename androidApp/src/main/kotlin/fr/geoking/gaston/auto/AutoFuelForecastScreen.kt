@@ -79,7 +79,7 @@ class AutoFuelForecastScreen(
     }
 
     override fun onGetTemplate(): Template {
-        if (!settingsManager.settings.value.isPremium) {
+        if (!settingsManager.settings.value.hasPremiumFeatures) {
             return MessageTemplate.Builder("Gaston Premium Required")
                 .setHeader(
                     Header.Builder()

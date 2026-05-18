@@ -60,8 +60,8 @@ fun FuelForecastScreen(
     val settings by settingsManager.settings.collectAsState()
     val scope = rememberCoroutineScope()
 
-    var showPaywall by remember { mutableStateOf(!settings.isPremium) }
-    if (showPaywall && !settings.isPremium) {
+    var showPaywall by remember { mutableStateOf(!settings.hasPremiumFeatures) }
+    if (showPaywall && !settings.hasPremiumFeatures) {
         PremiumPaywallPopup(
             billingManager = billingManager,
             onDismiss = onBack,

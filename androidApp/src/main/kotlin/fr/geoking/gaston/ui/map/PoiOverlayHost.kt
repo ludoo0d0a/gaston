@@ -91,7 +91,7 @@ fun PoiOverlayHost(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val lazyListState = rememberLazyListState()
 
-    if (showPaywallForFavorite && !settings.isPremium) {
+    if (showPaywallForFavorite && !settings.hasPremiumFeatures) {
         PremiumPaywallPopup(
             billingManager = billingManager,
             onDismiss = { showPaywallForFavorite = false },
@@ -280,7 +280,7 @@ fun PoiOverlayHost(
                         isFavorite = isFav,
                         onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
                             {
-                                if (settings.isPremium) {
+                                if (settings.hasPremiumFeatures) {
                                     scope.launch {
                                         favoritesRepo.toggleFavorite(poi)
                                         setFavoriteIds(favoritesRepo.getFavorites().map { it.id }.toSet())
@@ -327,7 +327,7 @@ fun PoiOverlayHost(
             isFavorite = poi.id in favoriteIds,
             onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
                 {
-                    if (settings.isPremium) {
+                    if (settings.hasPremiumFeatures) {
                         scope.launch {
                             favoritesRepo.toggleFavorite(poi)
                             setFavoriteIds(favoritesRepo.getFavorites().map { it.id }.toSet())
