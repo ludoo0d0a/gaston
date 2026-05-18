@@ -3,14 +3,12 @@ package fr.geoking.gaston.auto
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
-import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
-import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
@@ -89,7 +87,7 @@ class AutoFuelForecastScreen(
                         .setStartHeaderAction(Action.BACK)
                         .build()
                 )
-                .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_poi_gas_rounded)).build())
+                .setIcon(carContext.dashboardFuelIcon())
                 .addAction(
                     Action.Builder()
                         .setTitle("OK")
@@ -106,7 +104,7 @@ class AutoFuelForecastScreen(
                 Row.Builder()
                     .setTitle("Loading…")
                     .addText("Fetching local prices and market data")
-                    .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
+                    .setImage(carContext.actionMapIcon())
                     .build()
             )
         } else if (loadError != null && uiState.historyPoints.isEmpty() && uiState.forecastPoints.isEmpty()) {
@@ -128,7 +126,7 @@ class AutoFuelForecastScreen(
                 Row.Builder()
                     .setTitle(fuelTitle)
                     .addText(histLine)
-                    .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
+                    .setImage(carContext.dashboardFuelIcon())
                     .build()
             )
 

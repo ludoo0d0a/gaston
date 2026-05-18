@@ -3,7 +3,6 @@ package fr.geoking.gaston.auto
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
-import androidx.car.app.model.CarIcon
 import androidx.car.app.model.GridItem
 import androidx.car.app.model.GridTemplate
 import androidx.car.app.model.Header
@@ -11,7 +10,6 @@ import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
-import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
@@ -36,16 +34,13 @@ class AutoPlaystoreDashboardScreen(
 ) : Screen(carContext) {
 
     override fun onGetTemplate(): Template {
-        fun gridIcon(drawableId: Int) =
-            CarIcon.Builder(IconCompat.createWithResource(carContext, drawableId)).build()
-
         val grid = ItemList.Builder()
 
         val fuelTitle = carContext.getString(R.string.search_mode_fuel)
         grid.addItem(
             GridItem.Builder()
                 .setTitle(fuelTitle)
-                .setImage(gridIcon(R.drawable.ic_poi_gas_rounded))
+                .setImage(carContext.dashboardFuelIcon())
                 .setOnClickListener {
                     settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel)
                     pushMapScreen(fuelTitle)
@@ -57,7 +52,7 @@ class AutoPlaystoreDashboardScreen(
         grid.addItem(
             GridItem.Builder()
                 .setTitle(evTitle)
-                .setImage(gridIcon(R.drawable.ic_car_rounded))
+                .setImage(carContext.dashboardEvIcon())
                 .setOnClickListener {
                     settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric)
                     pushMapScreen(evTitle)
@@ -69,7 +64,7 @@ class AutoPlaystoreDashboardScreen(
         grid.addItem(
             GridItem.Builder()
                 .setTitle(myCarTitle)
-                .setImage(gridIcon(R.drawable.ic_directions_car_rounded))
+                .setImage(carContext.dashboardMyCarIcon())
                 .setOnClickListener {
                     settingsManager.setMyCarMode()
                     pushMapScreen(myCarTitle)
@@ -81,7 +76,7 @@ class AutoPlaystoreDashboardScreen(
         grid.addItem(
             GridItem.Builder()
                 .setTitle(otherTitle)
-                .setImage(gridIcon(R.drawable.ic_waypoint_rounded))
+                .setImage(carContext.dashboardOtherIcon())
                 .setOnClickListener {
                     settingsManager.setOtherMode()
                     pushMapScreen(otherTitle)
@@ -92,7 +87,7 @@ class AutoPlaystoreDashboardScreen(
         grid.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.dashboard_routes))
-                .setImage(gridIcon(R.drawable.ic_swap_horiz))
+                .setImage(carContext.dashboardRoutesIcon())
                 .setOnClickListener {
                     val mapDeps = getMapDeps() ?: return@setOnClickListener
                     screenManager.push(
@@ -112,7 +107,7 @@ class AutoPlaystoreDashboardScreen(
         grid.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.dashboard_network))
-                .setImage(gridIcon(R.drawable.ic_poi_radar_rounded))
+                .setImage(carContext.dashboardNetworkIcon())
                 .setOnClickListener {
                     screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService))
                 }
@@ -122,7 +117,7 @@ class AutoPlaystoreDashboardScreen(
         grid.addItem(
             GridItem.Builder()
                 .setTitle("Emergency")
-                .setImage(gridIcon(R.drawable.ic_sos_rounded))
+                .setImage(carContext.dashboardEmergencyIcon())
                 .setOnClickListener {
                     screenManager.push(AutoEmergencyScreen(carContext, networkService, connectivityManager))
                 }
@@ -132,7 +127,7 @@ class AutoPlaystoreDashboardScreen(
         grid.addItem(
             GridItem.Builder()
                 .setTitle("More")
-                .setImage(gridIcon(R.drawable.ic_settings))
+                .setImage(carContext.dashboardSettingsIcon())
                 .setOnClickListener {
                     screenManager.push(
                         object : Screen(carContext) {
@@ -141,7 +136,7 @@ class AutoPlaystoreDashboardScreen(
                                     .addItem(
                                         Row.Builder()
                                             .setTitle("Fuel outlook")
-                                            .setImage(gridIcon(R.drawable.ic_poi_gas_rounded))
+                                            .setImage(carContext.dashboardFuelIcon())
                                             .setOnClickListener {
                                                 screenManager.push(AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository))
                                             }
@@ -150,7 +145,7 @@ class AutoPlaystoreDashboardScreen(
                                     .addItem(
                                         Row.Builder()
                                             .setTitle("Map settings")
-                                            .setImage(gridIcon(R.drawable.ic_settings))
+                                            .setImage(carContext.dashboardSettingsIcon())
                                             .setOnClickListener {
                                                 screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
                                             }
@@ -159,7 +154,7 @@ class AutoPlaystoreDashboardScreen(
                                     .addItem(
                                         Row.Builder()
                                             .setTitle("Template lab")
-                                            .setImage(gridIcon(R.mipmap.ic_launcher))
+                                            .setImage(carContext.carIconUntinted(R.mipmap.ic_launcher))
                                             .setOnClickListener {
                                                 screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps))
                                             }

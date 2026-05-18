@@ -7,7 +7,6 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
-import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
@@ -15,7 +14,6 @@ import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.SearchTemplate
 import androidx.car.app.model.Template
-import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
 import fr.geoking.gaston.intent.IntentNavigationHelper
@@ -161,7 +159,7 @@ class AutoRoutePlanningScreen(
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
+                    .setIcon(carContext.actionMapIcon())
                     .setTitle("Back")
                     .setOnClickListener { screenManager.pop() }
                     .build()
@@ -196,10 +194,13 @@ class AutoRoutePlanningScreen(
                 listBuilder.addItem(
                     Row.Builder()
                         .setTitle(suggestion.label)
-                        .setImage(CarIcon.Builder(IconCompat.createWithResource(
-                            carContext,
-                            if (isHistory || isFavorite) R.drawable.ic_history else R.drawable.ic_map
-                        )).build())
+                        .setImage(
+                            if (isHistory || isFavorite) {
+                                carContext.actionHistoryIcon()
+                            } else {
+                                carContext.actionMapIcon()
+                            }
+                        )
                         .setOnClickListener {
                             if (step == Step.ORIGIN) {
                                 originQuery = suggestion.label
@@ -285,7 +286,7 @@ class AutoRoutePlanningScreen(
             .addAction(
                 Action.Builder()
                     .setTitle("Edit")
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
+                    .setIcon(carContext.actionSettingsIcon())
                     .setOnClickListener {
                         step = Step.ORIGIN
                         invalidate()
@@ -295,7 +296,7 @@ class AutoRoutePlanningScreen(
             .addAction(
                 Action.Builder()
                     .setTitle("Start nav")
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
+                    .setIcon(carContext.actionMapIcon())
                     .setOnClickListener { openExternalDirections() }
                     .build()
             )

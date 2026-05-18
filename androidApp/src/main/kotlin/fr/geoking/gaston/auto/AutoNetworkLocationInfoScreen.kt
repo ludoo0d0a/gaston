@@ -7,13 +7,11 @@ import android.util.Log
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
-import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Header
 import androidx.car.app.model.Pane
 import androidx.car.app.model.PaneTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
-import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.R
@@ -122,7 +120,7 @@ class AutoNetworkLocationInfoScreen(
             Row.Builder()
                 .setTitle("$connectionStatus • $networkTypeLabel")
                 .addText("Signal: $signalBars")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_swap_horiz)).build())
+                .setImage(carContext.dashboardRoutesIcon())
                 .build()
         )
 
@@ -142,7 +140,7 @@ class AutoNetworkLocationInfoScreen(
         paneBuilder.addRow(
             Row.Builder()
                 .setTitle(addressTitle)
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
+                .setImage(carContext.actionMapIcon())
                 .build()
         )
 
@@ -155,7 +153,7 @@ class AutoNetworkLocationInfoScreen(
         paneBuilder.addRow(
             Row.Builder()
                 .setTitle(coordsText)
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_waypoint_rounded)).build())
+                .setImage(carContext.dashboardOtherIcon())
                 .build()
         )
 

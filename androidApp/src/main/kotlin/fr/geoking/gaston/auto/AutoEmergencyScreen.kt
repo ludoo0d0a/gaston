@@ -9,14 +9,11 @@ import android.util.Log
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
-import androidx.car.app.model.CarColor
-import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
-import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
 import fr.geoking.gaston.feature.emergency.EmergencyCategory
@@ -116,7 +113,7 @@ class AutoEmergencyScreen(
             Row.Builder()
                 .setTitle("Call Emergency: $universalNumber")
                 .addText("Universal number for this region")
-                .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_sos_rounded)).build())
+                .setImage(carContext.dashboardEmergencyIcon())
                 .setOnClickListener { dial(universalNumber) }
                 .build()
         )
@@ -132,7 +129,7 @@ class AutoEmergencyScreen(
         } else {
             locationRow.addText("Location unavailable")
         }
-        locationRow.setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
+        locationRow.setImage(carContext.actionMapIcon())
         listBuilder.addItem(locationRow.build())
 
         // Local Emergency Numbers
@@ -142,7 +139,7 @@ class AutoEmergencyScreen(
                 Row.Builder()
                     .setTitle("Useful Numbers" + (if (countryName != null) " - $countryName" else ""))
                     .addText("${contacts.size} local emergency contacts")
-                    .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_speaker)).build())
+                    .setImage(carContext.carIcon(R.drawable.ic_speaker, AutoCarIcons.muted))
                     .setOnClickListener {
                         screenManager.push(AutoEmergencyContactsScreen(carContext, countryName, contacts))
                     }
@@ -159,13 +156,13 @@ class AutoEmergencyScreen(
                     .setStartHeaderAction(Action.BACK)
                     .addEndHeaderAction(
                         Action.Builder()
-                            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_notifications)).build())
+                            .setIcon(carContext.carIcon(R.drawable.ic_notifications, AutoCarIcons.primary))
                             .setOnClickListener { connectivityManager.triggerManualBorderEvent() }
                             .build()
                     )
                     .addEndHeaderAction(
                         Action.Builder()
-                            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_history)).build())
+                            .setIcon(carContext.actionHistoryIcon())
                             .setOnClickListener { loadLocation() }
                             .build()
                     )
@@ -209,7 +206,7 @@ class AutoEmergencyContactsScreen(
                 Row.Builder()
                     .setTitle(contact.label)
                     .addText("${contact.number}${if (contact.description != null) " - ${contact.description}" else ""}")
-                    .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, iconForCategory(contact.category))).build())
+                    .setImage(carContext.emergencyCategoryIcon(contact.category))
                     .setOnClickListener { dial(contact.number) }
                     .build()
             )
@@ -238,12 +235,4 @@ class AutoEmergencyContactsScreen(
         }
     }
 
-    private fun iconForCategory(category: EmergencyCategory): Int = when (category) {
-        EmergencyCategory.GENERAL -> R.drawable.ic_sos
-        EmergencyCategory.POLICE -> R.drawable.ic_directions_car
-        EmergencyCategory.MEDICAL -> R.drawable.ic_poi_radar
-        EmergencyCategory.FIRE -> R.drawable.ic_poi_gas
-        EmergencyCategory.ROADSIDE -> R.drawable.ic_error_outline
-        EmergencyCategory.OTHER -> R.drawable.ic_speaker
-    }
 }
