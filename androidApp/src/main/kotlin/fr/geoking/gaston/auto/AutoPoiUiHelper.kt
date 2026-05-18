@@ -14,6 +14,7 @@ import androidx.car.app.model.Row
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.R
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
@@ -84,6 +85,7 @@ object AutoPoiUiHelper {
             .setOnClickListener(onClick)
 
         val label = PoiMarkerHelper.getPoiLabel(poi, effectiveEnergyTypes, effectivePowerLevels)
+        val interpunct = "\u00b7"
 
         // PlaceList* templates require DistanceSpan on non-browsable rows; some hosts are strict even
         // when rows are browsable. Including a DistanceSpan makes the row universally valid.
@@ -95,13 +97,52 @@ object AutoPoiUiHelper {
             } else {
                 Distance.create(meters, Distance.UNIT_METERS)
             }
-            val interpunct = "\u00b7"
             val text = if (label != null) "  $interpunct $label" else " "
             val s = SpannableString(text)
             s.setSpan(DistanceSpan.create(distance), 0, 1, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
             rowBuilder.addText(s)
         } else if (label != null) {
             rowBuilder.addText(label)
+        }
+
+        // Second line: additional details for parity with phone dashboard
+        val secondaryDetails = mutableListOf<String>()
+        val fuelIds = effectiveEnergyTypes - "electric"
+        val hasFuelFilter = fuelIds.isNotEmpty()
+
+        // If the label is a fuel price, try to find the corresponding fuel name
+        val prices = poi.fuelPrices.orEmpty()
+        val matchingPrices = if (hasFuelFilter) {
+            prices.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+        } else {
+            prices.filter { !it.outOfStock }
+        }
+        val bestPriceItem = matchingPrices.minByOrNull { it.price }
+
+        val shownFuelPrice = label?.startsWith("€") == true
+        if (shownFuelPrice && bestPriceItem != null) {
+            secondaryDetails.add(bestPriceItem.fuelName)
+        } else if (poi.isElectric) {
+            poi.operator?.takeIf { it.isNotBlank() }?.let { secondaryDetails.add(it) }
+        }
+
+        if (poi.isElectric) {
+            poi.chargePointCount?.let { n ->
+                secondaryDetails.add(if (n == 1) "1 point" else "$n points")
+            }
+            availability?.let { s ->
+                secondaryDetails.add("${s.availableCount}/${s.totalCount} dispo")
+            }
+        }
+
+        val addressLocal = poi.addressLocal
+        if (secondaryDetails.isEmpty() && !addressLocal.isNullOrBlank()) {
+            secondaryDetails.add(addressLocal)
+        }
+
+        val secondaryText = secondaryDetails.joinToString(" $interpunct ")
+        if (secondaryText.isNotBlank()) {
+            rowBuilder.addText(secondaryText)
         }
 
         return rowBuilder.build()
