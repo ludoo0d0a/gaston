@@ -23,7 +23,12 @@ class AutoSettingsScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.screen_app_theme))
-                .addText("Current: ${settingsManager.settings.value.uiThemeMode.name}")
+                .addText(
+                    carContext.getString(
+                        R.string.settings_current_format,
+                        settingsManager.settings.value.uiThemeMode.name
+                    )
+                )
                 .setOnClickListener {
                     screenManager.push(AutoThemeSelectionScreen(carContext, settingsManager))
                 }

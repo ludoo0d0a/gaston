@@ -43,7 +43,7 @@ fun PhoneDashboardTopBar(
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Gaston")
+                Text(stringResource(R.string.app_name))
                 if (settings.hasPremiumFeatures) {
                     Spacer(Modifier.width(8.dp))
                     Surface(
@@ -51,7 +51,7 @@ fun PhoneDashboardTopBar(
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
-                            "PREMIUM",
+                            stringResource(R.string.premium_badge),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSecondary,
@@ -68,7 +68,7 @@ fun PhoneDashboardTopBar(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Update in progress",
+                        stringResource(R.string.update_in_progress),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )

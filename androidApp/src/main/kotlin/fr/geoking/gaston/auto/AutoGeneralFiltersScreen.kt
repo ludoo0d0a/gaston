@@ -28,7 +28,10 @@ class AutoGeneralFiltersScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.screen_brands))
-                .addText(if (settings.mapBrands.isEmpty()) "All" else settings.mapBrands.joinToString(", ").take(100))
+                .addText(
+                    if (settings.mapBrands.isEmpty()) carContext.getString(R.string.action_all)
+                    else settings.mapBrands.joinToString(", ").take(100)
+                )
                 .setOnClickListener {
                     screenManager.push(AutoMapBrandSelectionScreen(carContext, settingsManager))
                 }
@@ -37,7 +40,7 @@ class AutoGeneralFiltersScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Enseigne")
+                .setTitle(carContext.getString(R.string.screen_enseigne))
                 .addText(settings.mapEnseigneType)
                 .setOnClickListener {
                     screenManager.push(AutoMapEnseigneSelectionScreen(carContext, settingsManager))

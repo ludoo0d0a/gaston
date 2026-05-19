@@ -266,7 +266,11 @@ fun RoutePlanningScreen(
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    if (useCurrentLocationAsOrigin) "Use my current location" else "Enter an address / city",
+                    if (useCurrentLocationAsOrigin) {
+                        stringResource(R.string.route_use_current_location_origin)
+                    } else {
+                        stringResource(R.string.route_enter_address)
+                    },
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -315,7 +319,11 @@ fun RoutePlanningScreen(
                                     }) {
                                         Icon(
                                             imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                                            contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                                            contentDescription = if (isFavorite) {
+                                                stringResource(R.string.route_favorite_remove_cd)
+                                            } else {
+                                                stringResource(R.string.route_favorite_add_cd)
+                                            },
                                                 tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                                         )
                                     }
@@ -449,7 +457,11 @@ fun RoutePlanningScreen(
                                 }) {
                                     Icon(
                                         imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                                        contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                                        contentDescription = if (isFavorite) {
+                                            stringResource(R.string.route_favorite_remove_cd)
+                                        } else {
+                                            stringResource(R.string.route_favorite_add_cd)
+                                        },
                                         tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                                     )
                                 }
@@ -555,7 +567,10 @@ fun RoutePlanningScreen(
                     modifier = Modifier.weight(1f),
                     enabled = !loading && destQuery.isNotBlank() && (useCurrentLocationAsOrigin || originQuery.isNotBlank())
                 ) {
-                    Text(if (loading) "Calculating…" else "Calculate route")
+                    Text(
+                        if (loading) stringResource(R.string.route_calculating_short)
+                        else stringResource(R.string.route_calculate)
+                    )
                 }
 
                 if (currentRoute != null && onShowOnMap != null) {
@@ -583,7 +598,7 @@ fun RoutePlanningScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 tollEstimate?.let { toll ->
                     Text(
-                        "Estimated toll: €%.2f".format(toll.amountEur),
+                        stringResource(R.string.route_estimated_toll, toll.amountEur),
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -592,7 +607,12 @@ fun RoutePlanningScreen(
                 routeTraffic?.let { info ->
                     val roadSummary = info.events.map { it.roadRef }.distinct().sorted().joinToString(", ")
                     Text(
-                        "Traffic (${info.providerId}): ${info.events.size} events on $roadSummary",
+                        stringResource(
+                            R.string.route_traffic_summary,
+                            info.providerId,
+                            info.events.size,
+                            roadSummary
+                        ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -695,9 +715,9 @@ fun RoutePlanningScreen(
                 }
 
                 val title = if (settings.vehicleType == VehicleType.Truck || settings.vehicleType == VehicleType.Motorhome) {
-                    "POIs along route (${filteredStations.size})"
+                    stringResource(R.string.route_pois_along, filteredStations.size)
                 } else {
-                    "Stations along route (${filteredStations.size})"
+                    stringResource(R.string.route_stations_along, filteredStations.size)
                 }
                 val listState = rememberLazyListState()
                 Text(title, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
@@ -770,7 +790,7 @@ fun RoutePlanningScreen(
                                                 modifier = Modifier.padding(start = 4.dp)
                                             ) {
                                                 Text(
-                                                    "CHEAPEST",
+                                                    stringResource(R.string.route_cheapest_badge),
                                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.onSecondary,
@@ -829,23 +849,23 @@ fun RoutePlanningScreen(
             val origin = if (useCurrentLocationAsOrigin) {
                 if (!hasLocation) {
                     loading = false
-                    error = "Location permission is required to use current location"
+                    error = context.getString(R.string.route_location_permission_required)
                     return@LaunchedEffect
                 }
                 val loc = LocationHelper.getCurrentLocation(context)
                 if (loc == null) {
                     loading = false
-                    error = "Could not determine current location"
+                    error = context.getString(R.string.route_could_not_get_location)
                     return@LaunchedEffect
                 }
-                Pair("Current location", loc.latitude to loc.longitude)
+                Pair(context.getString(R.string.network_current_location), loc.latitude to loc.longitude)
             } else {
                 selectedOrigin?.let { it.label to (it.latitude to it.longitude) } ?: run {
                     val results = geocodingClient.geocode(originQuery, limit = 1)
                     val first = results.firstOrNull()
                     if (first == null) {
                         loading = false
-                        error = "Origin not found"
+                        error = context.getString(R.string.route_origin_not_found)
                         return@LaunchedEffect
                     }
                     selectedOrigin = first
@@ -863,7 +883,7 @@ fun RoutePlanningScreen(
                     val destFirst = destResults.firstOrNull()
                     if (destFirst == null) {
                         loading = false
-                        error = "Destination not found"
+                        error = context.getString(R.string.route_destination_not_found)
                         return@LaunchedEffect
                     }
                     selectedDest = destFirst
@@ -901,7 +921,7 @@ fun RoutePlanningScreen(
                 tollEstimate = null
                 routeTraffic = null
                 loading = false
-                error = "No route found"
+                error = context.getString(R.string.route_no_route_found)
             }
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e

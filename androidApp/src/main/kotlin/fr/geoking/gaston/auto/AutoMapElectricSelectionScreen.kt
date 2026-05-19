@@ -18,7 +18,12 @@ class AutoMapElectricSelectionScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.screen_min_power))
-                .addText(if (settings.mapPowerLevels.isEmpty()) "Any" else settings.mapPowerLevels.joinToString(", ") { "${it}kW" })
+                .addText(
+                    if (settings.mapPowerLevels.isEmpty()) carContext.getString(R.string.filter_any)
+                    else settings.mapPowerLevels.joinToString(", ") {
+                        carContext.getString(R.string.power_kw_any, it)
+                    }
+                )
                 .setOnClickListener {
                     screenManager.push(AutoMapIrvePowerSelectionScreen(carContext, settingsManager))
                 }
@@ -28,7 +33,10 @@ class AutoMapElectricSelectionScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.screen_connectors))
-                .addText(if (settings.selectedMapConnectorTypes.isEmpty()) "Any" else settings.selectedMapConnectorTypes.joinToString(", "))
+                .addText(
+                    if (settings.selectedMapConnectorTypes.isEmpty()) carContext.getString(R.string.filter_any)
+                    else settings.selectedMapConnectorTypes.joinToString(", ")
+                )
                 .setOnClickListener {
                     screenManager.push(AutoMapConnectorSelectionScreen(carContext, settingsManager))
                 }

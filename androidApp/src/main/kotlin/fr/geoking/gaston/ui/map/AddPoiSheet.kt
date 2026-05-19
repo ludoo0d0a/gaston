@@ -93,7 +93,7 @@ fun AddPoiSheet(
                         FilterChip(
                             selected = isElectric,
                             onClick = { isElectric = true },
-                            label = { Text("IRVE") },
+                            label = { Text(stringResource(R.string.poi_irve)) },
                             leadingIcon = {
                                 Icon(
                                     Icons.Default.EvStation,

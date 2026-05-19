@@ -106,7 +106,7 @@ fun EmergencyScreen(
             detectedCountryCode = info?.countryCode
             thoroughfare = info?.thoroughfare
         } else {
-            address = "Location not available — turn on GPS, or move to an open-sky area."
+            address = context.getString(R.string.emergency_gps_unavailable)
         }
         loading = false
     }
@@ -166,7 +166,7 @@ fun EmergencyScreen(
                         countryName = countryName,
                         onHighway = onHighway,
                         onCopy = {
-                            val payload = buildLocationMessage(latLng, address)
+                            val payload = buildLocationMessage(context, latLng, address)
                             if (payload.isNotBlank()) {
                                 copyToClipboard(context, payload)
                             }
@@ -183,7 +183,9 @@ fun EmergencyScreen(
                 if (contacts.isNotEmpty()) {
                     item {
                         Text(
-                            text = "Useful numbers" + (countryName?.let { " · $it" } ?: ""),
+                            text = countryName?.let {
+                                stringResource(R.string.emergency_useful_numbers_country, it)
+                            } ?: stringResource(R.string.emergency_useful_numbers),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
@@ -200,7 +202,7 @@ fun EmergencyScreen(
                 item {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "Tip: when calling 112 from a mobile in the EU, the operator can locate you automatically (AML).",
+                        text = stringResource(R.string.emergency_aml_tip),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -233,14 +235,14 @@ private fun UniversalEmergencyButton(number: String, onCall: () -> Unit) {
                     modifier = Modifier.size(32.dp)
                 )
                 Text(
-                    text = "Need help now?",
+                    text = stringResource(R.string.emergency_need_help_now),
                     style = MaterialTheme.typography.titleLarge,
                     color = EmergencyOnRed,
                     fontWeight = FontWeight.Bold
                 )
             }
             Text(
-                text = "Tap to call $number",
+                text = stringResource(R.string.emergency_tap_to_call, number),
                 style = MaterialTheme.typography.bodyMedium,
                 color = EmergencyOnRed.copy(alpha = 0.95f)
             )
@@ -255,7 +257,7 @@ private fun UniversalEmergencyButton(number: String, onCall: () -> Unit) {
                 Icon(painterResource(R.drawable.ic_phone), contentDescription = null)
                 Spacer(Modifier.size(8.dp))
                 Text(
-                    text = "Call $number",
+                    text = stringResource(R.string.emergency_call_cd, number),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -288,7 +290,7 @@ private fun LocationCard(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Your location",
+                    text = stringResource(R.string.emergency_your_location),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold
@@ -303,19 +305,23 @@ private fun LocationCard(
                 }
                 latLng != null -> {
                     Text(
-                        text = address ?: "Address unavailable",
+                        text = address ?: stringResource(R.string.emergency_address_unavailable),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     val (lat, lon) = latLng
                     Text(
-                        text = "Lat: ${"%.6f".format(Locale.US, lat)}, Lon: ${"%.6f".format(Locale.US, lon)}",
+                        text = stringResource(
+                            R.string.emergency_coords,
+                            "%.6f".format(Locale.US, lat),
+                            "%.6f".format(Locale.US, lon)
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (countryName != null) {
                         Text(
-                            text = "Country: $countryName",
+                            text = stringResource(R.string.emergency_country, countryName),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -333,7 +339,7 @@ private fun LocationCard(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = "You appear to be on a highway / motorway.",
+                                text = stringResource(R.string.emergency_on_highway),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = EmergencyRed
                             )
@@ -342,7 +348,7 @@ private fun LocationCard(
                 }
                 else -> {
                     Text(
-                        text = address ?: "Location unavailable",
+                        text = address ?: stringResource(R.string.emergency_location_unavailable),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -431,7 +437,7 @@ private fun ContactRow(contact: EmergencyContact, onCall: () -> Unit) {
             )
             Icon(
                 painter = painterResource(R.drawable.ic_phone),
-                contentDescription = "Call ${contact.label}",
+                contentDescription = stringResource(R.string.emergency_call_cd, contact.label),
                 tint = MaterialTheme.colorScheme.primary
             )
         }
@@ -521,31 +527,37 @@ private fun Address.toMeta(): GeocodeMeta {
     )
 }
 
-private fun buildLocationMessage(latLng: Pair<Double, Double>?, address: String?): String {
+private fun buildLocationMessage(context: Context, latLng: Pair<Double, Double>?, address: String?): String {
     val (lat, lon) = latLng ?: return ""
     val mapsLink = "https://maps.google.com/?q=%.6f,%.6f".format(Locale.US, lat, lon)
     return buildString {
-        append("I need help. My current location:")
+        append(context.getString(R.string.emergency_share_body_header))
         append("\n")
         if (!address.isNullOrBlank()) {
             append(address)
             append("\n")
         }
-        append("Lat ${"%.6f".format(Locale.US, lat)}, Lon ${"%.6f".format(Locale.US, lon)}")
+        append(
+            context.getString(
+                R.string.emergency_share_coords,
+                "%.6f".format(Locale.US, lat),
+                "%.6f".format(Locale.US, lon)
+            )
+        )
         append("\n")
         append(mapsLink)
     }
 }
 
 private fun shareLocation(context: Context, latLng: Pair<Double, Double>?, address: String?) {
-    val text = buildLocationMessage(latLng, address)
+    val text = buildLocationMessage(context, latLng, address)
     if (text.isBlank()) return
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, "Emergency: my location")
+        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.emergency_share_subject))
         putExtra(Intent.EXTRA_TEXT, text)
     }
-    val chooser = Intent.createChooser(intent, "Share my location").apply {
+    val chooser = Intent.createChooser(intent, context.getString(R.string.emergency_share_chooser)).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     context.startActivity(chooser)

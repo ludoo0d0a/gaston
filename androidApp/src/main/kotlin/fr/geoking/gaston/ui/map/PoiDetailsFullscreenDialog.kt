@@ -239,7 +239,10 @@ fun PoiDetailsFullscreenDialog(
                                 overallLastUpdate?.let { timestamp ->
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Text(
-                                        text = "Last updated ${DateTimeUtils.formatRelativeTime(timestamp)}",
+                                        text = stringResource(
+                                            R.string.poi_last_updated,
+                                            DateTimeUtils.formatRelativeTime(timestamp)
+                                        ),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 12.sp,
                                         modifier = Modifier.align(Alignment.End)
@@ -251,12 +254,12 @@ fun PoiDetailsFullscreenDialog(
                         // IRVE Details
                         if (poi.isElectric && poi.irveDetails != null) {
                             val d = poi.irveDetails!!
-                            SectionHeader("Connecteurs")
+                            SectionHeader(stringResource(R.string.poi_label_connectors))
                             val powerKw = poi.powerKw
                             val powerColor = powerKw?.let { ColorHelper.getPowerColor(it) }
                             if (powerKw != null) {
                                 Text(
-                                    text = "${powerKw.toInt()} kW",
+                                    text = stringResource(R.string.power_kw_format, powerKw.toInt()),
                                     color = powerColor ?: Color.White.copy(alpha = 0.9f),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium
@@ -281,7 +284,7 @@ fun PoiDetailsFullscreenDialog(
                             }
                             if (d.gratuit == true) {
                                 Text(
-                                    text = "Gratuit",
+                                    text = stringResource(R.string.poi_free),
                                     color = Color(0xFF22C55E),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium
@@ -289,29 +292,29 @@ fun PoiDetailsFullscreenDialog(
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
                             d.tarification?.takeIf { it.isNotBlank() }?.let { text ->
-                                PoiDetailRowStr("Tarification", text)
+                                PoiDetailRowStr(stringResource(R.string.poi_label_pricing), text)
                             }
                             d.openingHours?.takeIf { it.isNotBlank() }?.let { text ->
-                                PoiDetailRowStr("Horaires", text)
+                                PoiDetailRowStr(stringResource(R.string.poi_label_hours), text)
                             }
                             if (d.reservation == true) {
-                                PoiDetailRow("Réservation possible", true)
+                                PoiDetailRow(stringResource(R.string.poi_reservation_possible), true)
                             }
                             listOfNotNull(
-                                if (d.paymentActe == true) "À l'acte" else null,
-                                if (d.paymentCb == true) "CB" else null,
-                                if (d.paymentAutre == true) "Autre" else null
+                                if (d.paymentActe == true) stringResource(R.string.poi_payment_on_site) else null,
+                                if (d.paymentCb == true) stringResource(R.string.poi_payment_card) else null,
+                                if (d.paymentAutre == true) stringResource(R.string.poi_payment_other) else null
                             ).joinToString(", ").takeIf { it.isNotBlank() }?.let { pay ->
-                                PoiDetailRowStr("Paiement", pay)
+                                PoiDetailRowStr(stringResource(R.string.poi_label_payment), pay)
                             }
                             d.conditionAcces?.takeIf { it.isNotBlank() }?.let { text ->
-                                PoiDetailRowStr("Accès", text)
+                                PoiDetailRowStr(stringResource(R.string.poi_label_access), text)
                             }
                         }
 
                         // Community Actions
                         if (isLoggedIn && (onEdit != null || onRemove != null || onHide != null || onSuggestCorrection != null)) {
-                            SectionHeader("Actions")
+                            SectionHeader(stringResource(R.string.poi_section_actions))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -320,8 +323,16 @@ fun PoiDetailsFullscreenDialog(
                                     onEdit?.let { TextButton(onClick = it) { Text(stringResource(R.string.action_edit), color = Color(0xFF94A3B8), fontSize = 13.sp) } }
                                     onRemove?.let { TextButton(onClick = it) { Text(stringResource(R.string.action_remove), color = Color(0xFFFF6B6B), fontSize = 13.sp) } }
                                 } else {
-                                    onHide?.let { TextButton(onClick = it) { Text("Hide on map", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
-                                    onSuggestCorrection?.let { TextButton(onClick = it) { Text("Suggest correction", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
+                                    onHide?.let {
+                                        TextButton(onClick = it) {
+                                            Text(stringResource(R.string.action_hide_on_map), color = Color(0xFF94A3B8), fontSize = 13.sp)
+                                        }
+                                    }
+                                    onSuggestCorrection?.let {
+                                        TextButton(onClick = it) {
+                                            Text(stringResource(R.string.action_suggest_correction), color = Color(0xFF94A3B8), fontSize = 13.sp)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -346,7 +357,7 @@ fun PoiDetailsFullscreenDialog(
                                 PoiDetailRowStr("Cuisine", text)
                             }
                             d.openingHours?.takeIf { it.isNotBlank() }?.let { text ->
-                                PoiDetailRowStr("Horaires", text)
+                                PoiDetailRowStr(stringResource(R.string.poi_label_hours), text)
                             }
                         }
 

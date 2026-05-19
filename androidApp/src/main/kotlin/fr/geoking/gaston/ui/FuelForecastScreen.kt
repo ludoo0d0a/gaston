@@ -135,7 +135,7 @@ fun FuelForecastScreen(
                 ) {
                     item {
                         Text(
-                            "Regional estimations based on market trends and local pump averages.",
+                            stringResource(R.string.forecast_regional_estimations),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 8.dp)

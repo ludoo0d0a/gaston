@@ -119,7 +119,7 @@ class AutoNetworkLocationInfoScreen(
         paneBuilder.addRow(
             Row.Builder()
                 .setTitle("$connectionStatus • $networkTypeLabel")
-                .addText("Signal: $signalBars")
+                .addText(carContext.getString(R.string.network_signal, signalBars))
                 .setImage(carContext.dashboardRoutesIcon())
                 .build()
         )

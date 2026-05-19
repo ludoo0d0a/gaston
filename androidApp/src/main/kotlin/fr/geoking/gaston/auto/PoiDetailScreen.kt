@@ -80,17 +80,23 @@ class PoiDetailScreen(
         poi.brand?.takeIf { it.isNotBlank() }?.let { appendLine(it) }
         if (poi.isElectric) {
             poi.operator?.takeIf { it.isNotBlank() }?.let { appendLine(it) }
-            if (poi.isOnHighway) appendLine("Autoroute")
+            if (poi.isOnHighway) appendLine(carContext.getString(R.string.highway))
             poi.chargePointCount?.let { n ->
-                appendLine(if (n == 1) "1 point de charge" else "$n points de charge")
+                appendLine(
+                    if (n == 1) {
+                        carContext.getString(R.string.poi_charge_point_one)
+                    } else {
+                        carContext.getString(R.string.poi_charge_points, n)
+                    }
+                )
             }
             availabilitySummary?.let { s ->
-                appendLine("${s.availableCount} / ${s.totalCount} disponibles")
+                appendLine(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
             }
         }
 
         // 2. Address
-        appendHeader("Address")
+        appendHeader(carContext.getString(R.string.poi_section_address))
         val addressLines = mutableListOf<String>()
         poi.addressLocal?.takeIf { it.isNotBlank() }?.let { addressLines.add(it) }
         listOf(poi.townLocal, poi.postcode).filter { !it.isNullOrBlank() }.joinToString(", ").takeIf { it.isNotBlank() }?.let { addressLines.add(it) }
@@ -100,21 +106,21 @@ class PoiDetailScreen(
 
         // 3. Price Rating
         if (!poi.isElectric && poi.priceRating != null) {
-            appendHeader("Price Rating")
+            appendHeader(carContext.getString(R.string.poi_section_price_rating))
             val r = poi.priceRating!!
             val label = when {
-                r >= 8.5 -> "Consistently very cheap"
-                r >= 7.0 -> "Consistently cheap"
-                r >= 4.0 -> "Average prices"
-                r >= 2.0 -> "Consistently expensive"
-                else -> "Very expensive"
+                r >= 8.5 -> carContext.getString(R.string.poi_rating_very_cheap)
+                r >= 7.0 -> carContext.getString(R.string.poi_rating_cheap)
+                r >= 4.0 -> carContext.getString(R.string.poi_rating_average)
+                r >= 2.0 -> carContext.getString(R.string.poi_rating_expensive)
+                else -> carContext.getString(R.string.poi_rating_very_expensive)
             }
-            appendLine("%.1f / 10 · $label".format(r))
+            appendLine(carContext.getString(R.string.poi_rating_format_label, r, label))
         }
 
         // 4. Prices
         poi.fuelPrices?.takeIf { it.isNotEmpty() }?.let { prices ->
-            appendHeader("Prices")
+            appendHeader(carContext.getString(R.string.poi_section_prices))
             prices.forEach { fp ->
                 val priceStr = if (fp.outOfStock) "—" else "€%.3f".format(fp.price)
                 val updated = fp.updatedAt?.let {
@@ -127,22 +133,30 @@ class PoiDetailScreen(
         // 5. IRVE Details
         if (poi.isElectric) {
             poi.irveDetails?.let { d ->
-                appendHeader("Charging Details")
-                poi.powerKw?.let { appendLine("${it.toInt()} kW") }
+                appendHeader(carContext.getString(R.string.poi_section_charging_details))
+                poi.powerKw?.let { appendLine(carContext.getString(R.string.power_kw_format, it.toInt())) }
                 if (d.connectorTypes.isNotEmpty()) {
                     val labels = d.connectorTypes.sorted().map { BrandHelper.connectorTypeLabel(it) }.joinToString(", ")
-                    appendLine("Connecteurs: $labels")
+                    appendLine(carContext.getString(R.string.poi_connectors_prefix, labels))
                 }
-                if (d.gratuit == true) appendLine("Gratuit")
-                d.tarification?.takeIf { it.isNotBlank() }?.let { appendLine("Tarification: $it") }
-                d.openingHours?.takeIf { it.isNotBlank() }?.let { appendLine("Horaires: $it") }
-                if (d.reservation == true) appendLine("Réservation possible")
+                if (d.gratuit == true) appendLine(carContext.getString(R.string.poi_free))
+                d.tarification?.takeIf { it.isNotBlank() }?.let {
+                    appendLine(carContext.getString(R.string.poi_pricing_prefix, it))
+                }
+                d.openingHours?.takeIf { it.isNotBlank() }?.let {
+                    appendLine(carContext.getString(R.string.poi_hours_prefix, it))
+                }
+                if (d.reservation == true) appendLine(carContext.getString(R.string.poi_reservation_possible))
                 listOfNotNull(
-                    if (d.paymentActe == true) "À l'acte" else null,
-                    if (d.paymentCb == true) "CB" else null,
-                    if (d.paymentAutre == true) "Autre" else null
-                ).joinToString(", ").takeIf { it.isNotBlank() }?.let { appendLine("Paiement: $it") }
-                d.conditionAcces?.takeIf { it.isNotBlank() }?.let { appendLine("Accès: $it") }
+                    if (d.paymentActe == true) carContext.getString(R.string.poi_payment_on_site) else null,
+                    if (d.paymentCb == true) carContext.getString(R.string.poi_payment_card) else null,
+                    if (d.paymentAutre == true) carContext.getString(R.string.poi_payment_other) else null
+                ).joinToString(", ").takeIf { it.isNotBlank() }?.let {
+                    appendLine(carContext.getString(R.string.poi_payment_prefix, it))
+                }
+                d.conditionAcces?.takeIf { it.isNotBlank() }?.let {
+                    appendLine(carContext.getString(R.string.poi_access_prefix, it))
+                }
             }
         }
 
@@ -155,39 +169,45 @@ class PoiDetailScreen(
             if (a.toilets == true) ams.add(carContext.getString(R.string.amenity_toilets))
             if (a.carWash == true) ams.add(carContext.getString(R.string.amenity_car_wash))
             if (a.showers == true) ams.add(carContext.getString(R.string.amenity_showers))
-            if (a.atm == true) ams.add("ATM")
-            if (a.wifi == true) ams.add("Wifi")
+            if (a.atm == true) ams.add(carContext.getString(R.string.poi_amenity_atm))
+            if (a.wifi == true) ams.add(carContext.getString(R.string.poi_amenity_wifi))
 
             if (ams.isNotEmpty()) {
-                appendHeader("Services")
+                appendHeader(carContext.getString(R.string.poi_section_services))
                 appendLine(ams.joinToString(" · "))
             }
         }
 
         // 7. Restaurant
         poi.restaurantDetails?.let { d ->
-            appendHeader("Restaurant")
-            if (d.isFastFood) appendLine("Fast food")
-            d.brand?.takeIf { it.isNotBlank() }?.let { appendLine("Enseigne: $it") }
-            d.cuisine?.takeIf { it.isNotBlank() }?.let { appendLine("Cuisine: $it") }
-            d.openingHours?.takeIf { it.isNotBlank() }?.let { appendLine("Horaires: $it") }
+            appendHeader(carContext.getString(R.string.poi_section_restaurant))
+            if (d.isFastFood) appendLine(carContext.getString(R.string.poi_fast_food))
+            d.brand?.takeIf { it.isNotBlank() }?.let {
+                appendLine(carContext.getString(R.string.poi_brand_prefix, it))
+            }
+            d.cuisine?.takeIf { it.isNotBlank() }?.let {
+                appendLine(carContext.getString(R.string.poi_cuisine_prefix, it))
+            }
+            d.openingHours?.takeIf { it.isNotBlank() }?.let {
+                appendLine(carContext.getString(R.string.poi_hours_prefix, it))
+            }
         }
 
         // 8. Sources
         val sourceUpdates = poi.sourceUpdates
         if (sourceUpdates != null && sourceUpdates.isNotEmpty()) {
-            appendHeader("Sources")
+            appendHeader(carContext.getString(R.string.screen_sources))
             sourceUpdates.forEach { (src, time) ->
                 appendLine("• $src: ${fr.geoking.gaston.shared.datetime.DateTimeUtils.formatRelativeTime(time)}")
             }
         } else {
             poi.source?.takeIf { it.isNotBlank() }?.let {
-                appendHeader("Sources")
+                appendHeader(carContext.getString(R.string.screen_sources))
                 appendLine(it)
             }
         }
 
-        if (sb.isBlank()) return "No extra details"
+        if (sb.isBlank()) return carContext.getString(R.string.poi_no_extra_details)
 
         val ss = SpannableString(sb)
         spans.forEach { (range, span) ->

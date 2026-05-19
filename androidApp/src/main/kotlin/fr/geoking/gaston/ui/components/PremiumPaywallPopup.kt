@@ -35,7 +35,7 @@ fun PremiumPaywallPopup(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Gaston Premium",
+                    text = stringResource(R.string.premium_brand_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

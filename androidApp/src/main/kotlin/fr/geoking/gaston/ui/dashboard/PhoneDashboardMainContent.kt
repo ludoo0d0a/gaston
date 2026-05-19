@@ -177,7 +177,11 @@ fun PhoneDashboardMainContent(
             Spacer(Modifier.height(16.dp))
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                    text = stringResource(
+                        R.string.about_version_format,
+                        BuildConfig.VERSION_NAME,
+                        BuildConfig.VERSION_CODE
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
@@ -206,13 +210,22 @@ private fun PhoneDashboardNearbyCheapestSection(
     onOpenMap: (Poi?) -> Unit
 ) {
     val title = when (currentMode) {
-        DashboardMode.Fuel -> if (selectedSearchLocation != null) "Cheapest near ${cityLabelFromGeocodedPlace(selectedSearchLocation)}" else "Cheapest nearby"
-        DashboardMode.EV -> "Nearest stations"
+        DashboardMode.Fuel -> if (selectedSearchLocation != null) {
+            stringResource(R.string.dashboard_cheapest_near, cityLabelFromGeocodedPlace(selectedSearchLocation))
+        } else {
+            stringResource(R.string.dashboard_cheapest_nearby)
+        }
+        DashboardMode.EV -> stringResource(R.string.dashboard_nearest_stations)
         DashboardMode.MyCar -> {
-            if (settings.vehicleEnergy == "gas") "Cheapest nearby" else "Nearest stations"
+            if (settings.vehicleEnergy == "gas") stringResource(R.string.dashboard_cheapest_nearby)
+            else stringResource(R.string.dashboard_nearest_stations)
         }
         DashboardMode.Other -> {
-            if (settings.selectedOverpassAmenityTypes.contains("parking")) "Nearest parkings" else "Nearest nearby"
+            if (settings.selectedOverpassAmenityTypes.contains("parking")) {
+                stringResource(R.string.dashboard_nearest_parkings)
+            } else {
+                stringResource(R.string.dashboard_nearest_nearby)
+            }
         }
     }
 
@@ -253,7 +266,7 @@ private fun PhoneDashboardNearbyCheapestSection(
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Searching nearby...",
+                            stringResource(R.string.dashboard_searching_nearby),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -308,13 +321,13 @@ private fun PhoneDashboardEmergencyCard(onOpenEmergency: () -> Unit) {
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Emergency",
+                    text = stringResource(R.string.dashboard_emergency),
                     style = MaterialTheme.typography.titleMedium,
                     color = onEmergency,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Locate yourself · share location · call 112",
+                    text = stringResource(R.string.dashboard_emergency_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = onEmergency.copy(alpha = 0.9f),
                     maxLines = 1,

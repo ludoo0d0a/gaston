@@ -24,6 +24,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import fr.geoking.gaston.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -37,6 +39,16 @@ import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ui.ColorHelper
 import java.util.Locale
 import kotlin.math.max
+
+@Composable
+private fun fuelTypeLabel(fuelId: String): String = when (fuelId) {
+    "gazole" -> stringResource(R.string.fuel_gazole)
+    "sp95" -> stringResource(R.string.fuel_sp95)
+    "sp98" -> stringResource(R.string.fuel_sp98)
+    "gplc" -> stringResource(R.string.fuel_gplc)
+    "e85" -> stringResource(R.string.fuel_e85)
+    else -> fuelId
+}
 
 @Composable
 fun FuelForecastCompactCard(
@@ -95,12 +107,12 @@ fun UnifiedFuelForecastChartCard(
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
-                "Price Comparison (normalized)",
+                stringResource(R.string.forecast_price_comparison),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                "Relative trends of local fuels vs Brent. 14-day history.",
+                stringResource(R.string.forecast_relative_trends),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -140,18 +152,10 @@ fun UnifiedFuelForecastChartCard(
                 ) {
                     state.allFuelsHistory.keys.sorted().forEach { fuelId ->
                         val color = fuelColors[fuelId] ?: primaryColor
-                        val label = when (fuelId) {
-                            "gazole" -> "Gazole"
-                            "sp95" -> "SP95/E10"
-                            "sp98" -> "SP98"
-                            "gplc" -> "GPLc"
-                            "e85" -> "E85"
-                            else -> fuelId
-                        }
-                        LegendItem(label, color)
+                        LegendItem(fuelTypeLabel(fuelId), color)
                     }
                     if (state.brentHistory.isNotEmpty()) {
-                        LegendItem("Brent", brentColor)
+                        LegendItem(stringResource(R.string.forecast_legend_brent), brentColor)
                     }
                 }
             }
@@ -255,27 +259,20 @@ fun FuelForecastChartCard(
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
-                "Fuel price outlook (rule-based)",
+                stringResource(R.string.forecast_rule_based_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                "Near-you average vs Brent/heating oil/EUR-USD (Stooq). Not financial advice.",
+                stringResource(R.string.forecast_chart_disclaimer),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            val fuelLabel = when (state.fuelId) {
-                "gazole" -> "Gazole"
-                "sp95" -> "SP95 / E10"
-                "sp98" -> "SP98"
-                "gplc" -> "GPLc"
-                "e85" -> "E85"
-                else -> state.fuelId
-            }
+            val fuelLabel = fuelTypeLabel(state.fuelId)
             Text(
-                "Fuel: $fuelLabel",
+                stringResource(R.string.forecast_fuel_label, fuelLabel),
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(top = 8.dp)
             )
@@ -311,8 +308,17 @@ fun FuelForecastChartCard(
                     val score = state.marketScore
                     if (dir != null && score != null) {
                         Text(
-                            "Signal: ${if (dir) "upward pressure" else "no strong upward signal"} " +
-                                "(score ${String.format(Locale.US, "%+.4f", score)})",
+                            if (dir) {
+                                stringResource(
+                                    R.string.forecast_signal_up,
+                                    String.format(Locale.US, "%+.4f", score)
+                                )
+                            } else {
+                                stringResource(
+                                    R.string.forecast_signal_flat,
+                                    String.format(Locale.US, "%+.4f", score)
+                                )
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 8.dp)
                         )
@@ -324,7 +330,11 @@ fun FuelForecastChartCard(
                             String.format(Locale.US, "%.3f", mae)
                         } else "—"
                         Text(
-                            "7d accuracy (when targets realized): hit rate ${String.format(Locale.US, "%.0f", hit * 100)}% · MAE $maeStr €/L",
+                            stringResource(
+                                R.string.forecast_accuracy_phone,
+                                "${String.format(Locale.US, "%.0f", hit * 100)}%",
+                                maeStr
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 4.dp)
@@ -333,7 +343,11 @@ fun FuelForecastChartCard(
                     val last = state.lastScoreDirectionCorrect
                     if (last != null) {
                         Text(
-                            "Last scored prediction: ${if (last) "direction OK" else "direction miss"}",
+                            if (last) {
+                                stringResource(R.string.forecast_last_scored_ok)
+                            } else {
+                                stringResource(R.string.forecast_last_scored_miss)
+                            },
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 2.dp)

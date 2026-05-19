@@ -26,7 +26,7 @@ class AutoThemeSelectionScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(mode.name)
-                    .addText(if (isSelected) "Selected" else "")
+                    .addText(if (isSelected) carContext.getString(R.string.filter_selected) else "")
                     .setOnClickListener {
                         settingsManager.saveSettings(settings.copy(uiThemeMode = mode))
                         invalidate()

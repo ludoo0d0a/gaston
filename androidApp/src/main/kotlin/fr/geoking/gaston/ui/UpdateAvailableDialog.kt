@@ -53,13 +53,13 @@ fun UpdateAvailableDialog(
                     .padding(24.dp)
             ) {
                 Text(
-                    text = "Update available",
+                    text = stringResource(R.string.update_available_title),
                     fontSize = 20.sp,
                     style = MaterialTheme.typography.titleLarge
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "A new version of gaston is available. Update now to get the latest features and improvements.",
+                    text = stringResource(R.string.update_available_message),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                     fontSize = 14.sp,
                     style = MaterialTheme.typography.bodyMedium,

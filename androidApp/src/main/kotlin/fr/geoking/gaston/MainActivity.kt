@@ -26,6 +26,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.R
+import androidx.compose.ui.res.stringResource
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
 import fr.geoking.gaston.shared.location.ConnectivityManager
 import fr.geoking.gaston.feature.notification.NotificationHelper
@@ -775,7 +777,7 @@ private fun StartupErrorContent(error: Throwable) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        "Startup error",
+                        stringResource(R.string.startup_error),
                         color = Color(0xFFF87171),
                         fontSize = 20.sp
                     )

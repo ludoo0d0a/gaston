@@ -80,7 +80,7 @@ class AutoFuelForecastScreen(
 
     override fun onGetTemplate(): Template {
         if (!settingsManager.settings.value.hasPremiumFeatures) {
-            return MessageTemplate.Builder("Gaston Premium Required")
+            return MessageTemplate.Builder(carContext.getString(R.string.premium_required_message))
                 .setHeader(
                     Header.Builder()
                         .setTitle(carContext.getString(R.string.screen_fuel_price_outlook))
@@ -111,16 +111,20 @@ class AutoFuelForecastScreen(
             list.addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.forecast_unavailable))
-                    .addText(loadError ?: "Unknown error")
+                    .addText(loadError ?: carContext.getString(R.string.error_unknown))
                     .build()
             )
         } else {
             val fuelTitle = fuelTitle(uiState.fuelId)
             val lastHist = uiState.historyPoints.maxByOrNull { it.day }
             val histLine = if (lastHist != null) {
-                "Latest local avg (${lastHist.day}): ${lastHist.priceEurPerL.formatEurL()} €/L"
+                carContext.getString(
+                    R.string.forecast_latest_local_avg,
+                    lastHist.day,
+                    lastHist.priceEurPerL.formatEurL()
+                )
             } else {
-                "No history yet — open the app on the phone on more days to build a series."
+                carContext.getString(R.string.forecast_no_history_phone)
             }
             list.addItem(
                 Row.Builder()
@@ -140,15 +144,11 @@ class AutoFuelForecastScreen(
                 )
             } else {
                 forecasts.forEachIndexed { index, pt ->
-                    val label = when (index) {
-                        0 -> "D+1 (target ${pt.day})"
-                        1 -> "D+2 (target ${pt.day})"
-                        else -> "D+3 (target ${pt.day})"
-                    }
+                    val label = carContext.getString(R.string.forecast_day_target, index + 1, pt.day)
                     list.addItem(
                         Row.Builder()
                             .setTitle(label)
-                            .addText("Est. ${pt.priceEurPerL.formatEurL()} €/L")
+                            .addText(carContext.getString(R.string.forecast_est_price, pt.priceEurPerL.formatEurL()))
                             .build()
                     )
                 }
@@ -157,7 +157,11 @@ class AutoFuelForecastScreen(
             val dir = uiState.directionUp
             val score = uiState.marketScore
             if (dir != null && score != null) {
-                val upText = if (dir) "Upward pressure on pump prices" else "No strong upward signal"
+                val upText = if (dir) {
+                    carContext.getString(R.string.forecast_market_up)
+                } else {
+                    carContext.getString(R.string.forecast_market_flat)
+                }
                 list.addItem(
                     Row.Builder()
                         .setTitle(carContext.getString(R.string.forecast_market_signal))
@@ -173,7 +177,13 @@ class AutoFuelForecastScreen(
                 list.addItem(
                     Row.Builder()
                         .setTitle(carContext.getString(R.string.forecast_7day_accuracy))
-                        .addText("Hit rate: ${String.format(Locale.US, "%.0f", hit * 100)}% · MAE: $maeStr €/L")
+                        .addText(
+                            carContext.getString(
+                                R.string.forecast_hit_rate,
+                                "${String.format(Locale.US, "%.0f", hit * 100)}%",
+                                maeStr
+                            )
+                        )
                         .build()
                 )
             }
@@ -182,7 +192,10 @@ class AutoFuelForecastScreen(
                 list.addItem(
                     Row.Builder()
                         .setTitle(carContext.getString(R.string.forecast_last_scored))
-                        .addText(if (last) "Direction matched outcome" else "Direction did not match")
+                        .addText(
+                            if (last) carContext.getString(R.string.forecast_direction_matched)
+                            else carContext.getString(R.string.forecast_direction_not_matched)
+                        )
                         .build()
                 )
             }

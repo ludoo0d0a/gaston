@@ -15,15 +15,21 @@ class AutoAboutScreen(
 
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoAboutScreen") {
         val body = buildString {
-            appendLine("Gaston")
+            appendLine(carContext.getString(R.string.app_name))
             appendLine()
-            appendLine("Version: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
-            appendLine("Build date: ${BuildConfig.BUILD_DATE}")
+            appendLine(
+                carContext.getString(
+                    R.string.about_version_line,
+                    BuildConfig.VERSION_NAME,
+                    BuildConfig.VERSION_CODE
+                )
+            )
+            appendLine(carContext.getString(R.string.about_build_date_line, BuildConfig.BUILD_DATE))
             appendLine()
-            appendLine("Used APIs & services:")
+            appendLine(carContext.getString(R.string.about_used_apis_header))
             UsedApisList.forEach { api ->
                 val host = api.url.removePrefix("https://").removePrefix("http://").substringBefore('/')
-                appendLine("- ${api.name} — $host")
+                appendLine(carContext.getString(R.string.about_api_line, api.name, host))
             }
         }.trim().take(5000)
 

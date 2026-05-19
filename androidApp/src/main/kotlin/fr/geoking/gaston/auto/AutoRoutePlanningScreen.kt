@@ -78,8 +78,8 @@ class AutoRoutePlanningScreen(
         return try {
             when (step) {
                 Step.ORIGIN -> buildSearchTemplate(
-                    title = "Origin",
-                    hint = "Type or say the origin city/address",
+                    title = carContext.getString(R.string.route_origin),
+                    hint = carContext.getString(R.string.route_origin_placeholder),
                     query = originQuery,
                     onQueryChange = { originQuery = it.take(120) },
                     onSubmit = {
@@ -90,8 +90,8 @@ class AutoRoutePlanningScreen(
                 )
 
                 Step.DESTINATION -> buildSearchTemplate(
-                    title = "Destination",
-                    hint = "Type or say the destination city/address",
+                    title = carContext.getString(R.string.route_destination),
+                    hint = carContext.getString(R.string.route_destination_placeholder),
                     query = destinationQuery,
                     onQueryChange = { destinationQuery = it.take(120) },
                     onSubmit = {

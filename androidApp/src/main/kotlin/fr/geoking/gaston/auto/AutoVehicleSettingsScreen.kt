@@ -18,7 +18,10 @@ class AutoVehicleSettingsScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.screen_brand_model))
-                .addText(if (settings.vehicleBrand.isNotEmpty()) "${settings.vehicleBrand} ${settings.vehicleModel}" else "Not set")
+                .addText(
+                    if (settings.vehicleBrand.isNotEmpty()) "${settings.vehicleBrand} ${settings.vehicleModel}"
+                    else carContext.getString(R.string.vehicle_not_set)
+                )
                 .build()
         )
 
@@ -36,7 +39,10 @@ class AutoVehicleSettingsScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.screen_tank_capacity))
-                    .addText(settings.gasTankCapacityLiters?.let { "$it L" } ?: "Not set")
+                    .addText(
+                        settings.gasTankCapacityLiters?.let { carContext.getString(R.string.vehicle_tank_format, it) }
+                            ?: carContext.getString(R.string.vehicle_not_set)
+                    )
                     .setOnClickListener {
                         screenManager.push(AutoGasTankCapacitySelectionScreen(carContext, settingsManager))
                     }
@@ -45,7 +51,11 @@ class AutoVehicleSettingsScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.screen_fuel_consumption))
-                    .addText(settings.gasConsumptionLper100km?.let { "$it L/100km" } ?: "Not set")
+                    .addText(
+                        settings.gasConsumptionLper100km?.let {
+                            carContext.getString(R.string.vehicle_consumption_format, it.toString())
+                        } ?: carContext.getString(R.string.vehicle_not_set)
+                    )
                     .setOnClickListener {
                         screenManager.push(AutoGasConsumptionSelectionScreen(carContext, settingsManager))
                     }
@@ -57,7 +67,11 @@ class AutoVehicleSettingsScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.screen_battery_capacity))
-                    .addText(settings.batteryCapacityKwh?.let { "$it kWh" } ?: "Not set")
+                    .addText(
+                        settings.batteryCapacityKwh?.let {
+                            carContext.getString(R.string.vehicle_battery_format, it.toString())
+                        } ?: carContext.getString(R.string.vehicle_not_set)
+                    )
                     .setOnClickListener {
                         screenManager.push(AutoBatteryCapacitySelectionScreen(carContext, settingsManager))
                     }
@@ -66,7 +80,7 @@ class AutoVehicleSettingsScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.screen_electric_range))
-                    .addText("${settings.evRangeKm} km")
+                    .addText(carContext.getString(R.string.vehicle_range_format, settings.evRangeKm))
                     .setOnClickListener {
                         screenManager.push(AutoEvRangeSelectionScreen(carContext, settingsManager))
                     }
@@ -76,7 +90,11 @@ class AutoVehicleSettingsScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.screen_electric_consumption))
-                    .addText(settings.evConsumptionKwhPer100km?.let { "$it kWh/100km" } ?: "Not set")
+                    .addText(
+                        settings.evConsumptionKwhPer100km?.let {
+                            carContext.getString(R.string.vehicle_consumption_kwh_format, it.toString())
+                        } ?: carContext.getString(R.string.vehicle_not_set)
+                    )
                     .setOnClickListener {
                         screenManager.push(AutoEvConsumptionSelectionScreen(carContext, settingsManager))
                     }

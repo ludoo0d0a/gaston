@@ -111,7 +111,7 @@ class AutoEmergencyScreen(
         // Universal Emergency Number
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Call Emergency: $universalNumber")
+                .setTitle(carContext.getString(R.string.emergency_call, universalNumber))
                 .addText(carContext.getString(R.string.emergency_universal_number))
                 .setImage(carContext.dashboardEmergencyIcon())
                 .setOnClickListener { dial(universalNumber) }
@@ -124,8 +124,14 @@ class AutoEmergencyScreen(
         if (isLoadingLocation) {
             locationRow.addText(carContext.getString(R.string.emergency_locating_short))
         } else if (latitude != null && longitude != null) {
-            locationRow.addText("Lat: ${String.format("%.6f", latitude)}, Lon: ${String.format("%.6f", longitude)}")
-            locationRow.addText(locationAddress ?: "Address unavailable")
+            locationRow.addText(
+                carContext.getString(
+                    R.string.emergency_coords,
+                    String.format("%.6f", latitude),
+                    String.format("%.6f", longitude)
+                )
+            )
+            locationRow.addText(locationAddress ?: carContext.getString(R.string.emergency_address_unavailable))
         } else {
             locationRow.addText(carContext.getString(R.string.emergency_location_unavailable))
         }
@@ -137,8 +143,14 @@ class AutoEmergencyScreen(
         if (contacts.isNotEmpty()) {
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("Useful Numbers" + (if (countryName != null) " - $countryName" else ""))
-                    .addText("${contacts.size} local emergency contacts")
+                    .setTitle(
+                        if (countryName != null) {
+                            carContext.getString(R.string.emergency_useful_numbers_auto_country, countryName)
+                        } else {
+                            carContext.getString(R.string.emergency_useful_numbers)
+                        }
+                    )
+                    .addText(carContext.getString(R.string.emergency_contacts_count, contacts.size))
                     .setImage(carContext.carIcon(R.drawable.ic_speaker, AutoCarIcons.muted))
                     .setOnClickListener {
                         screenManager.push(AutoEmergencyContactsScreen(carContext, countryName, contacts))

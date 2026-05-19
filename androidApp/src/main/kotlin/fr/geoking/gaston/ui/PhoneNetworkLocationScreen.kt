@@ -1,6 +1,7 @@
 package fr.geoking.gaston.ui
 
 import fr.geoking.gaston.R
+import android.content.Context
 import android.location.Address
 import android.location.Geocoder
 import android.os.Build
@@ -67,9 +68,23 @@ fun PhoneNetworkLocationScreen(
                 geocodeAddress(context, location.latitude, location.longitude)
             }
         } else {
-            address = "Location not available"
+            address = context.getString(R.string.location_not_available)
         }
         loading = false
+    }
+
+    val connectedLabel = if (networkStatus.isConnected) {
+        stringResource(R.string.network_connected)
+    } else {
+        stringResource(R.string.network_disconnected)
+    }
+    val operatorName = networkStatus.operatorName ?: stringResource(R.string.network_unknown)
+    val countryLabel = networkStatus.countryName ?: networkStatus.countryCode
+        ?: stringResource(R.string.network_unknown)
+    val roamingLabel = if (networkStatus.isRoaming) {
+        stringResource(R.string.network_yes)
+    } else {
+        stringResource(R.string.network_no)
     }
 
     GastonTheme {
@@ -103,22 +118,26 @@ fun PhoneNetworkLocationScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    "Network: ${if (networkStatus.isConnected) "Connected" else "Disconnected"}",
+                    stringResource(R.string.network_connected_label, connectedLabel),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    "Type: ${networkStatus.networkType.toReadableString()} · Operator: ${networkStatus.operatorName ?: "Unknown"}",
+                    stringResource(
+                        R.string.network_type_operator,
+                        networkStatus.networkType.localizedLabel(context),
+                        operatorName
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    "Country: ${networkStatus.countryName ?: networkStatus.countryCode ?: "Unknown"} · Roaming: ${if (networkStatus.isRoaming) "Yes" else "No"}",
+                    stringResource(R.string.network_country_roaming, countryLabel, roamingLabel),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    "Current location",
+                    stringResource(R.string.network_current_location),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 8.dp)
@@ -127,7 +146,11 @@ fun PhoneNetworkLocationScreen(
                     loading -> Text(stringResource(R.string.network_loading_coords), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     latLng != null -> {
                         Text(
-                            "Lat: ${String.format(Locale.US, "%.6f", latLng!!.first)}, Lon: ${String.format(Locale.US, "%.6f", latLng!!.second)}",
+                            stringResource(
+                                R.string.emergency_coords,
+                                String.format(Locale.US, "%.6f", latLng!!.first),
+                                String.format(Locale.US, "%.6f", latLng!!.second)
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -144,7 +167,7 @@ fun PhoneNetworkLocationScreen(
     }
 }
 
-private suspend fun geocodeAddress(context: android.content.Context, lat: Double, lon: Double): String? {
+private suspend fun geocodeAddress(context: Context, lat: Double, lon: Double): String? {
     val geocoder = Geocoder(context, Locale.getDefault())
     return try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -165,7 +188,7 @@ private suspend fun geocodeAddress(context: android.content.Context, lat: Double
             }
         }
     } catch (_: Exception) {
-        "Geocoding error"
+        context.getString(R.string.network_geocoding_error)
     }
 }
 
@@ -178,14 +201,14 @@ private fun formatAddress(address: Address): String {
     return sb.toString()
 }
 
-private fun NetworkType.toReadableString(): String = when (this) {
-    NetworkType.WIFI -> "WiFi"
+private fun NetworkType.localizedLabel(context: Context): String = when (this) {
+    NetworkType.WIFI -> context.getString(R.string.network_wifi)
     NetworkType.FIVE_G -> "5G"
     NetworkType.FOUR_G -> "4G"
     NetworkType.THREE_G -> "3G"
     NetworkType.TWO_G -> "2G"
-    NetworkType.EDGE -> "Edge"
-    NetworkType.GPRS -> "GPRS"
-    NetworkType.UNKNOWN -> "Unknown"
-    NetworkType.NONE -> "None"
+    NetworkType.EDGE -> context.getString(R.string.network_edge)
+    NetworkType.GPRS -> context.getString(R.string.network_gprs)
+    NetworkType.UNKNOWN -> context.getString(R.string.network_unknown)
+    NetworkType.NONE -> context.getString(R.string.network_none)
 }
