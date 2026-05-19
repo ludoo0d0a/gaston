@@ -17,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import fr.geoking.gaston.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -98,7 +100,7 @@ private fun DebugLogOverlayContent() {
                                 Icon(Icons.Default.Delete, "Clear Logs", tint = MaterialTheme.colorScheme.onSurface)
                             }
                             IconButton(onClick = { isExpanded = false }) {
-                                Icon(Icons.Default.Close, "Close", tint = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Default.Close, stringResource(R.string.close), tint = MaterialTheme.colorScheme.onSurface)
                             }
                         }
                     }
@@ -247,10 +249,10 @@ private fun LogDetailsDialog(log: NetworkLog, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
         },
         title = {
-            Text("Request Details", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.request_details), fontSize = 18.sp, fontWeight = FontWeight.Bold)
         },
         text = {
             SelectionContainer {
@@ -320,7 +322,7 @@ private fun FullscreenBodyDialog(body: String, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
         },
         title = {
             Row(
@@ -328,9 +330,9 @@ private fun FullscreenBodyDialog(body: String, onDismiss: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Body Viewer", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.body_viewer), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close")
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                 }
             }
         },

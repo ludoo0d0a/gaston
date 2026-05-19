@@ -8,6 +8,7 @@ import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 
 /** Android Auto: toll data and car-safe options. */
@@ -21,8 +22,8 @@ class AutoSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("App theme")
-                .addText("Current: ${settingsManager.settings.value.uiThemeMode.name}")
+                .setTitle(carContext.getString(R.string.app_theme))
+                .addText(carContext.getString(R.string.current_theme, settingsManager.settings.value.uiThemeMode.name))
                 .setOnClickListener {
                     screenManager.push(AutoThemeSelectionScreen(carContext, settingsManager))
                 }
@@ -31,8 +32,8 @@ class AutoSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Download toll data (OpenTollData)")
-                .addText("French highway toll estimation")
+                .setTitle(carContext.getString(R.string.download_toll_data))
+                .addText(carContext.getString(R.string.highway_toll_desc))
                 .setOnClickListener {
                     screenManager.push(AutoTollDataScreen(carContext, settingsManager))
                 }
@@ -41,8 +42,8 @@ class AutoSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("About")
-                .addText("Version & data sources")
+                .setTitle(carContext.getString(R.string.about_title))
+                .addText(carContext.getString(R.string.version_data_sources))
                 .setOnClickListener {
                     screenManager.push(AutoAboutScreen(carContext))
                 }
@@ -51,7 +52,7 @@ class AutoSettingsScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Settings").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.settings_title)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

@@ -89,7 +89,7 @@ class AutoPlaystoreDashboardScreen(
 
         grid.addItem(
             GridItem.Builder()
-                .setTitle("Emergency")
+                .setTitle(carContext.getString(R.string.emergency))
                 .setImage(gridIcon(R.drawable.ic_sos_rounded))
                 .setOnClickListener {
                     screenManager.push(AutoEmergencyScreen(carContext, networkService))
@@ -99,7 +99,7 @@ class AutoPlaystoreDashboardScreen(
 
         grid.addItem(
             GridItem.Builder()
-                .setTitle("More")
+                .setTitle(carContext.getString(R.string.more_options))
                 .setImage(gridIcon(R.drawable.ic_settings))
                 .setOnClickListener {
                     screenManager.push(
@@ -108,7 +108,7 @@ class AutoPlaystoreDashboardScreen(
                                 val moreList = ItemList.Builder()
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Routes")
+                                            .setTitle(carContext.getString(R.string.routes))
                                             .setImage(gridIcon(R.drawable.ic_swap_horiz))
                                             .setOnClickListener {
                                                 val mapDeps = getMapDeps() ?: return@setOnClickListener
@@ -127,7 +127,7 @@ class AutoPlaystoreDashboardScreen(
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Fuel outlook")
+                                            .setTitle(carContext.getString(R.string.fuel_outlook))
                                             .setImage(gridIcon(R.drawable.ic_poi_gas_rounded))
                                             .setOnClickListener {
                                                 screenManager.push(AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository))
@@ -136,7 +136,7 @@ class AutoPlaystoreDashboardScreen(
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Network & GPS")
+                                            .setTitle(carContext.getString(R.string.network_location))
                                             .setImage(gridIcon(R.drawable.ic_poi_radar_rounded))
                                             .setOnClickListener {
                                                 screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService))
@@ -145,7 +145,7 @@ class AutoPlaystoreDashboardScreen(
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Map settings")
+                                            .setTitle(carContext.getString(R.string.map_settings))
                                             .setImage(gridIcon(R.drawable.ic_settings))
                                             .setOnClickListener {
                                                 screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
@@ -154,7 +154,7 @@ class AutoPlaystoreDashboardScreen(
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Template lab")
+                                            .setTitle(carContext.getString(R.string.template_lab))
                                             .setImage(gridIcon(R.mipmap.ic_launcher))
                                             .setOnClickListener {
                                                 screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps))
@@ -164,7 +164,7 @@ class AutoPlaystoreDashboardScreen(
                                     .build()
 
                                 return ListTemplate.Builder()
-                                    .setHeader(Header.Builder().setTitle("More").setStartHeaderAction(Action.BACK).build())
+                                    .setHeader(Header.Builder().setTitle(carContext.getString(R.string.more_options)).setStartHeaderAction(Action.BACK).build())
                                     .setSingleList(moreList)
                                     .build()
                             }
@@ -174,7 +174,7 @@ class AutoPlaystoreDashboardScreen(
                 .build()
         )
 
-        val title = if (settingsManager.settings.value.isPremium) "gaston premium" else "gaston - station finder"
+        val title = if (settingsManager.settings.value.isPremium) carContext.getString(R.string.gaston_premium).lowercase() else carContext.getString(R.string.gaston_station_finder)
         return GridTemplate.Builder()
             .setSingleList(grid.build())
             .setHeader(
@@ -188,7 +188,7 @@ class AutoPlaystoreDashboardScreen(
 
     private fun pushMapScreen(title: String? = null) {
         val mapDeps = getMapDeps() ?: return
-        val finalTitle = title ?: "Nearby Stations"
+        val finalTitle = title ?: carContext.getString(R.string.nearby_stations_title)
         val screen = if (settingsManager.settings.value.carMapMode == CarMapMode.Native) {
             NativeMapPoiScreen(
                 carContext = carContext,

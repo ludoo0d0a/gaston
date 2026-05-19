@@ -9,6 +9,7 @@ import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.car.app.navigation.model.MapWithContentTemplate
 import androidx.car.app.model.ListTemplate
+import fr.geoking.gaston.R
 
 @Suppress("DEPRECATION")
 class AutoRoutePreviewNavigationTemplateScreen(carContext: CarContext) : Screen(carContext) {
@@ -16,15 +17,15 @@ class AutoRoutePreviewNavigationTemplateScreen(carContext: CarContext) : Screen(
         val listBuilder = ItemList.Builder()
             .addItem(
                 Row.Builder()
-                    .setTitle("Fastest Route")
-                    .addText("25 min")
+                    .setTitle(carContext.getString(R.string.fastest_route))
+                    .addText(carContext.getString(R.string.minutes_format, 25))
                     .setOnClickListener { /* Select route */ }
                     .build()
             )
             .addItem(
                 Row.Builder()
-                    .setTitle("Shortest Route")
-                    .addText("30 min")
+                    .setTitle(carContext.getString(R.string.shortest_route))
+                    .addText(carContext.getString(R.string.minutes_format, 30))
                     .setOnClickListener { /* Select route */ }
                     .build()
             )
@@ -32,7 +33,7 @@ class AutoRoutePreviewNavigationTemplateScreen(carContext: CarContext) : Screen(
         val listTemplate = ListTemplate.Builder()
             .setHeader(
                 Header.Builder()
-                    .setTitle("Route Preview")
+                    .setTitle(carContext.getString(R.string.route_preview))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

@@ -46,6 +46,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import fr.geoking.gaston.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -150,15 +152,15 @@ fun PhoneDashboardMainContent(
         item {
             val gridActions = listOf(
                 DashboardRow(
-                    title = "Itinéraire",
-                    subtitle = "Routes",
+                    title = stringResource(R.string.routes),
+                    subtitle = stringResource(R.string.itinerary_subtitle),
                     icon = Icons.Default.Directions,
                     onClick = { onOpenRoutes(null) },
                     enabled = mapDepsReady
                 ),
                 DashboardRow(
-                    title = "Réseau",
-                    subtitle = "Network",
+                    title = stringResource(R.string.network),
+                    subtitle = stringResource(R.string.network_subtitle),
                     icon = Icons.Default.SignalCellular4Bar,
                     onClick = onOpenNetworkDiagnostics
                 )
@@ -184,7 +186,7 @@ fun PhoneDashboardMainContent(
             Spacer(Modifier.height(16.dp))
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                    text = stringResource(R.string.version_format, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
@@ -213,13 +215,23 @@ private fun PhoneDashboardNearbyCheapestSection(
     onOpenMap: (Poi?) -> Unit
 ) {
     val title = when (currentMode) {
-        DashboardMode.Fuel -> if (selectedSearchLocation != null) "Cheapest near ${cityLabelFromGeocodedPlace(selectedSearchLocation)}" else "Cheapest nearby"
-        DashboardMode.EV -> "Nearest stations"
+        DashboardMode.Fuel -> {
+            if (selectedSearchLocation != null) {
+                stringResource(R.string.cheapest_near_city, cityLabelFromGeocodedPlace(selectedSearchLocation))
+            } else {
+                stringResource(R.string.cheapest_nearby)
+            }
+        }
+        DashboardMode.EV -> stringResource(R.string.nearest_stations)
         DashboardMode.MyCar -> {
-            if (settings.vehicleEnergy == "gas") "Cheapest nearby" else "Nearest stations"
+            if (settings.vehicleEnergy == "gas") stringResource(R.string.cheapest_nearby) else stringResource(R.string.nearest_stations)
         }
         DashboardMode.Other -> {
-            if (settings.selectedOverpassAmenityTypes.contains("parking")) "Nearest parkings" else "Nearest nearby"
+            if (settings.selectedOverpassAmenityTypes.contains("parking")) {
+                stringResource(R.string.nearest_parkings)
+            } else {
+                stringResource(R.string.nearest_nearby)
+            }
         }
     }
 
@@ -241,7 +253,7 @@ private fun PhoneDashboardNearbyCheapestSection(
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Searching nearby...",
+                            stringResource(R.string.searching_nearby),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -296,13 +308,13 @@ private fun PhoneDashboardEmergencyCard(onOpenEmergency: () -> Unit) {
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Emergency",
+                    text = stringResource(R.string.emergency),
                     style = MaterialTheme.typography.titleMedium,
                     color = onEmergency,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Locate yourself · share location · call 112",
+                    text = stringResource(R.string.emergency_description),
                     style = MaterialTheme.typography.bodySmall,
                     color = onEmergency.copy(alpha = 0.9f),
                     maxLines = 1,
@@ -327,8 +339,8 @@ private fun PhoneDashboardFuelForecastCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         ListItem(
-            headlineContent = { Text("Price estimation") },
-            supportingContent = { Text("Local estimate from market + nearby pumps") },
+            headlineContent = { Text(stringResource(R.string.price_estimation)) },
+            supportingContent = { Text(stringResource(R.string.price_estimation_description)) },
             leadingContent = {
                 Icon(
                     imageVector = Icons.Default.LocalGasStation,

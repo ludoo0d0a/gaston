@@ -5,6 +5,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import fr.geoking.gaston.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -20,6 +22,7 @@ fun PremiumPaywallPopup(
     val scope = rememberCoroutineScope()
     var isPurchasing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val purchaseFailedMessage = stringResource(R.string.purchase_failed)
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -33,7 +36,7 @@ fun PremiumPaywallPopup(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Gaston Premium",
+                    text = stringResource(R.string.gaston_premium),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -41,9 +44,9 @@ fun PremiumPaywallPopup(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                PremiumFeatureItem("🚫 No Ads", "Clean and focused experience")
-                PremiumFeatureItem("⭐ Favorites", "Save your favorite stations")
-                PremiumFeatureItem("📈 Price Estimation", "Real-time fuel price outlook")
+                PremiumFeatureItem(stringResource(R.string.premium_feature_no_ads_title), stringResource(R.string.premium_feature_no_ads_desc))
+                PremiumFeatureItem("⭐ " + stringResource(R.string.favorites_title), stringResource(R.string.premium_feature_favorites_desc))
+                PremiumFeatureItem("📈 " + stringResource(R.string.price_estimation), stringResource(R.string.premium_feature_outlook_desc))
 
                 if (error != null) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -60,7 +63,7 @@ fun PremiumPaywallPopup(
                             billingManager.purchasePremium()
                                 .onSuccess { onPurchaseSuccess() }
                                 .onFailure {
-                                    error = it.message ?: "Purchase failed"
+                                    error = it.message ?: purchaseFailedMessage
                                     isPurchasing = false
                                 }
                         }
@@ -71,7 +74,7 @@ fun PremiumPaywallPopup(
                     if (isPurchasing) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                     } else {
-                        Text("Upgrade to Premium")
+                        Text(stringResource(R.string.upgrade_to_premium))
                     }
                 }
 
@@ -80,7 +83,7 @@ fun PremiumPaywallPopup(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isPurchasing
                 ) {
-                    Text("Maybe later")
+                    Text(stringResource(R.string.maybe_later))
                 }
             }
         }

@@ -152,15 +152,15 @@ fun SettingsScreen(
                 title = {
                     Text(
                         text = when (currentScreen) {
-                            SettingsScreenPage.Main -> "Settings"
-                            SettingsScreenPage.TollData -> "Highway toll"
-                            SettingsScreenPage.ErrorLog -> "Error log"
-                            SettingsScreenPage.About -> "About"
-                            SettingsScreenPage.GoogleAccount -> "Google account"
-                            SettingsScreenPage.VehicleConfig -> "Vehicle"
-                            SettingsScreenPage.MapConfig -> "Map"
-                            SettingsScreenPage.Sources -> "Sources"
-                            SettingsScreenPage.App -> "App"
+                            SettingsScreenPage.Main -> stringResource(R.string.settings_title)
+                            SettingsScreenPage.TollData -> stringResource(R.string.highway_toll_title)
+                            SettingsScreenPage.ErrorLog -> stringResource(R.string.error_log_title)
+                            SettingsScreenPage.About -> stringResource(R.string.about_title)
+                            SettingsScreenPage.GoogleAccount -> stringResource(R.string.google_account_title)
+                            SettingsScreenPage.VehicleConfig -> stringResource(R.string.vehicle_title)
+                            SettingsScreenPage.MapConfig -> stringResource(R.string.map_title)
+                            SettingsScreenPage.Sources -> stringResource(R.string.sources_title)
+                            SettingsScreenPage.App -> stringResource(R.string.app_title)
                         }
                     )
                 },
@@ -174,7 +174,7 @@ fun SettingsScreen(
                             }
                         }
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -246,7 +246,7 @@ private fun MapConfig(
         // Map Engine
         Column {
             Text(
-                "Map engine",
+                stringResource(R.string.map_engine),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
@@ -266,7 +266,7 @@ private fun MapConfig(
             // Map Theme (for MapLibre)
             Column {
                 Text(
-                    "Map theme",
+                    stringResource(R.string.map_theme),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 12.dp)
@@ -290,8 +290,8 @@ private fun MapConfig(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Show traffic", style = MaterialTheme.typography.titleSmall)
-                Text("Google traffic layer", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.show_traffic), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.google_traffic_layer), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Switch(
                 checked = settings.mapTrafficEnabled,
@@ -306,8 +306,8 @@ private fun MapConfig(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Debug logging", style = MaterialTheme.typography.titleSmall)
-                Text("Capture network logs on map", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.debug_logging), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.capture_network_logs_on_map), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Switch(
                 checked = settings.debugLoggingEnabled,
@@ -318,14 +318,14 @@ private fun MapConfig(
         // Map Filters
         Column {
             Text(
-                "Map filters",
+                stringResource(R.string.map_filters),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
             Text(
-                "Fuel types",
+                stringResource(R.string.fuel_types_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -351,7 +351,7 @@ private fun MapConfig(
 
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                "Power levels",
+                stringResource(R.string.power_levels_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -380,14 +380,14 @@ private fun MapConfig(
         // Itinerary
         Column {
             Text(
-                "Itinerary",
+                stringResource(R.string.itinerary_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
             Text(
-                "Search radius: ${settings.routeStationSearchRadiusMeters} m",
+                stringResource(R.string.search_radius_label, settings.routeStationSearchRadiusMeters),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -404,8 +404,8 @@ private fun MapConfig(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Only highway stations", style = MaterialTheme.typography.titleSmall)
-                    Text("Filter results to stations on highways", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.only_highway_stations), style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.filter_results_to_stations_on_highways), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(
                     checked = settings.filterOnlyHighwayStations,
@@ -548,7 +548,7 @@ private fun SourcesConfig(
     ) {
         Column {
             Text(
-                "Selection mode",
+                stringResource(R.string.selection_mode),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
@@ -557,18 +557,18 @@ private fun SourcesConfig(
                 FilterChip(
                     selected = settings.poiProviderSelectionMode == PoiProviderSelectionMode.Manual,
                     onClick = { onUpdate(settings.copy(poiProviderSelectionMode = PoiProviderSelectionMode.Manual)) },
-                    label = { Text("Manual") }
+                    label = { Text(stringResource(R.string.manual)) }
                 )
                 FilterChip(
                     selected = settings.poiProviderSelectionMode == PoiProviderSelectionMode.Auto,
                     onClick = { onUpdate(settings.copy(poiProviderSelectionMode = PoiProviderSelectionMode.Auto)) },
-                    label = { Text("Auto (by country)") }
+                    label = { Text(stringResource(R.string.auto_by_country)) }
                 )
             }
             if (settings.poiProviderSelectionMode == PoiProviderSelectionMode.Auto) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "Auto selects sources based on your current country. Your manual selection below remains as a fallback.",
+                    stringResource(R.string.auto_selection_description),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -577,7 +577,7 @@ private fun SourcesConfig(
 
         Column {
             Text(
-                "Data sources",
+                stringResource(R.string.data_sources),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -586,15 +586,15 @@ private fun SourcesConfig(
                 value = countryFilterText,
                 onValueChange = { countryFilterText = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Filter by country or region") },
-                placeholder = { Text("France, DE, global…") },
+                label = { Text(stringResource(R.string.filter_by_country_region)) },
+                placeholder = { Text(stringResource(R.string.filter_placeholder)) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
             )
             if (filteredCountryKeys.isEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "No country matches this filter.",
+                    stringResource(R.string.no_country_matches),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -640,9 +640,9 @@ private fun SourcesConfig(
                             )
                             Text(
                                 when {
-                                    allOn -> "${list.size} sources on — tap to turn all off"
-                                    selectedInCountry == 0 -> "${list.size} sources off — tap to enable all"
-                                    else -> "$selectedInCountry / ${list.size} on — tap to enable all"
+                                    allOn -> stringResource(R.string.sources_on_all, list.size)
+                                    selectedInCountry == 0 -> stringResource(R.string.sources_off_all, list.size)
+                                    else -> stringResource(R.string.sources_partial_on, selectedInCountry, list.size)
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -735,7 +735,7 @@ private fun AppConfig(
         // Theme
         Column {
             Text(
-                "App theme",
+                stringResource(R.string.app_theme),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
@@ -750,7 +750,7 @@ private fun AppConfig(
                 }
             }
             Text(
-                "Also applies to maps for night driving",
+                stringResource(R.string.also_applies_to_maps_for_night_driving),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp)
@@ -759,7 +759,7 @@ private fun AppConfig(
 
         Column {
             Text(
-                "API keys (optional)",
+                stringResource(R.string.api_keys_optional),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -768,7 +768,7 @@ private fun AppConfig(
                 value = settings.openChargeMapKey,
                 onValueChange = { onUpdate(settings.copy(openChargeMapKey = it)) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("OpenChargeMap API key") },
+                label = { Text(stringResource(R.string.open_charge_map_api_key)) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp)
             )
@@ -777,21 +777,21 @@ private fun AppConfig(
                 value = settings.ecoMovementKey,
                 onValueChange = { onUpdate(settings.copy(ecoMovementKey = it)) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Eco-Movement API key") },
+                label = { Text(stringResource(R.string.eco_movement_api_key)) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp)
             )
             Spacer(modifier = Modifier.height(8.dp))
             ApiKeyHelpLink(
-                helpText = "Eco-Movement key is used as: Authorization: Token <key>.",
+                helpText = stringResource(R.string.eco_movement_key_help),
                 url = "https://developers.eco-movement.com",
-                linkLabel = "Eco-Movement docs"
+                linkLabel = stringResource(R.string.eco_movement_docs)
             )
         }
 
         Column {
             Text(
-                "Fuel API keys (optional)",
+                stringResource(R.string.fuel_api_keys_optional),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -800,7 +800,7 @@ private fun AppConfig(
                 value = settings.fuelpricesDkKey,
                 onValueChange = { onUpdate(settings.copy(fuelpricesDkKey = it)) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Fuelprices.dk API key") },
+                label = { Text(stringResource(R.string.fuelprices_dk_api_key)) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp)
             )
@@ -809,7 +809,7 @@ private fun AppConfig(
                 value = settings.nswFuelCheckKey,
                 onValueChange = { onUpdate(settings.copy(nswFuelCheckKey = it)) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("NSW FuelCheck API key") },
+                label = { Text(stringResource(R.string.nsw_fuel_check_api_key)) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp)
             )
@@ -818,7 +818,7 @@ private fun AppConfig(
                 value = settings.nswFuelCheckSecret,
                 onValueChange = { onUpdate(settings.copy(nswFuelCheckSecret = it)) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("NSW FuelCheck API secret") },
+                label = { Text(stringResource(R.string.nsw_fuel_check_api_secret)) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp)
             )
@@ -844,24 +844,24 @@ private fun MainMenu(
     if (showClearCacheConfirm) {
         AlertDialog(
             onDismissRequest = { showClearCacheConfirm = false },
-            title = { Text("Clear Cache") },
-            text = { Text("This will clear map markers, image caches, and debug logs. Continue?") },
+            title = { Text(stringResource(R.string.clear_cache_title)) },
+            text = { Text(stringResource(R.string.clear_cache_confirm)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showClearCacheConfirm = false
                         scope.launch {
                             CacheManager.clearAllCaches(context)
-                            snackbarHostState.showSnackbar("Cache cleared")
+                            snackbarHostState.showSnackbar(context.getString(R.string.cache_cleared))
                         }
                     }
                 ) {
-                    Text("Clear", color = Color(0xFFFF6B6B))
+                    Text(stringResource(R.string.clear), color = Color(0xFFFF6B6B))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearCacheConfirm = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -902,8 +902,8 @@ private fun MainMenu(
                         }
                         Spacer(Modifier.width(16.dp))
                         Column {
-                            Text("Premium Active", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                            Text("Thank you for supporting Gaston!", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+                            Text(stringResource(R.string.premium_active), style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.premium_thanks), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
                         }
                     }
                 }
@@ -916,42 +916,42 @@ private fun MainMenu(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = if (settings.isLoggedIn) "Hello, ${settings.googleUserName}" else "Not signed in",
+                            text = if (settings.isLoggedIn) stringResource(R.string.hello_user, settings.googleUserName.orEmpty()) else stringResource(R.string.not_signed_in),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                     },
                     supportingContent = {
                         Text(
-                            text = if (settings.isLoggedIn) "Google account connected" else "Sign in to sync your profile",
+                            text = if (settings.isLoggedIn) stringResource(R.string.google_account_connected) else stringResource(R.string.sign_in_to_sync),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     trailingContent = {
                         when {
-                            authManager == null -> Text("Auth unavailable", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            authManager == null -> Text(stringResource(R.string.auth_unavailable), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             settings.isLoggedIn -> {
                                 TextButton(
                                     onClick = {
                                         authManager.signOut { success ->
                                             if (!success) {
-                                                scope.launch { snackbarHostState.showSnackbar("Sign out failed") }
+                                                scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.sign_out_failed)) }
                                             }
                                         }
                                     }
-                                ) { Text("Sign out") }
+                                ) { Text(stringResource(R.string.sign_out)) }
                             }
                             else -> {
                                 Button(
                                     onClick = {
                                         authManager.signIn(context) { success, error ->
                                             if (!success) {
-                                                scope.launch { snackbarHostState.showSnackbar(error ?: "Sign in failed") }
+                                                scope.launch { snackbarHostState.showSnackbar(error ?: context.getString(R.string.sign_in_failed)) }
                                             }
                                         }
                                     }
-                                ) { Text("Sign in") }
+                                ) { Text(stringResource(R.string.sign_in)) }
                             }
                         }
                     }
@@ -963,51 +963,51 @@ private fun MainMenu(
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 SettingsItem(
-                    label = "Vehicle",
-                    value = if (settings.vehicleBrand.isNotEmpty()) "${settings.vehicleBrand} ${settings.vehicleModel}" else "Not configured",
+                    label = stringResource(R.string.vehicle_title),
+                    value = if (settings.vehicleBrand.isNotEmpty()) "${settings.vehicleBrand} ${settings.vehicleModel}" else stringResource(R.string.not_configured),
                     onClick = { onNavigate(SettingsScreenPage.VehicleConfig) }
                 )
                 SettingsItem(
-                    label = "Map",
-                    value = "Traffic, filters",
+                    label = stringResource(R.string.map_title),
+                    value = stringResource(R.string.traffic_filters_summary),
                     onClick = { onNavigate(SettingsScreenPage.MapConfig) }
                 )
                 SettingsItem(
-                    label = "Sources",
+                    label = stringResource(R.string.sources_title),
                     value = when (settings.poiProviderSelectionMode) {
-                        PoiProviderSelectionMode.Auto -> "Auto (by country)"
-                        PoiProviderSelectionMode.Manual -> "Manual selection"
+                        PoiProviderSelectionMode.Auto -> stringResource(R.string.auto_by_country)
+                        PoiProviderSelectionMode.Manual -> stringResource(R.string.manual_selection)
                     },
                     onClick = { onNavigate(SettingsScreenPage.Sources) }
                 )
                 SettingsItem(
-                    label = "Google account",
-                    value = settings.googleUserName ?: "Not connected",
+                    label = stringResource(R.string.google_account_title),
+                    value = settings.googleUserName ?: stringResource(R.string.not_connected),
                     onClick = { onNavigate(SettingsScreenPage.GoogleAccount) }
                 )
                 SettingsItem(
-                    label = "Highway toll",
-                    value = if (!settings.tollDataPath.isNullOrBlank()) "Downloaded" else "Not downloaded",
+                    label = stringResource(R.string.highway_toll_title),
+                    value = if (!settings.tollDataPath.isNullOrBlank()) stringResource(R.string.downloaded) else stringResource(R.string.not_downloaded),
                     onClick = { onNavigate(SettingsScreenPage.TollData) }
                 )
                 SettingsItem(
-                    label = "Error log",
-                    value = "View recent errors",
+                    label = stringResource(R.string.error_log_title),
+                    value = stringResource(R.string.view_recent_errors),
                     onClick = { onNavigate(SettingsScreenPage.ErrorLog) }
                 )
                 SettingsItem(
-                    label = "App",
-                    value = "API keys",
+                    label = stringResource(R.string.app_title),
+                    value = stringResource(R.string.api_keys_summary),
                     onClick = { onNavigate(SettingsScreenPage.App) }
                 )
                 SettingsItem(
-                    label = "About",
-                    value = "Version & build info",
+                    label = stringResource(R.string.about_title),
+                    value = stringResource(R.string.about_summary),
                     onClick = { onNavigate(SettingsScreenPage.About) }
                 )
                 SettingsItem(
-                    label = "Clear cache",
-                    value = "Markers, images, logs & temp files",
+                    label = stringResource(R.string.clear_cache_title),
+                    value = stringResource(R.string.clear_cache_summary),
                     onClick = { showClearCacheConfirm = true }
                 )
             }
@@ -1051,13 +1051,13 @@ private fun TollDataSection(
             .padding(20.dp)
     ) {
         Text(
-            text = "French highway toll estimation uses OpenTollData. Download the data file to see estimated tolls on planned routes.",
+            text = stringResource(R.string.toll_data_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Text(
-            text = if (downloaded) "Status: Downloaded" else "Status: Not downloaded",
+            text = if (downloaded) stringResource(R.string.status_downloaded) else stringResource(R.string.status_not_downloaded),
             color = if (downloaded) Color(0xFF7FFF7F) else Color(0xFFFFB366),
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(bottom = 2.dp)
@@ -1071,7 +1071,7 @@ private fun TollDataSection(
             )
         }
         Text(
-            text = "Path: $displayPath",
+            text = stringResource(R.string.path_format, displayPath),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
@@ -1102,14 +1102,14 @@ private fun TollDataSection(
                                     },
                                     onFailure = { e ->
                                         withContext(Dispatchers.Main) {
-                                            downloadError = e.message ?: "Download failed"
+                                        downloadError = e.message ?: context.getString(R.string.download_failed)
                                         }
                                     }
                                 )
                             }
                         },
                     ) {
-                        Text("Download toll data (OpenTollData)")
+                    Text(stringResource(R.string.download_toll_data))
                     }
                 }
 
@@ -1117,7 +1117,7 @@ private fun TollDataSection(
                     val (bytes, total) = progress
                     val pct = if (total != null && total > 0) (100 * bytes / total).toInt() else null
                     Text(
-                        text = if (pct != null) "Downloading… $pct%" else "Downloading… ${bytes / (1024 * 1024)} MB",
+                    text = if (pct != null) stringResource(R.string.downloading_percent, pct) else stringResource(R.string.downloading_mb, bytes / (1024 * 1024)),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1153,9 +1153,9 @@ private fun AboutContent(
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(24.dp))
-        AboutRow("Version name", BuildConfig.VERSION_NAME)
-        AboutRow("Version code", BuildConfig.VERSION_CODE.toString())
-        AboutRow("Build date", BuildConfig.BUILD_DATE)
+        AboutRow(stringResource(R.string.version_name), BuildConfig.VERSION_NAME)
+        AboutRow(stringResource(R.string.version_code), BuildConfig.VERSION_CODE.toString())
+        AboutRow(stringResource(R.string.build_date), BuildConfig.BUILD_DATE)
         Spacer(modifier = Modifier.height(16.dp))
         AboutRowClickable(
             label = stringResource(id = R.string.about_view_disclaimer),
@@ -1163,7 +1163,7 @@ private fun AboutContent(
         )
         Spacer(modifier = Modifier.height(32.dp))
         Text(
-            text = "Used APIs & services",
+            text = stringResource(R.string.used_apis_services),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1244,7 +1244,7 @@ private fun AboutApiRow(
         }
         Icon(
             imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-            contentDescription = "Open website",
+            contentDescription = stringResource(R.string.open_website),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(20.dp)
         )
@@ -1377,12 +1377,12 @@ private fun GoogleAccount(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (authManager == null) {
-            Text("Authentication is currently unavailable.", color = MaterialTheme.colorScheme.onSurface)
+            Text(stringResource(R.string.auth_unavailable), color = MaterialTheme.colorScheme.onSurface)
         } else {
             val firebaseUser = remember { firebaseAuth?.currentUser }
             if (settings.googleUserName != null || firebaseUser != null) {
                 Text(
-                    "Connected as ${settings.googleUserName ?: firebaseUser?.displayName ?: "User"}",
+                    stringResource(R.string.connected_as, settings.googleUserName ?: firebaseUser?.displayName ?: stringResource(R.string.unknown)),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -1398,11 +1398,11 @@ private fun GoogleAccount(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Logout")
+                    Text(stringResource(R.string.logout))
                 }
             } else {
                 Text(
-                    "Sign in to personalize your experience.",
+                    stringResource(R.string.sign_in_personalize),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 24.dp)
@@ -1419,7 +1419,7 @@ private fun GoogleAccount(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Sign in with Google")
+                    Text(stringResource(R.string.sign_in_with_google))
                 }
             }
         }
@@ -1449,23 +1449,23 @@ private fun VehicleConfig(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    "Identity",
+                    stringResource(R.string.identity),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 ConfigTextField(
-                    label = "Brand",
+                    label = stringResource(R.string.brand),
                     value = settings.vehicleBrand,
                     leadingIcon = Icons.Default.DirectionsCar
                 ) { onUpdate(settings.copy(vehicleBrand = it)) }
                 ConfigTextField(
-                    label = "Model",
+                    label = stringResource(R.string.model),
                     value = settings.vehicleModel,
                     leadingIcon = Icons.Default.Badge
                 ) { onUpdate(settings.copy(vehicleModel = it)) }
 
                 Text(
-                    "Energy type",
+                    stringResource(R.string.energy_type),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
@@ -1502,7 +1502,7 @@ private fun VehicleConfig(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    "Specifications",
+                    stringResource(R.string.specifications),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -1513,7 +1513,7 @@ private fun VehicleConfig(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         ConfigTextField(
-                            label = "Tank (L)",
+                            label = stringResource(R.string.tank_l),
                             value = settings.gasTankCapacityLiters?.toString() ?: "",
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.WaterDrop,
@@ -1521,7 +1521,7 @@ private fun VehicleConfig(
                         ) { onUpdate(settings.copy(gasTankCapacityLiters = it.toFloatOrNull())) }
 
                         ConfigTextField(
-                            label = "L/100km",
+                            label = stringResource(R.string.l_100km),
                             value = settings.gasConsumptionLper100km?.toString() ?: "",
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.Speed,
@@ -1536,7 +1536,7 @@ private fun VehicleConfig(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         ConfigTextField(
-                            label = "Battery (kWh)",
+                            label = stringResource(R.string.battery_kwh),
                             value = settings.batteryCapacityKwh?.toString() ?: "",
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.BatteryChargingFull,
@@ -1544,7 +1544,7 @@ private fun VehicleConfig(
                         ) { onUpdate(settings.copy(batteryCapacityKwh = it.toFloatOrNull())) }
 
                         ConfigTextField(
-                            label = "Range (km)",
+                            label = stringResource(R.string.range_km),
                             value = settings.evRangeKm.toString(),
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.Map,
@@ -1552,7 +1552,7 @@ private fun VehicleConfig(
                         ) { onUpdate(settings.copy(evRangeKm = it.toIntOrNull() ?: 300)) }
                     }
                     ConfigTextField(
-                        label = "Consumption (kWh/100km)",
+                        label = stringResource(R.string.consumption_kwh_100km),
                         value = settings.evConsumptionKwhPer100km?.toString() ?: "",
                         leadingIcon = Icons.Default.Bolt,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
@@ -1571,14 +1571,14 @@ private fun VehicleConfig(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    "Preferences",
+                    stringResource(R.string.preferences),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
 
                 if (settings.vehicleEnergy == "gas" || settings.vehicleEnergy == "hybrid") {
                     Text(
-                        "Preferred gas types",
+                        stringResource(R.string.preferred_gas_types),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1601,7 +1601,7 @@ private fun VehicleConfig(
                     }
 
                     Text(
-                        "Fuel card",
+                        stringResource(R.string.fuel_card),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp)
@@ -1617,7 +1617,7 @@ private fun VehicleConfig(
 
                 if (settings.vehicleEnergy == "electric" || settings.vehicleEnergy == "hybrid") {
                     Text(
-                        "Preferred power range",
+                        stringResource(R.string.preferred_power_range),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1724,7 +1724,7 @@ private fun ErrorLog(errorLog: List<DetailedError>) {
                 .padding(20.dp)
         ) {
             if (reversedLog.isEmpty()) {
-                Text("No errors recorded", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.no_errors_recorded), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 Button(
                     onClick = {
@@ -1743,7 +1743,7 @@ private fun ErrorLog(errorLog: List<DetailedError>) {
                 ) {
                     Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Copy All Logs")
+                    Text(stringResource(R.string.copy_all_logs))
                 }
 
                 reversedLog.forEach { error ->
@@ -1779,7 +1779,7 @@ private fun ErrorLog(errorLog: List<DetailedError>) {
                             ) {
                                 Icon(
                                     Icons.Default.ContentCopy,
-                                    contentDescription = "Copy error",
+                                    contentDescription = stringResource(R.string.copy_error),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )

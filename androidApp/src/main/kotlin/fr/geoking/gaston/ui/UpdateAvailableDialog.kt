@@ -14,6 +14,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import fr.geoking.gaston.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -51,13 +53,13 @@ fun UpdateAvailableDialog(
                     .padding(24.dp)
             ) {
                 Text(
-                    text = "Update available",
+                    text = stringResource(R.string.update_available),
                     fontSize = 20.sp,
                     style = MaterialTheme.typography.titleLarge
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "A new version of gaston is available. Update now to get the latest features and improvements.",
+                    text = stringResource(R.string.update_description),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                     fontSize = 14.sp,
                     style = MaterialTheme.typography.bodyMedium,
@@ -70,11 +72,11 @@ fun UpdateAvailableDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onCancel) {
-                        Text("Cancel", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+                        Text(stringResource(R.string.cancel), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
                     }
                     Spacer(modifier = Modifier.padding(8.dp))
                     Button(onClick = onUpdate) {
-                        Text("Update")
+                        Text(stringResource(R.string.update))
                     }
                 }
             }

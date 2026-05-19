@@ -3,6 +3,7 @@ package fr.geoking.gaston.auto
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 
 class AutoEnergyMenuScreen(
@@ -26,8 +27,8 @@ class AutoEnergyMenuScreen(
         // Fuel Row
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Fuel")
-                .addText(if (isFuelMode) "Selected: ${fuels.joinToString(", ")}" else "Tap to select fuel types")
+                .setTitle(carContext.getString(R.string.search_mode_fuel))
+                .addText(if (isFuelMode) carContext.getString(R.string.selected_prefix, fuels.joinToString(", ")) else carContext.getString(R.string.tap_to_select_fuel))
                 .setOnClickListener {
                     if (!hasFuel) {
                         settingsManager.setMapEnergyTypes(setOf("sp95"))
@@ -42,8 +43,8 @@ class AutoEnergyMenuScreen(
         // Electric Row
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Electric")
-                .addText(if (isElectricMode) "Selected: Power and connectors" else "Tap for EV settings")
+                .setTitle(carContext.getString(R.string.search_mode_ev))
+                .addText(if (isElectricMode) carContext.getString(R.string.selected_ev_settings) else carContext.getString(R.string.tap_for_ev_settings))
                 .setOnClickListener {
                     if (!hasElectric) {
                         settingsManager.setMapEnergyTypes(setOf("electric"))
@@ -58,8 +59,8 @@ class AutoEnergyMenuScreen(
         // Hybrid Row
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Hybrid")
-                .addText(if (isHybridMode) "Selected: Fuel + Electric" else "Fuel + Electric")
+                .setTitle(carContext.getString(R.string.energy_hybrid))
+                .addText(if (isHybridMode) carContext.getString(R.string.selected_prefix, carContext.getString(R.string.energy_hybrid)) else carContext.getString(R.string.fuel_and_electric))
                 .setOnClickListener {
                     val nextFuels = if (fuels.isEmpty()) setOf("sp95") else fuels
                     settingsManager.setMapEnergyTypes(nextFuels + "electric")
@@ -72,7 +73,7 @@ class AutoEnergyMenuScreen(
             .setSingleList(listBuilder.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("Energy")
+                    .setTitle(carContext.getString(R.string.energy))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

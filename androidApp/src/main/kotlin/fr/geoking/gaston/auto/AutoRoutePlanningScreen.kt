@@ -80,8 +80,8 @@ class AutoRoutePlanningScreen(
         return try {
             when (step) {
                 Step.ORIGIN -> buildSearchTemplate(
-                    title = "Origin",
-                    hint = "Type or say the origin city/address",
+                    title = carContext.getString(R.string.origin),
+                    hint = carContext.getString(R.string.origin_hint),
                     query = originQuery,
                     onQueryChange = { originQuery = it.take(120) },
                     onSubmit = {
@@ -92,8 +92,8 @@ class AutoRoutePlanningScreen(
                 )
 
                 Step.DESTINATION -> buildSearchTemplate(
-                    title = "Destination",
-                    hint = "Type or say the destination city/address",
+                    title = carContext.getString(R.string.destination),
+                    hint = carContext.getString(R.string.destination_hint),
                     query = destinationQuery,
                     onQueryChange = { destinationQuery = it.take(120) },
                     onSubmit = {
@@ -109,7 +109,7 @@ class AutoRoutePlanningScreen(
         } catch (e: Exception) {
             Log.e("AutoRoutePlanning", "onGetTemplate failed", e)
             MessageTemplate.Builder((e.message ?: e.toString()).take(300))
-                .setHeader(Header.Builder().setTitle("Route").setStartHeaderAction(Action.BACK).build())
+                .setHeader(Header.Builder().setTitle(carContext.getString(R.string.route)).setStartHeaderAction(Action.BACK).build())
                 .build()
         }
     }
@@ -162,7 +162,7 @@ class AutoRoutePlanningScreen(
             .addAction(
                 Action.Builder()
                     .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
-                    .setTitle("Back")
+                    .setTitle(carContext.getString(R.string.back))
                     .setOnClickListener { screenManager.pop() }
                     .build()
             )
@@ -222,7 +222,7 @@ class AutoRoutePlanningScreen(
                 ItemList.Builder()
                     .addItem(
                         Row.Builder()
-                            .setTitle("Use current location")
+                            .setTitle(carContext.getString(R.string.use_current_location))
                             .setOnClickListener {
                                 originQuery = ""
                                 originSuggestions = emptyList()
@@ -236,7 +236,7 @@ class AutoRoutePlanningScreen(
         } else {
             builder.setItemList(
                 ItemList.Builder()
-                    .setNoItemsMessage("Submit destination to plan route")
+                    .setNoItemsMessage(carContext.getString(R.string.submit_dest_to_plan))
                     .build()
             )
         }
@@ -248,16 +248,16 @@ class AutoRoutePlanningScreen(
         if (loading) {
             return MessageTemplate.Builder(carContext.getString(loadingMessageResId))
                 .setLoading(true)
-                .setHeader(Header.Builder().setTitle("Route").setStartHeaderAction(Action.BACK).build())
+                .setHeader(Header.Builder().setTitle(carContext.getString(R.string.route)).setStartHeaderAction(Action.BACK).build())
                 .build()
         }
 
         lastError?.let { err ->
             return MessageTemplate.Builder(err.take(300))
-                .setHeader(Header.Builder().setTitle("Route").setStartHeaderAction(Action.BACK).build())
+                .setHeader(Header.Builder().setTitle(carContext.getString(R.string.route)).setStartHeaderAction(Action.BACK).build())
                 .addAction(
                     Action.Builder()
-                        .setTitle("Retry")
+                        .setTitle(carContext.getString(R.string.retry))
                         .setOnClickListener { compute() }
                         .build()
                 )
@@ -265,14 +265,14 @@ class AutoRoutePlanningScreen(
         }
 
         val list = ItemList.Builder()
-            .setNoItemsMessage("No POIs found along route")
+            .setNoItemsMessage(carContext.getString(R.string.no_pois_found))
 
         // Standard Android Auto list limit is 6 items for many templates.
         stations.take(6).forEach { poi ->
             list.addItem(
                 Row.Builder()
-                    .setTitle(poi.name.ifBlank { poi.address.ifBlank { "POI" } })
-                    .addText(poi.address.ifBlank { "${poi.latitude}, ${poi.longitude}" })
+                    .setTitle(poi.name.ifBlank { poi.address.ifBlank { carContext.getString(R.string.add_poi_label) } })
+                    .addText(poi.address.ifBlank { carContext.getString(R.string.lat_lon_format, poi.latitude, poi.longitude) })
                     .setOnClickListener {
                         val uri = IntentNavigationHelper.getNavigationUri(poi)
                         carContext.startCarApp(Intent(CarContext.ACTION_NAVIGATE).apply { data = uri })
@@ -284,7 +284,7 @@ class AutoRoutePlanningScreen(
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle("Edit")
+                    .setTitle(carContext.getString(R.string.edit))
                     .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
                     .setOnClickListener {
                         step = Step.ORIGIN
@@ -294,7 +294,7 @@ class AutoRoutePlanningScreen(
             )
             .addAction(
                 Action.Builder()
-                    .setTitle("Start nav")
+                    .setTitle(carContext.getString(R.string.start_nav))
                     .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
                     .setOnClickListener { openExternalDirections() }
                     .build()
@@ -302,7 +302,7 @@ class AutoRoutePlanningScreen(
             .build()
 
         val headerBuilder = Header.Builder()
-            .setTitle("Route POIs")
+            .setTitle(carContext.getString(R.string.route_pois))
             .setStartHeaderAction(Action.BACK)
 
         actionStrip.actions.forEach {
@@ -316,7 +316,7 @@ class AutoRoutePlanningScreen(
     }
 
     private fun openExternalDirections() {
-        val origin = originQuery.takeIf { it.isNotBlank() } ?: "Current location"
+        val origin = originQuery.takeIf { it.isNotBlank() } ?: carContext.getString(R.string.current_location)
         val dest = destinationQuery
         if (dest.isBlank()) return
         val url = "https://www.google.com/maps/dir/?api=1&origin=${Uri.encode(origin)}&destination=${Uri.encode(dest)}&travelmode=driving"
@@ -338,11 +338,11 @@ class AutoRoutePlanningScreen(
             try {
                 val originLatLon = if (originQuery.isBlank()) {
                     val loc = LocationHelper.getCurrentLocation(carContext)
-                    if (loc == null) throw Exception("Could not determine current location")
+                    if (loc == null) throw Exception(carContext.getString(R.string.could_not_determine_location))
                     loc.latitude to loc.longitude
                 } else {
                     val origin = geocodingClient.geocode(originQuery, limit = 1).firstOrNull()
-                        ?: throw Exception("Origin not found")
+                        ?: throw Exception(carContext.getString(R.string.origin_not_found))
                     origin.latitude to origin.longitude
                 }
 
@@ -353,7 +353,7 @@ class AutoRoutePlanningScreen(
                     destLon = initialDestination.longitude
                 } else {
                     val dest = geocodingClient.geocode(destinationQuery, limit = 1).firstOrNull()
-                        ?: throw Exception("Destination not found")
+                        ?: throw Exception(carContext.getString(R.string.destination_not_found))
                     destLat = dest.latitude
                     destLon = dest.longitude
                 }
@@ -363,7 +363,7 @@ class AutoRoutePlanningScreen(
 
                 // Warm up: ensure route endpoint is reachable (and fail early with nicer message)
                 val route = routingClient.getRoute(originLatLon.first, originLatLon.second, destLat, destLon)
-                if (route == null) throw Exception("No route found")
+                if (route == null) throw Exception(carContext.getString(R.string.no_route_found))
 
                 val result = routePlanner.getStationsAlongRoute(
                     originLat = originLatLon.first,

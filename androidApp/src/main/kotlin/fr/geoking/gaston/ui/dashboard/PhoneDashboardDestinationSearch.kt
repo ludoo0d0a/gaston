@@ -43,7 +43,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.res.stringResource
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.R
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.feature.location.LocationHelper
@@ -128,7 +130,7 @@ fun PhoneDashboardDestinationSearch(
         OutlinedTextField(
             value = destQuery,
             onValueChange = { destQuery = it },
-            placeholder = { Text("Where to?") },
+            placeholder = { Text(stringResource(R.string.where_to)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .onFocusChanged { destFocused = it.isFocused }
@@ -149,7 +151,7 @@ fun PhoneDashboardDestinationSearch(
                 }) {
                     Icon(
                         Icons.Default.Directions,
-                        contentDescription = "Open routes",
+                        contentDescription = stringResource(R.string.open_routes),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -160,7 +162,7 @@ fun PhoneDashboardDestinationSearch(
                         destQuery = ""
                         onLocationSelected(null)
                     }) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear))
                     }
                 }
             },

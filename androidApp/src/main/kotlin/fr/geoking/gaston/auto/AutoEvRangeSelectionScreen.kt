@@ -33,7 +33,7 @@ class AutoEvRangeSelectionScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Range").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(fr.geoking.gaston.R.string.electric_range)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

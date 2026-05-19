@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import fr.geoking.gaston.R
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -319,11 +321,11 @@ fun PoiDetailsFullscreenDialog(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 if (isCommunityPoi) {
-                                    onEdit?.let { TextButton(onClick = it) { Text("Edit", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
-                                    onRemove?.let { TextButton(onClick = it) { Text("Remove", color = Color(0xFFFF6B6B), fontSize = 13.sp) } }
+                                    onEdit?.let { TextButton(onClick = it) { Text(stringResource(R.string.edit), color = Color(0xFF94A3B8), fontSize = 13.sp) } }
+                                    onRemove?.let { TextButton(onClick = it) { Text(stringResource(R.string.remove), color = Color(0xFFFF6B6B), fontSize = 13.sp) } }
                                 } else {
-                                    onHide?.let { TextButton(onClick = it) { Text("Hide on map", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
-                                    onSuggestCorrection?.let { TextButton(onClick = it) { Text("Suggest correction", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
+                                    onHide?.let { TextButton(onClick = it) { Text(stringResource(R.string.hide_on_map), color = Color(0xFF94A3B8), fontSize = 13.sp) } }
+                                    onSuggestCorrection?.let { TextButton(onClick = it) { Text(stringResource(R.string.suggest_correction), color = Color(0xFF94A3B8), fontSize = 13.sp) } }
                                 }
                             }
                         }

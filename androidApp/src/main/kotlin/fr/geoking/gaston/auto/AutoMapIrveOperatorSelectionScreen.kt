@@ -3,6 +3,7 @@ package fr.geoking.gaston.auto
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.effectiveIrveOperatorFilter
 import fr.geoking.gaston.ui.BrandHelper
@@ -23,7 +24,7 @@ class AutoMapIrveOperatorSelectionScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(label)
-                    .addText(if (isSelected) "Active" else "Inactive")
+                    .addText(if (isSelected) carContext.getString(R.string.status_active) else carContext.getString(R.string.status_inactive))
                     .setOnClickListener {
                         val newOps = if (settings.mapIrveOperators.contains(id)) settings.mapIrveOperators - id else settings.mapIrveOperators + id
                         settingsManager.setMapIrveOperators(newOps)

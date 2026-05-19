@@ -26,20 +26,20 @@ class AutoMapSettingsScreen(
                 val net = networkService.status.value
                 val countryLine = net.countryName ?: net.countryCode
                 buildString {
-                    append("Auto (by country)")
+                    append(carContext.getString(fr.geoking.gaston.R.string.auto_by_country))
                     if (!countryLine.isNullOrBlank()) {
-                        append("\nNetwork country: ").append(countryLine)
+                        append("\n").append(carContext.getString(fr.geoking.gaston.R.string.network_country_format, countryLine))
                     }
                 }
             }
             PoiProviderSelectionMode.Manual ->
-                if (settings.selectedPoiProviders.isEmpty()) "None"
+                if (settings.selectedPoiProviders.isEmpty()) carContext.getString(fr.geoking.gaston.R.string.none_label)
                 else settings.selectedPoiProviders.joinToString(", ") { it.name }
         }
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Data Source")
+                .setTitle(carContext.getString(fr.geoking.gaston.R.string.data_source))
                 .addText(dataSourceText)
                 .setOnClickListener {
                     val next = if (settings.poiProviderSelectionMode == PoiProviderSelectionMode.Manual) {
@@ -55,8 +55,8 @@ class AutoMapSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Map Mode")
-                .addText("Current: ${settings.carMapMode.name}" + if (settings.carMapMode == CarMapMode.Custom) " (Warning: may not be compliant with POI category)" else "")
+                .setTitle(carContext.getString(fr.geoking.gaston.R.string.map_mode))
+                .addText(carContext.getString(fr.geoking.gaston.R.string.current_format, settings.carMapMode.name) + if (settings.carMapMode == CarMapMode.Custom) " " + carContext.getString(fr.geoking.gaston.R.string.map_mode_warning) else "")
                 .setOnClickListener {
                     val nextMode = if (settings.carMapMode == CarMapMode.Native) CarMapMode.Custom else CarMapMode.Native
                     settingsManager.setCarMapMode(nextMode)
@@ -67,8 +67,8 @@ class AutoMapSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Show Traffic")
-                .addText("Google traffic layer")
+                .setTitle(carContext.getString(fr.geoking.gaston.R.string.show_traffic))
+                .addText(carContext.getString(fr.geoking.gaston.R.string.google_traffic_layer))
                 .setToggle(
                     Toggle.Builder { checked ->
                         settingsManager.setMapTrafficEnabled(checked)
@@ -80,8 +80,8 @@ class AutoMapSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Vehicle & Range")
-                .addText("${settings.vehicleType.name}, ${settings.evRangeKm} km")
+                .setTitle(carContext.getString(fr.geoking.gaston.R.string.vehicle_range_title))
+                .addText(carContext.getString(fr.geoking.gaston.R.string.vehicle_range_summary, settings.vehicleType.name, settings.evRangeKm))
                 .setOnClickListener {
                     screenManager.push(AutoVehicleSettingsScreen(carContext, settingsManager))
                 }
@@ -91,7 +91,7 @@ class AutoMapSettingsScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Map Settings").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(fr.geoking.gaston.R.string.map_settings)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

@@ -31,7 +31,7 @@ class AutoNetworkLocationInfoScreen(
 ) : Screen(carContext) {
 
     private var networkStatus: NetworkStatus = NetworkStatus()
-    private var locationAddress: String = "Searching address..."
+    private var locationAddress: String = carContext.getString(R.string.searching_address)
     private var latitude: Double = 0.0
     private var longitude: Double = 0.0
     private var isLoadingLocation = true
@@ -51,7 +51,7 @@ class AutoNetworkLocationInfoScreen(
         lifecycleScope.launch {
             isLoadingLocation = true
             isGeocoding = false
-            locationAddress = "Searching address..."
+            locationAddress = carContext.getString(R.string.searching_address)
             invalidate()
 
             val location = LocationHelper.getCurrentLocation(carContext)
@@ -81,13 +81,13 @@ class AutoNetworkLocationInfoScreen(
                             geocoder.getFromLocation(location.latitude, location.longitude, 1)?.firstOrNull()?.let { formatAddress(it) }
                         }
                     }
-                    locationAddress = address ?: "Address not found"
+                    locationAddress = address ?: carContext.getString(R.string.location_address_not_found)
                 } catch (e: Exception) {
                     Log.e("AutoNetworkInfo", "Geocoding failed", e)
-                    locationAddress = "Geocoding error"
+                    locationAddress = carContext.getString(R.string.geocoding_error)
                 }
             } else {
-                locationAddress = "Location not available"
+                locationAddress = carContext.getString(R.string.location_not_available)
                 isLoadingLocation = false
             }
             isGeocoding = false
@@ -110,22 +110,22 @@ class AutoNetworkLocationInfoScreen(
         // Network info
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Network: ${if (networkStatus.isConnected) "Connected" else "Disconnected"}")
-                .addText("Type: ${networkStatus.networkType.toReadableString()} | Operator: ${networkStatus.operatorName ?: "Unknown"}")
-                .addText("Country: ${networkStatus.countryName ?: networkStatus.countryCode ?: "Unknown"} | Roaming: ${if (networkStatus.isRoaming) "Yes" else "No"}")
+                .setTitle(carContext.getString(R.string.network_title_status, if (networkStatus.isConnected) carContext.getString(R.string.connected) else carContext.getString(R.string.disconnected)))
+                .addText(carContext.getString(R.string.network_info_type_operator, networkStatus.networkType.toReadableString(), networkStatus.operatorName ?: carContext.getString(R.string.unknown)))
+                .addText(carContext.getString(R.string.network_info_country_roaming, networkStatus.countryName ?: networkStatus.countryCode ?: carContext.getString(R.string.unknown), if (networkStatus.isRoaming) carContext.getString(R.string.yes) else carContext.getString(R.string.no)))
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_speaker)).build())
                 .build()
         )
 
         // Location info
         val locationRow = Row.Builder()
-            .setTitle("Current Location")
+            .setTitle(carContext.getString(R.string.current_location_title))
         if (isLoadingLocation) {
-            locationRow.addText("Loading coordinates...")
+            locationRow.addText(carContext.getString(R.string.loading_coordinates))
         } else {
-            locationRow.addText("Lat: ${String.format("%.6f", latitude)}, Lon: ${String.format("%.6f", longitude)}")
-            if (isGeocoding && locationAddress == "Searching address...") {
-                locationRow.addText("Searching address...")
+            locationRow.addText(carContext.getString(R.string.lat_lon_format, latitude, longitude))
+            if (isGeocoding && locationAddress == carContext.getString(R.string.searching_address)) {
+                locationRow.addText(carContext.getString(R.string.searching_address))
             } else {
                 locationRow.addText(locationAddress)
             }
@@ -137,11 +137,11 @@ class AutoNetworkLocationInfoScreen(
             .setSingleList(listBuilder.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("Network & Location Info")
+                    .setTitle(carContext.getString(R.string.network_location))
                     .setStartHeaderAction(Action.BACK)
                     .addEndHeaderAction(
                         Action.Builder()
-                            .setTitle("Refresh")
+                            .setTitle(carContext.getString(R.string.refresh))
                             .setOnClickListener { loadLocation() }
                             .build()
                     )
@@ -158,7 +158,7 @@ class AutoNetworkLocationInfoScreen(
         NetworkType.TWO_G -> "2G"
         NetworkType.EDGE -> "Edge"
         NetworkType.GPRS -> "GPRS"
-        NetworkType.UNKNOWN -> "Unknown"
-        NetworkType.NONE -> "None"
+        NetworkType.UNKNOWN -> carContext.getString(R.string.unknown)
+        NetworkType.NONE -> carContext.getString(R.string.no)
     }
 }

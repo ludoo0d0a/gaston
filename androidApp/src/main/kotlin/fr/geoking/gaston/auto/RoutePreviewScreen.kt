@@ -71,20 +71,20 @@ class RoutePreviewScreen(
     override fun onGetTemplate(): Template {
         return try {
             if (isLoading) {
-                MessageTemplate.Builder("Calculating route...")
+                MessageTemplate.Builder(carContext.getString(R.string.calculating))
                     .setHeader(
                         Header.Builder()
-                            .setTitle(destination.name.ifBlank { "Destination" })
+                            .setTitle(destination.name.ifBlank { carContext.getString(R.string.destination_title) })
                             .setStartHeaderAction(Action.BACK)
                             .build()
                     )
                     .setLoading(true)
                     .build()
             } else if (routes.isEmpty()) {
-                MessageTemplate.Builder("No routes found")
+                MessageTemplate.Builder(carContext.getString(R.string.no_route_found))
                     .setHeader(
                         Header.Builder()
-                            .setTitle(destination.name.ifBlank { "Destination" })
+                            .setTitle(destination.name.ifBlank { carContext.getString(R.string.destination_title) })
                             .setStartHeaderAction(Action.BACK)
                             .build()
                     )
@@ -94,10 +94,10 @@ class RoutePreviewScreen(
             }
         } catch (e: Exception) {
             Log.e("RoutePreviewScreen", "Error building template", e)
-            MessageTemplate.Builder("Route preview error: ${e.message}")
+            MessageTemplate.Builder(carContext.getString(R.string.route_preview_error_format, e.message ?: carContext.getString(R.string.unknown)))
                 .setHeader(
                     Header.Builder()
-                        .setTitle("Error")
+                        .setTitle(carContext.getString(R.string.error))
                         .setStartHeaderAction(Action.BACK)
                         .build()
                 )
@@ -109,11 +109,11 @@ class RoutePreviewScreen(
         val listBuilder = ItemList.Builder()
 
         routes.forEachIndexed { index, route ->
-            val title = "Route ${index + 1}"
+            val title = carContext.getString(R.string.route_index_title, index + 1)
             val distanceKm = route.distanceMeters / 1000.0
             val estimatedMinutes = (distanceKm / 80.0 * 60.0).toInt().coerceAtLeast(1)
-            val summary = "Distance: %.1f km".format(distanceKm)
-            val etaDescription = "ETA: ~%d min (80 km/h)".format(estimatedMinutes)
+            val summary = carContext.getString(R.string.distance_format, distanceKm)
+            val etaDescription = carContext.getString(R.string.eta_format, estimatedMinutes)
 
             val row = Row.Builder()
                 .setTitle(title)
@@ -130,7 +130,7 @@ class RoutePreviewScreen(
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle("Start")
+                    .setTitle(carContext.getString(R.string.start_nav))
                     .setOnClickListener {
                         if (activeRoute != null) startExternalNavigation()
                     }
@@ -139,7 +139,7 @@ class RoutePreviewScreen(
             .build()
 
         val headerBuilder = Header.Builder()
-            .setTitle(destination.name.ifBlank { "Destination" })
+            .setTitle(destination.name.ifBlank { carContext.getString(R.string.destination_title) })
             .setStartHeaderAction(Action.BACK)
 
         actionStrip.actions.forEach {

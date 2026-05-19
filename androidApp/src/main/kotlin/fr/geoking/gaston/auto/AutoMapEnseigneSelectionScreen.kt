@@ -3,6 +3,7 @@ package fr.geoking.gaston.auto
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.ui.MAP_ENSEIGNE_OPTIONS
 
@@ -17,7 +18,7 @@ class AutoMapEnseigneSelectionScreen(
 
         MAP_ENSEIGNE_OPTIONS.forEach { (id, label) ->
             val isSelected = settings.mapEnseigneType == id
-            val displayLabel = if (isSelected) "$label (Selected)" else label
+            val displayLabel = if (isSelected) "$label " + carContext.getString(fr.geoking.gaston.R.string.selected_suffix) else label
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(displayLabel)
@@ -31,7 +32,7 @@ class AutoMapEnseigneSelectionScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Enseigne").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.enseigne)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

@@ -35,6 +35,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.ui.res.stringResource
+import fr.geoking.gaston.R
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -223,10 +225,10 @@ fun RoutePlanningScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Plan route") },
+                title = { Text(stringResource(R.string.plan_route_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -252,7 +254,7 @@ fun RoutePlanningScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("Origin", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.origin), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -277,7 +279,7 @@ fun RoutePlanningScreen(
                             originQuery = it.take(120)
                             selectedOrigin = null
                         },
-                        placeholder = { Text("Origin address or city") },
+                        placeholder = { Text(stringResource(R.string.origin_placeholder)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         modifier = Modifier.fillMaxWidth()
@@ -402,7 +404,7 @@ fun RoutePlanningScreen(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Destination", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.destination), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             Spacer(modifier = Modifier.height(4.dp))
             Box {
                 OutlinedTextField(
@@ -411,7 +413,7 @@ fun RoutePlanningScreen(
                         destQuery = it.take(120)
                         selectedDest = null
                     },
-                    placeholder = { Text("Destination address or city") },
+                    placeholder = { Text(stringResource(R.string.destination_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     modifier = Modifier.fillMaxWidth()
@@ -561,7 +563,7 @@ fun RoutePlanningScreen(
                         onClick = { onShowOnMap(currentRoute!!, stations) },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Show on Map")
+                        Text(stringResource(R.string.show_on_map))
                     }
                 }
             }
@@ -702,7 +704,7 @@ fun RoutePlanningScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (recommendations.isNotEmpty()) {
-                    Text("Recommended stops", color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.recommended_stops), color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.labelLarge)
                     Spacer(modifier = Modifier.height(4.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(recommendations) { poi ->

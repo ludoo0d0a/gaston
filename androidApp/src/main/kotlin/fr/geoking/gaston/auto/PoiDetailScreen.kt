@@ -33,7 +33,7 @@ class PoiDetailScreen(
             data = IntentNavigationHelper.getNavigationUri(poi)
         }
         val navigateAction = Action.Builder()
-            .setTitle("Navigate to")
+            .setTitle(carContext.getString(R.string.navigate_to))
             .setIcon(
                 CarIcon.Builder(
                     IconCompat.createWithResource(carContext, R.drawable.ic_poi_gas)
@@ -56,16 +56,16 @@ class PoiDetailScreen(
 
     private fun buildDetailMessage(poi: Poi): String {
         val lines = mutableListOf<String>()
-        poi.source?.takeIf { it.isNotBlank() }?.let { lines.add("Source: $it") }
+        poi.source?.takeIf { it.isNotBlank() }?.let { lines.add(carContext.getString(R.string.source_label, it)) }
         poi.brand?.takeIf { it.isNotBlank() }?.let { lines.add(it) }
         if (poi.isElectric) {
             poi.operator?.takeIf { it.isNotBlank() }?.let { lines.add(it) }
-            if (poi.isOnHighway) lines.add("Autoroute")
+            if (poi.isOnHighway) lines.add(carContext.getString(R.string.highway))
             poi.chargePointCount?.let { n ->
-                lines.add(if (n == 1) "1 point de charge" else "$n points de charge")
+                lines.add(carContext.resources.getQuantityString(R.plurals.points_count, n, n))
             }
             availabilitySummary?.let { s ->
-                lines.add("${s.availableCount} / ${s.totalCount} disponibles")
+                lines.add(carContext.resources.getQuantityString(R.plurals.available_count, s.availableCount, s.availableCount, s.totalCount))
             }
         }
         poi.addressLocal?.takeIf { it.isNotBlank() }?.let { lines.add(it) }
@@ -84,30 +84,30 @@ class PoiDetailScreen(
                 }
             }
         }
-        rating?.let { r -> lines.add("Note: $r/5") }
+        rating?.let { r -> lines.add(carContext.getString(R.string.rating_format, r.toDouble())) }
         poi.irveDetails?.let { d ->
             if (d.connectorTypes.isNotEmpty()) {
                 val connectorLabels = d.connectorTypes.sorted().map { connectorLabel(it) }.joinToString(", ")
-                lines.add("Connecteurs: $connectorLabels")
+                lines.add(carContext.getString(R.string.connectors_label_detail, connectorLabels))
             }
-            if (d.gratuit == true) lines.add("Gratuit")
-            d.tarification?.takeIf { it.isNotBlank() }?.let { lines.add("Tarification: $it") }
-            d.openingHours?.takeIf { it.isNotBlank() }?.let { lines.add("Horaires: $it") }
-            if (d.reservation == true) lines.add("Réservation possible")
+            if (d.gratuit == true) lines.add(carContext.getString(R.string.free))
+            d.tarification?.takeIf { it.isNotBlank() }?.let { lines.add(carContext.getString(R.string.tariffs_label, it)) }
+            d.openingHours?.takeIf { it.isNotBlank() }?.let { lines.add(carContext.getString(R.string.opening_hours_label, it)) }
+            if (d.reservation == true) lines.add(carContext.getString(R.string.reservation_possible))
             listOfNotNull(
-                if (d.paymentActe == true) "À l'acte" else null,
-                if (d.paymentCb == true) "CB" else null,
-                if (d.paymentAutre == true) "Autre" else null
-            ).joinToString(", ").takeIf { it.isNotBlank() }?.let { lines.add("Paiement: $it") }
-            d.conditionAcces?.takeIf { it.isNotBlank() }?.let { lines.add("Accès: $it") }
+                if (d.paymentActe == true) carContext.getString(R.string.payment_on_demand) else null,
+                if (d.paymentCb == true) carContext.getString(R.string.payment_card) else null,
+                if (d.paymentAutre == true) carContext.getString(R.string.payment_other) else null
+            ).joinToString(", ").takeIf { it.isNotBlank() }?.let { lines.add(carContext.getString(R.string.payment_label, it)) }
+            d.conditionAcces?.takeIf { it.isNotBlank() }?.let { lines.add(carContext.getString(R.string.access_label, it)) }
         }
         poi.restaurantDetails?.let { d ->
-            if (d.isFastFood) lines.add("Fast food")
-            d.brand?.takeIf { it.isNotBlank() }?.let { lines.add("Enseigne: $it") }
-            d.cuisine?.takeIf { it.isNotBlank() }?.let { lines.add("Cuisine: $it") }
-            d.openingHours?.takeIf { it.isNotBlank() }?.let { lines.add("Horaires: $it") }
+            if (d.isFastFood) lines.add(carContext.getString(R.string.fast_food))
+            d.brand?.takeIf { it.isNotBlank() }?.let { lines.add(carContext.getString(R.string.brand_label, it)) }
+            d.cuisine?.takeIf { it.isNotBlank() }?.let { lines.add(carContext.getString(R.string.cuisine_label, it)) }
+            d.openingHours?.takeIf { it.isNotBlank() }?.let { lines.add(carContext.getString(R.string.opening_hours_label, it)) }
         }
-        return lines.joinToString("\n").ifBlank { "No extra details" }
+        return lines.joinToString("\n").ifBlank { carContext.getString(R.string.no_extra_details) }
     }
 
     private fun connectorLabel(id: String): String = when (id) {
@@ -115,7 +115,7 @@ class PoiDetailScreen(
         "combo_ccs" -> "CCS"
         "chademo" -> "CHAdeMO"
         "ef" -> "E/F"
-        "autre" -> "Autre"
+        "autre" -> carContext.getString(R.string.other_label)
         else -> id
     }
 }

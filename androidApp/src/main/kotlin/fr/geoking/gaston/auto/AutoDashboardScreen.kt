@@ -95,7 +95,7 @@ class AutoDashboardScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Emergency")
+                .setTitle(carContext.getString(R.string.emergency))
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_sos_rounded)).build())
                 .setOnClickListener {
                     screenManager.push(AutoEmergencyScreen(carContext, networkService))
@@ -105,7 +105,7 @@ class AutoDashboardScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("More Options")
+                .setTitle(carContext.getString(R.string.more_options))
                 .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
                 .setOnClickListener {
                     screenManager.push(
@@ -114,7 +114,7 @@ class AutoDashboardScreen(
                                 val moreList = ItemList.Builder()
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Routes")
+                                            .setTitle(carContext.getString(R.string.routes))
                                             .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_swap_horiz)).build())
                                             .setOnClickListener {
                                                 val mapDeps = getMapDeps()
@@ -135,7 +135,7 @@ class AutoDashboardScreen(
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Fuel outlook")
+                                            .setTitle(carContext.getString(R.string.fuel_outlook))
                                             .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_poi_gas_rounded)).build())
                                             .setOnClickListener {
                                                 screenManager.push(
@@ -146,21 +146,21 @@ class AutoDashboardScreen(
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Network & Location")
+                                            .setTitle(carContext.getString(R.string.network_location))
                                             .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_poi_radar_rounded)).build())
                                             .setOnClickListener { screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService)) }
                                             .build()
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Template lab")
+                                            .setTitle(carContext.getString(R.string.template_lab))
                                             .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.mipmap.ic_launcher)).build())
                                             .setOnClickListener { screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps)) }
                                             .build()
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Settings")
+                                            .setTitle(carContext.getString(R.string.settings_title))
                                             .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_settings)).build())
                                             .setOnClickListener { screenManager.push(AutoSettingsScreen(carContext, settingsManager)) }
                                             .build()
@@ -168,7 +168,7 @@ class AutoDashboardScreen(
                                     .build()
 
                                 return ListTemplate.Builder()
-                                    .setHeader(Header.Builder().setTitle("More Options").setStartHeaderAction(Action.BACK).build())
+                                    .setHeader(Header.Builder().setTitle(carContext.getString(R.string.more_options)).setStartHeaderAction(Action.BACK).build())
                                     .setSingleList(moreList)
                                     .build()
                             }
@@ -178,7 +178,7 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        val title = if (settingsManager.settings.value.isPremium) "Gaston Premium" else "Gaston"
+        val title = if (settingsManager.settings.value.isPremium) carContext.getString(R.string.gaston_premium) else carContext.getString(R.string.app_name)
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
             .setHeader(
@@ -193,7 +193,7 @@ class AutoDashboardScreen(
     private fun pushMapScreen(title: String? = null) {
         val mapDeps = getMapDeps()
         if (mapDeps != null) {
-            val finalTitle = title ?: "Nearby Stations"
+            val finalTitle = title ?: carContext.getString(R.string.nearby_stations_title)
             val screen = if (settingsManager.settings.value.carMapMode == CarMapMode.Native) {
                 NativeMapPoiScreen(
                     carContext = carContext,

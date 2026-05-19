@@ -14,6 +14,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import fr.geoking.gaston.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -288,12 +290,12 @@ fun MapErrorBanner(
                     onClick = onCopy,
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                     modifier = Modifier
-                ) { Text("Copy", fontSize = 12.sp) }
+                ) { Text(stringResource(R.string.copy), fontSize = 12.sp) }
                 TextButton(
                     onClick = onIgnore,
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                     modifier = Modifier
-                ) { Text("Ignore", fontSize = 12.sp) }
+                ) { Text(stringResource(R.string.ignore), fontSize = 12.sp) }
                 Button(
                     onClick = onRetry,
                     colors = ButtonDefaults.buttonColors(
@@ -302,7 +304,7 @@ fun MapErrorBanner(
                     ),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                     modifier = Modifier
-                ) { Text("Retry", fontSize = 12.sp) }
+                ) { Text(stringResource(R.string.retry), fontSize = 12.sp) }
             }
         }
     }
@@ -312,10 +314,11 @@ fun MapErrorBanner(
 fun rememberErrorClipboardCopyHandler(message: String): () -> Unit {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
-    return remember(message) {
+    val label = stringResource(R.string.error)
+    return remember(message, label) {
         {
             scope.launch {
-                clipboard.setClipEntry(ClipEntry(android.content.ClipData.newPlainText("error", message)))
+                clipboard.setClipEntry(ClipEntry(android.content.ClipData.newPlainText(label, message)))
             }
         }
     }

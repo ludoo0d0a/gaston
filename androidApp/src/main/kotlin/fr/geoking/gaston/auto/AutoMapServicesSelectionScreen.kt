@@ -3,6 +3,7 @@ package fr.geoking.gaston.auto
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.ui.MAP_SERVICES_OPTIONS
 
@@ -20,7 +21,7 @@ class AutoMapServicesSelectionScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(label)
-                    .addText(if (isSelected) "Enabled" else "Disabled")
+                    .addText(if (isSelected) carContext.getString(fr.geoking.gaston.R.string.status_enabled) else carContext.getString(fr.geoking.gaston.R.string.status_disabled))
                     .setToggle(
                         Toggle.Builder { checked ->
                             val current = settingsManager.settings.value.selectedMapServices
@@ -35,7 +36,7 @@ class AutoMapServicesSelectionScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Services").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.services)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

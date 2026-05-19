@@ -19,6 +19,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.res.stringResource
+import fr.geoking.gaston.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -43,7 +45,7 @@ fun PhoneDashboardTopBar(
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Gaston")
+                Text(stringResource(R.string.app_name))
                 if (settings.isPremium) {
                     Spacer(Modifier.width(8.dp))
                     Surface(
@@ -51,7 +53,7 @@ fun PhoneDashboardTopBar(
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
-                            "PREMIUM",
+                            stringResource(R.string.premium),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSecondary,
@@ -68,7 +70,7 @@ fun PhoneDashboardTopBar(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Update in progress",
+                        stringResource(R.string.update_in_progress),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -77,7 +79,7 @@ fun PhoneDashboardTopBar(
         },
         actions = {
             IconButton(onClick = onOpenFavorites) {
-                Icon(Icons.Default.Star, contentDescription = "Favorites")
+                Icon(Icons.Default.Star, contentDescription = stringResource(R.string.favorites_title))
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(

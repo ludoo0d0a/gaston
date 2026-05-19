@@ -49,7 +49,7 @@ class AutoFuelForecastScreen(
             try {
                 val loc = withContext(Dispatchers.IO) { LocationHelper.getCurrentLocation(carContext) }
                 if (loc == null) {
-                    loadError = "Location unavailable"
+                    loadError = carContext.getString(R.string.location_unavailable)
                     uiState = FuelForecastUiState(
                         fuelId = "gazole",
                         locationKey = "",
@@ -82,10 +82,10 @@ class AutoFuelForecastScreen(
 
     override fun onGetTemplate(): Template {
         if (!settingsManager.settings.value.isPremium) {
-            return MessageTemplate.Builder("Gaston Premium Required")
+            return MessageTemplate.Builder(carContext.getString(R.string.premium_required))
                 .setHeader(
                     Header.Builder()
-                        .setTitle("Fuel Price Outlook")
+                        .setTitle(carContext.getString(R.string.fuel_price_outlook))
                         .setStartHeaderAction(Action.BACK)
                         .build()
                 )
@@ -104,25 +104,25 @@ class AutoFuelForecastScreen(
         if (loading) {
             list.addItem(
                 Row.Builder()
-                    .setTitle("Loading…")
-                    .addText("Fetching local prices and market data")
+                    .setTitle(carContext.getString(R.string.calculating))
+                    .addText(carContext.getString(R.string.forecast_fetching_data))
                     .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
                     .build()
             )
         } else if (loadError != null && uiState.historyPoints.isEmpty() && uiState.forecastPoints.isEmpty()) {
             list.addItem(
                 Row.Builder()
-                    .setTitle("Forecast unavailable")
-                    .addText(loadError ?: "Unknown error")
+                    .setTitle(carContext.getString(R.string.forecast_unavailable))
+                    .addText(loadError ?: carContext.getString(R.string.unknown))
                     .build()
             )
         } else {
             val fuelTitle = fuelTitle(uiState.fuelId)
             val lastHist = uiState.historyPoints.maxByOrNull { it.day }
             val histLine = if (lastHist != null) {
-                "Latest local avg (${lastHist.day}): ${lastHist.priceEurPerL.formatEurL()} €/L"
+                carContext.getString(R.string.forecast_latest_local_avg, lastHist.day, lastHist.priceEurPerL.formatEurL())
             } else {
-                "No history yet — open the app on the phone on more days to build a series."
+                carContext.getString(R.string.forecast_no_history)
             }
             list.addItem(
                 Row.Builder()
@@ -136,21 +136,17 @@ class AutoFuelForecastScreen(
             if (forecasts.isEmpty()) {
                 list.addItem(
                     Row.Builder()
-                        .setTitle("Next days")
-                        .addText("No forecast rows yet (needs market data). Pull to refresh from header.")
+                        .setTitle(carContext.getString(R.string.forecast_next_days))
+                        .addText(carContext.getString(R.string.forecast_no_data))
                         .build()
                 )
             } else {
                 forecasts.forEachIndexed { index, pt ->
-                    val label = when (index) {
-                        0 -> "D+1 (target ${pt.day})"
-                        1 -> "D+2 (target ${pt.day})"
-                        else -> "D+3 (target ${pt.day})"
-                    }
+                    val label = carContext.getString(R.string.forecast_day_format, index + 1, pt.day)
                     list.addItem(
                         Row.Builder()
                             .setTitle(label)
-                            .addText("Est. ${pt.priceEurPerL.formatEurL()} €/L")
+                            .addText(carContext.getString(R.string.forecast_est_price, pt.priceEurPerL.formatEurL()))
                             .build()
                     )
                 }
@@ -159,11 +155,11 @@ class AutoFuelForecastScreen(
             val dir = uiState.directionUp
             val score = uiState.marketScore
             if (dir != null && score != null) {
-                val upText = if (dir) "Upward pressure on pump prices" else "No strong upward signal"
+                val upText = if (dir) carContext.getString(R.string.forecast_upward_pressure) else carContext.getString(R.string.forecast_no_upward_signal)
                 list.addItem(
                     Row.Builder()
-                        .setTitle("Market signal")
-                        .addText("$upText (score ${String.format(Locale.US, "%+.4f", score)})")
+                        .setTitle(carContext.getString(R.string.forecast_market_signal))
+                        .addText(carContext.getString(R.string.forecast_market_signal_format, upText, String.format(Locale.US, "%+.4f", score)))
                         .build()
                 )
             }
@@ -174,8 +170,8 @@ class AutoFuelForecastScreen(
                 val maeStr = if (mae != null && !mae.isNaN()) mae.formatEurL() else "—"
                 list.addItem(
                     Row.Builder()
-                        .setTitle("7-day accuracy")
-                        .addText("Hit rate: ${String.format(Locale.US, "%.0f", hit * 100)}% · MAE: $maeStr €/L")
+                        .setTitle(carContext.getString(R.string.forecast_7day_accuracy))
+                        .addText(carContext.getString(R.string.forecast_hit_rate_mae_format, hit * 100, maeStr))
                         .build()
                 )
             }
@@ -183,8 +179,8 @@ class AutoFuelForecastScreen(
             if (last != null) {
                 list.addItem(
                     Row.Builder()
-                        .setTitle("Last scored prediction")
-                        .addText(if (last) "Direction matched outcome" else "Direction did not match")
+                        .setTitle(carContext.getString(R.string.forecast_last_scored))
+                        .addText(if (last) carContext.getString(R.string.forecast_direction_matched) else carContext.getString(R.string.forecast_direction_mismatch))
                         .build()
                 )
             }
@@ -192,7 +188,7 @@ class AutoFuelForecastScreen(
                 if (uiState.historyPoints.isNotEmpty() || uiState.forecastPoints.isNotEmpty()) {
                     list.addItem(
                         Row.Builder()
-                            .setTitle("Note")
+                            .setTitle(carContext.getString(R.string.forecast_note))
                             .addText(err)
                             .build()
                     )
@@ -204,11 +200,11 @@ class AutoFuelForecastScreen(
             .setSingleList(list.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("Fuel price outlook")
+                    .setTitle(carContext.getString(R.string.fuel_price_outlook))
                     .setStartHeaderAction(Action.BACK)
                     .addEndHeaderAction(
                         Action.Builder()
-                            .setTitle("Refresh")
+                            .setTitle(carContext.getString(R.string.refresh))
                             .setOnClickListener { refresh() }
                             .build()
                     )
@@ -216,15 +212,15 @@ class AutoFuelForecastScreen(
             )
             .build()
     }
-}
 
-private fun fuelTitle(fuelId: String): String = when (fuelId) {
-    "gazole" -> "Gazole"
-    "sp95" -> "SP95 / E10"
-    "sp98" -> "SP98"
-    "gplc" -> "GPLc"
-    "e85" -> "E85"
-    else -> fuelId
+    private fun fuelTitle(fuelId: String): String = when (fuelId) {
+        "gazole" -> carContext.getString(R.string.fuel_gazole)
+        "sp95" -> carContext.getString(R.string.fuel_sp95)
+        "sp98" -> carContext.getString(R.string.fuel_sp98)
+        "gplc" -> carContext.getString(R.string.fuel_gplc)
+        "e85" -> carContext.getString(R.string.fuel_e85)
+        else -> fuelId
+    }
 }
 
 private fun Double.formatEurL(): String = String.format(Locale.US, "%.3f", this)

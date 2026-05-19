@@ -3,6 +3,7 @@ package fr.geoking.gaston.auto
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.effectiveFuelBrandFilterIds
 import fr.geoking.gaston.ui.BrandHelper
@@ -23,7 +24,7 @@ class AutoMapBrandSelectionScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(label)
-                    .addText(if (isSelected) "Active" else "Inactive")
+                    .addText(if (isSelected) carContext.getString(R.string.status_active) else carContext.getString(R.string.status_inactive))
                     .setOnClickListener {
                         val current = settingsManager.settings.value.mapBrands
                         val next = if (isSelected) current - id else current + id
@@ -36,7 +37,7 @@ class AutoMapBrandSelectionScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Brands").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.brands)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }
