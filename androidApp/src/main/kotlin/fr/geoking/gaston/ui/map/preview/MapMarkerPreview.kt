@@ -56,7 +56,7 @@ private fun boundsForPois(pois: List<Poi>): PreviewLatLngBounds {
 }
 
 @Composable
-private fun MapMarkerPreviewCanvas(
+internal fun MapMarkerPreviewCanvas(
     markerSpecs: List<PreviewMapMarkerSpec>,
     modifier: Modifier = Modifier,
 ) {

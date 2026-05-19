@@ -557,17 +557,7 @@ def main():
     fg.save(f"{ASSETS_DIR}/feature-graphic-1024x500.png", "PNG")
     print("      → playstore-assets/feature-graphic-1024x500.png")
 
-    print("\n[3/4] Screenshots (1080×1920) …")
-    screenshots = [
-        ("screenshot-1-map.png",          make_ss_map()),
-        ("screenshot-2-fuel-prices.png",  make_ss_prices()),
-        ("screenshot-3-ev-charging.png",  make_ss_ev()),
-        ("screenshot-4-filters.png",      make_ss_filters()),
-        ("screenshot-5-android-auto.png", make_ss_auto()),
-    ]
-    for fname, img in screenshots:
-        img.save(f"{ASSETS_DIR}/{fname}", "PNG")
-        print(f"      → playstore-assets/{fname}")
+    print("\n[3/4] Screenshots — skipped (use scripts/regenerate_screenshots.sh)")
 
     print("\n[4/4] Android launcher icons …")
     save_launcher_icons(icon_master)
