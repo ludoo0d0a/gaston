@@ -6,6 +6,7 @@
         android:name="android.app.Application"
         tools:replace="android:name">
 
+        <!-- Robolectric: Amazon IAP receiver bytecode fails VerifyError on JDK 17+ -->
         <receiver
             android:name="com.amazon.device.iap.ResponseReceiver"
             tools:node="remove" />
