@@ -49,6 +49,7 @@ import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.isUserSelectablePoiDataSource
 import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.UsedApisList
 import fr.geoking.gaston.poi.FuelPriceRegistry
 import fr.geoking.gaston.shared.diagnostics.DetailedError
 import fr.geoking.gaston.ui.components.DisclaimerDialog
@@ -76,41 +77,6 @@ enum class SettingsScreenPage {
     App,
     About
 }
-
-/** Used in About screen: API/service name, website URL, optional logo URL, optional license/credit line. */
-private data class UsedApi(
-    val name: String,
-    val url: String,
-    val logoUrl: String? = null,
-    @StringRes val attributionRes: Int? = null,
-)
-
-private val UsedApisList = listOf(
-    // Routing & maps
-    UsedApi("OSRM", "https://project-osrm.org", "https://project-osrm.org/favicon.ico"),
-    UsedApi("Overpass API (OpenStreetMap)", "https://wiki.openstreetmap.org/wiki/Overpass_API", "https://www.openstreetmap.org/favicon.ico"),
-    // POI & fuel / charging
-    UsedApi("Open Charge Map", "https://openchargemap.org", "https://openchargemap.org/favicon.ico"),
-    UsedApi("Eco-Movement (OCPI)", "https://eco-movement.com", null),
-    UsedApi("Fastned (OCPI)", "https://fastnedcharging.com", null),
-    UsedApi("DKV Mobility (OCPI)", "https://www.dkv-mobility.com", null),
-    UsedApi("data.gouv.fr", "https://www.data.gouv.fr", "https://www.data.gouv.fr/favicon.ico"),
-    UsedApi("ODRE (bornes IRVE)", "https://odre.opendatasoft.com", null),
-    UsedApi("Gas API (prix carburants)", "https://gas-api.ovh", null),
-    UsedApi(
-        name = "OpenVan.camp",
-        url = "https://openvan.camp",
-        logoUrl = null,
-        attributionRes = R.string.openvan_attribution,
-    ),
-    UsedApi("data.economie.gouv.fr", "https://data.economie.gouv.fr", null),
-    UsedApi("Routex / Wigeogis", "https://www.wigeogis.com", null),
-    UsedApi("Belib (Paris EV)", "https://opendata.paris.fr", null),
-    UsedApi("Hérault Data (camping-car)", "https://www.herault-data.fr", null),
-    // Traffic & toll
-    UsedApi("CITA (trafic Luxembourg)", "https://www.cita.lu", "https://www.cita.lu/favicon.ico"),
-    UsedApi("OpenTollData", "https://github.com/louis2038/OpenTollData", null),
-)
 
 @Composable
 private fun MapEngine.displayLabel(): String = when (this) {
