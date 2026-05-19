@@ -2,6 +2,8 @@
 
 Gaston uses **Google Maps** for the map screen (mobile and Android Auto). You need a Google Maps API key for the map to work.
 
+For POI / fuel / EV data source keys, see [`API_KEYS.md`](API_KEYS.md).
+
 ## Quick Setup
 
 Add to `local.properties` in the project root (same key name as env var):

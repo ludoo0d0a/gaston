@@ -106,8 +106,8 @@ Quick access to road-trip essentials when something goes wrong, plus highway tol
 - **30+ POI providers** spanning Western, Central, Northern, Southern Europe and beyond
 - Selection mode: **Manual** (pick exact sources) or **Auto** (auto-select by current country)
 - Per-country toggles — enable/disable a whole country in one tap
-- Optional API keys for premium feeds (OpenChargeMap, Eco-Movement, Fuelprices.dk, NSW FuelCheck)
-- Full source list: see [`sources.md`](sources.md)
+- Optional API keys for some feeds (OpenChargeMap, Eco-Movement, Tankerkönig, Fuelprices.dk, NSW FuelCheck, …)
+- Full source list: [`sources.md`](sources.md) · how to get keys: [`docs/API_KEYS.md`](docs/API_KEYS.md)
 
 ### Android Auto
 
@@ -166,6 +166,7 @@ GOOGLE_MAPS_KEY=your_maps_sdk_key
 Full list of build-time keys → [`docs/ENV_VARS.md`](docs/ENV_VARS.md)
 
 Additional setup guides:
+- API keys for data sources → [`docs/API_KEYS.md`](docs/API_KEYS.md)
 - Google Maps API key → [`docs/MAPS_API_KEY_SETUP.md`](docs/MAPS_API_KEY_SETUP.md)
 - Google Play setup → [`docs/GOOGLE_PLAY_MIGRATION.md`](docs/GOOGLE_PLAY_MIGRATION.md)
 - Android Auto DHU debugging → [`docs/ANDROID_AUTO_DHU_DEBUG.md`](docs/ANDROID_AUTO_DHU_DEBUG.md)

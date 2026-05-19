@@ -14,17 +14,25 @@ echo "sdk.dir=$ANDROID_HOME" >> local.properties
 
 Use these names in `local.properties` or set the same name as an env var (e.g. for CI/GitHub Secrets).
 
+**How to obtain each key:** see [`API_KEYS.md`](API_KEYS.md) (registration links, auth headers, and which providers need no key).
+
 | Key | Usage |
 |-----|--------|
 | `VERSION_CODE` | Optional integer override for versionCode (e.g. `123`). |
-| `GOOGLE_MAPS_KEY` | Google Maps API key. **Required for map screen** (tiles); without it the map stays grey. |
+| `GOOGLE_MAPS_KEY` | Google Maps API key. **Required for map screen** (tiles); without it the map stays grey. Setup: [`MAPS_API_KEY_SETUP.md`](MAPS_API_KEY_SETUP.md). |
 | `GOOGLE_WEB_CLIENT_ID` | Google Sign-In **Web client ID**: copy from Firebase [Authentication → Sign-in method → Google](https://console.firebase.google.com/project/gaston-c8f44/authentication/providers) (`gaston-c8f44`). Details: `docs/GOOGLE_PLAY_MIGRATION.md` §5. |
-| `OPENCHARGEMAP_KEY` | Optional Open Charge Map API key (if you enable that provider). |
-| `MOBILITEIT_LUXEMBOURG_KEY` | Optional API key for Luxembourg mobiliteit.lu (if used). |
-| `TOMTOM_KEY` | Optional TomTom key (only if a TomTom provider is enabled). |
-| `CHARGY_API_KEY` | Optional API key for Luxembourg Chargy (if used). |
-| `GERMANY_TANKERKOENIG_KEY` | Optional API key for Germany Tankerkoenig (public demo key: `00000000-0000-0000-0000-000000000002`). |
-| `FASTNED_UK_KEY` | Fastned UK OCPI API key (required for Fastned provider). |
+| `OPENCHARGEMAP_KEY` | Open Charge Map API key (recommended if you enable that provider). |
+| `ECO_MOVEMENT_KEY` | Eco-Movement OCPI token (`Authorization: Token …`). Also overridable in Settings. |
+| `FUELPRICES_DK_KEY` | Fuelprices.dk API key (Denmark). Also overridable in Settings. |
+| `NSW_FUELCHECK_KEY` | NSW FuelCheck consumer key (Australia). Also overridable in Settings. |
+| `NSW_FUELCHECK_SECRET` | NSW FuelCheck consumer secret. Also overridable in Settings. |
+| `MOBILITEIT_LUXEMBOURG_KEY` | Luxembourg mobiliteit.lu / HAFAS OpenData API key (transit). |
+| `TOMTOM_KEY` | TomTom Traffic API key (global traffic fallback). |
+| `CHARGY_API_KEY` | Chargy Luxembourg KML feed API key. |
+| `GERMANY_TANKERKOENIG_KEY` | Tankerkönig API key (demo: `00000000-0000-0000-0000-000000000002`). |
+| `FASTNED_UK_KEY` | Fastned UK OCPI API key (`x-api-key` header). |
+| `DKV_SUBSCRIPTION_KEY` | DKV Mobility Azure APIM subscription key (`Ocp-Apim-Subscription-Key`). |
+| `DKV_AUTHORIZATION` | Optional DKV OCPI `Authorization: Token …` if required by your contract. |
 | `ROMANIA_PECO_APPLICATION_ID` | Parse application id for Peco Online (Romania). |
 | `ROMANIA_PECO_CLIENT_KEY` | Parse client key for Peco Online (Romania). |
 
