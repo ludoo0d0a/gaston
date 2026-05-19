@@ -418,12 +418,16 @@ object PreviewPoiSamples {
         source = "DataGouv + GasApi"
     )
 
+    /** Full-screen marketing / store capture — fuel price list. */
     fun marketingFuelDetailPoi(): Poi = previewCardTotal()
 
+    /** Full-screen marketing / store capture — EV connectors. */
     fun marketingEvDetailPoi(): Poi = previewCardIonity()
 
+    /** Bottom carousel on map marketing frame. */
     fun marketingMapCarouselPois(): List<Poi> = diverseCardPois().take(3)
 
+    /** Subset of map pins (fuel + fast charge) for readable store screenshots. */
     fun marketingMapMarkerSpecs(): List<PreviewMapMarkerSpec> = diverseMapMarkerSpecs().filter { spec ->
         spec.legend == "gazole" ||
             spec.legend == "sp98" ||
@@ -432,6 +436,7 @@ object PreviewPoiSamples {
             spec.legend == "sp95"
     }
 
+    /** Android Auto–style list rows. */
     fun marketingAutoListPois(): List<Poi> = listOf(
         previewCardTotal(),
         previewCardShell(),
