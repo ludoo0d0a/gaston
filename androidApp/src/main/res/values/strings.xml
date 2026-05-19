@@ -419,6 +419,9 @@
     <string name="provider_denmark_fuelprices">Fuelprices.dk</string>
     <string name="provider_fuelo">Fuelo.net</string>
     <string name="provider_australia_nsw">FuelCheck (NSW Australia)</string>
+    <string name="provider_australia_fuelwatch">FuelWatch (WA Australia)</string>
+    <string name="provider_australia_petrolspy">PetrolSpy (Australia)</string>
+    <string name="provider_switzerland_comparis">Comparis (Switzerland)</string>
     <string name="provider_croatia_mzoe">MZOE (Croatia official)</string>
     <string name="provider_finland_polttoaine">Polttoaine.net (Finland)</string>
     <string name="provider_greece_fuelgr">FuelGR (Greece)</string>

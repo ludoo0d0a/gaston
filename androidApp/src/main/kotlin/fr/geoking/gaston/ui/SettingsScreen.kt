@@ -127,6 +127,9 @@ private fun poiProviderLabelRes(type: PoiProviderType): Int = when (type) {
     PoiProviderType.DenmarkFuelpricesDk -> R.string.provider_denmark_fuelprices
     PoiProviderType.Fuelo -> R.string.provider_fuelo
     PoiProviderType.AustraliaNswFuelCheck -> R.string.provider_australia_nsw
+    PoiProviderType.AustraliaFuelWatch -> R.string.provider_australia_fuelwatch
+    PoiProviderType.AustraliaPetrolSpy -> R.string.provider_australia_petrolspy
+    PoiProviderType.SwitzerlandComparis -> R.string.provider_switzerland_comparis
     PoiProviderType.CroatiaMzoe -> R.string.provider_croatia_mzoe
     PoiProviderType.FinlandPolttoaine -> R.string.provider_finland_polttoaine
     PoiProviderType.GreeceFuelGr -> R.string.provider_greece_fuelgr
@@ -483,7 +486,10 @@ private fun SourcesConfig(
         ProviderUiInfo(PoiProviderType.NetherlandsAnwb, listOf("NL", "BE", "LU")),
         ProviderUiInfo(PoiProviderType.DenmarkFuelpricesDk, listOf("DK")),
         ProviderUiInfo(PoiProviderType.Fuelo, fueloSupported),
-        ProviderUiInfo(PoiProviderType.AustraliaNswFuelCheck, listOf("AU")),
+        ProviderUiInfo(PoiProviderType.AustraliaNswFuelCheck, listOf("AU-NSW")),
+        ProviderUiInfo(PoiProviderType.AustraliaFuelWatch, listOf("AU-WA")),
+        ProviderUiInfo(PoiProviderType.AustraliaPetrolSpy, listOf("AU")),
+        ProviderUiInfo(PoiProviderType.SwitzerlandComparis, listOf("CH")),
         ProviderUiInfo(PoiProviderType.CroatiaMzoe, listOf("HR")),
         ProviderUiInfo(PoiProviderType.FinlandPolttoaine, listOf("FI")),
         ProviderUiInfo(PoiProviderType.GreeceFuelGr, listOf("GR")),

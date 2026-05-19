@@ -24,6 +24,10 @@ import fr.geoking.gaston.api.tankerkoenig.GermanyTankerkoenigProvider
 import fr.geoking.gaston.api.econtrol.AustriaEControlProvider
 import fr.geoking.gaston.api.argentina.ArgentinaEnergiaProvider
 import fr.geoking.gaston.api.australia.AustraliaNswFuelCheckProvider
+import fr.geoking.gaston.api.australia.FuelWatchProvider
+import fr.geoking.gaston.api.australia.PetrolSpyProvider
+import fr.geoking.gaston.api.switzerland.ComparisProvider
+import fr.geoking.gaston.api.romania.RomaniaPecoDefaults
 import fr.geoking.gaston.api.croatia.CroatiaMzoeProvider
 import fr.geoking.gaston.api.denmark.FuelpricesDKProvider
 import fr.geoking.gaston.api.belgium.BelgiumPetrolPricesClient
@@ -51,7 +55,6 @@ import fr.geoking.gaston.api.routing.OsrmRoutingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.routex.RoutexProvider
-import fr.geoking.gaston.api.romania.RomaniaPecoDefaults
 import fr.geoking.gaston.api.romania.RomaniaPecoProvider
 import fr.geoking.gaston.api.serbia.SerbiaNisProvider
 import fr.geoking.gaston.api.si.GorivaSiProvider
@@ -144,6 +147,15 @@ val mapModule = module {
         val key = sm.settings.value.nswFuelCheckKey.ifBlank { BuildConfig.NSW_FUELCHECK_KEY }
         val secret = sm.settings.value.nswFuelCheckSecret.ifBlank { BuildConfig.NSW_FUELCHECK_SECRET }
         AustraliaNswFuelCheckProvider(get(), apiKey = key, apiSecret = secret, radiusKm = 20, limit = 60)
+    }
+    single<PoiProvider>(named("australiafuelwatch")) {
+        FuelWatchProvider(get(), radiusKm = 30, limit = 80)
+    }
+    single<PoiProvider>(named("australiapetrolspy")) {
+        PetrolSpyProvider(get(), radiusKm = 15, limit = 80)
+    }
+    single<PoiProvider>(named("switzerlandcomparis")) {
+        ComparisProvider(get(), radiusKm = 25, limit = 80)
     }
     single<PoiProvider>(named("croatiamzoe")) {
         CroatiaMzoeProvider(get(), radiusKm = 20, limit = 80)
@@ -283,6 +295,9 @@ val mapModule = module {
             denmarkFuelpricesDk = get(named("fuelpricesdk")),
             fuelo = get(named("fuelo")),
             australiaNswFuelCheck = get(named("nswfuelcheck")),
+            australiaFuelWatch = get(named("australiafuelwatch")),
+            australiaPetrolSpy = get(named("australiapetrolspy")),
+            switzerlandComparis = get(named("switzerlandcomparis")),
             croatiaMzoe = get(named("croatiamzoe")),
             finlandPolttoaine = get(named("finlandpolttoaine")),
             greeceFuelGr = get(named("greecefuelgr")),

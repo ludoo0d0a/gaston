@@ -50,8 +50,10 @@ These sources are listed by Pumperly, but Gaston currently has no corresponding 
 
 | Country | Pumperly source | Type | Notes / what’s missing in Gaston |
 |---|---|---|---|
-| Sweden | **Drivstoffappen** / **bensinpriser.nu** | Community | Missing provider |
-| Australia (WA) | **FuelWatch** | Government API | Still missing (endpoint was unstable from CI) |
+| Sweden | **Drivstoffappen** / **bensinpriser.nu** | Community | Implemented (DrivstoffAppen SE) |
+| Australia (WA) | **FuelWatch** | Government API | Implemented |
+| Switzerland | **Comparis** | Scraper | Implemented |
+| Australia (national) | **PetrolSpy** | API | Implemented |
 
 ## Notes
 
