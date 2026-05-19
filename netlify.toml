@@ -1,0 +1,3 @@
+# Root Netlify config — publish the static landing site
+[build]
+  publish = "website"

@@ -1,0 +1,17 @@
+{
+  "name": "Gaston — Stations & recharge",
+  "short_name": "Gaston",
+  "description": "Trouvez les meilleurs prix carburant et bornes de recharge, sur mobile et Android Auto.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2D1B4E",
+  "theme_color": "#7C4DFF",
+  "icons": [
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
