@@ -115,6 +115,65 @@ class PoiFetchCacheTest {
     }
 
     @Test
+    fun invalidateRegionCoverageOnProviderSetChange_clearsRegionsWhenProvidersChange() {
+        val regions = mutableListOf(
+            LoadedPoiRegion(
+                centerLat = 48.85,
+                centerLng = 2.35,
+                maxRadiusKmLoaded = 10,
+                loadedAtMs = 1L,
+                loadedProviders = setOf(PoiProviderType.Routex, PoiProviderType.Overpass),
+            ),
+        )
+        val routexKey = buildPoiFetchKey(setOf(PoiProviderType.Routex, PoiProviderType.Overpass))
+        val dataGouvKey = buildPoiFetchKey(setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass))
+
+        val afterRoutex = invalidateRegionCoverageOnProviderSetChange(
+            providers = setOf(PoiProviderType.Routex, PoiProviderType.Overpass),
+            lastKey = null,
+            loadedRegions = regions,
+        )
+        assertEquals(routexKey, afterRoutex)
+        assertTrue(regions.isEmpty())
+
+        regions += LoadedPoiRegion(
+            centerLat = 48.85,
+            centerLng = 2.35,
+            maxRadiusKmLoaded = 10,
+            loadedAtMs = 2L,
+            loadedProviders = setOf(PoiProviderType.Routex, PoiProviderType.Overpass),
+        )
+        val afterSwitchToFuel = invalidateRegionCoverageOnProviderSetChange(
+            providers = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+            lastKey = afterRoutex,
+            loadedRegions = regions,
+        )
+        assertEquals(dataGouvKey, afterSwitchToFuel)
+        assertTrue(regions.isEmpty())
+    }
+
+    @Test
+    fun invalidateRegionCoverageOnProviderSetChange_keepsRegionsWhenProvidersUnchanged() {
+        val regions = mutableListOf(
+            LoadedPoiRegion(
+                centerLat = 48.85,
+                centerLng = 2.35,
+                maxRadiusKmLoaded = 10,
+                loadedAtMs = 1L,
+                loadedProviders = setOf(PoiProviderType.DataGouv),
+            ),
+        )
+        val key = buildPoiFetchKey(setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass))
+        val result = invalidateRegionCoverageOnProviderSetChange(
+            providers = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+            lastKey = key,
+            loadedRegions = regions,
+        )
+        assertEquals(key, result)
+        assertEquals(1, regions.size)
+    }
+
+    @Test
     fun cacheTtl_parkingLastsLongerThanFuel() {
         assertTrue(POI_CACHE_TTL_AMENITY_MS > POI_CACHE_TTL_ENERGY_MS)
         assertEquals(3L * 24 * 60 * 60 * 1000L, POI_CACHE_TTL_AMENITY_MS)

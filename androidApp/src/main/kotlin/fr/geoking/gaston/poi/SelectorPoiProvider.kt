@@ -247,17 +247,17 @@ class SelectorPoiProvider(
 
     private suspend fun fetchPoisFromProviders(
         request: PoiSearchRequest,
-        providersToFetch: Set<PoiProviderType>,
-        categoriesToFetch: Set<PoiCategory>,
+        providerCategories: Map<PoiProviderType, Set<PoiCategory>>,
         allProviders: Set<PoiProviderType>,
     ): Pair<List<Poi>, List<PoiProviderError>> {
-        if (providersToFetch.isEmpty()) return emptyList<Poi>() to emptyList()
+        if (providerCategories.isEmpty()) return emptyList<Poi>() to emptyList()
 
-        val effectiveRequest = request.copy(categories = categoriesToFetch, skipFilters = true)
         val allPois = mutableListOf<Poi>()
         val errors = mutableListOf<PoiProviderError>()
 
-        providersToFetch.forEach { providerType ->
+        providerCategories.forEach { (providerType, categories) ->
+            if (categories.isEmpty()) return@forEach
+            val effectiveRequest = request.copy(categories = categories, skipFilters = true)
             val activeProvider = getProvider(providerType)
             val searchResult = try {
                 activeProvider.searchResult(effectiveRequest)
@@ -268,7 +268,7 @@ class SelectorPoiProvider(
             allPois.addAll(searchResult.pois)
             errors.addAll(searchResult.errors)
 
-            if (providerType == PoiProviderType.Overpass && PoiCategory.CaravanSite in categoriesToFetch && dataGouvCamping != null) {
+            if (providerType == PoiProviderType.Overpass && PoiCategory.CaravanSite in categories && dataGouvCamping != null) {
                 try {
                     val extra = dataGouvCamping.search(effectiveRequest)
                     allPois.addAll(extra)
@@ -354,7 +354,6 @@ class SelectorPoiProvider(
         }
 
         val categoriesToFetch = resolveCategoriesToFetch(settings)
-        val poiFetchKey = buildPoiFetchKey(providers)
 
         val nowMs = System.currentTimeMillis()
         val diskMinUpdatedAtMs = nowMs - POI_CACHE_DISK_RETENTION_MS
@@ -363,9 +362,11 @@ class SelectorPoiProvider(
 
         var isFromMemory = false
         val coverageAndCache = synchronized(cacheLock) {
-            if (lastCacheKey != poiFetchKey) {
-                lastCacheKey = poiFetchKey
-            }
+            lastCacheKey = invalidateRegionCoverageOnProviderSetChange(
+                providers = providers,
+                lastKey = lastCacheKey,
+                loadedRegions = loadedRegions,
+            )
             readCoverageAndCache(request, requiredRadiusKm, providers, categoriesToFetch, nowMs)
         }
         val coverage = coverageAndCache.first
@@ -425,13 +426,20 @@ class SelectorPoiProvider(
         } else {
             providers
         }
-        val categoriesForFetch = if (coverage.geoCovered && coverage.missingCategories.isNotEmpty()) {
-            coverage.missingCategories
-        } else {
-            categoriesToFetch
-        }
 
-        if (providersToFetch.isEmpty() && coverage.geoCovered) {
+        val providerCategories = providersToFetch.associateWith { providerType ->
+            if (coverage.geoCovered) {
+                if (providerType in coverage.missingProviders) {
+                    categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
+                } else {
+                    coverage.missingCategories.intersect(getProvider(providerType).supportedCategories())
+                }
+            } else {
+                categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
+            }
+        }.filterValues { it.isNotEmpty() }
+
+        if (providerCategories.isEmpty() && coverage.geoCovered) {
             send(
                 PoiSearchResult(pois = applyPostFilters(cachedPois.values.toList(), request, providers)),
             )
@@ -449,12 +457,11 @@ class SelectorPoiProvider(
         var finalEnriched = listOf<Poi>()
 
         coroutineScope {
-            providersToFetch.forEach { providerType ->
+            providerCategories.forEach { (providerType, categoriesForProvider) ->
                 launch {
                     val (rated, providerErrors) = fetchPoisFromProviders(
                         request = request,
-                        providersToFetch = setOf(providerType),
-                        categoriesToFetch = categoriesForFetch,
+                        providerCategories = mapOf(providerType to categoriesForProvider),
                         allProviders = providers,
                     )
                     flowMutex.withLock {
@@ -488,8 +495,8 @@ class SelectorPoiProvider(
                 centerLng = request.longitude,
                 requiredRadiusKm = requiredRadiusKm,
                 loadedAtMs = mergedNow,
-                fetchedProviders = providersToFetch,
-                fetchedCategories = categoriesForFetch,
+                fetchedProviders = providerCategories.keys,
+                fetchedCategories = providerCategories.values.flatten().toSet(),
                 maxRegions = maxRegions,
             )
             trimPoiCache(request.latitude, request.longitude, maxPoisInCache)
@@ -497,7 +504,8 @@ class SelectorPoiProvider(
 
         // Persist to DB
         try {
-            val entities = finalEnriched.map { p ->
+            val entitiesToPersist = synchronized(cacheLock) { cachedPois.values.toList() }
+            val entities = entitiesToPersist.map { p ->
                 PoiCacheEntity(
                     id = p.id,
                     latitude = p.latitude,
@@ -544,7 +552,6 @@ class SelectorPoiProvider(
         if (providers.isEmpty()) return PoiSearchResult()
 
         val categoriesToFetch = resolveCategoriesToFetch(settings)
-        val poiFetchKey = buildPoiFetchKey(providers)
 
         val nowMs = System.currentTimeMillis()
         val diskMinUpdatedAtMs = nowMs - POI_CACHE_DISK_RETENTION_MS
@@ -552,9 +559,11 @@ class SelectorPoiProvider(
         val maxPoisInCache = 1200
 
         val coverageAndCache = synchronized(cacheLock) {
-            if (lastCacheKey != poiFetchKey) {
-                lastCacheKey = poiFetchKey
-            }
+            lastCacheKey = invalidateRegionCoverageOnProviderSetChange(
+                providers = providers,
+                lastKey = lastCacheKey,
+                loadedRegions = loadedRegions,
+            )
             readCoverageAndCache(request, requiredRadiusKm, providers, categoriesToFetch, nowMs)
         }
         val coverage = coverageAndCache.first
@@ -600,20 +609,26 @@ class SelectorPoiProvider(
         } else {
             providers
         }
-        val categoriesForFetch = if (coverage.geoCovered && coverage.missingCategories.isNotEmpty()) {
-            coverage.missingCategories
-        } else {
-            categoriesToFetch
-        }
 
-        if (providersToFetch.isEmpty() && coverage.geoCovered) {
+        val providerCategories = providersToFetch.associateWith { providerType ->
+            if (coverage.geoCovered) {
+                if (providerType in coverage.missingProviders) {
+                    categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
+                } else {
+                    coverage.missingCategories.intersect(getProvider(providerType).supportedCategories())
+                }
+            } else {
+                categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
+            }
+        }.filterValues { it.isNotEmpty() }
+
+        if (providerCategories.isEmpty() && coverage.geoCovered) {
             return PoiSearchResult(pois = applyPostFilters(cachedPois.values.toList(), request, providers))
         }
 
         val (rated, errors) = fetchPoisFromProviders(
             request = request,
-            providersToFetch = providersToFetch,
-            categoriesToFetch = categoriesForFetch,
+            providerCategories = providerCategories,
             allProviders = providers,
         )
 
@@ -629,8 +644,8 @@ class SelectorPoiProvider(
                 centerLng = request.longitude,
                 requiredRadiusKm = requiredRadiusKm,
                 loadedAtMs = mergedNow,
-                fetchedProviders = providersToFetch,
-                fetchedCategories = categoriesForFetch,
+                fetchedProviders = providerCategories.keys,
+                fetchedCategories = providerCategories.values.flatten().toSet(),
                 maxRegions = maxRegions,
             )
             trimPoiCache(request.latitude, request.longitude, maxPoisInCache)
@@ -638,7 +653,8 @@ class SelectorPoiProvider(
 
         // Persist to DB
         try {
-            val entities = rated.map { p ->
+            val entitiesToPersist = synchronized(cacheLock) { cachedPois.values.toList() }
+            val entities = entitiesToPersist.map { p ->
                 PoiCacheEntity(
                     id = p.id,
                     latitude = p.latitude,
@@ -677,7 +693,7 @@ class SelectorPoiProvider(
         return searchResult(request).pois
     }
 
-    override fun         clearCache() {
+    override fun clearCache() {
         synchronized(cacheLock) {
             loadedRegions.clear()
             cachedPois.clear()

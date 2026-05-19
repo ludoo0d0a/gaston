@@ -69,6 +69,22 @@ data class PoiCoverageResult(
 fun buildPoiFetchKey(providers: Set<PoiProviderType>): String =
     providers.sortedBy { it.name }.joinToString(",") { it.name }
 
+/**
+ * Returns true when [providers] changed vs [lastKey] and [loadedRegions] was cleared so the next
+ * search refetches for the new provider set instead of treating stale region metadata as covered.
+ */
+fun invalidateRegionCoverageOnProviderSetChange(
+    providers: Set<PoiProviderType>,
+    lastKey: String?,
+    loadedRegions: MutableList<LoadedPoiRegion>,
+): String {
+    val key = buildPoiFetchKey(providers)
+    if (lastKey != key) {
+        loadedRegions.clear()
+    }
+    return key
+}
+
 fun resolveCategoriesToFetch(settings: AppSettings): Set<PoiCategory> {
     val amenityIds = settings.selectedOverpassAmenityTypes + settings.cacheWarmAmenityTypes
     val categories = amenityIds.mapNotNull { categoryFromAmenityId(it) }.toMutableSet()
