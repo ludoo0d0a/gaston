@@ -1,6 +1,5 @@
 package fr.geoking.gaston.shared.datetime
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -41,7 +40,7 @@ object DateTimeUtils {
 
     fun formatRelativeTime(dateStr: String): String {
         val instant = parseFlexible(dateStr) ?: return dateStr
-        val now = Clock.System.now()
+        val now = kotlin.time.Clock.System.now()
         val duration = now - instant
 
         val seconds = duration.inWholeSeconds

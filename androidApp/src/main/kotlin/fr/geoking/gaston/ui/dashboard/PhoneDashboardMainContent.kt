@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.PoiProviderSelectionMode
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.api.geocoding.GeocodingClient

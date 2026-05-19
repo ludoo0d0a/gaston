@@ -2,7 +2,6 @@ package fr.geoking.gaston.shared.rate
 
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -29,7 +28,7 @@ class DailyUserRateLimiter(
     }
 
     private fun currentDayKey(): String {
-        val dt = Clock.System.now().toLocalDateTime(timeZone)
+        val dt = kotlin.time.Clock.System.now().toLocalDateTime(timeZone)
         // YYYY-MM-DD
         return "${dt.year.toString().padStart(4, '0')}-${dt.monthNumber.toString().padStart(2, '0')}-${dt.dayOfMonth.toString().padStart(2, '0')}"
     }

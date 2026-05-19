@@ -31,7 +31,7 @@ androidx-work = "2.11.2"
 coreKtx = "1.18.0"
 robolectric = "4.16.1"
 firebase-bom = "34.13.0"
-revenuecat = "3.0.1"
+revenuecat = "2.10.2+17.55.1"
 
 [libraries]
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }

@@ -1,7 +1,6 @@
 package fr.geoking.gaston.poi
 
 import fr.geoking.gaston.api.routex.PoiAmenities
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.math.abs
 import kotlin.math.PI
@@ -472,7 +471,7 @@ object PoiMerger {
 
     private fun isStale(updatedAt: String, weeks: Int): Boolean {
         return try {
-            val now = Clock.System.now()
+            val now = kotlin.time.Clock.System.now()
             val updatedInstant = fr.geoking.gaston.shared.datetime.DateTimeUtils.parseFlexible(updatedAt) ?: return false
             val diff = now - updatedInstant
             diff.inWholeDays > (weeks * 7)
