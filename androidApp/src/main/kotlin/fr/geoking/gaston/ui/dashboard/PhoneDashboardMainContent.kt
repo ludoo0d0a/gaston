@@ -19,16 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Directions
-import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.EvStation
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.LocalGasStation
-import androidx.compose.material.icons.filled.LocalParking
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SignalCellular4Bar
-import androidx.compose.material.icons.filled.Sos
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -153,14 +143,14 @@ fun PhoneDashboardMainContent(
                 DashboardRow(
                     title = "Itinéraire",
                     subtitle = "Routes",
-                    icon = Icons.Default.Directions,
+                    iconResId = R.drawable.ic_directions,
                     onClick = { onOpenRoutes(null) },
                     enabled = mapDepsReady
                 ),
                 DashboardRow(
                     title = "Réseau",
                     subtitle = "Network",
-                    icon = Icons.Default.SignalCellular4Bar,
+                    iconResId = R.drawable.ic_signal_cellular,
                     onClick = onOpenNetworkDiagnostics
                 )
             )
@@ -249,7 +239,7 @@ private fun PhoneDashboardNearbyCheapestSection(
                         modifier = Modifier.size(24.dp),
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Map,
+                            painter = painterResource(R.drawable.ic_map),
                             contentDescription = "Open Map",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp),
@@ -309,7 +299,7 @@ private fun PhoneDashboardEmergencyCard(onOpenEmergency: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Icon(
-                imageVector = Icons.Default.Sos,
+                painter = painterResource(R.drawable.ic_sos),
                 contentDescription = null,
                 tint = onEmergency,
                 modifier = Modifier.size(36.dp)
@@ -351,7 +341,7 @@ private fun PhoneDashboardFuelForecastCard(
             supportingContent = { Text("Local estimate from market + nearby pumps") },
             leadingContent = {
                 Icon(
-                    imageVector = Icons.Default.LocalGasStation,
+                    painter = painterResource(R.drawable.ic_poi_gas),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)

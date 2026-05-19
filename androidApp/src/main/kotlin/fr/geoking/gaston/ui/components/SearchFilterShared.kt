@@ -3,8 +3,6 @@ package fr.geoking.gaston.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -80,7 +78,7 @@ fun SearchModeSelector(
         SearchRow(
             title = stringResource(R.string.search_mode_my_car),
             subtitle = "My car",
-            iconResId = R.drawable.ic_directions_car,
+            iconResId = R.drawable.ic_car,
             mode = SearchMode.MyCar,
             onClick = { settingsManager.setMyCarMode() }
         ),
@@ -210,7 +208,7 @@ fun SearchCategorySelector(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_directions_car),
+                                    painter = painterResource(R.drawable.ic_car),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(24.dp)
@@ -231,7 +229,7 @@ fun SearchCategorySelector(
                                 )
                             }
                             Icon(
-                                imageVector = Icons.Default.ChevronRight,
+                                painter = painterResource(R.drawable.ic_chevron_right),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -243,7 +241,7 @@ fun SearchCategorySelector(
                         selected = true,
                         onClick = { onOpenSettings(listOf(SettingsScreenPage.VehicleConfig)) },
                         label = { Text("${settings.vehicleBrand} ${settings.vehicleModel}") },
-                        leadingIcon = { Icon(painterResource(R.drawable.ic_directions_car), null, Modifier.size(18.dp)) }
+                        leadingIcon = { Icon(painterResource(R.drawable.ic_car), null, Modifier.size(18.dp)) }
                     )
                 }
             }

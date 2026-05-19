@@ -24,11 +24,28 @@ object AutoCarIcons {
     private const val MUTED_LIGHT = 0xFF64748B.toInt()
     private const val MUTED_DARK = 0xFF94A3B8.toInt()
 
+    private const val POLICE_LIGHT = 0xFF1565C0.toInt()
+    private const val POLICE_DARK = 0xFF64B5F6.toInt()
+    private const val MEDICAL_LIGHT = 0xFF2E7D32.toInt()
+    private const val MEDICAL_DARK = 0xFF81C784.toInt()
+    private const val FIRE_LIGHT = 0xFFE65100.toInt()
+    private const val FIRE_DARK = 0xFFFFB74D.toInt()
+    private const val ROADSIDE_LIGHT = 0xFFEF6C00.toInt()
+    private const val ROADSIDE_DARK = 0xFFFFCC80.toInt()
+    private const val OTHER_LIGHT = 0xFF6A1B9A.toInt()
+    private const val OTHER_DARK = 0xFFBA68C8.toInt()
+
     val primary: CarColor = CarColor.createCustom(PRIMARY_LIGHT, PRIMARY_DARK)
     val fuel: CarColor = CarColor.createCustom(FUEL_LIGHT, FUEL_DARK)
     val ev: CarColor = CarColor.createCustom(EV_LIGHT, EV_DARK)
     val emergency: CarColor = CarColor.createCustom(EMERGENCY_LIGHT, EMERGENCY_DARK)
     val muted: CarColor = CarColor.createCustom(MUTED_LIGHT, MUTED_DARK)
+
+    val police: CarColor = CarColor.createCustom(POLICE_LIGHT, POLICE_DARK)
+    val medical: CarColor = CarColor.createCustom(MEDICAL_LIGHT, MEDICAL_DARK)
+    val fire: CarColor = CarColor.createCustom(FIRE_LIGHT, FIRE_DARK)
+    val roadside: CarColor = CarColor.createCustom(ROADSIDE_LIGHT, ROADSIDE_DARK)
+    val other: CarColor = CarColor.createCustom(OTHER_LIGHT, OTHER_DARK)
 }
 
 fun CarContext.carIcon(
@@ -44,13 +61,13 @@ fun CarContext.dashboardFuelIcon(): CarIcon = carIcon(R.drawable.ic_poi_gas, Aut
 
 fun CarContext.dashboardEvIcon(): CarIcon = carIcon(R.drawable.ic_poi_electric, AutoCarIcons.ev)
 
-fun CarContext.dashboardMyCarIcon(): CarIcon = carIcon(R.drawable.ic_directions_car, AutoCarIcons.primary)
+fun CarContext.dashboardMyCarIcon(): CarIcon = carIcon(R.drawable.ic_car, AutoCarIcons.primary)
 
 fun CarContext.dashboardOtherIcon(): CarIcon = carIcon(R.drawable.ic_waypoint, AutoCarIcons.primary)
 
-fun CarContext.dashboardRoutesIcon(): CarIcon = carIcon(R.drawable.ic_swap_horiz, AutoCarIcons.primary)
+fun CarContext.dashboardRoutesIcon(): CarIcon = carIcon(R.drawable.ic_directions, AutoCarIcons.primary)
 
-fun CarContext.dashboardNetworkIcon(): CarIcon = carIcon(R.drawable.ic_poi_radar, AutoCarIcons.primary)
+fun CarContext.dashboardNetworkIcon(): CarIcon = carIcon(R.drawable.ic_signal_cellular, AutoCarIcons.primary)
 
 fun CarContext.dashboardEmergencyIcon(): CarIcon = carIcon(R.drawable.ic_sos, AutoCarIcons.emergency)
 
@@ -76,11 +93,11 @@ fun CarContext.actionHistoryIcon(): CarIcon = carIcon(R.drawable.ic_history, Aut
 
 fun CarContext.emergencyCategoryIcon(category: EmergencyCategory): CarIcon = when (category) {
     EmergencyCategory.GENERAL -> carIcon(R.drawable.ic_sos, AutoCarIcons.emergency)
-    EmergencyCategory.POLICE -> carIcon(R.drawable.ic_directions_car, AutoCarIcons.muted)
-    EmergencyCategory.MEDICAL -> carIcon(R.drawable.ic_poi_radar, AutoCarIcons.primary)
-    EmergencyCategory.FIRE -> carIcon(R.drawable.ic_poi_gas, AutoCarIcons.fuel)
-    EmergencyCategory.ROADSIDE -> carIcon(R.drawable.ic_error_outline, AutoCarIcons.emergency)
-    EmergencyCategory.OTHER -> carIcon(R.drawable.ic_speaker, AutoCarIcons.muted)
+    EmergencyCategory.POLICE -> carIcon(R.drawable.ic_local_police, AutoCarIcons.police)
+    EmergencyCategory.MEDICAL -> carIcon(R.drawable.ic_local_hospital, AutoCarIcons.medical)
+    EmergencyCategory.FIRE -> carIcon(R.drawable.ic_local_fire_department, AutoCarIcons.fire)
+    EmergencyCategory.ROADSIDE -> carIcon(R.drawable.ic_warning, AutoCarIcons.roadside)
+    EmergencyCategory.OTHER -> carIcon(R.drawable.ic_phone, AutoCarIcons.other)
 }
 
 /** Full-color assets (e.g. launcher) — no tint. */

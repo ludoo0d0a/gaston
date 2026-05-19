@@ -4,9 +4,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -24,6 +21,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import org.koin.compose.koinInject
 import androidx.compose.ui.Alignment
@@ -77,10 +76,10 @@ fun PhoneDashboardTopBar(
         },
         actions = {
             IconButton(onClick = onOpenFavorites) {
-                Icon(Icons.Default.Star, contentDescription = "Favorites")
+                Icon(painterResource(R.drawable.ic_star), contentDescription = "Favorites")
             }
             IconButton(onClick = onOpenSettings) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings")
+                Icon(painterResource(R.drawable.ic_settings), contentDescription = "Settings")
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
