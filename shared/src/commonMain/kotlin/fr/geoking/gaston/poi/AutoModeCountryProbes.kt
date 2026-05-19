@@ -76,6 +76,21 @@ object AutoModeCountryProbes {
         CountryStationProbe("DE", "Berlin", 52.5200, 13.4050, PoiProviderType.GermanyTankerkoenig),
         CountryStationProbe("AT", "Vienna", 48.2082, 16.3738, PoiProviderType.AustriaEControl),
         CountryStationProbe("BE", "Brussels", 50.8503, 4.3517, PoiProviderType.BelgiumOfficial),
+        CountryStationProbe("CH", "Zurich", 47.3769, 8.5417, PoiProviderType.SwitzerlandComparis),
+        CountryStationProbe(
+            iso = "AU",
+            cityLabel = "Sydney",
+            latitude = -33.8688,
+            longitude = 151.2093,
+            fuelProvider = PoiProviderType.AustraliaPetrolSpy,
+        ),
+        CountryStationProbe(
+            iso = "AU-WA",
+            cityLabel = "Perth",
+            latitude = -31.9505,
+            longitude = 115.8605,
+            fuelProvider = PoiProviderType.AustraliaFuelWatch,
+        ),
         CountryStationProbe("LU", "Luxembourg", 49.6116, 6.1319, PoiProviderType.OpenVanCamp),
     )
 }
