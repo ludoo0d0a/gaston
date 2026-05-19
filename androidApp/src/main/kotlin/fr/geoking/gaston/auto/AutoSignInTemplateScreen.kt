@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -12,12 +13,12 @@ class AutoSignInTemplateScreen(carContext: CarContext) : Screen(carContext) {
         val signInMethod = PinSignInMethod("123456")
 
         SignInTemplate.Builder(signInMethod)
-            .setTitle("SignInTemplate Sample")
+            .setTitle(carContext.getString(R.string.template_sign_in_sample))
             .setHeaderAction(Action.BACK)
             .setInstructions("Please enter this PIN on your phone.")
             .addAction(
                 Action.Builder()
-                    .setTitle("Done")
+                    .setTitle(carContext.getString(R.string.action_done))
                     .setOnClickListener { screenManager.pop() }
                     .build()
             )

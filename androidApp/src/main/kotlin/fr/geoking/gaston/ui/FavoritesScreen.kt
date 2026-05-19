@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui
 
+import fr.geoking.gaston.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -70,10 +72,10 @@ fun FavoritesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Favorites") },
+                title = { Text(stringResource(R.string.cd_favorites)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -143,7 +145,7 @@ private fun FavoritePoisList(
                     },
                     trailingContent = {
                         IconButton(onClick = { onRemove(poi) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Remove", tint = MaterialTheme.colorScheme.error)
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_remove), tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 )
@@ -174,10 +176,10 @@ private fun FavoriteLocationsList(
                     trailingContent = {
                         Row {
                             IconButton(onClick = { onSelect(loc) }) {
-                                Icon(Icons.Default.Directions, contentDescription = "Route", tint = MaterialTheme.colorScheme.primary)
+                                Icon(Icons.Default.Directions, contentDescription = stringResource(R.string.cd_route), tint = MaterialTheme.colorScheme.primary)
                             }
                             IconButton(onClick = { onRemove(loc) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Remove", tint = MaterialTheme.colorScheme.error)
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_remove), tint = MaterialTheme.colorScheme.error)
                             }
                         }
                     }

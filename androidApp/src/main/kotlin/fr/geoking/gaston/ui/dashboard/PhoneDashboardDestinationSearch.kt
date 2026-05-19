@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -125,7 +126,7 @@ fun PhoneDashboardDestinationSearch(
         OutlinedTextField(
             value = destQuery,
             onValueChange = { destQuery = it },
-            placeholder = { Text("Where to?") },
+            placeholder = { Text(stringResource(R.string.route_where_to)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .onFocusChanged { destFocused = it.isFocused }
@@ -146,7 +147,7 @@ fun PhoneDashboardDestinationSearch(
                 }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_directions),
-                        contentDescription = "Open routes",
+                        contentDescription = stringResource(R.string.action_open_routes),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -157,7 +158,7 @@ fun PhoneDashboardDestinationSearch(
                         destQuery = ""
                         onLocationSelected(null)
                     }) {
-                        Icon(painterResource(R.drawable.ic_close), contentDescription = "Clear")
+                        Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.action_clear))
                     }
                 }
             },

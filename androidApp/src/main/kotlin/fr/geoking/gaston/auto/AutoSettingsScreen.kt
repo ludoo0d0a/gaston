@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -21,7 +22,7 @@ class AutoSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("App theme")
+                .setTitle(carContext.getString(R.string.screen_app_theme))
                 .addText("Current: ${settingsManager.settings.value.uiThemeMode.name}")
                 .setOnClickListener {
                     screenManager.push(AutoThemeSelectionScreen(carContext, settingsManager))
@@ -31,8 +32,8 @@ class AutoSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Download toll data (OpenTollData)")
-                .addText("French highway toll estimation")
+                .setTitle(carContext.getString(R.string.screen_download_toll_data))
+                .addText(carContext.getString(R.string.settings_toll_french_highway))
                 .setOnClickListener {
                     screenManager.push(AutoTollDataScreen(carContext, settingsManager))
                 }
@@ -41,8 +42,8 @@ class AutoSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("About")
-                .addText("Version & data sources")
+                .setTitle(carContext.getString(R.string.screen_about))
+                .addText(carContext.getString(R.string.settings_version_sources))
                 .setOnClickListener {
                     screenManager.push(AutoAboutScreen(carContext))
                 }
@@ -51,7 +52,7 @@ class AutoSettingsScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Settings").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.cd_settings)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

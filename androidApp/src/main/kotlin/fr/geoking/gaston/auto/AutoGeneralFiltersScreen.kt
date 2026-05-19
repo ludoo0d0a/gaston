@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
@@ -16,7 +17,7 @@ class AutoGeneralFiltersScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Energy Types")
+                .setTitle(carContext.getString(R.string.screen_energy_types))
                 .addText(settings.selectedMapEnergyTypes.joinToString(", ").take(100))
                 .setOnClickListener {
                     screenManager.push(AutoEnergyMenuScreen(carContext, settingsManager))
@@ -26,7 +27,7 @@ class AutoGeneralFiltersScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Brands")
+                .setTitle(carContext.getString(R.string.screen_brands))
                 .addText(if (settings.mapBrands.isEmpty()) "All" else settings.mapBrands.joinToString(", ").take(100))
                 .setOnClickListener {
                     screenManager.push(AutoMapBrandSelectionScreen(carContext, settingsManager))
@@ -46,7 +47,7 @@ class AutoGeneralFiltersScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Services")
+                .setTitle(carContext.getString(R.string.screen_services))
                 .addText(settings.selectedMapServices.joinToString(", ").take(100))
                 .setOnClickListener {
                     screenManager.push(AutoMapServicesSelectionScreen(carContext, settingsManager))
@@ -56,7 +57,7 @@ class AutoGeneralFiltersScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("General Filters").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_general_filters)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

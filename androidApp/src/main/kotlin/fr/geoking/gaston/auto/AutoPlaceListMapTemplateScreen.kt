@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -22,7 +23,7 @@ class AutoPlaceListMapTemplateScreen(carContext: CarContext) : Screen(carContext
         val listBuilder = ItemList.Builder()
             .addItem(
                 Row.Builder()
-                    .setTitle("Eiffel Tower")
+                    .setTitle(carContext.getString(R.string.template_place_eiffel))
                     .addText("Champ de Mars, 5 Avenue Anatole France, 75007 Paris")
                     .setMetadata(
                         Metadata.Builder()
@@ -38,7 +39,7 @@ class AutoPlaceListMapTemplateScreen(carContext: CarContext) : Screen(carContext
             )
             .addItem(
                 Row.Builder()
-                    .setTitle("Louvre Museum")
+                    .setTitle(carContext.getString(R.string.template_place_louvre))
                     .addText("Rue de Rivoli, 75001 Paris")
                     .setMetadata(
                         Metadata.Builder()
@@ -60,14 +61,14 @@ class AutoPlaceListMapTemplateScreen(carContext: CarContext) : Screen(carContext
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle("Home")
+                    .setTitle(carContext.getString(R.string.action_home))
                     .setOnClickListener { screenManager.popToRoot() }
                     .build()
             )
             .build()
 
         PlaceListMapTemplate.Builder()
-            .setTitle("PlaceListMapTemplate")
+            .setTitle(carContext.getString(R.string.template_place_list_map_title))
             .setHeaderAction(Action.BACK)
             .setActionStrip(actionStrip)
             .setAnchor(anchor)

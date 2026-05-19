@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -24,13 +25,13 @@ class AutoTabTemplateScreen(carContext: CarContext) : Screen(carContext) {
             .setHeaderAction(Action.BACK)
             .addTab(
                 Tab.Builder()
-                    .setTitle("Fuel")
+                    .setTitle(carContext.getString(R.string.search_mode_fuel))
                     .setContentId("fuel")
                     .build()
             )
             .addTab(
                 Tab.Builder()
-                    .setTitle("Electric")
+                    .setTitle(carContext.getString(R.string.energy_electric))
                     .setContentId("ev")
                     .build()
             )

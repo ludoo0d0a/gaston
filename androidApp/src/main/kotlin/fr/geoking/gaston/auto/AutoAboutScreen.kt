@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -39,7 +40,7 @@ class AutoAboutScreen(
         }.trim().take(5000)
 
         LongMessageTemplate.Builder(body)
-            .setTitle("About")
+            .setTitle(carContext.getString(R.string.screen_about))
             .setHeaderAction(Action.BACK)
             .build()
     }

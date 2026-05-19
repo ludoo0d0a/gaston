@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
@@ -16,7 +17,7 @@ class AutoMapElectricSelectionScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Min. Power")
+                .setTitle(carContext.getString(R.string.screen_min_power))
                 .addText(if (settings.mapPowerLevels.isEmpty()) "Any" else settings.mapPowerLevels.joinToString(", ") { "${it}kW" })
                 .setOnClickListener {
                     screenManager.push(AutoMapIrvePowerSelectionScreen(carContext, settingsManager))
@@ -26,7 +27,7 @@ class AutoMapElectricSelectionScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Connectors")
+                .setTitle(carContext.getString(R.string.screen_connectors))
                 .addText(if (settings.selectedMapConnectorTypes.isEmpty()) "Any" else settings.selectedMapConnectorTypes.joinToString(", "))
                 .setOnClickListener {
                     screenManager.push(AutoMapConnectorSelectionScreen(carContext, settingsManager))
@@ -36,7 +37,7 @@ class AutoMapElectricSelectionScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Electric Settings").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_electric_settings)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

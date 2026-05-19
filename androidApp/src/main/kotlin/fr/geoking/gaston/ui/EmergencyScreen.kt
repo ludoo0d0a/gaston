@@ -45,6 +45,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -124,15 +125,15 @@ fun EmergencyScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Emergency") },
+                    title = { Text(stringResource(R.string.dashboard_emergency)) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(painterResource(R.drawable.ic_arrow_back), contentDescription = "Back")
+                            Icon(painterResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.action_back))
                         }
                     },
                     actions = {
                         IconButton(onClick = { refreshTick++ }) {
-                            Icon(painterResource(R.drawable.ic_refresh), contentDescription = "Refresh location")
+                            Icon(painterResource(R.drawable.ic_refresh), contentDescription = stringResource(R.string.emergency_refresh_location))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -297,7 +298,7 @@ private fun LocationCard(
                 loading -> {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                        Text("Locating you…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.emergency_locating), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 latLng != null -> {
@@ -356,14 +357,14 @@ private fun LocationCard(
                 ) {
                     Icon(painterResource(R.drawable.ic_share), contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
-                    Text("Share")
+                    Text(stringResource(R.string.action_share))
                 }
                 OutlinedButton(
                     onClick = onOpenInMaps,
                     enabled = latLng != null,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Open in maps")
+                    Text(stringResource(R.string.action_open_in_maps))
                 }
             }
             OutlinedButton(
@@ -371,7 +372,7 @@ private fun LocationCard(
                 enabled = latLng != null,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Copy location")
+                Text(stringResource(R.string.action_copy_location))
             }
         }
     }
@@ -568,7 +569,7 @@ private fun openInMaps(context: Context, lat: Double, lon: Double) {
 
 private fun copyToClipboard(context: Context, text: String) {
     val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
-    cm.setPrimaryClip(ClipData.newPlainText("Emergency location", text))
+    cm.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.emergency_location_clip), text))
 }
 
 private fun dial(context: Context, number: String) {

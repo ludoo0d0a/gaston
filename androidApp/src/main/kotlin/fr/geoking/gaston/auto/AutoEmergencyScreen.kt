@@ -112,7 +112,7 @@ class AutoEmergencyScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle("Call Emergency: $universalNumber")
-                .addText("Universal number for this region")
+                .addText(carContext.getString(R.string.emergency_universal_number))
                 .setImage(carContext.dashboardEmergencyIcon())
                 .setOnClickListener { dial(universalNumber) }
                 .build()
@@ -120,14 +120,14 @@ class AutoEmergencyScreen(
 
         // Location Info
         val locationRow = Row.Builder()
-            .setTitle("Your Current Location")
+            .setTitle(carContext.getString(R.string.screen_your_current_location))
         if (isLoadingLocation) {
-            locationRow.addText("Locating...")
+            locationRow.addText(carContext.getString(R.string.emergency_locating_short))
         } else if (latitude != null && longitude != null) {
             locationRow.addText("Lat: ${String.format("%.6f", latitude)}, Lon: ${String.format("%.6f", longitude)}")
             locationRow.addText(locationAddress ?: "Address unavailable")
         } else {
-            locationRow.addText("Location unavailable")
+            locationRow.addText(carContext.getString(R.string.emergency_location_unavailable))
         }
         locationRow.setImage(carContext.actionMapIcon())
         listBuilder.addItem(locationRow.build())
@@ -152,7 +152,7 @@ class AutoEmergencyScreen(
             .setSingleList(listBuilder.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("Emergency")
+                    .setTitle(carContext.getString(R.string.dashboard_emergency))
                     .setStartHeaderAction(Action.BACK)
                     .addEndHeaderAction(
                         Action.Builder()

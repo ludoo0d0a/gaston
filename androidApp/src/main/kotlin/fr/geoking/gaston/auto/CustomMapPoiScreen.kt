@@ -315,13 +315,13 @@ class CustomMapPoiScreen(
                     return MessageTemplate.Builder(errorMsg)
                         .setHeader(
                             Header.Builder()
-                                .setTitle("API Errors")
+                                .setTitle(carContext.getString(R.string.screen_api_errors))
                                 .setStartHeaderAction(Action.BACK)
                                 .build()
                         )
                         .addAction(
                             Action.Builder()
-                                .setTitle("Retry")
+                                .setTitle(carContext.getString(R.string.action_retry))
                                 .setOnClickListener {
                                     screenManager.pop()
                                     loadPois()
@@ -353,7 +353,7 @@ class CustomMapPoiScreen(
         )
         builder.addEndHeaderAction(
             Action.Builder()
-                .setTitle("Recenter")
+                .setTitle(carContext.getString(R.string.action_recenter))
                 .setIcon(carContext.actionRecenterIcon())
                 .setOnClickListener { recenterMap() }
                 .build()
@@ -532,14 +532,14 @@ class CustomMapPoiScreen(
         val actionStripBuilder = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle("Home")
+                    .setTitle(carContext.getString(R.string.action_home))
                     .setIcon(carContext.actionHomeIcon())
                     .setOnClickListener { screenManager.popToRoot() }
                     .build()
             )
             .addAction(
                 Action.Builder()
-                    .setTitle("Settings")
+                    .setTitle(carContext.getString(R.string.cd_settings))
                     .setIcon(carContext.actionSettingsIcon())
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
                     .build()

@@ -36,7 +36,7 @@ class ErrorScreen(
                     IconCompat.createWithResource(carContext, R.drawable.auto_theme_idle)
                 ).build()
             )
-            .setHeader(Header.Builder().setTitle("gaston Error").setStartHeaderAction(Action.APP_ICON).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_gaston_error)).setStartHeaderAction(Action.APP_ICON).build())
             .build()
     }
 }

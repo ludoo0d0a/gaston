@@ -2,6 +2,7 @@
 
 package fr.geoking.gaston.ui.map.maplibre
 
+import fr.geoking.gaston.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -79,7 +81,7 @@ fun DirectionsMapScreen(
     }
 
     MapScaffold(
-        title = "Navigation Preview",
+        title = stringResource(R.string.map_title_navigation_preview),
         settingsManager = settingsManager,
         mapCenterLatitude = route?.points?.firstOrNull()?.first,
         mapCenterLongitude = route?.points?.firstOrNull()?.second,

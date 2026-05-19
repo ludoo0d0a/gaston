@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
@@ -39,7 +40,7 @@ class AutoMapSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Data Source")
+                .setTitle(carContext.getString(R.string.screen_data_source))
                 .addText(dataSourceText)
                 .setOnClickListener {
                     val next = if (settings.poiProviderSelectionMode == PoiProviderSelectionMode.Manual) {
@@ -55,7 +56,7 @@ class AutoMapSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Map Mode")
+                .setTitle(carContext.getString(R.string.settings_map_mode))
                 .addText(
                     "Current: ${settings.carMapMode.name}" +
                         if (settings.carMapMode == CarMapMode.Custom) {
@@ -74,8 +75,8 @@ class AutoMapSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Show Traffic")
-                .addText("Google traffic layer")
+                .setTitle(carContext.getString(R.string.settings_show_traffic))
+                .addText(carContext.getString(R.string.filter_google_traffic))
                 .setToggle(
                     Toggle.Builder { checked ->
                         settingsManager.setMapTrafficEnabled(checked)
@@ -87,7 +88,7 @@ class AutoMapSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Vehicle & Range")
+                .setTitle(carContext.getString(R.string.screen_vehicle_and_range))
                 .addText("${settings.vehicleType.name}, ${settings.evRangeKm} km")
                 .setOnClickListener {
                     screenManager.push(AutoVehicleSettingsScreen(carContext, settingsManager))
@@ -98,7 +99,7 @@ class AutoMapSettingsScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Map Settings").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_map_settings)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

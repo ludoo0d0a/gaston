@@ -138,7 +138,7 @@ class AutoLibreMapLabScreen(carContext: CarContext) : Screen(carContext), Surfac
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle("Home")
+                    .setTitle(carContext.getString(R.string.action_home))
                     .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_home)).build())
                     .setOnClickListener { screenManager.popToRoot() }
                     .build()
@@ -169,29 +169,29 @@ class AutoLibreMapLabScreen(carContext: CarContext) : Screen(carContext), Surfac
         val list = ItemList.Builder()
             .addItem(
                 Row.Builder()
-                    .setTitle("Recenter")
+                    .setTitle(carContext.getString(R.string.action_recenter))
                     .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
                     .setOnClickListener { refreshLocation() }
                     .build()
             )
             .addItem(
                 Row.Builder()
-                    .setTitle("Zoom in")
+                    .setTitle(carContext.getString(R.string.action_zoom_in))
                     .addText("Level $zoom")
                     .setOnClickListener { bumpZoom(1) }
                     .build()
             )
             .addItem(
                 Row.Builder()
-                    .setTitle("Zoom out")
+                    .setTitle(carContext.getString(R.string.action_zoom_out))
                     .addText("Level $zoom")
                     .setOnClickListener { bumpZoom(-1) }
                     .build()
             )
             .addItem(
                 Row.Builder()
-                    .setTitle("Open MapLibre on phone")
-                    .addText("Vector map (OpenFreeMap)")
+                    .setTitle(carContext.getString(R.string.map_open_maplibre_phone))
+                    .addText(carContext.getString(R.string.map_vector_openfreemap))
                     .setOnClickListener {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("gaston://map/libremap")).apply {
                             setPackage(carContext.packageName)

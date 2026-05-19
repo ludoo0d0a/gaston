@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui
 
+import fr.geoking.gaston.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -100,15 +102,15 @@ fun FuelForecastScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Price Estimation") },
+                    title = { Text(stringResource(R.string.screen_price_estimation)) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                         }
                     },
                     actions = {
                         IconButton(onClick = { refreshTick++ }, enabled = !isLoading) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.action_refresh))
                         }
                     }
                 )

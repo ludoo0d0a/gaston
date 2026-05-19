@@ -110,7 +110,7 @@ class NativeMapPoiScreen(
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle("Home")
+                    .setTitle(carContext.getString(R.string.action_home))
                     .setIcon(carContext.actionHomeIcon())
                     .setOnClickListener { screenManager.popToRoot() }
                     .build()

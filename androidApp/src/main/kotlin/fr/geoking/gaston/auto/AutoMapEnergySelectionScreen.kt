@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
@@ -40,7 +41,7 @@ class AutoMapEnergySelectionScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Energy Types").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_energy_types)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

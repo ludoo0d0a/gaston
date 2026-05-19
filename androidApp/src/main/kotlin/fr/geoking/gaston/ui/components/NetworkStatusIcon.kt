@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui.components
 
+import fr.geoking.gaston.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -64,7 +66,7 @@ fun NetworkStatusIcon(
 
         Icon(
             imageVector = icon,
-            contentDescription = "Network Status",
+            contentDescription = stringResource(R.string.network_status),
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
             modifier = Modifier.size(14.dp)
         )

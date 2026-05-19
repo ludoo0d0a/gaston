@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
@@ -21,7 +22,7 @@ class AutoAdvancedFiltersScreen(
         if (hasElec) {
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("Operators")
+                    .setTitle(carContext.getString(R.string.screen_operators))
                     .addText(if (settings.mapIrveOperators.isEmpty()) "All" else settings.mapIrveOperators.joinToString(", "))
                     .setOnClickListener {
                         screenManager.push(AutoMapIrveOperatorSelectionScreen(carContext, settingsManager))
@@ -31,7 +32,7 @@ class AutoAdvancedFiltersScreen(
 
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("Power Range")
+                    .setTitle(carContext.getString(R.string.screen_power_range))
                     .addText(if (settings.mapPowerLevels.isEmpty()) "All" else settings.mapPowerLevels.joinToString(", ") { "${it}kW+" })
                     .setOnClickListener {
                         screenManager.push(AutoMapIrvePowerSelectionScreen(carContext, settingsManager))
@@ -41,7 +42,7 @@ class AutoAdvancedFiltersScreen(
 
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("Connectors")
+                    .setTitle(carContext.getString(R.string.screen_connectors))
                     .addText(settings.selectedMapConnectorTypes.joinToString(", ").take(100))
                     .setOnClickListener {
                         screenManager.push(AutoMapConnectorSelectionScreen(carContext, settingsManager))
@@ -53,7 +54,7 @@ class AutoAdvancedFiltersScreen(
         if (providers.contains(PoiProviderType.Overpass)) {
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("POI Types")
+                    .setTitle(carContext.getString(R.string.screen_poi_types))
                     .addText(settings.selectedOverpassAmenityTypes.joinToString(", ").take(100))
                     .setOnClickListener {
                         screenManager.push(AutoMapOverpassAmenitySelectionScreen(carContext, settingsManager))
@@ -64,7 +65,7 @@ class AutoAdvancedFiltersScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Advanced Filters").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_advanced_filters)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

@@ -116,7 +116,7 @@ class AutoPlaystoreDashboardScreen(
 
         grid.addItem(
             GridItem.Builder()
-                .setTitle("Emergency")
+                .setTitle(carContext.getString(R.string.dashboard_emergency))
                 .setImage(carContext.dashboardEmergencyIcon())
                 .setOnClickListener {
                     screenManager.push(AutoEmergencyScreen(carContext, networkService, connectivityManager))
@@ -126,7 +126,7 @@ class AutoPlaystoreDashboardScreen(
 
         grid.addItem(
             GridItem.Builder()
-                .setTitle("More")
+                .setTitle(carContext.getString(R.string.screen_more))
                 .setImage(carContext.dashboardSettingsIcon())
                 .setOnClickListener {
                     screenManager.push(
@@ -135,7 +135,7 @@ class AutoPlaystoreDashboardScreen(
                                 val moreList = ItemList.Builder()
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Fuel outlook")
+                                            .setTitle(carContext.getString(R.string.screen_fuel_outlook))
                                             .setImage(carContext.dashboardFuelIcon())
                                             .setOnClickListener {
                                                 screenManager.push(AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository))
@@ -144,7 +144,7 @@ class AutoPlaystoreDashboardScreen(
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Map settings")
+                                            .setTitle(carContext.getString(R.string.cd_map_settings))
                                             .setImage(carContext.dashboardSettingsIcon())
                                             .setOnClickListener {
                                                 screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
@@ -153,7 +153,7 @@ class AutoPlaystoreDashboardScreen(
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Template lab")
+                                            .setTitle(carContext.getString(R.string.screen_template_lab))
                                             .setImage(carContext.carIconUntinted(R.mipmap.ic_launcher))
                                             .setOnClickListener {
                                                 screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps))
@@ -163,7 +163,7 @@ class AutoPlaystoreDashboardScreen(
                                     .build()
 
                                 return ListTemplate.Builder()
-                                    .setHeader(Header.Builder().setTitle("More").setStartHeaderAction(Action.BACK).build())
+                                    .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_more)).setStartHeaderAction(Action.BACK).build())
                                     .setSingleList(moreList)
                                     .build()
                             }

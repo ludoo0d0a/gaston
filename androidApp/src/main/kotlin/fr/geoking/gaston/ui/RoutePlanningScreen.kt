@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui
 
+import fr.geoking.gaston.R
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -223,10 +225,10 @@ fun RoutePlanningScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Plan route") },
+                title = { Text(stringResource(R.string.route_plan_menu)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -252,7 +254,7 @@ fun RoutePlanningScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("Origin", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.route_origin), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -277,7 +279,7 @@ fun RoutePlanningScreen(
                             originQuery = it.take(120)
                             selectedOrigin = null
                         },
-                        placeholder = { Text("Origin address or city") },
+                        placeholder = { Text(stringResource(R.string.route_origin_placeholder)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         modifier = Modifier.fillMaxWidth()
@@ -298,7 +300,7 @@ fun RoutePlanningScreen(
                                         originQuery = ""
                                         selectedOrigin = null
                                     }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_clear))
                                     }
                                 }
                                 val place = selectedOrigin
@@ -377,7 +379,7 @@ fun RoutePlanningScreen(
                                                     },
                                                     modifier = Modifier.size(24.dp)
                                                 ) {
-                                                    Icon(Icons.Default.StarBorder, contentDescription = "Add to favorites", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
+                                                    Icon(Icons.Default.StarBorder, contentDescription = stringResource(R.string.route_add_favorite), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
                                                 }
                                             } else if (isFavorite) {
                                                 IconButton(
@@ -390,7 +392,7 @@ fun RoutePlanningScreen(
                                                     },
                                                     modifier = Modifier.size(24.dp)
                                                 ) {
-                                                    Icon(Icons.Default.Star, contentDescription = "Remove from favorites", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                                                    Icon(Icons.Default.Star, contentDescription = stringResource(R.string.route_remove_favorite), tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
                                                 }
                                             }
                                         }
@@ -402,7 +404,7 @@ fun RoutePlanningScreen(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Destination", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.route_destination_fallback), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
             Spacer(modifier = Modifier.height(4.dp))
             Box {
                 OutlinedTextField(
@@ -411,7 +413,7 @@ fun RoutePlanningScreen(
                         destQuery = it.take(120)
                         selectedDest = null
                     },
-                    placeholder = { Text("Destination address or city") },
+                    placeholder = { Text(stringResource(R.string.route_destination_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     modifier = Modifier.fillMaxWidth()
@@ -432,7 +434,7 @@ fun RoutePlanningScreen(
                                     destQuery = ""
                                     selectedDest = null
                                 }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_clear))
                                 }
                             }
                             val place = selectedDest
@@ -453,7 +455,7 @@ fun RoutePlanningScreen(
                                 }
                                 if (onSearchAtLocation != null) {
                                     IconButton(onClick = { onSearchAtLocation(place.latitude, place.longitude) }) {
-                                        Icon(Icons.Default.Place, contentDescription = "Search at destination", tint = MaterialTheme.colorScheme.onSurface)
+                                        Icon(Icons.Default.Place, contentDescription = stringResource(R.string.route_search_at_destination), tint = MaterialTheme.colorScheme.onSurface)
                                     }
                                 }
                             }
@@ -516,7 +518,7 @@ fun RoutePlanningScreen(
                                                 },
                                                 modifier = Modifier.size(24.dp)
                                             ) {
-                                                Icon(Icons.Default.StarBorder, contentDescription = "Add to favorites", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
+                                                Icon(Icons.Default.StarBorder, contentDescription = stringResource(R.string.route_add_favorite), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), modifier = Modifier.size(16.dp))
                                             }
                                         } else if (isFavorite) {
                                             IconButton(
@@ -529,7 +531,7 @@ fun RoutePlanningScreen(
                                                 },
                                                 modifier = Modifier.size(24.dp)
                                             ) {
-                                                Icon(Icons.Default.Star, contentDescription = "Remove from favorites", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                                                Icon(Icons.Default.Star, contentDescription = stringResource(R.string.route_remove_favorite), tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
                                             }
                                         }
                                     }
@@ -561,7 +563,7 @@ fun RoutePlanningScreen(
                         onClick = { onShowOnMap(currentRoute!!, stations) },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Show on Map")
+                        Text(stringResource(R.string.action_show_on_map))
                     }
                 }
             }
@@ -702,7 +704,7 @@ fun RoutePlanningScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (recommendations.isNotEmpty()) {
-                    Text("Recommended stops", color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.route_recommended_stops), color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.labelLarge)
                     Spacer(modifier = Modifier.height(4.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(recommendations) { poi ->
@@ -806,7 +808,7 @@ fun RoutePlanningScreen(
                                         context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                                     }
                                 ) {
-                                    Icon(Icons.Default.Directions, contentDescription = "Navigate", tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Icons.Default.Directions, contentDescription = stringResource(R.string.navigate), tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         }

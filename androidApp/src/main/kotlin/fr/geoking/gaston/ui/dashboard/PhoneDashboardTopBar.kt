@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -76,10 +77,10 @@ fun PhoneDashboardTopBar(
         },
         actions = {
             IconButton(onClick = onOpenFavorites) {
-                Icon(painterResource(R.drawable.ic_star), contentDescription = "Favorites")
+                Icon(painterResource(R.drawable.ic_star), contentDescription = stringResource(R.string.cd_favorites))
             }
             IconButton(onClick = onOpenSettings) {
-                Icon(painterResource(R.drawable.ic_settings), contentDescription = "Settings")
+                Icon(painterResource(R.drawable.ic_settings), contentDescription = stringResource(R.string.cd_settings))
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(

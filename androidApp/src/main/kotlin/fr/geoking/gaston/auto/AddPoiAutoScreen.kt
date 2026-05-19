@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.model.Action
 import androidx.car.app.model.Header
@@ -28,10 +29,10 @@ class AddPoiAutoScreen(
     override fun onGetTemplate(): Template {
         val coordStr = "%.4f, %.4f".format(lat, lng)
         return MessageTemplate.Builder("Add a station at current location?\n$coordStr")
-            .setHeader(Header.Builder().setTitle("Add POI").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_add_poi)).setStartHeaderAction(Action.BACK).build())
             .addAction(
                 Action.Builder()
-                    .setTitle("Gas station")
+                    .setTitle(carContext.getString(R.string.gas_station))
                     .setOnClickListener {
                         addPoi(isElectric = false)
                     }
@@ -39,7 +40,7 @@ class AddPoiAutoScreen(
             )
             .addAction(
                 Action.Builder()
-                    .setTitle("IRVE (charging)")
+                    .setTitle(carContext.getString(R.string.poi_irve_charging))
                     .setOnClickListener {
                         addPoi(isElectric = true)
                     }

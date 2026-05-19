@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui.map.maplibre
 
+import fr.geoking.gaston.R
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -21,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
@@ -223,7 +225,7 @@ fun VectorMapScreen(
     }
 
     MapScaffold(
-        title = "Gas Stations (Beta)",
+        title = stringResource(R.string.map_title_gas_stations_beta),
         settingsManager = settingsManager,
         mapCenterLatitude = currentTarget.latitude,
         mapCenterLongitude = currentTarget.longitude,
@@ -295,7 +297,7 @@ fun VectorMapScreen(
                                     addPoiInitialAddress = ""
                                     showAddPoiSheet = true
                                 },
-                                label = { Text("+ POI") }
+                                label = { Text(stringResource(R.string.action_add_poi)) }
                             )
                         }
                     }

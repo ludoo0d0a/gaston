@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
@@ -16,14 +17,14 @@ class AutoVehicleSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Brand & Model")
+                .setTitle(carContext.getString(R.string.screen_brand_model))
                 .addText(if (settings.vehicleBrand.isNotEmpty()) "${settings.vehicleBrand} ${settings.vehicleModel}" else "Not set")
                 .build()
         )
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Vehicle Type")
+                .setTitle(carContext.getString(R.string.screen_vehicle_type))
                 .addText(settings.vehicleType.name)
                 .setOnClickListener {
                     screenManager.push(AutoVehicleTypeSelectionScreen(carContext, settingsManager))
@@ -34,7 +35,7 @@ class AutoVehicleSettingsScreen(
         if (settings.vehicleEnergy == "gas" || settings.vehicleEnergy == "hybrid") {
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("Tank Capacity")
+                    .setTitle(carContext.getString(R.string.screen_tank_capacity))
                     .addText(settings.gasTankCapacityLiters?.let { "$it L" } ?: "Not set")
                     .setOnClickListener {
                         screenManager.push(AutoGasTankCapacitySelectionScreen(carContext, settingsManager))
@@ -43,7 +44,7 @@ class AutoVehicleSettingsScreen(
             )
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("Fuel Consumption")
+                    .setTitle(carContext.getString(R.string.screen_fuel_consumption))
                     .addText(settings.gasConsumptionLper100km?.let { "$it L/100km" } ?: "Not set")
                     .setOnClickListener {
                         screenManager.push(AutoGasConsumptionSelectionScreen(carContext, settingsManager))
@@ -55,7 +56,7 @@ class AutoVehicleSettingsScreen(
         if (settings.vehicleEnergy == "electric" || settings.vehicleEnergy == "hybrid") {
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("Battery Capacity")
+                    .setTitle(carContext.getString(R.string.screen_battery_capacity))
                     .addText(settings.batteryCapacityKwh?.let { "$it kWh" } ?: "Not set")
                     .setOnClickListener {
                         screenManager.push(AutoBatteryCapacitySelectionScreen(carContext, settingsManager))
@@ -64,7 +65,7 @@ class AutoVehicleSettingsScreen(
             )
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("Electric Range")
+                    .setTitle(carContext.getString(R.string.screen_electric_range))
                     .addText("${settings.evRangeKm} km")
                     .setOnClickListener {
                         screenManager.push(AutoEvRangeSelectionScreen(carContext, settingsManager))
@@ -74,7 +75,7 @@ class AutoVehicleSettingsScreen(
 
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("Electric Consumption")
+                    .setTitle(carContext.getString(R.string.screen_electric_consumption))
                     .addText(settings.evConsumptionKwhPer100km?.let { "$it kWh/100km" } ?: "Not set")
                     .setOnClickListener {
                         screenManager.push(AutoEvConsumptionSelectionScreen(carContext, settingsManager))
@@ -85,7 +86,7 @@ class AutoVehicleSettingsScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Vehicle & Range").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_vehicle_and_range)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

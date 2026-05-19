@@ -38,7 +38,7 @@ class PoiDetailScreen(
             data = IntentNavigationHelper.getNavigationUri(poi)
         }
         val navigateAction = Action.Builder()
-            .setTitle("Navigate to")
+            .setTitle(carContext.getString(R.string.screen_navigate_to))
             .setIcon(
                 CarIcon.Builder(
                     IconCompat.createWithResource(carContext, R.drawable.ic_poi_gas)

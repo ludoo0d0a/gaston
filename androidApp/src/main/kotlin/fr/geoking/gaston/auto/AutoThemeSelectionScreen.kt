@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -38,7 +39,7 @@ class AutoThemeSelectionScreen(
             .setSingleList(listBuilder.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("App theme")
+                    .setTitle(carContext.getString(R.string.screen_app_theme))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui.map
 
+import fr.geoking.gaston.R
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -31,6 +32,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
@@ -242,7 +244,7 @@ fun PoiOverlayHost(
                     IconButton(onClick = { showCheapestOnly = !showCheapestOnly }) {
                         Icon(
                             imageVector = Icons.Default.PriceCheck,
-                            contentDescription = "Show Cheapest",
+                            contentDescription = stringResource(R.string.action_show_cheapest),
                             tint = if (showCheapestOnly) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }

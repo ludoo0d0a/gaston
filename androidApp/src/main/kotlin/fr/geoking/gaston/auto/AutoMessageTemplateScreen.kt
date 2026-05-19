@@ -15,20 +15,20 @@ class AutoMessageTemplateScreen(carContext: CarContext) : Screen(carContext) {
         MessageTemplate.Builder("This is a MessageTemplate sample. It can show a message, an icon, and up to two actions.")
             .setHeader(
                 Header.Builder()
-                    .setTitle("MessageTemplate")
+                    .setTitle(carContext.getString(R.string.template_message_sample))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )
             .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
             .addAction(
                 Action.Builder()
-                    .setTitle("OK")
+                    .setTitle(carContext.getString(R.string.action_ok))
                     .setOnClickListener { screenManager.pop() }
                     .build()
             )
             .addAction(
                 Action.Builder()
-                    .setTitle("Cancel")
+                    .setTitle(carContext.getString(R.string.action_cancel))
                     .setOnClickListener { screenManager.pop() }
                     .build()
             )

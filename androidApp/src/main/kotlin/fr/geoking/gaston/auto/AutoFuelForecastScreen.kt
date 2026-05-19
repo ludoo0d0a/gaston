@@ -83,14 +83,14 @@ class AutoFuelForecastScreen(
             return MessageTemplate.Builder("Gaston Premium Required")
                 .setHeader(
                     Header.Builder()
-                        .setTitle("Fuel Price Outlook")
+                        .setTitle(carContext.getString(R.string.screen_fuel_price_outlook))
                         .setStartHeaderAction(Action.BACK)
                         .build()
                 )
                 .setIcon(carContext.dashboardFuelIcon())
                 .addAction(
                     Action.Builder()
-                        .setTitle("OK")
+                        .setTitle(carContext.getString(R.string.action_ok))
                         .setOnClickListener { screenManager.pop() }
                         .build()
                 )
@@ -102,15 +102,15 @@ class AutoFuelForecastScreen(
         if (loading) {
             list.addItem(
                 Row.Builder()
-                    .setTitle("Loading…")
-                    .addText("Fetching local prices and market data")
+                    .setTitle(carContext.getString(R.string.forecast_loading))
+                    .addText(carContext.getString(R.string.forecast_fetching))
                     .setImage(carContext.actionMapIcon())
                     .build()
             )
         } else if (loadError != null && uiState.historyPoints.isEmpty() && uiState.forecastPoints.isEmpty()) {
             list.addItem(
                 Row.Builder()
-                    .setTitle("Forecast unavailable")
+                    .setTitle(carContext.getString(R.string.forecast_unavailable))
                     .addText(loadError ?: "Unknown error")
                     .build()
             )
@@ -134,8 +134,8 @@ class AutoFuelForecastScreen(
             if (forecasts.isEmpty()) {
                 list.addItem(
                     Row.Builder()
-                        .setTitle("Next days")
-                        .addText("No forecast rows yet (needs market data). Pull to refresh from header.")
+                        .setTitle(carContext.getString(R.string.forecast_next_days))
+                        .addText(carContext.getString(R.string.forecast_no_rows))
                         .build()
                 )
             } else {
@@ -160,7 +160,7 @@ class AutoFuelForecastScreen(
                 val upText = if (dir) "Upward pressure on pump prices" else "No strong upward signal"
                 list.addItem(
                     Row.Builder()
-                        .setTitle("Market signal")
+                        .setTitle(carContext.getString(R.string.forecast_market_signal))
                         .addText("$upText (score ${String.format(Locale.US, "%+.4f", score)})")
                         .build()
                 )
@@ -172,7 +172,7 @@ class AutoFuelForecastScreen(
                 val maeStr = if (mae != null && !mae.isNaN()) mae.formatEurL() else "—"
                 list.addItem(
                     Row.Builder()
-                        .setTitle("7-day accuracy")
+                        .setTitle(carContext.getString(R.string.forecast_7day_accuracy))
                         .addText("Hit rate: ${String.format(Locale.US, "%.0f", hit * 100)}% · MAE: $maeStr €/L")
                         .build()
                 )
@@ -181,7 +181,7 @@ class AutoFuelForecastScreen(
             if (last != null) {
                 list.addItem(
                     Row.Builder()
-                        .setTitle("Last scored prediction")
+                        .setTitle(carContext.getString(R.string.forecast_last_scored))
                         .addText(if (last) "Direction matched outcome" else "Direction did not match")
                         .build()
                 )
@@ -190,7 +190,7 @@ class AutoFuelForecastScreen(
                 if (uiState.historyPoints.isNotEmpty() || uiState.forecastPoints.isNotEmpty()) {
                     list.addItem(
                         Row.Builder()
-                            .setTitle("Note")
+                            .setTitle(carContext.getString(R.string.forecast_note))
                             .addText(err)
                             .build()
                     )
@@ -202,11 +202,11 @@ class AutoFuelForecastScreen(
             .setSingleList(list.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("Fuel price outlook")
+                    .setTitle(carContext.getString(R.string.screen_fuel_price_outlook_short))
                     .setStartHeaderAction(Action.BACK)
                     .addEndHeaderAction(
                         Action.Builder()
-                            .setTitle("Refresh")
+                            .setTitle(carContext.getString(R.string.action_refresh))
                             .setOnClickListener { refresh() }
                             .build()
                     )

@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -24,7 +25,7 @@ class AutoPlaceListNavigationTemplateScreen(carContext: CarContext) : Screen(car
         val listBuilder = ItemList.Builder()
             .addItem(
                 Row.Builder()
-                    .setTitle("Eiffel Tower")
+                    .setTitle(carContext.getString(R.string.template_place_eiffel))
                     .addText("Champ de Mars, 5 Avenue Anatole France, 75007 Paris")
                     .setMetadata(
                         Metadata.Builder()
@@ -42,7 +43,7 @@ class AutoPlaceListNavigationTemplateScreen(carContext: CarContext) : Screen(car
         val listTemplate = ListTemplate.Builder()
             .setHeader(
                 Header.Builder()
-                    .setTitle("Place List")
+                    .setTitle(carContext.getString(R.string.template_place_list))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

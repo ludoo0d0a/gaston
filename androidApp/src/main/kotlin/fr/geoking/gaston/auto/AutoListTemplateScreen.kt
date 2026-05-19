@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -26,7 +27,7 @@ class AutoListTemplateScreen(carContext: CarContext) : Screen(carContext) {
         return ListTemplate.Builder()
             .setHeader(
                 Header.Builder()
-                    .setTitle("ListTemplate Sample")
+                    .setTitle(carContext.getString(R.string.template_list_sample))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

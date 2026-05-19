@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -89,7 +90,7 @@ fun PoiDetailsFullscreenDialog(
                         IconButton(onClick = onDismiss) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_arrow_back),
-                                contentDescription = "Close"
+                                contentDescription = stringResource(R.string.action_close)
                             )
                         }
                     },
@@ -107,7 +108,7 @@ fun PoiDetailsFullscreenDialog(
                             IconButton(onClick = navigate) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_directions),
-                                    contentDescription = "Navigate"
+                                    contentDescription = stringResource(R.string.navigate)
                                 )
                             }
                         }
@@ -115,7 +116,7 @@ fun PoiDetailsFullscreenDialog(
                             IconButton(onClick = { it(poi) }) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_map),
-                                    contentDescription = "Show on Map"
+                                    contentDescription = stringResource(R.string.action_show_on_map)
                                 )
                             }
                         }
@@ -316,8 +317,8 @@ fun PoiDetailsFullscreenDialog(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 if (isCommunityPoi) {
-                                    onEdit?.let { TextButton(onClick = it) { Text("Edit", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
-                                    onRemove?.let { TextButton(onClick = it) { Text("Remove", color = Color(0xFFFF6B6B), fontSize = 13.sp) } }
+                                    onEdit?.let { TextButton(onClick = it) { Text(stringResource(R.string.action_edit), color = Color(0xFF94A3B8), fontSize = 13.sp) } }
+                                    onRemove?.let { TextButton(onClick = it) { Text(stringResource(R.string.action_remove), color = Color(0xFFFF6B6B), fontSize = 13.sp) } }
                                 } else {
                                     onHide?.let { TextButton(onClick = it) { Text("Hide on map", color = Color(0xFF94A3B8), fontSize = 13.sp) } }
                                     onSuggestCorrection?.let { TextButton(onClick = it) { Text("Suggest correction", color = Color(0xFF94A3B8), fontSize = 13.sp) } }

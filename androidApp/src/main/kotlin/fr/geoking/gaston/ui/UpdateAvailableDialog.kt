@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui
 
+import fr.geoking.gaston.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -70,11 +72,11 @@ fun UpdateAvailableDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onCancel) {
-                        Text("Cancel", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+                        Text(stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
                     }
                     Spacer(modifier = Modifier.padding(8.dp))
                     Button(onClick = onUpdate) {
-                        Text("Update")
+                        Text(stringResource(R.string.action_update))
                     }
                 }
             }

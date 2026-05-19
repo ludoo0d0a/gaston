@@ -1,9 +1,11 @@
 package fr.geoking.gaston.ui.components
 
+import fr.geoking.gaston.R
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,7 +73,7 @@ fun PremiumPaywallPopup(
                     if (isPurchasing) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                     } else {
-                        Text("Upgrade to Premium")
+                        Text(stringResource(R.string.action_upgrade_premium))
                     }
                 }
 
@@ -80,7 +82,7 @@ fun PremiumPaywallPopup(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isPurchasing
                 ) {
-                    Text("Maybe later")
+                    Text(stringResource(R.string.action_maybe_later))
                 }
             }
         }

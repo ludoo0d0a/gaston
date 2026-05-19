@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui.map
 
+import fr.geoking.gaston.R
 import android.content.Context
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
@@ -22,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
@@ -287,12 +289,12 @@ fun MapErrorBanner(
                     onClick = onCopy,
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                     modifier = Modifier
-                ) { Text("Copy", fontSize = 12.sp) }
+                ) { Text(stringResource(R.string.action_copy), fontSize = 12.sp) }
                 TextButton(
                     onClick = onIgnore,
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                     modifier = Modifier
-                ) { Text("Ignore", fontSize = 12.sp) }
+                ) { Text(stringResource(R.string.action_ignore), fontSize = 12.sp) }
                 Button(
                     onClick = onRetry,
                     colors = ButtonDefaults.buttonColors(
@@ -301,7 +303,7 @@ fun MapErrorBanner(
                     ),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                     modifier = Modifier
-                ) { Text("Retry", fontSize = 12.sp) }
+                ) { Text(stringResource(R.string.action_retry), fontSize = 12.sp) }
             }
         }
     }

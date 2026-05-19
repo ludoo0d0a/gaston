@@ -127,7 +127,7 @@ class AutoDashboardScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Emergency")
+                .setTitle(carContext.getString(R.string.dashboard_emergency))
                 .setImage(carContext.dashboardEmergencyIcon())
                 .setOnClickListener {
                     screenManager.push(AutoEmergencyScreen(carContext, networkService, connectivityManager))
@@ -137,7 +137,7 @@ class AutoDashboardScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("More Options")
+                .setTitle(carContext.getString(R.string.screen_more_options))
                 .setImage(carContext.dashboardSettingsIcon())
                 .setOnClickListener {
                     screenManager.push(
@@ -146,7 +146,7 @@ class AutoDashboardScreen(
                                 val moreList = ItemList.Builder()
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Fuel outlook")
+                                            .setTitle(carContext.getString(R.string.screen_fuel_outlook))
                                             .setImage(carContext.dashboardFuelIcon())
                                             .setOnClickListener {
                                                 screenManager.push(
@@ -157,14 +157,14 @@ class AutoDashboardScreen(
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Template lab")
+                                            .setTitle(carContext.getString(R.string.screen_template_lab))
                                             .setImage(carContext.carIconUntinted(R.mipmap.ic_launcher))
                                             .setOnClickListener { screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps)) }
                                             .build()
                                     )
                                     .addItem(
                                         Row.Builder()
-                                            .setTitle("Settings")
+                                            .setTitle(carContext.getString(R.string.cd_settings))
                                             .setImage(carContext.dashboardSettingsIcon())
                                             .setOnClickListener { screenManager.push(AutoSettingsScreen(carContext, settingsManager)) }
                                             .build()
@@ -172,7 +172,7 @@ class AutoDashboardScreen(
                                     .build()
 
                                 return ListTemplate.Builder()
-                                    .setHeader(Header.Builder().setTitle("More Options").setStartHeaderAction(Action.BACK).build())
+                                    .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_more_options)).setStartHeaderAction(Action.BACK).build())
                                     .setSingleList(moreList)
                                     .build()
                             }

@@ -5,6 +5,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import fr.geoking.gaston.R
@@ -17,7 +18,7 @@ fun SettingsButton(
     IconButton(onClick = onClick, modifier = modifier) {
         Icon(
             painter = painterResource(id = R.drawable.ic_settings),
-            contentDescription = "Settings",
+            contentDescription = stringResource(R.string.cd_settings),
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
     }
@@ -31,7 +32,7 @@ fun HistoryButton(
     IconButton(onClick = onClick, modifier = modifier) {
         Icon(
             painter = painterResource(id = R.drawable.ic_history),
-            contentDescription = "History",
+            contentDescription = stringResource(R.string.cd_history),
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
     }

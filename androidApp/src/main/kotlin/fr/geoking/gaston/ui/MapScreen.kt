@@ -16,6 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -273,7 +274,7 @@ fun MapScreen(
     val currentSearchMode = rememberSearchMode(settings)
 
     MapScaffold(
-        title = "Gas Stations",
+        title = stringResource(R.string.map_title_gas_stations),
         settingsManager = settingsManager,
         mapCenterLatitude = cameraPositionState.position.target.latitude,
         mapCenterLongitude = cameraPositionState.position.target.longitude,
@@ -367,7 +368,7 @@ fun MapScreen(
                                     addPoiInitialAddress = ""
                                     showAddPoiSheet = true
                                 },
-                                label = { Text("+ POI") },
+                                label = { Text(stringResource(R.string.action_add_poi)) },
                                 leadingIcon = {
                                     Icon(
                                         Icons.Default.Add,

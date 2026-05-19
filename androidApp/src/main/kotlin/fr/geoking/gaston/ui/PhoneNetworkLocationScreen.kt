@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui
 
+import fr.geoking.gaston.R
 import android.location.Address
 import android.location.Geocoder
 import android.os.Build
@@ -27,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.feature.location.LocationHelper
@@ -74,15 +76,15 @@ fun PhoneNetworkLocationScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Network & location") },
+                    title = { Text(stringResource(R.string.screen_network_location)) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                         }
                     },
                     actions = {
                         IconButton(onClick = { refreshTick++ }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.action_refresh))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -122,7 +124,7 @@ fun PhoneNetworkLocationScreen(
                     modifier = Modifier.padding(top = 8.dp)
                 )
                 when {
-                    loading -> Text("Loading coordinates…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    loading -> Text(stringResource(R.string.network_loading_coords), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     latLng != null -> {
                         Text(
                             "Lat: ${String.format(Locale.US, "%.6f", latLng!!.first)}, Lon: ${String.format(Locale.US, "%.6f", latLng!!.second)}",

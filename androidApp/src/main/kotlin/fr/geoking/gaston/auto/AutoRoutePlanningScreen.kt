@@ -107,7 +107,7 @@ class AutoRoutePlanningScreen(
         } catch (e: Exception) {
             Log.e("AutoRoutePlanning", "onGetTemplate failed", e)
             MessageTemplate.Builder((e.message ?: e.toString()).take(300))
-                .setHeader(Header.Builder().setTitle("Route").setStartHeaderAction(Action.BACK).build())
+                .setHeader(Header.Builder().setTitle(carContext.getString(R.string.cd_route)).setStartHeaderAction(Action.BACK).build())
                 .build()
         }
     }
@@ -160,7 +160,7 @@ class AutoRoutePlanningScreen(
             .addAction(
                 Action.Builder()
                     .setIcon(carContext.actionMapIcon())
-                    .setTitle("Back")
+                    .setTitle(carContext.getString(R.string.action_back))
                     .setOnClickListener { screenManager.pop() }
                     .build()
             )
@@ -223,7 +223,7 @@ class AutoRoutePlanningScreen(
                 ItemList.Builder()
                     .addItem(
                         Row.Builder()
-                            .setTitle("Use current location")
+                            .setTitle(carContext.getString(R.string.action_use_current_location))
                             .setOnClickListener {
                                 originQuery = ""
                                 originSuggestions = emptyList()
@@ -249,16 +249,16 @@ class AutoRoutePlanningScreen(
         if (loading) {
             return MessageTemplate.Builder(carContext.getString(loadingMessageResId))
                 .setLoading(true)
-                .setHeader(Header.Builder().setTitle("Route").setStartHeaderAction(Action.BACK).build())
+                .setHeader(Header.Builder().setTitle(carContext.getString(R.string.cd_route)).setStartHeaderAction(Action.BACK).build())
                 .build()
         }
 
         lastError?.let { err ->
             return MessageTemplate.Builder(err.take(300))
-                .setHeader(Header.Builder().setTitle("Route").setStartHeaderAction(Action.BACK).build())
+                .setHeader(Header.Builder().setTitle(carContext.getString(R.string.cd_route)).setStartHeaderAction(Action.BACK).build())
                 .addAction(
                     Action.Builder()
-                        .setTitle("Retry")
+                        .setTitle(carContext.getString(R.string.action_retry))
                         .setOnClickListener { compute() }
                         .build()
                 )
@@ -285,7 +285,7 @@ class AutoRoutePlanningScreen(
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle("Edit")
+                    .setTitle(carContext.getString(R.string.action_edit))
                     .setIcon(carContext.actionSettingsIcon())
                     .setOnClickListener {
                         step = Step.ORIGIN
@@ -295,7 +295,7 @@ class AutoRoutePlanningScreen(
             )
             .addAction(
                 Action.Builder()
-                    .setTitle("Start nav")
+                    .setTitle(carContext.getString(R.string.action_start_nav))
                     .setIcon(carContext.actionMapIcon())
                     .setOnClickListener { openExternalDirections() }
                     .build()
@@ -303,7 +303,7 @@ class AutoRoutePlanningScreen(
             .build()
 
         val headerBuilder = Header.Builder()
-            .setTitle("Route POIs")
+            .setTitle(carContext.getString(R.string.screen_route_pois))
             .setStartHeaderAction(Action.BACK)
 
         actionStrip.actions.forEach {

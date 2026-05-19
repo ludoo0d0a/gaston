@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import android.content.Intent
 import android.net.Uri
 import androidx.car.app.CarContext
@@ -28,7 +29,7 @@ class AutoMapMoreOptionsScreen(
         val listBuilder = ItemList.Builder()
             .addItem(
                 Row.Builder()
-                    .setTitle("Recenter")
+                    .setTitle(carContext.getString(R.string.action_recenter))
                     .setImage(carContext.actionRecenterIcon())
                     .setOnClickListener {
                         onRecenter()
@@ -38,7 +39,7 @@ class AutoMapMoreOptionsScreen(
             )
             .addItem(
                 Row.Builder()
-                    .setTitle("Open in External Map")
+                    .setTitle(carContext.getString(R.string.action_open_external_map))
                     .setImage(carContext.actionMapIcon())
                     .setOnClickListener {
                         val intent = Intent(CarContext.ACTION_NAVIGATE).apply {
@@ -50,7 +51,7 @@ class AutoMapMoreOptionsScreen(
             )
             .addItem(
                 Row.Builder()
-                    .setTitle("Settings")
+                    .setTitle(carContext.getString(R.string.cd_settings))
                     .setImage(carContext.actionSettingsIcon())
                     .setOnClickListener {
                         screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
@@ -61,7 +62,7 @@ class AutoMapMoreOptionsScreen(
         return ListTemplate.Builder()
             .setHeader(
                 Header.Builder()
-                    .setTitle("More Options")
+                    .setTitle(carContext.getString(R.string.screen_more_options))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

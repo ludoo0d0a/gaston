@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui.components
 
+import fr.geoking.gaston.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -9,6 +10,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -53,7 +55,7 @@ fun MapScaffold(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.action_back)
                         )
                     }
                 },
@@ -63,7 +65,7 @@ fun MapScaffold(
                             IconButton(onClick = { navMenuExpanded = true }) {
                                 Icon(
                                     imageVector = Icons.Default.Directions,
-                                    contentDescription = "Navigation"
+                                    contentDescription = stringResource(R.string.cd_navigation)
                                 )
                             }
                             DropdownMenu(
@@ -72,7 +74,7 @@ fun MapScaffold(
                             ) {
                                 if (onPlanRoute != null) {
                                     DropdownMenuItem(
-                                        text = { Text("Plan route") },
+                                        text = { Text(stringResource(R.string.route_plan_menu)) },
                                         leadingIcon = { Icon(Icons.Default.Directions, contentDescription = null) },
                                         onClick = {
                                             navMenuExpanded = false
@@ -82,7 +84,7 @@ fun MapScaffold(
                                 }
                                 if (onLocatePlace != null) {
                                     DropdownMenuItem(
-                                        text = { Text("Locate a place") },
+                                        text = { Text(stringResource(R.string.route_locate_place)) },
                                         leadingIcon = { Icon(Icons.Default.Place, contentDescription = null) },
                                         onClick = {
                                             navMenuExpanded = false
@@ -92,7 +94,7 @@ fun MapScaffold(
                                 }
                                 if (onRouteToDirection != null) {
                                     DropdownMenuItem(
-                                        text = { Text("Route to a direction") },
+                                        text = { Text(stringResource(R.string.route_to_direction)) },
                                         leadingIcon = { Icon(Icons.Default.Directions, contentDescription = null) },
                                         onClick = {
                                             navMenuExpanded = false
@@ -107,21 +109,21 @@ fun MapScaffold(
                     IconButton(onClick = onRefresh) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh map"
+                            contentDescription = stringResource(R.string.cd_refresh_map)
                         )
                     }
 
                     IconButton(onClick = onShowSources) {
                         Icon(
                             imageVector = Icons.Default.Hub,
-                            contentDescription = "Data sources"
+                            contentDescription = stringResource(R.string.cd_data_sources)
                         )
                     }
 
                     IconButton(onClick = onShowSettings) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Map settings"
+                            contentDescription = stringResource(R.string.cd_map_settings)
                         )
                     }
                 },

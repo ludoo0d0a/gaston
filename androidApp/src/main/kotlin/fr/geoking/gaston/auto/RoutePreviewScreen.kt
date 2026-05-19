@@ -97,7 +97,7 @@ class RoutePreviewScreen(
             MessageTemplate.Builder("Route preview error: ${e.message}")
                 .setHeader(
                     Header.Builder()
-                        .setTitle("Error")
+                        .setTitle(carContext.getString(R.string.route_error))
                         .setStartHeaderAction(Action.BACK)
                         .build()
                 )
@@ -130,7 +130,7 @@ class RoutePreviewScreen(
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle("Start")
+                    .setTitle(carContext.getString(R.string.action_start))
                     .setOnClickListener {
                         if (activeRoute != null) startExternalNavigation()
                     }

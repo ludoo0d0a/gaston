@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -16,15 +17,15 @@ class AutoRoutePreviewNavigationTemplateScreen(carContext: CarContext) : Screen(
         val listBuilder = ItemList.Builder()
             .addItem(
                 Row.Builder()
-                    .setTitle("Fastest Route")
-                    .addText("25 min")
+                    .setTitle(carContext.getString(R.string.map_fastest_route))
+                    .addText(carContext.getString(R.string.template_route_25min))
                     .setOnClickListener { /* Select route */ }
                     .build()
             )
             .addItem(
                 Row.Builder()
-                    .setTitle("Shortest Route")
-                    .addText("30 min")
+                    .setTitle(carContext.getString(R.string.map_shortest_route))
+                    .addText(carContext.getString(R.string.template_route_30min))
                     .setOnClickListener { /* Select route */ }
                     .build()
             )
@@ -32,7 +33,7 @@ class AutoRoutePreviewNavigationTemplateScreen(carContext: CarContext) : Screen(
         val listTemplate = ListTemplate.Builder()
             .setHeader(
                 Header.Builder()
-                    .setTitle("Route Preview")
+                    .setTitle(carContext.getString(R.string.screen_route_preview))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

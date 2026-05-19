@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -44,7 +45,7 @@ class AutoTollDataScreen(
                 }
                 else -> "Downloading toll data… ${downloadBytes / (1024 * 1024)} MB"
             }
-            val cancelAction = Action.Builder().setTitle("Cancel").setOnClickListener {
+            val cancelAction = Action.Builder().setTitle(carContext.getString(R.string.action_cancel)).setOnClickListener {
                 isDownloading = false
                 downloadError = null
                 invalidate()
@@ -66,7 +67,7 @@ class AutoTollDataScreen(
         val listBuilder = ItemList.Builder()
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Toll data (OpenTollData)")
+                .setTitle(carContext.getString(R.string.screen_toll_data_opentolldata))
                 .addText(subtitle)
                 .setOnClickListener {
                     if (isDownloaded) {
@@ -110,7 +111,7 @@ class AutoTollDataScreen(
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
-            .setHeader(Header.Builder().setTitle("Download toll data (OpenTollData)").setStartHeaderAction(Action.BACK).build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_download_toll_data)).setStartHeaderAction(Action.BACK).build())
             .build()
     }
 }

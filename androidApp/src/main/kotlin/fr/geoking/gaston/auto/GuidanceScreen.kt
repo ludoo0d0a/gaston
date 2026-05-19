@@ -59,7 +59,7 @@ class GuidanceScreen(
                 androidx.car.app.model.ActionStrip.Builder()
                     .addAction(
                         Action.Builder()
-                            .setTitle("Exit")
+                            .setTitle(carContext.getString(R.string.action_exit))
                             .setOnClickListener { screenManager.pop() }
                             .build()
                     )

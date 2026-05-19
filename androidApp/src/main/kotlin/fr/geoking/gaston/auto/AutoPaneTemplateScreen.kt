@@ -17,40 +17,40 @@ class AutoPaneTemplateScreen(carContext: CarContext) : Screen(carContext) {
         val paneBuilder = Pane.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle("Primary Action")
+                    .setTitle(carContext.getString(R.string.template_primary_action))
                     .setOnClickListener { /* No-op */ }
                     .build()
             )
             .addAction(
                 Action.Builder()
-                    .setTitle("Secondary")
+                    .setTitle(carContext.getString(R.string.template_secondary))
                     .setOnClickListener { /* No-op */ }
                     .build()
             )
             .addRow(
                 Row.Builder()
-                    .setTitle("Pane Row 1")
-                    .addText("Additional information about this item.")
+                    .setTitle(carContext.getString(R.string.template_pane_row_1))
+                    .addText(carContext.getString(R.string.template_pane_info_1))
                     .setImage(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
                     .build()
             )
             .addRow(
                 Row.Builder()
-                    .setTitle("Pane Row 2")
-                    .addText("More details here.")
+                    .setTitle(carContext.getString(R.string.template_pane_row_2))
+                    .addText(carContext.getString(R.string.template_pane_info_2))
                     .build()
             )
             .addRow(
                 Row.Builder()
-                    .setTitle("Pane Row 3")
-                    .addText("Third line of information.")
+                    .setTitle(carContext.getString(R.string.template_pane_row_3))
+                    .addText(carContext.getString(R.string.template_pane_info_3))
                     .build()
             )
 
         PaneTemplate.Builder(paneBuilder.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("PaneTemplate Sample")
+                    .setTitle(carContext.getString(R.string.template_pane_sample))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

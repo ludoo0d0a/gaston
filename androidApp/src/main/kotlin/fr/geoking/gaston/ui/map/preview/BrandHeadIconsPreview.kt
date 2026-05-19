@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui.map.preview
 
+import fr.geoking.gaston.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -101,8 +103,8 @@ private fun BrandFlatIconsWrapped(modifier: Modifier = Modifier) {
             .verticalScroll(rememberScrollState())
             .background(Color(0xFF0F172A))
     ) {
-        BrandIconWrappedSection(title = "Electric", entries = electric)
-        BrandIconWrappedSection(title = "Gas", entries = gas)
+        BrandIconWrappedSection(title = stringResource(R.string.energy_electric), entries = electric)
+        BrandIconWrappedSection(title = stringResource(R.string.poi_gas), entries = gas)
     }
 }
 

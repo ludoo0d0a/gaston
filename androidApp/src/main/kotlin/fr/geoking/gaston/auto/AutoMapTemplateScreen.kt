@@ -116,7 +116,7 @@ class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), Surfac
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle("Home")
+                    .setTitle(carContext.getString(R.string.action_home))
                     .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_home)).build())
                     .setOnClickListener { screenManager.popToRoot() }
                     .build()
@@ -126,13 +126,13 @@ class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), Surfac
         val listBuilder = ItemList.Builder()
             .addItem(
                 Row.Builder()
-                    .setTitle("Zoom In")
+                    .setTitle(carContext.getString(R.string.action_zoom_in_title))
                     .setOnClickListener { bumpZoom(1) }
                     .build()
             )
             .addItem(
                 Row.Builder()
-                    .setTitle("Zoom Out")
+                    .setTitle(carContext.getString(R.string.action_zoom_out_title))
                     .setOnClickListener { bumpZoom(-1) }
                     .build()
             )
@@ -140,7 +140,7 @@ class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), Surfac
         val contentTemplate = ListTemplate.Builder()
             .setHeader(
                 Header.Builder()
-                    .setTitle("MapTemplate (OSM)")
+                    .setTitle(carContext.getString(R.string.map_template_osm))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

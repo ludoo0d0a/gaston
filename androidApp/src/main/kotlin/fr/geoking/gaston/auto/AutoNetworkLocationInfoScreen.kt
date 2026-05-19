@@ -160,11 +160,11 @@ class AutoNetworkLocationInfoScreen(
         return@safeCarTemplate PaneTemplate.Builder(paneBuilder.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("Network & Location Info")
+                    .setTitle(carContext.getString(R.string.screen_network_location_info))
                     .setStartHeaderAction(Action.BACK)
                     .addEndHeaderAction(
                         Action.Builder()
-                            .setTitle("Refresh")
+                            .setTitle(carContext.getString(R.string.action_refresh))
                             .setOnClickListener { loadLocation() }
                             .build()
                     )

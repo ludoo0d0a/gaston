@@ -29,7 +29,7 @@ class AutoGridTemplateScreen(carContext: CarContext) : Screen(carContext) {
             .setSingleList(gridBuilder.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("GridTemplate Sample")
+                    .setTitle(carContext.getString(R.string.template_grid_sample))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

@@ -63,28 +63,28 @@ fun SearchModeSelector(
     val quickActions = listOf(
         SearchRow(
             title = stringResource(R.string.search_mode_fuel),
-            subtitle = "Fuel",
+            subtitle = stringResource(R.string.search_mode_fuel),
             iconResId = R.drawable.ic_poi_gas,
             mode = SearchMode.Fuel,
             onClick = { settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel) }
         ),
         SearchRow(
             title = stringResource(R.string.search_mode_ev),
-            subtitle = "EV",
+            subtitle = stringResource(R.string.search_mode_ev),
             iconResId = R.drawable.ic_poi_electric,
             mode = SearchMode.EV,
             onClick = { settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric) }
         ),
         SearchRow(
             title = stringResource(R.string.search_mode_my_car),
-            subtitle = "My car",
+            subtitle = stringResource(R.string.search_mode_my_car),
             iconResId = R.drawable.ic_car,
             mode = SearchMode.MyCar,
             onClick = { settingsManager.setMyCarMode() }
         ),
         SearchRow(
             title = stringResource(R.string.search_mode_other),
-            subtitle = "Other",
+            subtitle = stringResource(R.string.search_mode_other),
             iconResId = R.drawable.ic_waypoint,
             mode = SearchMode.Other,
             onClick = { settingsManager.setOtherMode() }

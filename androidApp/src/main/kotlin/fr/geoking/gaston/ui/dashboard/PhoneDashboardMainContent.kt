@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -142,15 +143,15 @@ fun PhoneDashboardMainContent(
         item {
             val gridActions = listOf(
                 DashboardRow(
-                    title = "Itinéraire",
-                    subtitle = "Routes",
+                    title = stringResource(R.string.dashboard_routes),
+                    subtitle = stringResource(R.string.dashboard_routes),
                     iconResId = R.drawable.ic_directions,
                     onClick = { onOpenRoutes(null) },
                     enabled = mapDepsReady
                 ),
                 DashboardRow(
-                    title = "Réseau",
-                    subtitle = "Network",
+                    title = stringResource(R.string.dashboard_network),
+                    subtitle = stringResource(R.string.dashboard_network),
                     iconResId = R.drawable.ic_signal_cellular,
                     onClick = onOpenNetworkDiagnostics
                 )
@@ -241,7 +242,7 @@ private fun PhoneDashboardNearbyCheapestSection(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_map),
-                            contentDescription = "Open Map",
+                            contentDescription = stringResource(R.string.action_open_map),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp),
                         )
@@ -338,8 +339,8 @@ private fun PhoneDashboardFuelForecastCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         ListItem(
-            headlineContent = { Text("Price estimation") },
-            supportingContent = { Text("Local estimate from market + nearby pumps") },
+            headlineContent = { Text(stringResource(R.string.dashboard_price_estimation)) },
+            supportingContent = { Text(stringResource(R.string.dashboard_price_estimation_subtitle)) },
             leadingContent = {
                 Icon(
                     painter = painterResource(R.drawable.ic_poi_gas),

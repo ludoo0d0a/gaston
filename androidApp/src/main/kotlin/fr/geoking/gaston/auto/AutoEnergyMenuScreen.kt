@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
@@ -26,7 +27,7 @@ class AutoEnergyMenuScreen(
         // Fuel Row
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Fuel")
+                .setTitle(carContext.getString(R.string.search_mode_fuel))
                 .addText(if (isFuelMode) "Selected: ${fuels.joinToString(", ")}" else "Tap to select fuel types")
                 .setOnClickListener {
                     if (!hasFuel) {
@@ -42,7 +43,7 @@ class AutoEnergyMenuScreen(
         // Electric Row
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Electric")
+                .setTitle(carContext.getString(R.string.energy_electric))
                 .addText(if (isElectricMode) "Selected: Power and connectors" else "Tap for EV settings")
                 .setOnClickListener {
                     if (!hasElectric) {
