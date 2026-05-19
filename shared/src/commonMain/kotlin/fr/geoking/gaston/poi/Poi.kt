@@ -129,6 +129,12 @@ enum class PoiProviderType(
     MexicoCre(providesFuel = true),
     /** Argentina Secretaría de Energía open data. */
     ArgentinaEnergia(providesFuel = true),
+    /** Switzerland fuel prices via Comparis.ch (__NEXT_DATA__). */
+    SwitzerlandComparis(providesFuel = true),
+    /** Western Australia FuelWatch open API. */
+    AustraliaFuelWatch(providesFuel = true),
+    /** Australia-wide fuel prices via PetrolSpy. */
+    AustraliaPetrolSpy(providesFuel = true),
     DataGouvElec(providesElectric = true),
     OpenChargeMap(providesElectric = true),
     Chargy(providesElectric = true),

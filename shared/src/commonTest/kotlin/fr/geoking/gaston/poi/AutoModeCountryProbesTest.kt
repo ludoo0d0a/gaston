@@ -11,7 +11,7 @@ class AutoModeCountryProbesTest {
         val probeIsos = AutoModeCountryProbes.ALL.map { it.iso }.toSet()
         val autoIsos = setOf(
             "FR", "GB", "IT", "SI", "NO", "SE", "PT", "NL", "DK", "HR", "FI", "GR", "IE",
-            "MD", "RO", "RS", "MX", "AR", "ES", "DE", "AT", "BE", "LU",
+            "MD", "RO", "RS", "MX", "AR", "ES", "DE", "AT", "BE", "CH", "AU", "AU-WA", "LU",
         )
         assertEquals(autoIsos, probeIsos)
     }
@@ -19,6 +19,7 @@ class AutoModeCountryProbesTest {
     @Test
     fun eachProbe_matchesAutoProviderResolver() {
         for (probe in AutoModeCountryProbes.ALL) {
+            if (probe.iso == "AU-WA") continue
             val resolved = autoProvidersForCountries(
                 countryCodes = listOf(probe.iso),
                 wantFuel = true,

@@ -48,6 +48,9 @@ class SelectorPoiProvider(
     private val denmarkFuelpricesDk: PoiProvider,
     private val fuelo: PoiProvider,
     private val australiaNswFuelCheck: PoiProvider,
+    private val australiaFuelWatch: PoiProvider,
+    private val australiaPetrolSpy: PoiProvider,
+    private val switzerlandComparis: PoiProvider,
     private val croatiaMzoe: PoiProvider,
     private val finlandPolttoaine: PoiProvider,
     private val greeceFuelGr: PoiProvider,
@@ -126,6 +129,9 @@ class SelectorPoiProvider(
         PoiProviderType.DenmarkFuelpricesDk -> denmarkFuelpricesDk
         PoiProviderType.Fuelo -> fuelo
         PoiProviderType.AustraliaNswFuelCheck -> australiaNswFuelCheck
+        PoiProviderType.AustraliaFuelWatch -> australiaFuelWatch
+        PoiProviderType.AustraliaPetrolSpy -> australiaPetrolSpy
+        PoiProviderType.SwitzerlandComparis -> switzerlandComparis
         PoiProviderType.CroatiaMzoe -> croatiaMzoe
         PoiProviderType.FinlandPolttoaine -> finlandPolttoaine
         PoiProviderType.GreeceFuelGr -> greeceFuelGr
@@ -716,6 +722,9 @@ class SelectorPoiProvider(
         denmarkFuelpricesDk.clearCache()
         fuelo.clearCache()
         australiaNswFuelCheck.clearCache()
+        australiaFuelWatch.clearCache()
+        australiaPetrolSpy.clearCache()
+        switzerlandComparis.clearCache()
         croatiaMzoe.clearCache()
         finlandPolttoaine.clearCache()
         greeceFuelGr.clearCache()

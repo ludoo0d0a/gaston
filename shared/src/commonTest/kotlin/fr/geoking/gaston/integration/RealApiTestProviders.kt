@@ -20,8 +20,11 @@ import fr.geoking.gaston.api.no.DrivstoffAppenProvider
 import fr.geoking.gaston.api.openvan.OpenVanCampClient
 import fr.geoking.gaston.api.openvan.OpenVanCampProvider
 import fr.geoking.gaston.api.overpass.OverpassClient
+import fr.geoking.gaston.api.australia.FuelWatchProvider
+import fr.geoking.gaston.api.australia.PetrolSpyProvider
 import fr.geoking.gaston.api.romania.RomaniaPecoDefaults
 import fr.geoking.gaston.api.romania.RomaniaPecoProvider
+import fr.geoking.gaston.api.switzerland.ComparisProvider
 import fr.geoking.gaston.api.serbia.SerbiaNisProvider
 import fr.geoking.gaston.api.si.GorivaSiProvider
 import fr.geoking.gaston.api.tankerkoenig.GermanyTankerkoenigProvider
@@ -62,6 +65,9 @@ internal object RealApiTestProviders {
             radiusKm = 20,
             limit = 80,
         )
+        PoiProviderType.SwitzerlandComparis -> ComparisProvider(client, radiusKm = 25, limit = 80)
+        PoiProviderType.AustraliaFuelWatch -> FuelWatchProvider(client, radiusKm = 30, limit = 80)
+        PoiProviderType.AustraliaPetrolSpy -> PetrolSpyProvider(client, radiusKm = 15, limit = 80)
         PoiProviderType.SerbiaNis -> SerbiaNisProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.MexicoCre -> MexicoCREProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.ArgentinaEnergia -> ArgentinaEnergiaProvider(client, radiusKm = 20, limit = 80)
