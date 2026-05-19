@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.annotation.StringRes
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -81,7 +82,7 @@ private data class UsedApi(
     val name: String,
     val url: String,
     val logoUrl: String? = null,
-    val attribution: String? = null
+    @StringRes val attributionRes: Int? = null,
 )
 
 private val UsedApisList = listOf(
@@ -100,7 +101,7 @@ private val UsedApisList = listOf(
         name = "OpenVan.camp",
         url = "https://openvan.camp",
         logoUrl = null,
-        attribution = "Weekly fuel price reference data (Luxembourg and others). Licensed under CC BY 4.0; attribution to OpenVan.camp required."
+        attributionRes = R.string.openvan_attribution,
     ),
     UsedApi("data.economie.gouv.fr", "https://data.economie.gouv.fr", null),
     UsedApi("Routex / Wigeogis", "https://www.wigeogis.com", null),
@@ -110,6 +111,72 @@ private val UsedApisList = listOf(
     UsedApi("CITA (trafic Luxembourg)", "https://www.cita.lu", "https://www.cita.lu/favicon.ico"),
     UsedApi("OpenTollData", "https://github.com/louis2038/OpenTollData", null),
 )
+
+@Composable
+private fun MapEngine.displayLabel(): String = when (this) {
+    MapEngine.Google -> stringResource(R.string.map_engine_google)
+    MapEngine.MapLibre -> stringResource(R.string.map_engine_maplibre)
+}
+
+@Composable
+private fun MapTheme.displayLabel(): String = when (this) {
+    MapTheme.Dark -> stringResource(R.string.map_theme_dark)
+    MapTheme.Modern -> stringResource(R.string.map_theme_modern)
+    MapTheme.Standard -> stringResource(R.string.map_theme_standard)
+}
+
+@Composable
+private fun ThemeMode.displayLabel(): String = when (this) {
+    ThemeMode.System -> stringResource(R.string.theme_mode_system)
+    ThemeMode.Light -> stringResource(R.string.theme_mode_light)
+    ThemeMode.Dark -> stringResource(R.string.theme_mode_dark)
+}
+
+@Composable
+private fun FuelCard.displayLabel(): String = when (this) {
+    FuelCard.None -> stringResource(R.string.fuel_card_none)
+    FuelCard.Routex -> stringResource(R.string.fuel_card_routex)
+}
+
+@StringRes
+private fun poiProviderLabelRes(type: PoiProviderType): Int = when (type) {
+    PoiProviderType.DataGouvElec -> R.string.provider_datagouv_elec
+    PoiProviderType.Chargy -> R.string.provider_chargy
+    PoiProviderType.OpenChargeMap -> R.string.provider_openchargemap
+    PoiProviderType.Fastned -> R.string.provider_fastned
+    PoiProviderType.Dkv -> R.string.provider_dkv
+    PoiProviderType.EcoMovement -> R.string.provider_ecomovement
+    PoiProviderType.Overpass -> R.string.provider_overpass
+    PoiProviderType.Routex -> R.string.provider_routex
+    PoiProviderType.Etalab -> R.string.provider_etalab
+    PoiProviderType.GasApi -> R.string.provider_gasapi
+    PoiProviderType.DataGouv -> R.string.provider_datagouv
+    PoiProviderType.UkCma -> R.string.provider_uk_cma
+    PoiProviderType.ItalyMimit -> R.string.provider_italy_mimit
+    PoiProviderType.SloveniaGorivaSi -> R.string.provider_slovenia_goriva
+    PoiProviderType.NorwayDrivstoffAppen -> R.string.provider_norway_drivstoff
+    PoiProviderType.SwedenDrivstoffAppen -> R.string.provider_sweden_drivstoff
+    PoiProviderType.PortugalDgeg -> R.string.provider_portugal_dgeg
+    PoiProviderType.NetherlandsAnwb -> R.string.provider_netherlands_anwb
+    PoiProviderType.DenmarkFuelpricesDk -> R.string.provider_denmark_fuelprices
+    PoiProviderType.Fuelo -> R.string.provider_fuelo
+    PoiProviderType.AustraliaNswFuelCheck -> R.string.provider_australia_nsw
+    PoiProviderType.CroatiaMzoe -> R.string.provider_croatia_mzoe
+    PoiProviderType.FinlandPolttoaine -> R.string.provider_finland_polttoaine
+    PoiProviderType.GreeceFuelGr -> R.string.provider_greece_fuelgr
+    PoiProviderType.IrelandPickAPump -> R.string.provider_ireland_pickapump
+    PoiProviderType.MoldovaAnre -> R.string.provider_moldova_anre
+    PoiProviderType.RomaniaPeco -> R.string.provider_romania_peco
+    PoiProviderType.SerbiaNis -> R.string.provider_serbia_nis
+    PoiProviderType.MexicoCre -> R.string.provider_mexico_cre
+    PoiProviderType.ArgentinaEnergia -> R.string.provider_argentina_energia
+    PoiProviderType.OpenVanCamp -> R.string.provider_openvan_camp
+    PoiProviderType.SpainMinetur -> R.string.provider_spain_minetur
+    PoiProviderType.GermanyTankerkoenig -> R.string.provider_germany_tankerkoenig
+    PoiProviderType.AustriaEControl -> R.string.provider_austria_econtrol
+    PoiProviderType.BelgiumOfficial -> R.string.provider_belgium_official
+    else -> R.string.provider_overpass
+}
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -258,7 +325,7 @@ private fun MapConfig(
                     FilterChip(
                         selected = settings.phoneMapEngine == engine,
                         onClick = { onUpdate(settings.copy(phoneMapEngine = engine)) },
-                        label = { Text(engine.name) },
+                        label = { Text(engine.displayLabel()) },
                     )
                 }
             }
@@ -278,7 +345,7 @@ private fun MapConfig(
                         FilterChip(
                             selected = settings.mapTheme == theme,
                             onClick = { onUpdate(settings.copy(mapTheme = theme)) },
-                            label = { Text(theme.name) },
+                            label = { Text(theme.displayLabel()) },
                         )
                     }
                 }
@@ -386,12 +453,14 @@ private fun SourcesConfig(
     val context = LocalContext.current
     data class ProviderUiInfo(
         val type: PoiProviderType,
-        val label: String,
         /** ISO country codes (e.g. "FR", "BE") or special values ("GLOBAL", "EU"). */
         val supportedCountries: List<String>,
         val providesFuel: Boolean = type.providesFuel,
-        val providesElectric: Boolean = type.providesElectric
+        val providesElectric: Boolean = type.providesElectric,
     )
+
+    fun providerLabel(type: PoiProviderType): String =
+        context.getString(poiProviderLabelRes(type))
 
     fun countryLabel(code: String): String {
         val c = code.uppercase()
@@ -426,47 +495,46 @@ private fun SourcesConfig(
 
     val providers = listOf(
         // Electric
-        ProviderUiInfo(PoiProviderType.DataGouvElec, "data.gouv.fr (Electric)", listOf("FR")),
-        ProviderUiInfo(PoiProviderType.Chargy, "Chargy", listOf("LU")),
-        ProviderUiInfo(PoiProviderType.OpenChargeMap, "OpenChargeMap", listOf("GLOBAL")),
-        ProviderUiInfo(PoiProviderType.Fastned, "Fastned (OCPI)", listOf("GB")),
-        ProviderUiInfo(PoiProviderType.Dkv, "DKV Mobility (OCPI)", listOf("EU")),
-        ProviderUiInfo(PoiProviderType.EcoMovement, "Eco‑Movement (OCPI)", listOf("GLOBAL")),
-        ProviderUiInfo(PoiProviderType.Overpass, "OpenStreetMap (Overpass API)", listOf("GLOBAL")),
+        ProviderUiInfo(PoiProviderType.DataGouvElec, listOf("FR")),
+        ProviderUiInfo(PoiProviderType.Chargy, listOf("LU")),
+        ProviderUiInfo(PoiProviderType.OpenChargeMap, listOf("GLOBAL")),
+        ProviderUiInfo(PoiProviderType.Fastned, listOf("GB")),
+        ProviderUiInfo(PoiProviderType.Dkv, listOf("EU")),
+        ProviderUiInfo(PoiProviderType.EcoMovement, listOf("GLOBAL")),
+        ProviderUiInfo(PoiProviderType.Overpass, listOf("GLOBAL")),
 
         // Fuel
-        ProviderUiInfo(PoiProviderType.Routex, "Routex", listOf("EU")),
-        ProviderUiInfo(PoiProviderType.Etalab, "data.gouv.fr (Fuel instant)", listOf("FR")),
-        ProviderUiInfo(PoiProviderType.GasApi, "gas-api.ovh", listOf("FR")),
-        ProviderUiInfo(PoiProviderType.DataGouv, "data.gouv.fr (Fuel daily)", listOf("FR")),
-        ProviderUiInfo(PoiProviderType.UkCma, "UK Fuel Finder (CMA)", listOf("GB")),
-        ProviderUiInfo(PoiProviderType.ItalyMimit, "MIMIT (Italy official)", listOf("IT")),
-        ProviderUiInfo(PoiProviderType.SloveniaGorivaSi, "goriva.si (Slovenia official)", listOf("SI")),
-        ProviderUiInfo(PoiProviderType.NorwayDrivstoffAppen, "DrivstoffAppen (Norway)", listOf("NO")),
-        ProviderUiInfo(PoiProviderType.SwedenDrivstoffAppen, "DrivstoffAppen / bensinpriser.nu (Sweden)", listOf("SE")),
-        ProviderUiInfo(PoiProviderType.PortugalDgeg, "DGEG (Portugal official)", listOf("PT")),
-        ProviderUiInfo(PoiProviderType.NetherlandsAnwb, "ANWB", listOf("NL", "BE", "LU")),
-        ProviderUiInfo(PoiProviderType.DenmarkFuelpricesDk, "Fuelprices.dk", listOf("DK")),
-        ProviderUiInfo(PoiProviderType.Fuelo, "Fuelo.net", fueloSupported),
-        ProviderUiInfo(PoiProviderType.AustraliaNswFuelCheck, "FuelCheck (NSW Australia)", listOf("AU")),
-        ProviderUiInfo(PoiProviderType.CroatiaMzoe, "MZOE (Croatia official)", listOf("HR")),
-        ProviderUiInfo(PoiProviderType.FinlandPolttoaine, "Polttoaine.net (Finland)", listOf("FI")),
-        ProviderUiInfo(PoiProviderType.GreeceFuelGr, "FuelGR (Greece)", listOf("GR")),
-        ProviderUiInfo(PoiProviderType.IrelandPickAPump, "Pick A Pump (Ireland)", listOf("IE")),
-        ProviderUiInfo(PoiProviderType.MoldovaAnre, "ANRE (Moldova)", listOf("MD")),
-        ProviderUiInfo(PoiProviderType.RomaniaPeco, "Peco Online (Romania)", listOf("RO")),
-        ProviderUiInfo(PoiProviderType.SerbiaNis, "NIS (Serbia)", listOf("RS")),
-        ProviderUiInfo(PoiProviderType.MexicoCre, "CRE (Mexico)", listOf("MX")),
-        ProviderUiInfo(PoiProviderType.ArgentinaEnergia, "Secretaría de Energía (Argentina)", listOf("AR")),
+        ProviderUiInfo(PoiProviderType.Routex, listOf("EU")),
+        ProviderUiInfo(PoiProviderType.Etalab, listOf("FR")),
+        ProviderUiInfo(PoiProviderType.GasApi, listOf("FR")),
+        ProviderUiInfo(PoiProviderType.DataGouv, listOf("FR")),
+        ProviderUiInfo(PoiProviderType.UkCma, listOf("GB")),
+        ProviderUiInfo(PoiProviderType.ItalyMimit, listOf("IT")),
+        ProviderUiInfo(PoiProviderType.SloveniaGorivaSi, listOf("SI")),
+        ProviderUiInfo(PoiProviderType.NorwayDrivstoffAppen, listOf("NO")),
+        ProviderUiInfo(PoiProviderType.SwedenDrivstoffAppen, listOf("SE")),
+        ProviderUiInfo(PoiProviderType.PortugalDgeg, listOf("PT")),
+        ProviderUiInfo(PoiProviderType.NetherlandsAnwb, listOf("NL", "BE", "LU")),
+        ProviderUiInfo(PoiProviderType.DenmarkFuelpricesDk, listOf("DK")),
+        ProviderUiInfo(PoiProviderType.Fuelo, fueloSupported),
+        ProviderUiInfo(PoiProviderType.AustraliaNswFuelCheck, listOf("AU")),
+        ProviderUiInfo(PoiProviderType.CroatiaMzoe, listOf("HR")),
+        ProviderUiInfo(PoiProviderType.FinlandPolttoaine, listOf("FI")),
+        ProviderUiInfo(PoiProviderType.GreeceFuelGr, listOf("GR")),
+        ProviderUiInfo(PoiProviderType.IrelandPickAPump, listOf("IE")),
+        ProviderUiInfo(PoiProviderType.MoldovaAnre, listOf("MD")),
+        ProviderUiInfo(PoiProviderType.RomaniaPeco, listOf("RO")),
+        ProviderUiInfo(PoiProviderType.SerbiaNis, listOf("RS")),
+        ProviderUiInfo(PoiProviderType.MexicoCre, listOf("MX")),
+        ProviderUiInfo(PoiProviderType.ArgentinaEnergia, listOf("AR")),
         ProviderUiInfo(
             PoiProviderType.OpenVanCamp,
-            "OpenVan.camp",
-            FuelPriceRegistry.REFERENCE_PRICE_COUNTRIES.toList().sorted()
+            FuelPriceRegistry.REFERENCE_PRICE_COUNTRIES.toList().sorted(),
         ),
-        ProviderUiInfo(PoiProviderType.SpainMinetur, "Spain Minetur (official)", listOf("ES")),
-        ProviderUiInfo(PoiProviderType.GermanyTankerkoenig, "Tankerkönig (Germany)", listOf("DE")),
-        ProviderUiInfo(PoiProviderType.AustriaEControl, "E‑Control (Austria)", listOf("AT")),
-        ProviderUiInfo(PoiProviderType.BelgiumOfficial, "Belgium (official)", listOf("BE")),
+        ProviderUiInfo(PoiProviderType.SpainMinetur, listOf("ES")),
+        ProviderUiInfo(PoiProviderType.GermanyTankerkoenig, listOf("DE")),
+        ProviderUiInfo(PoiProviderType.AustriaEControl, listOf("AT")),
+        ProviderUiInfo(PoiProviderType.BelgiumOfficial, listOf("BE")),
     )
         .filter { it.type.isUserSelectablePoiDataSource() }
         .distinctBy { it.type }
@@ -475,7 +543,9 @@ private fun SourcesConfig(
         providers
             .flatMap { p -> p.supportedCountries.map { c -> c.uppercase() to p } }
             .groupBy({ it.first }, { it.second })
-            .mapValues { (_, list) -> list.distinctBy { it.type }.sortedBy { it.label.lowercase() } }
+            .mapValues { (_, list) ->
+                list.distinctBy { it.type }.sortedBy { providerLabel(it.type).lowercase() }
+            }
     }
 
     val sortedCountryKeys = remember(providersByCountry) {
@@ -636,7 +706,7 @@ private fun SourcesConfig(
                         list
                             .sortedWith(
                                 compareBy<ProviderUiInfo> { !it.providesElectric }
-                                    .thenBy { it.label.lowercase() }
+                                    .thenBy { providerLabel(it.type).lowercase() }
                             )
                             .forEach { p ->
                                 val isMultiCountry =
@@ -655,7 +725,7 @@ private fun SourcesConfig(
                                     },
                                     label = {
                                         Text(
-                                            p.label,
+                                            providerLabel(p.type),
                                             maxLines = 1,
                                             style = chipLabelStyle,
                                         )
@@ -706,7 +776,7 @@ private fun ThemeConfig(
                     FilterChip(
                         selected = settings.uiThemeMode == mode,
                         onClick = { onUpdate(settings.copy(uiThemeMode = mode)) },
-                        label = { Text(mode.name) },
+                        label = { Text(mode.displayLabel()) },
                     )
                 }
             }
@@ -758,15 +828,15 @@ private fun AppConfig(
             )
             Spacer(modifier = Modifier.height(8.dp))
             ApiKeyHelpLink(
-                helpText = "Eco-Movement key is used as: Authorization: Token <key>.",
+                helpText = stringResource(R.string.ecomovement_key_help),
                 url = "https://developers.eco-movement.com",
-                linkLabel = "Eco-Movement docs"
+                linkLabel = stringResource(R.string.ecomovement_docs_link),
             )
         }
 
         Column {
             Text(
-                "Fuel API keys (optional)",
+                stringResource(R.string.fuel_api_keys_optional),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -827,7 +897,7 @@ private fun MainMenu(
                         showClearCacheConfirm = false
                         scope.launch {
                             CacheManager.clearAllCaches(context)
-                            snackbarHostState.showSnackbar("Cache cleared")
+                            snackbarHostState.showSnackbar(context.getString(R.string.cache_cleared))
                         }
                     }
                 ) {
@@ -899,14 +969,22 @@ private fun MainMenu(
                 ListItem(
                     headlineContent = {
                         Text(
-                            text = if (settings.isLoggedIn) "Hello, ${settings.googleUserName}" else "Not signed in",
+                            text = if (settings.isLoggedIn) {
+                                stringResource(R.string.hello_user, settings.googleUserName.orEmpty())
+                            } else {
+                                stringResource(R.string.not_signed_in)
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                     },
                     supportingContent = {
                         Text(
-                            text = if (settings.isLoggedIn) "Google account connected" else "Sign in to sync your profile",
+                            text = if (settings.isLoggedIn) {
+                                stringResource(R.string.google_account_connected)
+                            } else {
+                                stringResource(R.string.sign_in_sync_profile)
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -919,7 +997,11 @@ private fun MainMenu(
                                     onClick = {
                                         authManager.signOut { success ->
                                             if (!success) {
-                                                scope.launch { snackbarHostState.showSnackbar("Sign out failed") }
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar(
+                                                        context.getString(R.string.sign_out_failed)
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -930,7 +1012,11 @@ private fun MainMenu(
                                     onClick = {
                                         authManager.signIn(context) { success, error ->
                                             if (!success) {
-                                                scope.launch { snackbarHostState.showSnackbar(error ?: "Sign in failed") }
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar(
+                                                        error ?: context.getString(R.string.sign_in_failed)
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -946,17 +1032,21 @@ private fun MainMenu(
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 SettingsItem(
-                    label = "Vehicle",
-                    value = if (settings.vehicleBrand.isNotEmpty()) "${settings.vehicleBrand} ${settings.vehicleModel}" else "Not configured",
+                    label = stringResource(R.string.screen_vehicle),
+                    value = if (settings.vehicleBrand.isNotEmpty()) {
+                        "${settings.vehicleBrand} ${settings.vehicleModel}"
+                    } else {
+                        stringResource(R.string.vehicle_not_configured)
+                    },
                     onClick = { onNavigate(SettingsScreenPage.VehicleConfig) }
                 )
                 SettingsItem(
-                    label = "Map",
-                    value = "Engine, traffic, itinerary",
+                    label = stringResource(R.string.screen_map),
+                    value = stringResource(R.string.settings_map_subtitle),
                     onClick = { onNavigate(SettingsScreenPage.MapConfig) }
                 )
                 SettingsItem(
-                    label = "Sources",
+                    label = stringResource(R.string.screen_sources),
                     value = when (settings.poiProviderSelectionMode) {
                         PoiProviderSelectionMode.Auto -> stringResource(R.string.action_auto_by_country)
                         PoiProviderSelectionMode.Manual -> stringResource(R.string.selection_manual_full)
@@ -964,33 +1054,37 @@ private fun MainMenu(
                     onClick = { onNavigate(SettingsScreenPage.Sources) }
                 )
                 SettingsItem(
-                    label = "Highway toll",
-                    value = if (!settings.tollDataPath.isNullOrBlank()) "Downloaded" else "Not downloaded",
+                    label = stringResource(R.string.screen_highway_toll),
+                    value = if (!settings.tollDataPath.isNullOrBlank()) {
+                        stringResource(R.string.toll_downloaded)
+                    } else {
+                        stringResource(R.string.toll_not_downloaded)
+                    },
                     onClick = { onNavigate(SettingsScreenPage.TollData) }
                 )
                 SettingsItem(
-                    label = "Error log",
-                    value = "View recent errors",
+                    label = stringResource(R.string.screen_error_log),
+                    value = stringResource(R.string.settings_error_log_subtitle),
                     onClick = { onNavigate(SettingsScreenPage.ErrorLog) }
                 )
                 SettingsItem(
-                    label = "Theme",
-                    value = settings.uiThemeMode.name,
+                    label = stringResource(R.string.screen_theme),
+                    value = settings.uiThemeMode.displayLabel(),
                     onClick = { onNavigate(SettingsScreenPage.Theme) }
                 )
                 SettingsItem(
-                    label = "App",
-                    value = "API keys",
+                    label = stringResource(R.string.screen_app),
+                    value = stringResource(R.string.settings_app_subtitle),
                     onClick = { onNavigate(SettingsScreenPage.App) }
                 )
                 SettingsItem(
-                    label = "About",
-                    value = "Version & build info",
+                    label = stringResource(R.string.screen_about),
+                    value = stringResource(R.string.settings_about_subtitle),
                     onClick = { onNavigate(SettingsScreenPage.About) }
                 )
                 SettingsItem(
-                    label = "Clear cache",
-                    value = "Markers, images, logs & temp files",
+                    label = stringResource(R.string.screen_clear_cache),
+                    value = stringResource(R.string.settings_clear_cache_subtitle),
                     onClick = { showClearCacheConfirm = true }
                 )
             }
@@ -1014,7 +1108,7 @@ private fun TollDataSection(
     val downloaded = helper.isTollDataDownloaded(settings)
     val displayPath = helper.getDisplayPath(settings)
 
-    val fileInfo = remember(settings.tollDataPath) {
+    val fileInfo = remember(settings.tollDataPath, context) {
         settings.tollDataPath?.let { path ->
             val file = File(path)
             if (file.exists()) {
@@ -1022,7 +1116,7 @@ private fun TollDataSection(
                 val lastModified = file.lastModified()
                 val dateStr = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(lastModified))
                 val sizeStr = if (size > 1024 * 1024) "${size / (1024 * 1024)} MB" else "${size / 1024} KB"
-                "Size: $sizeStr, Downloaded: $dateStr"
+                context.getString(R.string.toll_file_info, sizeStr, dateStr)
             } else null
         }
     }
@@ -1034,13 +1128,17 @@ private fun TollDataSection(
             .padding(20.dp)
     ) {
         Text(
-            text = "French highway toll estimation uses OpenTollData. Download the data file to see estimated tolls on planned routes.",
+            text = stringResource(R.string.toll_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Text(
-            text = if (downloaded) "Status: Downloaded" else "Status: Not downloaded",
+            text = if (downloaded) {
+                stringResource(R.string.toll_status_downloaded)
+            } else {
+                stringResource(R.string.toll_status_not_downloaded)
+            },
             color = if (downloaded) Color(0xFF7FFF7F) else Color(0xFFFFB366),
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(bottom = 2.dp)
@@ -1054,7 +1152,7 @@ private fun TollDataSection(
             )
         }
         Text(
-            text = "Path: $displayPath",
+            text = stringResource(R.string.toll_path, displayPath),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
@@ -1085,7 +1183,8 @@ private fun TollDataSection(
                                     },
                                     onFailure = { e ->
                                         withContext(Dispatchers.Main) {
-                                            downloadError = e.message ?: "Download failed"
+                                            downloadError = e.message
+                                                ?: context.getString(R.string.download_failed)
                                         }
                                     }
                                 )
@@ -1100,7 +1199,11 @@ private fun TollDataSection(
                     val (bytes, total) = progress
                     val pct = if (total != null && total > 0) (100 * bytes / total).toInt() else null
                     Text(
-                        text = if (pct != null) "Downloading… $pct%" else "Downloading… ${bytes / (1024 * 1024)} MB",
+                        text = if (pct != null) {
+                            stringResource(R.string.toll_downloading_percent, pct)
+                        } else {
+                            stringResource(R.string.toll_downloading_mb, bytes / (1024 * 1024))
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1109,7 +1212,7 @@ private fun TollDataSection(
         }
         downloadError?.let { err ->
             Text(
-                text = "Error: $err",
+                text = stringResource(R.string.toll_error, err),
                 color = Color(0xFFFF6B6B),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 8.dp)
@@ -1130,15 +1233,15 @@ private fun AboutContent(
             .padding(20.dp)
     ) {
         Text(
-            text = "Gaston",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(24.dp))
-        AboutRow("Version name", BuildConfig.VERSION_NAME)
-        AboutRow("Version code", BuildConfig.VERSION_CODE.toString())
-        AboutRow("Build date", BuildConfig.BUILD_DATE)
+        AboutRow(stringResource(R.string.about_version_name), BuildConfig.VERSION_NAME)
+        AboutRow(stringResource(R.string.about_version_code), BuildConfig.VERSION_CODE.toString())
+        AboutRow(stringResource(R.string.about_build_date), BuildConfig.BUILD_DATE)
         Spacer(modifier = Modifier.height(16.dp))
         AboutRowClickable(
             label = stringResource(id = R.string.about_view_disclaimer),
@@ -1146,7 +1249,7 @@ private fun AboutContent(
         )
         Spacer(modifier = Modifier.height(32.dp))
         Text(
-            text = "Used APIs & services",
+            text = stringResource(R.string.about_used_apis),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1157,7 +1260,7 @@ private fun AboutContent(
                 name = api.name,
                 url = api.url,
                 logoUrl = api.logoUrl,
-                attribution = api.attribution,
+                attributionRes = api.attributionRes,
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(api.url))
                     context.startActivity(intent)
@@ -1172,7 +1275,7 @@ private fun AboutApiRow(
     name: String,
     url: String,
     logoUrl: String?,
-    attribution: String? = null,
+    @StringRes attributionRes: Int? = null,
     onClick: () -> Unit
 ) {
     Row(
@@ -1216,9 +1319,9 @@ private fun AboutApiRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (attribution != null) {
+            if (attributionRes != null) {
                 Text(
-                    text = attribution,
+                    text = stringResource(attributionRes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 6.dp)
@@ -1402,23 +1505,23 @@ private fun VehicleConfig(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    "Identity",
+                    stringResource(R.string.vehicle_identity),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 ConfigTextField(
-                    label = "Brand",
+                    label = stringResource(R.string.vehicle_brand),
                     value = settings.vehicleBrand,
                     leadingIcon = Icons.Default.DirectionsCar
                 ) { onUpdate(settings.copy(vehicleBrand = it)) }
                 ConfigTextField(
-                    label = "Model",
+                    label = stringResource(R.string.vehicle_model),
                     value = settings.vehicleModel,
                     leadingIcon = Icons.Default.Badge
                 ) { onUpdate(settings.copy(vehicleModel = it)) }
 
                 Text(
-                    "Energy type",
+                    stringResource(R.string.vehicle_energy_type),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
@@ -1428,15 +1531,15 @@ private fun VehicleConfig(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     listOf(
-                        "gas" to ("Gas" to Icons.Default.LocalGasStation),
-                        "electric" to ("Electric" to Icons.Default.EvStation),
-                        "hybrid" to ("Hybrid" to Icons.Default.SettingsInputComponent)
+                        "gas" to (R.string.energy_gas to Icons.Default.LocalGasStation),
+                        "electric" to (R.string.vehicle_energy_electric to Icons.Default.EvStation),
+                        "hybrid" to (R.string.energy_hybrid to Icons.Default.SettingsInputComponent),
                     ).forEach { (id, info) ->
-                        val (label, icon) = info
+                        val (labelRes, icon) = info
                         FilterChip(
                             selected = settings.vehicleEnergy == id,
                             onClick = { onUpdate(settings.copy(vehicleEnergy = id)) },
-                            label = { Text(label) },
+                            label = { Text(stringResource(labelRes)) },
                             leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) },
                             modifier = Modifier.weight(1f)
                         )
@@ -1455,7 +1558,7 @@ private fun VehicleConfig(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    "Specifications",
+                    stringResource(R.string.vehicle_specifications),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -1466,7 +1569,7 @@ private fun VehicleConfig(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         ConfigTextField(
-                            label = "Tank (L)",
+                            label = stringResource(R.string.vehicle_tank_liters),
                             value = settings.gasTankCapacityLiters?.toString() ?: "",
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.WaterDrop,
@@ -1474,7 +1577,7 @@ private fun VehicleConfig(
                         ) { onUpdate(settings.copy(gasTankCapacityLiters = it.toFloatOrNull())) }
 
                         ConfigTextField(
-                            label = "L/100km",
+                            label = stringResource(R.string.vehicle_consumption_l100),
                             value = gasConsumptionText,
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.Speed,
@@ -1495,7 +1598,7 @@ private fun VehicleConfig(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         ConfigTextField(
-                            label = "Battery (kWh)",
+                            label = stringResource(R.string.vehicle_battery_kwh),
                             value = settings.batteryCapacityKwh?.toString() ?: "",
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.BatteryChargingFull,
@@ -1503,7 +1606,7 @@ private fun VehicleConfig(
                         ) { onUpdate(settings.copy(batteryCapacityKwh = it.toFloatOrNull())) }
 
                         ConfigTextField(
-                            label = "Range (km)",
+                            label = stringResource(R.string.vehicle_range_km_label),
                             value = settings.evRangeKm.toString(),
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.Map,
@@ -1511,7 +1614,7 @@ private fun VehicleConfig(
                         ) { onUpdate(settings.copy(evRangeKm = it.toIntOrNull() ?: 300)) }
                     }
                     ConfigTextField(
-                        label = "Consumption (kWh/100km)",
+                        label = stringResource(R.string.vehicle_consumption_kwh100),
                         value = evConsumptionText,
                         leadingIcon = Icons.Default.Bolt,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
@@ -1536,14 +1639,14 @@ private fun VehicleConfig(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    "Preferences",
+                    stringResource(R.string.vehicle_preferences),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
 
                 if (settings.vehicleEnergy == "gas" || settings.vehicleEnergy == "hybrid") {
                     Text(
-                        "Preferred gas types",
+                        stringResource(R.string.vehicle_preferred_gas_types),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1566,14 +1669,14 @@ private fun VehicleConfig(
                     }
 
                     Text(
-                        "Fuel card",
+                        stringResource(R.string.vehicle_fuel_card),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                     FuelCard.entries.forEach { card ->
                         SelectionItem(
-                            label = card.name,
+                            label = card.displayLabel(),
                             isSelected = settings.fuelCard == card,
                             onSelect = { onUpdate(settings.copy(fuelCard = card)) }
                         )
@@ -1582,7 +1685,7 @@ private fun VehicleConfig(
 
                 if (settings.vehicleEnergy == "electric" || settings.vehicleEnergy == "hybrid") {
                     Text(
-                        "Preferred power range",
+                        stringResource(R.string.vehicle_preferred_power_range),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1613,7 +1716,7 @@ private fun VehicleConfig(
 private fun ApiKeyHelpLink(
     helpText: String,
     url: String,
-    linkLabel: String = "Create API key",
+    linkLabel: String,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -1682,6 +1785,8 @@ private fun ErrorLog(
     val scrollState = rememberScrollState()
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val genericErrorLabel = stringResource(R.string.error_log_generic)
     val reversedLog = remember(errorLog) { errorLog.reversed() }
     var showClearConfirm by remember { mutableStateOf(false) }
 
@@ -1728,7 +1833,8 @@ private fun ErrorLog(
                         onClick = {
                             val allErrors = reversedLog.joinToString("\n\n") { error ->
                                 val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(error.timestamp))
-                                val httpCode = error.httpCode?.let { "HTTP $it" } ?: "Generic"
+                                val httpCode = error.httpCode?.let { context.getString(R.string.error_log_http, it) }
+                                    ?: genericErrorLabel
                                 "[$timestamp] $httpCode\n${error.message}"
                             }
                             scope.launch {
@@ -1755,7 +1861,8 @@ private fun ErrorLog(
 
                 reversedLog.forEach { error ->
                     val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(error.timestamp))
-                    val httpCode = error.httpCode?.let { "HTTP $it" } ?: "Generic"
+                    val httpCode = error.httpCode?.let { stringResource(R.string.error_log_http, it) }
+                        ?: genericErrorLabel
 
                     Column(
                         modifier = Modifier
