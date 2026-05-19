@@ -106,7 +106,8 @@ androidApp/src/main/res/
 
 To regenerate everything after a brand change:
 ```bash
-python3 scripts/gen_assets.py
+python3 scripts/gen_assets.py          # icon + feature graphic
+./scripts/regenerate_screenshots.sh    # phone screenshots from real Compose UI
 ```
 
 ---

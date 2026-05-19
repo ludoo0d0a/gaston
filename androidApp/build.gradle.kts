@@ -166,6 +166,12 @@ configure<ApplicationExtension> {
         }
     }
 
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
     lint {
         baseline = file("lint-baseline.xml")
         // Ensure we lint transitive dependencies too (incl. bundled native .so from AARs),
@@ -277,6 +283,9 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.androidx.activity.compose)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     // Ads (AdMob)
     implementation(libs.play.services.ads)

@@ -418,6 +418,27 @@ object PreviewPoiSamples {
         source = "DataGouv + GasApi"
     )
 
+    fun marketingFuelDetailPoi(): Poi = previewCardTotal()
+
+    fun marketingEvDetailPoi(): Poi = previewCardIonity()
+
+    fun marketingMapCarouselPois(): List<Poi> = diverseCardPois().take(3)
+
+    fun marketingMapMarkerSpecs(): List<PreviewMapMarkerSpec> = diverseMapMarkerSpecs().filter { spec ->
+        spec.legend == "gazole" ||
+            spec.legend == "sp98" ||
+            spec.legend == "IRVE · max 200 kW" ||
+            spec.legend == "IRVE · max 300 kW" ||
+            spec.legend == "sp95"
+    }
+
+    fun marketingAutoListPois(): List<Poi> = listOf(
+        previewCardTotal(),
+        previewCardShell(),
+        previewCardIonity(),
+        previewCardUrbanEv(),
+    )
+
     private fun previewCardBpE85(): Poi = Poi(
         id = "card-bp",
         name = "Station",

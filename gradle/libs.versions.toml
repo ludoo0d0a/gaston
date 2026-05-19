@@ -50,6 +50,8 @@ compose-foundation-layout = { module = "androidx.compose.foundation:foundation-l
 compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "compose-material3" }
 compose-material-icons-core = { module = "androidx.compose.material:material-icons-core", version.ref = "compose-material-icons" }
 compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "compose-material-icons" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "compose" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "compose" }
 androidx-car-app = { module = "androidx.car.app:app", version.ref = "androidx-car-app" }
 androidx-car-app-projected = { module = "androidx.car.app:app-projected", version.ref = "androidx-car-app" }
 

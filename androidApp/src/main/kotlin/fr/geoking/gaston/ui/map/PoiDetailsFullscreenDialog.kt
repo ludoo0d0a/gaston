@@ -48,7 +48,8 @@ fun PoiDetailsFullscreenDialog(
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
     onNavigate: (() -> Unit)? = null,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    embedded: Boolean = false,
 ) {
     val brandInfo = BrandHelper.getBrandInfo(poi.brand)
     val sources = remember(poi.source) {
@@ -71,14 +72,7 @@ fun PoiDetailsFullscreenDialog(
         if (isEmpty()) add("%.4f, %.4f".format(poi.latitude, poi.longitude))
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true
-        )
-    ) {
+    val detailContent: @Composable () -> Unit = {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
@@ -440,6 +434,21 @@ fun PoiDetailsFullscreenDialog(
                     }
                 }
             }
+        }
+    }
+
+    if (embedded) {
+        detailContent()
+    } else {
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            )
+        ) {
+            detailContent()
         }
     }
 }
