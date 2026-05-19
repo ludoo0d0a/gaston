@@ -6,20 +6,23 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -45,12 +48,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import fr.geoking.gaston.R
 import fr.geoking.gaston.ThemeMode
+import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.MAP_ENERGY_OPTIONS
 import fr.geoking.gaston.ui.MAP_IRVE_POWER_OPTIONS
@@ -176,11 +181,7 @@ fun MarketingFiltersScreen() {
                         }
                     },
                     actions = {
-                        Icon(
-                            Icons.Default.FilterList,
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 16.dp),
-                        )
+                        Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.padding(end = 16.dp))
                     },
                 )
             },
