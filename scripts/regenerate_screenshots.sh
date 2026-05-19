@@ -7,7 +7,7 @@ cd "$ROOT"
 
 echo "Exporting marketing screenshots (Compose + Robolectric)…"
 ./gradlew :androidApp:testPlaystoreDebugUnitTest \
-  --tests "fr.geoking.gaston.ui.map.MarketingScreenshotTest"
+  --tests "fr.geoking.gaston.marketing.MarketingScreenshotTest"
 
 echo "Done — PNGs written to playstore-assets/ and website/assets/screenshots/"
 echo "Icon & feature graphic: python3 scripts/gen_assets.py"

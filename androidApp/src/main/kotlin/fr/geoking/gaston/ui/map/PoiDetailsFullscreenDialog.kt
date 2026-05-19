@@ -49,6 +49,7 @@ fun PoiDetailsFullscreenDialog(
     onToggleFavorite: (() -> Unit)? = null,
     onNavigate: (() -> Unit)? = null,
     onDismiss: () -> Unit,
+    /** When true, renders as full-screen content (for marketing captures) instead of a [Dialog]. */
     embedded: Boolean = false,
 ) {
     val brandInfo = BrandHelper.getBrandInfo(poi.brand)
