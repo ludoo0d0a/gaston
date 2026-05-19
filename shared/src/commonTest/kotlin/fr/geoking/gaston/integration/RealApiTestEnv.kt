@@ -15,6 +15,9 @@ class MissingIntegrationTestEnvException(
 internal fun requireIntegrationEnv(envKey: String, usage: String): String =
     requireIntegrationEnvs(envKey to usage).getValue(envKey)
 
+internal fun integrationEnvOrDefault(envKey: String, default: String): String =
+    getEnv(envKey)?.trim()?.takeIf { it.isNotEmpty() } ?: default
+
 internal fun requireIntegrationEnvs(vararg required: Pair<String, String>): Map<String, String> {
     val missing = required
         .map { it.first }

@@ -20,7 +20,11 @@ import fr.geoking.gaston.api.no.DrivstoffAppenProvider
 import fr.geoking.gaston.api.openvan.OpenVanCampClient
 import fr.geoking.gaston.api.openvan.OpenVanCampProvider
 import fr.geoking.gaston.api.overpass.OverpassClient
+import fr.geoking.gaston.api.australia.FuelWatchProvider
+import fr.geoking.gaston.api.australia.PetrolSpyProvider
+import fr.geoking.gaston.api.romania.RomaniaPecoDefaults
 import fr.geoking.gaston.api.romania.RomaniaPecoProvider
+import fr.geoking.gaston.api.switzerland.ComparisProvider
 import fr.geoking.gaston.api.serbia.SerbiaNisProvider
 import fr.geoking.gaston.api.si.GorivaSiProvider
 import fr.geoking.gaston.api.tankerkoenig.GermanyTankerkoenigProvider
@@ -54,19 +58,16 @@ internal object RealApiTestProviders {
         PoiProviderType.GreeceFuelGr -> GreeceFuelGRProvider(client, limit = 60)
         PoiProviderType.IrelandPickAPump -> IrelandPickAPumpProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.MoldovaAnre -> MoldovaAnreProvider(client, radiusKm = 20, limit = 80)
-        PoiProviderType.RomaniaPeco -> {
-            val keys = requireIntegrationEnvs(
-                "ROMANIA_PECO_APPLICATION_ID" to "Romania Peco Parse application id",
-                "ROMANIA_PECO_CLIENT_KEY" to "Romania Peco Parse client key",
-            )
-            RomaniaPecoProvider(
-                client,
-                applicationId = keys.getValue("ROMANIA_PECO_APPLICATION_ID"),
-                clientKey = keys.getValue("ROMANIA_PECO_CLIENT_KEY"),
-                radiusKm = 20,
-                limit = 80,
-            )
-        }
+        PoiProviderType.RomaniaPeco -> RomaniaPecoProvider(
+            client,
+            applicationId = integrationEnvOrDefault("ROMANIA_PECO_APPLICATION_ID", RomaniaPecoDefaults.APPLICATION_ID),
+            clientKey = integrationEnvOrDefault("ROMANIA_PECO_CLIENT_KEY", RomaniaPecoDefaults.CLIENT_KEY),
+            radiusKm = 20,
+            limit = 80,
+        )
+        PoiProviderType.SwitzerlandComparis -> ComparisProvider(client, radiusKm = 25, limit = 80)
+        PoiProviderType.AustraliaFuelWatch -> FuelWatchProvider(client, radiusKm = 30, limit = 80)
+        PoiProviderType.AustraliaPetrolSpy -> PetrolSpyProvider(client, radiusKm = 15, limit = 80)
         PoiProviderType.SerbiaNis -> SerbiaNisProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.MexicoCre -> MexicoCREProvider(client, radiusKm = 20, limit = 80)
         PoiProviderType.ArgentinaEnergia -> ArgentinaEnergiaProvider(client, radiusKm = 20, limit = 80)
