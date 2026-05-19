@@ -13,11 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Directions
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -37,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import fr.geoking.gaston.R
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
@@ -148,7 +145,7 @@ fun PhoneDashboardDestinationSearch(
                     )
                 }) {
                     Icon(
-                        Icons.Default.Directions,
+                        painter = painterResource(R.drawable.ic_directions),
                         contentDescription = "Open routes",
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -160,7 +157,7 @@ fun PhoneDashboardDestinationSearch(
                         destQuery = ""
                         onLocationSelected(null)
                     }) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                        Icon(painterResource(R.drawable.ic_close), contentDescription = "Clear")
                     }
                 }
             },
@@ -208,11 +205,13 @@ fun PhoneDashboardDestinationSearch(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    when {
-                                        isFavorite -> Icons.Default.Star
-                                        isHistory -> Icons.Default.History
-                                        else -> Icons.Default.Place
-                                    },
+                                    painter = painterResource(
+                                        when {
+                                            isFavorite -> R.drawable.ic_star
+                                            isHistory -> R.drawable.ic_history
+                                            else -> R.drawable.ic_place
+                                        }
+                                    ),
                                     contentDescription = null,
                                     tint = if (isFavorite) Color(0xFFFACC15) else MaterialTheme.colorScheme.onSurfaceVariant.copy(
                                         alpha = 0.6f

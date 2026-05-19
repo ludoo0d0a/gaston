@@ -8,17 +8,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Directions
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import fr.geoking.gaston.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -91,7 +88,7 @@ fun PoiDetailsFullscreenDialog(
                     navigationIcon = {
                         IconButton(onClick = onDismiss) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                painter = painterResource(R.drawable.ic_arrow_back),
                                 contentDescription = "Close"
                             )
                         }
@@ -100,7 +97,7 @@ fun PoiDetailsFullscreenDialog(
                         onToggleFavorite?.let { toggle ->
                             IconButton(onClick = toggle) {
                                 Icon(
-                                    imageVector = if (isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
+                                    painter = painterResource(if (isFavorite) R.drawable.ic_star else R.drawable.ic_star_border),
                                     contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
                                     tint = if (isFavorite) Color(0xFFFACC15) else MaterialTheme.colorScheme.onSurface
                                 )
@@ -109,7 +106,7 @@ fun PoiDetailsFullscreenDialog(
                         onNavigate?.let { navigate ->
                             IconButton(onClick = navigate) {
                                 Icon(
-                                    imageVector = Icons.Default.Directions,
+                                    painter = painterResource(R.drawable.ic_directions),
                                     contentDescription = "Navigate"
                                 )
                             }
@@ -117,7 +114,7 @@ fun PoiDetailsFullscreenDialog(
                         onShowOnMap?.let {
                             IconButton(onClick = { it(poi) }) {
                                 Icon(
-                                    imageVector = Icons.Default.Map,
+                                    painter = painterResource(R.drawable.ic_map),
                                     contentDescription = "Show on Map"
                                 )
                             }

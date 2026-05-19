@@ -22,16 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.LocalHospital
-import androidx.compose.material.icons.filled.LocalPolice
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Sos
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -58,12 +48,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.content.ClipData
 import android.content.ClipboardManager
+import fr.geoking.gaston.R
 import fr.geoking.gaston.feature.emergency.EmergencyCategory
 import fr.geoking.gaston.feature.emergency.EmergencyContact
 import fr.geoking.gaston.feature.emergency.EmergencyContactRegistry
@@ -136,12 +127,12 @@ fun EmergencyScreen(
                     title = { Text("Emergency") },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(painterResource(R.drawable.ic_arrow_back), contentDescription = "Back")
                         }
                     },
                     actions = {
                         IconButton(onClick = { refreshTick++ }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh location")
+                            Icon(painterResource(R.drawable.ic_refresh), contentDescription = "Refresh location")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -235,7 +226,7 @@ private fun UniversalEmergencyButton(number: String, onCall: () -> Unit) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(
-                    imageVector = Icons.Default.Sos,
+                    painter = painterResource(R.drawable.ic_sos),
                     contentDescription = null,
                     tint = EmergencyOnRed,
                     modifier = Modifier.size(32.dp)
@@ -260,7 +251,7 @@ private fun UniversalEmergencyButton(number: String, onCall: () -> Unit) {
                     contentColor = EmergencyRedDark
                 )
             ) {
-                Icon(Icons.Default.Phone, contentDescription = null)
+                Icon(painterResource(R.drawable.ic_phone), contentDescription = null)
                 Spacer(Modifier.size(8.dp))
                 Text(
                     text = "Call $number",
@@ -291,7 +282,7 @@ private fun LocationCard(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(
-                    imageVector = Icons.Default.MyLocation,
+                    painter = painterResource(R.drawable.ic_gps_fixed),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -335,7 +326,7 @@ private fun LocationCard(
                             modifier = Modifier.padding(top = 4.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Warning,
+                                painter = painterResource(R.drawable.ic_warning),
                                 contentDescription = null,
                                 tint = EmergencyRed,
                                 modifier = Modifier.size(16.dp)
@@ -363,7 +354,7 @@ private fun LocationCard(
                     enabled = latLng != null,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(painterResource(R.drawable.ic_share), contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(6.dp))
                     Text("Share")
                 }
@@ -410,7 +401,7 @@ private fun ContactRow(contact: EmergencyContact, onCall: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = iconForCategory(contact.category),
+                    painter = painterResource(iconForCategory(contact.category)),
                     contentDescription = null,
                     tint = tint,
                     modifier = Modifier.size(22.dp)
@@ -438,7 +429,7 @@ private fun ContactRow(contact: EmergencyContact, onCall: () -> Unit) {
                 fontWeight = FontWeight.Bold
             )
             Icon(
-                imageVector = Icons.Default.Phone,
+                painter = painterResource(R.drawable.ic_phone),
                 contentDescription = "Call ${contact.label}",
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -446,13 +437,13 @@ private fun ContactRow(contact: EmergencyContact, onCall: () -> Unit) {
     }
 }
 
-private fun iconForCategory(category: EmergencyCategory): ImageVector = when (category) {
-    EmergencyCategory.GENERAL -> Icons.Default.Sos
-    EmergencyCategory.POLICE -> Icons.Default.LocalPolice
-    EmergencyCategory.MEDICAL -> Icons.Default.LocalHospital
-    EmergencyCategory.FIRE -> Icons.Default.LocalFireDepartment
-    EmergencyCategory.ROADSIDE -> Icons.Default.Warning
-    EmergencyCategory.OTHER -> Icons.Default.Phone
+private fun iconForCategory(category: EmergencyCategory): Int = when (category) {
+    EmergencyCategory.GENERAL -> R.drawable.ic_sos
+    EmergencyCategory.POLICE -> R.drawable.ic_local_police
+    EmergencyCategory.MEDICAL -> R.drawable.ic_local_hospital
+    EmergencyCategory.FIRE -> R.drawable.ic_local_fire_department
+    EmergencyCategory.ROADSIDE -> R.drawable.ic_warning
+    EmergencyCategory.OTHER -> R.drawable.ic_phone
 }
 
 private fun colorForCategory(category: EmergencyCategory): Color = when (category) {

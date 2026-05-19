@@ -20,9 +20,6 @@ import fr.geoking.gaston.ui.ColorHelper
 import fr.geoking.gaston.poi.MapPoiFilter
 import kotlin.math.roundToInt
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Map
-
 @Composable
 fun CheapestStationsCard(
     stations: List<Poi>,
@@ -61,7 +58,7 @@ fun CheapestStationsCard(
                     modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Map,
+                        painter = painterResource(R.drawable.ic_map),
                         contentDescription = "Open Map",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
