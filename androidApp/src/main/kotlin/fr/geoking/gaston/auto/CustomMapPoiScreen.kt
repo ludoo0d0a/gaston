@@ -100,6 +100,7 @@ class CustomMapPoiScreen(
     private var headingUpdateJob: Job? = null
     private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
     private var lastKnownBearingDegrees: Float = 0f
+    private var lastMapOrientationUpdateMillis: Long = 0
 
     /** Last resolved search center; combined with settings so auto mode reloads when the vehicle moves across regions. */
     private val searchCenterFlow = MutableStateFlow(searchLat to searchLon)
@@ -253,7 +254,7 @@ class CustomMapPoiScreen(
             lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
             Log.d("CustomMapPoiScreen", "loadPois search center lat=$lat lon=$lon bearing=$lastKnownBearingDegrees")
 
-            surfaceRenderer?.updateUserLocation(searchLat, searchLon)
+            surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
             applyMapOrientationToRenderer()
 
             try {
@@ -265,7 +266,7 @@ class CustomMapPoiScreen(
                 val filteredPois = getFilteredPois(settings)
                 surfaceRenderer?.let { renderer ->
                     renderer.updateLocation(searchLat, searchLon, zoom)
-                    renderer.updateUserLocation(lat, lon)
+                    renderer.updateUserLocation(lat, lon, lastKnownBearingDegrees)
                     renderer.updatePois(
                         newPois = filteredPois,
                         effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
@@ -374,6 +375,7 @@ class CustomMapPoiScreen(
 
     private fun applyMapOrientationToRenderer() {
         surfaceRenderer?.setMapOrientation(orientationMode, lastKnownBearingDegrees)
+        lastMapOrientationUpdateMillis = System.currentTimeMillis()
     }
 
     private fun toggleMapOrientation() {
@@ -384,9 +386,6 @@ class CustomMapPoiScreen(
         applyMapOrientationToRenderer()
         if (orientationMode == MapOrientationMode.HeadingUp) {
             lifecycleScope.launch { refreshHeadingFromLocation() }
-            startHeadingUpdates()
-        } else {
-            stopHeadingUpdates()
         }
         invalidate()
     }
@@ -401,7 +400,7 @@ class CustomMapPoiScreen(
                 searchCenterFlow.value = searchLat to searchLon
                 lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
                 surfaceRenderer?.updateLocation(searchLat, searchLon, zoom)
-                surfaceRenderer?.updateUserLocation(searchLat, searchLon)
+                surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
                 applyMapOrientationToRenderer()
             }
             loadPois()
@@ -411,9 +410,9 @@ class CustomMapPoiScreen(
     private fun startHeadingUpdates() {
         stopHeadingUpdates()
         headingUpdateJob = lifecycleScope.launch {
-            while (isActive && orientationMode == MapOrientationMode.HeadingUp) {
-                delay(2_000)
+            while (isActive) {
                 refreshHeadingFromLocation()
+                delay(1_000)
             }
         }
     }
@@ -427,8 +426,14 @@ class CustomMapPoiScreen(
         val location = LocationHelper.getCurrentLocation(carContext, timeoutMs = 2_000L)
         if (location != null) {
             lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
-            surfaceRenderer?.updateUserLocation(location.latitude, location.longitude)
-            applyMapOrientationToRenderer()
+            surfaceRenderer?.updateUserLocation(location.latitude, location.longitude, lastKnownBearingDegrees)
+
+            if (orientationMode == MapOrientationMode.HeadingUp &&
+                System.currentTimeMillis() - lastMapOrientationUpdateMillis >= 30_000L) {
+                applyMapOrientationToRenderer()
+            } else {
+                invalidate()
+            }
         }
     }
 
@@ -436,6 +441,7 @@ class CustomMapPoiScreen(
         Log.d("CustomMapPoiScreen", "onSurfaceAvailable")
         surfaceRenderer?.stop()
         themeCollectionJob?.cancel()
+        startHeadingUpdates()
         val surface = surfaceContainer.surface
         if (surface == null) {
             // Some head units/emulators can report an available container before the Surface is ready.
@@ -464,9 +470,6 @@ class CustomMapPoiScreen(
             )
             setMapOrientation(orientationMode, lastKnownBearingDegrees)
             start()
-        }
-        if (orientationMode == MapOrientationMode.HeadingUp) {
-            startHeadingUpdates()
         }
 
         themeCollectionJob = lifecycleScope.launch {

@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.content.Context
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Rect
 import android.util.Log
 import android.util.LruCache
@@ -43,6 +44,7 @@ class AutoSurfaceRenderer(
     private var zoom: Int = 13
     private var userLat: Double? = null
     private var userLon: Double? = null
+    private var userHeadingDegrees: Float = 0f
     private var visibleArea: Rect? = null
     private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
     private var headingDegrees: Float = 0f
@@ -68,7 +70,29 @@ class AutoSurfaceRenderer(
     private val executor = Executors.newFixedThreadPool(4)
 
     private val backgroundPaint = Paint().apply { color = Color.LTGRAY }
+    private val userLocationPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = NAVIGATION_BLUE
+        style = Paint.Style.FILL
+    }
+    private val userLocationStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 4f
+        strokeJoin = Paint.Join.ROUND
+    }
+    private val arrowPath = Path().apply {
+        val radius = 24f
+        moveTo(0f, -radius)
+        lineTo(-radius * 0.8f, radius * 0.8f)
+        lineTo(0f, radius * 0.4f)
+        lineTo(radius * 0.8f, radius * 0.8f)
+        close()
+    }
     private val drawThread = Thread(::runDrawLoop, "AutoSurfaceRenderer")
+
+    companion object {
+        private val NAVIGATION_BLUE = Color.parseColor("#4285F4")
+    }
 
     fun start() {
         if (!drawThread.isAlive) drawThread.start()
@@ -104,9 +128,10 @@ class AutoSurfaceRenderer(
         }
     }
 
-    fun updateUserLocation(newLat: Double, newLon: Double) {
+    fun updateUserLocation(newLat: Double, newLon: Double, heading: Float = userHeadingDegrees) {
         userLat = newLat
         userLon = newLon
+        userHeadingDegrees = AutoMapHeading.normalizeDegrees(heading)
     }
 
     fun updateVisibleArea(area: Rect) {
@@ -222,31 +247,16 @@ class AutoSurfaceRenderer(
         val drawX = ((tileX - centerX) * tileSize + centerPxX).toFloat()
         val drawY = ((tileY - centerY) * tileSize + centerPxY).toFloat()
 
-        val radius = 16f
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.RED
-            style = Paint.Style.FILL
-        }
-        val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            style = Paint.Style.STROKE
-            strokeWidth = 4f
-        }
+        val bearing = mapBearingDegrees
+        val rotation = userHeadingDegrees - bearing
 
-        canvas.drawCircle(drawX, drawY, radius, paint)
-        canvas.drawCircle(drawX, drawY, radius, strokePaint)
+        canvas.save()
+        canvas.translate(drawX, drawY)
+        canvas.rotate(rotation)
 
-        if (orientationMode == MapOrientationMode.HeadingUp) {
-            val tipLen = radius * 2.2f
-            val headingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.RED
-                style = Paint.Style.STROKE
-                strokeWidth = 5f
-                strokeCap = Paint.Cap.ROUND
-            }
-            // Inside the rotated canvas, forward is toward the top of the screen.
-            canvas.drawLine(drawX, drawY, drawX, drawY - tipLen, headingPaint)
-        }
+        canvas.drawPath(arrowPath, userLocationPaint)
+        canvas.drawPath(arrowPath, userLocationStrokePaint)
+        canvas.restore()
     }
 
     private fun getTile(x: Int, y: Int, z: Int): Bitmap? {
