@@ -33,27 +33,26 @@ data class PecoStation(
 
 class RomaniaPecoClient(
     private val client: HttpClient,
-    private val applicationId: String,
-    private val clientKey: String,
+    applicationId: String,
+    clientKey: String,
 ) {
+    private val applicationId = applicationId.ifBlank { RomaniaPecoDefaults.APPLICATION_ID }
+    private val clientKey = clientKey.ifBlank { RomaniaPecoDefaults.CLIENT_KEY }
     private val apiUrl = "https://pg-app-hnf14cfy2xb2v9x9eueuchcd2xyetd.scalabl.cloud/1/classes/farapret3"
 
-    private fun parseHeaders(): Map<String, String>? {
-        if (applicationId.isBlank() || clientKey.isBlank()) return null
-        return mapOf(
-            "X-Parse-Application-Id" to applicationId,
-            "X-Parse-Client-Key" to clientKey,
-            "User-Agent" to "Parse Android SDK API Level 34",
-        )
-    }
+    private fun parseHeaders(): Map<String, String> = mapOf(
+        "X-Parse-Application-Id" to applicationId,
+        "X-Parse-Client-Key" to clientKey,
+        "User-Agent" to "Parse Android SDK API Level 34",
+    )
 
     suspend fun fetchAllStations(): List<PecoStation> {
-        val headers = parseHeaders() ?: return emptyList()
+        val headers = parseHeaders()
         val stations = mutableListOf<PecoStation>()
         val limit = 1000
         var skip = 0
 
-        val where = "{\"Benzina_Regular\":{\"\$gt\":0,\"\$lt\":999999}}"
+        val where = RomaniaPecoDefaults.WHERE_CLAUSE
 
         while (true) {
             val url = "$apiUrl?limit=$limit&skip=$skip&where=$where"

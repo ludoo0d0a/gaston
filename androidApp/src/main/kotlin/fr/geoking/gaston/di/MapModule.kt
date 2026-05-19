@@ -51,6 +51,7 @@ import fr.geoking.gaston.api.routing.OsrmRoutingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.routex.RoutexProvider
+import fr.geoking.gaston.api.romania.RomaniaPecoDefaults
 import fr.geoking.gaston.api.romania.RomaniaPecoProvider
 import fr.geoking.gaston.api.serbia.SerbiaNisProvider
 import fr.geoking.gaston.api.si.GorivaSiProvider
@@ -162,8 +163,8 @@ val mapModule = module {
     single<PoiProvider>(named("romaniapeco")) {
         RomaniaPecoProvider(
             get(),
-            applicationId = BuildConfig.ROMANIA_PECO_APPLICATION_ID,
-            clientKey = BuildConfig.ROMANIA_PECO_CLIENT_KEY,
+            applicationId = BuildConfig.ROMANIA_PECO_APPLICATION_ID.ifBlank { RomaniaPecoDefaults.APPLICATION_ID },
+            clientKey = BuildConfig.ROMANIA_PECO_CLIENT_KEY.ifBlank { RomaniaPecoDefaults.CLIENT_KEY },
             radiusKm = 20,
             limit = 80,
         )
