@@ -41,8 +41,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Run country station load integration tests
+        id: run_tests
         env:
           RUN_REAL_API_TESTS: "1"
+          STATION_LOAD_PROBE_REPORT: ${{ github.workspace }}/shared/build/station-load-probe-report.json
           FUELPRICES_DK_KEY: ${{ secrets.FUELPRICES_DK_KEY }}
           GERMANY_TANKERKOENIG_KEY: ${{ secrets.GERMANY_TANKERKOENIG_KEY }}
           ROMANIA_PECO_APPLICATION_ID: ${{ secrets.ROMANIA_PECO_APPLICATION_ID }}
@@ -52,11 +54,101 @@ jobs:
             -PrunRealApiTests=true \
             --tests "fr.geoking.gaston.integration.CountryStationLoadRealApiTests"
 
-      - name: Summary
+      - name: Publish probe summary
         if: always()
+        env:
+          FUELPRICES_DK_KEY: ${{ secrets.FUELPRICES_DK_KEY }}
+          GERMANY_TANKERKOENIG_KEY: ${{ secrets.GERMANY_TANKERKOENIG_KEY }}
+          ROMANIA_PECO_APPLICATION_ID: ${{ secrets.ROMANIA_PECO_APPLICATION_ID }}
+          ROMANIA_PECO_CLIENT_KEY: ${{ secrets.ROMANIA_PECO_CLIENT_KEY }}
+          REPORT: ${{ github.workspace }}/shared/build/station-load-probe-report.json
+          TEST_OUTCOME: ${{ steps.run_tests.outcome }}
         run: |
-          echo "### Station load integration" >> "$GITHUB_STEP_SUMMARY"
-          echo "Live HTTP checks for auto-mode fuel providers in all supported countries (see \`AutoModeCountryProbes\`)." >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Required secrets for key-gated probes: \`FUELPRICES_DK_KEY\`, \`GERMANY_TANKERKOENIG_KEY\`, \`ROMANIA_PECO_APPLICATION_ID\`, \`ROMANIA_PECO_CLIENT_KEY\` (tests fail with an explicit env key name if missing)." >> "$GITHUB_STEP_SUMMARY"
-          echo "Probes marked \`skipIfEmpty\` (SE, IE, AR, ES) are skipped when upstream APIs return no data, not as hard failures." >> "$GITHUB_STEP_SUMMARY"
+          status_label() {
+            case "$1" in
+              ok) echo "✅ OK" ;;
+              skipped) echo "⏭️ Skipped" ;;
+              failed) echo "❌ Failed" ;;
+              missing_env_key) echo "🔑 Missing API key" ;;
+              auth_error) echo "🚫 Auth error (key invalid?)" ;;
+              *) echo "❓ $1" ;;
+            esac
+          }
+
+          secret_status() {
+            if [ -n "${!1}" ]; then
+              echo "✅ configured"
+            else
+              echo "🔑 missing"
+            fi
+          }
+
+          {
+            echo "### Station load integration"
+            echo ""
+            echo "Live HTTP checks for auto-mode fuel providers (see \`AutoModeCountryProbes\`)."
+            echo ""
+            echo "**Gradle test:** ${TEST_OUTCOME}"
+            echo ""
+            echo "#### CI secrets"
+            echo "| Secret | Status | Used by |"
+            echo "|--------|--------|---------|"
+            echo "| \`FUELPRICES_DK_KEY\` | $(secret_status FUELPRICES_DK_KEY) | DK (Denmark) |"
+            echo "| \`GERMANY_TANKERKOENIG_KEY\` | $(secret_status GERMANY_TANKERKOENIG_KEY) | DE (Germany) |"
+            echo "| \`ROMANIA_PECO_APPLICATION_ID\` | $(secret_status ROMANIA_PECO_APPLICATION_ID) | RO (Romania) |"
+            echo "| \`ROMANIA_PECO_CLIENT_KEY\` | $(secret_status ROMANIA_PECO_CLIENT_KEY) | RO (Romania) |"
+            echo ""
+            echo "Probes marked \`skipIfEmpty\` (SE, IE, AR, ES) report **Skipped** when upstream APIs return no data."
+            echo ""
+
+            if [ -f "$REPORT" ]; then
+              echo "#### Summary"
+              jq -r '
+                .probes
+                | group_by(.status)
+                | map({status: .[0].status, count: length})
+                | sort_by(.status)
+                | .[]
+                | "- **\(.status)**: \(.count)"
+              ' "$REPORT"
+              echo ""
+              echo "#### Results by country"
+              echo "| Country | City | Provider | Status | Stations | Details |"
+              echo "|---------|------|----------|--------|----------|---------|"
+              jq -r '
+                .probes[]
+                | [
+                    .iso,
+                    .cityLabel,
+                    .fuelProvider,
+                    .status,
+                    (if .stationCount != null then "\(.stationCount) (\(.validCount // .stationCount) valid)" else "-" end),
+                    (
+                      if .status == "missing_env_key" then
+                        "Missing: " + ((.envKeys // []) | join(", "))
+                      elif .status == "auth_error" then
+                        (.message // "Authentication failed")
+                      elif .message != null then
+                        .message
+                      else
+                        "-"
+                      end
+                    )
+                  ]
+                | @tsv
+              ' "$REPORT" | while IFS=$'\t' read -r iso city provider probe_status stations details; do
+                echo "| **${iso}** | ${city} | \`${provider}\` | $(status_label "${probe_status}") | ${stations} | ${details} |"
+              done
+            else
+              echo "#### Results by country"
+              echo ""
+              echo "⚠️ Probe report not found at \`${REPORT}\`."
+              if [ "$TEST_OUTCOME" = "failure" ]; then
+                echo "Tests failed before writing per-country results — check the Gradle log."
+              elif [ "$TEST_OUTCOME" = "cancelled" ]; then
+                echo "Job was cancelled."
+              else
+                echo "Report file was not produced."
+              fi
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

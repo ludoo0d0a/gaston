@@ -19,16 +19,23 @@ class CountryStationLoadRealApiTests {
 
     @Test
     fun allAutoModeCountries_loadNearbyStations() = runBlocking {
+        val results = mutableListOf<StationLoadProbeResult>()
         val failures = mutableListOf<String>()
         val skipped = mutableListOf<String>()
 
-        for ((index, probe) in AutoModeCountryProbes.ALL.withIndex()) {
-            if (index > 0) delay(1_500)
-            when (val outcome = loadProbe(probe)) {
-                is ProbeOutcome.Success -> Unit
-                is ProbeOutcome.Skipped -> skipped += outcome.reason
-                is ProbeOutcome.Failed -> failures += outcome.message
+        try {
+            for ((index, probe) in AutoModeCountryProbes.ALL.withIndex()) {
+                if (index > 0) delay(1_500)
+                val outcome = loadProbe(probe)
+                results += StationLoadProbeReport.fromProbe(probe, outcome)
+                when (outcome) {
+                    is ProbeOutcome.Success -> Unit
+                    is ProbeOutcome.Skipped -> skipped += outcome.reason
+                    is ProbeOutcome.Failed -> failures += outcome.message
+                }
             }
+        } finally {
+            StationLoadProbeReport.write(results)
         }
 
         if (skipped.isNotEmpty()) {
@@ -55,7 +62,9 @@ class CountryStationLoadRealApiTests {
             RealApiTestProviders.create(client, probe)
         } catch (e: MissingIntegrationTestEnvException) {
             return ProbeOutcome.Failed(
-                "${probe.iso} (${probe.fuelProvider}): ${e.message}",
+                message = "${probe.iso} (${probe.fuelProvider}): ${e.message}",
+                status = StationLoadProbeStatus.MISSING_ENV_KEY,
+                envKeys = e.envKeys,
             )
         }
             ?: return ProbeOutcome.Skipped("${probe.iso}: no provider factory for ${probe.fuelProvider}")
@@ -74,7 +83,7 @@ class CountryStationLoadRealApiTests {
                     )
                 } else {
                     ProbeOutcome.Failed(
-                        "${probe.iso} (${probe.cityLabel}, ${probe.fuelProvider}): returned 0 stations",
+                        message = "${probe.iso} (${probe.cityLabel}, ${probe.fuelProvider}): returned 0 stations",
                     )
                 }
             } else {
@@ -85,16 +94,18 @@ class CountryStationLoadRealApiTests {
                 }
                 if (valid == 0) {
                     ProbeOutcome.Failed(
-                        "${probe.iso} (${probe.cityLabel}, ${probe.fuelProvider}): ${pois.size} results but none had valid name/coordinates",
+                        message = "${probe.iso} (${probe.cityLabel}, ${probe.fuelProvider}): ${pois.size} results but none had valid name/coordinates",
                     )
                 } else {
                     println("${probe.iso}: ${pois.size} station(s), $valid with name+coordinates")
-                    ProbeOutcome.Success
+                    ProbeOutcome.Success(total = pois.size, valid = valid)
                 }
             }
         } catch (e: Exception) {
+            val message = "${probe.iso} (${probe.cityLabel}, ${probe.fuelProvider}): ${e::class.simpleName}: ${e.message}"
             ProbeOutcome.Failed(
-                "${probe.iso} (${probe.cityLabel}, ${probe.fuelProvider}): ${e::class.simpleName}: ${e.message}",
+                message = message,
+                status = StationLoadProbeReport.classifyFailure(e, message),
             )
         }
     }
@@ -110,11 +121,5 @@ class CountryStationLoadRealApiTests {
             if (last.isNotEmpty()) return last
         }
         return last
-    }
-
-    private sealed interface ProbeOutcome {
-        data object Success : ProbeOutcome
-        data class Skipped(val reason: String) : ProbeOutcome
-        data class Failed(val message: String) : ProbeOutcome
     }
 }
