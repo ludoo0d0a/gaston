@@ -13,6 +13,7 @@ import android.os.Build
 import android.telephony.TelephonyManager
 import android.util.Log
 import fr.geoking.gaston.feature.location.LocationHelper
+import fr.geoking.gaston.shared.network.CountrySource
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkStatus
 import fr.geoking.gaston.shared.network.NetworkType
@@ -107,10 +108,16 @@ class AndroidNetworkService(
 
             // Prefer GPS-based country code for cross-border accuracy, fallback to Telephony
             val finalCountryCode = locationCountryCode ?: telephonyCountry
+            val countrySource = when {
+                locationCountryCode != null -> CountrySource.LOCATION
+                telephonyCountry != null -> CountrySource.NETWORK
+                else -> CountrySource.UNKNOWN
+            }
 
             NetworkStatus(
                 countryCode = finalCountryCode,
                 countryName = locationCountryName, // Might be null if only telephony worked
+                countrySource = countrySource,
                 telephonyCountryCode = telephonyCountry,
                 networkType = networkType,
                 isRoaming = isRoaming,

@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.feature.location.LocationHelper
+import fr.geoking.gaston.shared.network.CountrySource
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkType
 import fr.geoking.gaston.ui.dashboard.GastonTheme
@@ -123,16 +124,17 @@ fun PhoneNetworkLocationScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    stringResource(
-                        R.string.network_type_operator,
-                        networkStatus.networkType.localizedLabel(context),
-                        operatorName
-                    ),
+                    stringResource(R.string.network_operator, operatorName),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                val countrySource = when (networkStatus.countrySource) {
+                    CountrySource.LOCATION -> " " + stringResource(R.string.network_source_location)
+                    CountrySource.NETWORK -> " " + stringResource(R.string.network_source_network)
+                    CountrySource.UNKNOWN -> ""
+                }
                 Text(
-                    stringResource(R.string.network_country_roaming, countryLabel, roamingLabel),
+                    stringResource(R.string.network_country_roaming, "$countryLabel$countrySource", roamingLabel),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

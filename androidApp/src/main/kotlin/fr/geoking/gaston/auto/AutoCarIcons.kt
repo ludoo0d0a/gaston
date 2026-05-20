@@ -91,6 +91,8 @@ fun CarContext.actionRecenterIcon(): CarIcon = carIcon(R.drawable.ic_gps_fixed, 
 
 fun CarContext.actionHistoryIcon(): CarIcon = carIcon(R.drawable.ic_history, AutoCarIcons.muted)
 
+fun CarContext.actionRefreshIcon(): CarIcon = carIcon(R.drawable.ic_refresh, AutoCarIcons.primary)
+
 fun CarContext.emergencyCategoryIcon(category: EmergencyCategory): CarIcon = when (category) {
     EmergencyCategory.GENERAL -> carIcon(R.drawable.ic_sos, AutoCarIcons.emergency)
     EmergencyCategory.POLICE -> carIcon(R.drawable.ic_local_police, AutoCarIcons.police)

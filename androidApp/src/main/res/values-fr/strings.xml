@@ -524,6 +524,9 @@
     <string name="network_disconnected">Déconnecté</string>
     <string name="network_type_operator">Type : %1$s · Opérateur : %2$s</string>
     <string name="network_country_roaming">Pays : %1$s · Itinérance : %2$s</string>
+    <string name="network_operator">Opérateur : %1$s</string>
+    <string name="network_source_location">(via position)</string>
+    <string name="network_source_network">(via réseau)</string>
     <string name="network_yes">Oui</string>
     <string name="network_no">Non</string>
     <string name="network_unknown">Inconnu</string>

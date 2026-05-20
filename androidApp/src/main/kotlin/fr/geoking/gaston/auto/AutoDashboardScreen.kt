@@ -121,7 +121,7 @@ class AutoDashboardScreen(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.dashboard_network))
                 .setImage(carContext.dashboardNetworkIcon())
-                .setOnClickListener { screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService)) }
+                .setOnClickListener { screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService, connectivityManager)) }
                 .build()
         )
 
