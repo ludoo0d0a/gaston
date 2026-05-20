@@ -21,6 +21,7 @@ import androidx.car.app.SurfaceCallback
 import androidx.car.app.SurfaceContainer
 import androidx.car.app.AppManager
 import androidx.car.app.constraints.ConstraintManager
+import com.google.android.gms.location.Priority
 import androidx.lifecycle.DefaultLifecycleObserver
 import fr.geoking.gaston.poi.PoiProviderType
 import androidx.lifecycle.lifecycleScope
@@ -412,7 +413,7 @@ class CustomMapPoiScreen(
         headingUpdateJob = lifecycleScope.launch {
             while (isActive) {
                 refreshHeadingFromLocation()
-                delay(1_000)
+                delay(3_000)
             }
         }
     }
@@ -423,7 +424,12 @@ class CustomMapPoiScreen(
     }
 
     private suspend fun refreshHeadingFromLocation() {
-        val location = LocationHelper.getCurrentLocation(carContext, timeoutMs = 2_000L)
+        val priority = if (orientationMode == MapOrientationMode.HeadingUp) {
+            Priority.PRIORITY_HIGH_ACCURACY
+        } else {
+            Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        }
+        val location = LocationHelper.getCurrentLocation(carContext, timeoutMs = 2_000L, priority = priority)
         if (location != null) {
             lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
             surfaceRenderer?.updateUserLocation(location.latitude, location.longitude, lastKnownBearingDegrees)

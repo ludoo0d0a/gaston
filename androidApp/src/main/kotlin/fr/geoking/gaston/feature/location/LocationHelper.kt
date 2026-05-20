@@ -16,7 +16,11 @@ object LocationHelper {
     private const val FRESH_AGE_MS = 300_000L // 5 minutes
 
     @SuppressLint("MissingPermission")
-    suspend fun getCurrentLocation(context: Context, timeoutMs: Long = 3000L): Location? {
+    suspend fun getCurrentLocation(
+        context: Context,
+        timeoutMs: Long = 3000L,
+        priority: Int = Priority.PRIORITY_HIGH_ACCURACY
+    ): Location? {
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
 
         // 1. Try last location first (instant if available)
@@ -32,11 +36,11 @@ object LocationHelper {
         }
 
         // 2. Request a fresh location with timeout
-        Log.d(TAG, "Requesting fresh location (timeout ${timeoutMs}ms)")
+        Log.d(TAG, "Requesting fresh location (priority=$priority, timeout=${timeoutMs}ms)")
         val cts = CancellationTokenSource()
         val fresh = withTimeoutOrNull(timeoutMs) {
             try {
-                fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token).await()
+                fusedClient.getCurrentLocation(priority, cts.token).await()
             } finally {
                 cts.cancel()
             }

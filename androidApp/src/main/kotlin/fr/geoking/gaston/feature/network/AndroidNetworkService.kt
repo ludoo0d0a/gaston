@@ -12,6 +12,7 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.telephony.TelephonyManager
 import android.util.Log
+import com.google.android.gms.location.Priority
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.shared.network.CountrySource
 import fr.geoking.gaston.shared.network.NetworkService
@@ -20,6 +21,8 @@ import fr.geoking.gaston.shared.network.NetworkType
 import fr.geoking.gaston.shared.platform.PermissionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +37,11 @@ class AndroidNetworkService(
     private val scope: CoroutineScope,
     private val permissionManager: PermissionManager
 ) : NetworkService {
+
+    private var updateJob: Job? = null
+    private var lastLocationCountryUpdateMs = 0L
+    private var cachedLocationCountryCode: String? = null
+    private var cachedLocationCountryName: String? = null
 
     private val _status = MutableStateFlow(NetworkStatus())
     override val status: StateFlow<NetworkStatus> = _status.asStateFlow()
@@ -69,7 +77,12 @@ class AndroidNetworkService(
     }
 
     private fun updateStatus() {
-        scope.launch(Dispatchers.IO) {
+        val isFirstUpdate = _status.value.countryCode == null && _status.value.operatorName == null
+        updateJob?.cancel()
+        updateJob = scope.launch(Dispatchers.IO) {
+            if (!isFirstUpdate) {
+                delay(5000) // Debounce network state changes
+            }
             val newStatus = fetchCurrentStatus()
             _status.value = newStatus
         }
@@ -98,11 +111,21 @@ class AndroidNetworkService(
             var locationCountryName: String? = null
 
             if (permissionManager.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
-                val location = LocationHelper.getCurrentLocation(context)
-                if (location != null) {
-                    val address = getAddress(location)
-                    locationCountryCode = address?.countryCode?.uppercase(Locale.US)
-                    locationCountryName = address?.countryName
+                val now = System.currentTimeMillis()
+                if (now - lastLocationCountryUpdateMs < 600_000L && cachedLocationCountryCode != null) {
+                    locationCountryCode = cachedLocationCountryCode
+                    locationCountryName = cachedLocationCountryName
+                } else {
+                    val location = LocationHelper.getCurrentLocation(context, priority = Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+                    if (location != null) {
+                        val address = getAddress(location)
+                        locationCountryCode = address?.countryCode?.uppercase(Locale.US)
+                        locationCountryName = address?.countryName
+
+                        cachedLocationCountryCode = locationCountryCode
+                        cachedLocationCountryName = locationCountryName
+                        lastLocationCountryUpdateMs = now
+                    }
                 }
             }
 
