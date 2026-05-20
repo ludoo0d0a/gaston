@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,12 +29,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.res.painterResource
 import fr.geoking.gaston.R
 import androidx.compose.ui.layout.onSizeChanged
@@ -48,6 +52,7 @@ import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.intent.NavDestination
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Minimum query length before opening remote address/city autocomplete on the phone dashboard. */
@@ -65,6 +70,7 @@ fun PhoneDashboardDestinationSearch(
     onOpenRoutes: (NavDestination?, NavDestination?) -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var destQuery by remember(selectedSearchLocation?.label) {
         mutableStateOf(selectedSearchLocation?.label.orEmpty())
     }
@@ -133,6 +139,44 @@ fun PhoneDashboardDestinationSearch(
                 .onSizeChanged { destFieldHeight = it.height },
             shape = RoundedCornerShape(24.dp),
             singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(
+                onSearch = {
+                    if (destSuggestions.isNotEmpty()) {
+                        val first = destSuggestions.first()
+                        destQuery = first.label
+                        destFocused = false
+                        onLocationSelected(first)
+                    } else if (destQuery.length >= PHONE_DEST_AUTOCOMPLETE_MIN_CHARS) {
+                        scope.launch {
+                            val client = geocodingClient ?: return@launch
+                            try {
+                                val biasPair: Pair<Double, Double>? = when {
+                                    !hasLocationPermission -> null
+                                    userLat != null && userLon != null -> userLat to userLon
+                                    else -> {
+                                        val loc = withContext(Dispatchers.IO) { LocationHelper.getCurrentLocation(context) }
+                                        if (loc != null) loc.latitude to loc.longitude else null
+                                    }
+                                }
+                                val remote = client.geocode(
+                                    destQuery,
+                                    limit = 1,
+                                    biasLatitude = biasPair?.first,
+                                    biasLongitude = biasPair?.second
+                                )
+                                if (remote.isNotEmpty()) {
+                                    val first = remote.first()
+                                    destQuery = first.label
+                                    destFocused = false
+                                    onLocationSelected(first)
+                                }
+                            } catch (_: Exception) {
+                            }
+                        }
+                    }
+                }
+            ),
             leadingIcon = {
                 IconButton(onClick = {
                     destQuery = ""
@@ -239,6 +283,23 @@ fun PhoneDashboardDestinationSearch(
                                     color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.weight(1f)
                                 )
+                                IconButton(onClick = {
+                                    onOpenRoutes(
+                                        null,
+                                        NavDestination(
+                                            address = suggestion.label,
+                                            latitude = suggestion.latitude,
+                                            longitude = suggestion.longitude
+                                        )
+                                    )
+                                }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_directions),
+                                        contentDescription = stringResource(R.string.action_open_routes),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
                         }
                     }
