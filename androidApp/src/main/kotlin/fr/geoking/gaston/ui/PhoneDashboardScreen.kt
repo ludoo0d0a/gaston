@@ -85,7 +85,7 @@ fun PhoneDashboardScreen(
     isUpdateInProgress: Boolean = false,
     showAds: Boolean = false,
     onOpenMap: (Poi?) -> Unit,
-    onOpenRoutes: (NavDestination?) -> Unit,
+    onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
     onOpenFavorites: () -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
     onOpenFuelForecast: () -> Unit,

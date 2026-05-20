@@ -122,12 +122,19 @@ fun RoutePlanningScreen(
     onShowOnMap: ((fr.geoking.gaston.api.routing.RouteResult, List<Poi>) -> Unit)? = null,
     onSearchAtLocation: ((Double, Double) -> Unit)? = null,
     initialDestination: NavDestination? = null,
+    initialOrigin: NavDestination? = null,
     showAds: Boolean = false
 ) {
     BackHandler(onBack = onBack)
     val context = LocalContext.current
     var currentRoute by remember { mutableStateOf<fr.geoking.gaston.api.routing.RouteResult?>(null) }
-    var originQuery by remember { mutableStateOf("") }
+    var originQuery by remember(initialOrigin) {
+        mutableStateOf(
+            if (initialOrigin != null) {
+                initialOrigin.address ?: initialOrigin.latitude?.let { "${initialOrigin.latitude}, ${initialOrigin.longitude}" } ?: ""
+            } else ""
+        )
+    }
     var destQuery by remember(initialDestination) {
         mutableStateOf(
             if (initialDestination != null) {
@@ -135,7 +142,7 @@ fun RoutePlanningScreen(
             } else ""
         )
     }
-    var useCurrentLocationAsOrigin by remember { mutableStateOf(true) }
+    var useCurrentLocationAsOrigin by remember(initialOrigin) { mutableStateOf(initialOrigin == null) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var stations by remember { mutableStateOf<List<Poi>>(emptyList()) }
@@ -167,8 +174,28 @@ fun RoutePlanningScreen(
     var destFocused by remember { mutableStateOf(false) }
     var originFieldHeight by remember { mutableStateOf(0) }
     var destFieldHeight by remember { mutableStateOf(0) }
-    var selectedOrigin by remember { mutableStateOf<GeocodedPlace?>(null) }
-    var selectedDest by remember { mutableStateOf<GeocodedPlace?>(null) }
+    var selectedOrigin by remember(initialOrigin) {
+        mutableStateOf(
+            if (initialOrigin?.latitude != null && initialOrigin.longitude != null) {
+                GeocodedPlace(
+                    label = initialOrigin.address ?: "${initialOrigin.latitude}, ${initialOrigin.longitude}",
+                    latitude = initialOrigin.latitude,
+                    longitude = initialOrigin.longitude
+                )
+            } else null
+        )
+    }
+    var selectedDest by remember(initialDestination) {
+        mutableStateOf(
+            if (initialDestination?.latitude != null && initialDestination.longitude != null) {
+                GeocodedPlace(
+                    label = initialDestination.address ?: "${initialDestination.latitude}, ${initialDestination.longitude}",
+                    latitude = initialDestination.latitude,
+                    longitude = initialDestination.longitude
+                )
+            } else null
+        )
+    }
 
     LaunchedEffect(originQuery, settings.favoriteLocations) {
         if (originQuery.isBlank() || useCurrentLocationAsOrigin) {
@@ -838,8 +865,8 @@ fun RoutePlanningScreen(
         }
     }
 
-    LaunchedEffect(calculateTrigger, initialDestination) {
-        if (calculateTrigger == 0 && initialDestination == null) return@LaunchedEffect
+    LaunchedEffect(calculateTrigger, initialDestination, initialOrigin) {
+        if (calculateTrigger == 0 && initialDestination == null && initialOrigin == null) return@LaunchedEffect
         loading = true
         error = null
         stations = emptyList()
@@ -873,12 +900,7 @@ fun RoutePlanningScreen(
                 }
             }
 
-            val destination = if (initialDestination?.latitude != null && initialDestination.longitude != null) {
-                val resolved = GeocodedPlace(initialDestination.address ?: destQuery, initialDestination.latitude, initialDestination.longitude)
-                selectedDest = resolved
-                Pair(resolved.label, resolved.latitude to resolved.longitude)
-            } else {
-                selectedDest?.let { it.label to (it.latitude to it.longitude) } ?: run {
+            val destination = selectedDest?.let { it.label to (it.latitude to it.longitude) } ?: run {
                     val destResults = geocodingClient.geocode(destQuery, limit = 1)
                     val destFirst = destResults.firstOrNull()
                     if (destFirst == null) {
@@ -889,7 +911,6 @@ fun RoutePlanningScreen(
                     selectedDest = destFirst
                     Pair(destFirst.label, destFirst.latitude to destFirst.longitude)
                 }
-            }
 
             val (oLat, oLon) = origin.second
             val (dLat, dLon) = destination.second
