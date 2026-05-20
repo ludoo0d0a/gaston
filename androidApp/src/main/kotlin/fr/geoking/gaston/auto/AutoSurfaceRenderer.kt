@@ -39,6 +39,7 @@ class AutoSurfaceRenderer(
 ) {
     @Volatile
     private var running = true
+    private var needsRedraw = false
     private var lat: Double = initialLat
     private var lon: Double = initialLon
     private var zoom: Int = 13
@@ -99,24 +100,37 @@ class AutoSurfaceRenderer(
     }
 
     fun stop() {
-        running = false
+        synchronized(this) {
+            running = false
+            (this as java.lang.Object).notifyAll()
+        }
         executor.shutdownNow()
         try { drawThread.join(500) } catch (_: Exception) {}
+    }
+
+    fun invalidate() {
+        synchronized(this) {
+            needsRedraw = true
+            (this as java.lang.Object).notifyAll()
+        }
     }
 
     fun updateLocation(newLat: Double, newLon: Double, newZoom: Int = 13) {
         lat = newLat
         lon = newLon
         zoom = newZoom
+        invalidate()
     }
 
     fun setMapOrientation(mode: MapOrientationMode, headingDegrees: Float = this.headingDegrees) {
         orientationMode = mode
         this.headingDegrees = AutoMapHeading.normalizeDegrees(headingDegrees)
+        invalidate()
     }
 
     fun updateHeading(headingDegrees: Float) {
         this.headingDegrees = AutoMapHeading.normalizeDegrees(headingDegrees)
+        invalidate()
     }
 
     fun setTileUrlTemplate(template: String) {
@@ -125,6 +139,7 @@ class AutoSurfaceRenderer(
             synchronized(tileCache) {
                 tileCache.evictAll()
             }
+            invalidate()
         }
     }
 
@@ -132,10 +147,12 @@ class AutoSurfaceRenderer(
         userLat = newLat
         userLon = newLon
         userHeadingDegrees = AutoMapHeading.normalizeDegrees(heading)
+        invalidate()
     }
 
     fun updateVisibleArea(area: Rect) {
         visibleArea = area
+        invalidate()
     }
 
     fun updatePois(
@@ -146,11 +163,24 @@ class AutoSurfaceRenderer(
         this.pois = newPois
         this.effectiveEnergyTypes = effectiveEnergyTypes
         this.effectivePowerLevels = effectivePowerLevels
+        invalidate()
     }
 
     private fun runDrawLoop() {
         while (running) {
-            val canvas = try { surface.lockCanvas(null) } catch (_: Exception) { null } ?: break
+            synchronized(this) {
+                while (!needsRedraw && running) {
+                    try {
+                        (this as java.lang.Object).wait()
+                    } catch (e: InterruptedException) {
+                        return
+                    }
+                }
+                needsRedraw = false
+            }
+            if (!running) break
+
+            val canvas = try { surface.lockCanvas(null) } catch (_: Exception) { null } ?: continue
             try {
                 canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backgroundPaint)
                 val bearing = mapBearingDegrees
@@ -169,7 +199,6 @@ class AutoSurfaceRenderer(
             } finally {
                 try { surface.unlockCanvasAndPost(canvas) } catch (_: Exception) {}
             }
-            try { Thread.sleep(100) } catch (_: InterruptedException) { break }
         }
     }
 
@@ -284,6 +313,7 @@ class AutoSurfaceRenderer(
                             synchronized(tileCache) {
                                 tileCache.put(key, bitmap)
                             }
+                            invalidate()
                         }
                     }
                 } catch (e: Exception) {
