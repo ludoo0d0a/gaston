@@ -63,6 +63,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 /**
  * POI map with a custom OSM surface renderer. Supports north-up and heading-up orientation
@@ -106,6 +107,15 @@ class CustomMapPoiScreen(
     /** Last resolved search center; combined with settings so auto mode reloads when the vehicle moves across regions. */
     private val searchCenterFlow = MutableStateFlow(searchLat to searchLon)
 
+    private var lastCameraFitWidth: Int = 0
+    private var lastCameraFitHeight: Int = 0
+    private var hasAppliedVisibleAreaCamera: Boolean = false
+    private var lastAppliedSearchLat: Double = searchLat
+    private var lastAppliedSearchLon: Double = searchLon
+    private var lastAppliedZoom: Int = zoom
+    private var lastSyncedPoiIds: List<String> = emptyList()
+    private var visibleAreaCameraJob: Job? = null
+
     init {
         lifecycle.addObserver(this)
         lifecycleScope.launch {
@@ -139,9 +149,15 @@ class CustomMapPoiScreen(
                 }
                 .distinctUntilChanged()
                 .collectLatest {
+                    syncRendererWithMapState()
                     invalidate()
                 }
         }
+    }
+
+    private companion object {
+        private const val VISIBLE_AREA_SIZE_DELTA_PX = 8
+        private const val VISIBLE_AREA_CAMERA_DEBOUNCE_MS = 150L
     }
 
     private data class PoiFetchSettings(
@@ -195,6 +211,67 @@ class CustomMapPoiScreen(
         searchLat = camera.centerLat
         searchLon = camera.centerLon
         zoom = camera.zoom
+        lastAppliedSearchLat = searchLat
+        lastAppliedSearchLon = searchLon
+        lastAppliedZoom = zoom
+    }
+
+    private fun shouldRefitCameraForVisibleArea(area: Rect): Boolean {
+        if (area.width() <= 0 || area.height() <= 0) return false
+        if (!hasAppliedVisibleAreaCamera) return true
+        return abs(area.width() - lastCameraFitWidth) > VISIBLE_AREA_SIZE_DELTA_PX ||
+            abs(area.height() - lastCameraFitHeight) > VISIBLE_AREA_SIZE_DELTA_PX
+    }
+
+    private fun refitCameraForVisibleAreaIfNeeded() {
+        val area = currentVisibleArea ?: return
+        if (isLoading || !shouldRefitCameraForVisibleArea(area)) return
+        val settings = settingsManager.settings.value
+        val filteredPois = getFilteredPois(settings)
+        if (filteredPois.isEmpty()) return
+
+        val prevLat = searchLat
+        val prevLon = searchLon
+        val prevZoom = zoom
+        val (userLat, userLon) = searchCenterFlow.value
+        applyCameraForStations(userLat, userLon, filteredPois, zoom)
+        lastCameraFitWidth = area.width()
+        lastCameraFitHeight = area.height()
+        hasAppliedVisibleAreaCamera = true
+
+        if (prevLat != searchLat || prevLon != searchLon || prevZoom != zoom) {
+            Log.d(
+                "CustomMapPoiScreen",
+                "refitCamera applied area=${area.width()}x${area.height()} zoom=$prevZoom->$zoom"
+            )
+            syncRendererWithMapState()
+        }
+    }
+
+    private fun syncRendererWithMapState() {
+        val renderer = surfaceRenderer ?: return
+        val settings = settingsManager.settings.value
+        val filteredPois = getFilteredPois(settings)
+        val poiIds = filteredPois.map { it.id }
+
+        if (searchLat != lastAppliedSearchLat ||
+            searchLon != lastAppliedSearchLon ||
+            zoom != lastAppliedZoom
+        ) {
+            renderer.updateLocation(searchLat, searchLon, zoom)
+            lastAppliedSearchLat = searchLat
+            lastAppliedSearchLon = searchLon
+            lastAppliedZoom = zoom
+        }
+        renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
+        if (poiIds != lastSyncedPoiIds) {
+            lastSyncedPoiIds = poiIds
+            renderer.updatePois(
+                newPois = filteredPois,
+                effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
+                effectivePowerLevels = settings.effectiveIrvePowerLevels()
+            )
+        }
     }
 
     private suspend fun searchPoisWithZoomOut(
@@ -265,15 +342,9 @@ class CustomMapPoiScreen(
                 errors = loadedErrors
 
                 val filteredPois = getFilteredPois(settings)
-                surfaceRenderer?.let { renderer ->
-                    renderer.updateLocation(searchLat, searchLon, zoom)
-                    renderer.updateUserLocation(lat, lon, lastKnownBearingDegrees)
-                    renderer.updatePois(
-                        newPois = filteredPois,
-                        effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
-                        effectivePowerLevels = settings.effectiveIrvePowerLevels()
-                    )
-                }
+                surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+                lastSyncedPoiIds = emptyList()
+                syncRendererWithMapState()
 
                 Log.d(
                     "CustomMapPoiScreen",
@@ -300,6 +371,7 @@ class CustomMapPoiScreen(
                 availabilityByPoiId = emptyMap()
             }
             isLoading = false
+            refitCameraForVisibleAreaIfNeeded()
             invalidate()
         }
     }
@@ -387,6 +459,8 @@ class CustomMapPoiScreen(
         applyMapOrientationToRenderer()
         if (orientationMode == MapOrientationMode.HeadingUp) {
             lifecycleScope.launch { refreshHeadingFromLocation() }
+        } else {
+            syncRendererWithMapState()
         }
         invalidate()
     }
@@ -465,28 +539,30 @@ class CustomMapPoiScreen(
         ).apply {
             updateLocation(searchLat, searchLon, zoom)
             currentVisibleArea?.let { updateVisibleArea(it) }
-            val settings = settingsManager.settings.value
-            val filteredPois = getFilteredPois(settings)
-            updateUserLocation(searchLat, searchLon)
-            updatePois(
-                newPois = filteredPois,
-                effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
-                effectivePowerLevels = settings.effectiveIrvePowerLevels()
-            )
-            setMapOrientation(orientationMode, lastKnownBearingDegrees)
             start()
         }
+        lastSyncedPoiIds = emptyList()
+        syncRendererWithMapState()
+        surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
 
         themeCollectionJob = lifecycleScope.launch {
-            settingsManager.settings.collect { settings ->
-                val dark = when (settings.uiThemeMode) {
-                    ThemeMode.Dark -> true
-                    ThemeMode.Light -> false
-                    ThemeMode.System -> carContext.isDarkMode
+            settingsManager.settings
+                .map { settings ->
+                    val dark = when (settings.uiThemeMode) {
+                        ThemeMode.Dark -> true
+                        ThemeMode.Light -> false
+                        ThemeMode.System -> carContext.isDarkMode
+                    }
+                    if (dark) {
+                        "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+                    } else {
+                        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    }
                 }
-                val url = if (dark) "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png" else "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                surfaceRenderer?.setTileUrlTemplate(url)
-            }
+                .distinctUntilChanged()
+                .collect { url ->
+                    surfaceRenderer?.setTileUrlTemplate(url)
+                }
         }
     }
 
@@ -494,20 +570,17 @@ class CustomMapPoiScreen(
         Log.d("CustomMapPoiScreen", "onVisibleAreaChanged: $visibleArea")
         currentVisibleArea = visibleArea
         surfaceRenderer?.updateVisibleArea(visibleArea)
-        if (!isLoading) {
-            val settings = settingsManager.settings.value
-            val filteredPois = getFilteredPois(settings)
-            if (filteredPois.isNotEmpty()) {
-                val (userLat, userLon) = searchCenterFlow.value
-                applyCameraForStations(userLat, userLon, filteredPois, zoom)
-                surfaceRenderer?.updateLocation(searchLat, searchLon, zoom)
-            }
+        visibleAreaCameraJob?.cancel()
+        visibleAreaCameraJob = lifecycleScope.launch {
+            delay(VISIBLE_AREA_CAMERA_DEBOUNCE_MS)
+            refitCameraForVisibleAreaIfNeeded()
         }
     }
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
         Log.d("CustomMapPoiScreen", "onSurfaceDestroyed")
         stopHeadingUpdates()
+        visibleAreaCameraJob?.cancel()
         surfaceRenderer?.stop()
         surfaceRenderer = null
         themeCollectionJob?.cancel()
@@ -525,6 +598,7 @@ class CustomMapPoiScreen(
 
     private fun bumpZoom(delta: Int) {
         zoom = (zoom + delta).coerceIn(4, 18)
+        lastAppliedZoom = zoom
         surfaceRenderer?.updateLocation(searchLat, searchLon, zoom)
         invalidate()
     }
@@ -588,16 +662,6 @@ class CustomMapPoiScreen(
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
         val filteredPois = getFilteredPois(currentSettings)
-
-        surfaceRenderer?.let { renderer ->
-            renderer.updateLocation(searchLat, searchLon, zoom)
-            renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
-            renderer.updatePois(
-                newPois = filteredPois,
-                effectiveEnergyTypes = effectiveEnergies,
-                effectivePowerLevels = effectivePowerLevels
-            )
-        }
 
         val sortedPois = if (sortByPrice) {
             val fuelIds = effectiveEnergies - "electric"

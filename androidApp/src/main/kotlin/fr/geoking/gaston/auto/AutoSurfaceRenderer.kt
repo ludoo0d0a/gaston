@@ -40,6 +40,7 @@ class AutoSurfaceRenderer(
     @Volatile
     private var running = true
     private var needsRedraw = false
+    private var tileRedrawPending = false
     private var lat: Double = initialLat
     private var lon: Double = initialLon
     private var zoom: Int = 13
@@ -60,14 +61,13 @@ class AutoSurfaceRenderer(
         get() = visibleArea?.let { (it.top + it.bottom) / 2.0 } ?: (height / 2.0)
 
     private var pois: List<Poi> = emptyList()
+    private var poiIds: List<String> = emptyList()
     private var effectiveEnergyTypes: Set<String> = emptySet()
     private var effectivePowerLevels: Set<Int> = emptySet()
 
-    // Cache up to 50 tile bitmaps (approx 50 * 256*256*4 bytes ~ 12MB)
-    private val tileCache = LruCache<String, Bitmap>(50)
-    // Tracks active network requests to avoid duplicates
+    // Cache tile bitmaps (heading-up can need ~25+ tiles; 100 ≈ 25MB peak)
+    private val tileCache = LruCache<String, Bitmap>(100)
     private val pendingRequests = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
-    // Fixed thread pool for network I/O
     private val executor = Executors.newFixedThreadPool(4)
 
     private val backgroundPaint = Paint().apply { color = Color.LTGRAY }
@@ -92,6 +92,7 @@ class AutoSurfaceRenderer(
     private val drawThread = Thread(::runDrawLoop, "AutoSurfaceRenderer")
 
     companion object {
+        private const val TAG = "AutoSurfaceRenderer"
         private val NAVIGATION_BLUE = Color.parseColor("#4285F4")
     }
 
@@ -111,7 +112,19 @@ class AutoSurfaceRenderer(
     fun invalidate() {
         synchronized(this) {
             needsRedraw = true
+            tileRedrawPending = false
             (this as java.lang.Object).notifyAll()
+        }
+    }
+
+    /** Incremental redraw when a tile finishes loading; does not flash the full gray background. */
+    private fun scheduleTileRedraw() {
+        synchronized(this) {
+            if (!tileRedrawPending) {
+                tileRedrawPending = true
+                needsRedraw = true
+                (this as java.lang.Object).notifyAll()
+            }
         }
     }
 
@@ -157,8 +170,8 @@ class AutoSurfaceRenderer(
     }
 
     fun updateVisibleArea(area: Rect) {
-        if (visibleArea == area) return
-        visibleArea = area
+        if (visibleArea?.equals(area) == true) return
+        visibleArea = Rect(area)
         invalidate()
     }
 
@@ -167,11 +180,15 @@ class AutoSurfaceRenderer(
         effectiveEnergyTypes: Set<String>,
         effectivePowerLevels: Set<Int>
     ) {
-        if (this.pois == newPois &&
+        val newIds = newPois.map { it.id }
+        if (poiIds == newIds &&
             this.effectiveEnergyTypes == effectiveEnergyTypes &&
             this.effectivePowerLevels == effectivePowerLevels
-        ) return
-        this.pois = newPois
+        ) {
+            return
+        }
+        pois = newPois
+        poiIds = newIds
         this.effectiveEnergyTypes = effectiveEnergyTypes
         this.effectivePowerLevels = effectivePowerLevels
         invalidate()
@@ -188,12 +205,12 @@ class AutoSurfaceRenderer(
                     }
                 }
                 needsRedraw = false
+                tileRedrawPending = false
             }
             if (!running) break
 
             val canvas = try { surface.lockCanvas(null) } catch (_: Exception) { null } ?: continue
             try {
-                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backgroundPaint)
                 val bearing = mapBearingDegrees
                 val cx = centerPxX.toFloat()
                 val cy = centerPxY.toFloat()
@@ -235,10 +252,18 @@ class AutoSurfaceRenderer(
         for (x in startTileX..endTileX) {
             for (y in startTileY..endTileY) {
                 val bitmap = getTile(x, y, zoom)
+                val drawX = ((x - centerX) * tileSize + centerPxX).toFloat()
+                val drawY = ((y - centerY) * tileSize + centerPxY).toFloat()
                 if (bitmap != null) {
-                    val drawX = ((x - centerX) * tileSize + centerPxX).toFloat()
-                    val drawY = ((y - centerY) * tileSize + centerPxY).toFloat()
                     canvas.drawBitmap(bitmap, drawX, drawY, null)
+                } else {
+                    canvas.drawRect(
+                        drawX,
+                        drawY,
+                        drawX + tileSize,
+                        drawY + tileSize,
+                        backgroundPaint
+                    )
                 }
             }
         }
@@ -324,11 +349,11 @@ class AutoSurfaceRenderer(
                             synchronized(tileCache) {
                                 tileCache.put(key, bitmap)
                             }
-                            invalidate()
+                            scheduleTileRedraw()
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("AutoSurfaceRenderer", "Failed to fetch tile $key", e)
+                    Log.e(TAG, "Failed to fetch tile $key", e)
                 } finally {
                     pendingRequests.remove(key)
                 }
