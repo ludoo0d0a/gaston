@@ -116,6 +116,7 @@ class AutoSurfaceRenderer(
     }
 
     fun updateLocation(newLat: Double, newLon: Double, newZoom: Int = 13) {
+        if (lat == newLat && lon == newLon && zoom == newZoom) return
         lat = newLat
         lon = newLon
         zoom = newZoom
@@ -123,34 +124,40 @@ class AutoSurfaceRenderer(
     }
 
     fun setMapOrientation(mode: MapOrientationMode, headingDegrees: Float = this.headingDegrees) {
+        val normalizedHeading = AutoMapHeading.normalizeDegrees(headingDegrees)
+        if (orientationMode == mode && this.headingDegrees == normalizedHeading) return
         orientationMode = mode
-        this.headingDegrees = AutoMapHeading.normalizeDegrees(headingDegrees)
+        this.headingDegrees = normalizedHeading
         invalidate()
     }
 
     fun updateHeading(headingDegrees: Float) {
-        this.headingDegrees = AutoMapHeading.normalizeDegrees(headingDegrees)
+        val normalizedHeading = AutoMapHeading.normalizeDegrees(headingDegrees)
+        if (this.headingDegrees == normalizedHeading) return
+        this.headingDegrees = normalizedHeading
         invalidate()
     }
 
     fun setTileUrlTemplate(template: String) {
-        if (tileUrlTemplate != template) {
-            tileUrlTemplate = template
-            synchronized(tileCache) {
-                tileCache.evictAll()
-            }
-            invalidate()
+        if (tileUrlTemplate == template) return
+        tileUrlTemplate = template
+        synchronized(tileCache) {
+            tileCache.evictAll()
         }
+        invalidate()
     }
 
     fun updateUserLocation(newLat: Double, newLon: Double, heading: Float = userHeadingDegrees) {
+        val normalizedHeading = AutoMapHeading.normalizeDegrees(heading)
+        if (userLat == newLat && userLon == newLon && userHeadingDegrees == normalizedHeading) return
         userLat = newLat
         userLon = newLon
-        userHeadingDegrees = AutoMapHeading.normalizeDegrees(heading)
+        userHeadingDegrees = normalizedHeading
         invalidate()
     }
 
     fun updateVisibleArea(area: Rect) {
+        if (visibleArea == area) return
         visibleArea = area
         invalidate()
     }
@@ -160,6 +167,10 @@ class AutoSurfaceRenderer(
         effectiveEnergyTypes: Set<String>,
         effectivePowerLevels: Set<Int>
     ) {
+        if (this.pois == newPois &&
+            this.effectiveEnergyTypes == effectiveEnergyTypes &&
+            this.effectivePowerLevels == effectivePowerLevels
+        ) return
         this.pois = newPois
         this.effectiveEnergyTypes = effectiveEnergyTypes
         this.effectivePowerLevels = effectivePowerLevels
