@@ -413,7 +413,7 @@ class CustomMapPoiScreen(
         headingUpdateJob = lifecycleScope.launch {
             while (isActive) {
                 refreshHeadingFromLocation()
-                delay(3_000)
+                delay(30_000)
             }
         }
     }
@@ -434,8 +434,7 @@ class CustomMapPoiScreen(
             lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
             surfaceRenderer?.updateUserLocation(location.latitude, location.longitude, lastKnownBearingDegrees)
 
-            if (orientationMode == MapOrientationMode.HeadingUp &&
-                System.currentTimeMillis() - lastMapOrientationUpdateMillis >= 30_000L) {
+            if (orientationMode == MapOrientationMode.HeadingUp) {
                 applyMapOrientationToRenderer()
             } else {
                 invalidate()
