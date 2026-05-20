@@ -10,10 +10,10 @@ import fr.geoking.gaston.ThemeMode
 
 /** Light theme for Play Store phone surfaces (home, diagnostics, map settings). */
 val PlaystoreHomeLightScheme = lightColorScheme(
-    primary = Color(0xFF1E3A8A),
+    primary = Color(0xFF3B82F6),
     onPrimary = Color.White,
     primaryContainer = Color(0xFFDBEAFE),
-    onPrimaryContainer = Color(0xFF1E3A8A),
+    onPrimaryContainer = Color(0xFF3B82F6),
     secondary = Color(0xFFF97316),
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFFFEDD5),
@@ -30,7 +30,7 @@ val PlaystoreHomeLightScheme = lightColorScheme(
 /** Dark theme for Play Store phone surfaces (home, diagnostics, map settings). */
 val PlaystoreHomeDarkScheme = darkColorScheme(
     primary = Color(0xFF93C5FD),
-    onPrimary = Color(0xFF1E3A8A),
+    onPrimary = Color(0xFF3B82F6),
     primaryContainer = Color(0xFF3B82F6),
     onPrimaryContainer = Color.White,
     secondary = Color(0xFFFDBA74),
@@ -38,7 +38,7 @@ val PlaystoreHomeDarkScheme = darkColorScheme(
     secondaryContainer = Color(0xFF9A3412),
     onSecondaryContainer = Color(0xFFFFEDD5),
     tertiary = Color(0xFF60A5FA),
-    onTertiary = Color(0xFF1E3A8A),
+    onTertiary = Color(0xFF3B82F6),
     surface = Color(0xFF1E293B),
     onSurface = Color(0xFFF8FAFC),
     surfaceContainerHighest = Color(0xFF334155),
