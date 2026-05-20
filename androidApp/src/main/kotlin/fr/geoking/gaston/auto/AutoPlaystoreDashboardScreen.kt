@@ -109,7 +109,7 @@ class AutoPlaystoreDashboardScreen(
                 .setTitle(carContext.getString(R.string.dashboard_network))
                 .setImage(carContext.dashboardNetworkIcon())
                 .setOnClickListener {
-                    screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService))
+                    screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService, connectivityManager))
                 }
                 .build()
         )

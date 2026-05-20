@@ -15,6 +15,8 @@ import androidx.car.app.model.Template
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.R
+import fr.geoking.gaston.shared.location.ConnectivityManager
+import fr.geoking.gaston.shared.network.CountrySource
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkStatus
 import fr.geoking.gaston.shared.network.NetworkType
@@ -25,7 +27,8 @@ import java.util.Locale
 
 class AutoNetworkLocationInfoScreen(
     carContext: CarContext,
-    private val networkService: NetworkService
+    private val networkService: NetworkService,
+    private val connectivityManager: ConnectivityManager
 ) : Screen(carContext) {
 
     private var networkStatus: NetworkStatus = NetworkStatus()
@@ -105,9 +108,8 @@ class AutoNetworkLocationInfoScreen(
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoNetworkInfo", "AutoNetworkLocationInfoScreen") {
         val paneBuilder = Pane.Builder()
 
-        // Row 1: Connection Status & Network Type
+        // Row 1: Connection Status
         val connectionStatus = if (networkStatus.isConnected) "Connected" else "Disconnected"
-        val networkTypeLabel = networkStatus.networkType.toReadableString()
         val signalBars = when (networkStatus.signalLevel) {
             1 -> "▂   "
             2 -> "▂▄  "
@@ -118,7 +120,7 @@ class AutoNetworkLocationInfoScreen(
 
         paneBuilder.addRow(
             Row.Builder()
-                .setTitle("$connectionStatus • $networkTypeLabel")
+                .setTitle(connectionStatus)
                 .addText(carContext.getString(R.string.network_signal, signalBars))
                 .setImage(carContext.dashboardRoutesIcon())
                 .build()
@@ -127,11 +129,16 @@ class AutoNetworkLocationInfoScreen(
         // Row 2: Operator & Country
         val operator = networkStatus.operatorName ?: "Unknown"
         val country = networkStatus.countryName ?: networkStatus.countryCode ?: "Unknown"
+        val countrySource = when (networkStatus.countrySource) {
+            CountrySource.LOCATION -> " " + carContext.getString(R.string.network_source_location)
+            CountrySource.NETWORK -> " " + carContext.getString(R.string.network_source_network)
+            CountrySource.UNKNOWN -> ""
+        }
         val roamingText = if (networkStatus.isRoaming) " • Roaming" else ""
 
         paneBuilder.addRow(
             Row.Builder()
-                .setTitle("$operator • $country$roamingText")
+                .setTitle("$operator • $country$countrySource$roamingText")
                 .build()
         )
 
@@ -164,7 +171,13 @@ class AutoNetworkLocationInfoScreen(
                     .setStartHeaderAction(Action.BACK)
                     .addEndHeaderAction(
                         Action.Builder()
-                            .setTitle(carContext.getString(R.string.action_refresh))
+                            .setIcon(carContext.carIcon(R.drawable.ic_notifications, AutoCarIcons.primary))
+                            .setOnClickListener { connectivityManager.triggerManualBorderEvent() }
+                            .build()
+                    )
+                    .addEndHeaderAction(
+                        Action.Builder()
+                            .setIcon(carContext.actionRefreshIcon())
                             .setOnClickListener { loadLocation() }
                             .build()
                     )
