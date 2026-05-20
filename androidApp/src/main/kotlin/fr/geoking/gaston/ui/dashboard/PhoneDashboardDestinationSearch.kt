@@ -62,7 +62,7 @@ fun PhoneDashboardDestinationSearch(
     selectedSearchLocation: GeocodedPlace?,
     settings: AppSettings,
     onLocationSelected: (GeocodedPlace?) -> Unit,
-    onOpenRoutes: (NavDestination?) -> Unit
+    onOpenRoutes: (NavDestination?, NavDestination?) -> Unit
 ) {
     val context = LocalContext.current
     var destQuery by remember(selectedSearchLocation?.label) {
@@ -135,30 +135,43 @@ fun PhoneDashboardDestinationSearch(
             singleLine = true,
             leadingIcon = {
                 IconButton(onClick = {
-                    onOpenRoutes(
-                        selectedSearchLocation?.let {
-                            NavDestination(
-                                address = it.label,
-                                latitude = it.latitude,
-                                longitude = it.longitude
-                            )
-                        }
-                    )
+                    destQuery = ""
+                    onLocationSelected(null)
                 }) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_directions),
-                        contentDescription = stringResource(R.string.action_open_routes),
+                        painter = painterResource(R.drawable.ic_gps_fixed),
+                        contentDescription = stringResource(R.string.action_use_current_location),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
             },
             trailingIcon = {
-                if (destQuery.isNotEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (destQuery.isNotEmpty()) {
+                        IconButton(onClick = {
+                            destQuery = ""
+                            onLocationSelected(null)
+                        }) {
+                            Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.action_clear))
+                        }
+                    }
                     IconButton(onClick = {
-                        destQuery = ""
-                        onLocationSelected(null)
+                        onOpenRoutes(
+                            null,
+                            selectedSearchLocation?.let {
+                                NavDestination(
+                                    address = it.label,
+                                    latitude = it.latitude,
+                                    longitude = it.longitude
+                                )
+                            }
+                        )
                     }) {
-                        Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.action_clear))
+                        Icon(
+                            painter = painterResource(R.drawable.ic_directions),
+                            contentDescription = stringResource(R.string.action_open_routes),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             },

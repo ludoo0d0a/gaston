@@ -88,7 +88,7 @@ fun PhoneDashboardMainContent(
     fuelForecastState: FuelForecastUiState,
     fuelForecastLoading: Boolean,
     onOpenMap: (Poi?) -> Unit,
-    onOpenRoutes: (NavDestination?) -> Unit,
+    onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
     onOpenFuelForecast: () -> Unit,
     onOpenEmergency: () -> Unit,
     onOpenSettings: (List<SettingsScreenPage>?) -> Unit,
@@ -104,6 +104,19 @@ fun PhoneDashboardMainContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item { Spacer(Modifier.height(8.dp)) }
+
+        item {
+            PhoneDashboardDestinationSearch(
+                geocodingClient = geocodingClient,
+                hasLocationPermission = hasLocationPermission,
+                userLat = userLat,
+                userLon = userLon,
+                selectedSearchLocation = selectedSearchLocation,
+                settings = settings,
+                onLocationSelected = onLocationSelected,
+                onOpenRoutes = onOpenRoutes
+            )
+        }
 
         item {
             SearchModeSelector(
@@ -142,13 +155,6 @@ fun PhoneDashboardMainContent(
 
         item {
             val gridActions = listOf(
-                DashboardRow(
-                    title = stringResource(R.string.dashboard_routes),
-                    subtitle = stringResource(R.string.dashboard_routes),
-                    iconResId = R.drawable.ic_directions,
-                    onClick = { onOpenRoutes(null) },
-                    enabled = mapDepsReady
-                ),
                 DashboardRow(
                     title = stringResource(R.string.dashboard_network),
                     subtitle = stringResource(R.string.dashboard_network),

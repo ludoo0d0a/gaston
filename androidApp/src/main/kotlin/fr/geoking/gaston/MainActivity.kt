@@ -380,6 +380,7 @@ fun MainUI(
     var routeForDirections by remember { mutableStateOf<RouteResult?>(null) }
     var stationsForDirections by remember { mutableStateOf<List<Poi>>(emptyList()) }
     var initialNavDestination by remember { mutableStateOf<NavDestination?>(null) }
+    var initialNavOrigin by remember { mutableStateOf<NavDestination?>(null) }
     var settingsInitialStack by remember { mutableStateOf<List<SettingsScreenPage>?>(null) }
 
     val context = LocalContext.current
@@ -524,10 +525,12 @@ fun MainUI(
                         poiProvider = mapDeps!!.poiProvider,
                         geocodingClient = mapDeps!!.geocodingClient,
                         settingsManager = settingsManager,
+                        initialOrigin = initialNavOrigin,
                         onBack = {
                             showMap = false
                             showRoutePlanning = false
                             initialNavDestination = null
+                            initialNavOrigin = null
                             pendingMapPoi = null
                             pendingMapLocation = null
                         },
@@ -592,8 +595,9 @@ fun MainUI(
                             pendingMapPoi = poi
                             showMap = true
                         },
-                        onOpenRoutes = { destination ->
+                        onOpenRoutes = { destination, origin ->
                             initialNavDestination = destination
+                            initialNavOrigin = origin
                             showRoutePlanning = true
                             showMap = true
                         },
@@ -659,10 +663,12 @@ fun MainUI(
                         poiProvider = mapDeps!!.poiProvider,
                         geocodingClient = mapDeps!!.geocodingClient,
                         settingsManager = settingsManager,
+                        initialOrigin = initialNavOrigin,
                         onBack = {
                             showMap = false
                             showRoutePlanning = false
                             initialNavDestination = null
+                            initialNavOrigin = null
                             pendingMapPoi = null
                             pendingMapLocation = null
                         },
@@ -736,8 +742,9 @@ fun MainUI(
                                 pendingMapPoi = poi
                                 showMap = true
                             },
-                            onOpenRoutes = { destination ->
+                        onOpenRoutes = { destination, origin ->
                                 initialNavDestination = destination
+                            initialNavOrigin = origin
                                 showRoutePlanning = true
                                 showMap = true
                             },
