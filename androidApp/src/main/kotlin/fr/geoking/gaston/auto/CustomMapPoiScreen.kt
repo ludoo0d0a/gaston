@@ -81,7 +81,8 @@ class CustomMapPoiScreen(
     private val geocodingClient: GeocodingClient? = null,
     private val communityRepo: CommunityPoiRepository? = null,
     private val favoritesRepo: FavoritesRepository? = null,
-    private val title: String = "Nearby Stations"
+    private val title: String = "Nearby Stations",
+    private val itineraryPoints: List<Pair<Double, Double>> = emptyList()
 ) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
 
     private var pois: List<Poi> = emptyList()
@@ -103,6 +104,7 @@ class CustomMapPoiScreen(
     private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
     private var lastKnownBearingDegrees: Float = 0f
     private var lastMapOrientationUpdateMillis: Long = 0
+    private val historyPoints = mutableListOf<Pair<Double, Double>>()
 
     /** Last resolved search center; combined with settings so auto mode reloads when the vehicle moves across regions. */
     private val searchCenterFlow = MutableStateFlow(searchLat to searchLon)
@@ -413,9 +415,9 @@ class CustomMapPoiScreen(
             .setStartHeaderAction(Action.BACK)
 
         val compassTitle = if (orientationMode == MapOrientationMode.NorthUp) {
-            carContext.getString(R.string.action_orientation_heading_up)
+            carContext.getString(R.string.map_orientation_my_direction)
         } else {
-            carContext.getString(R.string.action_orientation_north_up)
+            carContext.getString(R.string.map_orientation_north_up)
         }
         builder.addEndHeaderAction(
             Action.Builder()
@@ -505,8 +507,16 @@ class CustomMapPoiScreen(
         }
         val location = LocationHelper.getCurrentLocation(carContext, timeoutMs = 2_000L, priority = priority)
         if (location != null) {
+            val lat = location.latitude
+            val lon = location.longitude
             lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
-            surfaceRenderer?.updateUserLocation(location.latitude, location.longitude, lastKnownBearingDegrees)
+            surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+
+            val last = historyPoints.lastOrNull()
+            if (last == null || abs(last.first - lat) > 0.0002 || abs(last.second - lon) > 0.0002) {
+                historyPoints.add(lat to lon)
+                surfaceRenderer?.addHistoryPoint(lat, lon)
+            }
 
             if (orientationMode == MapOrientationMode.HeadingUp) {
                 applyMapOrientationToRenderer()
@@ -539,6 +549,8 @@ class CustomMapPoiScreen(
         ).apply {
             updateLocation(searchLat, searchLon, zoom)
             currentVisibleArea?.let { updateVisibleArea(it) }
+            setHistory(historyPoints)
+            setItinerary(itineraryPoints)
             start()
         }
         lastSyncedPoiIds = emptyList()

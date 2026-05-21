@@ -249,6 +249,8 @@
     <string name="screen_operators">Opérateurs</string>
     <string name="screen_plan_route">Planifier un itinéraire</string>
     <string name="screen_poi_types">Types de POI</string>
+    <string name="map_orientation_north_up">Nord en haut</string>
+    <string name="map_orientation_my_direction">Ma direction</string>
     <string name="screen_power_range">Plage de puissance</string>
     <string name="screen_price_estimation">Estimation des prix</string>
     <string name="screen_range">Autonomie</string>
