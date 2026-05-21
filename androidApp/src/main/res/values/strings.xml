@@ -33,7 +33,7 @@
     <string name="filter_section_power_range">Power Range</string>
     <string name="filters">Filters</string>
     <string name="filters_with_count">Filters (%1$d)</string>
-    <string name="for_my_car">For my car</string>
+    <string name="for_my_car">For my vehicle</string>
     <string name="gas_station">Gas station</string>
     <string name="hi_how_can_i_help">Hi, how can I help you</string>
     <string name="highway">Highway</string>
@@ -44,14 +44,14 @@
     <string name="search_filters">Search Filters</string>
     <string name="search_mode_ev">EV</string>
     <string name="search_mode_fuel">Fuel</string>
-    <string name="search_mode_my_car">My car</string>
+    <string name="search_mode_my_car">My vehicle</string>
     <string name="search_mode_other">Other</string>
     <string name="searching_address">Searching address…</string>
     <string name="tap_to_configure">Tap to configure</string>
     <string name="vehicle_energy_electric">Electric</string>
     <string name="vehicle_energy_fuel">Fuel</string>
     <string name="vehicle_energy_hybrid">Gas &amp; Electric</string>
-    <string name="vehicle_filters_active">Vehicle filters active: %1$s\nUsing your car\'s predefined preferences.</string>
+    <string name="vehicle_filters_active">Vehicle filters active: %1$s\nUsing your vehicle\'s predefined preferences.</string>
     <string name="action_back">Back</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_ok">OK</string>
@@ -138,6 +138,11 @@
     <string name="screen_vehicle_and_range">Vehicle &amp; Range</string>
     <string name="screen_brand_model">Brand &amp; Model</string>
     <string name="screen_vehicle_type">Vehicle Type</string>
+    <string name="vehicle_type_car">Car</string>
+    <string name="vehicle_type_truck">Truck</string>
+    <string name="vehicle_type_motorcycle">Motorcycle</string>
+    <string name="vehicle_type_motorhome">Motorhome</string>
+    <string name="vehicle_type_bicycle">Bicycle</string>
     <string name="screen_tank_capacity">Tank Capacity</string>
     <string name="screen_fuel_consumption">Fuel Consumption</string>
     <string name="screen_battery_capacity">Battery Capacity</string>

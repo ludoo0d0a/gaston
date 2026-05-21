@@ -37,7 +37,8 @@ class OverpassProvider(
         PoiCategory.Parking,
         PoiCategory.Viewpoint,
         PoiCategory.Gas,
-        PoiCategory.Irve
+        PoiCategory.Irve,
+        PoiCategory.BatterySwap
     )
 
     override suspend fun search(request: PoiSearchRequest): List<Poi> {
@@ -55,11 +56,19 @@ class OverpassProvider(
             if (amenityValues.isNotEmpty()) add("amenity" to amenityValues)
             if (tourismValues.isNotEmpty()) add("tourism" to tourismValues)
             if (highwayValues.isNotEmpty()) add("highway" to highwayValues)
+            if (PoiCategory.BatterySwap in wanted) {
+                // Special case for battery swap stations that might not be tagged with amenity
+                add("charging_station:battery_swapping" to setOf("yes"))
+            }
+            if (PoiCategory.BatterySwap in wanted) {
+                add("battery_swap" to setOf("yes"))
+            }
         }
         if (tagFilters.isEmpty()) return emptyList()
         val needsWays = PoiCategory.TruckStop in wanted || PoiCategory.RestArea in wanted ||
             PoiCategory.Restaurant in wanted || PoiCategory.FastFood in wanted ||
-            PoiCategory.Parking in wanted || PoiCategory.Gas in wanted || PoiCategory.Irve in wanted
+            PoiCategory.Parking in wanted || PoiCategory.Gas in wanted || PoiCategory.Irve in wanted ||
+            PoiCategory.BatterySwap in wanted
         val elements = if (needsWays) {
             client.queryNodesAndWaysWithTagFilters(
                 latitude = request.latitude,
@@ -191,6 +200,7 @@ class OverpassProvider(
         PoiCategory.Viewpoint -> "Viewpoint"
         PoiCategory.Gas -> "Gas station"
         PoiCategory.Irve -> "Charging station"
+        PoiCategory.BatterySwap -> "Battery swap"
         else -> c.name
     }
 }

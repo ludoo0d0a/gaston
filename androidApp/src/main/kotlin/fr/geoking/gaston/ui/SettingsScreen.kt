@@ -1493,6 +1493,41 @@ private fun VehicleConfig(
                 ) { onUpdate(settings.copy(vehicleModel = it)) }
 
                 Text(
+                    stringResource(R.string.screen_vehicle_type),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    fr.geoking.gaston.VehicleType.entries.forEach { type ->
+                        val icon = when (type) {
+                            fr.geoking.gaston.VehicleType.Car -> Icons.Default.DirectionsCar
+                            fr.geoking.gaston.VehicleType.Truck -> Icons.Default.LocalShipping
+                            fr.geoking.gaston.VehicleType.Motorcycle -> Icons.Default.TwoWheeler
+                            fr.geoking.gaston.VehicleType.Motorhome -> Icons.Default.Home
+                            fr.geoking.gaston.VehicleType.Bicycle -> Icons.Default.DirectionsBike
+                        }
+                        val label = when (type) {
+                            fr.geoking.gaston.VehicleType.Car -> stringResource(R.string.vehicle_type_car)
+                            fr.geoking.gaston.VehicleType.Truck -> stringResource(R.string.vehicle_type_truck)
+                            fr.geoking.gaston.VehicleType.Motorcycle -> stringResource(R.string.vehicle_type_motorcycle)
+                            fr.geoking.gaston.VehicleType.Motorhome -> stringResource(R.string.vehicle_type_motorhome)
+                            fr.geoking.gaston.VehicleType.Bicycle -> stringResource(R.string.vehicle_type_bicycle)
+                        }
+                        FilterChip(
+                            selected = settings.vehicleType == type,
+                            onClick = { onUpdate(settings.copy(vehicleType = type)) },
+                            label = { Text(label) },
+                            leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) }
+                        )
+                    }
+                }
+
+                Text(
                     stringResource(R.string.vehicle_energy_type),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

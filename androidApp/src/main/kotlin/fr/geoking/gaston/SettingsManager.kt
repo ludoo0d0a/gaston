@@ -434,7 +434,7 @@ open class SettingsManager(
         )
     }
 
-    open fun setMyCarMode() {
+    open fun setMyVehicleMode() {
         val current = _settings.value
         val leavingOther = current.poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
             current.selectedPoiProviders == setOf(PoiProviderType.Overpass)
