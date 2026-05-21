@@ -20,6 +20,9 @@
     <string name="action_fullscreen">Plein écran</string>
     <string name="action_hide_on_map">Masquer sur la carte</string>
     <string name="action_home">Accueil</string>
+    <string name="action_recenter">Recentrer</string>
+    <string name="action_orientation_north_up">Nord en haut</string>
+    <string name="action_orientation_heading_up">Direction en haut</string>
     <string name="action_ignore">Ignorer</string>
     <string name="action_manual">Manuel</string>
     <string name="action_maybe_later">Plus tard</string>
@@ -29,7 +32,6 @@
     <string name="action_open_map">Ouvrir la carte</string>
     <string name="action_open_routes">Ouvrir les itinéraires</string>
     <string name="action_open_website">Ouvrir le site web</string>
-    <string name="action_recenter">Recentrer</string>
     <string name="action_refresh">Actualiser</string>
     <string name="action_remove">Supprimer</string>
     <string name="action_request_details">Détails de la requête</string>

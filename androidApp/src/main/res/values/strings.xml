@@ -74,6 +74,8 @@
     <string name="action_sign_out">Sign out</string>
     <string name="action_home">Home</string>
     <string name="action_recenter">Recenter</string>
+    <string name="action_orientation_north_up">North up</string>
+    <string name="action_orientation_heading_up">Heading up</string>
     <string name="action_zoom_in">Zoom in</string>
     <string name="action_zoom_out">Zoom out</string>
     <string name="action_exit">Exit</string>
