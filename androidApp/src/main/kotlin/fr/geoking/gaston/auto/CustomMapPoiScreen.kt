@@ -413,9 +413,9 @@ class CustomMapPoiScreen(
             .setStartHeaderAction(Action.BACK)
 
         val compassTitle = if (orientationMode == MapOrientationMode.NorthUp) {
-            "Heading up"
+            carContext.getString(R.string.action_orientation_heading_up)
         } else {
-            "North up"
+            carContext.getString(R.string.action_orientation_north_up)
         }
         builder.addEndHeaderAction(
             Action.Builder()
