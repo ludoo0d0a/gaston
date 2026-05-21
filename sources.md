@@ -42,7 +42,7 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **DKV Mobility (OCPI)** | EU (network) | EV charging | `https://api-portal.dkv-mobility.com/...` | Yes — `DKV_SUBSCRIPTION_KEY` |
 | **Eco‑Movement (OCPI 2.2.1)** | EU / Global | EV charging | `https://open-chargepoints.com/api/ocpi/cpo/2.2.1` | Yes — `ECO_MOVEMENT_KEY` |
 | **Belib’ availability** | Paris (FR) | EV charging | `https://parisdata.opendatasoft.com/.../belib-...` | No — see [`BELIB_AVAILABILITY_API.md`](docs/BELIB_AVAILABILITY_API.md) |
-| **OpenStreetMap (Overpass)** | Global | POIs (many) | `https://overpass-api.de/api/interpreter` | No |
+| **OpenStreetMap (Overpass)** | Global | POIs (many), Battery Swap | `https://overpass-api.de/api/interpreter` | No |
 
 ## Present in Pumperly but NOT implemented in Gaston (missing providers)
 

@@ -85,7 +85,7 @@ fun CarContext.actionZoomInIcon(): CarIcon = carIcon(R.drawable.ic_add, AutoCarI
 
 fun CarContext.actionZoomOutIcon(): CarIcon = carIcon(R.drawable.ic_remove, AutoCarIcons.primary)
 
-fun CarContext.actionCompassIcon(): CarIcon = carIcon(R.drawable.ic_compass, AutoCarIcons.primary)
+fun CarContext.actionCompassIcon(): CarIcon = carIconUntinted(R.drawable.ic_compass)
 
 fun CarContext.actionRecenterIcon(): CarIcon = carIcon(R.drawable.ic_gps_fixed, AutoCarIcons.primary)
 

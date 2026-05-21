@@ -52,18 +52,28 @@ fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
         return categories
     }
 
-    // Energy: Gas/Irve
+    // Energy: Gas/Irve/Swap
     val mode = effectiveEnergyFilterMode()
     when (mode) {
-        EnergyFilterMode.Fuel -> categories.add(PoiCategory.Gas)
-        EnergyFilterMode.Electric -> categories.add(PoiCategory.Irve)
+        EnergyFilterMode.Fuel -> {
+            categories.add(PoiCategory.Gas)
+            // Show swap stations in Fuel mode if explicitly requested
+            if (selectedMapEnergyTypes.contains("swap")) {
+                categories.add(PoiCategory.BatterySwap)
+            }
+        }
+        EnergyFilterMode.Electric -> {
+            categories.add(PoiCategory.Irve)
+            categories.add(PoiCategory.BatterySwap)
+        }
         EnergyFilterMode.Hybrid -> {
             categories.add(PoiCategory.Gas)
             categories.add(PoiCategory.Irve)
+            categories.add(PoiCategory.BatterySwap)
         }
     }
 
-    // Vehicle-specific extra amenities (only when "For my car" is active)
+    // Vehicle-specific extra amenities (only when "For my vehicle" is active)
     if (useVehicleFilter) {
         when (vehicleType) {
             VehicleType.Truck -> {
@@ -74,6 +84,10 @@ fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
                 categories.add(PoiCategory.CaravanSite)
                 categories.add(PoiCategory.Camping)
                 categories.add(PoiCategory.PicnicSite)
+            }
+            VehicleType.Motorcycle -> {
+                // For motorcycles, battery swap is often relevant
+                categories.add(PoiCategory.BatterySwap)
             }
             else -> {}
         }
@@ -230,7 +244,33 @@ object StationMapFilters {
         val mode = settings.effectiveEnergyFilterMode()
         val fuelFilters = settings.selectedMapEnergyTypes
         result = result.filter { poi ->
-            MapPoiFilter.matchesEnergyFilter(poi, mode, fuelFilters)
+            if (poi.poiCategory == PoiCategory.BatterySwap) {
+                // If Swap filter is explicitly selected, or if we are in My Vehicle mode with a Motorcycle
+                val swapExplicitlySelected = fuelFilters.contains("swap")
+                val isMotorcycle = settings.useVehicleFilter && settings.vehicleType == VehicleType.Motorcycle
+
+                // Show swap stations if explicitly requested OR if in My Vehicle mode (any vehicle, but user said "show them all" unless motorcycle filter applies)
+                // Actually, user said: "filter if "my vehicle" is selected and configured as 2 wheels."
+                if (settings.useVehicleFilter) {
+                    val brand = poi.brand?.lowercase() ?: ""
+                    val isCarSwap = brand.contains("nio") || brand.contains("ample")
+                    val is2WheelSwap = brand.contains("gogoro") || brand.contains("zeway")
+
+                    if (settings.vehicleType == VehicleType.Motorcycle || settings.vehicleType == VehicleType.Bicycle) {
+                        // 2 wheels: show if it's a known 2-wheel brand OR if it's NOT a known car brand
+                        is2WheelSwap || !isCarSwap
+                    } else {
+                        // Cars/Trucks: only show if it's a known car brand.
+                        // We avoid showing unknown swap stations to cars as they are often for 2-wheels.
+                        isCarSwap
+                    }
+                } else {
+                    // Manual mode: show if "swap" chip is selected
+                    swapExplicitlySelected
+                }
+            } else {
+                MapPoiFilter.matchesEnergyFilter(poi, mode, fuelFilters)
+            }
         }
 
         // Filter by power range (IRVE)

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.OutdoorGrill
 import androidx.compose.material.icons.rounded.Restaurant
 import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.rounded.Wc
@@ -76,6 +77,7 @@ object AmenityIconCatalog {
         PoiCategory.Radar -> Style(Icons.Rounded.Speed, 0xFF333333.toInt())
         PoiCategory.Parking -> Style(Icons.Rounded.LocalParking, 0xFF1D4ED8.toInt())
         PoiCategory.Viewpoint -> Style(Icons.Rounded.Visibility, 0xFF6366F1.toInt())
+        PoiCategory.BatterySwap -> Style(Icons.Rounded.SwapHoriz, 0xFFF59E0B.toInt())
         else -> null
     }
 
