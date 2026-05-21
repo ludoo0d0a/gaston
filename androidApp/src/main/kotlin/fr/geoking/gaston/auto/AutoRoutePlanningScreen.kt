@@ -16,6 +16,7 @@ import androidx.car.app.model.SearchTemplate
 import androidx.car.app.model.Template
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
+import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
@@ -295,6 +296,13 @@ class AutoRoutePlanningScreen(
             )
             .addAction(
                 Action.Builder()
+                    .setTitle(carContext.getString(R.string.action_show_on_map))
+                    .setIcon(carContext.actionMapIcon())
+                    .setOnClickListener { showOnMap() }
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
                     .setTitle(carContext.getString(R.string.action_start_nav))
                     .setIcon(carContext.actionMapIcon())
                     .setOnClickListener { openExternalDirections() }
@@ -314,6 +322,59 @@ class AutoRoutePlanningScreen(
             .setHeader(headerBuilder.build())
             .setSingleList(list.build())
             .build()
+    }
+
+    private fun showOnMap() {
+        lifecycleScope.launch {
+            try {
+                loading = true
+                invalidate()
+                val originLatLon = if (originQuery.isBlank()) {
+                    val loc = LocationHelper.getCurrentLocation(carContext)
+                    loc?.let { it.latitude to it.longitude }
+                } else {
+                    geocodingClient.geocode(originQuery, limit = 1).firstOrNull()?.let { it.latitude to it.longitude }
+                }
+
+                val destLatLon = if (initialDestination?.latitude != null && initialDestination.longitude != null) {
+                    initialDestination.latitude to initialDestination.longitude
+                } else {
+                    geocodingClient.geocode(destinationQuery, limit = 1).firstOrNull()?.let { it.latitude to it.longitude }
+                }
+
+                if (originLatLon != null && destLatLon != null) {
+                    val route = routingClient.getRoute(originLatLon.first, originLatLon.second, destLatLon.first, destLatLon.second)
+                    if (route != null) {
+                        val factory: BorneAvailabilityProviderFactory? = try {
+                            org.koin.core.context.GlobalContext.get().get()
+                        } catch (e: Exception) {
+                            null
+                        }
+
+                        if (factory != null) {
+                            screenManager.push(
+                                CustomMapPoiScreen(
+                                    carContext = carContext,
+                                    poiProvider = poiProvider,
+                                    availabilityProviderFactory = factory,
+                                    settingsManager = settingsManager,
+                                    routePlanner = routePlanner,
+                                    routingClient = routingClient,
+                                    geocodingClient = geocodingClient,
+                                    title = carContext.getString(R.string.screen_route_preview),
+                                    itineraryPoints = route.points
+                                )
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("AutoRoutePlanning", "Failed to show on map", e)
+            } finally {
+                loading = false
+                invalidate()
+            }
+        }
     }
 
     private fun openExternalDirections() {

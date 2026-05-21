@@ -40,7 +40,9 @@ class AutoSurfaceRenderer(
     @Volatile
     private var running = true
     private var needsRedraw = false
+    private var forceRedraw = false
     private var tileRedrawPending = false
+    private var lastDrawMillis: Long = 0
     private var lat: Double = initialLat
     private var lon: Double = initialLon
     private var zoom: Int = 13
@@ -65,12 +67,22 @@ class AutoSurfaceRenderer(
     private var effectiveEnergyTypes: Set<String> = emptySet()
     private var effectivePowerLevels: Set<Int> = emptySet()
 
+    private var historyPoints: List<Pair<Double, Double>> = emptyList()
+    private var itineraryPoints: List<Pair<Double, Double>> = emptyList()
+
     // Cache tile bitmaps (heading-up can need ~25+ tiles; 100 ≈ 25MB peak)
     private val tileCache = LruCache<String, Bitmap>(100)
     private val pendingRequests = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
     private val executor = Executors.newFixedThreadPool(4)
 
     private val backgroundPaint = Paint().apply { color = Color.LTGRAY }
+    private val routePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.RED
+        style = Paint.Style.STROKE
+        strokeWidth = 4f
+        strokeJoin = Paint.Join.ROUND
+        strokeCap = Paint.Cap.ROUND
+    }
     private val userLocationPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = NAVIGATION_BLUE
         style = Paint.Style.FILL
@@ -89,11 +101,13 @@ class AutoSurfaceRenderer(
         lineTo(radius * 0.8f, radius * 0.8f)
         close()
     }
+    private val reusablePath = Path()
     private val drawThread = Thread(::runDrawLoop, "AutoSurfaceRenderer")
 
     companion object {
         private const val TAG = "AutoSurfaceRenderer"
         private val NAVIGATION_BLUE = Color.parseColor("#4285F4")
+        private const val MIN_DRAW_INTERVAL_MS = 30_000L
     }
 
     fun start() {
@@ -109,9 +123,10 @@ class AutoSurfaceRenderer(
         try { drawThread.join(500) } catch (_: Exception) {}
     }
 
-    fun invalidate() {
+    fun invalidate(force: Boolean = false) {
         synchronized(this) {
             needsRedraw = true
+            if (force) forceRedraw = true
             tileRedrawPending = false
             (this as java.lang.Object).notifyAll()
         }
@@ -133,7 +148,7 @@ class AutoSurfaceRenderer(
         lat = newLat
         lon = newLon
         zoom = newZoom
-        invalidate()
+        invalidate(force = true) // User interaction or explicit move should be immediate
     }
 
     fun setMapOrientation(mode: MapOrientationMode, headingDegrees: Float = this.headingDegrees) {
@@ -141,7 +156,7 @@ class AutoSurfaceRenderer(
         if (orientationMode == mode && this.headingDegrees == normalizedHeading) return
         orientationMode = mode
         this.headingDegrees = normalizedHeading
-        invalidate()
+        invalidate(force = true)
     }
 
     fun updateHeading(headingDegrees: Float) {
@@ -172,7 +187,7 @@ class AutoSurfaceRenderer(
     fun updateVisibleArea(area: Rect) {
         if (visibleArea?.equals(area) == true) return
         visibleArea = Rect(area)
-        invalidate()
+        invalidate(force = true)
     }
 
     fun updatePois(
@@ -194,22 +209,57 @@ class AutoSurfaceRenderer(
         invalidate()
     }
 
+    fun setHistory(points: List<Pair<Double, Double>>) {
+        historyPoints = points.toList()
+        invalidate()
+    }
+
+    fun setItinerary(points: List<Pair<Double, Double>>) {
+        itineraryPoints = points.toList()
+        invalidate()
+    }
+
+    fun addHistoryPoint(pLat: Double, pLon: Double) {
+        val last = historyPoints.lastOrNull()
+        if (last != null) {
+            // Basic optimization: skip if very close (approx < 10-20m)
+            if (abs(last.first - pLat) < 0.0002 && abs(last.second - pLon) < 0.0002) return
+        }
+        historyPoints = historyPoints + (pLat to pLon)
+        invalidate()
+    }
+
     private fun runDrawLoop() {
         while (running) {
             synchronized(this) {
-                while (!needsRedraw && running) {
+                while (running) {
+                    val now = System.currentTimeMillis()
+                    val timeSinceLastDraw = now - lastDrawMillis
+                    val canDraw = forceRedraw || (needsRedraw && timeSinceLastDraw >= MIN_DRAW_INTERVAL_MS)
+
+                    if (canDraw) break
+
                     try {
+                        if (needsRedraw && !forceRedraw) {
+                            val waitTime = MIN_DRAW_INTERVAL_MS - timeSinceLastDraw
+                            if (waitTime > 0) {
+                                (this as java.lang.Object).wait(waitTime)
+                                continue
+                            }
+                        }
                         (this as java.lang.Object).wait()
                     } catch (e: InterruptedException) {
                         return
                     }
                 }
                 needsRedraw = false
+                forceRedraw = false
                 tileRedrawPending = false
             }
             if (!running) break
 
             val canvas = try { surface.lockCanvas(null) } catch (_: Exception) { null } ?: continue
+            lastDrawMillis = System.currentTimeMillis()
             try {
                 val bearing = mapBearingDegrees
                 val cx = centerPxX.toFloat()
@@ -219,6 +269,7 @@ class AutoSurfaceRenderer(
                     canvas.rotate(-bearing, cx, cy)
                 }
                 drawMapTiles(canvas)
+                drawPaths(canvas)
                 drawPois(canvas)
                 drawUserLocation(canvas)
                 if (bearing != 0f) {
@@ -236,6 +287,36 @@ class AutoSurfaceRenderer(
             return max(centerPxX, width - centerPxX).coerceAtLeast(max(centerPxY, height - centerPxY))
         }
         return hypot(width.toDouble(), height.toDouble()) / 2.0
+    }
+
+    private fun drawPaths(canvas: Canvas) {
+        if (historyPoints.isEmpty() && itineraryPoints.isEmpty()) return
+
+        val tileSize = 256
+        val centerX = lonToTileX(lon, zoom)
+        val centerY = latToTileY(lat, zoom)
+
+        fun drawPoints(points: List<Pair<Double, Double>>) {
+            if (points.size < 2) return
+            reusablePath.reset()
+            var first = true
+            points.forEach { (pLat, pLon) ->
+                val tileX = lonToTileX(pLon, zoom)
+                val tileY = latToTileY(pLat, zoom)
+                val x = ((tileX - centerX) * tileSize + centerPxX).toFloat()
+                val y = ((tileY - centerY) * tileSize + centerPxY).toFloat()
+                if (first) {
+                    reusablePath.moveTo(x, y)
+                    first = false
+                } else {
+                    reusablePath.lineTo(x, y)
+                }
+            }
+            canvas.drawPath(reusablePath, routePaint)
+        }
+
+        drawPoints(itineraryPoints)
+        drawPoints(historyPoints)
     }
 
     private fun drawMapTiles(canvas: Canvas) {

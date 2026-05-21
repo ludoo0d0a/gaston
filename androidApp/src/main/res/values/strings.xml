@@ -132,6 +132,8 @@
     <string name="screen_power_range">Power Range</string>
     <string name="screen_connectors">Connectors</string>
     <string name="screen_poi_types">POI Types</string>
+    <string name="map_orientation_north_up">North up</string>
+    <string name="map_orientation_my_direction">My direction</string>
     <string name="screen_electric_settings">Electric Settings</string>
     <string name="screen_min_power">Min. Power</string>
     <string name="screen_data_source">Data Source</string>
