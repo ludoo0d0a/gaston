@@ -222,7 +222,7 @@ private fun PhoneDashboardNearbyCheapestSection(
             stringResource(R.string.dashboard_cheapest_nearby)
         }
         DashboardMode.EV -> stringResource(R.string.dashboard_nearest_stations)
-        DashboardMode.MyCar -> {
+        DashboardMode.MyVehicle -> {
             if (settings.vehicleEnergy == "gas") stringResource(R.string.dashboard_cheapest_nearby)
             else stringResource(R.string.dashboard_nearest_stations)
         }

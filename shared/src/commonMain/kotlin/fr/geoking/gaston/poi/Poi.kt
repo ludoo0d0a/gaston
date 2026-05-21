@@ -41,7 +41,9 @@ enum class PoiCategory {
     /** Parking lots (OSM amenity=parking). */
     Parking,
     /** Points of interest with a view (OSM tourism=viewpoint). */
-    Viewpoint;
+    Viewpoint,
+    /** Battery swap station (OSM charging_station:battery_swapping=yes). */
+    BatterySwap;
     companion object {
         /** OSM amenity tag value for this category, when applicable. */
         fun fromOsmAmenity(amenity: String): PoiCategory? = when (amenity) {
@@ -71,6 +73,15 @@ enum class PoiCategory {
         }
         /** Resolve category from OSM tags (amenity, tourism, highway). */
         fun fromOsmTags(tags: Map<String, String>): PoiCategory? {
+            if (tags["charging_station:battery_swapping"] == "yes" || tags["battery_swap"] == "yes") {
+                return BatterySwap
+            }
+            // Brand-based battery swap detection
+            val brand = tags["brand"]?.lowercase() ?: ""
+            if (brand.contains("nio") || brand.contains("gogoro") || brand.contains("zeway") || brand.contains("ample")) {
+                return BatterySwap
+            }
+
             tags["amenity"]?.let { fromOsmAmenity(it) }?.let { return it }
             tags["tourism"]?.let { fromOsmTourism(it) }?.let { return it }
             tags["highway"]?.let { fromOsmHighway(it) }?.let { return it }

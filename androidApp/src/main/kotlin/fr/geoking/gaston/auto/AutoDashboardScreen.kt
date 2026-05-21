@@ -77,7 +77,7 @@ class AutoDashboardScreen(
                 .setTitle(myCarTitle)
                 .setImage(carContext.dashboardMyCarIcon())
                 .setOnClickListener {
-                    settingsManager.setMyCarMode()
+                    settingsManager.setMyVehicleMode()
                     pushMapScreen(myCarTitle)
                 }
                 .build()

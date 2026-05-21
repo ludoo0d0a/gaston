@@ -3,6 +3,8 @@ package fr.geoking.gaston.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -26,7 +28,7 @@ import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.ui.*
 import fr.geoking.gaston.ui.map.AmenityIconCatalog
 
-enum class SearchMode { Fuel, EV, MyCar, Other }
+enum class SearchMode { Fuel, EV, MyVehicle, Other }
 
 data class SearchRow(
     val title: String,
@@ -46,7 +48,7 @@ fun rememberSearchMode(settings: AppSettings): SearchMode {
 
         when {
             isOtherSelected -> SearchMode.Other
-            settings.useVehicleFilter -> SearchMode.MyCar
+            settings.useVehicleFilter -> SearchMode.MyVehicle
             settings.effectiveEnergyFilterMode() == EnergyFilterMode.Electric -> SearchMode.EV
             else -> SearchMode.Fuel
         }
@@ -79,8 +81,8 @@ fun SearchModeSelector(
             title = stringResource(R.string.search_mode_my_car),
             subtitle = stringResource(R.string.search_mode_my_car),
             iconResId = R.drawable.ic_directions_car,
-            mode = SearchMode.MyCar,
-            onClick = { settingsManager.setMyCarMode() }
+            mode = SearchMode.MyVehicle,
+            onClick = { settingsManager.setMyVehicleMode() }
         ),
         SearchRow(
             title = stringResource(R.string.search_mode_other),
@@ -162,6 +164,25 @@ fun SearchCategorySelector(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     val fuels = MAP_ENERGY_OPTIONS.filter { it.first != "electric" }
+                    item {
+                        val isSelected = settings.selectedMapEnergyTypes.contains("swap")
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                val current = settings.selectedMapEnergyTypes
+                                val next = if (isSelected) current - "swap" else current + "swap"
+                                settingsManager.setMapEnergyTypes(next)
+                            },
+                            label = { Text("Swap") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Rounded.SwapHoriz,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        )
+                    }
                     items(fuels.size) { index ->
                         val (id, label) = fuels[index]
                         FuelFilterChip(
@@ -178,6 +199,26 @@ fun SearchCategorySelector(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    item {
+                        val isSelected = settings.selectedMapEnergyTypes.contains("swap")
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                val current = settings.selectedMapEnergyTypes
+                                val next = if (isSelected) current - "swap" else current + "swap"
+                                // We keep the current mode (EV) but toggle the swap filter
+                                settingsManager.saveSettings(settings.copy(selectedMapEnergyTypes = next))
+                            },
+                            label = { Text("Swap") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Rounded.SwapHoriz,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        )
+                    }
                     items(MAP_IRVE_POWER_OPTIONS.size) { index ->
                         val (kw, label) = MAP_IRVE_POWER_OPTIONS[index]
                         PowerFilterChip(
@@ -189,7 +230,7 @@ fun SearchCategorySelector(
                     }
                 }
             }
-            SearchMode.MyCar -> {
+            SearchMode.MyVehicle -> {
                 if (settings.vehicleBrand.isEmpty()) {
                     Card(
                         onClick = { onOpenSettings(listOf(SettingsScreenPage.VehicleConfig)) },

@@ -131,7 +131,7 @@
     <string name="filter_sources_partial">%1$d / %2$d actives — appuyer pour tout activer</string>
     <string name="filters">Filtres</string>
     <string name="filters_with_count">Filtres (%1$d)</string>
-    <string name="for_my_car">Pour ma voiture</string>
+    <string name="for_my_car">Mon véhicule</string>
     <string name="forecast_7day_accuracy">Précision sur 7 jours</string>
     <string name="forecast_est_price">Est. %1$s €/L</string>
     <string name="forecast_fetching">Récupération des prix locaux et des données marché</string>
@@ -163,7 +163,7 @@
     <string name="network_signal">Signal : %1$s</string>
     <string name="network_status">État du réseau</string>
     <string name="no_fuel_price_details">Aucun détail de prix disponible</string>
-    <string name="no_vehicle_profile">Aucun profil voiture</string>
+    <string name="no_vehicle_profile">Aucun profil véhicule</string>
     <string name="planning_route">Planification de l\'itinéraire en cours…</string>
     <string name="poi_address">Adresse</string>
     <string name="poi_gas">Essence</string>
@@ -265,11 +265,16 @@
     <string name="screen_vehicle">Véhicule</string>
     <string name="screen_vehicle_and_range">Véhicule et autonomie</string>
     <string name="screen_vehicle_type">Type de véhicule</string>
+    <string name="vehicle_type_car">Voiture</string>
+    <string name="vehicle_type_truck">Camion</string>
+    <string name="vehicle_type_motorcycle">Deux-roues</string>
+    <string name="vehicle_type_motorhome">Camping-car</string>
+    <string name="vehicle_type_bicycle">Vélo</string>
     <string name="screen_your_current_location">Votre position actuelle</string>
     <string name="search_filters">Filtres de recherche</string>
     <string name="search_mode_ev">Électrique</string>
     <string name="search_mode_fuel">Essence</string>
-    <string name="search_mode_my_car">Ma voiture</string>
+    <string name="search_mode_my_car">Mon véhicule</string>
     <string name="search_mode_other">Autre</string>
     <string name="searching_address">Recherche d\'adresse en cours…</string>
     <string name="settings_api_keys_optional">Clés API (facultatif)</string>
@@ -345,7 +350,7 @@
     <string name="vehicle_energy_electric">Électrique</string>
     <string name="vehicle_energy_fuel">Carburant</string>
     <string name="vehicle_energy_hybrid">Essence &amp; Électrique</string>
-    <string name="vehicle_filters_active">Filtres du véhicule actifs : %1$s\nUtilisation des préférences de votre voiture.</string>
+    <string name="vehicle_filters_active">Filtres du véhicule actifs : %1$s\nUtilisation des préférences de votre véhicule.</string>
     <string name="sign_out_failed">Échec de la déconnexion</string>
     <string name="sign_in_failed">Échec de la connexion</string>
     <string name="settings_map_subtitle">Moteur, trafic, itinéraire</string>
