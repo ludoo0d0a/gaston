@@ -246,7 +246,11 @@ fun SettingsScreen(
                     errorLog = errorLog,
                     onClear = onClearErrorLog
                 )
-                SettingsScreenPage.About -> AboutContent(onShowDisclaimer = { showDisclaimer = true })
+                SettingsScreenPage.About -> AboutContent(
+                    settings = current,
+                    onUpdate = { save(settingsManager, it) },
+                    onShowDisclaimer = { showDisclaimer = true }
+                )
                 SettingsScreenPage.MapConfig -> MapConfig(
                     settings = current,
                     onUpdate = { save(settingsManager, it) }
@@ -1195,6 +1199,8 @@ private fun TollDataSection(
 
 @Composable
 private fun AboutContent(
+    settings: AppSettings,
+    onUpdate: (AppSettings) -> Unit,
     onShowDisclaimer: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1214,6 +1220,34 @@ private fun AboutContent(
         AboutRow(stringResource(R.string.about_version_name), BuildConfig.VERSION_NAME)
         AboutRow(stringResource(R.string.about_version_code), BuildConfig.VERSION_CODE.toString())
         AboutRow(stringResource(R.string.about_build_date), BuildConfig.BUILD_DATE)
+
+        if (BuildConfig.DEBUG) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.about_premium_mode),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        stringResource(R.string.about_premium_mode_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = settings.devSimulatePremium,
+                    onCheckedChange = { onUpdate(settings.copy(devSimulatePremium = it)) },
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         AboutRowClickable(
             label = stringResource(id = R.string.about_view_disclaimer),
