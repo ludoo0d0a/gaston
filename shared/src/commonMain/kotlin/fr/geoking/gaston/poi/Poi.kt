@@ -97,6 +97,7 @@ enum class PoiCategory {
 enum class PoiProviderType(
     val providesFuel: Boolean = false,
     val providesElectric: Boolean = false,
+    val providesSwap: Boolean = false,
 ) {
     Routex(providesFuel = true),
     Etalab(providesFuel = true),
@@ -165,7 +166,7 @@ enum class PoiProviderType(
     AustriaEControl(providesFuel = true),
     /** Belgian official maximum fuel prices. */
     BelgiumOfficial(providesFuel = true),
-    Overpass(providesFuel = true, providesElectric = true),
+    Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }
 
@@ -186,6 +187,9 @@ fun Iterable<PoiProviderType>.anyProvidesFuel(): Boolean = any { it.providesFuel
 
 /** True if any selected provider can supply electric / IRVE POIs. */
 fun Iterable<PoiProviderType>.anyProvidesElectric(): Boolean = any { it.providesElectric }
+
+/** True if any selected provider can supply battery swap POIs. */
+fun Iterable<PoiProviderType>.anyProvidesSwap(): Boolean = any { it.providesSwap }
 
 /**
  * IRVE-only details: connector types, tarification (free text), opening hours, payment, etc.
@@ -459,7 +463,7 @@ interface PoiProvider {
         val cat = request.categories
         val supported = supportedCategories()
         val overlap = if (cat.isEmpty()) supported else cat.intersect(supported)
-        if (overlap.isEmpty() || (PoiCategory.Gas !in overlap && PoiCategory.Irve !in overlap)) {
+        if (overlap.isEmpty() || (PoiCategory.Gas !in overlap && PoiCategory.Irve !in overlap && PoiCategory.BatterySwap !in overlap)) {
             return emptyList()
         }
         val list = getGasStations(request.latitude, request.longitude, request.viewport)
