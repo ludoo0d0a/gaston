@@ -368,17 +368,17 @@ object PoiMarkerHelper {
             color = if (brandInfo != null) Color.WHITE else categoryColor
         }
         val center = sizePx / 2f
+        // Always use a white background for POI circles as requested.
+        circlePaint.color = Color.WHITE
         canvas.drawCircle(center, center, sizePx / 2f, circlePaint)
 
-        // Draw subtle border for white circle
-        if (brandInfo != null) {
-            val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                style = Paint.Style.STROKE
-                strokeWidth = (sizePx * 0.02f).coerceAtLeast(1f)
-                color = 0xFFDDDDDD.toInt()
-            }
-            canvas.drawCircle(center, center, (sizePx / 2f) - borderPaint.strokeWidth / 2f, borderPaint)
+        // Draw border: category color for non-branded, light gray for branded.
+        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = (sizePx * 0.06f).coerceAtLeast(2f)
+            color = if (brandInfo != null) 0xFFDDDDDD.toInt() else categoryColor
         }
+        canvas.drawCircle(center, center, (sizePx / 2f) - borderPaint.strokeWidth / 2f, borderPaint)
 
         val iconResId = if (brandInfo != null) {
             brandInfo.iconResId
@@ -403,8 +403,8 @@ object PoiMarkerHelper {
 
         val iconDrawable = ContextCompat.getDrawable(context, iconResId)?.mutate() ?: return null
         if (brandInfo == null) {
-            val tintColor = contrastingForegroundArgb(categoryColor)
-            iconDrawable.setTint(tintColor)
+            // Non-branded icons should be black on white background for high contrast.
+            iconDrawable.setTint(Color.BLACK)
         }
 
         val left = innerPadding.toInt()
