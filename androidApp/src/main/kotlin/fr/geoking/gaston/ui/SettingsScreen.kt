@@ -1221,31 +1221,29 @@ private fun AboutContent(
         AboutRow(stringResource(R.string.about_version_code), BuildConfig.VERSION_CODE.toString())
         AboutRow(stringResource(R.string.about_build_date), BuildConfig.BUILD_DATE)
 
-        if (BuildConfig.DEBUG) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.about_premium_mode),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        stringResource(R.string.about_premium_mode_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Switch(
-                    checked = settings.devSimulatePremium,
-                    onCheckedChange = { onUpdate(settings.copy(devSimulatePremium = it)) },
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.about_premium_mode),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    stringResource(R.string.about_premium_mode_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            Switch(
+                checked = settings.devSimulatePremium,
+                onCheckedChange = { onUpdate(settings.copy(devSimulatePremium = it)) },
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
