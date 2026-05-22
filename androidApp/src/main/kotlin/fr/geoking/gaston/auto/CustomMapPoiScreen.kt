@@ -598,6 +598,29 @@ class CustomMapPoiScreen(
         themeCollectionJob?.cancel()
     }
 
+    override fun onClick(x: Float, y: Float) {
+        val renderer = surfaceRenderer ?: return
+        val clickedPois = renderer.findPoisAt(x, y)
+        if (clickedPois.isEmpty()) return
+
+        if (clickedPois.size == 1) {
+            val poi = clickedPois.first()
+            val availability = availabilityByPoiId[poi.id]
+            screenManager.push(
+                PoiDetailScreen(
+                    carContext = carContext,
+                    poi = poi,
+                    availabilitySummary = availability,
+                    rating = null
+                )
+            )
+        } else {
+            carContext.getCarService(AppManager::class.java)
+                .showToast("Multiple stations here, zooming in...", 1)
+            bumpZoom(1)
+        }
+    }
+
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
         carContext.getCarService(AppManager::class.java).setSurfaceCallback(this)
     }

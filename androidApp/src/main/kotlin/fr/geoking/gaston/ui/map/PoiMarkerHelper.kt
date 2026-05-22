@@ -150,12 +150,12 @@ object PoiMarkerHelper {
         canvas.drawPath(triPath, fillPaint)
         canvas.drawPath(triPath, strokePaint)
 
-        // 2) Pin head: *_rounded / brand roundedIconResId already include ic_poi_background_circle — no extra drawCircle.
+        // 2) Pin head
         val headSizePx = (2f * circleR).toInt().coerceAtLeast(16)
         val headBitmap = if (amenityStyle != null) {
             AmenityIconCatalog.headBitmap(amenityStyle, headSizePx)
         } else {
-            vectorToBitmapCached(context, headDrawableId, headSizePx)
+            getPoiHeadBitmap(context, poi, brandInfo, headSizePx, categoryColor)
         }
         if (headBitmap != null) {
             val left = circleCx - headBitmap.width / 2f
@@ -330,6 +330,7 @@ object PoiMarkerHelper {
 
     /**
      * Layer-list drawables with built-in disc ([BrandHelper.BrandInfo.roundedIconResId] or [ic_poi_*_rounded]).
+     * @deprecated Use [getPoiHeadBitmap] for better control over contrast and sizing.
      */
     internal fun headDrawableResId(poi: Poi, brandInfo: BrandHelper.BrandInfo?): Int {
         if (brandInfo != null) return brandInfo.roundedIconResId
@@ -344,6 +345,77 @@ object PoiMarkerHelper {
             PoiCategory.Viewpoint -> R.drawable.ic_map
             else -> if (poi.isElectric) R.drawable.ic_poi_electric_rounded else R.drawable.ic_poi_gas_rounded
         }
+    }
+
+    internal fun getPoiHeadBitmap(
+        context: Context,
+        poi: Poi,
+        brandInfo: BrandHelper.BrandInfo?,
+        sizePx: Int,
+        categoryColor: Int
+    ): Bitmap? {
+        val visualId = brandInfo?.displayName ?: poi.poiCategory?.name ?: if (poi.isElectric) "irve" else "gas"
+        val key = "head_${visualId}_${categoryColor}_$sizePx"
+        synchronized(vectorRasterCache) {
+            vectorRasterCache.get(key)?.let { return it }
+        }
+
+        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        val circlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = if (brandInfo != null) Color.WHITE else categoryColor
+        }
+        val center = sizePx / 2f
+        canvas.drawCircle(center, center, sizePx / 2f, circlePaint)
+
+        // Draw subtle border for white circle
+        if (brandInfo != null) {
+            val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = (sizePx * 0.02f).coerceAtLeast(1f)
+                color = 0xFFDDDDDD.toInt()
+            }
+            canvas.drawCircle(center, center, (sizePx / 2f) - borderPaint.strokeWidth / 2f, borderPaint)
+        }
+
+        val iconResId = if (brandInfo != null) {
+            brandInfo.iconResId
+        } else {
+            when (poi.poiCategory) {
+                PoiCategory.Toilet -> R.drawable.ic_poi_toilet
+                PoiCategory.DrinkingWater -> R.drawable.ic_poi_water
+                PoiCategory.Camping -> R.drawable.ic_poi_camping
+                PoiCategory.CaravanSite -> R.drawable.ic_poi_caravan
+                PoiCategory.PicnicSite -> R.drawable.ic_poi_picnic
+                PoiCategory.Radar -> R.drawable.ic_poi_radar
+                PoiCategory.Parking -> R.drawable.ic_poi_parking
+                PoiCategory.Viewpoint -> R.drawable.ic_map
+                else -> if (poi.isElectric) R.drawable.ic_poi_electric else R.drawable.ic_poi_gas
+            }
+        }
+
+        // Previous was 4.8dp on each side for a 48dp circle. So 9.6dp total padding on 48dp = 20%.
+        // Let's use 8% on each side for a bigger image (16% total).
+        val innerPadding = sizePx * 0.08f
+        val iconSize = (sizePx - 2 * innerPadding).toInt()
+
+        val iconDrawable = ContextCompat.getDrawable(context, iconResId)?.mutate() ?: return null
+        if (brandInfo == null) {
+            val tintColor = contrastingForegroundArgb(categoryColor)
+            iconDrawable.setTint(tintColor)
+        }
+
+        val left = innerPadding.toInt()
+        val top = innerPadding.toInt()
+        iconDrawable.setBounds(left, top, left + iconSize, top + iconSize)
+        iconDrawable.draw(canvas)
+
+        synchronized(vectorRasterCache) {
+            vectorRasterCache.put(key, bitmap)
+        }
+        return bitmap
     }
 
     internal fun vectorToBitmapCached(context: Context, drawableId: Int, size: Int): Bitmap? {

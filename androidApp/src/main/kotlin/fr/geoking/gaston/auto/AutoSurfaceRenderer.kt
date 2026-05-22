@@ -12,6 +12,7 @@ import android.util.Log
 import android.util.LruCache
 import android.view.Surface
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import java.net.HttpURLConnection
@@ -108,6 +109,7 @@ class AutoSurfaceRenderer(
         private const val TAG = "AutoSurfaceRenderer"
         private val NAVIGATION_BLUE = Color.parseColor("#4285F4")
         private const val MIN_DRAW_INTERVAL_MS = 30_000L
+        const val POI_MARKER_WIDTH_PX = 96
     }
 
     fun start() {
@@ -355,7 +357,7 @@ class AutoSurfaceRenderer(
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
 
-        val markerWidthPx = 72
+        val markerWidthPx = POI_MARKER_WIDTH_PX
 
         pois.forEach { poi ->
             val tileX = lonToTileX(poi.longitude, zoom)
@@ -365,8 +367,10 @@ class AutoSurfaceRenderer(
             val drawY = ((tileY - centerY) * tileSize + centerPxY).toFloat()
 
             val brandInfo = BrandHelper.getBrandInfo(poi.brand)
-            val iconResId = PoiMarkerHelper.headDrawableResId(poi, brandInfo)
-            val bitmap = PoiMarkerHelper.vectorToBitmapCached(context, iconResId, markerWidthPx) ?: return@forEach
+            val category = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
+            val categoryColor = PoiMarkerHelper.getPoiColor(poi, category, effectiveEnergyTypes, effectivePowerLevels)
+
+            val bitmap = PoiMarkerHelper.getPoiHeadBitmap(context, poi, brandInfo, markerWidthPx, categoryColor) ?: return@forEach
 
             val bw = bitmap.width.toFloat()
             val bh = bitmap.height.toFloat()
@@ -376,6 +380,43 @@ class AutoSurfaceRenderer(
             }
 
             canvas.drawBitmap(bitmap, drawX - bw / 2f, drawY - bh / 2f, null)
+        }
+    }
+
+    /** Find POIs at the given screen coordinates. */
+    fun findPoisAt(screenX: Float, screenY: Float): List<Poi> {
+        val bearing = mapBearingDegrees
+        val cx = centerPxX.toFloat()
+        val cy = centerPxY.toFloat()
+
+        // Inverse rotation if the map is rotated: rotate screenX/screenY back to worldX/worldY.
+        // During draw, we rotate canvas by -bearing. So to go back, we rotate by +bearing.
+        val (worldX, worldY) = if (bearing != 0f) {
+            val angleRad = Math.toRadians(bearing.toDouble())
+            val dx = screenX - cx
+            val dy = screenY - cy
+            val rx = dx * cos(angleRad) + dy * sin(angleRad)
+            val ry = -dx * sin(angleRad) + dy * cos(angleRad)
+            (cx + rx).toFloat() to (cy + ry).toFloat()
+        } else {
+            screenX to screenY
+        }
+
+        val tileSize = 256
+        val centerX = lonToTileX(lon, zoom)
+        val centerY = latToTileY(lat, zoom)
+        val markerRadiusPx = POI_MARKER_WIDTH_PX / 2f
+        val hitRadiusSq = markerRadiusPx * markerRadiusPx
+
+        return pois.filter { poi ->
+            val tileX = lonToTileX(poi.longitude, zoom)
+            val tileY = latToTileY(poi.latitude, zoom)
+            val px = ((tileX - centerX) * tileSize + centerPxX).toFloat()
+            val py = ((tileY - centerY) * tileSize + centerPxY).toFloat()
+
+            val dx = worldX - px
+            val dy = worldY - py
+            dx * dx + dy * dy <= hitRadiusSq
         }
     }
 
