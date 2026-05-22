@@ -13,7 +13,21 @@ class AutoMapElectricSelectionScreen(
 
     override fun onGetTemplate(): Template {
         val settings = settingsManager.settings.value
+        val isSwapSelected = settings.selectedMapEnergyTypes.contains("swap")
         val listBuilder = ItemList.Builder()
+
+        if (isSwapSelected) {
+            return MessageTemplate.Builder(carContext.getString(R.string.filter_exclusive_swap))
+                .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_electric_settings)).setStartHeaderAction(Action.BACK).build())
+                .addAction(Action.Builder()
+                    .setTitle(carContext.getString(R.string.action_disable_swap))
+                    .setOnClickListener {
+                        settingsManager.saveSettings(settings.copy(selectedMapEnergyTypes = settings.selectedMapEnergyTypes - "swap"))
+                        invalidate()
+                    }
+                    .build())
+                .build()
+        }
 
         listBuilder.addItem(
             Row.Builder()

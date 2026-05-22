@@ -110,7 +110,14 @@ fun LazyListScope.energySelectorItems(
                     val current = settings.mapPowerLevels
                     val next = if (current.contains(kw)) current - kw else current + kw
                     settingsManager.setUseVehicleFilter(false)
-                    settingsManager.setMapPowerLevels(next)
+                    if (next.isNotEmpty() && settings.selectedMapEnergyTypes.contains("swap")) {
+                        settingsManager.saveSettings(settings.copy(
+                            selectedMapEnergyTypes = settings.selectedMapEnergyTypes - "swap",
+                            mapPowerLevels = next
+                        ))
+                    } else {
+                        settingsManager.setMapPowerLevels(next)
+                    }
                 }
             )
         }
@@ -168,7 +175,14 @@ fun EnergyTypeSelectorRows(
                         isSelected = settings.effectiveIrvePowerLevels().contains(kw),
                         onClick = {
                             settingsManager.setUseVehicleFilter(false)
-                            settingsManager.setMapPowerLevels(setOf(kw))
+                            if (settings.selectedMapEnergyTypes.contains("swap")) {
+                                settingsManager.saveSettings(settings.copy(
+                                    selectedMapEnergyTypes = settings.selectedMapEnergyTypes - "swap",
+                                    mapPowerLevels = setOf(kw)
+                                ))
+                            } else {
+                                settingsManager.setMapPowerLevels(setOf(kw))
+                            }
                         }
                     )
                 }

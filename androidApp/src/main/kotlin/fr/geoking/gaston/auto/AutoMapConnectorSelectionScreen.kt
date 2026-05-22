@@ -26,7 +26,14 @@ class AutoMapConnectorSelectionScreen(
                         Toggle.Builder { checked ->
                             val current = settingsManager.settings.value.selectedMapConnectorTypes
                             val next = if (checked) current + id else current - id
-                            settingsManager.setMapConnectorTypes(next)
+                            if (checked && settings.selectedMapEnergyTypes.contains("swap")) {
+                                settingsManager.saveSettings(settings.copy(
+                                    selectedMapEnergyTypes = settings.selectedMapEnergyTypes - "swap",
+                                    selectedMapConnectorTypes = next
+                                ))
+                            } else {
+                                settingsManager.setMapConnectorTypes(next)
+                            }
                             invalidate()
                         }.setChecked(isSelected).build()
                     )

@@ -583,6 +583,8 @@
     <string name="filter_disabled">Disabled</string>
     <string name="filter_selected">Selected</string>
     <string name="filter_any">Any</string>
+    <string name="filter_exclusive_swap">Battery swap filter is currently exclusive. Other electric filters are disabled.</string>
+    <string name="action_disable_swap">Disable Swap</string>
     <string name="settings_current_format">Current: %1$s</string>
     <string name="error_unknown">Unknown error</string>
     <string name="startup_error">Startup error</string>
