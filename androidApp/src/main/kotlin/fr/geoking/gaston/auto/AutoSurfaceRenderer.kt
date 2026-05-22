@@ -20,7 +20,17 @@ import java.net.URL
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
-import kotlin.math.*
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.hypot
+import kotlin.math.ln
+import kotlin.math.max
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.tan
 
 /**
  * Map renderer for Android Auto surface using OpenStreetMap tiles.
@@ -352,12 +362,22 @@ class AutoSurfaceRenderer(
         }
     }
 
+    /** Scale POI icons based on zoom: base 96px at zoom 13. */
+    private fun getMarkerWidthForZoom(zoom: Int): Int {
+        val baseWidth = 96
+        val baseZoom = 13
+        // Scale by 2^(zoom - baseZoom), but clamp to reasonable range (e.g., 32px to 256px)
+        val scale = 2.0.pow(zoom.toDouble() - baseZoom)
+        return (baseWidth * scale).toInt().coerceIn(32, 256)
+    }
+
     private fun drawPois(canvas: Canvas) {
         val tileSize = 256
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
+        val bearing = mapBearingDegrees
 
-        val markerWidthPx = POI_MARKER_WIDTH_PX
+        val markerWidthPx = getMarkerWidthForZoom(zoom)
 
         pois.forEach { poi ->
             val tileX = lonToTileX(poi.longitude, zoom)
@@ -379,7 +399,16 @@ class AutoSurfaceRenderer(
                 return@forEach
             }
 
-            canvas.drawBitmap(bitmap, drawX - bw / 2f, drawY - bh / 2f, null)
+            if (bearing != 0f) {
+                canvas.save()
+                // Rotate back so the icon remains vertical.
+                // The canvas is already rotated by -bearing around (centerPxX, centerPxY).
+                canvas.rotate(bearing, drawX, drawY)
+                canvas.drawBitmap(bitmap, drawX - bw / 2f, drawY - bh / 2f, null)
+                canvas.restore()
+            } else {
+                canvas.drawBitmap(bitmap, drawX - bw / 2f, drawY - bh / 2f, null)
+            }
         }
     }
 
@@ -405,7 +434,7 @@ class AutoSurfaceRenderer(
         val tileSize = 256
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
-        val markerRadiusPx = POI_MARKER_WIDTH_PX / 2f
+        val markerRadiusPx = getMarkerWidthForZoom(zoom) / 2f
         val hitRadiusSq = markerRadiusPx * markerRadiusPx
 
         return pois.filter { poi ->

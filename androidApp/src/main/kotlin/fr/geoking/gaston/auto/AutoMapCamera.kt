@@ -2,10 +2,12 @@ package fr.geoking.gaston.auto
 
 import fr.geoking.gaston.poi.Poi
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.log2
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.tan
 
@@ -91,12 +93,22 @@ object AutoMapCamera {
         minLng -= padLng
         maxLng += padLng
 
-        val centerLat = (minLat + maxLat) / 2.0
-        val centerLon = (minLng + maxLng) / 2.0
-        val zoom = zoomForBounds(minLat, maxLat, minLng, maxLng, mapWidthPx, mapHeightPx, paddingFraction = 0.0)
-            .coerceIn(MIN_ZOOM, MAX_ZOOM)
+        // Center on user position as requested.
+        // To keep all stations visible, we must use a symmetric span around the user.
+        val latSpan = max(abs(maxLat - userLat), abs(minLat - userLat))
+        val lngSpan = max(abs(maxLng - userLon), abs(minLng - userLon))
 
-        return Camera(centerLat, centerLon, zoom)
+        val symmetricMinLat = userLat - latSpan
+        val symmetricMaxLat = userLat + latSpan
+        val symmetricMinLng = userLon - lngSpan
+        val symmetricMaxLng = userLon + lngSpan
+
+        val zoom = zoomForBounds(
+            symmetricMinLat, symmetricMaxLat, symmetricMinLng, symmetricMaxLng,
+            mapWidthPx, mapHeightPx, paddingFraction = 0.0
+        ).coerceIn(MIN_ZOOM, MAX_ZOOM)
+
+        return Camera(userLat, userLon, zoom)
     }
 
     internal fun zoomForBounds(
