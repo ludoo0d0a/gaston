@@ -17,6 +17,24 @@ class AutoMapEnergySelectionScreen(
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
         val effectiveEnergies = settings.effectiveMapEnergyFilterIds()
+        val isSwapSelected = settings.selectedMapEnergyTypes.contains("swap")
+
+        // Swap Row
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle("Swap")
+                .setToggle(
+                    Toggle.Builder { checked ->
+                        if (checked) {
+                            settingsManager.setMapEnergyTypes(setOf("swap"))
+                        } else {
+                            settingsManager.setMapEnergyTypes(emptySet())
+                        }
+                        invalidate()
+                    }.setChecked(isSwapSelected).build()
+                )
+                .build()
+        )
 
         MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.take(6).forEach { (id, label) ->
             val isSelected = effectiveEnergies.contains(id)
@@ -31,9 +49,10 @@ class AutoMapEnergySelectionScreen(
                             } else {
                                 if (isHybrid) setOf("electric") else emptySet()
                             }
-                            settingsManager.setMapEnergyTypes(next)
+                            // Removing "swap" if any other fuel is selected
+                            settingsManager.setMapEnergyTypes(next - "swap")
                             invalidate()
-                        }.setChecked(isSelected).build()
+                        }.setChecked(isSelected && !isSwapSelected).build()
                     )
                     .build()
             )

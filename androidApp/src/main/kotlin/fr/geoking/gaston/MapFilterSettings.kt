@@ -20,6 +20,9 @@ fun AppSettings.effectiveEnergyFilterMode(): EnergyFilterMode {
     }
 }
 
+fun AppSettings.isSwapExclusive(): Boolean =
+    !useVehicleFilter && selectedMapEnergyTypes.contains("swap")
+
 /** True when the user explicitly selected "Other" (amenities) mode. */
 fun AppSettings.isOtherModeActive(): Boolean =
     poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
@@ -49,6 +52,12 @@ fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
 
     // In "Other" mode, we ONLY want the selected amenities.
     if (isOtherModeActive()) {
+        return categories
+    }
+
+    // When Swap is exclusive, we ONLY want battery swap (plus any selected amenities above)
+    if (isSwapExclusive()) {
+        categories.add(PoiCategory.BatterySwap)
         return categories
     }
 
@@ -274,30 +283,36 @@ object StationMapFilters {
         }
 
         // Filter by power range (IRVE)
-        val powerFilters = settings.effectiveIrvePowerLevels()
-        if (powerFilters.isNotEmpty()) {
-            result = result.filter { poi ->
-                val power = poi.powerKw
-                !poi.isElectric || power == null || MapPoiFilter.powerMatchesAnyLevel(power, powerFilters)
+        if (!settings.isSwapExclusive()) {
+            val powerFilters = settings.effectiveIrvePowerLevels()
+            if (powerFilters.isNotEmpty()) {
+                result = result.filter { poi ->
+                    val power = poi.powerKw
+                    !poi.isElectric || power == null || MapPoiFilter.powerMatchesAnyLevel(power, powerFilters)
+                }
             }
         }
 
         // Filter by operator (IRVE)
-        val operatorFilters = settings.effectiveIrveOperatorFilter()
-        if (operatorFilters.isNotEmpty()) {
-            val operatorIds = operatorFilters.map { it.lowercase() }.toSet()
-            result = result.filter { poi ->
-                val op = poi.operator
-                !poi.isElectric || op == null || operatorIds.any { id -> op.lowercase().contains(id) }
+        if (!settings.isSwapExclusive()) {
+            val operatorFilters = settings.effectiveIrveOperatorFilter()
+            if (operatorFilters.isNotEmpty()) {
+                val operatorIds = operatorFilters.map { it.lowercase() }.toSet()
+                result = result.filter { poi ->
+                    val op = poi.operator
+                    !poi.isElectric || op == null || operatorIds.any { id -> op.lowercase().contains(id) }
+                }
             }
         }
 
         // Filter by connector type (IRVE)
-        val connectorFilters = settings.selectedMapConnectorTypes
-        if (connectorFilters.isNotEmpty()) {
-            result = result.filter { poi ->
-                val types = poi.irveDetails?.connectorTypes
-                !poi.isElectric || types == null || types.any { it in connectorFilters }
+        if (!settings.isSwapExclusive()) {
+            val connectorFilters = settings.selectedMapConnectorTypes
+            if (connectorFilters.isNotEmpty()) {
+                result = result.filter { poi ->
+                    val types = poi.irveDetails?.connectorTypes
+                    !poi.isElectric || types == null || types.any { it in connectorFilters }
+                }
             }
         }
 

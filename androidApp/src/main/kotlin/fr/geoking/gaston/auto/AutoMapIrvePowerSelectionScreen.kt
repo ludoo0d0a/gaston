@@ -26,7 +26,14 @@ class AutoMapIrvePowerSelectionScreen(
                     .setToggle(
                         Toggle.Builder { checked ->
                             val newLevels = if (checked) settings.mapPowerLevels + kw else settings.mapPowerLevels - kw
-                            settingsManager.setMapPowerLevels(newLevels)
+                            if (checked && settings.selectedMapEnergyTypes.contains("swap")) {
+                                settingsManager.saveSettings(settings.copy(
+                                    selectedMapEnergyTypes = settings.selectedMapEnergyTypes - "swap",
+                                    mapPowerLevels = newLevels
+                                ))
+                            } else {
+                                settingsManager.setMapPowerLevels(newLevels)
+                            }
                             invalidate()
                         }.setChecked(isSelected).build()
                     )

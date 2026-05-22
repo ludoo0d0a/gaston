@@ -163,15 +163,17 @@ fun SearchCategorySelector(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    val isSwapSelected = settings.selectedMapEnergyTypes.contains("swap")
                     val fuels = MAP_ENERGY_OPTIONS.filter { it.first != "electric" }
                     item {
-                        val isSelected = settings.selectedMapEnergyTypes.contains("swap")
                         FilterChip(
-                            selected = isSelected,
+                            selected = isSwapSelected,
                             onClick = {
-                                val current = settings.selectedMapEnergyTypes
-                                val next = if (isSelected) current - "swap" else current + "swap"
-                                settingsManager.setMapEnergyTypes(next)
+                                if (isSwapSelected) {
+                                    settingsManager.setMapEnergyTypes(emptySet())
+                                } else {
+                                    settingsManager.setMapEnergyTypes(setOf("swap"))
+                                }
                             },
                             label = { Text("Swap") },
                             leadingIcon = {
@@ -183,14 +185,16 @@ fun SearchCategorySelector(
                             }
                         )
                     }
-                    items(fuels.size) { index ->
-                        val (id, label) = fuels[index]
-                        FuelFilterChip(
-                            id = id,
-                            label = label,
-                            isSelected = settings.selectedMapEnergyTypes.contains(id),
-                            onClick = { settingsManager.setMapEnergyTypes(setOf(id)) }
-                        )
+                    if (!isSwapSelected) {
+                        items(fuels.size) { index ->
+                            val (id, label) = fuels[index]
+                            FuelFilterChip(
+                                id = id,
+                                label = label,
+                                isSelected = settings.selectedMapEnergyTypes.contains(id),
+                                onClick = { settingsManager.setMapEnergyTypes(setOf(id)) }
+                            )
+                        }
                     }
                 }
             }
@@ -199,15 +203,19 @@ fun SearchCategorySelector(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    val isSwapSelected = settings.selectedMapEnergyTypes.contains("swap")
                     item {
-                        val isSelected = settings.selectedMapEnergyTypes.contains("swap")
                         FilterChip(
-                            selected = isSelected,
+                            selected = isSwapSelected,
                             onClick = {
-                                val current = settings.selectedMapEnergyTypes
-                                val next = if (isSelected) current - "swap" else current + "swap"
-                                // We keep the current mode (EV) but toggle the swap filter
-                                settingsManager.saveSettings(settings.copy(selectedMapEnergyTypes = next))
+                                if (isSwapSelected) {
+                                    settingsManager.saveSettings(settings.copy(selectedMapEnergyTypes = emptySet()))
+                                } else {
+                                    settingsManager.saveSettings(settings.copy(
+                                        selectedMapEnergyTypes = setOf("swap"),
+                                        mapPowerLevels = emptySet()
+                                    ))
+                                }
                             },
                             label = { Text("Swap") },
                             leadingIcon = {
@@ -219,14 +227,18 @@ fun SearchCategorySelector(
                             }
                         )
                     }
-                    items(MAP_IRVE_POWER_OPTIONS.size) { index ->
-                        val (kw, label) = MAP_IRVE_POWER_OPTIONS[index]
-                        PowerFilterChip(
-                            kw = kw,
-                            label = label,
-                            isSelected = settings.effectiveIrvePowerLevels().contains(kw),
-                            onClick = { settingsManager.setMapPowerLevels(setOf(kw)) }
-                        )
+                    if (!isSwapSelected) {
+                        items(MAP_IRVE_POWER_OPTIONS.size) { index ->
+                            val (kw, label) = MAP_IRVE_POWER_OPTIONS[index]
+                            PowerFilterChip(
+                                kw = kw,
+                                label = label,
+                                isSelected = settings.effectiveIrvePowerLevels().contains(kw),
+                                onClick = {
+                                    settingsManager.setMapPowerLevels(setOf(kw))
+                                }
+                            )
+                        }
                     }
                 }
             }
