@@ -154,7 +154,7 @@ fun PhoneDashboardMainContent(
         }
 
         item {
-            val gridActions = listOf(
+            val gridActions = mutableListOf(
                 DashboardRow(
                     title = stringResource(R.string.dashboard_network),
                     subtitle = stringResource(R.string.dashboard_network),
@@ -162,18 +162,22 @@ fun PhoneDashboardMainContent(
                     onClick = onOpenNetworkDiagnostics
                 )
             )
+
+            if (fuelForecastRepository != null && currentMode == DashboardMode.Fuel) {
+                val latestPrice = fuelForecastState.historyPoints.lastOrNull()?.priceEurPerL
+                gridActions.add(
+                    DashboardRow(
+                        title = stringResource(R.string.dashboard_price_estimation),
+                        subtitle = if (fuelForecastLoading && latestPrice == null) "..." else if (latestPrice != null) "€%.3f".format(latestPrice) else "—",
+                        iconResId = R.drawable.ic_poi_gas,
+                        onClick = onOpenFuelForecast
+                    )
+                )
+            }
+
             PhoneDashboardOtherActionsGrid(otherActions = gridActions)
         }
 
-        if (fuelForecastRepository != null && currentMode == DashboardMode.Fuel) {
-            item {
-                PhoneDashboardFuelForecastCard(
-                    fuelForecastLoading = fuelForecastLoading,
-                    fuelForecastState = fuelForecastState,
-                    onOpenFuelForecast = onOpenFuelForecast
-                )
-            }
-        }
 
         item {
             PhoneDashboardEmergencyCard(onOpenEmergency = onOpenEmergency)
@@ -346,47 +350,6 @@ private fun PhoneDashboardEmergencyCard(onOpenEmergency: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PhoneDashboardFuelForecastCard(
-    fuelForecastLoading: Boolean,
-    fuelForecastState: FuelForecastUiState,
-    onOpenFuelForecast: () -> Unit
-) {
-    Card(
-        onClick = onOpenFuelForecast,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        ListItem(
-            headlineContent = { Text(stringResource(R.string.dashboard_price_estimation)) },
-            supportingContent = { Text(stringResource(R.string.dashboard_price_estimation_subtitle)) },
-            leadingContent = {
-                Icon(
-                    painter = painterResource(R.drawable.ic_poi_gas),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            trailingContent = {
-                if (fuelForecastLoading && fuelForecastState.historyPoints.isEmpty()) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                } else {
-                    val price = fuelForecastState.historyPoints.lastOrNull()?.priceEurPerL
-                    Text(
-                        text = if (price != null) "€%.3f".format(price) else "—",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 private fun PhoneDashboardOtherActionsGrid(otherActions: List<DashboardRow>) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         otherActions.chunked(2).forEach { pair ->
@@ -432,6 +395,13 @@ private fun PhoneDashboardOtherActionsGrid(otherActions: List<DashboardRow>) {
                                 fontWeight = FontWeight.Bold,
                                 color = if (action.enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                             )
+                            if (action.subtitle.isNotEmpty() && action.subtitle != action.title) {
+                                Text(
+                                    text = action.subtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (action.enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                )
+                            }
                         }
                     }
                 }
