@@ -22,12 +22,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
@@ -38,6 +37,7 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -173,6 +173,7 @@ fun MapScreen(
     var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val billingManager = org.koin.compose.koinInject<fr.geoking.gaston.premium.BillingManager>()
     var showPaywallForFavorite by remember { mutableStateOf(false) }
+    var showCheapestList by remember { mutableStateOf(false) }
 
 
     var hasLocationPermission by remember {
@@ -307,7 +308,21 @@ fun MapScreen(
         favoritesFilterEnabled = settings.isLoggedIn && favoritesRepo != null,
         isLoading = mapData.isLoading,
         palette = palette,
-        showAds = showAds
+        showAds = showAds,
+        floatingActionButton = {
+            if (currentSearchMode == SearchMode.Fuel && poisInView.any { !it.fuelPrices.isNullOrEmpty() }) {
+                FloatingActionButton(
+                    onClick = { showCheapestList = true },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PriceCheck,
+                        contentDescription = stringResource(R.string.action_show_cheapest_list)
+                    )
+                }
+            }
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -422,26 +437,29 @@ fun MapScreen(
                     }
 
                     val fuelIdsForCheapest = effectiveEnergies - "electric"
-                    val minPrice = remember(poisToShow, fuelIdsForCheapest) {
-                        if (fuelIdsForCheapest.isEmpty()) null
+                    val top3Prices = remember(poisToShow, fuelIdsForCheapest) {
+                        if (fuelIdsForCheapest.isEmpty()) emptyList<Double>()
                         else {
-                            poisToShow.mapNotNull { poi ->
+                            poisToShow.flatMap { poi ->
                                 poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
-                                    ?.minByOrNull { it.price }?.price
-                            }.minOrNull()
+                                    ?.map { it.price } ?: emptyList()
+                            }.distinct().sorted().take(3)
                         }
                     }
 
                     poisToShow.forEach { poi ->
                         val availability = mapData.availabilityByPoiId[poi.id]
                         val isPoiSelected = selectedPoi?.id == poi.id
-                        val isCheapest = remember(poi, minPrice, fuelIdsForCheapest) {
-                            if (minPrice == null) false
+                        val cheapestRank = remember(poi, top3Prices, fuelIdsForCheapest) {
+                            val minPoiPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
+                                ?.minOfOrNull { it.price }
+                            if (minPoiPrice == null) null
                             else {
-                                poi.fuelPrices?.any { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest && it.price == minPrice } == true
+                                val idx = top3Prices.indexOf(minPoiPrice)
+                                if (idx != -1) idx + 1 else null
                             }
                         }
-                        val markerBitmap = remember(poi, effectiveEnergies, effectivePowerLevels, isPoiSelected, isCheapest, sizePx, availability) {
+                        val markerBitmap = remember(poi, effectiveEnergies, effectivePowerLevels, isPoiSelected, cheapestRank, sizePx, availability) {
                             BitmapDescriptorFactory.fromBitmap(
                                 PoiMarkerHelper.getMarkerBitmap(
                                     context = context,
@@ -449,7 +467,7 @@ fun MapScreen(
                                     effectiveEnergyTypes = effectiveEnergies,
                                     effectivePowerLevels = effectivePowerLevels,
                                     isSelected = isPoiSelected,
-                                    isCheapest = isCheapest,
+                                    cheapestRank = cheapestRank,
                                     sizePx = sizePx,
                                     availability = availability,
                                     markerStyle = MarkerStyle.Bubble
@@ -529,6 +547,113 @@ fun MapScreen(
         onInvalidate = { mapActions.invalidate() },
         initialSelectedPoi = initialSelectedPoi
     )
+
+    if (showCheapestList) {
+        val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+        val rankedPois = remember(poisInView, fuelIds) {
+            val top3 = poisInView.flatMap { poi ->
+                poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                    ?.map { it.price } ?: emptyList()
+            }.distinct().sorted().take(3)
+
+            poisInView.mapNotNull { poi ->
+                val minPoiPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                    ?.minOfOrNull { it.price }
+                if (minPoiPrice == null) null
+                else {
+                    val rank = top3.indexOf(minPoiPrice)
+                    if (rank != -1) Pair(poi, rank + 1) else null
+                }
+            }.sortedBy { it.second }
+        }
+
+        ModalBottomSheet(
+            onDismissRequest = { showCheapestList = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.cheapest_stations_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 32.dp)
+                ) {
+                    items(rankedPois) { (poi, rank) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    when (rank) {
+                                        1 -> ColorHelper.ColorRank1.copy(alpha = 0.1f)
+                                        2 -> ColorHelper.ColorRank2.copy(alpha = 0.1f)
+                                        3 -> ColorHelper.ColorRank3.copy(alpha = 0.1f)
+                                        else -> Color.Transparent
+                                    },
+                                    MaterialTheme.shapes.medium
+                                )
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable {
+                                        selectedPoi = poi
+                                        showCheapestList = false
+                                    }
+                            ) {
+                                Text(
+                                    text = poi.name.ifBlank { poi.siteName ?: stringResource(R.string.gas_station) },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                                    ?.minByOrNull { it.price }
+                                if (minPrice != null) {
+                                    Text(
+                                        text = "${minPrice.fuelName}: €%.3f".format(minPrice.price),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = when (rank) {
+                                            1 -> ColorHelper.ColorRank1
+                                            2 -> ColorHelper.ColorRank2
+                                            3 -> ColorHelper.ColorRank3
+                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    )
+                                }
+                            }
+
+                            IconButton(onClick = {
+                                scope.launch {
+                                    cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(poi.latitude, poi.longitude)))
+                                }
+                            }) {
+                                Icon(Icons.Default.MyLocation, contentDescription = stringResource(R.string.action_recenter))
+                            }
+
+                            IconButton(onClick = {
+                                val uri = IntentNavigationHelper.getNavigationUri(poi)
+                                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                            }) {
+                                Icon(Icons.Default.Directions, contentDescription = stringResource(R.string.navigate))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF0F172A)

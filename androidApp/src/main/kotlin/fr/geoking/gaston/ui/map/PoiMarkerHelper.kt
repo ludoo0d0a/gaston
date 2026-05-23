@@ -47,7 +47,7 @@ object PoiMarkerHelper {
         effectiveEnergyTypes: Set<String>,
         effectivePowerLevels: Set<Int>,
         isSelected: Boolean = false,
-        isCheapest: Boolean = false,
+        cheapestRank: Int? = null,
         sizePx: Int = 120,
         availability: StationAvailabilitySummary? = null,
         markerStyle: MarkerStyle = MarkerStyle.Circle
@@ -65,7 +65,7 @@ object PoiMarkerHelper {
 
         val availKey = availability?.let { "${it.availableCount}/${it.totalCount}" } ?: "na"
         val headKey = if (amenityStyle != null) "amenity_${System.identityHashCode(amenityStyle.icon)}_${amenityStyle.glyphArgb}" else headDrawableId.toString()
-        val cacheKey = "${poi.id}_${label}_${headKey}_${categoryColor}_${isSelected}_${isCheapest}_${sizePx}_${availKey}_$MARKER_LAYOUT_CACHE_TAG"
+        val cacheKey = "${poi.id}_${label}_${headKey}_${categoryColor}_${isSelected}_${cheapestRank}_${sizePx}_${availKey}_$MARKER_LAYOUT_CACHE_TAG"
         synchronized(cache) {
             cache.get(cacheKey)?.let { return it }
         }
@@ -73,8 +73,14 @@ object PoiMarkerHelper {
         val w = sizePx.coerceIn(56, 512)
         val fillColor = categoryColor
         val labelFg = contrastingForegroundArgb(fillColor)
-        val edgeStrokeArgb = if (isCheapest) 0xFFFFD700.toInt() else contrastingEdgeStrokeArgb(labelFg)
-        val strokeW = if (isCheapest) (w * 0.07f).coerceIn(4f, 10f) else (w * 0.035f).coerceIn(2f, 5f)
+        val edgeStrokeArgb = when (cheapestRank) {
+            1 -> ColorHelper.ColorRank1.toArgb()
+            2 -> ColorHelper.ColorRank2.toArgb()
+            3 -> ColorHelper.ColorRank3.toArgb()
+            else -> contrastingEdgeStrokeArgb(labelFg)
+        }
+        val isAnyCheapest = cheapestRank != null && cheapestRank in 1..3
+        val strokeW = if (isAnyCheapest) (w * 0.07f).coerceIn(4f, 10f) else (w * 0.035f).coerceIn(2f, 5f)
         val topMargin = w * 0.03f
         val gapSmall = w * 0.025f
 

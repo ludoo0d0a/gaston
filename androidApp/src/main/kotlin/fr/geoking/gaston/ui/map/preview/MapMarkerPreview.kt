@@ -113,6 +113,7 @@ internal fun MapMarkerPreviewCanvas(
                         poi = poi,
                         effectiveEnergyTypes = spec.effectiveEnergyTypes,
                         effectivePowerLevels = spec.effectivePowerLevels,
+                        cheapestRank = null,
                         sizePx = PREVIEW_MARKER_SIZE_PX,
                         markerStyle = MarkerStyle.Circle
                     )

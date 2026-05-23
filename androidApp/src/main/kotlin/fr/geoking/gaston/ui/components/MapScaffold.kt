@@ -42,12 +42,14 @@ fun MapScaffold(
     mapCenterLatitude: Double? = null,
     mapCenterLongitude: Double? = null,
     showAds: Boolean = false,
+    floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
     val settings by settingsManager.settings.collectAsState()
     var navMenuExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
+        floatingActionButton = floatingActionButton,
         topBar = {
             TopAppBar(
                 title = { Text(title) },
