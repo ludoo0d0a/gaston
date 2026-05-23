@@ -44,14 +44,8 @@ class BelibAvailabilityClient(
         radiusKm: Int = 10,
         limit: Int = 100
     ): List<BelibPdcRecord> {
-        val deltaLat = radiusKm / 111.0
-        val deltaLng = radiusKm / (111.0 * cos(latitude * PI / 180)).coerceAtLeast(0.01)
-        val latLo = latitude - deltaLat
-        val latHi = latitude + deltaLat
-        val lngLo = longitude - deltaLng
-        val lngHi = longitude + deltaLng
-        // Paris Data uses coordonneesxy.lat and coordonneesxy.lon (lat=latitude, lon=longitude)
-        val where = "coordonneesxy.lat > $latLo and coordonneesxy.lat < $latHi and coordonneesxy.lon > $lngLo and coordonneesxy.lon < $lngHi"
+        // Use within_distance predicate as coordonneesxy is a geo_point_2d and doesn't support .lat/.lon access in where clause
+        val where = "within_distance(coordonneesxy, geom'POINT($longitude $latitude)', ${radiusKm}km)"
         val encodedWhere = where.encodeURLParameter()
         val url = "$baseUrl/records?where=$encodedWhere&limit=${limit.coerceAtMost(100)}"
 
