@@ -430,6 +430,7 @@ private fun SourcesConfig(
         val supportedCountries: List<String>,
         val providesFuel: Boolean = type.providesFuel,
         val providesElectric: Boolean = type.providesElectric,
+        val providesSwap: Boolean = type.providesSwap,
     )
 
     fun providerLabel(type: PoiProviderType): String =
@@ -538,12 +539,25 @@ private fun SourcesConfig(
     }
 
     var countryFilterText by remember { mutableStateOf("") }
-    val filteredCountryKeys = remember(sortedCountryKeys, countryFilterText) {
+    var energyFilter by remember { mutableStateOf("all") }
+    val filteredCountryKeys = remember(sortedCountryKeys, countryFilterText, energyFilter, providersByCountry) {
         val q = countryFilterText.trim().lowercase()
-        if (q.isEmpty()) sortedCountryKeys
+        val baseKeys = if (q.isEmpty()) sortedCountryKeys
         else sortedCountryKeys.filter { key ->
             countryLabel(key).lowercase().contains(q) ||
                 key.lowercase().contains(q)
+        }
+
+        if (energyFilter == "all") baseKeys
+        else baseKeys.filter { key ->
+            providersByCountry[key].orEmpty().any { p ->
+                when (energyFilter) {
+                    "fuel" -> p.providesFuel
+                    "electric" -> p.providesElectric
+                    "swap" -> p.providesSwap
+                    else -> true
+                }
+            }
         }
     }
 
@@ -590,6 +604,23 @@ private fun SourcesConfig(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf(
+                    "all" to stringResource(R.string.action_all),
+                    "fuel" to stringResource(R.string.search_mode_fuel),
+                    "electric" to stringResource(R.string.search_mode_ev),
+                    "swap" to "Swap"
+                ).forEach { (id, label) ->
+                    FilterChip(
+                        selected = energyFilter == id,
+                        onClick = { energyFilter = id },
+                        label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                    )
+                }
+            }
             OutlinedTextField(
                 value = countryFilterText,
                 onValueChange = { countryFilterText = it },
@@ -609,7 +640,14 @@ private fun SourcesConfig(
             }
 
             filteredCountryKeys.forEach { countryKey ->
-                val list = providersByCountry[countryKey].orEmpty()
+                val list = providersByCountry[countryKey].orEmpty().filter { p ->
+                    when (energyFilter) {
+                        "fuel" -> p.providesFuel
+                        "electric" -> p.providesElectric
+                        "swap" -> p.providesSwap
+                        else -> true
+                    }
+                }
                 if (list.isEmpty()) return@forEach
 
                 val allTypesInCountry = list.map { it.type }.toSet()

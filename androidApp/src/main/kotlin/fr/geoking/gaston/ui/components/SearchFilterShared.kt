@@ -163,38 +163,15 @@ fun SearchCategorySelector(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    val isSwapSelected = settings.selectedMapEnergyTypes.contains("swap")
                     val fuels = MAP_ENERGY_OPTIONS.filter { it.first != "electric" }
-                    item {
-                        FilterChip(
-                            selected = isSwapSelected,
-                            onClick = {
-                                if (isSwapSelected) {
-                                    settingsManager.setMapEnergyTypes(emptySet())
-                                } else {
-                                    settingsManager.setMapEnergyTypes(setOf("swap"))
-                                }
-                            },
-                            label = { Text("Swap") },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Rounded.SwapHoriz,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                    items(fuels.size) { index ->
+                        val (id, label) = fuels[index]
+                        FuelFilterChip(
+                            id = id,
+                            label = label,
+                            isSelected = settings.selectedMapEnergyTypes.contains(id),
+                            onClick = { settingsManager.setMapEnergyTypes(setOf(id)) }
                         )
-                    }
-                    if (!isSwapSelected) {
-                        items(fuels.size) { index ->
-                            val (id, label) = fuels[index]
-                            FuelFilterChip(
-                                id = id,
-                                label = label,
-                                isSelected = settings.selectedMapEnergyTypes.contains(id),
-                                onClick = { settingsManager.setMapEnergyTypes(setOf(id)) }
-                            )
-                        }
                     }
                 }
             }

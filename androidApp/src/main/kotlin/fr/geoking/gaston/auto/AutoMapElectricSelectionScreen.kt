@@ -16,8 +16,29 @@ class AutoMapElectricSelectionScreen(
         val isSwapSelected = settings.selectedMapEnergyTypes.contains("swap")
         val listBuilder = ItemList.Builder()
 
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle("Battery Swap")
+                .setToggle(
+                    Toggle.Builder { checked ->
+                        if (checked) {
+                            settingsManager.saveSettings(settings.copy(
+                                selectedMapEnergyTypes = setOf("swap"),
+                                mapPowerLevels = emptySet(),
+                                selectedMapConnectorTypes = emptySet()
+                            ))
+                        } else {
+                            settingsManager.saveSettings(settings.copy(selectedMapEnergyTypes = emptySet()))
+                        }
+                        invalidate()
+                    }.setChecked(isSwapSelected).build()
+                )
+                .build()
+        )
+
         if (isSwapSelected) {
-            return MessageTemplate.Builder(carContext.getString(R.string.filter_exclusive_swap))
+            return ListTemplate.Builder()
+                .setSingleList(listBuilder.build())
                 .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_electric_settings)).setStartHeaderAction(Action.BACK).build())
                 .addAction(Action.Builder()
                     .setTitle(carContext.getString(R.string.action_disable_swap))
