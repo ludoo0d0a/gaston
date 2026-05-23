@@ -38,6 +38,7 @@ import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.ui.components.AdMobBanner
+import fr.geoking.gaston.ui.components.FuelFilterChip
 import fr.geoking.gaston.ui.components.FuelForecastChartCard
 import fr.geoking.gaston.ui.components.UnifiedFuelForecastChartCard
 import fr.geoking.gaston.ui.dashboard.GastonTheme
@@ -83,6 +84,7 @@ fun FuelForecastScreen(
     var refreshTick by remember { mutableStateOf(0) }
 
     val allFuelIds = setOf("gazole", "sp95", "sp98", "gplc", "e85")
+    var selectedFuelIds by remember { mutableStateOf(setOf("gazole", "sp95", "sp98")) }
 
     LaunchedEffect(refreshTick) {
         isLoading = true
@@ -142,22 +144,41 @@ fun FuelForecastScreen(
                         )
                     }
 
-                    val unifiedState = states["unified"]
-                    if (unifiedState != null) {
-                        item {
-                            UnifiedFuelForecastChartCard(
-                                state = unifiedState,
-                                isLoading = isLoading && states.isEmpty()
-                            )
+                    item {
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            allFuelIds.forEach { fuelId ->
+                                val label = when (fuelId) {
+                                    "gazole" -> stringResource(R.string.fuel_gazole)
+                                    "sp95" -> stringResource(R.string.fuel_sp95)
+                                    "sp98" -> stringResource(R.string.fuel_sp98)
+                                    "gplc" -> stringResource(R.string.fuel_gplc)
+                                    "e85" -> stringResource(R.string.fuel_e85)
+                                    else -> fuelId
+                                }
+                                FuelFilterChip(
+                                    id = fuelId,
+                                    label = label,
+                                    isSelected = selectedFuelIds.contains(fuelId),
+                                    onClick = {
+                                        selectedFuelIds = if (selectedFuelIds.contains(fuelId)) {
+                                            if (selectedFuelIds.size > 1) selectedFuelIds - fuelId else selectedFuelIds
+                                        } else {
+                                            selectedFuelIds + fuelId
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
 
-                    val sortedFuels = listOf("gazole", "sp95", "sp98", "gplc", "e85")
-                    items(sortedFuels) { fuelId ->
-                        val state = states[fuelId] ?: FuelForecastUiState(fuelId = fuelId, locationKey = "")
-                        FuelForecastChartCard(
-                            state = state,
-                            isLoading = isLoading && states.isEmpty() // Only show inner loading if first load
+                    item {
+                        UnifiedFuelForecastChartCard(
+                            states = states,
+                            selectedFuelIds = selectedFuelIds,
+                            isLoading = isLoading && states.isEmpty()
                         )
                     }
 
