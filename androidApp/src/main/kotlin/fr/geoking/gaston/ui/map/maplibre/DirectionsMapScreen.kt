@@ -154,6 +154,7 @@ fun DirectionsMapScreen(
                                     effectiveEnergyTypes = energyTypes,
                                     effectivePowerLevels = powerLevels,
                                     isSelected = false,
+                                    cheapestRank = null,
                                     sizePx = 120,
                                     availability = null,
                                     markerStyle = MarkerStyle.Bubble

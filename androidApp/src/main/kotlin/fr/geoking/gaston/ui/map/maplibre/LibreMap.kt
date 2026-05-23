@@ -129,6 +129,7 @@ private fun updatePoisAndIcons(
                 effectiveEnergyTypes = effectiveEnergyTypes,
                 effectivePowerLevels = effectivePowerLevels,
                 isSelected = isSelected,
+                cheapestRank = null,
                 sizePx = if (isSelected) 150 else 120,
                 availability = availability,
                 markerStyle = MarkerStyle.Bubble

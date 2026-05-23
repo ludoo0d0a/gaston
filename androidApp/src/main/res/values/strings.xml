@@ -19,6 +19,7 @@
     <string name="amenity_viewpoint">Viewpoint</string>
     <string name="app_name">Gaston</string>
     <string name="charging_station">Charging station</string>
+    <string name="cheapest_stations_title">Cheapest Stations</string>
     <string name="connectors_label">Connectors: %1$s</string>
     <string name="dashboard_network">Network</string>
     <string name="dashboard_routes">Routes</string>
@@ -98,6 +99,7 @@
     <string name="action_show_logs">Show Logs</string>
     <string name="action_fullscreen">Fullscreen</string>
     <string name="action_request_details">Request Details</string>
+    <string name="action_show_cheapest_list">Show cheapest list</string>
     <string name="action_body_viewer">Body Viewer</string>
     <string name="action_all">All</string>
     <string name="action_manual">Manual</string>

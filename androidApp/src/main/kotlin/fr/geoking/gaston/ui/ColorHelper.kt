@@ -10,6 +10,11 @@ object ColorHelper {
     val ColorE85 = Color(0xFFA855F7)
     val ColorGPLC = Color(0xFFF97316)
 
+    // Rank Colors
+    val ColorRank1 = Color(0xFFFFD700) // Gold
+    val ColorRank2 = Color(0xFFC0C0C0) // Silver
+    val ColorRank3 = Color(0xFFCD7F32) // Bronze
+
     // Power Colors
     val ColorPower0_20 = Color(0xFF86EFAC)
     val ColorPower20_50 = Color(0xFF22C55E)
