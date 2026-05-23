@@ -2,43 +2,62 @@ package fr.geoking.gaston.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import fr.geoking.gaston.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.BoxWithConstraints
 import fr.geoking.gaston.repository.DailyPricePoint
 import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ui.ColorHelper
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 @Composable
 private fun fuelTypeLabel(fuelId: String): String = when (fuelId) {
@@ -96,10 +115,17 @@ fun FuelForecastCompactCard(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun UnifiedFuelForecastChartCard(
-    state: FuelForecastUiState,
+    states: Map<String, FuelForecastUiState>,
+    selectedFuelIds: Set<String>,
     isLoading: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val unified = states["unified"]
+    val brentHistory = unified?.brentHistory ?: emptyList()
+
+    val filteredHistory = unified?.allFuelsHistory?.filterKeys { it in selectedFuelIds } ?: emptyMap()
+    val filteredForecast = unified?.allFuelsForecast?.filterKeys { it in selectedFuelIds } ?: emptyMap()
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -117,11 +143,11 @@ fun UnifiedFuelForecastChartCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            if (isLoading && state.allFuelsHistory.isEmpty()) {
+            if (isLoading && filteredHistory.isEmpty()) {
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .height(140.dp)
+                        .height(200.dp)
                         .padding(top = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -130,18 +156,19 @@ fun UnifiedFuelForecastChartCard(
             } else {
                 val brentColor = MaterialTheme.colorScheme.secondary
                 val primaryColor = MaterialTheme.colorScheme.primary
-                val fuelColors = state.allFuelsHistory.keys.associateWith {
+                val fuelColors = (filteredHistory.keys + filteredForecast.keys).associateWith {
                     ColorHelper.getFuelColor(it) ?: primaryColor
                 }
 
                 UnifiedForecastChart(
-                    allFuelsHistory = state.allFuelsHistory,
-                    brentHistory = state.brentHistory,
+                    allFuelsHistory = filteredHistory,
+                    allFuelsForecast = filteredForecast,
+                    brentHistory = brentHistory,
                     fuelColors = fuelColors,
                     brentColor = brentColor,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp)
+                        .height(240.dp)
                         .padding(top = 16.dp)
                 )
 
@@ -150,11 +177,11 @@ fun UnifiedFuelForecastChartCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    state.allFuelsHistory.keys.sorted().forEach { fuelId ->
+                    (filteredHistory.keys + filteredForecast.keys).sorted().forEach { fuelId ->
                         val color = fuelColors[fuelId] ?: primaryColor
                         LegendItem(fuelTypeLabel(fuelId), color)
                     }
-                    if (state.brentHistory.isNotEmpty()) {
+                    if (brentHistory.isNotEmpty()) {
                         LegendItem(stringResource(R.string.forecast_legend_brent), brentColor)
                     }
                 }
@@ -181,66 +208,186 @@ private fun LegendItem(label: String, color: Color) {
     }
 }
 
+private data class ChartPoint(
+    val fuelId: String?, // null if brent
+    val day: String,
+    val price: Double,
+    val isForecast: Boolean,
+    val x: Float,
+    val y: Float
+)
+
 @Composable
 private fun UnifiedForecastChart(
     allFuelsHistory: Map<String, List<DailyPricePoint>>,
+    allFuelsForecast: Map<String, List<DailyPricePoint>>,
     brentHistory: List<fr.geoking.gaston.fuelforecast.DailyClose>,
     fuelColors: Map<String, Color>,
     brentColor: Color,
     modifier: Modifier = Modifier
 ) {
+    val textMeasurer = rememberTextMeasurer()
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val labelStyle = TextStyle(fontSize = 10.sp, color = onSurface.copy(alpha = 0.6f))
+    val bubbleBg = MaterialTheme.colorScheme.secondaryContainer
+    val bubbleOnBg = MaterialTheme.colorScheme.onSecondaryContainer
     val gridColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
 
-    val allDays = (allFuelsHistory.values.flatten().map { it.day } + brentHistory.map { it.day }).distinct().sorted()
+    var selectedPoint by remember { mutableStateOf<ChartPoint?>(null) }
+
+    val allFuelPoints = (allFuelsHistory.values.flatten() + allFuelsForecast.values.flatten())
+    val allDays = (allFuelPoints.map { it.day } + brentHistory.map { it.day }).distinct().sorted()
     if (allDays.isEmpty()) return
 
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
+    val fuelPrices = allFuelPoints.map { it.priceEurPerL }
+    val fuelMin = (fuelPrices.minOrNull() ?: 1.5)
+    val fuelMax = (fuelPrices.maxOrNull() ?: 2.0)
+    val fuelRange = (fuelMax - fuelMin).coerceAtLeast(0.01)
+    val yMin = fuelMin - fuelRange * 0.1
+    val yMax = fuelMax + fuelRange * 0.1
+    val yRange = (yMax - yMin).coerceAtLeast(0.01)
 
-        fun xFor(day: String): Float {
-            val i = allDays.indexOf(day)
-            if (i < 0) return 0f
-            return w * (i / denom.toFloat())
-        }
+    val brentPrices = brentHistory.map { it.close }
+    val brentMin = brentPrices.minOrNull() ?: 0.0
+    val brentMax = brentPrices.maxOrNull() ?: 1.0
+    val brentRange = (brentMax - brentMin).coerceAtLeast(0.001)
 
-        drawLine(gridColor, Offset(0f, h * 0.5f), Offset(w, h * 0.5f), strokeWidth = 1f)
+    val yAxisWidth = 40.dp
 
-        if (brentHistory.size >= 2) {
-            val bSorted = brentHistory.sortedBy { it.day }
-            val prices = bSorted.map { it.close }
-            val minP = prices.minOrNull() ?: 0.0
-            val maxP = prices.maxOrNull() ?: 1.0
-            val range = (maxP - minP).coerceAtLeast(0.001)
+    BoxWithConstraints(modifier = modifier) {
+        val w = constraints.maxWidth.toFloat()
+        val h = constraints.maxHeight.toFloat()
 
-            val path = Path()
-            bSorted.forEachIndexed { i, pt ->
-                val x = xFor(pt.day)
-                val norm = ((pt.close - minP) / range).coerceIn(0.0, 1.0)
-                val y = h - norm.toFloat() * h
-                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        Canvas(modifier = Modifier.fillMaxSize().pointerInput(allDays, allFuelsHistory, allFuelsForecast, brentHistory) {
+            detectTapGestures { offset ->
+                val w = size.width
+                val h = size.height
+                val chartW = w - yAxisWidth.toPx()
+                val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
+
+                fun xFor(day: String): Float = yAxisWidth.toPx() + chartW * (allDays.indexOf(day) / denom.toFloat())
+                fun yForFuel(p: Double): Float = h - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * h)
+                fun yForBrent(p: Double): Float = h - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * h)
+
+                val points = mutableListOf<ChartPoint>()
+                allFuelsHistory.forEach { (fid, pts) ->
+                    pts.forEach { points.add(ChartPoint(fid, it.day, it.priceEurPerL, false, xFor(it.day), yForFuel(it.priceEurPerL))) }
+                }
+                allFuelsForecast.forEach { (fid, pts) ->
+                    pts.forEach { points.add(ChartPoint(fid, it.day, it.priceEurPerL, true, xFor(it.day), yForFuel(it.priceEurPerL))) }
+                }
+                brentHistory.forEach { points.add(ChartPoint(null, it.day, it.close, false, xFor(it.day), yForBrent(it.close))) }
+
+                selectedPoint = points.minByOrNull { abs(it.x - offset.x) + abs(it.y - offset.y) }?.let {
+                    if (abs(it.x - offset.x) < 100 && abs(it.y - offset.y) < 100) it else null
+                }
             }
-            drawPath(path, brentColor, style = Stroke(width = 2.5f, cap = StrokeCap.Round))
-        }
+        }) {
+            val w = size.width
+            val h = size.height
+            val chartW = w - yAxisWidth.toPx()
+            val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
 
-        allFuelsHistory.forEach { (fuelId, history) ->
-            if (history.size >= 2) {
-                val color = fuelColors[fuelId] ?: Color.Gray
-                val sorted = history.sortedBy { it.day }
-                val prices = sorted.map { it.priceEurPerL }
-                val minP = prices.minOrNull() ?: 0.0
-                val maxP = prices.maxOrNull() ?: 1.0
-                val range = (maxP - minP).coerceAtLeast(0.001)
+            fun xFor(day: String): Float = yAxisWidth.toPx() + chartW * (allDays.indexOf(day) / denom.toFloat())
+            fun yForFuel(p: Double): Float = h - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * h)
+            fun yForBrent(p: Double): Float = h - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * h)
 
+            // Grid & Y-axis labels
+            val steps = 5
+            for (i in 0..steps) {
+                val ratio = i / steps.toFloat()
+                val y = h - ratio * h
+                val price = yMin + ratio * yRange
+                drawLine(gridColor, Offset(yAxisWidth.toPx(), y), Offset(w, y), strokeWidth = 1f)
+                drawText(
+                    textMeasurer,
+                    String.format(Locale.US, "%.2f", price),
+                    Offset(4f, y - 12f),
+                    style = labelStyle
+                )
+            }
+
+            // Brent
+            if (brentHistory.size >= 2) {
                 val path = Path()
-                sorted.forEachIndexed { i, pt ->
+                brentHistory.sortedBy { it.day }.forEachIndexed { i, pt ->
                     val x = xFor(pt.day)
-                    val norm = ((pt.priceEurPerL - minP) / range).coerceIn(0.0, 1.0)
-                    val y = h - norm.toFloat() * h
+                    val y = yForBrent(pt.close)
                     if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
                 }
-                drawPath(path, color, style = Stroke(width = 3.5f, cap = StrokeCap.Round))
+                drawPath(path, brentColor, style = Stroke(width = 2f, cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))))
+            }
+
+            // Fuels
+            val allFids = (allFuelsHistory.keys + allFuelsForecast.keys).distinct()
+            allFids.forEach { fid ->
+                val color = fuelColors[fid] ?: Color.Gray
+                val hist = allFuelsHistory[fid]?.sortedBy { it.day } ?: emptyList()
+                val fore = allFuelsForecast[fid]?.sortedBy { it.day } ?: emptyList()
+
+                if (hist.size >= 2) {
+                    val path = Path()
+                    hist.forEachIndexed { i, pt ->
+                        val x = xFor(pt.day)
+                        val y = yForFuel(pt.priceEurPerL)
+                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    }
+                    drawPath(path, color, style = Stroke(width = 3f, cap = StrokeCap.Round))
+                }
+
+                if (fore.isNotEmpty()) {
+                    val path = Path()
+                    var started = false
+                    hist.lastOrNull()?.let {
+                        path.moveTo(xFor(it.day), yForFuel(it.priceEurPerL))
+                        started = true
+                    }
+                    fore.sortedBy { it.day }.forEach { pt ->
+                        val x = xFor(pt.day)
+                        val y = yForFuel(pt.priceEurPerL)
+                        if (!started) { path.moveTo(x, y); started = true } else path.lineTo(x, y)
+                    }
+                    drawPath(path, color, style = Stroke(width = 3f, cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))))
+                }
+            }
+
+            // Selection marker
+            selectedPoint?.let { pt ->
+                drawCircle(pt.fuelId?.let { fuelColors[it] } ?: brentColor, radius = 6f, center = Offset(pt.x, pt.y))
+            }
+        }
+
+        // Detail Bubble
+        selectedPoint?.let { pt ->
+            val fuelName = pt.fuelId?.let { fuelTypeLabel(it) } ?: stringResource(R.string.forecast_legend_brent)
+            val priceStr = if (pt.fuelId != null) "€%.3f".format(pt.price) else "$%.2f".format(pt.price)
+            val text = "$fuelName\n$priceStr\n${pt.day}"
+
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            val xDp = with(density) { pt.x.toDp() }
+            val yDp = with(density) { pt.y.toDp() }
+
+            Box(
+                modifier = Modifier
+                    .offset(
+                        x = if (pt.x > w * 0.7f) xDp - 120.dp else xDp,
+                        y = if (pt.y > h * 0.5f) yDp - 80.dp else yDp
+                    )
+                    .align(Alignment.TopStart)
+            ) {
+                Surface(
+                    color = bubbleBg,
+                    shape = RoundedCornerShape(8.dp),
+                    tonalElevation = 4.dp,
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Text(
+                        text = text,
+                        modifier = Modifier.padding(8.dp),
+                        style = TextStyle(fontSize = 12.sp, color = bubbleOnBg),
+                        lineHeight = 16.sp
+                    )
+                }
             }
         }
     }
