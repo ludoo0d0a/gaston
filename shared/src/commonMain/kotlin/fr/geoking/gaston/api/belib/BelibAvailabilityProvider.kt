@@ -7,7 +7,7 @@ package fr.geoking.gaston.api.belib
 class BelibAvailabilityProvider(
     private val client: BelibAvailabilityClient,
     private val radiusKm: Int = 10,
-    private val limit: Int = 200
+    private val limit: Int = 100
 ) : BorneAvailabilityProvider {
 
     override suspend fun getAvailability(

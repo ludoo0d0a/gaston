@@ -337,7 +337,7 @@ val mapModule = module {
     // Borne availability (e.g. Belib Paris): factory returns provider for current location.
     single { BelibAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("belib")) {
-        BelibAvailabilityProvider(get(), radiusKm = 10, limit = 200)
+        BelibAvailabilityProvider(get(), radiusKm = 10, limit = 100)
     }
     single<BorneAvailabilityProviderFactory> {
         BorneAvailabilityProviderFactory(get(named("belib")))
