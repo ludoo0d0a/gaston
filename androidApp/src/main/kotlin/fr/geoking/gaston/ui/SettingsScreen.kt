@@ -940,7 +940,7 @@ private fun MainMenu(
         ) {
             if (settings.hasPremiumFeatures) {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF3B82F6)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1D4ED8)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
