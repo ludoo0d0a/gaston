@@ -95,6 +95,7 @@ fun PhoneDashboardMainContent(
     onOpenNetworkDiagnostics: () -> Unit,
     onRequestLocationPermission: () -> Unit,
     onLocationSelected: (GeocodedPlace?) -> Unit,
+    onToggleFavorite: (GeocodedPlace) -> Unit,
     onPoiSelected: (Poi) -> Unit
 ) {
     val currentMode = rememberSearchMode(settings)
@@ -114,7 +115,8 @@ fun PhoneDashboardMainContent(
                 selectedSearchLocation = selectedSearchLocation,
                 settings = settings,
                 onLocationSelected = onLocationSelected,
-                onOpenRoutes = onOpenRoutes
+                onOpenRoutes = onOpenRoutes,
+                onToggleFavorite = onToggleFavorite
             )
         }
 

@@ -67,7 +67,8 @@ fun PhoneDashboardDestinationSearch(
     selectedSearchLocation: GeocodedPlace?,
     settings: AppSettings,
     onLocationSelected: (GeocodedPlace?) -> Unit,
-    onOpenRoutes: (NavDestination?, NavDestination?) -> Unit
+    onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
+    onToggleFavorite: (GeocodedPlace) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -81,7 +82,6 @@ fun PhoneDashboardDestinationSearch(
     LaunchedEffect(
         destQuery,
         settings.favoriteLocations,
-        settings.routeHistory,
         selectedSearchLocation,
         hasLocationPermission,
         userLat,
@@ -97,12 +97,14 @@ fun PhoneDashboardDestinationSearch(
             return@LaunchedEffect
         }
 
-        val historyMatches = settings.routeHistory.filter { it.label.contains(destQuery, ignoreCase = true) }
-        val favoriteMatches = settings.favoriteLocations.filter { it.label.contains(destQuery, ignoreCase = true) }
-        val localSuggestions = (favoriteMatches + historyMatches).distinctBy { it.label }
-        destSuggestions = localSuggestions
+        val favoriteMatches = settings.favoriteLocations
+            .filter { it.label.contains(destQuery, ignoreCase = true) }
+            .take(3)
 
-        val client = geocodingClient ?: return@LaunchedEffect
+        val client = geocodingClient ?: run {
+            destSuggestions = favoriteMatches
+            return@LaunchedEffect
+        }
 
         delay(300)
         try {
@@ -118,24 +120,29 @@ fun PhoneDashboardDestinationSearch(
             val biasLon = biasPair?.second
             val remote = client.geocode(
                 destQuery,
-                limit = 8,
+                limit = 5,
                 biasLatitude = biasLat,
                 biasLongitude = biasLon
             )
-            destSuggestions = (favoriteMatches + historyMatches + remote).distinctBy { it.label }
+            destSuggestions = (favoriteMatches + remote).distinctBy { it.label }.take(5)
         } catch (_: Exception) {
-            // Keep local suggestions only
+            destSuggestions = favoriteMatches
         }
     }
 
     Box {
         OutlinedTextField(
             value = destQuery,
-            onValueChange = { destQuery = it },
+            onValueChange = {
+                destQuery = it
+                destFocused = true
+            },
             placeholder = { Text(stringResource(R.string.route_where_to)) },
             modifier = Modifier
                 .fillMaxWidth()
-                .onFocusChanged { destFocused = it.isFocused }
+                .onFocusChanged {
+                    destFocused = it.isFocused
+                }
                 .onSizeChanged { destFieldHeight = it.height },
             shape = RoundedCornerShape(24.dp),
             singleLine = true,
@@ -192,6 +199,24 @@ fun PhoneDashboardDestinationSearch(
             trailingIcon = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (destQuery.isNotEmpty()) {
+                        val currentIsFavorite = selectedSearchLocation?.let { loc ->
+                            loc.label == destQuery && settings.favoriteLocations.any {
+                                it.latitude == loc.latitude && it.longitude == loc.longitude
+                            }
+                        } ?: false
+
+                        if (selectedSearchLocation != null && selectedSearchLocation.label == destQuery) {
+                            IconButton(onClick = { onToggleFavorite(selectedSearchLocation) }) {
+                                Icon(
+                                    painter = painterResource(
+                                        if (currentIsFavorite) R.drawable.ic_star else R.drawable.ic_star_border
+                                    ),
+                                    contentDescription = null,
+                                    tint = if (currentIsFavorite) Color(0xFFFACC15) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+
                         IconButton(onClick = {
                             destQuery = ""
                             onLocationSelected(null)
@@ -241,47 +266,40 @@ fun PhoneDashboardDestinationSearch(
                 ) {
                     LazyColumn(modifier = Modifier.heightIn(max = 250.dp)) {
                         items(destSuggestions) { suggestion ->
-                            val isHistory = settings.routeHistory.any {
-                                it.label == suggestion.label &&
-                                    it.latitude == suggestion.latitude &&
-                                    it.longitude == suggestion.longitude
-                            }
                             val isFavorite = settings.favoriteLocations.any {
-                                it.label == suggestion.label &&
-                                    it.latitude == suggestion.latitude &&
+                                it.latitude == suggestion.latitude &&
                                     it.longitude == suggestion.longitude
                             }
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable {
-                                        destQuery = suggestion.label
-                                        destFocused = false
-                                        onLocationSelected(suggestion)
-                                    }
-                                    .padding(12.dp),
+                                    .padding(start = 4.dp, end = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    painter = painterResource(
-                                        when {
-                                            isFavorite -> R.drawable.ic_star
-                                            isHistory -> R.drawable.ic_history
-                                            else -> R.drawable.ic_place
-                                        }
-                                    ),
-                                    contentDescription = null,
-                                    tint = if (isFavorite) Color(0xFFFACC15) else MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                        alpha = 0.6f
-                                    ),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(12.dp))
+                                IconButton(onClick = { onToggleFavorite(suggestion) }) {
+                                    Icon(
+                                        painter = painterResource(
+                                            if (isFavorite) R.drawable.ic_star else R.drawable.ic_star_border
+                                        ),
+                                        contentDescription = null,
+                                        tint = if (isFavorite) Color(0xFFFACC15) else MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                            alpha = 0.6f
+                                        ),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                                 Text(
                                     text = suggestion.label,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            destQuery = suggestion.label
+                                            destFocused = false
+                                            onLocationSelected(suggestion)
+                                        }
+                                        .padding(vertical = 12.dp)
                                 )
                                 IconButton(onClick = {
                                     onOpenRoutes(

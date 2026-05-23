@@ -351,6 +351,7 @@ fun PhoneDashboardScreen(
                 onOpenNetworkDiagnostics = onOpenNetworkDiagnostics,
                 onRequestLocationPermission = onRequestLocationPermission,
                 onLocationSelected = onLocationSelected,
+                onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) },
                 onPoiSelected = { poiForDetails = it }
             )
         }
