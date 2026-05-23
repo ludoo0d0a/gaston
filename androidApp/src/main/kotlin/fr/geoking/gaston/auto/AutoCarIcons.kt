@@ -13,7 +13,7 @@ import fr.geoking.gaston.feature.emergency.EmergencyCategory
  * Station brand / POI list icons stay full-color via [AutoPoiUiHelper].
  */
 object AutoCarIcons {
-    private const val PRIMARY_LIGHT = 0xFF3B82F6.toInt()
+    private const val PRIMARY_LIGHT = 0xFF1D4ED8.toInt()
     private const val PRIMARY_DARK = 0xFF93C5FD.toInt()
     private const val FUEL_LIGHT = 0xFFEAB308.toInt()
     private const val FUEL_DARK = 0xFFFACC15.toInt()
