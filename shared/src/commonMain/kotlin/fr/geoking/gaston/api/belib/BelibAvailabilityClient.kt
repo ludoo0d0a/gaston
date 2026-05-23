@@ -42,7 +42,7 @@ class BelibAvailabilityClient(
         latitude: Double,
         longitude: Double,
         radiusKm: Int = 10,
-        limit: Int = 200
+        limit: Int = 100
     ): List<BelibPdcRecord> {
         val deltaLat = radiusKm / 111.0
         val deltaLng = radiusKm / (111.0 * cos(latitude * PI / 180)).coerceAtLeast(0.01)
@@ -53,7 +53,7 @@ class BelibAvailabilityClient(
         // Paris Data uses coordonneesxy.lat and coordonneesxy.lon (lat=latitude, lon=longitude)
         val where = "coordonneesxy.lat > $latLo and coordonneesxy.lat < $latHi and coordonneesxy.lon > $lngLo and coordonneesxy.lon < $lngHi"
         val encodedWhere = where.encodeURLParameter()
-        val url = "$baseUrl/records?where=$encodedWhere&limit=${limit.coerceAtMost(500)}"
+        val url = "$baseUrl/records?where=$encodedWhere&limit=${limit.coerceAtMost(100)}"
 
         val response = client.get(url)
         val body = response.bodyAsText()
