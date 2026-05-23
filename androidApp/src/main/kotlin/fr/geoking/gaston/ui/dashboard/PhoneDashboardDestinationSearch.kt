@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -76,6 +77,7 @@ fun PhoneDashboardDestinationSearch(
         mutableStateOf(selectedSearchLocation?.label.orEmpty())
     }
     var destSuggestions by remember { mutableStateOf<List<GeocodedPlace>>(emptyList()) }
+    var isSearching by remember { mutableStateOf(false) }
     var destFocused by remember { mutableStateOf(false) }
     var destFieldHeight by remember { mutableIntStateOf(0) }
 
@@ -90,10 +92,12 @@ fun PhoneDashboardDestinationSearch(
     ) {
         if (destQuery.isBlank() || destQuery == selectedSearchLocation?.label) {
             destSuggestions = emptyList()
+            isSearching = false
             return@LaunchedEffect
         }
         if (destQuery.length < PHONE_DEST_AUTOCOMPLETE_MIN_CHARS) {
             destSuggestions = emptyList()
+            isSearching = false
             return@LaunchedEffect
         }
 
@@ -103,9 +107,11 @@ fun PhoneDashboardDestinationSearch(
 
         val client = geocodingClient ?: run {
             destSuggestions = favoriteMatches
+            isSearching = false
             return@LaunchedEffect
         }
 
+        isSearching = true
         delay(300)
         try {
             val biasPair: Pair<Double, Double>? = when {
@@ -127,6 +133,8 @@ fun PhoneDashboardDestinationSearch(
             destSuggestions = (favoriteMatches + remote).distinctBy { it.label }.take(5)
         } catch (_: Exception) {
             destSuggestions = favoriteMatches
+        } finally {
+            isSearching = false
         }
     }
 
@@ -252,7 +260,7 @@ fun PhoneDashboardDestinationSearch(
             )
         )
 
-        if (destFocused && destSuggestions.isNotEmpty()) {
+        if (destFocused && (destSuggestions.isNotEmpty() || isSearching)) {
             Popup(
                 onDismissRequest = { destFocused = false },
                 offset = IntOffset(0, destFieldHeight),
@@ -264,6 +272,19 @@ fun PhoneDashboardDestinationSearch(
                     elevation = CardDefaults.cardElevation(8.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
+                    if (isSearching) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    } else {
                     LazyColumn(modifier = Modifier.heightIn(max = 250.dp)) {
                         items(destSuggestions) { suggestion ->
                             val isFavorite = settings.favoriteLocations.any {
@@ -320,6 +341,7 @@ fun PhoneDashboardDestinationSearch(
                                 }
                             }
                         }
+                    }
                     }
                 }
             }
