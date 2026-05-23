@@ -46,6 +46,8 @@ import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.effectiveEnergyFilterMode
+import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.intent.NavDestination
@@ -165,7 +167,8 @@ fun PhoneDashboardMainContent(
                 )
             )
 
-            if (fuelForecastRepository != null && currentMode == DashboardMode.Fuel) {
+            val energyMode = settings.effectiveEnergyFilterMode()
+            if (fuelForecastRepository != null && (energyMode == EnergyFilterMode.Fuel || energyMode == EnergyFilterMode.Hybrid)) {
                 val latestPrice = fuelForecastState.historyPoints.lastOrNull()?.priceEurPerL
                 gridActions.add(
                     DashboardRow(
