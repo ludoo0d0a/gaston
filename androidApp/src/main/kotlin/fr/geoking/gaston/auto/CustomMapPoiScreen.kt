@@ -230,13 +230,17 @@ class CustomMapPoiScreen(
         if (isLoading || !shouldRefitCameraForVisibleArea(area)) return
         val settings = settingsManager.settings.value
         val filteredPois = getFilteredPois(settings)
-        if (filteredPois.isEmpty()) return
+        if (filteredPois.isEmpty() && itineraryPoints.isEmpty()) return
 
         val prevLat = searchLat
         val prevLon = searchLon
         val prevZoom = zoom
         val (userLat, userLon) = searchCenterFlow.value
-        applyCameraForStations(userLat, userLon, filteredPois, zoom)
+        if (itineraryPoints.isNotEmpty()) {
+            applyCameraForItinerary(userLat, userLon, filteredPois)
+        } else {
+            applyCameraForStations(userLat, userLon, filteredPois, zoom)
+        }
         lastCameraFitWidth = area.width()
         lastCameraFitHeight = area.height()
         hasAppliedVisibleAreaCamera = true
@@ -281,6 +285,23 @@ class CustomMapPoiScreen(
         userLon: Double,
         settings: AppSettings,
     ): Pair<List<Poi>, List<PoiProviderError>> {
+        if (itineraryPoints.isNotEmpty() && routePlanner != null) {
+            val (fitW, fitH) = mapFitSizePx()
+            val result = routePlanner.getStationsAlongRoute(
+                points = itineraryPoints,
+                poiProvider = poiProvider
+            )
+            val loadedPois = result.getOrDefault(emptyList())
+            val filteredPois = StationMapFilters.apply(
+                settings = settings,
+                pois = loadedPois,
+                providers = settings.effectiveProvidersAt(userLat, userLon),
+                skipWhenOnlyOverpass = true
+            )
+            applyCameraForItinerary(userLat, userLon, filteredPois)
+            return loadedPois to emptyList()
+        }
+
         val (fitW, fitH) = mapFitSizePx()
         var lastResult = PoiSearchResult()
         var lastFiltered = emptyList<Poi>()
@@ -315,6 +336,33 @@ class CustomMapPoiScreen(
         return lastResult.pois to lastResult.errors
     }
 
+    private fun applyCameraForItinerary(userLat: Double, userLon: Double, stations: List<Poi>) {
+        val pointsToFit = itineraryPoints + stations.map { it.latitude to it.longitude }
+        if (pointsToFit.isEmpty()) return
+
+        var minLat = pointsToFit.minOf { it.first }
+        var maxLat = pointsToFit.maxOf { it.first }
+        var minLon = pointsToFit.minOf { it.second }
+        var maxLon = pointsToFit.maxOf { it.second }
+
+        val (fitW, fitH) = mapFitSizePx()
+        val zoomLevel = AutoMapCamera.zoomForBounds(
+            minLat = minLat,
+            maxLat = maxLat,
+            minLng = minLon,
+            maxLng = maxLon,
+            mapWidthPx = fitW,
+            mapHeightPx = fitH
+        )
+
+        searchLat = (minLat + maxLat) / 2.0
+        searchLon = (minLon + maxLon) / 2.0
+        zoom = zoomLevel
+        lastAppliedSearchLat = searchLat
+        lastAppliedSearchLon = searchLon
+        lastAppliedZoom = zoom
+    }
+
     private fun loadPois() {
         lifecycleScope.launch {
             isLoading = true
@@ -328,13 +376,16 @@ class CustomMapPoiScreen(
                 LocationHelper.getInitialLocation(carContext, settingsManager)
             }
 
-            searchLat = lat
-            searchLon = lon
             searchCenterFlow.value = lat to lon
             lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
             Log.d("CustomMapPoiScreen", "loadPois search center lat=$lat lon=$lon bearing=$lastKnownBearingDegrees")
 
-            surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
+            if (itineraryPoints.isEmpty()) {
+                searchLat = lat
+                searchLon = lon
+            }
+
+            surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
             applyMapOrientationToRenderer()
 
             try {
