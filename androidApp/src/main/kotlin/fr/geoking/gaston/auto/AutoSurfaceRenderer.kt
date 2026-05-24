@@ -119,7 +119,7 @@ class AutoSurfaceRenderer(
         private const val TAG = "AutoSurfaceRenderer"
         private val NAVIGATION_BLUE = Color.parseColor("#4285F4")
         private const val MIN_DRAW_INTERVAL_MS = 30_000L
-        const val POI_MARKER_WIDTH_PX = 96
+        const val POI_MARKER_WIDTH_PX = 120
     }
 
     fun start() {
@@ -362,22 +362,13 @@ class AutoSurfaceRenderer(
         }
     }
 
-    /** Scale POI icons based on zoom: base 96px at zoom 13. */
-    private fun getMarkerWidthForZoom(zoom: Int): Int {
-        val baseWidth = 96
-        val baseZoom = 13
-        // Scale by 2^(zoom - baseZoom), but clamp to reasonable range (e.g., 32px to 256px)
-        val scale = 2.0.pow(zoom.toDouble() - baseZoom)
-        return (baseWidth * scale).toInt().coerceIn(32, 256)
-    }
-
     private fun drawPois(canvas: Canvas) {
         val tileSize = 256
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
         val bearing = mapBearingDegrees
 
-        val markerWidthPx = getMarkerWidthForZoom(zoom)
+        val markerWidthPx = POI_MARKER_WIDTH_PX
 
         pois.forEach { poi ->
             val tileX = lonToTileX(poi.longitude, zoom)
@@ -386,11 +377,13 @@ class AutoSurfaceRenderer(
             val drawX = ((tileX - centerX) * tileSize + centerPxX).toFloat()
             val drawY = ((tileY - centerY) * tileSize + centerPxY).toFloat()
 
-            val brandInfo = BrandHelper.getBrandInfo(poi.brand)
-            val category = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
-            val categoryColor = PoiMarkerHelper.getPoiColor(poi, category, effectiveEnergyTypes, effectivePowerLevels)
-
-            val bitmap = PoiMarkerHelper.getPoiHeadBitmap(context, poi, brandInfo, markerWidthPx, categoryColor) ?: return@forEach
+            val bitmap = PoiMarkerHelper.getMarkerBitmap(
+                context = context,
+                poi = poi,
+                effectiveEnergyTypes = effectiveEnergyTypes,
+                effectivePowerLevels = effectivePowerLevels,
+                sizePx = markerWidthPx
+            )
 
             val bw = bitmap.width.toFloat()
             val bh = bitmap.height.toFloat()
@@ -404,10 +397,10 @@ class AutoSurfaceRenderer(
                 // Rotate back so the icon remains vertical.
                 // The canvas is already rotated by -bearing around (centerPxX, centerPxY).
                 canvas.rotate(bearing, drawX, drawY)
-                canvas.drawBitmap(bitmap, drawX - bw / 2f, drawY - bh / 2f, null)
+                canvas.drawBitmap(bitmap, drawX - bw / 2f, drawY - bh, null)
                 canvas.restore()
             } else {
-                canvas.drawBitmap(bitmap, drawX - bw / 2f, drawY - bh / 2f, null)
+                canvas.drawBitmap(bitmap, drawX - bw / 2f, drawY - bh, null)
             }
         }
     }
@@ -434,8 +427,8 @@ class AutoSurfaceRenderer(
         val tileSize = 256
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
-        val markerRadiusPx = getMarkerWidthForZoom(zoom) / 2f
-        val hitRadiusSq = markerRadiusPx * markerRadiusPx
+        val markerWidthPx = POI_MARKER_WIDTH_PX
+        val markerRadiusPx = markerWidthPx / 2f
 
         return pois.filter { poi ->
             val tileX = lonToTileX(poi.longitude, zoom)
@@ -443,9 +436,17 @@ class AutoSurfaceRenderer(
             val px = ((tileX - centerX) * tileSize + centerPxX).toFloat()
             val py = ((tileY - centerY) * tileSize + centerPxY).toFloat()
 
+            // The marker is anchored at the bottom-center.
+            // Let's assume the hit area is a circle centered on the head.
+            // From getMarkerBitmap, circleCy = labelBlockH + circleR
+            // h = (triTopY + triH + 2f).toInt()
+            // It's a bit complex to calculate exactly here without the bitmap,
+            // but we can approximate it as being roughly markerWidthPx above the tip.
+            val hitCenterY = py - markerWidthPx * 0.6f
+
             val dx = worldX - px
-            val dy = worldY - py
-            dx * dx + dy * dy <= hitRadiusSq
+            val dy = worldY - hitCenterY
+            dx * dx + dy * dy <= (markerRadiusPx * markerRadiusPx)
         }
     }
 
@@ -463,8 +464,7 @@ class AutoSurfaceRenderer(
         val drawX = ((tileX - centerX) * tileSize + centerPxX).toFloat()
         val drawY = ((tileY - centerY) * tileSize + centerPxY).toFloat()
 
-        val bearing = mapBearingDegrees
-        val rotation = userHeadingDegrees - bearing
+        val rotation = userHeadingDegrees
 
         canvas.save()
         canvas.translate(drawX, drawY)
