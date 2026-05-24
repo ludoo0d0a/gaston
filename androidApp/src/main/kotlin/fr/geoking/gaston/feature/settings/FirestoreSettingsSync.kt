@@ -76,11 +76,9 @@ class FirestoreSettingsSync(
             "mapTrafficEnabled" to s.mapTrafficEnabled,
             "evRangeKm" to s.evRangeKm,
             "evConsumptionKwhPer100km" to s.evConsumptionKwhPer100km,
-            "openChargeMapKey" to s.openChargeMapKey,
             "selectedOverpassAmenityTypes" to s.selectedOverpassAmenityTypes.toList(),
             "vehicleType" to s.vehicleType.name,
             "carMapMode" to s.carMapMode.name,
-            "mobiliteitLuxembourgKey" to s.mobiliteitLuxembourgKey,
             "isPremium" to s.isPremium,
             "favoriteLocations" to s.favoriteLocations.map { mapOf("label" to it.label, "latitude" to it.latitude, "longitude" to it.longitude) },
             "lastAcceptedDisclaimerVersion" to s.lastAcceptedDisclaimerVersion
@@ -138,11 +136,9 @@ class FirestoreSettingsSync(
             mapTrafficEnabled = pick(local.mapTrafficEnabled, remote["mapTrafficEnabled"], default.mapTrafficEnabled, ::parseBoolean),
             evRangeKm = pick(local.evRangeKm, remote["evRangeKm"], default.evRangeKm, ::parseInt),
             evConsumptionKwhPer100km = pick(local.evConsumptionKwhPer100km, remote["evConsumptionKwhPer100km"], default.evConsumptionKwhPer100km) { (it as Double).toFloat() },
-            openChargeMapKey = pick(local.openChargeMapKey, remote["openChargeMapKey"], default.openChargeMapKey, ::parseString),
             selectedOverpassAmenityTypes = pick(local.selectedOverpassAmenityTypes, remote["selectedOverpassAmenityTypes"], default.selectedOverpassAmenityTypes, ::parseStringSet),
             vehicleType = pick(local.vehicleType, remote["vehicleType"], default.vehicleType) { parseEnum(it, VehicleType::class.java) },
             carMapMode = pick(local.carMapMode, remote["carMapMode"], default.carMapMode) { parseEnum(it, CarMapMode::class.java) },
-            mobiliteitLuxembourgKey = pick(local.mobiliteitLuxembourgKey, remote["mobiliteitLuxembourgKey"], default.mobiliteitLuxembourgKey, ::parseString),
             isPremium = pick(local.isPremium, remote["isPremium"], default.isPremium, ::parseBoolean),
             favoriteLocations = pick(local.favoriteLocations, remote["favoriteLocations"], default.favoriteLocations, ::parseGeocodedPlaceList),
             lastAcceptedDisclaimerVersion = pick(local.lastAcceptedDisclaimerVersion, remote["lastAcceptedDisclaimerVersion"], default.lastAcceptedDisclaimerVersion, ::parseInt)

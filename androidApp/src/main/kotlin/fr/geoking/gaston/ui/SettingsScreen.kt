@@ -74,7 +74,6 @@ enum class SettingsScreenPage {
     MapConfig,
     Sources,
     Theme,
-    App,
     About
 }
 
@@ -194,10 +193,9 @@ fun SettingsScreen(
                             SettingsScreenPage.ErrorLog -> stringResource(R.string.screen_error_log)
                             SettingsScreenPage.About -> stringResource(R.string.screen_about)
                             SettingsScreenPage.VehicleConfig -> stringResource(R.string.screen_vehicle)
-                            SettingsScreenPage.MapConfig -> stringResource(R.string.screen_map)
                             SettingsScreenPage.Sources -> stringResource(R.string.screen_sources)
                             SettingsScreenPage.Theme -> stringResource(R.string.screen_theme)
-                            SettingsScreenPage.App -> stringResource(R.string.screen_app)
+                            SettingsScreenPage.MapConfig -> stringResource(R.string.screen_map)
                         }
                     )
                 },
@@ -260,10 +258,6 @@ fun SettingsScreen(
                     onUpdate = { save(settingsManager, it) }
                 )
                 SettingsScreenPage.Theme -> ThemeConfig(
-                    settings = current,
-                    onUpdate = { save(settingsManager, it) }
-                )
-                SettingsScreenPage.App -> AppConfig(
                     settings = current,
                     onUpdate = { save(settingsManager, it) }
                 )
@@ -804,87 +798,6 @@ private fun ThemeConfig(
     }
 }
 
-@Composable
-private fun AppConfig(
-    settings: AppSettings,
-    onUpdate: (AppSettings) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        Column {
-            Text(
-                stringResource(R.string.settings_api_keys_optional),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            OutlinedTextField(
-                value = settings.openChargeMapKey,
-                onValueChange = { onUpdate(settings.copy(openChargeMapKey = it)) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.settings_opencm_key)) },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedTextField(
-                value = settings.ecoMovementKey,
-                onValueChange = { onUpdate(settings.copy(ecoMovementKey = it)) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.settings_ecomovement_key)) },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            ApiKeyHelpLink(
-                helpText = stringResource(R.string.ecomovement_key_help),
-                url = "https://developers.eco-movement.com",
-                linkLabel = stringResource(R.string.ecomovement_docs_link),
-            )
-        }
-
-        Column {
-            Text(
-                stringResource(R.string.fuel_api_keys_optional),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            OutlinedTextField(
-                value = settings.fuelpricesDkKey,
-                onValueChange = { onUpdate(settings.copy(fuelpricesDkKey = it)) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.settings_fuelprices_dk_key)) },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedTextField(
-                value = settings.nswFuelCheckKey,
-                onValueChange = { onUpdate(settings.copy(nswFuelCheckKey = it)) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.settings_nsw_key)) },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedTextField(
-                value = settings.nswFuelCheckSecret,
-                onValueChange = { onUpdate(settings.copy(nswFuelCheckSecret = it)) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.settings_nsw_secret)) },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp)
-            )
-        }
-    }
-}
-
 private fun save(settingsManager: SettingsManager, s: AppSettings) {
     settingsManager.saveSettingsWithThemeCheck(s)
 }
@@ -1085,11 +998,6 @@ private fun MainMenu(
                     label = stringResource(R.string.screen_theme),
                     value = settings.uiThemeMode.displayLabel(),
                     onClick = { onNavigate(SettingsScreenPage.Theme) }
-                )
-                SettingsItem(
-                    label = stringResource(R.string.screen_app),
-                    value = stringResource(R.string.settings_app_subtitle),
-                    onClick = { onNavigate(SettingsScreenPage.App) }
                 )
                 SettingsItem(
                     label = stringResource(R.string.screen_about),
@@ -1789,46 +1697,6 @@ private fun VehicleConfig(
     }
 }
 
-@Composable
-private fun ApiKeyHelpLink(
-    helpText: String,
-    url: String,
-    linkLabel: String,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    Column(modifier = modifier.padding(bottom = 4.dp)) {
-        Text(
-            text = helpText,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                }
-                .padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = linkLabel,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
-}
 
 @Composable
 private fun ConfigTextField(
