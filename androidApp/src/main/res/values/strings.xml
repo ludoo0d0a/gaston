@@ -43,6 +43,7 @@
     <string name="no_vehicle_profile">No vehicle profile</string>
     <string name="planning_route">Planning route…</string>
     <string name="search_filters">Search Filters</string>
+    <string name="finding_stations">Finding stations along route…</string>
     <string name="search_mode_ev">EV</string>
     <string name="search_mode_fuel">Fuel</string>
     <string name="search_mode_my_car">My vehicle</string>

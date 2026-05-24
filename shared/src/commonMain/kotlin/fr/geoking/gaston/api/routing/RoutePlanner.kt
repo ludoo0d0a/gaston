@@ -123,6 +123,21 @@ class RoutePlanner(
         }
     }
 
+    suspend fun getStationsAlongRoute(
+        points: List<Pair<Double, Double>>,
+        poiProvider: PoiProvider,
+        radiusMeters: Int = defaultPoiRadiusMeters
+    ): Result<List<Poi>> {
+        return try {
+            val result = mutableListOf<Poi>()
+            getStationsAlongRouteFlow(points, poiProvider, radiusMeters)
+                .collect { result.clear(); result.addAll(it) }
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private fun samplePointsByDistance(points: List<Pair<Double, Double>>, intervalMeters: Double): List<Pair<Double, Double>> {
         if (points.isEmpty()) return emptyList()
         if (points.size == 1) return points

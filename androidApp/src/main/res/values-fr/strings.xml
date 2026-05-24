@@ -167,6 +167,7 @@
     <string name="no_fuel_price_details">Aucun détail de prix disponible</string>
     <string name="no_vehicle_profile">Aucun profil véhicule</string>
     <string name="planning_route">Planification de l\'itinéraire en cours…</string>
+    <string name="finding_stations">Recherche des stations sur l\'itinéraire…</string>
     <string name="poi_address">Adresse</string>
     <string name="poi_gas">Essence</string>
     <string name="poi_irve">IRVE</string>

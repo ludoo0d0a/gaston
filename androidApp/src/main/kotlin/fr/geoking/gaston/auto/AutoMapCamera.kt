@@ -124,11 +124,12 @@ object AutoMapCamera {
         val w = mapWidthPx * (1.0 - 2.0 * pad).coerceAtLeast(1.0)
         val h = mapHeightPx * (1.0 - 2.0 * pad).coerceAtLeast(1.0)
 
-        val latSpan = (mercatorY(maxLat) - mercatorY(minLat)).coerceAtLeast(1e-9)
-        val lngSpan = ((maxLng - minLng) / 360.0).coerceAtLeast(1e-9)
+        val latSpan = abs(mercatorY(maxLat) - mercatorY(minLat)).coerceAtLeast(1e-9)
+        val lngSpan = abs(maxLng - minLng).let { if (it > 360) it % 360 else it } / 360.0
+        val effectiveLngSpan = lngSpan.coerceAtLeast(1e-9)
 
         val zoomLat = log2(h / (256.0 * latSpan))
-        val zoomLng = log2(w / (256.0 * lngSpan))
+        val zoomLng = log2(w / (256.0 * effectiveLngSpan))
         return floor(min(zoomLat, zoomLng)).toInt().coerceIn(MIN_ZOOM, MAX_ZOOM)
     }
 

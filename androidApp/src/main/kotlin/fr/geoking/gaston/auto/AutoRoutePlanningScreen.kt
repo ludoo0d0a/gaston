@@ -58,6 +58,7 @@ class AutoRoutePlanningScreen(
     private var loading: Boolean = false
     private var loadingMessageResId: Int = R.string.planning_route
     private var stations: List<Poi> = emptyList()
+    private var currentRoutePoints: List<Pair<Double, Double>>? = null
 
     private var originSuggestions: List<GeocodedPlace> = emptyList()
     private var destinationSuggestions: List<GeocodedPlace> = emptyList()
@@ -247,13 +248,6 @@ class AutoRoutePlanningScreen(
     }
 
     private fun buildResultsTemplate(): Template {
-        if (loading) {
-            return MessageTemplate.Builder(carContext.getString(loadingMessageResId))
-                .setLoading(true)
-                .setHeader(Header.Builder().setTitle(carContext.getString(R.string.cd_route)).setStartHeaderAction(Action.BACK).build())
-                .build()
-        }
-
         lastError?.let { err ->
             return MessageTemplate.Builder(err.take(300))
                 .setHeader(Header.Builder().setTitle(carContext.getString(R.string.cd_route)).setStartHeaderAction(Action.BACK).build())
@@ -267,68 +261,102 @@ class AutoRoutePlanningScreen(
         }
 
         val list = ItemList.Builder()
-            .setNoItemsMessage("No POIs found along route")
+            .setNoItemsMessage(if (loading) carContext.getString(loadingMessageResId) else "No POIs found along route")
 
-        // Standard Android Auto list limit is 6 items for many templates.
-        stations.take(6).forEach { poi ->
-            list.addItem(
-                Row.Builder()
-                    .setTitle(poi.name.ifBlank { poi.address.ifBlank { "POI" } })
-                    .addText(poi.address.ifBlank { "${poi.latitude}, ${poi.longitude}" })
-                    .setOnClickListener {
-                        val uri = IntentNavigationHelper.getNavigationUri(poi)
-                        carContext.startCarApp(Intent(CarContext.ACTION_NAVIGATE).apply { data = uri })
-                    }
-                    .build()
-            )
+        if (!loading) {
+            // Standard Android Auto list limit is 6 items for many templates.
+            stations.take(6).forEach { poi ->
+                list.addItem(
+                    Row.Builder()
+                        .setTitle(poi.name.ifBlank { poi.address.ifBlank { "POI" } })
+                        .addText(poi.address.ifBlank { "${poi.latitude}, ${poi.longitude}" })
+                        .setOnClickListener {
+                            val uri = IntentNavigationHelper.getNavigationUri(poi)
+                            carContext.startCarApp(Intent(CarContext.ACTION_NAVIGATE).apply { data = uri })
+                        }
+                        .build()
+                )
+            }
         }
 
-        val actionStrip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setTitle(carContext.getString(R.string.action_edit))
-                    .setIcon(carContext.actionSettingsIcon())
-                    .setOnClickListener {
-                        step = Step.ORIGIN
-                        invalidate()
-                    }
-                    .build()
-            )
-            .addAction(
+        val actionStripBuilder = ActionStrip.Builder()
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setTitle(carContext.getString(R.string.action_edit))
+                .setIcon(carContext.actionSettingsIcon())
+                .setOnClickListener {
+                    step = Step.ORIGIN
+                    invalidate()
+                }
+                .build()
+        )
+
+        val canShowMap = !loading || currentRoutePoints != null
+        if (canShowMap) {
+            actionStripBuilder.addAction(
                 Action.Builder()
                     .setTitle(carContext.getString(R.string.action_show_on_map))
                     .setIcon(carContext.actionMapIcon())
                     .setOnClickListener { showOnMap() }
                     .build()
             )
-            .addAction(
+        }
+
+        if (!loading && stations.isNotEmpty()) {
+            actionStripBuilder.addAction(
                 Action.Builder()
                     .setTitle(carContext.getString(R.string.action_start_nav))
                     .setIcon(carContext.actionMapIcon())
                     .setOnClickListener { openExternalDirections() }
                     .build()
             )
-            .build()
+        }
+
+        val actionStrip = actionStripBuilder.build()
 
         val headerBuilder = Header.Builder()
-            .setTitle(carContext.getString(R.string.screen_route_pois))
+            .setTitle(if (loading) carContext.getString(loadingMessageResId) else carContext.getString(R.string.screen_route_pois))
             .setStartHeaderAction(Action.BACK)
-
-        actionStrip.actions.forEach {
-            headerBuilder.addEndHeaderAction(it)
-        }
 
         return ListTemplate.Builder()
             .setHeader(headerBuilder.build())
+            .setLoading(loading)
             .setSingleList(list.build())
+            .setActionStrip(actionStrip)
             .build()
     }
 
     private fun showOnMap() {
+        val points = currentRoutePoints
+        if (points != null) {
+            val factory: BorneAvailabilityProviderFactory? = try {
+                org.koin.core.context.GlobalContext.get().get()
+            } catch (e: Exception) {
+                null
+            }
+
+            if (factory != null) {
+                screenManager.push(
+                    CustomMapPoiScreen(
+                        carContext = carContext,
+                        poiProvider = poiProvider,
+                        availabilityProviderFactory = factory,
+                        settingsManager = settingsManager,
+                        routePlanner = routePlanner,
+                        routingClient = routingClient,
+                        geocodingClient = geocodingClient,
+                        title = carContext.getString(R.string.screen_route_preview),
+                        itineraryPoints = points
+                    )
+                )
+            }
+            return
+        }
+
+        // If points are null, we might still be loading or failed to get them.
+        // Try one last time if we have queries.
         lifecycleScope.launch {
             try {
-                loading = true
-                invalidate()
                 val originLatLon = if (originQuery.isBlank()) {
                     val loc = LocationHelper.getCurrentLocation(carContext)
                     loc?.let { it.latitude to it.longitude }
@@ -345,34 +373,12 @@ class AutoRoutePlanningScreen(
                 if (originLatLon != null && destLatLon != null) {
                     val route = routingClient.getRoute(originLatLon.first, originLatLon.second, destLatLon.first, destLatLon.second)
                     if (route != null) {
-                        val factory: BorneAvailabilityProviderFactory? = try {
-                            org.koin.core.context.GlobalContext.get().get()
-                        } catch (e: Exception) {
-                            null
-                        }
-
-                        if (factory != null) {
-                            screenManager.push(
-                                CustomMapPoiScreen(
-                                    carContext = carContext,
-                                    poiProvider = poiProvider,
-                                    availabilityProviderFactory = factory,
-                                    settingsManager = settingsManager,
-                                    routePlanner = routePlanner,
-                                    routingClient = routingClient,
-                                    geocodingClient = geocodingClient,
-                                    title = carContext.getString(R.string.screen_route_preview),
-                                    itineraryPoints = route.points
-                                )
-                            )
-                        }
+                        currentRoutePoints = route.points
+                        showOnMap()
                     }
                 }
             } catch (e: Exception) {
                 Log.e("AutoRoutePlanning", "Failed to show on map", e)
-            } finally {
-                loading = false
-                invalidate()
             }
         }
     }
@@ -423,9 +429,13 @@ class AutoRoutePlanningScreen(
                 loadingMessageResId = R.string.planning_route
                 invalidate()
 
-                // Warm up: ensure route endpoint is reachable (and fail early with nicer message)
                 val route = routingClient.getRoute(originLatLon.first, originLatLon.second, destLat, destLon)
                 if (route == null) throw Exception("No route found")
+                currentRoutePoints = route.points
+                invalidate()
+
+                loadingMessageResId = R.string.finding_stations
+                invalidate()
 
                 val result = routePlanner.getStationsAlongRoute(
                     originLat = originLatLon.first,
