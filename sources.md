@@ -17,7 +17,7 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **Austria E‑Control** | Austria | Fuel | `https://api.e-control.at/sprit/1.0/` | No |
 | **MIMIT (Prezzi + Anagrafica)** | Italy | Fuel | `https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv` + `.../anagrafica_impianti_attivi.csv` | No |
 | **goriva.si** | Slovenia | Fuel | `https://goriva.si/api/v1/search/` | No |
-| **DrivstoffAppen** | Norway | Fuel | `https://backend.drivstoffapp.no/stations/fuel/nearby` | No |
+| **DrivstoffAppen** | Norway + Sweden | Fuel | `https://backend.drivstoffapp.no/stations/fuel/nearby` | No |
 | **DGEG (Preços Combustíveis)** | Portugal | Fuel | `https://precoscombustiveis.dgeg.gov.pt/api/PrecoComb/PesquisarPostos` | No |
 | **ANWB** | Netherlands + Belgium + Luxembourg | Fuel | `https://api.anwb.nl/routing/points-of-interest/v3/all` | No |
 | **Fuelprices.dk** | Denmark | Fuel | `https://fuelprices.dk/api` | Yes — `FUELPRICES_DK_KEY` |
@@ -34,6 +34,9 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **Secretaría de Energía** | Argentina | Fuel | (CSV open data) | No |
 | **Belgium official (max prices)** | Belgium | Fuel | (client-backed) | No |
 | **EIA petroleum/pri/gnd** | United States | Fuel | `https://api.eia.gov/v2/petroleum/pri/gnd/data/` | Yes — `EIA_KEY` |
+| **FuelWatch** | Australia (WA) | Fuel | `https://www.fuelwatch.wa.gov.au/` | No |
+| **PetrolSpy** | Australia | Fuel | `https://petrolspy.com.au/` | No |
+| **Comparis** | Switzerland | Fuel | `https://www.comparis.ch/` | No |
 | **OpenVan.camp** | Multi-country (reference prices) | Fuel | `https://openvan.camp/api/fuel/prices` | No |
 | **Routex / Wigeogis** | Europe | Fuel | `https://app.wigeogis.com/kunden/routex-sitefinder/backend` | No |
 | **DataGouv IRVE** | France | EV charging | `https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/bornes-irve` | No |
@@ -44,17 +47,6 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **Eco‑Movement (OCPI 2.2.1)** | EU / Global | EV charging | `https://open-chargepoints.com/api/ocpi/cpo/2.2.1` | Yes — `ECO_MOVEMENT_KEY` |
 | **Belib’ availability** | Paris (FR) | EV charging | `https://parisdata.opendatasoft.com/.../belib-...` | No — see [`BELIB_AVAILABILITY_API.md`](docs/BELIB_AVAILABILITY_API.md) |
 | **OpenStreetMap (Overpass)** | Global | POIs (many), Battery Swap | `https://overpass-api.de/api/interpreter` | No |
-
-## Present in Pumperly but NOT implemented in Gaston (missing providers)
-
-These sources are listed by Pumperly, but Gaston currently has no corresponding provider implementation wired.
-
-| Country | Pumperly source | Type | Notes / what’s missing in Gaston |
-|---|---|---|---|
-| Sweden | **Drivstoffappen** / **bensinpriser.nu** | Community | Implemented (DrivstoffAppen SE) |
-| Australia (WA) | **FuelWatch** | Government API | Implemented |
-| Switzerland | **Comparis** | Scraper | Implemented |
-| Australia (national) | **PetrolSpy** | API | Implemented |
 
 ## Notes
 
