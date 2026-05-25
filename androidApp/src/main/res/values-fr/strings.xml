@@ -489,6 +489,8 @@
     <string name="forecast_price_comparison">Comparaison des prix (normalisée)</string>
     <string name="forecast_relative_trends">Tendances relatives des carburants locaux vs Brent. Historique 14 jours.</string>
     <string name="forecast_regional_estimations">Estimations régionales basées sur les tendances du marché et les stations locales.</string>
+    <string name="forecast_algorithm_title">Algorithme d\'estimation des prix</string>
+    <string name="forecast_algorithm_description">Notre estimation des prix repose sur l\'analyse de plusieurs sources de données : les prix moyens régionaux des pompes locales, les tendances du marché mondial (pétrole brut Brent, fioul domestique) et le taux de change EUR/USD.</string>
     <string name="forecast_hit_rate">Taux de réussite : %1$s · MAE : %2$s €/L</string>
     <string name="forecast_direction_matched">Direction conforme au résultat</string>
     <string name="forecast_direction_not_matched">Direction non conforme</string>

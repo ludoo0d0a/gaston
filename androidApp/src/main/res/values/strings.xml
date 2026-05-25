@@ -488,6 +488,8 @@
     <string name="forecast_price_comparison">Price Comparison (normalized)</string>
     <string name="forecast_relative_trends">Relative trends of local fuels vs Brent. 14-day history.</string>
     <string name="forecast_regional_estimations">Regional estimations based on market trends and local pump averages.</string>
+    <string name="forecast_algorithm_title">Price Estimation Algorithm</string>
+    <string name="forecast_algorithm_description">Our price estimation is based on an analysis of several data sources: average regional prices from local pumps, global market trends (Brent crude oil, heating oil), and the EUR/USD exchange rate.</string>
     <string name="forecast_hit_rate">Hit rate: %1$s · MAE: %2$s €/L</string>
     <string name="forecast_direction_matched">Direction matched outcome</string>
     <string name="forecast_direction_not_matched">Direction did not match</string>
