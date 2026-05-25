@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
@@ -12,7 +13,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import fr.geoking.gaston.R
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
@@ -33,6 +33,11 @@ fun CheapestStationsCard(
     emptyMessage: String? = null,
     title: String? = null
 ) {
+    val fuelIds = selectedEnergyIds - "electric"
+    val minPrice = remember(stations, fuelIds) {
+        CheapestStationHighlight.minFuelPrice(stations, fuelIds)
+    }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -74,19 +79,26 @@ fun CheapestStationsCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                stations.forEachIndexed { index, poi ->
-                    CheapestStationItem(
-                        poi = poi,
-                        userLatitude = userLatitude,
-                        userLongitude = userLongitude,
-                        selectedEnergyIds = selectedEnergyIds,
-                        onClick = { onClick(poi) }
-                    )
-                    if (index < stations.size - 1) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 8.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    stations.forEach { poi ->
+                        val isCheapest = CheapestStationHighlight.isCheapestFuelStation(
+                            poi = poi,
+                            minPrice = minPrice,
+                            fuelIds = fuelIds
                         )
+                        CheapestHighlightCard(
+                            isCheapest = isCheapest,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            CheapestStationItem(
+                                poi = poi,
+                                userLatitude = userLatitude,
+                                userLongitude = userLongitude,
+                                selectedEnergyIds = selectedEnergyIds,
+                                isCheapest = isCheapest,
+                                onClick = { onClick(poi) }
+                            )
+                        }
                     }
                 }
             }
@@ -100,6 +112,7 @@ private fun CheapestStationItem(
     userLatitude: Double?,
     userLongitude: Double?,
     selectedEnergyIds: Set<String>,
+    isCheapest: Boolean,
     onClick: () -> Unit
 ) {
     val brandInfo = BrandHelper.getBrandInfo(poi.brand)
@@ -110,7 +123,8 @@ private fun CheapestStationItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val resId = when {
@@ -129,13 +143,19 @@ private fun CheapestStationItem(
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = poi.name.ifBlank { poi.siteName ?: "Station" },
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = poi.name.ifBlank { poi.siteName ?: "Station" },
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                if (isCheapest) {
+                    CheapestStationBadge(modifier = Modifier.padding(start = 4.dp))
+                }
+            }
             distance?.let {
                 Text(
                     text = "%.1f km".format(it),
@@ -163,7 +183,11 @@ private fun CheapestStationItem(
                         text = "€%.3f".format(bestPrice.price),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF16A34A) // Green
+                        color = if (isCheapest) {
+                            CheapestStationHighlight.badgeTextColor
+                        } else {
+                            Color(0xFF16A34A)
+                        }
                     )
                     val fuelId = MapPoiFilter.fuelNameToId(bestPrice.fuelName)
                     Text(

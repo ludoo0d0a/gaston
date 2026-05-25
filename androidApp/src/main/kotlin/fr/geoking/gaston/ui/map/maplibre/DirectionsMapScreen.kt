@@ -24,6 +24,7 @@ import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.ui.components.CheapestStationHighlight
 import fr.geoking.gaston.ui.components.MapScaffold
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
@@ -144,8 +145,16 @@ fun DirectionsMapScreen(
                     map.getStyle { style ->
                         val energyTypes = settings.effectiveMapEnergyFilterIds()
                         val powerLevels = settings.effectiveIrvePowerLevels()
+                        val fuelIdsForCheapest = energyTypes - "electric"
+                        val minPrice = CheapestStationHighlight.minFuelPrice(filteredPois, fuelIdsForCheapest)
 
                         val features = filteredPois.map { poi ->
+                            val isCheapest = CheapestStationHighlight.isCheapestFuelStation(
+                                poi = poi,
+                                minPrice = minPrice,
+                                fuelIds = fuelIdsForCheapest
+                            )
+                            val cheapestRank = if (isCheapest) 1 else null
                             // Update icon only if it doesn't exist
                             if (style.getImage(poi.id) == null) {
                                 val markerBitmap = PoiMarkerHelper.getMarkerBitmap(
@@ -154,7 +163,7 @@ fun DirectionsMapScreen(
                                     effectiveEnergyTypes = energyTypes,
                                     effectivePowerLevels = powerLevels,
                                     isSelected = false,
-                                    cheapestRank = null,
+                                    cheapestRank = cheapestRank,
                                     sizePx = 120,
                                     availability = null,
                                     markerStyle = MarkerStyle.Bubble

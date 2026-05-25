@@ -73,6 +73,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import fr.geoking.gaston.feature.location.LocationHelper
+import fr.geoking.gaston.ui.components.CheapestHighlightCard
+import fr.geoking.gaston.ui.components.CheapestStationBadge
+import fr.geoking.gaston.ui.components.CheapestStationHighlight
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.intent.NavDestination
 import fr.geoking.gaston.SettingsManager
@@ -669,13 +672,7 @@ fun RoutePlanningScreen(
                 val energyTypes = settings.effectiveMapEnergyFilterIds()
                 val fuelIdsForCheapest = energyTypes - "electric"
                 val minPrice = remember(filteredStations, fuelIdsForCheapest) {
-                    if (fuelIdsForCheapest.isEmpty()) null
-                    else {
-                        filteredStations.mapNotNull { poi ->
-                            poi.fuelPrices?.filter { !it.outOfStock && fr.geoking.gaston.poi.MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
-                                ?.minByOrNull { it.price }?.price
-                        }.minOrNull()
-                    }
+                    CheapestStationHighlight.minFuelPrice(filteredStations, fuelIdsForCheapest)
                 }
 
                 val recommendations = remember(filteredStations, settings, currentRoute) {
@@ -793,13 +790,14 @@ fun RoutePlanningScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(filteredStations, key = { it.id }) { poi ->
-                        val isCheapest = minPrice != null && poi.fuelPrices?.any { !it.outOfStock && fr.geoking.gaston.poi.MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest && it.price == minPrice } == true
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isCheapest) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                            border = if (isCheapest) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.secondary) else null
+                        val isCheapest = CheapestStationHighlight.isCheapestFuelStation(
+                            poi = poi,
+                            minPrice = minPrice,
+                            fuelIds = fuelIdsForCheapest
+                        )
+                        CheapestHighlightCard(
+                            isCheapest = isCheapest,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
                                 modifier = Modifier
@@ -811,19 +809,7 @@ fun RoutePlanningScreen(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(poi.name.ifBlank { poi.address }, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                                         if (isCheapest) {
-                                            Surface(
-                                                color = MaterialTheme.colorScheme.secondary,
-                                                shape = MaterialTheme.shapes.extraSmall,
-                                                modifier = Modifier.padding(start = 4.dp)
-                                            ) {
-                                                Text(
-                                                    stringResource(R.string.route_cheapest_badge),
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSecondary,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
+                                            CheapestStationBadge(modifier = Modifier.padding(start = 4.dp))
                                         }
                                     }
                                     Text(poi.address, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
