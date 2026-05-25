@@ -58,16 +58,16 @@ object CheapestStationHighlight {
 }
 
 @Composable
-fun CheapestStationBadge(modifier: Modifier = Modifier) {
+fun CheapestStationBadge(text: String, modifier: Modifier = Modifier) {
     Surface(
         color = CheapestStationHighlight.badgeBackgroundColor,
         shape = MaterialTheme.shapes.extraSmall,
         modifier = modifier
     ) {
         Text(
-            stringResource(R.string.route_cheapest_badge),
+            text = text,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelLarge,
             color = CheapestStationHighlight.badgeTextColor,
             fontWeight = FontWeight.Bold
         )

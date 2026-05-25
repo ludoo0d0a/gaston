@@ -808,9 +808,6 @@ fun RoutePlanningScreen(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(poi.name.ifBlank { poi.address }, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                                        if (isCheapest) {
-                                            CheapestStationBadge(modifier = Modifier.padding(start = 4.dp))
-                                        }
                                     }
                                     Text(poi.address, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
 
@@ -825,12 +822,16 @@ fun RoutePlanningScreen(
                                             energyTypes,
                                             powerLevels
                                         )
-                                        Text(
-                                            text = label,
-                                            color = Color(color),
-                                            style = MaterialTheme.typography.labelLarge,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        if (isCheapest) {
+                                            CheapestStationBadge(text = label)
+                                        } else {
+                                            Text(
+                                                text = label,
+                                                color = Color(color),
+                                                style = MaterialTheme.typography.labelLarge,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     } else if (poi.powerKw != null) {
                                         Text("${poi.powerKw} kW", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                                     }

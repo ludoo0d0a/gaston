@@ -152,9 +152,6 @@ private fun CheapestStationItem(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                if (isCheapest) {
-                    CheapestStationBadge(modifier = Modifier.padding(start = 4.dp))
-                }
             }
             distance?.let {
                 Text(
@@ -179,16 +176,17 @@ private fun CheapestStationItem(
 
                 val bestPrice = matchingPrices.minByOrNull { it.price }
                 if (bestPrice != null) {
-                    Text(
-                        text = "€%.3f".format(bestPrice.price),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isCheapest) {
-                            CheapestStationHighlight.badgeTextColor
-                        } else {
-                            Color(0xFF16A34A)
-                        }
-                    )
+                    val formattedPrice = "€%.3f".format(bestPrice.price)
+                    if (isCheapest) {
+                        CheapestStationBadge(text = formattedPrice)
+                    } else {
+                        Text(
+                            text = formattedPrice,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF16A34A)
+                        )
+                    }
                     val fuelId = MapPoiFilter.fuelNameToId(bestPrice.fuelName)
                     Text(
                         text = bestPrice.fuelName,
