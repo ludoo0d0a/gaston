@@ -107,7 +107,7 @@ Quick access to road-trip essentials when something goes wrong, plus highway tol
 - Selection mode: **Manual** (pick exact sources) or **Auto** (auto-select by current country)
 - Per-country toggles — enable/disable a whole country in one tap
 - Optional API keys for some feeds (OpenChargeMap, Eco-Movement, Tankerkönig, Fuelprices.dk, NSW FuelCheck, …)
-- Full source list: [`sources.md`](sources.md) · how to get keys: [`docs/API_KEYS.md`](docs/API_KEYS.md)
+- Full source list: [`docs/sources.md`](docs/sources.md) · how to get keys: [`docs/API_KEYS.md`](docs/API_KEYS.md)
 
 ### Android Auto
 

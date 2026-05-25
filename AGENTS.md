@@ -11,7 +11,7 @@ Instructions for AI agents working in this repository. Behavioral rules also liv
 | `:shared` | Models, Ktor clients, POI/fuel/EV/traffic/weather providers |
 | `:androidApp` | Jetpack Compose (phone) + Car App Library (Android Auto) |
 
-Human-oriented docs: [`README.md`](README.md), data sources [`sources.md`](sources.md), API keys [`docs/API_KEYS.md`](docs/API_KEYS.md).
+Human-oriented docs: [`README.md`](README.md), data sources [`docs/sources.md`](docs/sources.md), API keys [`docs/API_KEYS.md`](docs/API_KEYS.md).
 
 ## Build & test
 

@@ -2,7 +2,7 @@
 
 This document compares **Pumperly**’s documented sources (from its “Data Sources” tables) with what is currently implemented in **Gaston**.
 
-**API keys:** which feeds need credentials and how to register → [`docs/API_KEYS.md`](docs/API_KEYS.md). Build-time property names → [`docs/ENV_VARS.md`](docs/ENV_VARS.md).
+**API keys:** which feeds need credentials and how to register → [`API_KEYS.md`](API_KEYS.md). Build-time property names → [`ENV_VARS.md`](ENV_VARS.md).
 
 ## Implemented in Gaston (selectable providers)
 
@@ -45,7 +45,7 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **Fastned (OCPI 2.2.1)** | UK (Open Data) | EV charging | `https://uk-public.api.fastned.nl/uk-public/ocpi/cpo/2.2.1` | Yes — `FASTNED_UK_KEY` |
 | **DKV Mobility (OCPI)** | EU (network) | EV charging | `https://api-portal.dkv-mobility.com/...` | Yes — `DKV_SUBSCRIPTION_KEY` |
 | **Eco‑Movement (OCPI 2.2.1)** | EU / Global | EV charging | `https://open-chargepoints.com/api/ocpi/cpo/2.2.1` | Yes — `ECO_MOVEMENT_KEY` |
-| **Belib’ availability** | Paris (FR) | EV charging | `https://parisdata.opendatasoft.com/.../belib-...` | No — see [`BELIB_AVAILABILITY_API.md`](docs/BELIB_AVAILABILITY_API.md) |
+| **Belib’ availability** | Paris (FR) | EV charging | `https://parisdata.opendatasoft.com/.../belib-...` | No — see [`BELIB_AVAILABILITY_API.md`](BELIB_AVAILABILITY_API.md) |
 | **OpenStreetMap (Overpass)** | Global | POIs (many), Battery Swap | `https://overpass-api.de/api/interpreter` | No |
 
 ## Notes

@@ -65,7 +65,7 @@ Create the secrets in **Settings → Secrets and variables → Actions** and add
 
 ## GitHub secrets — Play Store deploy only
 
-These are **not** Gradle / `local.properties` keys. They are used by [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) (see [`PLAY_STORE_GUIDE.md`](../PLAY_STORE_GUIDE.md)).
+These are **not** Gradle / `local.properties` keys. They are used by [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) (see [`PLAY_STORE_GUIDE.md`](PLAY_STORE_GUIDE.md)).
 
 | Secret | What it is |
 |--------|------------|

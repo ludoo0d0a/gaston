@@ -71,7 +71,7 @@ A minimal offline map engine could expose:
 
 - **Load** asset: `.map` (Mapsforge) or tile archive (MapLibre/MBTiles/PMTiles).
 - **View lifecycle:** `MapView` / MapLibre `MapView` / Compose `AndroidView` wrapper.
-- **Camera:** center, zoom, bearing (aligns with Android Auto surface-map ideas in root `TODO.md`).
+- **Camera:** center, zoom, bearing (aligns with Android Auto surface-map ideas in [`TODO.md`](TODO.md)).
 - **Overlays:** POIs, **route polyline**, user location.
 - **Styling:** Mapsforge theme XML vs MapLibre style JSON.
 
@@ -121,4 +121,4 @@ Adding offline maps implies a **second map backend** (or a strategy pattern): se
 
 ## Related internal doc
 
-- Root **`TODO.md`** — Android Auto surface map, zoom, north-up / heading-up (orthogonal but relevant if the same renderer should run on Auto `Surface`).
+- [`TODO.md`](TODO.md) — Android Auto surface map, zoom, north-up / heading-up (orthogonal but relevant if the same renderer should run on Auto `Surface`).

@@ -226,7 +226,7 @@ Not a POI source, but required for the map UI.
 
 These providers work without credentials (open data, public APIs, or scraping where allowed):
 
-DataGouv (fuel + IRVE), Gas API, UK CMA feeds, Spain Minetur, Austria E-Control, Italy MIMIT, goriva.si, DrivstoffAppen, DGEG, ANWB, Fuelo, MZOE, polttoaine.net, FuelGR, Pick A Pump, ANRE, CRE, Argentina energy data, Belgium official prices, OpenVan.camp, Routex/Wigeogis, Belib availability (Paris open data), Overpass/OSM, OSRM, Open-Meteo, CITA traffic, RATP, STIB, and most other entries in [`sources.md`](../sources.md).
+DataGouv (fuel + IRVE), Gas API, UK CMA feeds, Spain Minetur, Austria E-Control, Italy MIMIT, goriva.si, DrivstoffAppen, DGEG, ANWB, Fuelo, MZOE, polttoaine.net, FuelGR, Pick A Pump, ANRE, CRE, Argentina energy data, Belgium official prices, OpenVan.camp, Routex/Wigeogis, Belib availability (Paris open data), Overpass/OSM, OSRM, Open-Meteo, CITA traffic, RATP, STIB, and most other entries in [`sources.md`](sources.md).
 
 ---
 
