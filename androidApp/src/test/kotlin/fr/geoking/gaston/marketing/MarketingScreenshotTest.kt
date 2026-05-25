@@ -16,7 +16,7 @@ import java.io.File
 import java.io.FileOutputStream
 
 /**
- * Exports 1080×1920 PNGs from real Compose UI into playstore-assets/ and website/.
+ * Exports 1080×1920 PNGs (brand backdrop + rounded phone chassis) into playstore-assets/ and website/.
  *
  * Run: ./scripts/regenerate_screenshots.sh
  */
@@ -40,7 +40,9 @@ class MarketingScreenshotTest {
 
     private fun export(name: String, content: @Composable () -> Unit) {
         composeRule.mainClock.autoAdvance = true
-        composeRule.setContent { content() }
+        composeRule.setContent {
+            MarketingScreenshotFrame { content() }
+        }
         Thread.sleep(1200)
         val decor = composeRule.activity.window.decorView
         decor.measure(

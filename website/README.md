@@ -38,7 +38,7 @@ npx netlify-cli dev --dir website
 | `css/styles.css` | Styles (brand colors from `playstore-assets/README.md`) |
 | `js/main.js` | i18n, slideshow, scroll effects |
 
-Screenshots and icon are copied from `playstore-assets/`. After updating store assets, refresh:
+Screenshots are generated from real app Compose UI, wrapped in a rounded device chassis on a brand-purple backdrop (`MarketingScreenshotFrame`; see `scripts/regenerate_screenshots.sh`). After updating store assets:
 
 ```bash
 cp playstore-assets/icon-512.png website/assets/
