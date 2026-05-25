@@ -83,7 +83,10 @@ class UsaEiaProvider(
     }
 
     private suspend fun loadStatePrices(state: UsStateLookup.State): List<FuelPrice>? {
-        if (apiKey.isBlank()) return null
+        if (apiKey.isBlank()) {
+            log.w { "[UsaEiaProvider] EIA_KEY is blank, EIA price data will not be available" }
+            return null
+        }
         priceCache[state.eiaDuoArea]?.let { return it }
         return try {
             val prices = eiaClient.getStateRetailPrices(state.eiaDuoArea, apiKey).takeIf { it.isNotEmpty() }

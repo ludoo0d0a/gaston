@@ -71,10 +71,8 @@ object UsStateLookup {
     )
 
     fun isInUnitedStates(lat: Double, lon: Double): Boolean {
-        if (lat in 24.0..49.6 && lon in -125.0..-66.0) return true
-        if (lat in 51.0..71.5 && lon in -170.0..-129.0) return true
-        if (lat in 18.0..23.0 && lon in -161.0..-154.0) return true
-        return false
+        // Synchronized with ParkingRegion.UnitedStates (includes CONUS, AK, HI, PR, USVI)
+        return lat in 17.0..71.5 && lon in -170.0..-64.0
     }
 
     fun nearestState(lat: Double, lon: Double): State? {

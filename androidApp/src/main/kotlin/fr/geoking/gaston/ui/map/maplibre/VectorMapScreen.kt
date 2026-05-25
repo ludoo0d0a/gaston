@@ -337,11 +337,18 @@ fun VectorMapScreen(
                 )
 
                 if (settings.debugLoggingEnabled) {
+                    val detectedCountries = remember(currentTarget) {
+                        fr.geoking.gaston.countryDisplayLabelAtMapPosition(
+                            currentTarget.latitude,
+                            currentTarget.longitude
+                        )
+                    }
                     DebugLogOverlay(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(top = 16.dp)
-                            .zIndex(2f)
+                            .zIndex(2f),
+                        detectedCountries = detectedCountries
                     )
                 }
             }
