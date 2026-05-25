@@ -27,7 +27,6 @@ import fr.geoking.gaston.api.australia.AustraliaNswFuelCheckProvider
 import fr.geoking.gaston.api.australia.FuelWatchProvider
 import fr.geoking.gaston.api.australia.PetrolSpyProvider
 import fr.geoking.gaston.api.switzerland.ComparisProvider
-import fr.geoking.gaston.api.romania.RomaniaPecoDefaults
 import fr.geoking.gaston.api.croatia.CroatiaMzoeProvider
 import fr.geoking.gaston.api.denmark.FuelpricesDKProvider
 import fr.geoking.gaston.api.belgium.BelgiumPetrolPricesClient
@@ -176,8 +175,8 @@ val mapModule = module {
     single<PoiProvider>(named("romaniapeco")) {
         RomaniaPecoProvider(
             get(),
-            applicationId = BuildConfig.ROMANIA_PECO_APPLICATION_ID.ifBlank { RomaniaPecoDefaults.APPLICATION_ID },
-            clientKey = BuildConfig.ROMANIA_PECO_CLIENT_KEY.ifBlank { RomaniaPecoDefaults.CLIENT_KEY },
+            applicationId = BuildConfig.ROMANIA_PECO_APPLICATION_ID,
+            clientKey = BuildConfig.ROMANIA_PECO_CLIENT_KEY,
             radiusKm = 20,
             limit = 80,
         )

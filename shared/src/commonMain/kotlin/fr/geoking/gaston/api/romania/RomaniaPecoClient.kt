@@ -1,9 +1,12 @@
 package fr.geoking.gaston.api.romania
 
+import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.http.encodeURLParameter
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -33,38 +36,58 @@ data class PecoStation(
 
 class RomaniaPecoClient(
     private val client: HttpClient,
-    applicationId: String,
-    clientKey: String,
+    private val applicationId: String,
+    private val clientKey: String,
 ) {
-    private val applicationId = applicationId.ifBlank { RomaniaPecoDefaults.APPLICATION_ID }
-    private val clientKey = clientKey.ifBlank { RomaniaPecoDefaults.CLIENT_KEY }
-    private val apiUrl = "https://pg-app-hnf14cfy2xb2v9x9eueuchcd2xyetd.scalabl.cloud/1/classes/farapret3"
+    private val encodedWhere = RomaniaPecoApi.WHERE_JSON.encodeURLParameter()
+
+    fun isConfigured(): Boolean = applicationId.isNotBlank() && clientKey.isNotBlank()
 
     private fun parseHeaders(): Map<String, String> = mapOf(
         "X-Parse-Application-Id" to applicationId,
         "X-Parse-Client-Key" to clientKey,
         "User-Agent" to "Parse Android SDK API Level 34",
+        "Accept" to "application/json",
     )
 
     suspend fun fetchAllStations(): List<PecoStation> {
+        if (!isConfigured()) return emptyList()
+
         val headers = parseHeaders()
         val stations = mutableListOf<PecoStation>()
-        val limit = 1000
+        val limit = RomaniaPecoApi.PAGE_LIMIT
         var skip = 0
 
-        val where = RomaniaPecoDefaults.WHERE_CLAUSE
-
         while (true) {
-            val url = "$apiUrl?limit=$limit&skip=$skip&where=$where"
+            val url =
+                "${RomaniaPecoApi.API_URL}?limit=$limit&skip=$skip&count=1&where=$encodedWhere"
             val response = client.get(url) {
                 headers.forEach { (k, v) -> header(k, v) }
-                header("Accept", "application/json")
+            }
+            if (response.status.value != 200) {
+                throw NetworkException(
+                    response.status.value,
+                    "Peco Online HTTP ${response.status.value}",
+                )
             }
             val data = response.body<ParseResponse>()
-            stations.addAll(data.results)
+
+            for (s in data.results) {
+                if (s.lat == 0.0 || s.lng == 0.0) continue
+                if (s.lat < RomaniaPecoApi.LAT_MIN || s.lat > RomaniaPecoApi.LAT_MAX) continue
+                if (s.lng < RomaniaPecoApi.LNG_MIN || s.lng > RomaniaPecoApi.LNG_MAX) continue
+                stations.add(s)
+            }
+
             if (data.results.size < limit) break
             skip += data.results.size
+            delay(200)
         }
         return stations
     }
+}
+
+internal fun Double?.isValidPecoPrice(): Boolean {
+    val p = this ?: return false
+    return p > 0 && p < RomaniaPecoApi.NO_DATA_SENTINEL
 }

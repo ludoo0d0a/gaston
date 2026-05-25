@@ -31,6 +31,7 @@ class RomaniaPecoProvider(
         longitude: Double,
         viewport: MapViewport?
     ): List<Poi> {
+        if (!pecoClient.isConfigured()) return emptyList()
         val stations = getOrFetchStations()
         if (stations.isEmpty()) return emptyList()
 
@@ -41,16 +42,28 @@ class RomaniaPecoProvider(
                 }
                 .map { s ->
                     val prices = mutableListOf<FuelPrice>()
-                    s.Benzina_Regular?.takeIf { it > 0 && it < 999999 }?.let { prices.add(FuelPrice("SP95", it)) }
-                    s.Benzina_Premium?.takeIf { it > 0 && it < 999999 }?.let { prices.add(FuelPrice("SP98", it)) }
-                    s.Motorina_Regular?.takeIf { it > 0 && it < 999999 }?.let { prices.add(FuelPrice("Gazole", it)) }
-                    s.Motorina_Premium?.takeIf { it > 0 && it < 999999 }?.let { prices.add(FuelPrice("Gazole Premium", it)) }
-                    s.GPL?.takeIf { it > 0 && it < 999999 }?.let { prices.add(FuelPrice("GPL", it)) }
-                    s.AdBlue?.takeIf { it > 0 && it < 999999 }?.let { prices.add(FuelPrice("AdBlue", it)) }
+                    s.Benzina_Regular.takeIf { it.isValidPecoPrice() }
+                        ?.let { prices.add(FuelPrice("SP95", it)) }
+                    s.Benzina_Premium.takeIf { it.isValidPecoPrice() }
+                        ?.let { prices.add(FuelPrice("SP98", it)) }
+                    s.Motorina_Regular.takeIf { it.isValidPecoPrice() }
+                        ?.let { prices.add(FuelPrice("Gazole", it)) }
+                    s.Motorina_Premium.takeIf { it.isValidPecoPrice() }
+                        ?.let { prices.add(FuelPrice("Gazole Premium", it)) }
+                    s.GPL.takeIf { it.isValidPecoPrice() }
+                        ?.let { prices.add(FuelPrice("GPL", it)) }
+                    s.AdBlue.takeIf { it.isValidPecoPrice() }
+                        ?.let { prices.add(FuelPrice("AdBlue", it)) }
+
+                    val name = s.Statie?.trim()?.takeIf { it.isNotEmpty() }
+                        ?: listOfNotNull(s.Retea?.trim(), s.Oras?.trim())
+                            .joinToString(" ")
+                            .trim()
+                            .ifEmpty { "Gas Station" }
 
                     Poi(
                         id = "peco:${s.Id ?: s.objectId}",
-                        name = s.Statie?.trim() ?: s.Retea?.trim() ?: "Gas Station",
+                        name = name,
                         address = s.Adresa?.trim() ?: "",
                         latitude = s.lat,
                         longitude = s.lng,
@@ -71,7 +84,7 @@ class RomaniaPecoProvider(
             val stations = pecoClient.fetchAllStations()
             cachedStations = stations
             stations
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
     }
