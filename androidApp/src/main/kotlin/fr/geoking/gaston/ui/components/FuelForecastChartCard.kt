@@ -59,6 +59,8 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
 
+private val X_AXIS_HEIGHT = 24.dp
+
 @Composable
 private fun fuelTypeLabel(fuelId: String): String = when (fuelId) {
     "gazole" -> stringResource(R.string.fuel_gazole)
@@ -263,11 +265,12 @@ private fun UnifiedForecastChart(
                 val w = size.width
                 val h = size.height
                 val chartW = w - yAxisWidth.toPx()
+                val chartH = h - X_AXIS_HEIGHT.toPx()
                 val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
 
                 fun xFor(day: String): Float = yAxisWidth.toPx() + chartW * (allDays.indexOf(day) / denom.toFloat())
-                fun yForFuel(p: Double): Float = h - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * h)
-                fun yForBrent(p: Double): Float = h - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * h)
+                fun yForFuel(p: Double): Float = chartH - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * chartH)
+                fun yForBrent(p: Double): Float = chartH - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * chartH)
 
                 val points = mutableListOf<ChartPoint>()
                 allFuelsHistory.forEach { (fid, pts) ->
@@ -286,17 +289,18 @@ private fun UnifiedForecastChart(
             val w = size.width
             val h = size.height
             val chartW = w - yAxisWidth.toPx()
+            val chartH = h - X_AXIS_HEIGHT.toPx()
             val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
 
             fun xFor(day: String): Float = yAxisWidth.toPx() + chartW * (allDays.indexOf(day) / denom.toFloat())
-            fun yForFuel(p: Double): Float = h - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * h)
-            fun yForBrent(p: Double): Float = h - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * h)
+            fun yForFuel(p: Double): Float = chartH - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * chartH)
+            fun yForBrent(p: Double): Float = chartH - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * chartH)
 
             // Grid & Y-axis labels
             val steps = 5
             for (i in 0..steps) {
                 val ratio = i / steps.toFloat()
-                val y = h - ratio * h
+                val y = chartH - ratio * chartH
                 val price = yMin + ratio * yRange
                 drawLine(gridColor, Offset(yAxisWidth.toPx(), y), Offset(w, y), strokeWidth = 1f)
                 drawText(
@@ -305,6 +309,26 @@ private fun UnifiedForecastChart(
                     Offset(4f, y - 12f),
                     style = labelStyle
                 )
+            }
+
+            // X-axis labels
+            val xLabelsIndices = if (allDays.size >= 3) {
+                listOf(0, allDays.size / 2, allDays.size - 1)
+            } else {
+                allDays.indices.toList()
+            }
+
+            xLabelsIndices.forEach { idx ->
+                val day = allDays[idx]
+                val x = xFor(day)
+                val label = day.substring(5).replace("-", "/")
+                val textLayoutResult = textMeasurer.measure(label, labelStyle)
+                drawText(
+                    textLayoutResult,
+                    topLeft = Offset(x - textLayoutResult.size.width / 2f, chartH + 4.dp.toPx())
+                )
+                // Vertical grid line
+                drawLine(gridColor, Offset(x, 0f), Offset(x, chartH), strokeWidth = 1f)
             }
 
             // Brent
@@ -512,13 +536,16 @@ private fun ForecastSparkline(
     forecast: List<DailyPricePoint>,
     modifier: Modifier = Modifier
 ) {
+    val textMeasurer = rememberTextMeasurer()
     val histColor = MaterialTheme.colorScheme.primary
     val foreColor = MaterialTheme.colorScheme.tertiary
     val gridColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+    val labelStyle = TextStyle(fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
 
     val histSorted = history.sortedBy { it.day }
     val foreSorted = forecast.sortedBy { it.day }
     val allPrices = histSorted.map { it.priceEurPerL } + foreSorted.map { it.priceEurPerL }
+    val allDays = (histSorted + foreSorted).map { it.day }
     val yMin = allPrices.minOrNull() ?: 1.5
     val yMax = allPrices.maxOrNull() ?: 2.0
     val pad = max(0.02, (yMax - yMin) * 0.12)
@@ -528,6 +555,7 @@ private fun ForecastSparkline(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val chartH = h - X_AXIS_HEIGHT.toPx()
         val total = histSorted.size + foreSorted.size
         val denom = (max(2, total) - 1).coerceAtLeast(1)
 
@@ -537,10 +565,31 @@ private fun ForecastSparkline(
         }
         fun yFor(p: Double): Float {
             val t = ((p - ymin) / (ymax - ymin)).coerceIn(0.0, 1.0)
-            return h - t.toFloat() * h
+            return chartH - t.toFloat() * chartH
         }
 
-        drawLine(gridColor, Offset(0f, h * 0.5f), Offset(w, h * 0.5f), strokeWidth = 1f)
+        drawLine(gridColor, Offset(0f, chartH * 0.5f), Offset(w, chartH * 0.5f), strokeWidth = 1f)
+
+        // X-axis labels
+        if (allDays.isNotEmpty()) {
+            val xLabelsIndices = if (allDays.size >= 3) {
+                listOf(0, allDays.size / 2, allDays.size - 1)
+            } else {
+                allDays.indices.toList()
+            }
+            xLabelsIndices.forEach { idx ->
+                val day = allDays[idx]
+                val x = xFor(idx)
+                val label = day.substring(5).replace("-", "/")
+                val textLayoutResult = textMeasurer.measure(label, labelStyle)
+                drawText(
+                    textLayoutResult,
+                    topLeft = Offset(x - textLayoutResult.size.width / 2f, chartH + 4.dp.toPx())
+                )
+                // Vertical grid line
+                drawLine(gridColor, Offset(x, 0f), Offset(x, chartH), strokeWidth = 1f)
+            }
+        }
 
         if (histSorted.size >= 2) {
             val path = Path()
