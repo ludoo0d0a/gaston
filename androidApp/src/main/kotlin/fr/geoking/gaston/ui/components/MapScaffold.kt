@@ -48,6 +48,16 @@ fun MapScaffold(
 ) {
     val settings by settingsManager.settings.collectAsState()
     var navMenuExpanded by remember { mutableStateOf(false) }
+    var moreMenuExpanded by remember { mutableStateOf(false) }
+
+    val toggleTheme = {
+        val nextMode = when (settings.uiThemeMode) {
+            ThemeMode.System -> ThemeMode.Light
+            ThemeMode.Light -> ThemeMode.Dark
+            ThemeMode.Dark -> ThemeMode.System
+        }
+        settingsManager.saveSettings(settings.copy(uiThemeMode = nextMode))
+    }
 
     Scaffold(
         floatingActionButton = floatingActionButton,
@@ -109,24 +119,6 @@ fun MapScaffold(
                         }
                     }
 
-                    IconButton(onClick = {
-                        val nextMode = when (settings.uiThemeMode) {
-                            ThemeMode.System -> ThemeMode.Light
-                            ThemeMode.Light -> ThemeMode.Dark
-                            ThemeMode.Dark -> ThemeMode.System
-                        }
-                        settingsManager.saveSettings(settings.copy(uiThemeMode = nextMode))
-                    }) {
-                        Icon(
-                            imageVector = when (settings.uiThemeMode) {
-                                ThemeMode.System -> Icons.Default.BrightnessAuto
-                                ThemeMode.Light -> Icons.Default.LightMode
-                                ThemeMode.Dark -> Icons.Default.DarkMode
-                            },
-                            contentDescription = stringResource(R.string.action_toggle_theme)
-                        )
-                    }
-
                     IconButton(onClick = onRefresh) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
@@ -134,18 +126,51 @@ fun MapScaffold(
                         )
                     }
 
-                    IconButton(onClick = onShowSources) {
-                        Icon(
-                            imageVector = Icons.Default.Hub,
-                            contentDescription = stringResource(R.string.cd_data_sources)
-                        )
-                    }
-
-                    IconButton(onClick = onShowSettings) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.cd_map_settings)
-                        )
+                    Box {
+                        IconButton(onClick = { moreMenuExpanded = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.screen_more)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = moreMenuExpanded,
+                            onDismissRequest = { moreMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.screen_theme)) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = when (settings.uiThemeMode) {
+                                            ThemeMode.System -> Icons.Default.BrightnessAuto
+                                            ThemeMode.Light -> Icons.Default.LightMode
+                                            ThemeMode.Dark -> Icons.Default.DarkMode
+                                        },
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    moreMenuExpanded = false
+                                    toggleTheme()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.screen_sources)) },
+                                leadingIcon = { Icon(Icons.Default.Hub, contentDescription = null) },
+                                onClick = {
+                                    moreMenuExpanded = false
+                                    onShowSources()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.screen_map_settings)) },
+                                leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                onClick = {
+                                    moreMenuExpanded = false
+                                    onShowSettings()
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
