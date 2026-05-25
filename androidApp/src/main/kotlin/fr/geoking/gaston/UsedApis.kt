@@ -65,6 +65,7 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("Tankerkönig (Germany)", "https://creativecommons.tankerkoenig.de", null),
     UsedApi("E-Control (Austria)", "https://www.e-control.at", null),
     UsedApi("Belgium official fuel prices", "https://petrolprices.economie.fgov.be", null),
+    UsedApi("EIA (US official)", "https://www.eia.gov/opendata/browser/petroleum/pri", null),
 
     // EV charging
     UsedApi("Open Charge Map", "https://openchargemap.org", "https://openchargemap.org/favicon.ico"),
