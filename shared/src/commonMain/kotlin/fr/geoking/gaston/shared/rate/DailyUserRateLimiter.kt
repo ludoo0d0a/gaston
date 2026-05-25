@@ -30,7 +30,7 @@ class DailyUserRateLimiter(
     private fun currentDayKey(): String {
         val dt = kotlin.time.Clock.System.now().toLocalDateTime(timeZone)
         // YYYY-MM-DD
-        return "${dt.year.toString().padStart(4, '0')}-${dt.monthNumber.toString().padStart(2, '0')}-${dt.dayOfMonth.toString().padStart(2, '0')}"
+        return "${dt.year.toString().padStart(4, '0')}-${dt.month.toString().padStart(2, '0')}-${dt.day.toString().padStart(2, '0')}"
     }
 }
 

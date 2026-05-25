@@ -1,7 +1,7 @@
 package fr.geoking.gaston.poi
 
 import fr.geoking.gaston.api.routex.PoiAmenities
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.math.abs
 import kotlin.math.PI
 import kotlin.math.atan2

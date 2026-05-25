@@ -33,6 +33,7 @@ import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.intent.NavDestination
+import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider

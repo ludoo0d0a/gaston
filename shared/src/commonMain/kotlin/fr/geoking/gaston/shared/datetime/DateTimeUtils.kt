@@ -1,6 +1,6 @@
 package fr.geoking.gaston.shared.datetime
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
@@ -63,7 +63,7 @@ object DateTimeUtils {
             }
             else -> {
                 val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-                "${localDateTime.dayOfMonth}/${localDateTime.monthNumber}/${localDateTime.year}"
+                "${localDateTime.day}/${localDateTime.month}/${localDateTime.year}"
             }
         }
     }

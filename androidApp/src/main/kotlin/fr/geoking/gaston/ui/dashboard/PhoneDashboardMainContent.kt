@@ -282,7 +282,7 @@ private fun PhoneDashboardNearbyCheapestSection(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = title,
+                        text = if (isHybrid) titleFuel else titleGeneric,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,

@@ -201,6 +201,5 @@ class OverpassProvider(
         PoiCategory.Gas -> "Gas station"
         PoiCategory.Irve -> "Charging station"
         PoiCategory.BatterySwap -> "Battery swap"
-        else -> c.name
     }
 }
