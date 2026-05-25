@@ -7,6 +7,38 @@ import kotlin.test.assertTrue
 class PoiMergerTest {
 
     @Test
+    fun mergeInto_upsertsElectricAlongsideFuelOnSameStation() {
+        val cache = mutableMapOf<String, Poi>()
+        val fuel = Poi(
+            id = "station-1",
+            name = "Total",
+            address = "Rue A",
+            latitude = 48.85,
+            longitude = 2.35,
+            poiCategory = PoiCategory.Gas,
+            fuelPrices = listOf(FuelPrice("Gazole", 1.75)),
+        )
+        val electric = Poi(
+            id = "station-1",
+            name = "Total",
+            address = "Rue A",
+            latitude = 48.85,
+            longitude = 2.35,
+            isElectric = true,
+            poiCategory = PoiCategory.Irve,
+            powerKw = 150.0,
+            operator = "TotalEnergies",
+        )
+        PoiMerger.mergeInto(cache, listOf(fuel))
+        PoiMerger.mergeInto(cache, listOf(electric))
+        val merged = cache["station-1"]!!
+        assertEquals(listOf("Gazole"), merged.fuelPrices?.map { it.fuelName })
+        assertTrue(merged.isElectric)
+        assertEquals(150.0, merged.powerKw)
+        assertEquals("TotalEnergies", merged.operator)
+    }
+
+    @Test
     fun mergePois_mergesClosePois() {
         // Paris coordinates
         val lat = 48.8566

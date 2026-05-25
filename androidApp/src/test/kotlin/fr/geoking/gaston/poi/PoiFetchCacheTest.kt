@@ -20,11 +20,19 @@ class PoiFetchCacheTest {
     }
 
     @Test
-    fun resolveCategoriesToFetch_includesGasAndIrveInFuelMode() {
+    fun resolveCategoriesToFetch_fuelModeOnlyGas() {
         val settings = AppSettings(mapEnergyMode = EnergyFilterMode.Fuel)
         val categories = resolveCategoriesToFetch(settings)
         assertTrue(PoiCategory.Gas in categories)
+        assertFalse(PoiCategory.Irve in categories)
+    }
+
+    @Test
+    fun resolveCategoriesToFetch_electricModeOnlyIrve() {
+        val settings = AppSettings(mapEnergyMode = EnergyFilterMode.Electric)
+        val categories = resolveCategoriesToFetch(settings)
         assertTrue(PoiCategory.Irve in categories)
+        assertFalse(PoiCategory.Gas in categories)
     }
 
     @Test
@@ -106,6 +114,76 @@ class PoiFetchCacheTest {
             missingCategories = setOf(PoiCategory.Parking),
         )
         assertEquals(setOf(PoiProviderType.Overpass), providers)
+    }
+
+    @Test
+    fun providersForIncrementalFetch_fetchesElectricWhenIrveMissingAfterFuelLoad() {
+        val all = setOf(PoiProviderType.DataGouv, PoiProviderType.DataGouvElec, PoiProviderType.Overpass)
+        val providers = providersForIncrementalFetch(
+            allProviders = all,
+            missingProviders = emptySet(),
+            missingCategories = setOf(PoiCategory.Irve),
+        )
+        assertTrue(PoiProviderType.DataGouvElec in providers)
+        assertFalse(PoiProviderType.DataGouv in providers)
+    }
+
+    @Test
+    fun computePoiCoverage_toggleToElectricHitsCacheWhenIrveFresh() {
+        val nowMs = 1_000_000_000_000L
+        val region = LoadedPoiRegion(
+            centerLat = 48.85,
+            centerLng = 2.35,
+            maxRadiusKmLoaded = 10,
+            loadedAtMs = nowMs,
+            loadedProviders = setOf(PoiProviderType.DataGouv, PoiProviderType.DataGouvElec),
+            loadedCategories = setOf(PoiCategory.Gas, PoiCategory.Irve),
+            categoryLoadedAtMs = mapOf(
+                PoiCategory.Gas to nowMs - 60_000L,
+                PoiCategory.Irve to nowMs - 60_000L,
+            ),
+        )
+        val coverage = computePoiCoverage(
+            regions = listOf(region),
+            centerLat = 48.85,
+            centerLng = 2.35,
+            requiredRadiusKm = 10,
+            providers = setOf(PoiProviderType.DataGouv, PoiProviderType.DataGouvElec),
+            categoriesToFetch = setOf(PoiCategory.Irve),
+            nowMs = nowMs,
+        )
+        assertTrue(coverage.fullyCovered)
+    }
+
+    @Test
+    fun computePoiCoverage_toggleToElectricNeedsIrveFetchAfterFuelOnly() {
+        val nowMs = 1_000_000_000_000L
+        val region = LoadedPoiRegion(
+            centerLat = 48.85,
+            centerLng = 2.35,
+            maxRadiusKmLoaded = 10,
+            loadedAtMs = nowMs,
+            loadedProviders = setOf(PoiProviderType.DataGouv),
+            loadedCategories = setOf(PoiCategory.Gas),
+            categoryLoadedAtMs = mapOf(PoiCategory.Gas to nowMs - 60_000L),
+        )
+        val coverage = computePoiCoverage(
+            regions = listOf(region),
+            centerLat = 48.85,
+            centerLng = 2.35,
+            requiredRadiusKm = 10,
+            providers = setOf(PoiProviderType.DataGouv, PoiProviderType.DataGouvElec),
+            categoriesToFetch = setOf(PoiCategory.Irve),
+            nowMs = nowMs,
+        )
+        assertFalse(coverage.fullyCovered)
+        assertTrue(PoiCategory.Irve in coverage.missingCategories)
+        val toFetch = providersForIncrementalFetch(
+            allProviders = setOf(PoiProviderType.DataGouv, PoiProviderType.DataGouvElec),
+            missingProviders = coverage.missingProviders,
+            missingCategories = coverage.missingCategories,
+        )
+        assertEquals(setOf(PoiProviderType.DataGouvElec), toFetch)
     }
 
     @Test
