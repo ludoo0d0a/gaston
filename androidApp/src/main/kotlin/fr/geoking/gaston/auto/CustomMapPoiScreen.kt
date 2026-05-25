@@ -20,6 +20,7 @@ import android.graphics.Rect
 import androidx.car.app.SurfaceCallback
 import androidx.car.app.SurfaceContainer
 import androidx.car.app.AppManager
+import androidx.car.app.CarToast
 import androidx.car.app.constraints.ConstraintManager
 import com.google.android.gms.location.Priority
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -270,14 +271,12 @@ class CustomMapPoiScreen(
             lastAppliedZoom = zoom
         }
         renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
-        if (poiIds != lastSyncedPoiIds) {
-            lastSyncedPoiIds = poiIds
-            renderer.updatePois(
-                newPois = filteredPois,
-                effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
-                effectivePowerLevels = settings.effectiveIrvePowerLevels()
-            )
-        }
+        renderer.updatePois(
+            newPois = filteredPois,
+            effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
+            effectivePowerLevels = settings.effectiveIrvePowerLevels(),
+        )
+        lastSyncedPoiIds = poiIds
     }
 
     private suspend fun searchPoisWithZoomOut(
@@ -606,6 +605,7 @@ class CustomMapPoiScreen(
         }
         lastSyncedPoiIds = emptyList()
         syncRendererWithMapState()
+        registerSurfaceCallback()
         surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
 
         themeCollectionJob = lifecycleScope.launch {
@@ -654,32 +654,47 @@ class CustomMapPoiScreen(
         val clickedPois = renderer.findPoisAt(x, y)
         if (clickedPois.isEmpty()) return
 
-        if (clickedPois.size == 1) {
-            val poi = clickedPois.first()
-            val availability = availabilityByPoiId[poi.id]
-            screenManager.push(
-                PoiDetailScreen(
-                    carContext = carContext,
-                    poi = poi,
-                    availabilitySummary = availability,
-                    rating = null
-                )
+        val poi = if (clickedPois.size == 1) {
+            clickedPois.first()
+        } else if (
+            AutoMapPoiHitTest.shouldZoomInsteadOfOpen(
+                hits = clickedPois,
+                mapLat = renderer.mapLatForHitTest(),
+                mapLon = renderer.mapLonForHitTest(),
+                zoom = renderer.zoomForHitTest(),
+                centerPxX = renderer.centerPxXForHitTest(),
+                centerPxY = renderer.centerPxYForHitTest(),
             )
-        } else {
+        ) {
             carContext.getCarService(AppManager::class.java)
-                .showToast("Multiple stations here, zooming in...", 1)
+                .showToast("Multiple stations here, zooming in...", CarToast.LENGTH_LONG)
             bumpZoom(1)
+            return
+        } else {
+            clickedPois.first()
         }
+
+        val availability = availabilityByPoiId[poi.id]
+        screenManager.push(
+            PoiDetailScreen(
+                carContext = carContext,
+                poi = poi,
+                availabilitySummary = availability,
+                rating = null,
+            ),
+        )
+    }
+
+    private fun registerSurfaceCallback() {
+        carContext.getCarService(AppManager::class.java).setSurfaceCallback(this)
     }
 
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
-        carContext.getCarService(AppManager::class.java).setSurfaceCallback(this)
+        registerSurfaceCallback()
     }
 
     override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
         stopHeadingUpdates()
-        surfaceRenderer?.stop()
-        surfaceRenderer = null
     }
 
     private fun bumpZoom(delta: Int) {

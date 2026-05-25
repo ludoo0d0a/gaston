@@ -405,50 +405,30 @@ class AutoSurfaceRenderer(
         }
     }
 
-    /** Find POIs at the given screen coordinates. */
-    fun findPoisAt(screenX: Float, screenY: Float): List<Poi> {
-        val bearing = mapBearingDegrees
-        val cx = centerPxX.toFloat()
-        val cy = centerPxY.toFloat()
+    internal fun centerPxXForHitTest(): Double = centerPxX
 
-        // Inverse rotation if the map is rotated: rotate screenX/screenY back to worldX/worldY.
-        // During draw, we rotate canvas by -bearing. So to go back, we rotate by +bearing.
-        val (worldX, worldY) = if (bearing != 0f) {
-            val angleRad = Math.toRadians(bearing.toDouble())
-            val dx = screenX - cx
-            val dy = screenY - cy
-            val rx = dx * cos(angleRad) + dy * sin(angleRad)
-            val ry = -dx * sin(angleRad) + dy * cos(angleRad)
-            (cx + rx).toFloat() to (cy + ry).toFloat()
-        } else {
-            screenX to screenY
-        }
+    internal fun centerPxYForHitTest(): Double = centerPxY
 
-        val tileSize = 256
-        val centerX = lonToTileX(lon, zoom)
-        val centerY = latToTileY(lat, zoom)
-        val markerWidthPx = POI_MARKER_WIDTH_PX
-        val markerRadiusPx = markerWidthPx / 2f
+    internal fun mapLatForHitTest(): Double = lat
 
-        return pois.filter { poi ->
-            val tileX = lonToTileX(poi.longitude, zoom)
-            val tileY = latToTileY(poi.latitude, zoom)
-            val px = ((tileX - centerX) * tileSize + centerPxX).toFloat()
-            val py = ((tileY - centerY) * tileSize + centerPxY).toFloat()
+    internal fun mapLonForHitTest(): Double = lon
 
-            // The marker is anchored at the bottom-center.
-            // Let's assume the hit area is a circle centered on the head.
-            // From getMarkerBitmap, circleCy = labelBlockH + circleR
-            // h = (triTopY + triH + 2f).toInt()
-            // It's a bit complex to calculate exactly here without the bitmap,
-            // but we can approximate it as being roughly markerWidthPx above the tip.
-            val hitCenterY = py - markerWidthPx * 0.6f
+    internal fun zoomForHitTest(): Int = zoom
 
-            val dx = worldX - px
-            val dy = worldY - hitCenterY
-            dx * dx + dy * dy <= (markerRadiusPx * markerRadiusPx)
-        }
-    }
+    /** POIs at [screenX]/[screenY], nearest first; empty if outside [visibleArea] or no hit. */
+    fun findPoisAt(screenX: Float, screenY: Float): List<Poi> =
+        AutoMapPoiHitTest.findPoisAt(
+            screenX = screenX,
+            screenY = screenY,
+            pois = pois,
+            mapLat = lat,
+            mapLon = lon,
+            zoom = zoom,
+            mapBearingDegrees = mapBearingDegrees,
+            centerPxX = centerPxX,
+            centerPxY = centerPxY,
+            visibleArea = visibleArea,
+        )
 
     private fun drawUserLocation(canvas: Canvas) {
         val uLat = userLat ?: return
