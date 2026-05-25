@@ -45,6 +45,39 @@ val DEFAULT_MAP_BRANDS = emptySet<String>()
 /** Default EV range in km for route planning. */
 const val DEFAULT_EV_RANGE_KM = 300
 
+val PRELOADED_FAVORITES = listOf(
+    GeocodedPlace("Paris", 48.8534, 2.3488),
+    GeocodedPlace("London", 51.5085, -0.1257),
+    GeocodedPlace("Rome", 41.8947, 12.4811),
+    GeocodedPlace("Berlin", 52.5244, 13.4105),
+    GeocodedPlace("Madrid", 40.4165, -3.7026),
+    GeocodedPlace("Vienna", 48.2064, 16.3707),
+    GeocodedPlace("Brussels", 50.8467, 4.3499),
+    GeocodedPlace("Amsterdam", 52.3740, 4.8897),
+    GeocodedPlace("Bern", 46.9481, 7.4474),
+    GeocodedPlace("Luxembourg City", 49.6117, 6.1300),
+    GeocodedPlace("Lisbon", 38.7169, -9.1399),
+    GeocodedPlace("Oslo", 59.9127, 10.7461),
+    GeocodedPlace("Stockholm", 59.3326, 18.0649),
+    GeocodedPlace("Copenhagen", 55.6759, 12.5655),
+    GeocodedPlace("Helsinki", 60.1692, 24.9402),
+    GeocodedPlace("Dublin", 53.3331, -6.2489),
+    GeocodedPlace("Athens", 37.9534, 23.7490),
+    GeocodedPlace("Ljubljana", 46.0511, 14.5051),
+    GeocodedPlace("Zagreb", 45.8144, 15.9780),
+    GeocodedPlace("Bucharest", 44.4328, 26.1043),
+    GeocodedPlace("Belgrade", 44.8176, 20.4633),
+    GeocodedPlace("Chișinău", 47.0056, 28.8575),
+    GeocodedPlace("Canberra", -35.2835, 149.1281),
+    GeocodedPlace("Mexico City", 19.4273, -99.1419),
+    GeocodedPlace("Buenos Aires", -34.6051, -58.4004),
+    GeocodedPlace("Washington, D.C.", 38.8951, -77.0364),
+    GeocodedPlace("New York", 40.7128, -74.0060),
+    GeocodedPlace("Los Angeles", 34.0522, -118.2437),
+    GeocodedPlace("Chicago", 41.8781, -87.6298),
+    GeocodedPlace("Houston", 29.7604, -95.3698)
+)
+
 enum class FuelCard { None, Routex }
 
 enum class PoiProviderSelectionMode { Manual, Auto }
@@ -129,11 +162,25 @@ open class SettingsManager(
             emptyList()
         }
 
-        val favoriteLocationsJson = prefs.getString("favorite_locations", null)
-        val favoriteLocations = try {
-            if (favoriteLocationsJson.isNullOrBlank()) emptyList() else Json.decodeFromString<List<GeocodedPlace>>(favoriteLocationsJson)
-        } catch (_: Exception) {
-            emptyList()
+        val favoriteLocations = run {
+            val storedJson = prefs.getString("favorite_locations", null)
+            val stored = try {
+                if (storedJson.isNullOrBlank()) emptyList() else Json.decodeFromString<List<GeocodedPlace>>(storedJson)
+            } catch (_: Exception) {
+                emptyList()
+            }
+
+            if (!prefs.getBoolean("favorites_preloaded_v1", false)) {
+                val preloaded = PRELOADED_FAVORITES
+                val merged = (stored + preloaded).distinctBy { "${it.latitude},${it.longitude}" }
+                prefs.edit()
+                    .putBoolean("favorites_preloaded_v1", true)
+                    .putString("favorite_locations", Json.encodeToString(merged))
+                    .apply()
+                merged
+            } else {
+                stored
+            }
         }
 
         val selectedProviders = run {
