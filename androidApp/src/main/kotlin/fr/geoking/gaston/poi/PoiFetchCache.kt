@@ -86,16 +86,10 @@ fun invalidateRegionCoverageOnProviderSetChange(
 }
 
 fun resolveCategoriesToFetch(settings: AppSettings): Set<PoiCategory> {
-    val amenityIds = settings.selectedOverpassAmenityTypes + settings.cacheWarmAmenityTypes
-    val categories = amenityIds.mapNotNull { categoryFromAmenityId(it) }.toMutableSet()
-
-    if (settings.isOtherModeActive()) {
-        categories += settings.effectiveAllowedCategories()
-        return categories
-    }
-
-    categories += PoiCategory.Gas
-    categories += PoiCategory.Irve
+    val categories = settings.cacheWarmAmenityTypes
+        .mapNotNull { categoryFromAmenityId(it) }
+        .toMutableSet()
+    // Energy (Gas / Irve / …) follows the active filter mode; amenities follow selection + vehicle.
     categories += settings.effectiveAllowedCategories()
     return categories
 }
@@ -145,7 +139,15 @@ fun providersForIncrementalFetch(
     missingCategories: Set<PoiCategory>,
 ): Set<PoiProviderType> {
     val result = missingProviders.toMutableSet()
-    val needsAmenityFetch = missingCategories.any { it != PoiCategory.Gas && it != PoiCategory.Irve }
+    if (PoiCategory.Gas in missingCategories) {
+        result += allProviders.filter { it.providesFuel }
+    }
+    if (PoiCategory.Irve in missingCategories || PoiCategory.BatterySwap in missingCategories) {
+        result += allProviders.filter { it.providesElectric || it.providesSwap }
+    }
+    val needsAmenityFetch = missingCategories.any {
+        it !in setOf(PoiCategory.Gas, PoiCategory.Irve, PoiCategory.BatterySwap)
+    }
     if (needsAmenityFetch && PoiProviderType.Overpass in allProviders) {
         result += PoiProviderType.Overpass
     }
