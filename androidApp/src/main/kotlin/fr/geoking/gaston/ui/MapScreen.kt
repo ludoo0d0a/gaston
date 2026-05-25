@@ -523,11 +523,18 @@ fun MapScreen(
                 }
 
                 if (settings.debugLoggingEnabled) {
+                    val detectedCountries = remember(cameraPositionState.position.target) {
+                        fr.geoking.gaston.countryDisplayLabelAtMapPosition(
+                            cameraPositionState.position.target.latitude,
+                            cameraPositionState.position.target.longitude
+                        )
+                    }
                     DebugLogOverlay(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(top = 80.dp) // Below the top bar
-                            .zIndex(2f)
+                            .zIndex(2f),
+                        detectedCountries = detectedCountries
                     )
                 }
             }

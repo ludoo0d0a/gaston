@@ -118,10 +118,10 @@ enum class ParkingRegion(
         countryCode = "MK"
     ),
     UnitedStates(
-        latMin = 18.0,
+        latMin = 17.0,
         latMax = 71.5,
         lonMin = -170.0,
-        lonMax = -66.0,
+        lonMax = -64.0,
         countryCode = "US"
     );
 
@@ -133,8 +133,13 @@ enum class ParkingRegion(
         private val bySpecificity = listOf(
             Luxembourg, Montenegro, NorthMacedonia, Slovenia, Croatia,
             Belgium, Switzerland, Netherlands, Denmark, Austria,
-            Germany, France, UnitedKingdom, Spain, Italy, UnitedStates
+            Germany, France, UnitedKingdom, Spain, Italy
+            // UnitedStates is excluded from 'containing' (single region choice) to avoid breaking
+            // logic that expects null for non-European regions, but is still available in 'allContaining'
+            // and 'allInViewport' for provider resolution.
         )
+
+        private val allRegions = bySpecificity + UnitedStates
 
         /** Returns the region containing (lat, lon), or null if none. */
         fun containing(lat: Double, lon: Double): ParkingRegion? =
@@ -142,7 +147,7 @@ enum class ParkingRegion(
 
         /** Returns all regions containing (lat, lon). Useful for cross-border areas. */
         fun allContaining(lat: Double, lon: Double): List<ParkingRegion> =
-            bySpecificity.filter { it.contains(lat, lon) }
+            allRegions.filter { it.contains(lat, lon) }
 
         /** Returns all regions intersecting with the given viewport. */
         fun allInViewport(
@@ -151,7 +156,7 @@ enum class ParkingRegion(
             lonMin: Double,
             lonMax: Double
         ): List<ParkingRegion> {
-            return bySpecificity.filter { region ->
+            return allRegions.filter { region ->
                 region.latMin <= latMax && region.latMax >= latMin &&
                         region.lonMin <= lonMax && region.lonMax >= lonMin
             }

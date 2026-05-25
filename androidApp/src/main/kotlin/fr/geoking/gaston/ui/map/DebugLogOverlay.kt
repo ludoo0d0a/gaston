@@ -37,15 +37,16 @@ import java.util.*
 
 @Composable
 fun DebugLogOverlay(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    detectedCountries: String? = null
 ) {
     Box(modifier = modifier) {
-        DebugLogOverlayContent()
+        DebugLogOverlayContent(detectedCountries)
     }
 }
 
 @Composable
-private fun DebugLogOverlayContent() {
+private fun DebugLogOverlayContent(detectedCountries: String?) {
     var isExpanded by remember { mutableStateOf(false) }
     val logs by DebugLogStore.logs.collectAsState()
     var selectedLog by remember { mutableStateOf<NetworkLog?>(null) }
@@ -83,11 +84,20 @@ private fun DebugLogOverlayContent() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            "Network Debug Logs (${logs.size})",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Column {
+                            Text(
+                                "Network Debug Logs (${logs.size})",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                            detectedCountries?.let {
+                                Text(
+                                    it,
+                                    color = Color.White.copy(alpha = 0.6f),
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
                         Row {
                             IconButton(onClick = {
                                 scope.launch {
