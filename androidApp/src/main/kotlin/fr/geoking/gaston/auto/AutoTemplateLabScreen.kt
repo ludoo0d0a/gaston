@@ -60,8 +60,7 @@ class AutoTemplateLabScreen(
                 .setTitle(carContext.getString(R.string.screen_map_settings))
                 .addText("Current mode: ${settingsManager.settings.value.carMapMode.name}")
                 .setOnClickListener {
-                    val next = if (settingsManager.settings.value.carMapMode == fr.geoking.gaston.CarMapMode.Native) fr.geoking.gaston.CarMapMode.Custom else fr.geoking.gaston.CarMapMode.Native
-                    settingsManager.setCarMapMode(next)
+                    settingsManager.setCarMapMode(settingsManager.settings.value.carMapMode.next())
                     invalidate()
                 }
                 .build()
@@ -131,6 +130,27 @@ class AutoTemplateLabFeaturesScreen(
         listBuilder.addItem(Row.Builder().setTitle(carContext.getString(R.string.map_custom_pan)).setOnClickListener {
             val deps = getMapDeps()
             if (deps != null) screenManager.push(CustomMapPoiScreen(carContext, deps.poiProvider, deps.availabilityProviderFactory, settingsManager, deps.routePlanner, deps.routingClient, deps.tollCalculator, deps.trafficProviderFactory, deps.geocodingClient, deps.communityRepo, deps.favoritesRepo))
+        }.build())
+
+        listBuilder.addItem(Row.Builder().setTitle("MapLibre POI map").setOnClickListener {
+            val deps = getMapDeps()
+            if (deps != null) {
+                screenManager.push(
+                    MapLibrePoiScreen(
+                        carContext,
+                        deps.poiProvider,
+                        deps.availabilityProviderFactory,
+                        settingsManager,
+                        deps.routePlanner,
+                        deps.routingClient,
+                        deps.tollCalculator,
+                        deps.trafficProviderFactory,
+                        deps.geocodingClient,
+                        deps.communityRepo,
+                        deps.favoritesRepo,
+                    ),
+                )
+            }
         }.build())
 
         listBuilder.addItem(Row.Builder().setTitle(carContext.getString(R.string.screen_route_planning)).setOnClickListener {

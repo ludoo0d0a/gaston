@@ -18,7 +18,13 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-enum class CarMapMode { Native, Custom }
+enum class CarMapMode {
+    Native,
+    Custom,
+    MapLibre;
+
+    fun next(): CarMapMode = entries[(ordinal + 1) % entries.size]
+}
 enum class MapEngine { Google, MapLibre }
 enum class ThemeMode { System, Light, Dark }
 enum class MapTheme(val styleUrl: String) {

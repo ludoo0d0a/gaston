@@ -188,8 +188,8 @@ class AutoPlaystoreDashboardScreen(
     private fun pushMapScreen(title: String? = null) {
         val mapDeps = getMapDeps() ?: return
         val finalTitle = title ?: "Nearby Stations"
-        val screen = if (settingsManager.settings.value.carMapMode == CarMapMode.Native) {
-            NativeMapPoiScreen(
+        val screen = when (settingsManager.settings.value.carMapMode) {
+            CarMapMode.Native -> NativeMapPoiScreen(
                 carContext = carContext,
                 poiProvider = mapDeps.poiProvider,
                 availabilityProviderFactory = mapDeps.availabilityProviderFactory,
@@ -198,8 +198,21 @@ class AutoPlaystoreDashboardScreen(
                 favoritesRepo = mapDeps.favoritesRepo,
                 title = finalTitle
             )
-        } else {
-            CustomMapPoiScreen(
+            CarMapMode.Custom -> CustomMapPoiScreen(
+                carContext = carContext,
+                poiProvider = mapDeps.poiProvider,
+                availabilityProviderFactory = mapDeps.availabilityProviderFactory,
+                settingsManager = settingsManager,
+                routePlanner = mapDeps.routePlanner,
+                routingClient = mapDeps.routingClient,
+                tollCalculator = mapDeps.tollCalculator,
+                trafficProviderFactory = mapDeps.trafficProviderFactory,
+                geocodingClient = mapDeps.geocodingClient,
+                communityRepo = mapDeps.communityRepo,
+                favoritesRepo = mapDeps.favoritesRepo,
+                title = finalTitle
+            )
+            CarMapMode.MapLibre -> MapLibrePoiScreen(
                 carContext = carContext,
                 poiProvider = mapDeps.poiProvider,
                 availabilityProviderFactory = mapDeps.availabilityProviderFactory,
