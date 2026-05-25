@@ -228,6 +228,11 @@ fun MapScreen(
         }
     }
 
+    fun currentMapCameraSample(): MapCameraSample {
+        val pos = cameraPositionState.position
+        return MapCameraSample(pos.target.latitude, pos.target.longitude, pos.zoom)
+    }
+
     val cameraFlow = remember(cameraPositionState) {
         snapshotFlow { cameraPositionState.position }
             .map { pos -> MapCameraSample(pos.target.latitude, pos.target.longitude, pos.zoom) }
@@ -281,7 +286,7 @@ fun MapScreen(
         mapCenterLongitude = cameraPositionState.position.target.longitude,
         onBack = onBack,
         onRefresh = {
-            mapActions.refresh(true)
+            mapActions.refresh(true, currentMapCameraSample())
         },
         onLocateMe = {
             scope.launch {
@@ -369,7 +374,7 @@ fun MapScreen(
                     message = msg,
                     onCopy = onCopy,
                     onIgnore = mapActions.clearError,
-                    onRetry = mapActions.retry
+                    onRetry = { mapActions.retry(currentMapCameraSample()) }
                 )
             }
 

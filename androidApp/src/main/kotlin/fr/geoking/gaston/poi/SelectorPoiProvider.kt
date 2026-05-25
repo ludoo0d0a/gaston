@@ -289,7 +289,7 @@ class SelectorPoiProvider(
                 provider = providerType.name,
                 poiCount = searchResult.pois.size,
                 durationMs = System.currentTimeMillis() - fetchStartMs,
-                errors = searchResult.errors.map { "${it.provider}: ${it.message}" },
+                errors = searchResult.errors.map { "${it.providerName}: ${it.message}" },
             )
             allPois.addAll(searchResult.pois)
             errors.addAll(searchResult.errors)
@@ -572,7 +572,7 @@ class SelectorPoiProvider(
             effectiveProviders = providers.map { it.name }.sorted(),
             fetchedProviders = providerCategories.keys.map { it.name }.sorted(),
             poiCount = synchronized(cacheLock) { cachedPois.size },
-            errors = errors.map { "${it.provider}: ${it.message}" },
+            errors = errors.map { "${it.providerName}: ${it.message}" },
         )
 
         // Persist to DB
@@ -787,7 +787,7 @@ class SelectorPoiProvider(
             effectiveProviders = providers.map { it.name }.sorted(),
             fetchedProviders = providerCategories.keys.map { it.name }.sorted(),
             poiCount = result.size,
-            errors = errors.map { "${it.provider}: ${it.message}" },
+            errors = errors.map { "${it.providerName}: ${it.message}" },
         )
         Log.d("SelectorPoiProvider", "search providers=$providers categories=$categoriesToFetch skipFilters=${request.skipFilters} -> ${result.size} pois")
         return PoiSearchResult(pois = result, errors = errors)

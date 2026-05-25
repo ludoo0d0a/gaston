@@ -51,7 +51,9 @@ import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.shared.network.NetworkException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
 @Stable
@@ -95,18 +97,20 @@ fun rememberMapDataState(
     var isErrorPaused by remember { mutableStateOf(false) }
     var retryCount by remember { mutableStateOf(0) }
     var isLoading by remember { mutableStateOf(false) }
+    var lastCameraSample by remember { mutableStateOf<MapCameraSample?>(null) }
+    val refreshRequestFlow = remember { MutableSharedFlow<MapCameraSample>(extraBufferCapacity = 1) }
 
     val scope = rememberCoroutineScope()
 
     val actions = remember(context) {
         MapDataActions(
-            refresh = { /* replaced below */ },
-            clearError = { /* replaced below */ },
-            retry = { /* replaced below */ },
-            invalidate = { /* replaced below */ }
+            refresh = { _, _ -> },
+            clearError = { },
+            retry = { _ -> },
+            invalidate = { }
         )
     }
-    actions.refresh = { clearCaches ->
+    actions.refresh = { clearCaches, atCenter ->
         scope.launch {
             if (clearCaches) CacheManager.clearAllCaches(context)
             cachedPois = emptyList()
@@ -114,16 +118,28 @@ fun rememberMapDataState(
             trafficInfo = null
             mapErrorMessage = null
             isErrorPaused = false
-            retryCount++
+            val sample = atCenter ?: lastCameraSample
+            if (sample != null) {
+                refreshRequestFlow.emit(sample)
+            } else {
+                retryCount++
+            }
         }
     }
     actions.clearError = {
         mapErrorMessage = null
     }
-    actions.retry = {
+    actions.retry = { atCenter ->
         mapErrorMessage = null
         isErrorPaused = false
-        retryCount++
+        scope.launch {
+            val sample = atCenter ?: lastCameraSample
+            if (sample != null) {
+                refreshRequestFlow.emit(sample)
+            } else {
+                retryCount++
+            }
+        }
     }
     actions.invalidate = {
         retryCount++
@@ -136,7 +152,8 @@ fun rememberMapDataState(
             requestLocationPermission()
         }
 
-        cameraFlow.collectLatest { sample ->
+        merge(cameraFlow, refreshRequestFlow).collectLatest { sample ->
+            lastCameraSample = sample
             if (isErrorPaused) return@collectLatest
 
             val centerLat = sample.centerLat
@@ -238,14 +255,14 @@ fun rememberMapDataState(
 
 @Stable
 class MapDataActions(
-    refresh: (clearCaches: Boolean) -> Unit,
+    refresh: (clearCaches: Boolean, atCenter: MapCameraSample?) -> Unit,
     clearError: () -> Unit,
-    retry: () -> Unit,
+    retry: (atCenter: MapCameraSample?) -> Unit,
     invalidate: () -> Unit
 ) {
-    var refresh: (clearCaches: Boolean) -> Unit = refresh
+    var refresh: (clearCaches: Boolean, atCenter: MapCameraSample?) -> Unit = refresh
     var clearError: () -> Unit = clearError
-    var retry: () -> Unit = retry
+    var retry: (atCenter: MapCameraSample?) -> Unit = retry
     var invalidate: () -> Unit = invalidate
 }
 

@@ -176,6 +176,13 @@ fun VectorMapScreen(
         settings.effectiveProvidersAt(currentTarget.latitude, currentTarget.longitude)
     }
 
+    fun currentMapCameraSample(): MapCameraSample {
+        val pos = mapLibreMap?.cameraPosition ?: cameraPosition
+        val target = pos?.target ?: LatLng(defaultLat, defaultLng)
+        val zoom = (pos?.zoom ?: defaultZoom).toFloat()
+        return MapCameraSample(target.latitude, target.longitude, zoom)
+    }
+
     val cameraFlow = remember {
         snapshotFlow { cameraPosition }
             .filterNotNull()
@@ -231,7 +238,7 @@ fun VectorMapScreen(
         mapCenterLongitude = currentTarget.longitude,
         onBack = onBack,
         onRefresh = {
-            mapActions.refresh(true)
+            mapActions.refresh(true, currentMapCameraSample())
         },
         onLocateMe = {
             scope.launch {
@@ -271,7 +278,7 @@ fun VectorMapScreen(
                     message = msg,
                     onCopy = onCopy,
                     onIgnore = mapActions.clearError,
-                    onRetry = mapActions.retry
+                    onRetry = { mapActions.retry(currentMapCameraSample()) }
                 )
             }
 
