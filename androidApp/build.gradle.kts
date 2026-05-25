@@ -63,7 +63,8 @@ configure<ApplicationExtension> {
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
 
-        val githubToken = sanitizeBuildConfigString(requireProp("GITHUB_TOKEN"))
+        // Optional: GitHub PAT for in-app GitHub features (user can also configure at runtime).
+        val githubToken = sanitizeBuildConfigString(prop("GITHUB_TOKEN"))
         val googleWebClientId = sanitizeBuildConfigString(requireProp("GOOGLE_WEB_CLIENT_ID"))
         val mobiliteitLuxembourgKey = sanitizeBuildConfigString(requireProp("MOBILITEIT_LUXEMBOURG_KEY"))
         val tomtomKey = sanitizeBuildConfigString(requireProp("TOMTOM_KEY"))
