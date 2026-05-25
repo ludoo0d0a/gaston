@@ -1,9 +1,15 @@
+buildscript {
+    dependencies {
+        // AGP 9 built-in Kotlin: pin KGP above AGP’s default (2.2.10)
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
+    }
+}
+
 plugins {
     //trick: for the same plugin versions in all sub-modules
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.androidLibrary) apply false
     alias(libs.plugins.androidKotlinMultiplatformLibrary) apply false
-    alias(libs.plugins.kotlinAndroid) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.kotlinSerialization) apply false

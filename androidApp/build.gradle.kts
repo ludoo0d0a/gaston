@@ -1,5 +1,4 @@
 import com.android.build.api.dsl.ApplicationExtension
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -11,7 +10,6 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.kotlinAndroid)
     // Only apply Google Services when the local (uncommitted) google-services.json is present.
     // This keeps CI/clean checkouts buildable without secrets.
     if (File("google-services.json").exists()) {
@@ -295,12 +293,5 @@ dependencies {
 
     // Ads (AdMob)
     implementation(libs.play.services.ads)
-}
-android {
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
 }
 

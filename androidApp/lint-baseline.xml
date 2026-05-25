@@ -1,70 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<issues format="6" by="lint 9.0.0" type="baseline" client="gradle" dependencies="false" name="AGP (9.0.0)" variant="all" version="9.0.0">
+<issues format="6" by="lint 9.2.1" type="baseline" client="gradle" dependencies="true" name="AGP (9.2.1)" variant="all" version="9.2.1">
 
     <issue
-        id="MissingPermission"
-        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
-        errorLine1="            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                    String.format(&quot;%.6f&quot;, latitude),"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="214"
-            column="28"/>
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoEmergencyScreen.kt"
+            line="130"
+            column="21"/>
     </issue>
 
     <issue
-        id="MissingPermission"
-        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
-        errorLine1="                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                    String.format(&quot;%.6f&quot;, longitude)"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="215"
-            column="20"/>
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoEmergencyScreen.kt"
+            line="131"
+            column="21"/>
     </issue>
 
     <issue
-        id="MissingPermission"
-        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
-        errorLine1="                val carAudioRecord = CarAudioRecord.create(carContext)"
-        errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="            &quot;${String.format(&quot;%.6f&quot;, latitude)}, ${String.format(&quot;%.6f&quot;, longitude)}&quot;"
+        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidVoiceManager.kt"
-            line="310"
-            column="38"/>
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoNetworkLocationInfoScreen.kt"
+            line="158"
+            column="16"/>
     </issue>
 
     <issue
-        id="MissingPermission"
-        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
-        errorLine1="            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="            &quot;${String.format(&quot;%.6f&quot;, latitude)}, ${String.format(&quot;%.6f&quot;, longitude)}&quot;"
+        errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidWeatherLookup.kt"
-            line="36"
-            column="28"/>
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoNetworkLocationInfoScreen.kt"
+            line="158"
+            column="52"/>
     </issue>
 
     <issue
-        id="MissingPermission"
-        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
-        errorLine1="                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        id="OldTargetApi"
+        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the `android.os.Build.VERSION_CODES` javadoc for details."
+        errorLine1="        targetSdk = 35"
+        errorLine2="        ~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidWeatherLookup.kt"
-            line="37"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="WrongConstant"
-        message="Must be one of: Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST, Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS, Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY, Player.PLAY_WHEN_READY_CHANGE_REASON_REMOTE, Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM, Player.PLAY_WHEN_READY_CHANGE_REASON_SUPPRESSED_TOO_LONG"
-        errorLine1="                .setPlayWhenReady(playWhenReady, Player.PLAYBACK_SUPPRESSION_REASON_NONE)"
-        errorLine2="                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidVoiceManager.kt"
-            line="119"
-            column="50"/>
+            file="build.gradle.kts"
+            line="30"
+            column="9"/>
     </issue>
 
     <issue
@@ -73,26 +62,26 @@
         errorLine1="                val result = credentialManager.getCredential(context, request)"
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/GoogleAuthManager.kt"
-            line="47"
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="58"
             column="30"/>
     </issue>
 
     <issue
-        id="CredentialManagerSignInWithGoogle"
-        message="Use of `:googleid` classes without use of `GoogleIdTokenCredential.createFrom`"
-        errorLine1="        val googleIdOption = GetGoogleIdOption.Builder()"
-        errorLine2="                             ~~~~~~~~~~~~~~~~~">
+        id="NonObservableLocale"
+        message="Reading locale in a non-observable way in a composable function"
+        errorLine1="                    val timestamp = SimpleDateFormat(&quot;yyyy-MM-dd HH:mm:ss&quot;, Locale.getDefault()).format(Date(error.timestamp))"
+        errorLine2="                                                                            ~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/GoogleAuthManager.kt"
-            line="34"
-            column="30"/>
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="1940"
+            column="77"/>
     </issue>
 
     <issue
         id="AndroidGradlePluginVersion"
-        message="A newer version of Gradle than 9.1.0 is available: 9.4.1"
-        errorLine1="distributionUrl=https\://services.gradle.org/distributions/gradle-9.1.0-bin.zip"
+        message="A newer version of Gradle than 9.4.1 is available: 9.5.1"
+        errorLine1="distributionUrl=https\://services.gradle.org/distributions/gradle-9.4.1-bin.zip"
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="../gradle/wrapper/gradle-wrapper.properties"
@@ -101,311 +90,443 @@
     </issue>
 
     <issue
-        id="AndroidGradlePluginVersion"
-        message="A newer version of com.android.application than 9.0.0 is available: 9.1.0. (There is also a newer version of 9.0.𝑥 available, if upgrading to 9.1.0 is difficult: 9.0.1)"
-        errorLine1="agp = &quot;9.0.0&quot;"
-        errorLine2="      ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="2"
-            column="7"/>
-    </issue>
-
-    <issue
-        id="AndroidGradlePluginVersion"
-        message="A newer version of com.android.kotlin.multiplatform.library than 9.0.0 is available: 9.1.0. (There is also a newer version of 9.0.𝑥 available, if upgrading to 9.1.0 is difficult: 9.0.1)"
-        errorLine1="agp = &quot;9.0.0&quot;"
-        errorLine2="      ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="2"
-            column="7"/>
-    </issue>
-
-    <issue
-        id="AndroidGradlePluginVersion"
-        message="A newer version of com.android.library than 9.0.0 is available: 9.1.0. (There is also a newer version of 9.0.𝑥 available, if upgrading to 9.1.0 is difficult: 9.0.1)"
-        errorLine1="agp = &quot;9.0.0&quot;"
-        errorLine2="      ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="2"
-            column="7"/>
-    </issue>
-
-    <issue
         id="GradleDependency"
-        message="A newer version of androidx.compose.foundation:foundation-layout than 1.10.4 is available: 1.10.5"
-        errorLine1="compose = &quot;1.10.4&quot;"
+        message="A newer version of androidx.compose.foundation:foundation-layout than 1.11.1 is available: 1.11.2"
+        errorLine1="compose = &quot;1.11.1&quot;"
         errorLine2="          ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="4"
+            line="6"
             column="11"/>
     </issue>
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.compose.runtime:runtime than 1.10.4 is available: 1.10.5"
-        errorLine1="compose = &quot;1.10.4&quot;"
+        message="A newer version of androidx.compose.runtime:runtime than 1.11.1 is available: 1.11.2"
+        errorLine1="compose = &quot;1.11.1&quot;"
         errorLine2="          ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="4"
+            line="6"
             column="11"/>
     </issue>
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.compose.ui:ui than 1.10.4 is available: 1.10.5"
-        errorLine1="compose = &quot;1.10.4&quot;"
+        message="A newer version of androidx.compose.ui:ui than 1.11.1 is available: 1.11.2"
+        errorLine1="compose = &quot;1.11.1&quot;"
         errorLine2="          ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="4"
+            line="6"
             column="11"/>
     </issue>
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.compose.ui:ui-tooling than 1.10.4 is available: 1.10.5"
-        errorLine1="compose = &quot;1.10.4&quot;"
+        message="A newer version of androidx.compose.ui:ui-test-junit4 than 1.11.1 is available: 1.11.2"
+        errorLine1="compose = &quot;1.11.1&quot;"
         errorLine2="          ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="4"
+            line="6"
             column="11"/>
     </issue>
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.compose.ui:ui-tooling-preview than 1.10.4 is available: 1.10.5"
-        errorLine1="compose = &quot;1.10.4&quot;"
+        message="A newer version of androidx.compose.ui:ui-test-manifest than 1.11.1 is available: 1.11.2"
+        errorLine1="compose = &quot;1.11.1&quot;"
         errorLine2="          ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="4"
+            line="6"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.ui:ui-tooling than 1.11.1 is available: 1.11.2"
+        errorLine1="compose = &quot;1.11.1&quot;"
+        errorLine2="          ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="6"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.ui:ui-tooling-preview than 1.11.1 is available: 1.11.2"
+        errorLine1="compose = &quot;1.11.1&quot;"
+        errorLine2="          ~~~~~~~~">
+        <location
+            file="../gradle/libs.versions.toml"
+            line="6"
             column="11"/>
     </issue>
 
     <issue
         id="GradleDependency"
         message="Upgrade `androidx.compose.foundation` for keyboard and mouse support"
-        errorLine1="compose = &quot;1.10.4&quot;"
+        errorLine1="compose = &quot;1.11.1&quot;"
         errorLine2="          ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="4"
+            line="6"
             column="11"/>
     </issue>
 
     <issue
         id="GradleDependency"
-        message="A newer version of androidx.activity:activity-compose than 1.12.4 is available: 1.13.0"
-        errorLine1="androidx-activityCompose = &quot;1.12.4&quot;"
-        errorLine2="                           ~~~~~~~~">
+        message="A newer version of com.google.android.gms:play-services-ads than 25.2.0 is available: 25.3.0"
+        errorLine1="play-services-ads = &quot;25.2.0&quot;"
+        errorLine2="                    ~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="7"
-            column="28"/>
+            line="25"
+            column="21"/>
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of androidx.media3:media3-common than 1.9.2 is available: 1.9.3"
-        errorLine1="media3 = &quot;1.9.2&quot;"
-        errorLine2="         ~~~~~~~">
+        id="NewerVersionAvailable"
+        message="A newer version of org.junit.jupiter:junit-jupiter-api than 6.0.3 is available: 6.1.0"
+        errorLine1="junit-jupiter = &quot;6.0.3&quot;"
+        errorLine2="                ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
             line="16"
-            column="10"/>
+            column="17"/>
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of androidx.media3:media3-session than 1.9.2 is available: 1.9.3"
-        errorLine1="media3 = &quot;1.9.2&quot;"
-        errorLine2="         ~~~~~~~">
+        id="NewerVersionAvailable"
+        message="A newer version of org.junit.jupiter:junit-jupiter-engine than 6.0.3 is available: 6.1.0"
+        errorLine1="junit-jupiter = &quot;6.0.3&quot;"
+        errorLine2="                ~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
             line="16"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.credentials:credentials than 1.5.0-rc01 is available: 1.5.0"
-        errorLine1="androidx-credentials = &quot;1.5.0-rc01&quot;"
-        errorLine2="                       ~~~~~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="22"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.credentials:credentials-play-services-auth than 1.5.0-rc01 is available: 1.5.0"
-        errorLine1="androidx-credentials = &quot;1.5.0-rc01&quot;"
-        errorLine2="                       ~~~~~~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="22"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of com.google.android.libraries.identity.googleid:googleid than 1.1.1 is available: 1.2.0"
-        errorLine1="googleid = &quot;1.1.1&quot;"
-        errorLine2="           ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="23"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.room:room-compiler than 2.6.1 is available: 2.8.4"
-        errorLine1="androidx-room = &quot;2.6.1&quot;"
-        errorLine2="                ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="24"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.room:room-ktx than 2.6.1 is available: 2.8.4"
-        errorLine1="androidx-room = &quot;2.6.1&quot;"
-        errorLine2="                ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="24"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.room:room-runtime than 2.6.1 is available: 2.8.4"
-        errorLine1="androidx-room = &quot;2.6.1&quot;"
-        errorLine2="                ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="24"
             column="17"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of org.robolectric:robolectric than 4.14.1 is available: 4.16.1"
-        errorLine1="    testImplementation(&quot;org.robolectric:robolectric:4.14.1&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        message="A newer version of com.revenuecat.purchases:purchases-kmp-core than 2.10.2+17.55.1 is available: 3.0.2"
+        errorLine1="revenuecat = &quot;2.10.2+17.55.1&quot;"
+        errorLine2="             ~~~~~~~~~~~~~~~~">
         <location
-            file="build.gradle.kts"
-            line="220"
-            column="24"/>
+            file="../gradle/libs.versions.toml"
+            line="34"
+            column="14"/>
     </issue>
 
     <issue
         id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlin.android than 2.3.0 is available: 2.3.20"
-        errorLine1="kotlin = &quot;2.3.0&quot;"
-        errorLine2="         ~~~~~~~">
+        message="A newer version of com.revenuecat.purchases:purchases-kmp-ui than 2.10.2+17.55.1 is available: 3.0.2"
+        errorLine1="revenuecat = &quot;2.10.2+17.55.1&quot;"
+        errorLine2="             ~~~~~~~~~~~~~~~~">
         <location
             file="../gradle/libs.versions.toml"
-            line="3"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlin.multiplatform than 2.3.0 is available: 2.3.20"
-        errorLine1="kotlin = &quot;2.3.0&quot;"
-        errorLine2="         ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="3"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlin.plugin.compose than 2.3.0 is available: 2.3.20"
-        errorLine1="kotlin = &quot;2.3.0&quot;"
-        errorLine2="         ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="3"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlin.plugin.serialization than 2.3.0 is available: 2.3.20"
-        errorLine1="kotlin = &quot;2.3.0&quot;"
-        errorLine2="         ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="3"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.insert-koin:koin-android than 4.1.1 is available: 4.2.0"
-        errorLine1="koin = &quot;4.1.1&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="12"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.insert-koin:koin-core than 4.1.1 is available: 4.2.0"
-        errorLine1="koin = &quot;4.1.1&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="12"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of com.google.maps.android:maps-compose than 8.2.0 is available: 8.2.2"
-        errorLine1="maps-compose = &quot;8.2.0&quot;"
-        errorLine2="               ~~~~~~~">
-        <location
-            file="../gradle/libs.versions.toml"
-            line="18"
-            column="16"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="        AndroidVoiceManager(androidContext(), get())"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/di/AppModule.kt"
-            line="194"
-            column="9"/>
+            line="34"
+            column="14"/>
     </issue>
 
     <issue
         id="ConfigurationScreenWidthHeight"
         message="Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize"
-        errorLine1="                val maxHeight = configuration.screenHeightDp.dp * 0.15f"
-        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="                val mapPaddingBottom = if (selectedPoi != null) (configuration.screenHeightDp * 0.4f).dp else 0.dp"
+        errorLine2="                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/fr/geoking/gaston/ui/MapScreen.kt"
-            line="300"
+            line="406"
+            column="66"/>
+    </issue>
+
+    <issue
+        id="ConfigurationScreenWidthHeight"
+        message="Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize"
+        errorLine1="    val maxHeight = configuration.screenHeightDp.dp * 0.15f"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/MapScreensShared.kt"
+            line="261"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="ConfigurationScreenWidthHeight"
+        message="Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize"
+        errorLine1="            val cardHeight = (configuration.screenHeightDp * 0.85f).dp"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/PoiOverlayHost.kt"
+            line="255"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="ConfigurationScreenWidthHeight"
+        message="Using Configuration.screenWidthDp instead of LocalWindowInfo.current.containerSize"
+        errorLine1="                            .width(configuration.screenWidthDp.dp)"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/PoiOverlayHost.kt"
+            line="268"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="ConfigurationScreenWidthHeight"
+        message="Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize"
+        errorLine1="                val mapPaddingBottom = if (selectedPoi != null) (configuration.screenHeightDp * 0.4f).dp else 0.dp"
+        errorLine2="                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/maplibre/VectorMapScreen.kt"
+            line="313"
+            column="66"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="            address = context.getString(R.string.emergency_gps_unavailable)"
+        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/EmergencyScreen.kt"
+            line="109"
+            column="23"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="            address = context.getString(R.string.location_not_available)"
+        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/PhoneNetworkLocationScreen.kt"
+            line="72"
+            column="23"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                    error = context.getString(R.string.route_location_permission_required)"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
+            line="879"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                    error = context.getString(R.string.route_could_not_get_location)"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
+            line="885"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                Pair(context.getString(R.string.network_current_location), loc.latitude to loc.longitude)"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
+            line="888"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                        error = context.getString(R.string.route_origin_not_found)"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
+            line="895"
             column="33"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                        error = context.getString(R.string.route_destination_not_found)"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
+            line="908"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                error = context.getString(R.string.route_no_route_found)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
+            line="945"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="        context.getString(poiProviderLabelRes(type))"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="437"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="            &quot;GLOBAL&quot; -> context.getString(R.string.country_global)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="442"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="            &quot;EU&quot; -> context.getString(R.string.country_europe)"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="443"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="            &quot;PT-AC&quot; -> context.getString(R.string.country_portugal_azores)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="444"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="            &quot;PT-MA&quot; -> context.getString(R.string.country_portugal_madeira)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="445"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="            &quot;ES-CN&quot; -> context.getString(R.string.country_spain_canary)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="446"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="            &quot;ES-IB&quot; -> context.getString(R.string.country_spain_balearic)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="447"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                            snackbarHostState.showSnackbar(context.getString(R.string.cache_cleared))"
+        errorLine2="                                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="914"
+            column="60"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                                                        context.getString(R.string.sign_out_failed)"
+        errorLine2="                                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="1016"
+            column="57"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                                                        error ?: context.getString(R.string.sign_in_failed)"
+        errorLine2="                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="1031"
+            column="66"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                context.getString(R.string.toll_file_info, sizeStr, dateStr)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="1133"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                                                ?: context.getString(R.string.download_failed)"
+        errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="1201"
+            column="52"/>
+    </issue>
+
+    <issue
+        id="LocalContextGetResourceValueCall"
+        message="Querying resource values using LocalContext.current"
+        errorLine1="                                val httpCode = error.httpCode?.let { context.getString(R.string.error_log_http, it) }"
+        errorLine2="                                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
+            line="1913"
+            column="70"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Optional Modifier parameter should have a default value of `Modifier`"
+        errorLine1="private fun MarketingBrandIcon(iconRes: Int, modifier: Modifier = Modifier.size(40.dp)) {"
+        errorLine2="                                             ~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/marketing/MarketingScreenshots.kt"
+            line="307"
+            column="46"/>
     </issue>
 
     <issue
@@ -414,8 +535,8 @@
         errorLine1="    modifier: Modifier = Modifier"
         errorLine2="    ~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/ui/PhoneMainScreen.kt"
-            line="54"
+            file="src/main/kotlin/fr/geoking/gaston/ui/components/NetworkStatusIcon.kt"
+            line="38"
             column="5"/>
     </issue>
 
@@ -426,52 +547,1218 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/kotlin/fr/geoking/gaston/ui/map/PoiDetailCard.kt"
+            line="52"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UnrememberedMutableState"
+        message="Creating a state object during composition without using `remember`"
+        errorLine1="                            state = MarkerState(position = LatLng(poi.latitude, poi.longitude)),"
+        errorLine2="                                    ~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/MapScreen.kt"
+            line="479"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="UnrememberedMutableState"
+        message="Creating a state object during composition without using `remember`"
+        errorLine1="                            state = MarkerState(position = LatLng(lat, lon)),"
+        errorLine2="                                    ~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/MapScreen.kt"
+            line="501"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="MissingQuantity"
+        message="For locale &quot;fr&quot; (French) the following quantity should also be defined: `many` (e.g. &quot;1000000 de jours&quot;)"
+        errorLine1="    &lt;plurals name=&quot;points_count&quot;>"
+        errorLine2="    ^">
+        <location
+            file="src/main/res/values-fr/strings.xml"
+            line="611"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="MissingQuantity"
+        message="For locale &quot;fr&quot; (French) the following quantity should also be defined: `many` (e.g. &quot;1000000 de jours&quot;)"
+        errorLine1="    &lt;plurals name=&quot;available_count&quot;>"
+        errorLine2="    ^">
+        <location
+            file="src/main/res/values-fr/strings.xml"
+            line="615"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                        Log.i(&quot;AdMobBanner&quot;, &quot;Banner loaded (unitId=$adUnitId)&quot;)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/components/AdMobBanner.kt"
+            line="46"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                        Log.i(&quot;AdMobBanner&quot;, &quot;Banner loaded (unitId=$adUnitId)&quot;)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/components/AdMobBanner.kt"
+            line="46"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                        Log.e("
+        errorLine2="                        ^">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/components/AdMobBanner.kt"
+            line="50"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                        Log.e("
+        errorLine2="                        ^">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/components/AdMobBanner.kt"
+            line="50"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.i(&quot;AdMobBanner&quot;, &quot;Banner unit id changed -> reload (unitId=$adUnitId)&quot;)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/components/AdMobBanner.kt"
+            line="64"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(TAG, &quot;registerDefaultNetworkCallback failed (ACCESS_NETWORK_STATE?)&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/network/AndroidNetworkService.kt"
+            line="72"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.w(TAG, &quot;fetchCurrentStatus limited by permissions&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/network/AndroidNetworkService.kt"
+            line="153"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                android.util.Log.e(&quot;AppModule&quot;, &quot;Database build/validation failed&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/di/AppModule.kt"
+            line="219"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        android.util.Log.d(&quot;AppModule&quot;, &quot;Building persistent Room database...&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/di/AppModule.kt"
+            line="224"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.w(&quot;AppModule&quot;, &quot;Persistent DB failed. Falling back to in-memory.&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/di/AppModule.kt"
+            line="232"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        Log.d(&quot;gastonNavigation&quot;, &quot;Android Auto Screens: ${screenNames.joinToString(&quot;, &quot;)}&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoDashboardScreen.kt"
+            line="44"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                    Log.e(&quot;AutoEmergency&quot;, &quot;Geocoding failed&quot;, e)"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoEmergencyScreen.kt"
+            line="87"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(&quot;AutoEmergency&quot;, &quot;Dialing failed&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoEmergencyScreen.kt"
+            line="194"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(&quot;AutoEmergency&quot;, &quot;Dialing failed&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoEmergencyScreen.kt"
+            line="246"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.w(&quot;AutoLibreMapLabScreen&quot;, &quot;SurfaceContainer.surface is null; skipping renderer start&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoLibreMapLabScreen.kt"
+            line="88"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.w(&quot;AutoLibreMapLabScreen&quot;, &quot;Skipping map surface: invalid size ${surfaceContainer.width}x${surfaceContainer.height}&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoLibreMapLabScreen.kt"
+            line="93"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                            Log.e(&quot;AutoLibreMapLabScreen&quot;, &quot;startCarApp failed&quot;, e)"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoLibreMapLabScreen.kt"
+            line="203"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.w(&quot;AutoMapTemplateScreen&quot;, &quot;Skipping map surface: invalid size ${surfaceContainer.width}x${surfaceContainer.height}&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoMapTemplateScreen.kt"
+            line="53"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                    Log.e(&quot;AutoNetworkInfo&quot;, &quot;Geocoding failed&quot;, e)"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoNetworkLocationInfoScreen.kt"
+            line="87"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.e(TAG, &quot;Failed to load POIs for search&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoPoiSearchScreen.kt"
+            line="71"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(&quot;AutoRoutePlanning&quot;, &quot;onGetTemplate failed&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoRoutePlanningScreen.kt"
+            line="110"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.e(&quot;AutoRoutePlanning&quot;, &quot;Failed to show on map&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoRoutePlanningScreen.kt"
+            line="381"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                    Log.e(TAG, &quot;Failed to fetch tile $key&quot;, e)"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoSurfaceRenderer.kt"
+            line="507"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.e(&quot;CacheManager&quot;, &quot;Error clearing PoiProvider cache&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/CacheManager.kt"
+            line="22"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.e(&quot;CacheManager&quot;, &quot;Error clearing DebugLogStore&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/CacheManager.kt"
+            line="29"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                android.util.Log.e(&quot;CacheManager&quot;, &quot;Error clearing Coil cache&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/CacheManager.kt"
+            line="40"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                android.util.Log.e(&quot;CacheManager&quot;, &quot;Error clearing cache directory&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/CacheManager.kt"
             line="55"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.e(TAG, &quot;Failed to load map dependencies&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/CarAppSession.kt"
+            line="82"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.e(TAG, &quot;onNewIntent: mapDeps is null&quot;)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/CarAppSession.kt"
+            line="94"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(TAG, &quot;Failed to create Android Auto root screen&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/CarAppSession.kt"
+            line="158"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="    Log.e(logTag, &quot;onGetTemplate FAILED — screen=$logTag template=${templateName ?: &quot;?&quot;}&quot;, e)"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/CarTemplateSafe.kt"
+            line="32"
             column="5"/>
     </issue>
 
     <issue
-        id="ModifierParameter"
-        message="Modifier parameter should be the first optional parameter"
-        errorLine1="    modifier: Modifier = Modifier"
-        errorLine2="    ~~~~~~~~">
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.d("
+        errorLine2="            ^">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
-            line="1550"
+            file="src/main/kotlin/fr/geoking/gaston/auto/CustomMapPoiScreen.kt"
+            line="250"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.d(&quot;CustomMapPoiScreen&quot;, &quot;loadPois search center lat=$lat lon=$lon bearing=$lastKnownBearingDegrees&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/CustomMapPoiScreen.kt"
+            line="382"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.d("
+        errorLine2="                ^">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/CustomMapPoiScreen.kt"
+            line="403"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.e(&quot;CustomMapPoiScreen&quot;, &quot;getGasStations failed&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/CustomMapPoiScreen.kt"
+            line="422"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        Log.d(&quot;CustomMapPoiScreen&quot;, &quot;onSurfaceAvailable&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/CustomMapPoiScreen.kt"
+            line="582"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.w(&quot;CustomMapPoiScreen&quot;, &quot;SurfaceContainer.surface is null; skipping renderer start&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/CustomMapPoiScreen.kt"
+            line="590"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        Log.d(&quot;CustomMapPoiScreen&quot;, &quot;onVisibleAreaChanged: $visibleArea&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/CustomMapPoiScreen.kt"
+            line="634"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        Log.d(&quot;CustomMapPoiScreen&quot;, &quot;onSurfaceDestroyed&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/CustomMapPoiScreen.kt"
+            line="645"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(TAG, &quot;Failed to restore diagnostics&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/diagnostics/DiagnosticsPersistence.kt"
+            line="51"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(TAG, &quot;Failed to persist diagnostics&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/diagnostics/DiagnosticsPersistence.kt"
+            line="61"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.d(TAG, &quot;uploadSettings: success&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/settings/FirestoreSettingsSync.kt"
+            line="31"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(TAG, &quot;uploadSettings: failed&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/settings/FirestoreSettingsSync.kt"
+            line="33"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.d(TAG, &quot;downloadAndMerge: no remote settings found&quot;)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/settings/FirestoreSettingsSync.kt"
+            line="47"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(TAG, &quot;downloadAndMerge: failed&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/settings/FirestoreSettingsSync.kt"
+            line="54"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.e(&quot;FuelForecastRepository&quot;, &quot;Failed to refresh national averages&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/repository/FuelForecastRepository.kt"
+            line="298"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.e(&quot;FuelForecastScreen&quot;, &quot;Failed to refresh forecasts&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/FuelForecastScreen.kt"
+            line="97"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        android.util.Log.d(&quot;GastonApplication&quot;, &quot;onCreate start&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/GastonApplication.kt"
+            line="14"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.d(&quot;GastonApplication&quot;, &quot;Koin started OK&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/GastonApplication.kt"
+            line="23"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.e(&quot;GastonApplication&quot;, &quot;Koin/DI init failed&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/GastonApplication.kt"
+            line="26"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                android.util.Log.e(&quot;GastonApplication&quot;, &quot;AdMob init failed&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/GastonApplication.kt"
+            line="33"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        Log.d(TAG, &quot;signIn: clientId configured=${!isPlaceholder}, length=${clientId.length}&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="40"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.w(TAG, &quot;signIn: GOOGLE_WEB_CLIENT_ID is missing or placeholder; add it in GitHub secrets and rebuild&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="42"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.d(TAG, &quot;signIn: requesting credential...&quot;)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="57"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                    Log.d(TAG, &quot;signIn: got ID token, signing into Firebase...&quot;)"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="72"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                        Log.d(TAG, &quot;signIn: Firebase success user=$firstName&quot;)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="81"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                        Log.e(TAG, &quot;signIn: $msg&quot;, e)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="93"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                    Log.e(TAG, &quot;signIn: $msg&quot;)"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="99"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.e(TAG, &quot;signIn: GetCredentialException $detail&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="105"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.e(TAG, &quot;signIn: Exception $detail&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="110"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.d(TAG, &quot;signOut: success&quot;)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="134"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.e(TAG, &quot;signOut: $detail&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/auth/GoogleAuthManager.kt"
+            line="138"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.w(TAG, &quot;lastLocation failed&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/location/LocationHelper.kt"
+            line="30"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.d(TAG, &quot;Using fresh lastLocation from FusedLocationProviderClient&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/location/LocationHelper.kt"
+            line="34"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        Log.d(TAG, &quot;Requesting fresh location (priority=$priority, timeout=${timeoutMs}ms)&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/location/LocationHelper.kt"
+            line="39"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.d(TAG, &quot;Got fresh location from getCurrentLocation&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/location/LocationHelper.kt"
+            line="49"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        Log.d(TAG, &quot;Fresh update timed out or failed, using last known location&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/location/LocationHelper.kt"
+            line="54"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.d(TAG, &quot;Using stored location from settings: ${settings.lastKnownLat}, ${settings.lastKnownLon}&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/location/LocationHelper.kt"
+            line="71"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        Log.d(TAG, &quot;No GPS and no stored location, falling back to Paris&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/location/LocationHelper.kt"
+            line="76"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.e(&quot;MainActivity&quot;, &quot;ensureMapDeps: failed to load map dependencies&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="124"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        android.util.Log.d(&quot;MainActivity&quot;, &quot;onCreate start&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="138"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.e(&quot;MainActivity&quot;, &quot;Showing startup error (Koin failed)&quot;, appError)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="142"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                android.util.Log.e(&quot;MainActivity&quot;, &quot;setContent failed for StartupErrorContent&quot;, ce)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="146"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.d(&quot;MainActivity&quot;, &quot;Resolving Koin dependencies...&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="169"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.d(&quot;MainActivity&quot;, &quot;Dependencies resolved successfully.&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="175"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.d(&quot;MainActivity&quot;, &quot;Calling setContent...&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="177"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.d(&quot;MainActivity&quot;, &quot;setContent called successfully.&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="191"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.e(&quot;MainActivity&quot;, &quot;Startup failed&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="193"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                android.util.Log.e(&quot;MainActivity&quot;, &quot;setContent failed for StartupErrorContent (fallback)&quot;, ce)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="197"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.e(&quot;MainActivity&quot;, &quot;installMainComposeContent: setContent crashed&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="236"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                android.util.Log.e(&quot;MainActivity&quot;, &quot;installMainComposeContent: fallback setContent crashed&quot;, ce)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="240"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="    android.util.Log.d(&quot;MainActivity&quot;, &quot;Compose setContent block running&quot;)"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="268"
             column="5"/>
     </issue>
 
     <issue
-        id="ModifierParameter"
-        message="Modifier parameter should be the first optional parameter"
-        errorLine1="    modifier: Modifier = Modifier"
-        errorLine2="    ~~~~~~~~">
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        android.util.Log.d(&quot;MainActivity&quot;, &quot;Compose first frame&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/ui/components/VoiceMainContent.kt"
-            line="45"
+            file="src/main/kotlin/fr/geoking/gaston/MainActivity.kt"
+            line="278"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.d(&quot;MapModuleLoader&quot;, &quot;Loading map module (first map open)&quot;)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/di/MapModule.kt"
+            line="449"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.e(&quot;NativeMapPoiScreen&quot;, &quot;loadPois failed&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/NativeMapPoiScreen.kt"
+            line="102"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                        android.util.Log.e(&quot;PhoneDashboardScreen&quot;, &quot;Failed to fetch nearby POIs&quot;, e)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/PhoneDashboardScreen.kt"
+            line="212"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            android.util.Log.e(&quot;PhoneDashboardScreen&quot;, &quot;Fuel forecast refresh failed&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/PhoneDashboardScreen.kt"
+            line="296"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.e(&quot;RoutePreviewScreen&quot;, &quot;Failed to load routes&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/RoutePreviewScreen.kt"
+            line="61"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(&quot;RoutePreviewScreen&quot;, &quot;Error building template&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/RoutePreviewScreen.kt"
+            line="96"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                    Log.e(&quot;SelectorPoiProvider&quot;, &quot;Failed to cleanup old POIs&quot;, e)"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/poi/SelectorPoiProvider.kt"
+            line="328"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(&quot;SelectorPoiProvider&quot;, &quot;Failed to resolve providers from settings&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/poi/SelectorPoiProvider.kt"
+            line="353"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="                Log.e(&quot;SelectorPoiProvider&quot;, &quot;Failed to query DB cache&quot;, e)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/poi/SelectorPoiProvider.kt"
+            line="404"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(&quot;SelectorPoiProvider&quot;, &quot;Failed to persist POIs&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/poi/SelectorPoiProvider.kt"
+            line="527"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(&quot;SelectorPoiProvider&quot;, &quot;Failed to resolve providers from settings&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/poi/SelectorPoiProvider.kt"
+            line="554"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(&quot;SelectorPoiProvider&quot;, &quot;Failed to query DB cache&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/poi/SelectorPoiProvider.kt"
+            line="598"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(&quot;SelectorPoiProvider&quot;, &quot;Failed to persist POIs&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/poi/SelectorPoiProvider.kt"
+            line="676"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        Log.d(&quot;SelectorPoiProvider&quot;, &quot;search providers=$providers categories=$categoriesToFetch skipFilters=${request.skipFilters} -> ${result.size} pois&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/poi/SelectorPoiProvider.kt"
+            line="681"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="            Log.e(&quot;SelectorPoiProvider&quot;, &quot;Failed to resolve providers from settings&quot;, e)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/poi/SelectorPoiProvider.kt"
+            line="774"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="LogNotTimber"
+        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
+        errorLine1="        Log.d(&quot;SelectorPoiProvider&quot;, &quot;selected=$providers lat=$latitude lon=$longitude -> ${result.size} pois (energy+power+operator+connector filter)&quot;)"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/poi/SelectorPoiProvider.kt"
+            line="800"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;sources&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;filter_sources_on&quot;>%1$d sources on — tap to turn all off&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="232"
             column="5"/>
     </issue>
 
     <issue
-        id="ModifierParameter"
-        message="Modifier parameter should be the first optional parameter"
-        errorLine1="    modifier: Modifier = Modifier"
-        errorLine2="    ~~~~~~~~">
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;sources&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;filter_sources_off&quot;>%1$d sources off — tap to enable all&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/ui/components/VoiceStatusContent.kt"
-            line="78"
+            file="src/main/res/values/strings.xml"
+            line="233"
             column="5"/>
     </issue>
 
     <issue
-        id="UnusedBoxWithConstraintsScope"
-        message="BoxWithConstraints scope is not used"
-        errorLine1="    ) {"
-        errorLine2="      ^">
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;local&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;emergency_contacts_count&quot;>%1$d local emergency contacts&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/ui/PhoneMainScreen.kt"
-            line="77"
-            column="7"/>
+            file="src/main/res/values/strings.xml"
+            line="262"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;events&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;route_traffic_summary&quot;>Traffic (%1$s): %2$d events on %3$s&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="522"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;charging&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;poi_charge_points&quot;>%1$d charging points&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="571"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PluralsCandidate"
+        message="Formatting %d followed by words (&quot;available&quot;): This should probably be a plural rather than a string"
+        errorLine1="    &lt;string name=&quot;poi_availability&quot;>%1$d / %2$d available&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="572"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ChromeOsAbiSupport"
+        message="Missing x86_64 ABI support for ChromeOS"
+        errorLine1="            abiFilters += listOf(&quot;armeabi-v7a&quot;, &quot;arm64-v8a&quot;)"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="28"
+            column="27"/>
     </issue>
 
     <issue
@@ -481,7 +1768,7 @@
         errorLine2="         ~~~~~~~">
         <location
             file="src/main/AndroidManifest.xml"
-            line="56"
+            line="58"
             column="10"/>
     </issue>
 
@@ -494,6 +1781,28 @@
             file="src/main/AndroidManifest.xml"
             line="8"
             column="36"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 26"
+        errorLine1="        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/network/AndroidNetworkService.kt"
+            line="203"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 26"
+        errorLine1="        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/feature/notification/NotificationHelper.kt"
+            line="30"
+            column="13"/>
     </issue>
 
     <issue
@@ -517,12 +1826,12 @@
     <issue
         id="AutoboxingStateCreation"
         message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
-        errorLine1="        mutableStateOf("
-        errorLine2="        ~~~~~~~~~~~~~~">
+        errorLine1="    var refreshTick by remember { mutableStateOf(0) }"
+        errorLine2="                                  ~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/ui/components/FilterFab.kt"
-            line="32"
-            column="9"/>
+            file="src/main/kotlin/fr/geoking/gaston/ui/FuelForecastScreen.kt"
+            line="84"
+            column="35"/>
     </issue>
 
     <issue
@@ -531,9 +1840,20 @@
         errorLine1="    var retryCount by remember { mutableStateOf(0) }"
         errorLine2="                                 ~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/ui/MapScreen.kt"
-            line="111"
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/MapScreensShared.kt"
+            line="96"
             column="34"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="        val ratingState = remember(poi.id) { mutableStateOf(settingsManager.getPoiRating(poi.id)) }"
+        errorLine2="                                             ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/PoiOverlayHost.kt"
+            line="316"
+            column="46"/>
     </issue>
 
     <issue
@@ -543,29 +1863,51 @@
         errorLine2="                                       ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
-            line="94"
+            line="151"
             column="40"/>
     </issue>
 
     <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var originFieldHeight by remember { mutableStateOf(0) }"
+        errorLine2="                                        ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
+            line="175"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var destFieldHeight by remember { mutableStateOf(0) }"
+        errorLine2="                                      ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
+            line="176"
+            column="39"/>
+    </issue>
+
+    <issue
         id="UnusedResources"
-        message="The resource `R.drawable.ic_brand_casino` appears to be unused"
-        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        message="The resource `R.drawable.auto_theme_active` appears to be unused"
+        errorLine1="&lt;layer-list xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
         errorLine2="^">
         <location
-            file="src/main/res/drawable/ic_brand_casino.xml"
-            line="2"
+            file="src/main/res/drawable/auto_theme_active.xml"
+            line="3"
             column="1"/>
     </issue>
 
     <issue
         id="UnusedResources"
-        message="The resource `R.drawable.ic_brand_casino_rounded` appears to be unused"
-        errorLine1="&lt;layer-list xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        message="The resource `R.drawable.ic_brand_ibis` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
         errorLine2="^">
         <location
-            file="src/main/res/drawable/ic_brand_casino_rounded.xml"
-            line="1"
+            file="src/main/res/drawable/ic_brand_ibis.xml"
+            line="2"
             column="1"/>
     </issue>
 
@@ -593,24 +1935,240 @@
 
     <issue
         id="UnusedResources"
-        message="The resource `R.drawable.ic_brand_intermarche` appears to be unused"
+        message="The resource `R.drawable.ic_brand_mercure` appears to be unused"
         errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
         errorLine2="^">
         <location
-            file="src/main/res/drawable/ic_brand_intermarche.xml"
+            file="src/main/res/drawable/ic_brand_mercure.xml"
             line="2"
             column="1"/>
     </issue>
 
     <issue
         id="UnusedResources"
-        message="The resource `R.drawable.ic_brand_intermarche_rounded` appears to be unused"
+        message="The resource `R.drawable.ic_brand_novotel` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_brand_novotel.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_car` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_car.xml"
+            line="6"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_car_rounded` appears to be unused"
         errorLine1="&lt;layer-list xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
         errorLine2="^">
         <location
-            file="src/main/res/drawable/ic_brand_intermarche_rounded.xml"
+            file="src/main/res/drawable/ic_car_rounded.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_directions_car_rounded` appears to be unused"
+        errorLine1="&lt;layer-list xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_directions_car_rounded.xml"
             line="1"
             column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.mipmap.ic_launcher_foreground` appears to be unused">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher_foreground.png"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_location_on` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_location_on.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_place` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_place.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_poi_electric_marker` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_poi_electric_marker.xml"
+            line="7"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_search` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_search.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_sos_rounded` appears to be unused"
+        errorLine1="&lt;layer-list xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_sos_rounded.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_stop` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_stop.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_swap_horiz` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_swap_horiz.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_waypoint` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_waypoint.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_waypoint_rounded` appears to be unused"
+        errorLine1="&lt;layer-list xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_waypoint_rounded.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.filter_chip_my_favorites` appears to be unused"
+        errorLine1="    &lt;string name=&quot;filter_chip_my_favorites&quot;>My favorites&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="29"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.filter_section_amenities` appears to be unused"
+        errorLine1="    &lt;string name=&quot;filter_section_amenities&quot;>Amenities (Overpass)&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="30"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.filter_section_connectors` appears to be unused"
+        errorLine1="    &lt;string name=&quot;filter_section_connectors&quot;>Connectors&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="31"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.filter_section_favorites` appears to be unused"
+        errorLine1="    &lt;string name=&quot;filter_section_favorites&quot;>Favorites&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="32"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.filter_section_fuel_types` appears to be unused"
+        errorLine1="    &lt;string name=&quot;filter_section_fuel_types&quot;>Fuel Types&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="33"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.filters_with_count` appears to be unused"
+        errorLine1="    &lt;string name=&quot;filters_with_count&quot;>Filters (%1$d)&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="36"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.for_my_car` appears to be unused"
+        errorLine1="    &lt;string name=&quot;for_my_car&quot;>For my vehicle&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="37"
+            column="13"/>
     </issue>
 
     <issue
@@ -620,8 +2178,659 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="4"
+            line="39"
             column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.search_filters` appears to be unused"
+        errorLine1="    &lt;string name=&quot;search_filters&quot;>Search Filters&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="45"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.vehicle_energy_fuel` appears to be unused"
+        errorLine1="    &lt;string name=&quot;vehicle_energy_fuel&quot;>Fuel&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="54"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.vehicle_energy_hybrid` appears to be unused"
+        errorLine1="    &lt;string name=&quot;vehicle_energy_hybrid&quot;>Gas &amp;amp; Electric&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="55"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.vehicle_filters_active` appears to be unused"
+        errorLine1="    &lt;string name=&quot;vehicle_filters_active&quot;>Vehicle filters active: %1$s\nUsing your vehicle\&apos;s predefined preferences.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="56"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_orientation_north_up` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_orientation_north_up&quot;>North up&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="79"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_orientation_heading_up` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_orientation_heading_up&quot;>Heading up&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="80"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_show_logs` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_show_logs&quot;>Show Logs&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="100"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_fullscreen` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_fullscreen&quot;>Fullscreen&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="101"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_request_details` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_request_details&quot;>Request Details&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="102"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_body_viewer` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_body_viewer&quot;>Body Viewer&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="104"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.screen_favorites` appears to be unused"
+        errorLine1="    &lt;string name=&quot;screen_favorites&quot;>Favorites&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="110"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.screen_emergency` appears to be unused"
+        errorLine1="    &lt;string name=&quot;screen_emergency&quot;>Emergency&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="111"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.screen_route` appears to be unused"
+        errorLine1="    &lt;string name=&quot;screen_route&quot;>Route&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="112"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.screen_routes` appears to be unused"
+        errorLine1="    &lt;string name=&quot;screen_routes&quot;>Routes&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="113"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.screen_plan_route` appears to be unused"
+        errorLine1="    &lt;string name=&quot;screen_plan_route&quot;>Plan route&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="114"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.screen_operator` appears to be unused"
+        errorLine1="    &lt;string name=&quot;screen_operator&quot;>Opérateur&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="136"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.screen_opentolldata` appears to be unused"
+        errorLine1="    &lt;string name=&quot;screen_opentolldata&quot;>OpenTollData&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="167"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.map_level` appears to be unused"
+        errorLine1="    &lt;string name=&quot;map_level&quot;>Level %1$d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="181"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.dashboard_price_estimation_subtitle` appears to be unused"
+        errorLine1="    &lt;string name=&quot;dashboard_price_estimation_subtitle&quot;>Local estimate from market + nearby pumps&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="190"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.route_poi_fallback` appears to be unused"
+        errorLine1="    &lt;string name=&quot;route_poi_fallback&quot;>POI&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="203"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.energy_label` appears to be unused"
+        errorLine1="    &lt;string name=&quot;energy_label&quot;>Energy&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="215"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_current_theme` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_current_theme&quot;>Current: %1$s&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="253"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.settings_vehicle_summary` appears to be unused"
+        errorLine1="    &lt;string name=&quot;settings_vehicle_summary&quot;>%1$s, %2$d km&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="256"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.template_lab_current_mode` appears to be unused"
+        errorLine1="    &lt;string name=&quot;template_lab_current_mode&quot;>Current mode: %1$s&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="301"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.template_message` appears to be unused"
+        errorLine1="    &lt;string name=&quot;template_message&quot;>MessageTemplate&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="302"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.template_place_list_map` appears to be unused"
+        errorLine1="    &lt;string name=&quot;template_place_list_map&quot;>PlaceListMapTemplate&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="310"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.template_error` appears to be unused"
+        errorLine1="    &lt;string name=&quot;template_error&quot;>[%1$s] Template error&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="313"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.template_list_item` appears to be unused"
+        errorLine1="    &lt;string name=&quot;template_list_item&quot;>List Item %1$d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="322"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.template_list_item_desc` appears to be unused"
+        errorLine1="    &lt;string name=&quot;template_list_item_desc&quot;>Description for item %1$d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="323"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.template_grid_item` appears to be unused"
+        errorLine1="    &lt;string name=&quot;template_grid_item&quot;>Item %1$d&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="324"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.template_search_result` appears to be unused"
+        errorLine1="    &lt;string name=&quot;template_search_result&quot;>Result for \&apos;%1$s\&apos;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="328"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.template_selected_tab` appears to be unused"
+        errorLine1="    &lt;string name=&quot;template_selected_tab&quot;>Selected Tab: %1$s&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="338"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.template_sample_address` appears to be unused"
+        errorLine1="    &lt;string name=&quot;template_sample_address&quot;>Sample address&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="339"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.template_sample_name` appears to be unused"
+        errorLine1="    &lt;string name=&quot;template_sample_name&quot;>Sample&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="340"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.range_km` appears to be unused"
+        errorLine1="    &lt;string name=&quot;range_km&quot;>%1$d km&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="341"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.coords_format` appears to be unused"
+        errorLine1="    &lt;string name=&quot;coords_format&quot;>%1$.4f, %2$.4f&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="342"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.price_format` appears to be unused"
+        errorLine1="    &lt;string name=&quot;price_format&quot;>€%1$.2f&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="343"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.action_create_api_key` appears to be unused"
+        errorLine1="    &lt;string name=&quot;action_create_api_key&quot;>Create API key&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="389"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.emergency_useful_numbers_auto` appears to be unused"
+        errorLine1="    &lt;string name=&quot;emergency_useful_numbers_auto&quot;>Useful Numbers%1$s&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="455"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.fuel_sp95_slash` appears to be unused"
+        errorLine1="    &lt;string name=&quot;fuel_sp95_slash&quot;>SP95 / E10&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="506"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.network_type_operator` appears to be unused"
+        errorLine1="    &lt;string name=&quot;network_type_operator&quot;>Type: %1$s · Operator: %2$s&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="539"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.poi_rating_format` appears to be unused"
+        errorLine1="    &lt;string name=&quot;poi_rating_format&quot;>%1$.1f / 10&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="563"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.filter_exclusive_swap` appears to be unused"
+        errorLine1="    &lt;string name=&quot;filter_exclusive_swap&quot;>Battery swap filter is currently exclusive. Other electric filters are disabled.&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="589"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.car_template_error` appears to be unused"
+        errorLine1="    &lt;string name=&quot;car_template_error&quot;>AndroidAuto template error&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="594"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.car_template_full_stack` appears to be unused"
+        errorLine1="    &lt;string name=&quot;car_template_full_stack&quot;>Full stack:&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="595"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="NotShrinkingResources"
+        message="Avoid setting isShrinkResources = false"
+        errorLine1="            isShrinkResources = false"
+        errorLine2="                                ~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="132"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;emergency_locating_short&quot;>Localisation...&lt;/string>"
+        errorLine2="                                            ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-fr/strings.xml"
+            line="104"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;emergency_locating_short&quot;>Locating...&lt;/string>"
+        errorLine2="                                            ~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="260"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;template_lab_subtitle_ui&quot;>Message, Pane, Grid, Search, SignIn, Tabs...&lt;/string>"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="298"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;template_lab_subtitle_map&quot;>NavigationTemplate, RoutePreview, PlaceList...&lt;/string>"
+        errorLine2="                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="299"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;template_lab_subtitle_features&quot;>Native POI, Custom Map, Route Planning...&lt;/string>"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="300"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;template_lab_subtitle_features&quot;>POI natif, carte perso, planification...&lt;/string>"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-fr/strings.xml"
+            line="319"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;template_lab_subtitle_map&quot;>NavigationTemplate, RoutePreview, PlaceList...&lt;/string>"
+        errorLine2="                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-fr/strings.xml"
+            line="320"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;template_lab_subtitle_ui&quot;>Message, Pane, Grid, Search, SignIn, onglets...&lt;/string>"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-fr/strings.xml"
+            line="321"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;dashboard_searching_nearby&quot;>Searching nearby...&lt;/string>"
+        errorLine2="                                              ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="475"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="TypographyEllipsis"
+        message="Replace &quot;...&quot; with ellipsis character (…, &amp;#8230;) ?"
+        errorLine1="    &lt;string name=&quot;route_calculating&quot;>Calculating route...&lt;/string>"
+        errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="511"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icons should not fill every pixel of their square region; see the design guide for details">
+        <location
+            file="src/main/res/mipmap-hdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icons should not fill every pixel of their square region; see the design guide for details">
+        <location
+            file="src/main/res/mipmap-mdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icons should not fill every pixel of their square region; see the design guide for details">
+        <location
+            file="src/main/res/mipmap-xhdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icons should not fill every pixel of their square region; see the design guide for details">
+        <location
+            file="src/main/res/mipmap-xxhdpi/ic_launcher.png"/>
+    </issue>
+
+    <issue
+        id="IconLauncherShape"
+        message="Launcher icons should not fill every pixel of their square region; see the design guide for details">
+        <location
+            file="src/main/res/mipmap-xxxhdpi/ic_launcher.png"/>
     </issue>
 
     <issue
@@ -637,288 +2846,101 @@
 
     <issue
         id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
-        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="        val bitmap = Bitmap.createBitmap(bucket, bucket, Bitmap.Config.ARGB_8888)"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="158"
-            column="29"/>
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/AmenityIconCatalog.kt"
+            line="97"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Canvas.withTranslation` instead?"
+        errorLine1="        canvas.save()"
+        errorLine2="        ~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/AmenityIconCatalog.kt"
+            line="103"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Canvas.withScale` instead?"
+        errorLine1="        canvas.save()"
+        errorLine2="        ~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/AmenityIconCatalog.kt"
+            line="150"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Canvas.withSave` instead?"
+        errorLine1="                canvas.save()"
+        errorLine2="                ~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/AmenityIconCatalog.kt"
+            line="164"
+            column="17"/>
     </issue>
 
     <issue
         id="UseKtx"
         message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
-        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="        val intent = Intent(Intent.ACTION_DIAL, Uri.parse(&quot;tel:$sanitized&quot;)).apply {"
+        errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="158"
-            column="29"/>
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoEmergencyScreen.kt"
+            line="188"
+            column="49"/>
     </issue>
 
     <issue
         id="UseKtx"
         message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                    this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
-        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="        val intent = Intent(Intent.ACTION_DIAL, Uri.parse(&quot;tel:$sanitized&quot;)).apply {"
+        errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="169"
-            column="33"/>
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoEmergencyScreen.kt"
+            line="240"
+            column="49"/>
     </issue>
 
     <issue
         id="UseKtx"
         message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                    this.data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
-        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(&quot;gaston://map/libremap&quot;)).apply {"
+        errorLine2="                                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="169"
-            column="33"/>
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoLibreMapLabScreen.kt"
+            line="196"
+            column="65"/>
     </issue>
 
     <issue
         id="UseKtx"
         message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;gaston://map/gas_stations&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="                            data = Uri.parse(&quot;geo:$lat,$lon?q=${Uri.encode(&quot;%.4f, %.4f&quot;.format(java.util.Locale.US, lat, lon))}&quot;)"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="266"
-            column="24"/>
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoMapMoreOptionsScreen.kt"
+            line="46"
+            column="36"/>
     </issue>
 
     <issue
         id="UseKtx"
         message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;gaston://map/gas_stations&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="                            data = Uri.parse(&quot;geo:$lat,$lon?q=${Uri.encode(&quot;%.4f, %.4f&quot;.format(java.util.Locale.US, lat, lon))}&quot;)"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="266"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;gaston://map/electric_stations&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="281"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;gaston://map/electric_stations&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="281"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;gaston://map/hybrid_stations&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="296"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;gaston://map/hybrid_stations&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="296"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;gaston://map/current_location&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="311"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;gaston://map/current_location&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="311"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="326"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="326"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                    data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="335"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                    data = Uri.parse(&quot;geo:0,0?q=$query&quot;)"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="335"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;google.navigation:q=0,0&amp;layer=t&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="349"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;google.navigation:q=0,0&amp;layer=t&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="349"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;audio/*&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="367"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;audio/*&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="367"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;tel:$number&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="385"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;tel:$number&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="385"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;tel:112&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="404"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                data = Uri.parse(&quot;tel:112&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidActionExecutor.kt"
-            line="404"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                                    .setArtworkUri(Uri.parse(&quot;android.resource://${context.packageName}/drawable/ic_launcher_foreground&quot;))"
-        errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/AndroidVoiceManager.kt"
-            line="133"
-            column="52"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                        val uri = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name.ifBlank { poi.address })}&quot;)"
-        errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/auto/AutoRoutePlanningScreen.kt"
-            line="198"
-            column="35"/>
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoMapMoreOptionsScreen.kt"
+            line="46"
+            column="36"/>
     </issue>
 
     <issue
@@ -928,63 +2950,96 @@
         errorLine2="                                                ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/fr/geoking/gaston/auto/AutoRoutePlanningScreen.kt"
-            line="244"
+            line="391"
             column="49"/>
     </issue>
 
     <issue
         id="UseKtx"
-        message="Use the KTX function `createBitmap` instead?"
-        errorLine1="        val bitmap = Bitmap.createBitmap(ICON_WIDTH, ICON_HEIGHT, Bitmap.Config.ARGB_8888)"
-        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        message="Use the KTX extension function `String.toColorInt` instead?"
+        errorLine1="        private val NAVIGATION_BLUE = Color.parseColor(&quot;#4285F4&quot;)"
+        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/auto/DynamicImageGenerator.kt"
-            line="47"
-            column="22"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX function `createBitmap` instead?"
-        errorLine1="            val bitmap = Bitmap.createBitmap(ICON_WIDTH, ICON_HEIGHT, Bitmap.Config.ARGB_8888)"
-        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/auto/DynamicImageGenerator.kt"
-            line="66"
-            column="26"/>
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoSurfaceRenderer.kt"
+            line="120"
+            column="39"/>
     </issue>
 
     <issue
         id="UseKtx"
         message="Use the KTX extension function `Canvas.withRotation` instead?"
-        errorLine1="            canvas.save()"
-        errorLine2="            ~~~~~~~~~~~~~">
+        errorLine1="                canvas.save()"
+        errorLine2="                ~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/auto/DynamicImageGenerator.kt"
-            line="116"
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoSurfaceRenderer.kt"
+            line="403"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Canvas.withTranslation` instead?"
+        errorLine1="        canvas.save()"
+        errorLine2="        ~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/auto/AutoSurfaceRenderer.kt"
+            line="469"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            prefs.edit().putString(KEY_ERROR_LOG, raw).apply()"
+        errorLine2="            ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/diagnostics/DiagnosticsPersistence.kt"
+            line="59"
             column="13"/>
     </issue>
 
     <issue
         id="UseKtx"
         message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                            data = Uri.parse(&quot;geo:$searchLat,$searchLon?q=${Uri.encode(&quot;Map&quot;)}&quot;)"
-        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="    val uri = Uri.parse(&quot;geo:%.6f,%.6f?q=%.6f,%.6f&quot;.format(Locale.US, lat, lon, lat, lon))"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/auto/MapPoiScreen.kt"
-            line="243"
-            column="36"/>
+            file="src/main/kotlin/fr/geoking/gaston/ui/EmergencyScreen.kt"
+            line="567"
+            column="15"/>
     </issue>
 
     <issue
         id="UseKtx"
         message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                            data = Uri.parse(&quot;geo:$searchLat,$searchLon?q=${Uri.encode(&quot;Map&quot;)}&quot;)"
-        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="        val webUri = Uri.parse(&quot;https://maps.google.com/?q=%.6f,%.6f&quot;.format(Locale.US, lat, lon))"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/auto/MapPoiScreen.kt"
-            line="243"
-            column="36"/>
+            file="src/main/kotlin/fr/geoking/gaston/ui/EmergencyScreen.kt"
+            line="575"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="    val intent = Intent(Intent.ACTION_DIAL, Uri.parse(&quot;tel:$sanitized&quot;)).apply {"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/ui/EmergencyScreen.kt"
+            line="590"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="        return Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(label)}&quot;)"
+        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/intent/IntentNavigationHelper.kt"
+            line="17"
+            column="16"/>
     </issue>
 
     <issue
@@ -994,19 +3049,19 @@
         errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/fr/geoking/gaston/ui/MapScreen.kt"
-            line="77"
+            line="120"
             column="18"/>
     </issue>
 
     <issue
         id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                            val uri = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name)}&quot;)"
-        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/ui/MapScreen.kt"
-            line="586"
-            column="39"/>
+            file="src/main/kotlin/fr/geoking/gaston/marketing/MarketingScreenshots.kt"
+            line="312"
+            column="22"/>
     </issue>
 
     <issue
@@ -1022,321 +3077,46 @@
 
     <issue
         id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="            data = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(title)}&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="        val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/auto/PoiDetailScreen.kt"
-            line="32"
-            column="20"/>
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/PoiMarkerHelper.kt"
+            line="132"
+            column="22"/>
     </issue>
 
     <issue
         id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="            data = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(title)}&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/auto/PoiDetailScreen.kt"
-            line="32"
-            column="20"/>
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/PoiMarkerHelper.kt"
+            line="369"
+            column="22"/>
     </issue>
 
     <issue
         id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                                        val uri = Uri.parse(&quot;geo:${poi.latitude},${poi.longitude}?q=${Uri.encode(poi.name)}&quot;)"
-        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/fr/geoking/gaston/ui/RoutePlanningScreen.kt"
-            line="233"
-            column="51"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="                    prefs.edit().putString(&quot;agent&quot;, DEFAULT_AGENT.name).apply()"
-        errorLine2="                    ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="348"
-            column="21"/>
+            file="src/main/kotlin/fr/geoking/gaston/ui/map/PoiMarkerHelper.kt"
+            line="443"
+            column="22"/>
     </issue>
 
     <issue
         id="UseKtx"
         message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="                    prefs.edit().putString(&quot;agent&quot;, DEFAULT_AGENT.name).apply()"
-        errorLine2="                    ~~~~~~~~~~~~">
+        errorLine1="                prefs.edit()"
+        errorLine2="                ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="363"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        val edit = prefs.edit()"
-        errorLine2="                   ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="445"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;poi_provider&quot;, type.name).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="463"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;map_energy_types&quot;, types.joinToString(&quot;,&quot;)).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="468"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;map_enseigne_type&quot;, type).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="473"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;map_services&quot;, services.joinToString(&quot;,&quot;)).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="478"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;map_power_levels&quot;, levels.joinToString(&quot;,&quot;)).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="483"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;map_irve_operators&quot;, operators.joinToString(&quot;,&quot;)).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="488"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;map_brands&quot;, brands.joinToString(&quot;,&quot;)).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="493"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;map_connector_types&quot;, types.joinToString(&quot;,&quot;)).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="498"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putBoolean(&quot;map_traffic_enabled&quot;, value).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="503"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;overpass_amenity_types&quot;, value.joinToString(&quot;,&quot;)).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="509"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;stt_engine_preference&quot;, preference.name).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="514"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;vehicle_type&quot;, type.name).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="519"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;vehicle_brand&quot;, brand).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="524"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;vehicle_model&quot;, model).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="529"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;vehicle_energy&quot;, energy).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="534"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;vehicle_gas_types&quot;, types.joinToString(&quot;,&quot;)).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="539"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;vehicle_power_levels&quot;, levels.joinToString(&quot;,&quot;)).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="544"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putString(&quot;fuel_card&quot;, card.name).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="549"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putBoolean(&quot;use_vehicle_filter&quot;, use).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="554"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putInt(&quot;ev_range_km&quot;, value).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="560"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="            prefs.edit().putFloat(&quot;ev_consumption_kwh_100&quot;, consumption).apply()"
-        errorLine2="            ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="566"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="            prefs.edit().remove(&quot;ev_consumption_kwh_100&quot;).apply()"
-        errorLine2="            ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="569"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="        prefs.edit().putInt(&quot;poi_rating_$poiId&quot;, v).apply()"
-        errorLine2="        ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="583"
-            column="9"/>
+            line="182"
+            column="17"/>
     </issue>
 
     <issue
@@ -1346,7 +3126,18 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
-            line="614"
+            line="314"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(&quot;poi_ratings&quot;, Json.encodeToString(capped)).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/fr/geoking/gaston/SettingsManager.kt"
+            line="635"
             column="9"/>
     </issue>
 
@@ -1357,7 +3148,7 @@
         errorLine2="                                                            ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
-            line="759"
+            line="1307"
             column="61"/>
     </issue>
 
@@ -1368,7 +3159,7 @@
         errorLine2="                       ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
-            line="811"
+            line="1360"
             column="24"/>
     </issue>
 
@@ -1379,30 +3170,8 @@
         errorLine2="                                                                     ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/fr/geoking/gaston/ui/SettingsScreen.kt"
-            line="1564"
+            line="1811"
             column="70"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    implementation(&quot;com.alphacephei:vosk-android:0.3.75&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="212"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="UseTomlInstead"
-        message="Use version catalog instead"
-        errorLine1="    testImplementation(&quot;org.robolectric:robolectric:4.14.1&quot;)"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="220"
-            column="24"/>
     </issue>
 
 </issues>

@@ -39,6 +39,8 @@
     <string name="action_save">Enregistrer</string>
     <string name="action_share">Partager</string>
     <string name="action_show_cheapest">Afficher les moins chers</string>
+    <string name="action_show_cheapest_list">Afficher la liste des moins chers</string>
+    <string name="action_disable_swap">Désactiver l\'échange</string>
     <string name="action_show_logs">Afficher les journaux</string>
     <string name="action_show_on_map">Afficher sur la carte</string>
     <string name="action_sign_in">Se connecter</string>
@@ -78,6 +80,7 @@
     <string name="cd_route">Itinéraire</string>
     <string name="cd_settings">Paramètres</string>
     <string name="charging_station">Borne de recharge</string>
+    <string name="cheapest_stations_title">Stations les moins chères</string>
     <string name="connectors_label">Connecteurs : %1$s</string>
     <string name="coords_format">%1$.4f, %2$.4f</string>
     <string name="country_europe">Europe</string>
@@ -113,6 +116,7 @@
     <string name="filter_country_placeholder">France, DE, global…</string>
     <string name="filter_data_sources">Sources de données</string>
     <string name="filter_debug_logging">Journalisation debug</string>
+    <string name="filter_exclusive_swap">Le filtre échange de batterie est exclusif. Les autres filtres électriques sont désactivés.</string>
     <string name="filter_google_traffic">Couche trafic Google</string>
     <string name="filter_itinerary">Itinéraire</string>
     <string name="filter_no_country_match">Aucun pays ne correspond à ce filtre.</string>
@@ -380,6 +384,8 @@
     <string name="about_version_name">Nom de version</string>
     <string name="about_version_code">Code de version</string>
     <string name="about_build_date">Date de build</string>
+    <string name="about_premium_mode">Mode Premium</string>
+    <string name="about_premium_mode_subtitle">Débloquer toutes les fonctionnalités pour les tests</string>
     <string name="error_log_generic">Générique</string>
     <string name="error_log_http">HTTP %1$d</string>
     <string name="action_create_api_key">Créer une clé API</string>
