@@ -1,0 +1,35 @@
+---
+description: Gaston KMP/Android project layout, build commands, and coding conventions
+alwaysApply: true
+---
+
+# Gaston project conventions
+
+Kotlin Multiplatform fuel & EV station finder — `:shared` (models, networking, providers) and `:androidApp` (Compose phone UI + Car App Library for Android Auto).
+
+## Build & verify
+
+```bash
+./gradlew :androidApp:assembleFullDebug          # local debug APK
+./gradlew --no-daemon :androidApp:assembleDebug :androidApp:lintFullDebug :shared:build   # CI-equivalent
+./gradlew :shared:testAndroidHostTest            # shared unit tests on JVM
+```
+
+- JDK 17+, Android Studio Koala+
+- Secrets in `local.properties` only (never commit keys). See `docs/ENV_VARS.md`, `docs/API_KEYS.md`
+- New POI/country providers: follow existing `*Provider` / `*Client` patterns under `shared/src/commonMain/kotlin/fr/geoking/gaston/api/`
+
+## Code style
+
+- Match surrounding Kotlin: explicit types when clarity helps, avoid drive-by refactors
+- Phone UI: Jetpack Compose + Material 3 in `androidApp/.../ui/`
+- Android Auto: Car App Library templates in `androidApp/.../auto/` — keep templates safe and minimal while driving
+- Networking: Ktor in `:shared`; DI via Koin
+- Persistence: Room in `:androidApp` for on-device cache/history
+- Prefer extending an existing provider/client over new parallel abstractions
+
+## Scope reminders
+
+- Do not add Play Billing, Firebase, or new data sources unless requested
+- Provider API keys are optional toggles — do not hardcode secrets
+- 16 KB page size: no new native code; CI runs `lintFullDebug` for alignment issues
