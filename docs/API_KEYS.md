@@ -14,6 +14,7 @@ Some keys can also be entered in the app under **Settings → App config** (stor
 | `FUELPRICES_DK_KEY` | Yes | Fuelprices.dk (Denmark) |
 | `NSW_FUELCHECK_KEY` + `NSW_FUELCHECK_SECRET` | Yes | NSW FuelCheck (Australia) |
 | `GERMANY_TANKERKOENIG_KEY` | — | Tankerkönig (Germany); demo key available |
+| `EIA_KEY` | — | EIA Open Data (US state retail fuel averages) |
 | `FASTNED_UK_KEY` | — | Fastned UK OCPI |
 | `CHARGY_API_KEY` | — | Chargy Luxembourg KML feed |
 | `DKV_SUBSCRIPTION_KEY` (+ optional `DKV_AUTHORIZATION`) | — | DKV Mobility OCPI |
@@ -103,6 +104,24 @@ Support: [api.nsw.gov.au/support](https://api.nsw.gov.au/support/buildapis)
 `00000000-0000-0000-0000-000000000002` (low rate limits; not for production traffic).
 
 Terms: one request per minute, max 25 km radius; data under Creative Commons — see site for MTS-K restrictions.
+
+---
+
+## EIA Open Data (fuel, United States)
+
+| | |
+|---|---|
+| **Property** | `EIA_KEY` |
+| **Auth** | Query parameter `api_key=` on all requests |
+| **Dataset** | [petroleum/pri/gnd](https://www.eia.gov/opendata/browser/petroleum/pri) — weekly state retail gasoline & diesel ($/gal) |
+| **Register** | [eia.gov/opendata/register.php](https://www.eia.gov/opendata/register.php) |
+
+1. Register for a free EIA API key (terms of service apply).
+2. Set `EIA_KEY` in `local.properties` or as an environment variable.
+
+Without a key, the US provider still returns OpenStreetMap fuel stations but does not attach EIA price rows.
+
+**Note:** EIA prices are **state-level weekly averages**, not per-station; Gaston applies the nearest state’s latest weekly values to all stations in the search area (same pattern as Belgium official max prices).
 
 ---
 
@@ -219,6 +238,7 @@ The [station-load-integration](../.github/workflows/station-load-integration.yml
 |--------|---------|
 | `FUELPRICES_DK_KEY` | DK |
 | `GERMANY_TANKERKOENIG_KEY` | DE |
+| `EIA_KEY` | US |
 | `ROMANIA_PECO_APPLICATION_ID` / `ROMANIA_PECO_CLIENT_KEY` | RO |
 
 Add secrets under **Settings → Secrets and variables → Actions** after you obtain the keys above.

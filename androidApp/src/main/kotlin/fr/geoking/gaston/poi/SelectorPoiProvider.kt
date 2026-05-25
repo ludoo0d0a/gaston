@@ -71,6 +71,7 @@ class SelectorPoiProvider(
     private val germanyTankerkoenig: PoiProvider,
     private val austriaEControl: PoiProvider,
     private val belgiumOfficial: PoiProvider,
+    private val usaEia: PoiProvider,
     private val openVanCampClient: OpenVanCampClient,
     private val overpass: PoiProvider,
     private val dataGouvCamping: PoiProvider?,
@@ -152,6 +153,7 @@ class SelectorPoiProvider(
         PoiProviderType.GermanyTankerkoenig -> germanyTankerkoenig
         PoiProviderType.AustriaEControl -> austriaEControl
         PoiProviderType.BelgiumOfficial -> belgiumOfficial
+        PoiProviderType.UsaEia -> usaEia
         PoiProviderType.Overpass -> overpass
         PoiProviderType.Hybrid -> hybridProvider
     }
@@ -738,6 +740,7 @@ class SelectorPoiProvider(
         germanyTankerkoenig.clearCache()
         austriaEControl.clearCache()
         belgiumOfficial.clearCache()
+        usaEia.clearCache()
         overpass.clearCache()
     }
 

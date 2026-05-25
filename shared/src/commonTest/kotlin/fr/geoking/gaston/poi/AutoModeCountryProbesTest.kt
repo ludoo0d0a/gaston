@@ -11,7 +11,7 @@ class AutoModeCountryProbesTest {
         val probeIsos = AutoModeCountryProbes.ALL.map { it.iso }.toSet()
         val autoIsos = setOf(
             "FR", "GB", "IT", "SI", "NO", "SE", "PT", "NL", "DK", "HR", "FI", "GR", "IE",
-            "MD", "RO", "RS", "MX", "AR", "ES", "DE", "AT", "BE", "CH", "AU", "AU-WA", "LU",
+            "MD", "RO", "RS", "MX", "AR", "ES", "DE", "AT", "BE", "CH", "AU", "AU-WA", "LU", "US",
         )
         assertEquals(autoIsos, probeIsos)
     }

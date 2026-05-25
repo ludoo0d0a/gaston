@@ -92,5 +92,6 @@ object AutoModeCountryProbes {
             fuelProvider = PoiProviderType.AustraliaFuelWatch,
         ),
         CountryStationProbe("LU", "Luxembourg", 49.6116, 6.1319, PoiProviderType.OpenVanCamp),
+        CountryStationProbe("US", "New York", 40.7128, -74.0060, PoiProviderType.UsaEia),
     )
 }

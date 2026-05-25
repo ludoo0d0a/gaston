@@ -45,6 +45,7 @@ fun autoProvidersForCountries(
                 "BE" -> PoiProviderType.BelgiumOfficial
                 "CH" -> PoiProviderType.SwitzerlandComparis
                 "AU" -> PoiProviderType.AustraliaPetrolSpy
+                "US" -> PoiProviderType.UsaEia
                 "LU" -> PoiProviderType.OpenVanCamp
                 else -> null
             }

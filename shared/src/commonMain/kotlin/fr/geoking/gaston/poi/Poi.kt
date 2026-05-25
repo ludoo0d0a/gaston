@@ -166,6 +166,8 @@ enum class PoiProviderType(
     AustriaEControl(providesFuel = true),
     /** Belgian official maximum fuel prices. */
     BelgiumOfficial(providesFuel = true),
+    /** US state-level weekly retail fuel prices (EIA petroleum/pri/gnd) + OSM stations. */
+    UsaEia(providesFuel = true),
     Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }

@@ -33,6 +33,7 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **CRE** | Mexico | Fuel | (places + prices) | No |
 | **Secretaría de Energía** | Argentina | Fuel | (CSV open data) | No |
 | **Belgium official (max prices)** | Belgium | Fuel | (client-backed) | No |
+| **EIA petroleum/pri/gnd** | United States | Fuel | `https://api.eia.gov/v2/petroleum/pri/gnd/data/` | Yes — `EIA_KEY` |
 | **OpenVan.camp** | Multi-country (reference prices) | Fuel | `https://openvan.camp/api/fuel/prices` | No |
 | **Routex / Wigeogis** | Europe | Fuel | `https://app.wigeogis.com/kunden/routex-sitefinder/backend` | No |
 | **DataGouv IRVE** | France | EV charging | `https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/bornes-irve` | No |

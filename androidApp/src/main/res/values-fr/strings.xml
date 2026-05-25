@@ -452,6 +452,7 @@
     <string name="provider_germany_tankerkoenig">Tankerkönig (Allemagne)</string>
     <string name="provider_austria_econtrol">E-Control (Autriche)</string>
     <string name="provider_belgium_official">Belgique (officiel)</string>
+    <string name="provider_usa_eia">EIA (moyenne état US)</string>
     <string name="emergency_useful_numbers">Numéros utiles</string>
     <string name="emergency_useful_numbers_country">Numéros utiles · %1$s</string>
     <string name="emergency_useful_numbers_auto">Numéros utiles%1$s</string>

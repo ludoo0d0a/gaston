@@ -31,6 +31,8 @@ import fr.geoking.gaston.api.croatia.CroatiaMzoeProvider
 import fr.geoking.gaston.api.denmark.FuelpricesDKProvider
 import fr.geoking.gaston.api.belgium.BelgiumPetrolPricesClient
 import fr.geoking.gaston.api.belgium.BelgiumOfficialProvider
+import fr.geoking.gaston.api.us.EiaPetroleumClient
+import fr.geoking.gaston.api.us.UsaEiaProvider
 import fr.geoking.gaston.api.dgeg.PortugalDgegProvider
 import fr.geoking.gaston.api.finland.PolttoaineProvider
 import fr.geoking.gaston.api.fuelo.FueloProvider
@@ -267,6 +269,16 @@ val mapModule = module {
     single<PoiProvider>(named("belgiumofficial")) {
         BelgiumOfficialProvider(belgiumClient = get(), overpassClient = get(), radiusKm = 10, limit = 50)
     }
+    single { EiaPetroleumClient(get()) }
+    single<PoiProvider>(named("usaeia")) {
+        UsaEiaProvider(
+            eiaClient = get(),
+            overpassClient = get(),
+            apiKey = BuildConfig.EIA_KEY,
+            radiusKm = 15,
+            limit = 100,
+        )
+    }
     single { DataGouvCampingClient(get()) }
     single<PoiProvider>(named("datagouvcamping")) {
         DataGouvCampingProvider(get(), radiusKm = 15, limit = 50)
@@ -310,6 +322,7 @@ val mapModule = module {
             germanyTankerkoenig = get(named("germanytankerkoenig")),
             austriaEControl = get(named("austriaecontrol")),
             belgiumOfficial = get(named("belgiumofficial")),
+            usaEia = get(named("usaeia")),
             openVanCampClient = get(),
             overpass = get(named("overpass")),
             dataGouvCamping = get(named("datagouvcamping")),

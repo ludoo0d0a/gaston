@@ -51,6 +51,7 @@ class AutoPoiProviderSelectionScreen(
         PoiProviderType.GermanyTankerkoenig to "Tankerkönig (Germany)",
         PoiProviderType.AustriaEControl to "E-Control (Austria)",
         PoiProviderType.BelgiumOfficial to "Belgium (official)",
+        PoiProviderType.UsaEia to "EIA (US state avg)",
         PoiProviderType.Overpass to "Overpass",
         PoiProviderType.Hybrid to "Hybrid (Gas + EV)"
     ).filter { (type, _) -> type.isUserSelectablePoiDataSource() }

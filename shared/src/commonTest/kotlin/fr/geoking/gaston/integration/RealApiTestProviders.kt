@@ -2,6 +2,8 @@ package fr.geoking.gaston.integration
 
 import fr.geoking.gaston.api.argentina.ArgentinaEnergiaProvider
 import fr.geoking.gaston.api.belgium.BelgiumOfficialProvider
+import fr.geoking.gaston.api.us.EiaPetroleumClient
+import fr.geoking.gaston.api.us.UsaEiaProvider
 import fr.geoking.gaston.api.belgium.BelgiumPetrolPricesClient
 import fr.geoking.gaston.api.croatia.CroatiaMzoeProvider
 import fr.geoking.gaston.api.datagouv.DataGouvProvider
@@ -94,6 +96,16 @@ internal object RealApiTestProviders {
             radiusKm = 10,
             limit = 100,
         )
+        PoiProviderType.UsaEia -> {
+            val key = requireIntegrationEnv("EIA_KEY", "EIA Open Data API (US petroleum/pri)")
+            UsaEiaProvider(
+                eiaClient = EiaPetroleumClient(client),
+                overpassClient = OverpassClient(client),
+                apiKey = key,
+                radiusKm = 15,
+                limit = 80,
+            )
+        }
         else -> null
     }
 }

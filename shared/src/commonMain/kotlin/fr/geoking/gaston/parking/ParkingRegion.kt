@@ -116,6 +116,13 @@ enum class ParkingRegion(
         lonMin = 20.45,
         lonMax = 23.03,
         countryCode = "MK"
+    ),
+    UnitedStates(
+        latMin = 18.0,
+        latMax = 71.5,
+        lonMin = -170.0,
+        lonMax = -66.0,
+        countryCode = "US"
     );
 
     fun contains(lat: Double, lon: Double): Boolean =
@@ -126,7 +133,7 @@ enum class ParkingRegion(
         private val bySpecificity = listOf(
             Luxembourg, Montenegro, NorthMacedonia, Slovenia, Croatia,
             Belgium, Switzerland, Netherlands, Denmark, Austria,
-            Germany, France, UnitedKingdom, Spain, Italy
+            Germany, France, UnitedKingdom, Spain, Italy, UnitedStates
         )
 
         /** Returns the region containing (lat, lon), or null if none. */

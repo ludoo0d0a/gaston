@@ -30,6 +30,7 @@ Use these names in `local.properties` or set the same name as an env var (e.g. f
 | `TOMTOM_KEY` | TomTom Traffic API key (global traffic fallback). |
 | `CHARGY_API_KEY` | Chargy Luxembourg KML feed API key. |
 | `GERMANY_TANKERKOENIG_KEY` | Tankerkönig API key (demo: `00000000-0000-0000-0000-000000000002`). |
+| `EIA_KEY` | EIA Open Data API key (US petroleum/pri state retail prices). Optional — OSM stations still load without it. |
 | `FASTNED_UK_KEY` | Fastned UK OCPI API key (`x-api-key` header). |
 | `DKV_SUBSCRIPTION_KEY` | DKV Mobility Azure APIM subscription key (`Ocp-Apim-Subscription-Key`). |
 | `DKV_AUTHORIZATION` | Optional DKV OCPI `Authorization: Token …` if required by your contract. |

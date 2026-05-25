@@ -143,6 +143,7 @@ private fun poiProviderLabelRes(type: PoiProviderType): Int = when (type) {
     PoiProviderType.GermanyTankerkoenig -> R.string.provider_germany_tankerkoenig
     PoiProviderType.AustriaEControl -> R.string.provider_austria_econtrol
     PoiProviderType.BelgiumOfficial -> R.string.provider_belgium_official
+    PoiProviderType.UsaEia -> R.string.provider_usa_eia
     else -> R.string.provider_overpass
 }
 
@@ -506,6 +507,7 @@ private fun SourcesConfig(
         ProviderUiInfo(PoiProviderType.GermanyTankerkoenig, listOf("DE")),
         ProviderUiInfo(PoiProviderType.AustriaEControl, listOf("AT")),
         ProviderUiInfo(PoiProviderType.BelgiumOfficial, listOf("BE")),
+        ProviderUiInfo(PoiProviderType.UsaEia, listOf("US")),
     )
         .filter { it.type.isUserSelectablePoiDataSource() }
         .distinctBy { it.type }
