@@ -44,4 +44,9 @@ object DebugLogStore {
     fun clearLogs() {
         _logs.value = emptyList()
     }
+
+    fun clearAll() {
+        clearLogs()
+        ProviderTraceStore.clear()
+    }
 }

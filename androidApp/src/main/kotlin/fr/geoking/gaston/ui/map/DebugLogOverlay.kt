@@ -32,6 +32,9 @@ import kotlinx.serialization.json.*
 import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.shared.logging.DebugLogStore
 import fr.geoking.gaston.shared.logging.NetworkLog
+import fr.geoking.gaston.shared.logging.ProviderTraceEntry
+import fr.geoking.gaston.shared.logging.ProviderTracePhase
+import fr.geoking.gaston.shared.logging.ProviderTraceStore
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -45,11 +48,19 @@ fun DebugLogOverlay(
     }
 }
 
+private enum class DebugOverlayTab {
+    Network,
+    Providers,
+}
+
 @Composable
 private fun DebugLogOverlayContent(detectedCountries: String?) {
     var isExpanded by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableStateOf(DebugOverlayTab.Network) }
     val logs by DebugLogStore.logs.collectAsState()
+    val providerTraces by ProviderTraceStore.entries.collectAsState()
     var selectedLog by remember { mutableStateOf<NetworkLog?>(null) }
+    var selectedTrace by remember { mutableStateOf<ProviderTraceEntry?>(null) }
     var selectedHost by remember { mutableStateOf<String?>(null) }
     val availableHosts = remember(logs) {
         logs.map { it.host }.filter { it.isNotEmpty() }.distinct().sorted()
@@ -84,20 +95,15 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                "Network Debug Logs (${logs.size})",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                            detectedCountries?.let {
-                                Text(
-                                    it,
-                                    color = Color.White.copy(alpha = 0.6f),
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
+                        Text(
+                            when (selectedTab) {
+                                DebugOverlayTab.Network -> "Network (${logs.size})"
+                                DebugOverlayTab.Providers -> "Providers (${providerTraces.size})"
+                            },
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                        )
                         Row {
                             IconButton(onClick = {
                                 scope.launch {
@@ -106,7 +112,7 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
                             }) {
                                 Icon(Icons.Default.CleaningServices, "Clear Cache", tint = MaterialTheme.colorScheme.onSurface)
                             }
-                            IconButton(onClick = { DebugLogStore.clearLogs() }) {
+                            IconButton(onClick = { DebugLogStore.clearAll() }) {
                                 Icon(Icons.Default.Delete, "Clear Logs", tint = MaterialTheme.colorScheme.onSurface)
                             }
                             IconButton(onClick = { isExpanded = false }) {
@@ -115,67 +121,38 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
                         }
                     }
 
-                    if (availableHosts.isNotEmpty()) {
-                        LazyRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            item {
-                                FilterChip(
-                                    selected = selectedHost == null,
-                                    onClick = { selectedHost = null },
-                                    label = { Text("All", fontSize = 11.sp) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        containerColor = Color.Transparent,
-                                        labelColor = Color.White.copy(alpha = 0.6f),
-                                        selectedContainerColor = Color.White.copy(alpha = 0.2f),
-                                        selectedLabelColor = Color.White
-                                    ),
-                                    border = FilterChipDefaults.filterChipBorder(
-                                        borderColor = Color.White.copy(alpha = 0.2f),
-                                        selectedBorderColor = Color.White.copy(alpha = 0.5f),
-                                        borderWidth = 1.dp,
-                                        selectedBorderWidth = 1.dp,
-                                        enabled = true,
-                                        selected = selectedHost == null
-                                    )
-                                )
-                            }
-                            items(availableHosts) { host ->
-                                FilterChip(
-                                    selected = selectedHost == host,
-                                    onClick = { selectedHost = if (selectedHost == host) null else host },
-                                    label = { Text(host, fontSize = 11.sp) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        containerColor = Color.Transparent,
-                                        labelColor = Color.White.copy(alpha = 0.6f),
-                                        selectedContainerColor = Color.White.copy(alpha = 0.2f),
-                                        selectedLabelColor = Color.White
-                                    ),
-                                    border = FilterChipDefaults.filterChipBorder(
-                                        borderColor = Color.White.copy(alpha = 0.2f),
-                                        selectedBorderColor = Color.White.copy(alpha = 0.5f),
-                                        borderWidth = 1.dp,
-                                        selectedBorderWidth = 1.dp,
-                                        enabled = true,
-                                        selected = selectedHost == host
-                                    )
-                                )
-                            }
-                        }
+                    TabRow(
+                        selectedTabIndex = selectedTab.ordinal,
+                        containerColor = Color.Transparent,
+                        contentColor = Color.White,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    ) {
+                        Tab(
+                            selected = selectedTab == DebugOverlayTab.Network,
+                            onClick = { selectedTab = DebugOverlayTab.Network },
+                            text = { Text("Network", fontSize = 12.sp) },
+                        )
+                        Tab(
+                            selected = selectedTab == DebugOverlayTab.Providers,
+                            onClick = { selectedTab = DebugOverlayTab.Providers },
+                            text = { Text("Providers", fontSize = 12.sp) },
+                        )
                     }
 
-                    val filteredLogs = if (selectedHost == null) {
-                        logs
-                    } else {
-                        logs.filter { it.host == selectedHost }
-                    }
-
-                    LazyColumn(modifier = Modifier.weight(1f)) {
-                        items(filteredLogs, key = { it.id }) { log ->
-                            LogItem(log, onClick = { selectedLog = log })
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        when (selectedTab) {
+                            DebugOverlayTab.Network -> NetworkDebugTab(
+                                logs = logs,
+                                availableHosts = availableHosts,
+                                selectedHost = selectedHost,
+                                detectedCountries = detectedCountries,
+                                onHostSelected = { selectedHost = it },
+                                onLogClick = { selectedLog = it },
+                            )
+                            DebugOverlayTab.Providers -> ProviderTraceTab(
+                                traces = providerTraces,
+                                onTraceClick = { selectedTrace = it },
+                            )
                         }
                     }
                 }
@@ -186,6 +163,255 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
     if (selectedLog != null) {
         LogDetailsDialog(log = selectedLog!!, onDismiss = { selectedLog = null })
     }
+    if (selectedTrace != null) {
+        ProviderTraceDetailsDialog(trace = selectedTrace!!, onDismiss = { selectedTrace = null })
+    }
+}
+
+@Composable
+private fun NetworkDebugTab(
+    logs: List<NetworkLog>,
+    availableHosts: List<String>,
+    selectedHost: String?,
+    detectedCountries: String?,
+    onHostSelected: (String?) -> Unit,
+    onLogClick: (NetworkLog) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        detectedCountries?.let {
+            Text(
+                it,
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 10.sp,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            )
+        }
+        if (availableHosts.isNotEmpty()) {
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    HostFilterChip(
+                        label = "All",
+                        selected = selectedHost == null,
+                        onClick = { onHostSelected(null) },
+                    )
+                }
+                items(availableHosts) { host ->
+                    HostFilterChip(
+                        label = host,
+                        selected = selectedHost == host,
+                        onClick = { onHostSelected(if (selectedHost == host) null else host) },
+                    )
+                }
+            }
+        }
+
+        val filteredLogs = if (selectedHost == null) logs else logs.filter { it.host == selectedHost }
+
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            items(filteredLogs, key = { it.id }) { log ->
+                LogItem(log, onClick = { onLogClick(log) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun HostFilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label, fontSize = 11.sp) },
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = Color.Transparent,
+            labelColor = Color.White.copy(alpha = 0.6f),
+            selectedContainerColor = Color.White.copy(alpha = 0.2f),
+            selectedLabelColor = Color.White
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            borderColor = Color.White.copy(alpha = 0.2f),
+            selectedBorderColor = Color.White.copy(alpha = 0.5f),
+            borderWidth = 1.dp,
+            selectedBorderWidth = 1.dp,
+            enabled = true,
+            selected = selected
+        )
+    )
+}
+
+@Composable
+private fun ProviderTraceTab(
+    traces: List<ProviderTraceEntry>,
+    onTraceClick: (ProviderTraceEntry) -> Unit,
+) {
+    if (traces.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                "No provider traces yet.\nPan the map or refresh POIs.",
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 12.sp,
+            )
+        }
+    } else {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(traces, key = { it.id }) { trace ->
+                ProviderTraceItem(trace, onClick = { onTraceClick(trace) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProviderTraceItem(trace: ProviderTraceEntry, onClick: () -> Unit) {
+    val time = remember(trace.timestamp) {
+        SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(trace.timestamp))
+    }
+    val phaseColor = providerPhaseColor(trace.phase)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = trace.phase.name,
+                color = phaseColor,
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.sp,
+                modifier = Modifier
+                    .background(phaseColor.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
+            )
+            trace.provider?.let { provider ->
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = provider,
+                    color = Color(0xFF93C5FD),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            trace.poiCount?.let { count ->
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "$count POIs",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 10.sp,
+                )
+            }
+            trace.durationMs?.let { ms ->
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "${ms}ms",
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 10.sp,
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = time,
+                color = Color.White.copy(alpha = 0.4f),
+                fontSize = 10.sp,
+            )
+        }
+        Text(
+            text = trace.message,
+            color = Color.White.copy(alpha = 0.85f),
+            fontSize = 11.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        if (trace.effectiveProviders.isNotEmpty() && trace.phase == ProviderTracePhase.Resolved) {
+            Text(
+                text = trace.effectiveProviders.joinToString(", "),
+                color = Color.White.copy(alpha = 0.45f),
+                fontSize = 10.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        if (trace.errors.isNotEmpty()) {
+            Text(
+                text = trace.errors.joinToString(" · "),
+                color = Color(0xFFF87171),
+                fontSize = 10.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 8.dp),
+            color = Color.White.copy(alpha = 0.1f)
+        )
+    }
+}
+
+private fun providerPhaseColor(phase: ProviderTracePhase): Color = when (phase) {
+    ProviderTracePhase.Resolved -> Color(0xFF60A5FA)
+    ProviderTracePhase.CacheMemory, ProviderTracePhase.CacheDisk -> Color(0xFF94A3B8)
+    ProviderTracePhase.FetchPlanned -> Color(0xFFA78BFA)
+    ProviderTracePhase.FetchStart -> Color(0xFFFACC15)
+    ProviderTracePhase.FetchEnd -> Color(0xFF4ADE80)
+    ProviderTracePhase.Skipped -> Color(0xFFFB923C)
+    ProviderTracePhase.Complete -> Color(0xFF2DD4BF)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProviderTraceDetailsDialog(trace: ProviderTraceEntry, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
+        },
+        title = {
+            Text("${trace.phase.name} — ${trace.provider ?: "POI providers"}", fontWeight = FontWeight.Bold)
+        },
+        text = {
+            SelectionContainer {
+                LazyColumn {
+                    item {
+                        DetailItem("Time", Date(trace.timestamp).toString())
+                        DetailItem("Message", trace.message)
+                        trace.provider?.let { DetailItem("Provider", it) }
+                        trace.poiCount?.let { DetailItem("POI count", it.toString()) }
+                        trace.durationMs?.let { DetailItem("Duration", "${it}ms") }
+                        if (trace.countries.isNotEmpty()) {
+                            DetailItem("Countries", trace.countries.joinToString(", "))
+                        }
+                        if (trace.categories.isNotEmpty()) {
+                            DetailItem("Categories", trace.categories.joinToString(", "))
+                        }
+                        if (trace.effectiveProviders.isNotEmpty()) {
+                            DetailItem("Effective", trace.effectiveProviders.joinToString(", "))
+                        }
+                        if (trace.fetchedProviders.isNotEmpty()) {
+                            DetailItem("Fetched", trace.fetchedProviders.joinToString(", "))
+                        }
+                        trace.errors.forEach { err ->
+                            DetailItem("Error", err)
+                        }
+                    }
+                }
+            }
+        },
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.fillMaxWidth(0.95f),
+    )
 }
 
 @Composable

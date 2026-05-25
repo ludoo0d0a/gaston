@@ -16,6 +16,9 @@ import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.repository.StationPriceHistoryRepository
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.location.approxDistanceKm
+import fr.geoking.gaston.shared.logging.ProviderTraceEntry
+import fr.geoking.gaston.shared.logging.ProviderTracePhase
+import fr.geoking.gaston.shared.logging.ProviderTraceStore
 import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
 import kotlin.math.PI
 import kotlin.math.cos
@@ -267,12 +270,27 @@ class SelectorPoiProvider(
             if (categories.isEmpty()) return@forEach
             val effectiveRequest = request.copy(categories = categories, skipFilters = true)
             val activeProvider = getProvider(providerType)
+            val fetchStartMs = System.currentTimeMillis()
+            traceProvider(
+                phase = ProviderTracePhase.FetchStart,
+                message = "search ${categories.joinToString { it.name }}",
+                provider = providerType.name,
+                categories = categories.map { it.name },
+            )
             val searchResult = try {
                 activeProvider.searchResult(effectiveRequest)
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 PoiSearchResult(errors = listOf(PoiProviderError(providerType.name, e.message ?: "Unknown error")))
             }
+            traceProvider(
+                phase = ProviderTracePhase.FetchEnd,
+                message = "search done",
+                provider = providerType.name,
+                poiCount = searchResult.pois.size,
+                durationMs = System.currentTimeMillis() - fetchStartMs,
+                errors = searchResult.errors.map { "${it.provider}: ${it.message}" },
+            )
             allPois.addAll(searchResult.pois)
             errors.addAll(searchResult.errors)
 
@@ -357,11 +375,24 @@ class SelectorPoiProvider(
         }
 
         if (providers.isEmpty()) {
+            traceProvider(
+                phase = ProviderTracePhase.Skipped,
+                message = "searchFlow: no effective providers",
+                countries = isoCountries,
+            )
             send(PoiSearchResult())
             return@channelFlow
         }
 
         val categoriesToFetch = resolveCategoriesToFetch(settings)
+        traceProviderResolved(
+            source = "searchFlow",
+            providers = providers,
+            countries = isoCountries,
+            categories = categoriesToFetch,
+            selectionMode = settings.poiProviderSelectionMode.name,
+            radiusKm = requiredRadiusKm,
+        )
 
         val nowMs = System.currentTimeMillis()
         val diskMinUpdatedAtMs = nowMs - POI_CACHE_DISK_RETENTION_MS
@@ -413,6 +444,12 @@ class SelectorPoiProvider(
                     dbPois.forEach { (poi, seenAt) -> poiSeenAtMs[poi.id] = seenAt }
                     cachedPois.values.toList()
                 }
+                traceProvider(
+                    phase = ProviderTracePhase.CacheDisk,
+                    message = "searchFlow: disk cache primed",
+                    effectiveProviders = providers.map { it.name }.sorted(),
+                    poiCount = dbResultPois.size,
+                )
                 currentAlreadyCoveredResult = PoiSearchResult(pois = applyPostFilters(dbResultPois, request, providers))
             }
         }
@@ -420,6 +457,12 @@ class SelectorPoiProvider(
         if (currentAlreadyCoveredResult != null) {
             send(currentAlreadyCoveredResult)
             if (isFromMemory) {
+                traceProvider(
+                    phase = ProviderTracePhase.CacheMemory,
+                    message = "searchFlow: region covered (memory)",
+                    effectiveProviders = providers.map { it.name }.sorted(),
+                    poiCount = currentAlreadyCoveredResult.pois.size,
+                )
                 return@channelFlow
             }
         }
@@ -447,7 +490,20 @@ class SelectorPoiProvider(
             }
         }.filterValues { it.isNotEmpty() }
 
+        traceProviderFetchPlanned(
+            source = "searchFlow",
+            effectiveProviders = providers,
+            providerCategories = providerCategories,
+            geoCovered = coverage.geoCovered,
+        )
+
         if (providerCategories.isEmpty() && coverage.geoCovered) {
+            traceProvider(
+                phase = ProviderTracePhase.Skipped,
+                message = "searchFlow: geo covered, nothing to fetch",
+                effectiveProviders = providers.map { it.name }.sorted(),
+                poiCount = cachedPois.size,
+            )
             send(
                 PoiSearchResult(pois = applyPostFilters(cachedPois.values.toList(), request, providers)),
             )
@@ -510,6 +566,15 @@ class SelectorPoiProvider(
             trimPoiCache(request.latitude, request.longitude, maxPoisInCache)
         }
 
+        traceProvider(
+            phase = ProviderTracePhase.Complete,
+            message = "searchFlow done",
+            effectiveProviders = providers.map { it.name }.sorted(),
+            fetchedProviders = providerCategories.keys.map { it.name }.sorted(),
+            poiCount = synchronized(cacheLock) { cachedPois.size },
+            errors = errors.map { "${it.provider}: ${it.message}" },
+        )
+
         // Persist to DB
         try {
             val entitiesToPersist = synchronized(cacheLock) { cachedPois.values.toList() }
@@ -557,9 +622,24 @@ class SelectorPoiProvider(
             settings.selectedPoiProviders
         }
 
-        if (providers.isEmpty()) return PoiSearchResult()
+        if (providers.isEmpty()) {
+            traceProvider(
+                phase = ProviderTracePhase.Skipped,
+                message = "searchResult: no effective providers",
+                countries = isoCountries,
+            )
+            return PoiSearchResult()
+        }
 
         val categoriesToFetch = resolveCategoriesToFetch(settings)
+        traceProviderResolved(
+            source = "searchResult",
+            providers = providers,
+            countries = isoCountries,
+            categories = categoriesToFetch,
+            selectionMode = settings.poiProviderSelectionMode.name,
+            radiusKm = requiredRadiusKm,
+        )
 
         val nowMs = System.currentTimeMillis()
         val diskMinUpdatedAtMs = nowMs - POI_CACHE_DISK_RETENTION_MS
@@ -575,7 +655,15 @@ class SelectorPoiProvider(
             readCoverageAndCache(request, requiredRadiusKm, providers, categoriesToFetch, nowMs)
         }
         val coverage = coverageAndCache.first
-        coverageAndCache.second?.let { return it }
+        coverageAndCache.second?.let {
+            traceProvider(
+                phase = ProviderTracePhase.CacheMemory,
+                message = "searchResult: region covered (memory)",
+                effectiveProviders = providers.map { it.name }.sorted(),
+                poiCount = it.pois.size,
+            )
+            return it
+        }
 
         // Try persistent cache
         val latDelta = requiredRadiusKm / 111.0
@@ -630,7 +718,20 @@ class SelectorPoiProvider(
             }
         }.filterValues { it.isNotEmpty() }
 
+        traceProviderFetchPlanned(
+            source = "searchResult",
+            effectiveProviders = providers,
+            providerCategories = providerCategories,
+            geoCovered = coverage.geoCovered,
+        )
+
         if (providerCategories.isEmpty() && coverage.geoCovered) {
+            traceProvider(
+                phase = ProviderTracePhase.Skipped,
+                message = "searchResult: geo covered, nothing to fetch",
+                effectiveProviders = providers.map { it.name }.sorted(),
+                poiCount = cachedPois.size,
+            )
             return PoiSearchResult(pois = applyPostFilters(cachedPois.values.toList(), request, providers))
         }
 
@@ -680,6 +781,14 @@ class SelectorPoiProvider(
 
         val finalPois = synchronized(cacheLock) { cachedPois.values.toList() }
         val result = applyPostFilters(finalPois, request, providers)
+        traceProvider(
+            phase = ProviderTracePhase.Complete,
+            message = "searchResult done",
+            effectiveProviders = providers.map { it.name }.sorted(),
+            fetchedProviders = providerCategories.keys.map { it.name }.sorted(),
+            poiCount = result.size,
+            errors = errors.map { "${it.provider}: ${it.message}" },
+        )
         Log.d("SelectorPoiProvider", "search providers=$providers categories=$categoriesToFetch skipFilters=${request.skipFilters} -> ${result.size} pois")
         return PoiSearchResult(pois = result, errors = errors)
     }
@@ -778,13 +887,43 @@ class SelectorPoiProvider(
             settings.selectedPoiProviders
         }
 
-        if (providers.isEmpty()) return emptyList()
+        if (providers.isEmpty()) {
+            traceProvider(
+                phase = ProviderTracePhase.Skipped,
+                message = "getGasStations: no effective providers",
+                countries = isoCountries,
+            )
+            return emptyList()
+        }
+
+        traceProviderResolved(
+            source = "getGasStations",
+            providers = providers,
+            countries = isoCountries,
+            categories = setOf(PoiCategory.Gas),
+            selectionMode = settings.poiProviderSelectionMode.name,
+            radiusKm = radiusKm,
+        )
 
         val allPois = mutableListOf<Poi>()
 
         providers.forEach { providerType ->
             val activeProvider = getProvider(providerType)
-            allPois.addAll(activeProvider.getGasStations(latitude, longitude, viewport))
+            val fetchStartMs = System.currentTimeMillis()
+            traceProvider(
+                phase = ProviderTracePhase.FetchStart,
+                message = "getGasStations",
+                provider = providerType.name,
+            )
+            val pois = activeProvider.getGasStations(latitude, longitude, viewport)
+            traceProvider(
+                phase = ProviderTracePhase.FetchEnd,
+                message = "getGasStations done",
+                provider = providerType.name,
+                poiCount = pois.size,
+                durationMs = System.currentTimeMillis() - fetchStartMs,
+            )
+            allPois.addAll(pois)
         }
 
         var result = PoiMerger.mergePois(allPois)
@@ -868,5 +1007,74 @@ class SelectorPoiProvider(
             }
         }
         return enrichedPois
+    }
+
+    private fun isProviderTraceEnabled(): Boolean =
+        settingsManager.settings.value.debugLoggingEnabled
+
+    private fun traceProvider(
+        phase: ProviderTracePhase,
+        message: String,
+        effectiveProviders: List<String> = emptyList(),
+        fetchedProviders: List<String> = emptyList(),
+        countries: List<String> = emptyList(),
+        categories: List<String> = emptyList(),
+        provider: String? = null,
+        poiCount: Int? = null,
+        durationMs: Long? = null,
+        errors: List<String> = emptyList(),
+    ) {
+        if (!isProviderTraceEnabled()) return
+        ProviderTraceStore.add(
+            ProviderTraceEntry(
+                id = System.nanoTime().toString(),
+                timestamp = System.currentTimeMillis(),
+                phase = phase,
+                message = message,
+                effectiveProviders = effectiveProviders,
+                fetchedProviders = fetchedProviders,
+                countries = countries,
+                categories = categories,
+                provider = provider,
+                poiCount = poiCount,
+                durationMs = durationMs,
+                errors = errors,
+            ),
+        )
+    }
+
+    private fun traceProviderResolved(
+        source: String,
+        providers: Set<PoiProviderType>,
+        countries: List<String>,
+        categories: Set<PoiCategory>,
+        selectionMode: String,
+        radiusKm: Int,
+    ) {
+        traceProvider(
+            phase = ProviderTracePhase.Resolved,
+            message = "$source ($selectionMode, r=${radiusKm}km)",
+            effectiveProviders = providers.map { it.name }.sorted(),
+            countries = countries.distinct().sorted(),
+            categories = categories.map { it.name }.sorted(),
+        )
+    }
+
+    private fun traceProviderFetchPlanned(
+        source: String,
+        effectiveProviders: Set<PoiProviderType>,
+        providerCategories: Map<PoiProviderType, Set<PoiCategory>>,
+        geoCovered: Boolean,
+    ) {
+        val plan = providerCategories.entries.joinToString { (p, cats) ->
+            "${p.name}:${cats.joinToString { it.name }}"
+        }
+        traceProvider(
+            phase = ProviderTracePhase.FetchPlanned,
+            message = "$source geoCovered=$geoCovered → $plan",
+            effectiveProviders = effectiveProviders.map { it.name }.sorted(),
+            fetchedProviders = providerCategories.keys.map { it.name }.sorted(),
+            categories = providerCategories.values.flatten().map { it.name }.distinct().sorted(),
+        )
     }
 }
