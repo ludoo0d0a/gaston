@@ -77,15 +77,6 @@ data class AppSettings(
     val batteryCapacityKwh: Float? = null,
     val gasTankCapacityLiters: Float? = null,
     val gasConsumptionLper100km: Float? = null,
-    val openChargeMapKey: String = "",
-    /** Eco-Movement OCPI Data API key (Authorization: Token ...). */
-    val ecoMovementKey: String = "",
-    /** Fuelprices.dk API key (Denmark). */
-    val fuelpricesDkKey: String = "",
-    /** NSW FuelCheck API key (Australia). */
-    val nswFuelCheckKey: String = "",
-    /** NSW FuelCheck API secret (Australia). */
-    val nswFuelCheckSecret: String = "",
     val selectedOverpassAmenityTypes: Set<String> = emptySet(),
     /** Amenities to keep fetching in the background after the user leaves Other mode (cache warming). */
     val cacheWarmAmenityTypes: Set<String> = emptySet(),
@@ -96,7 +87,6 @@ data class AppSettings(
     val googleUserName: String? = null,
     val isLoggedIn: Boolean = false,
     val tollDataPath: String? = null,
-    val mobiliteitLuxembourgKey: String = "",
     val routeHistory: List<GeocodedPlace> = emptyList(),
     val favoriteLocations: List<GeocodedPlace> = emptyList(),
     val isPremium: Boolean = false,
@@ -132,30 +122,6 @@ open class SettingsManager(
     }
 
     private fun loadSettings(): AppSettings {
-        val mobiliteitLuxembourgKey =
-            prefs.getString("mobiliteit_luxembourg_key", "")?.takeIf { it.isNotEmpty() }
-                ?: BuildConfig.MOBILITEIT_LUXEMBOURG_KEY
-
-        val openChargeMapKey =
-            prefs.getString("openchargemap_key", "")?.takeIf { it.isNotBlank() }
-                ?: BuildConfig.OPENCHARGEMAP_KEY
-
-        val ecoMovementKey =
-            prefs.getString("eco_movement_key", "")?.takeIf { it.isNotBlank() }
-                ?: BuildConfig.ECO_MOVEMENT_KEY
-
-        val fuelpricesDkKey =
-            prefs.getString("fuelprices_dk_key", "")?.takeIf { it.isNotBlank() }
-                ?: BuildConfig.FUELPRICES_DK_KEY
-
-        val nswFuelCheckKey =
-            prefs.getString("nsw_fuelcheck_key", "")?.takeIf { it.isNotBlank() }
-                ?: BuildConfig.NSW_FUELCHECK_KEY
-
-        val nswFuelCheckSecret =
-            prefs.getString("nsw_fuelcheck_secret", "")?.takeIf { it.isNotBlank() }
-                ?: BuildConfig.NSW_FUELCHECK_SECRET
-
         val routeHistoryJson = prefs.getString("route_history", null)
         val routeHistory = try {
             if (routeHistoryJson.isNullOrBlank()) emptyList() else Json.decodeFromString<List<GeocodedPlace>>(routeHistoryJson)
@@ -267,11 +233,6 @@ open class SettingsManager(
             batteryCapacityKwh = prefs.getString("battery_capacity_kwh", null)?.toFloatOrNull(),
             gasTankCapacityLiters = prefs.getString("gas_tank_capacity_liters", null)?.toFloatOrNull(),
             gasConsumptionLper100km = sanitizeConsumption(prefs.getString("gas_consumption_l_per_100km", null)?.toFloatOrNull()),
-            openChargeMapKey = openChargeMapKey,
-            ecoMovementKey = ecoMovementKey,
-            fuelpricesDkKey = fuelpricesDkKey,
-            nswFuelCheckKey = nswFuelCheckKey,
-            nswFuelCheckSecret = nswFuelCheckSecret,
             selectedOverpassAmenityTypes = prefs.getStringSet("overpass_amenity_types", null)?.toSet()
                 ?: emptySet(),
             cacheWarmAmenityTypes = prefs.getStringSet("cache_warm_amenity_types", null)?.toSet()
@@ -283,7 +244,6 @@ open class SettingsManager(
             googleUserName = prefs.getString("google_user_name", null),
             isLoggedIn = prefs.getBoolean("is_logged_in", false),
             tollDataPath = prefs.getString("toll_data_path", null),
-            mobiliteitLuxembourgKey = mobiliteitLuxembourgKey,
             routeHistory = routeHistory,
             favoriteLocations = favoriteLocations,
             isPremium = prefs.getBoolean("is_premium", false),
@@ -337,11 +297,6 @@ open class SettingsManager(
             .putString("battery_capacity_kwh", sanitized.batteryCapacityKwh?.toString())
             .putString("gas_tank_capacity_liters", sanitized.gasTankCapacityLiters?.toString())
             .putString("gas_consumption_l_per_100km", sanitized.gasConsumptionLper100km?.toString())
-            .putString("openchargemap_key", settings.openChargeMapKey)
-            .putString("eco_movement_key", settings.ecoMovementKey)
-            .putString("fuelprices_dk_key", settings.fuelpricesDkKey)
-            .putString("nsw_fuelcheck_key", settings.nswFuelCheckKey)
-            .putString("nsw_fuelcheck_secret", settings.nswFuelCheckSecret)
             .putStringSet("overpass_amenity_types", settings.selectedOverpassAmenityTypes)
             .putStringSet("cache_warm_amenity_types", settings.cacheWarmAmenityTypes)
             .putString("phone_map_engine", settings.phoneMapEngine.name)
@@ -351,7 +306,6 @@ open class SettingsManager(
             .putString("google_user_name", sanitized.googleUserName)
             .putBoolean("is_logged_in", sanitized.isLoggedIn)
             .putString("toll_data_path", sanitized.tollDataPath)
-            .putString("mobiliteit_luxembourg_key", sanitized.mobiliteitLuxembourgKey)
             .putString("route_history", Json.encodeToString(sanitized.routeHistory))
             .putString("favorite_locations", Json.encodeToString(sanitized.favoriteLocations))
             .putBoolean("is_premium", sanitized.isPremium)
