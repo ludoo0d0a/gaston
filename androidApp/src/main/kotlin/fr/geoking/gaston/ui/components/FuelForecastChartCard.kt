@@ -144,6 +144,12 @@ fun UnifiedFuelForecastChartCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Text(
+                stringResource(R.string.forecast_chart_projection_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
 
             if (isLoading && filteredHistory.isEmpty()) {
                 Box(
@@ -183,8 +189,17 @@ fun UnifiedFuelForecastChartCard(
                         val color = fuelColors[fuelId] ?: primaryColor
                         LegendItem(fuelTypeLabel(fuelId), color)
                     }
+                    if (filteredForecast.values.any { it.isNotEmpty() }) {
+                        LegendDashedItem(
+                            label = stringResource(R.string.forecast_legend_projection),
+                            color = primaryColor
+                        )
+                    }
                     if (brentHistory.isNotEmpty()) {
-                        LegendItem(stringResource(R.string.forecast_legend_brent), brentColor)
+                        LegendDashedItem(
+                            label = stringResource(R.string.forecast_legend_brent),
+                            color = brentColor
+                        )
                     }
                 }
             }
@@ -201,6 +216,27 @@ private fun LegendItem(label: String, color: Color) {
                 .clip(CircleShape)
                 .background(color)
         )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(start = 4.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun LegendDashedItem(label: String, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Canvas(Modifier.size(width = 18.dp, height = 10.dp)) {
+            drawLine(
+                color = color,
+                start = Offset(0f, size.height / 2f),
+                end = Offset(size.width, size.height / 2f),
+                strokeWidth = 3f,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
+            )
+        }
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,

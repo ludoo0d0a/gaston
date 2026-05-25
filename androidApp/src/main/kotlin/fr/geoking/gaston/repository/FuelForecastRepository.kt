@@ -1,10 +1,13 @@
 package fr.geoking.gaston.repository
 
+import fr.geoking.gaston.api.datagouv.DataGouvNationalFuelClient
 import fr.geoking.gaston.api.datagouv.DataGouvPrixCarburantClient
 import fr.geoking.gaston.api.datagouv.DataGouvPrixCarburantStation
+import fr.geoking.gaston.api.datagouv.NationalFuelDailyAverage
 import fr.geoking.gaston.fuelforecast.DailyClose
 import fr.geoking.gaston.fuelforecast.FuelForecastResult
 import fr.geoking.gaston.fuelforecast.MarketReturnInputs
+import fr.geoking.gaston.fuelforecast.NationalFuelTrendPredictor
 import fr.geoking.gaston.fuelforecast.RuleBasedFuelPricePredictor
 import fr.geoking.gaston.fuelforecast.StooqDailyClient
 import fr.geoking.gaston.fuelforecast.StooqSymbols
@@ -35,10 +38,12 @@ private val FUEL_PRIORITY = listOf("gazole", "sp95", "sp98", "gplc", "e85")
 class FuelForecastRepository(
     private val http: HttpClient,
     private val db: AppDatabase,
-    private val predictor: RuleBasedFuelPricePredictor = RuleBasedFuelPricePredictor()
+    private val marketPredictor: RuleBasedFuelPricePredictor = RuleBasedFuelPricePredictor(),
+    private val trendPredictor: NationalFuelTrendPredictor = NationalFuelTrendPredictor()
 ) {
     private val stooq = StooqDailyClient(http)
     private val prix = DataGouvPrixCarburantClient(http)
+    private val nationalFuel = DataGouvNationalFuelClient(http)
     private val marketDao = db.marketDailyQuoteDao()
     private val localAvgDao = db.localFuelAvgDailyDao()
     private val predictionDao = db.fuelPricePredictionDao()
@@ -48,6 +53,8 @@ class FuelForecastRepository(
 
     companion object {
         private const val MARKET_CACHE_MS = 4L * 60L * 60L * 1000L
+        private const val NATIONAL_HISTORY_CACHE_MS = 12L * 60L * 60L * 1000L
+        private const val NATIONAL_HISTORY_DAYS = 14
         private const val CHEAPEST_STATIONS = 20
         private const val SEARCH_RADIUS_KM = 15
         private const val STATION_LIMIT = 100
@@ -113,11 +120,12 @@ class FuelForecastRepository(
             )
         }
 
-        refreshNationalAveragesIfStale(today, now)
+        refreshNationalHistoryIfStale(today, now)
 
         refreshMarketCacheIfStale(now)
 
-        val fromDay = LocalDate.parse(today).minusDays(14).toString()
+        val fromDay = LocalDate.parse(today).minusDays(NATIONAL_HISTORY_DAYS.toLong()).toString()
+        val nationalHistoryByFuel = loadNationalHistoryFromDb(fromDay, today)
         var brent = loadClosesFromDb(StooqSymbols.BRENT_UK, fromDay)
         var ho = loadClosesFromDb(StooqSymbols.HEATING_OIL, fromDay)
         var fx = loadClosesFromDb(StooqSymbols.EURUSD, fromDay)
@@ -144,34 +152,44 @@ class FuelForecastRepository(
         val allForecasts = mutableMapOf<String, List<DailyPricePoint>>()
 
         for (fuel in effectiveFuels) {
-            val baseline = localAvgDao.getDay(locKey, fuel, today)?.avgPrice
-            if (baseline != null && brent.size >= 4) {
-                val forecast = predictor.predict(fuel, baseline, brent, ho, fx)
-                persistPredictions(today, now, locKey, fuel, baseline, forecast)
-            }
-
-            val history = localAvgDao.series(locKey, fuel, fromDay).map {
-                DailyPricePoint(day = it.day, priceEurPerL = it.avgPrice, isForecast = false)
+            val nationalHistory = nationalHistoryByFuel[fuel].orEmpty()
+            val history = nationalHistory.map {
+                DailyPricePoint(day = it.day, priceEurPerL = it.priceEurPerL, isForecast = false)
             }
             allHistories[fuel] = history
 
-            val predictions = predictionDao.forCreationDay(today, fuel, locKey)
-            val forecastPoints = predictions.map { p ->
-                DailyPricePoint(day = p.targetDay, priceEurPerL = p.predictedPrice, isForecast = true)
+            val baseline = nationalHistory.lastOrNull()?.priceEurPerL
+                ?: localAvgDao.getDay(locKey, fuel, today)?.avgPrice
+            val trendProjection = trendPredictor.project(nationalHistory, anchorDay = today)
+            val forecastPoints = trendProjection.map {
+                DailyPricePoint(day = it.day, priceEurPerL = it.priceEurPerL, isForecast = true)
             }
             allForecasts[fuel] = forecastPoints
 
+            if (baseline != null && forecastPoints.isNotEmpty()) {
+                persistTrendPredictions(today, now, locKey, fuel, baseline, trendProjection)
+            }
+            if (baseline != null && brent.size >= 4) {
+                val marketForecast = marketPredictor.predict(fuel, baseline, brent, ho, fx)
+                persistPredictions(today, now, locKey, fuel, baseline, marketForecast)
+            }
+
+            val predictions = predictionDao.forCreationDay(today, fuel, locKey)
             val score = predictions.firstOrNull()?.marketScore
-            val up = predictions.firstOrNull()?.predictedUp
+            val up = trendProjection.lastOrNull()?.priceEurPerL?.let { projected ->
+                baseline != null && projected > baseline + DIRECTION_EPSILON_EUR
+            } ?: predictions.firstOrNull()?.predictedUp
 
             val accFrom = LocalDate.parse(today).minusDays(7).toString()
             val accRow = scoreDao.accuracySince(fuel, locKey, accFrom)
             val lastScore = scoreDao.latestScoreForLocation(fuel, locKey)
 
-            val error = if (stationPricesForFuel(stations, fuel).isEmpty()) {
-                "No pump prices for $fuel nearby. Try again later."
-            } else {
-                null
+            val error = when {
+                nationalHistory.isEmpty() ->
+                    "National price history unavailable. Check connection and try again."
+                trendProjection.isEmpty() ->
+                    "Not enough history yet to project prices (need a few days of data)."
+                else -> null
             }
 
             resultMap[fuel] = FuelForecastUiState(
@@ -194,7 +212,7 @@ class FuelForecastRepository(
                 locationKey = locKey,
                 allFuelsHistory = allHistories,
                 allFuelsForecast = allForecasts,
-                brentHistory = brent
+                brentHistory = emptyList()
             )
         }
 
@@ -237,8 +255,9 @@ class FuelForecastRepository(
         val pending = predictionDao.pendingScoring(todayParis)
         val now = System.currentTimeMillis()
         for (p in pending) {
-            val actualRow = localAvgDao.getDay(p.locationKey, p.fuelId, p.targetDay) ?: continue
-            val actual = actualRow.avgPrice
+            val actual = nationalDao.getPrice("FR", p.fuelId, p.targetDay)?.avgPrice
+                ?: localAvgDao.getDay(p.locationKey, p.fuelId, p.targetDay)?.avgPrice
+                ?: continue
             val baseline = p.baselinePrice
             val actualUp = actual > baseline + DIRECTION_EPSILON_EUR
             val correct = actualUp == p.predictedUp
@@ -274,28 +293,74 @@ class FuelForecastRepository(
         }
     }
 
-    private suspend fun refreshNationalAveragesIfStale(today: String, nowMs: Long) {
+    private suspend fun refreshNationalHistoryIfStale(today: String, nowMs: Long) {
         val fuelToSample = "gazole"
         val existing = nationalDao.getPrice("FR", fuelToSample, today)
-        if (existing != null && nowMs - existing.updatedAtMs < MARKET_CACHE_MS) return
+        if (existing != null && nowMs - existing.updatedAtMs < NATIONAL_HISTORY_CACHE_MS) return
 
+        val fromDay = LocalDate.parse(today).minusDays(NATIONAL_HISTORY_DAYS.toLong()).toString()
         try {
-            val averages = prix.getNationalAverages(limit = 100)
-            for ((fuelName, price) in averages) {
-                val fuelId = MapPoiFilter.fuelNameToId(fuelName) ?: continue
-                nationalDao.upsert(
-                    fr.geoking.gaston.persistence.NationalFuelPriceEntity(
-                        id = UUID.randomUUID().toString(),
-                        countryCode = "FR",
-                        fuelId = fuelId,
-                        day = today,
-                        avgPrice = price,
-                        updatedAtMs = nowMs
+            val history = nationalFuel.fetchNationalDailyHistory(fromDay, today)
+            for ((fuelId, series) in history) {
+                for (point in series) {
+                    nationalDao.upsert(
+                        fr.geoking.gaston.persistence.NationalFuelPriceEntity(
+                            id = "${fuelId}_${point.day}",
+                            countryCode = "FR",
+                            fuelId = fuelId,
+                            day = point.day,
+                            avgPrice = point.priceEurPerL,
+                            updatedAtMs = nowMs
+                        )
                     )
-                )
+                }
             }
         } catch (e: Exception) {
-            android.util.Log.e("FuelForecastRepository", "Failed to refresh national averages", e)
+            android.util.Log.e("FuelForecastRepository", "Failed to refresh national fuel history", e)
+        }
+    }
+
+    private suspend fun loadNationalHistoryFromDb(
+        fromDay: String,
+        toDay: String
+    ): Map<String, List<NationalFuelDailyAverage>> {
+        val fuels = listOf("gazole", "sp95", "sp98", "gplc", "e85")
+        return fuels.associateWith { fuelId ->
+            nationalDao.getPricesSince("FR", fuelId, fromDay)
+                .filter { it.day <= toDay }
+                .sortedBy { it.day }
+                .map { NationalFuelDailyAverage(day = it.day, priceEurPerL = it.avgPrice) }
+        }.filterValues { it.isNotEmpty() }
+    }
+
+    private suspend fun persistTrendPredictions(
+        createdDay: String,
+        createdAtMs: Long,
+        locationKey: String,
+        fuelId: String,
+        baseline: Double,
+        projection: List<NationalFuelDailyAverage>
+    ) {
+        projection.forEachIndexed { index, point ->
+            val horizon = index + 1
+            if (predictionDao.existsForHorizon(createdDay, fuelId, locationKey, horizon)) return@forEachIndexed
+            val predictedUp = point.priceEurPerL > baseline + DIRECTION_EPSILON_EUR
+            predictionDao.insert(
+                FuelPricePredictionEntity(
+                    id = UUID.randomUUID().toString(),
+                    createdAtMs = createdAtMs,
+                    createdDay = createdDay,
+                    targetDay = point.day,
+                    horizonDays = horizon,
+                    fuelId = fuelId,
+                    locationKey = locationKey,
+                    predictedUp = predictedUp,
+                    predictedPrice = point.priceEurPerL,
+                    baselinePrice = baseline,
+                    marketScore = 0.0,
+                    inputsJson = """{"source":"datagouv_national_trend"}"""
+                )
+            )
         }
     }
 

@@ -489,12 +489,14 @@
     <string name="premium_required_message">Gaston Premium Required</string>
     <string name="forecast_rule_based_title">Fuel price outlook (rule-based)</string>
     <string name="forecast_fuel_label">Fuel: %1$s</string>
-    <string name="forecast_chart_disclaimer">Near-you average vs Brent/heating oil/EUR-USD (Stooq). Not financial advice.</string>
-    <string name="forecast_price_comparison">Price Comparison (normalized)</string>
-    <string name="forecast_relative_trends">Relative trends of local fuels vs Brent. 14-day history.</string>
-    <string name="forecast_regional_estimations">Regional estimations based on market trends and local pump averages.</string>
+    <string name="forecast_chart_disclaimer">National data.gouv.fr averages; dashed line = trend projection. Not financial advice.</string>
+    <string name="forecast_price_comparison">National average prices (France)</string>
+    <string name="forecast_relative_trends">Daily national averages from data.gouv.fr (prix-carburants-quotidien). Solid: history; dashed: projected next days.</string>
+    <string name="forecast_chart_projection_hint">Dashed lines are trend projections, not official prices.</string>
+    <string name="forecast_legend_projection">Projection</string>
+    <string name="forecast_regional_estimations">National averages and short-term projections from data.gouv.fr history.</string>
     <string name="forecast_algorithm_title">Price Estimation Algorithm</string>
-    <string name="forecast_algorithm_description">Our price estimation is based on an analysis of several data sources: average regional prices from local pumps, global market trends (Brent crude oil, heating oil), and the EUR/USD exchange rate.</string>
+    <string name="forecast_algorithm_description">History shows France-wide daily average pump prices from data.gouv.fr. Projections extrapolate the recent trend over the next few days (dashed line on the chart). Brent and EUR/USD can refine direction when market data is available.</string>
     <string name="forecast_hit_rate">Hit rate: %1$s · MAE: %2$s €/L</string>
     <string name="forecast_direction_matched">Direction matched outcome</string>
     <string name="forecast_direction_not_matched">Direction did not match</string>

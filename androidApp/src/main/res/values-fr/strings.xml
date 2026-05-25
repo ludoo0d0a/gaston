@@ -490,12 +490,14 @@
     <string name="premium_required_message">Gaston Premium requis</string>
     <string name="forecast_rule_based_title">Perspectives prix carburant (règles)</string>
     <string name="forecast_fuel_label">Carburant : %1$s</string>
-    <string name="forecast_chart_disclaimer">Moyenne locale vs Brent/pétrole chauffage/EUR-USD (Stooq). Ce n\'est pas un conseil financier.</string>
-    <string name="forecast_price_comparison">Comparaison des prix (normalisée)</string>
-    <string name="forecast_relative_trends">Tendances relatives des carburants locaux vs Brent. Historique 14 jours.</string>
-    <string name="forecast_regional_estimations">Estimations régionales basées sur les tendances du marché et les stations locales.</string>
+    <string name="forecast_chart_disclaimer">Moyennes nationales data.gouv.fr ; trait pointillé = projection de tendance. Ce n\'est pas un conseil financier.</string>
+    <string name="forecast_price_comparison">Prix moyens nationaux (France)</string>
+    <string name="forecast_relative_trends">Moyennes nationales quotidiennes data.gouv.fr (prix-carburants-quotidien). Trait plein : historique ; pointillé : projection.</string>
+    <string name="forecast_chart_projection_hint">Les traits pointillés sont une projection de tendance, pas des prix officiels.</string>
+    <string name="forecast_legend_projection">Projection</string>
+    <string name="forecast_regional_estimations">Moyennes nationales et projections court terme à partir de l\'historique data.gouv.fr.</string>
     <string name="forecast_algorithm_title">Algorithme d\'estimation des prix</string>
-    <string name="forecast_algorithm_description">Notre estimation des prix repose sur l\'analyse de plusieurs sources de données : les prix moyens régionaux des pompes locales, les tendances du marché mondial (pétrole brut Brent, fioul domestique) et le taux de change EUR/USD.</string>
+    <string name="forecast_algorithm_description">L\'historique affiche les prix moyens nationaux quotidiens data.gouv.fr. La projection prolonge la tendance récente sur les prochains jours (trait pointillé sur le graphique). Brent et EUR/USD peuvent affiner la direction lorsque les données marché sont disponibles.</string>
     <string name="forecast_hit_rate">Taux de réussite : %1$s · MAE : %2$s €/L</string>
     <string name="forecast_direction_matched">Direction conforme au résultat</string>
     <string name="forecast_direction_not_matched">Direction non conforme</string>
