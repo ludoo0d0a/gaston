@@ -55,6 +55,8 @@ import org.koin.compose.koinInject
 
 import androidx.compose.runtime.snapshotFlow
 
+enum class PoiSortOrder { Distance, Price }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PoiOverlayHost(
@@ -71,6 +73,7 @@ fun PoiOverlayHost(
     poisForOverlay: List<Poi>,
     onCenterMapOnPoi: (poi: Poi) -> Unit,
     onInvalidate: () -> Unit,
+    sortOrder: PoiSortOrder = PoiSortOrder.Distance,
     initialSelectedPoi: Poi? = null
 ) {
     val scope = rememberCoroutineScope()
@@ -78,7 +81,7 @@ fun PoiOverlayHost(
 
     var showPaywallForFavorite by remember { mutableStateOf(false) }
     var frozenPoisForSheet by remember { mutableStateOf<List<Poi>>(emptyList()) }
-    var showCheapestOnly by remember { mutableStateOf(false) }
+    var appliedSortOrder by remember { mutableStateOf<PoiSortOrder?>(null) }
     var scrollRequestPoiId by remember { mutableStateOf(initialSelectedPoi?.id) }
     var poiForDetailsDialog by remember { mutableStateOf<Poi?>(null) }
 
@@ -113,68 +116,68 @@ fun PoiOverlayHost(
         }
     }
 
-    LaunchedEffect(selectedPoi, poisForOverlay, favoriteIds) {
+    LaunchedEffect(selectedPoi, poisForOverlay, favoriteIds, sortOrder) {
         val sel = selectedPoi
         if (sel != null) {
             val currentPois = poisForOverlay
             val shouldRebuild =
-                frozenPoisForSheet.isEmpty() || currentPois.size > frozenPoisForSheet.size
+                frozenPoisForSheet.isEmpty() ||
+                        sortOrder != appliedSortOrder ||
+                        currentPois.size > frozenPoisForSheet.size
             if (shouldRebuild) {
-                val others = currentPois.filter { it.id != sel.id }.toMutableList()
-                val sorted = mutableListOf(sel)
+                if (sortOrder == PoiSortOrder.Price) {
+                    val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+                    val sorted = currentPois.map { poi ->
+                        val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                            ?.minOfOrNull { it.price }
+                        Pair(poi, minPrice)
+                    }.sortedWith(compareBy<Pair<Poi, Double?>> { it.second ?: Double.MAX_VALUE }
+                        .thenBy { approxDistanceKm(sel.latitude, sel.longitude, it.first.latitude, it.first.longitude) })
+                        .map { it.first }
 
-                var current: Poi = sel
-                while (others.isNotEmpty()) {
-                    val next = others.minBy { p ->
-                        approxDistanceKm(current.latitude, current.longitude, p.latitude, p.longitude)
+                    frozenPoisForSheet = sorted
+                } else {
+                    val others = currentPois.filter { it.id != sel.id }.toMutableList()
+                    val sorted = mutableListOf(sel)
+
+                    var current: Poi = sel
+                    while (others.isNotEmpty()) {
+                        val next = others.minBy { p ->
+                            approxDistanceKm(current.latitude, current.longitude, p.latitude, p.longitude)
+                        }
+                        sorted.add(next)
+                        others.remove(next)
+                        current = next
                     }
-                    sorted.add(next)
-                    others.remove(next)
-                    current = next
-                }
 
-                frozenPoisForSheet = sorted
+                    frozenPoisForSheet = sorted
+                }
+                appliedSortOrder = sortOrder
             }
         } else {
             frozenPoisForSheet = emptyList()
+            appliedSortOrder = null
         }
     }
 
-    val fuelIdsForCheapest = remember(settings) { settings.effectiveMapEnergyFilterIds() - "electric" }
-    val minPrice = remember(poisForOverlay, fuelIdsForCheapest) {
-        if (fuelIdsForCheapest.isEmpty()) null
-        else {
-            poisForOverlay.mapNotNull { poi ->
-                poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
-                    ?.minByOrNull { it.price }?.price
-            }.minOrNull()
-        }
-    }
-
-    val cheapestPois = remember(poisForOverlay, minPrice, fuelIdsForCheapest) {
-        if (minPrice == null) emptyList()
-        else {
-            poisForOverlay.filter { poi ->
-                poi.fuelPrices?.any { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest && it.price == minPrice } == true
-            }
-        }
-    }
-
-    LaunchedEffect(showCheapestOnly) {
-        if (showCheapestOnly && cheapestPois.isNotEmpty()) {
-            if (selectedPoi == null || cheapestPois.none { it.id == selectedPoi.id }) {
-                val first = cheapestPois.first()
-                onSelectedPoiChange(first)
-                scrollRequestPoiId = first.id
-            }
-        }
-    }
-
+    // Ensure the list is scrolled to the selected POI when it changes externally (e.g. map click).
     LaunchedEffect(selectedPoi?.id) {
-        if (selectedPoi == null) {
-            showCheapestOnly = false
-        } else if (showCheapestOnly && cheapestPois.isNotEmpty() && cheapestPois.none { it.id == selectedPoi.id }) {
-            showCheapestOnly = false
+        val selId = selectedPoi?.id ?: return@LaunchedEffect
+        // We only trigger a scroll if the selected POI is NOT already the one at the center of the list.
+        val viewportWidth = lazyListState.layoutInfo.viewportSize.width
+        if (viewportWidth > 0) {
+            val viewportCenter = viewportWidth / 2
+            val closestItem = lazyListState.layoutInfo.visibleItemsInfo.minByOrNull { item ->
+                val itemCenter = item.offset + item.size / 2
+                kotlin.math.abs(itemCenter - viewportCenter)
+            }
+            val centeredPoiId = closestItem?.index?.let { idx -> frozenPoisForSheet.getOrNull(idx)?.id }
+            if (centeredPoiId != selId) {
+                scrollRequestPoiId = selId
+            }
+        } else {
+            // Initial opening
+            scrollRequestPoiId = selId
         }
     }
 
@@ -186,11 +189,7 @@ fun PoiOverlayHost(
     }
 
     if (selectedPoi != null) {
-        val listToShow = if (showCheapestOnly && cheapestPois.isNotEmpty()) {
-            cheapestPois
-        } else {
-            frozenPoisForSheet.takeIf { it.isNotEmpty() } ?: listOf(selectedPoi)
-        }
+        val listToShow = frozenPoisForSheet.takeIf { it.isNotEmpty() } ?: listOf(selectedPoi)
         val currentListToShow by rememberUpdatedState(listToShow)
 
         LaunchedEffect(scrollRequestPoiId) {
@@ -233,23 +232,6 @@ fun PoiOverlayHost(
             containerColor = MaterialTheme.colorScheme.surface,
             dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
-            if (minPrice != null && cheapestPois.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    IconButton(onClick = { showCheapestOnly = !showCheapestOnly }) {
-                        Icon(
-                            imageVector = Icons.Default.PriceCheck,
-                            contentDescription = stringResource(R.string.action_show_cheapest),
-                            tint = if (showCheapestOnly) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
 
             val configuration = LocalConfiguration.current
             val cardHeight = (configuration.screenHeightDp * 0.85f).dp

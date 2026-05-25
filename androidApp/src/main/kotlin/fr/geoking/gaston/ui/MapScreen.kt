@@ -173,7 +173,7 @@ fun MapScreen(
     var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val billingManager = org.koin.compose.koinInject<fr.geoking.gaston.premium.BillingManager>()
     var showPaywallForFavorite by remember { mutableStateOf(false) }
-    var showCheapestList by remember { mutableStateOf(false) }
+    var poiSortOrder by remember { mutableStateOf(fr.geoking.gaston.ui.map.PoiSortOrder.Distance) }
 
 
     var hasLocationPermission by remember {
@@ -312,7 +312,19 @@ fun MapScreen(
         floatingActionButton = {
             if (currentSearchMode == SearchMode.Fuel && poisInView.any { !it.fuelPrices.isNullOrEmpty() }) {
                 FloatingActionButton(
-                    onClick = { showCheapestList = true },
+                    onClick = {
+                        val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+                        val cheapest = poisInView.mapNotNull { poi ->
+                            val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                                ?.minOfOrNull { it.price }
+                            if (minPrice != null) Pair(poi, minPrice) else null
+                        }.minByOrNull { it.second }?.first
+
+                        if (cheapest != null) {
+                            poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Price
+                            selectedPoi = cheapest
+                        }
+                    },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
@@ -482,6 +494,9 @@ fun MapScreen(
                             icon = markerBitmap,
                             anchor = Offset(0.5f, 1f),
                             onClick = {
+                                if (selectedPoi == null) {
+                                    poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
+                                }
                                 selectedPoi = poi
                                 true
                             }
@@ -529,7 +544,13 @@ fun MapScreen(
         setFavoriteIds = { favoriteIds = it },
         communityRepo = communityRepo,
         selectedPoi = selectedPoi,
-        onSelectedPoiChange = { selectedPoi = it },
+        onSelectedPoiChange = {
+            selectedPoi = it
+            if (it == null) {
+                poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
+            }
+        },
+        sortOrder = poiSortOrder,
         poisForOverlay = if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
             poisInView.filter { it.id in favoriteIds }
         } else {
@@ -548,112 +569,6 @@ fun MapScreen(
         initialSelectedPoi = initialSelectedPoi
     )
 
-    if (showCheapestList) {
-        val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
-        val rankedPois = remember(poisInView, fuelIds) {
-            val top3 = poisInView.flatMap { poi ->
-                poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                    ?.map { it.price } ?: emptyList()
-            }.distinct().sorted().take(3)
-
-            poisInView.mapNotNull { poi ->
-                val minPoiPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                    ?.minOfOrNull { it.price }
-                if (minPoiPrice == null) null
-                else {
-                    val rank = top3.indexOf(minPoiPrice)
-                    if (rank != -1) Pair(poi, rank + 1) else null
-                }
-            }.sortedBy { it.second }
-        }
-
-        ModalBottomSheet(
-            onDismissRequest = { showCheapestList = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.cheapest_stations_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                androidx.compose.foundation.lazy.LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 32.dp)
-                ) {
-                    items(rankedPois) { (poi, rank) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    when (rank) {
-                                        1 -> ColorHelper.ColorRank1.copy(alpha = 0.1f)
-                                        2 -> ColorHelper.ColorRank2.copy(alpha = 0.1f)
-                                        3 -> ColorHelper.ColorRank3.copy(alpha = 0.1f)
-                                        else -> Color.Transparent
-                                    },
-                                    MaterialTheme.shapes.medium
-                                )
-                                .padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable {
-                                        selectedPoi = poi
-                                        showCheapestList = false
-                                    }
-                            ) {
-                                Text(
-                                    text = poi.name.ifBlank { poi.siteName ?: stringResource(R.string.gas_station) },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                                    ?.minByOrNull { it.price }
-                                if (minPrice != null) {
-                                    Text(
-                                        text = "${minPrice.fuelName}: €%.3f".format(minPrice.price),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = when (rank) {
-                                            1 -> ColorHelper.ColorRank1
-                                            2 -> ColorHelper.ColorRank2
-                                            3 -> ColorHelper.ColorRank3
-                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                        }
-                                    )
-                                }
-                            }
-
-                            IconButton(onClick = {
-                                scope.launch {
-                                    cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(poi.latitude, poi.longitude)))
-                                }
-                            }) {
-                                Icon(Icons.Default.MyLocation, contentDescription = stringResource(R.string.action_recenter))
-                            }
-
-                            IconButton(onClick = {
-                                val uri = IntentNavigationHelper.getNavigationUri(poi)
-                                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                            }) {
-                                Icon(Icons.Default.Directions, contentDescription = stringResource(R.string.navigate))
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF0F172A)
