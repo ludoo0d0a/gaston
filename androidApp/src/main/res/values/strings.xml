@@ -101,6 +101,7 @@
     <string name="action_fullscreen">Fullscreen</string>
     <string name="action_request_details">Request Details</string>
     <string name="action_show_cheapest_list">Show cheapest list</string>
+    <string name="action_toggle_theme">Toggle theme</string>
     <string name="action_body_viewer">Body Viewer</string>
     <string name="action_all">All</string>
     <string name="action_manual">Manual</string>

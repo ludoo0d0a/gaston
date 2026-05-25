@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.ThemeMode
 import fr.geoking.gaston.ui.anim.AnimationPalette
 import fr.geoking.gaston.ui.components.AdMobBanner
 
@@ -106,6 +107,24 @@ fun MapScaffold(
                                 }
                             }
                         }
+                    }
+
+                    IconButton(onClick = {
+                        val nextMode = when (settings.uiThemeMode) {
+                            ThemeMode.System -> ThemeMode.Light
+                            ThemeMode.Light -> ThemeMode.Dark
+                            ThemeMode.Dark -> ThemeMode.System
+                        }
+                        settingsManager.saveSettings(settings.copy(uiThemeMode = nextMode))
+                    }) {
+                        Icon(
+                            imageVector = when (settings.uiThemeMode) {
+                                ThemeMode.System -> Icons.Default.BrightnessAuto
+                                ThemeMode.Light -> Icons.Default.LightMode
+                                ThemeMode.Dark -> Icons.Default.DarkMode
+                            },
+                            contentDescription = stringResource(R.string.action_toggle_theme)
+                        )
                     }
 
                     IconButton(onClick = onRefresh) {
