@@ -83,7 +83,8 @@ fun PhoneDashboardMainContent(
     energyFilterIds: Set<String>,
     isLoadingPois: Boolean,
     showLoaderByDelay: Boolean,
-    nearbyPois: List<Poi>,
+    nearbyFuelPois: List<Poi>,
+    nearbyElectricPois: List<Poi>,
     searchError: String?,
     mapDepsReady: Boolean,
     fuelForecastRepository: FuelForecastRepository?,
@@ -144,7 +145,8 @@ fun PhoneDashboardMainContent(
                 showLoaderByDelay = showLoaderByDelay,
                 hasLocationPermission = hasLocationPermission,
                 onRequestLocationPermission = onRequestLocationPermission,
-                nearbyPois = nearbyPois,
+                nearbyFuelPois = nearbyFuelPois,
+                nearbyElectricPois = nearbyElectricPois,
                 userLat = userLat,
                 userLon = userLon,
                 energyFilterIds = energyFilterIds,
@@ -213,7 +215,8 @@ private fun PhoneDashboardNearbyCheapestSection(
     showLoaderByDelay: Boolean,
     hasLocationPermission: Boolean,
     onRequestLocationPermission: () -> Unit,
-    nearbyPois: List<Poi>,
+    nearbyFuelPois: List<Poi>,
+    nearbyElectricPois: List<Poi>,
     userLat: Double?,
     userLon: Double?,
     energyFilterIds: Set<String>,
@@ -224,7 +227,29 @@ private fun PhoneDashboardNearbyCheapestSection(
     onPoiSelected: (Poi) -> Unit,
     onOpenMap: (Poi?) -> Unit
 ) {
-    val title = when (currentMode) {
+    val energyMode = settings.effectiveEnergyFilterMode()
+    val isHybrid = energyMode == EnergyFilterMode.Hybrid
+
+    val titleFuel = when (currentMode) {
+        DashboardMode.Fuel, DashboardMode.MyVehicle -> if (selectedSearchLocation != null) {
+            stringResource(R.string.dashboard_cheapest_fuel_near, cityLabelFromGeocodedPlace(selectedSearchLocation))
+        } else {
+            stringResource(R.string.dashboard_cheapest_fuel_nearby)
+        }
+        else -> if (selectedSearchLocation != null) {
+            stringResource(R.string.dashboard_cheapest_near, cityLabelFromGeocodedPlace(selectedSearchLocation))
+        } else {
+            stringResource(R.string.dashboard_cheapest_nearby)
+        }
+    }
+
+    val titleElectric = if (selectedSearchLocation != null) {
+        stringResource(R.string.dashboard_nearest_charging_near, cityLabelFromGeocodedPlace(selectedSearchLocation))
+    } else {
+        stringResource(R.string.dashboard_nearest_charging_nearby)
+    }
+
+    val titleGeneric = when (currentMode) {
         DashboardMode.Fuel -> if (selectedSearchLocation != null) {
             stringResource(R.string.dashboard_cheapest_near, cityLabelFromGeocodedPlace(selectedSearchLocation))
         } else {
@@ -244,7 +269,7 @@ private fun PhoneDashboardNearbyCheapestSection(
         }
     }
 
-    if (isLoadingPois && showLoaderByDelay && nearbyPois.isEmpty()) {
+    if (isLoadingPois && showLoaderByDelay && nearbyFuelPois.isEmpty() && nearbyElectricPois.isEmpty()) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -296,17 +321,45 @@ private fun PhoneDashboardNearbyCheapestSection(
         } else {
             Modifier.fillMaxWidth()
         }
-        CheapestStationsCard(
-            stations = nearbyPois,
-            userLatitude = userLat,
-            userLongitude = userLon,
-            selectedEnergyIds = energyFilterIds,
-            onClick = onPoiSelected,
-            onMapClick = { onOpenMap(null) },
-            modifier = cardModifier,
-            emptyMessage = searchError,
-            title = title
-        )
+        if (isHybrid) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                CheapestStationsCard(
+                    stations = nearbyFuelPois,
+                    userLatitude = userLat,
+                    userLongitude = userLon,
+                    selectedEnergyIds = energyFilterIds - "electric",
+                    onClick = onPoiSelected,
+                    onMapClick = { onOpenMap(null) },
+                    modifier = cardModifier,
+                    emptyMessage = searchError,
+                    title = titleFuel
+                )
+                CheapestStationsCard(
+                    stations = nearbyElectricPois,
+                    userLatitude = userLat,
+                    userLongitude = userLon,
+                    selectedEnergyIds = setOf("electric"),
+                    onClick = onPoiSelected,
+                    onMapClick = { onOpenMap(null) },
+                    modifier = cardModifier,
+                    emptyMessage = searchError,
+                    title = titleElectric
+                )
+            }
+        } else {
+            val pois = if (energyMode == EnergyFilterMode.Electric) nearbyElectricPois else nearbyFuelPois
+            CheapestStationsCard(
+                stations = pois,
+                userLatitude = userLat,
+                userLongitude = userLon,
+                selectedEnergyIds = energyFilterIds,
+                onClick = onPoiSelected,
+                onMapClick = { onOpenMap(null) },
+                modifier = cardModifier,
+                emptyMessage = searchError,
+                title = titleGeneric
+            )
+        }
     }
 }
 

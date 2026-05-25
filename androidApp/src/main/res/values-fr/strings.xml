@@ -472,6 +472,10 @@
     <string name="emergency_share_coords">Lat %1$s, Lon %2$s</string>
     <string name="dashboard_cheapest_near">Moins cher près de %1$s</string>
     <string name="dashboard_cheapest_nearby">Moins cher à proximité</string>
+    <string name="dashboard_cheapest_fuel_near">Carburant moins cher près de %1$s</string>
+    <string name="dashboard_cheapest_fuel_nearby">Carburant moins cher à proximité</string>
+    <string name="dashboard_nearest_charging_near">Bornes de recharge près de %1$s</string>
+    <string name="dashboard_nearest_charging_nearby">Bornes de recharge à proximité</string>
     <string name="dashboard_nearest_stations">Stations les plus proches</string>
     <string name="dashboard_nearest_parkings">Parkings les plus proches</string>
     <string name="dashboard_nearest_nearby">Plus proche</string>

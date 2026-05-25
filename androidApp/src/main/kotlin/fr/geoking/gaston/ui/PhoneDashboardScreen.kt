@@ -227,7 +227,7 @@ fun PhoneDashboardScreen(
     // mode, fuel type, power level, brand, etc.). Synchronous, no network,
     // no debounce — toggling Fuel/EV or fuel chips updates the widget
     // instantly using the already-cached `rawNearbyPois`.
-    val nearbyPois by remember {
+    val nearbyFuelPois by remember {
         derivedStateOf {
             val baseLat = userLat
             val baseLon = userLon
@@ -236,10 +236,18 @@ fun PhoneDashboardScreen(
                 return@derivedStateOf emptyList<Poi>()
             }
             val currentProviders = settings.effectiveProvidersAt(baseLat, baseLon)
-            val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+
+            // When in "My Vehicle" mode for a hybrid, we still use the vehicle gas types
+            // but we MUST force the energy mode to Fuel for THIS specific list.
+            val fuelSettings = if (settings.useVehicleFilter && settings.vehicleEnergy == "hybrid") {
+                settings.copy(useVehicleFilter = false, mapEnergyMode = EnergyFilterMode.Fuel, selectedMapEnergyTypes = settings.vehicleGasTypes)
+            } else {
+                settings
+            }
+            val fuelIds = fuelSettings.effectiveMapEnergyFilterIds() - "electric"
 
             StationMapFilters.apply(
-                settings = settings,
+                settings = fuelSettings,
                 pois = rawPois,
                 providers = currentProviders,
                 skipWhenOnlyOverpass = true
@@ -259,6 +267,34 @@ fun PhoneDashboardScreen(
                         distA.compareTo(distB)
                     }
                 }
+                .take(5)
+        }
+    }
+
+    val nearbyElectricPois by remember {
+        derivedStateOf {
+            val baseLat = userLat
+            val baseLon = userLon
+            val rawPois = rawNearbyPois
+            if (baseLat == null || baseLon == null || rawPois.isEmpty()) {
+                return@derivedStateOf emptyList<Poi>()
+            }
+            val currentProviders = settings.effectiveProvidersAt(baseLat, baseLon)
+
+            // Force Electric mode for this list
+            val electricSettings = if (settings.useVehicleFilter && settings.vehicleEnergy == "hybrid") {
+                settings.copy(useVehicleFilter = false, mapEnergyMode = EnergyFilterMode.Electric)
+            } else {
+                settings
+            }
+
+            StationMapFilters.apply(
+                settings = electricSettings,
+                pois = rawPois,
+                providers = currentProviders,
+                skipWhenOnlyOverpass = true
+            )
+                .sortedBy { approxDistanceKm(baseLat, baseLon, it.latitude, it.longitude) }
                 .take(5)
         }
     }
@@ -337,7 +373,8 @@ fun PhoneDashboardScreen(
                 energyFilterIds = energyFilterIds,
                 isLoadingPois = isLoadingPois,
                 showLoaderByDelay = showLoaderByDelay,
-                nearbyPois = nearbyPois,
+                nearbyFuelPois = nearbyFuelPois,
+                nearbyElectricPois = nearbyElectricPois,
                 searchError = searchError,
                 mapDepsReady = mapDepsReady,
                 fuelForecastRepository = fuelForecastRepository,

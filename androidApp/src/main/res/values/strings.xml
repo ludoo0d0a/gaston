@@ -471,6 +471,10 @@
     <string name="emergency_share_coords">Lat %1$s, Lon %2$s</string>
     <string name="dashboard_cheapest_near">Cheapest near %1$s</string>
     <string name="dashboard_cheapest_nearby">Cheapest nearby</string>
+    <string name="dashboard_cheapest_fuel_near">Cheapest fuel near %1$s</string>
+    <string name="dashboard_cheapest_fuel_nearby">Cheapest fuel nearby</string>
+    <string name="dashboard_nearest_charging_near">Nearest charging near %1$s</string>
+    <string name="dashboard_nearest_charging_nearby">Nearest charging nearby</string>
     <string name="dashboard_nearest_stations">Nearest stations</string>
     <string name="dashboard_nearest_parkings">Nearest parkings</string>
     <string name="dashboard_nearest_nearby">Nearest nearby</string>
