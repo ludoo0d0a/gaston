@@ -2,6 +2,7 @@ package fr.geoking.gaston.di
 
 import android.content.Context
 import fr.geoking.gaston.feature.network.AndroidNetworkService
+import fr.geoking.gaston.feature.notification.ConnectivityNotificationForwarder
 import fr.geoking.gaston.feature.notification.NotificationHelper
 import fr.geoking.gaston.feature.weather.AndroidWeatherLookup
 import fr.geoking.gaston.feature.permission.AndroidPermissionManager
@@ -184,6 +185,13 @@ val appModule = module {
     }
 
     single { NotificationHelper(androidContext()) }
+
+    single(createdAtStart = true) {
+        ConnectivityNotificationForwarder.start(
+            connectivityManager = get(),
+            notificationHelper = get()
+        )
+    }
 
     single { fr.geoking.gaston.repository.StationPriceHistoryRepository(dao = get<AppDatabase>().stationPriceSampleDao(), nationalDao = get<AppDatabase>().nationalFuelPriceDao()) }
 

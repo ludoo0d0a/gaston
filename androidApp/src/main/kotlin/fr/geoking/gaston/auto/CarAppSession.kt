@@ -2,17 +2,10 @@ package fr.geoking.gaston.auto
 
 import android.content.Intent
 import android.util.Log
-import androidx.car.app.AppManager
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.Session
-import androidx.car.app.model.Alert
-import androidx.car.app.model.CarIcon
-import androidx.car.app.model.CarText
-import androidx.core.graphics.drawable.IconCompat
-import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.BuildConfig
-import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.geocoding.GeocodingClient
@@ -31,8 +24,6 @@ import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkStatus
 import fr.geoking.gaston.toll.TollCalculator
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.component.inject
@@ -49,18 +40,6 @@ class CarAppSession : Session(), KoinComponent {
     private val connectivityManager: ConnectivityManager by inject()
 
     private var cachedMapDeps: MapDeps? = null
-
-    init {
-        lifecycleScope.launch {
-            connectivityManager.connectivityEvents.collect { event ->
-                val alert = Alert.Builder(NETWORK_ALERT_ID, CarText.create("${event.title}: ${event.message}"), 5000)
-                    .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build())
-                    .build()
-
-                carContext.getCarService(AppManager::class.java).showAlert(alert)
-            }
-        }
-    }
 
     fun getMapDeps(): MapDeps? {
         if (cachedMapDeps == null) {
@@ -167,6 +146,5 @@ class CarAppSession : Session(), KoinComponent {
 
     companion object {
         private const val TAG = "CarAppSession"
-        private const val NETWORK_ALERT_ID = 1001
     }
 }

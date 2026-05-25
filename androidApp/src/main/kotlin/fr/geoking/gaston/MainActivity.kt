@@ -29,8 +29,6 @@ import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.R
 import androidx.compose.ui.res.stringResource
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
-import fr.geoking.gaston.shared.location.ConnectivityManager
-import fr.geoking.gaston.feature.notification.NotificationHelper
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkStatus
 import fr.geoking.gaston.di.MapDeps
@@ -175,18 +173,13 @@ class MainActivity : ComponentActivity() {
             android.util.Log.d("MainActivity", "Dependencies resolved successfully.")
 
             android.util.Log.d("MainActivity", "Calling setContent...")
-            val connectivityManager: ConnectivityManager = get()
-            val notificationHelper: NotificationHelper = get()
-
             installMainComposeContent(
                 diagnostics = diagnostics,
                 settingsManager = settingsManager,
                 authManager = authManager,
                 networkService = networkService,
                 fuelForecastRepository = fuelForecastRepository,
-                isPlaystoreDistribution = BuildConfig.IS_PLAYSTORE_DISTRIBUTION,
-                connectivityManager = connectivityManager,
-                notificationHelper = notificationHelper
+                isPlaystoreDistribution = BuildConfig.IS_PLAYSTORE_DISTRIBUTION
             )
             android.util.Log.d("MainActivity", "setContent called successfully.")
         } catch (e: Throwable) {
@@ -209,9 +202,7 @@ class MainActivity : ComponentActivity() {
         authManager: GoogleAuthManager?,
         networkService: NetworkService,
         fuelForecastRepository: FuelForecastRepository,
-        isPlaystoreDistribution: Boolean,
-        connectivityManager: ConnectivityManager,
-        notificationHelper: NotificationHelper
+        isPlaystoreDistribution: Boolean
     ) {
         try {
             setContent {
@@ -227,9 +218,7 @@ class MainActivity : ComponentActivity() {
                     updateResultLauncher = updateResultLauncher,
                     pendingNavDestination = pendingNavDestination,
                     pendingLibreMapLab = pendingLibreMapLab,
-                    isPlaystoreDistribution = isPlaystoreDistribution,
-                    connectivityManager = connectivityManager,
-                    notificationHelper = notificationHelper
+                    isPlaystoreDistribution = isPlaystoreDistribution
                 )
             }
         } catch (e: Throwable) {
@@ -261,17 +250,10 @@ private fun MainActivityComposeRoot(
     updateResultLauncher: ActivityResultLauncher<IntentSenderRequest>,
     pendingNavDestination: MutableStateFlow<NavDestination?>,
     pendingLibreMapLab: MutableStateFlow<Boolean>,
-    isPlaystoreDistribution: Boolean,
-    connectivityManager: ConnectivityManager,
-    notificationHelper: NotificationHelper
+    isPlaystoreDistribution: Boolean
 ) {
     android.util.Log.d("MainActivity", "Compose setContent block running")
 
-    LaunchedEffect(Unit) {
-        connectivityManager.connectivityEvents.collect { event ->
-            notificationHelper.showConnectivityNotification(event.title, event.message)
-        }
-    }
     val settings by settingsManager.settings.collectAsState()
 
     LaunchedEffect(Unit) {
