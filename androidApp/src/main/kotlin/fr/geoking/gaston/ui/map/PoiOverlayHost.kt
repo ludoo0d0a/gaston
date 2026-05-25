@@ -229,18 +229,18 @@ fun PoiOverlayHost(
             },
             sheetState = sheetState,
             sheetGesturesEnabled = true,
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = Color(0xFF0F172A),
             dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
 
             val configuration = LocalConfiguration.current
-            val cardHeight = (configuration.screenHeightDp * 0.85f).dp
+            val cardHeight = (configuration.screenHeightDp * 0.5f).dp
             LazyRow(
                 state = lazyListState,
                 flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(top = 0.dp, bottom = 8.dp),
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
                 items(listToShow, key = { it.id }) { poi ->
