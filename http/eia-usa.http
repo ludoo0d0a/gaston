@@ -46,3 +46,23 @@ Accept: application/json
         client.assert(response.status === 200, "Response status is not 200");
     });
 %}
+
+### Get latest retail prices for New York City metro (YNYC)
+GET {{baseUrl}}?api_key={{apiKey}}&frequency=weekly&data[0]=value&length=8&sort[0][column]=period&sort[0][direction]=desc&facets[duoarea][]=YNYC&facets[process][]=PTE&facets[product][]=EPM0&facets[product][]=EPD2D
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Get latest retail prices for Boston metro (YBOS)
+GET {{baseUrl}}?api_key={{apiKey}}&frequency=weekly&data[0]=value&length=8&sort[0][column]=period&sort[0][direction]=desc&facets[duoarea][]=YBOS&facets[process][]=PTE&facets[product][]=EPM0&facets[product][]=EPD2D
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
