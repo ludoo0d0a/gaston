@@ -10,8 +10,8 @@ import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.shared.logging.log
 
 /**
- * US fuel stations from OpenStreetMap enriched with state-level weekly retail averages
- * from the EIA Open Data API ([EiaPetroleumClient], route petroleum/pri/gnd).
+ * US fuel stations from OpenStreetMap enriched with EIA weekly retail averages
+ * ([EiaPetroleumClient], route petroleum/pri/gnd) at metro or state granularity.
  */
 class UsaEiaProvider(
     private val eiaClient: EiaPetroleumClient,
@@ -30,8 +30,7 @@ class UsaEiaProvider(
         longitude: Double,
         viewport: MapViewport?,
     ): List<Poi> {
-        val state = UsStateLookup.nearestState(latitude, longitude)
-        if (state == null) return emptyList()
+        if (!UsStateLookup.isInUnitedStates(latitude, longitude)) return emptyList()
 
         val effectiveRadiusKm = viewport
             ?.let {
@@ -39,8 +38,6 @@ class UsaEiaProvider(
                     .coerceIn(1, 50)
             }
             ?: radiusKm
-
-        val fuelPrices = loadStatePrices(state)
 
         val elements = try {
             overpassClient.queryNodesAndWaysWithTagFilters(
@@ -55,14 +52,12 @@ class UsaEiaProvider(
             emptyList()
         }
 
-        val priceLabel = state.iso2
-        val source = if (fuelPrices != null) {
-            "OpenStreetMap + EIA ($priceLabel state avg, \$/gal)"
-        } else {
-            "OpenStreetMap"
-        }
-
         return elements.map { el ->
+            val area = UsEiaAreaLookup.resolve(el.lat, el.lon)
+            val fuelPrices = area?.let { loadAreaPrices(it) }
+            val source = area?.takeIf { fuelPrices != null }?.let { resolved ->
+                "OpenStreetMap + EIA (${resolved.label} avg, \$/gal)"
+            } ?: "OpenStreetMap"
             val name = el.name()?.takeIf { it.isNotBlank() } ?: "Gas station"
             Poi(
                 id = "osm:us_fuel:${el.id}",
@@ -82,18 +77,23 @@ class UsaEiaProvider(
         priceCache.clear()
     }
 
-    private suspend fun loadStatePrices(state: UsStateLookup.State): List<FuelPrice>? {
+    private suspend fun loadAreaPrices(area: UsEiaAreaLookup.Area): List<FuelPrice>? {
         if (apiKey.isBlank()) {
             log.w { "[UsaEiaProvider] EIA_KEY is blank, EIA price data will not be available" }
             return null
         }
-        priceCache[state.eiaDuoArea]?.let { return it }
+        priceCache[area.duoArea]?.let { return it }
         return try {
-            val prices = eiaClient.getStateRetailPrices(state.eiaDuoArea, apiKey).takeIf { it.isNotEmpty() }
-            if (prices != null) priceCache[state.eiaDuoArea] = prices
+            val prices = eiaClient.getRetailPrices(area.duoArea, apiKey).takeIf { it.isNotEmpty() }
+            if (prices != null) {
+                priceCache[area.duoArea] = prices
+                log.d { "[UsaEiaProvider] cached duoarea=${area.duoArea} label=${area.label} products=${prices.size}" }
+            } else {
+                log.w { "[UsaEiaProvider] EIA returned no rows for duoarea=${area.duoArea} label=${area.label}" }
+            }
             prices
         } catch (e: Exception) {
-            log.w(e) { "[UsaEiaProvider] EIA fetch failed for ${state.iso2}" }
+            log.w(e) { "[UsaEiaProvider] EIA fetch failed for duoarea=${area.duoArea} label=${area.label}" }
             null
         }
     }

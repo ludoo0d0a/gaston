@@ -15,7 +15,7 @@ import kotlin.test.assertTrue
 class EiaPetroleumClientTest {
 
     @Test
-    fun getStateRetailPrices_parsesLatestWeeklyRows() = runBlocking {
+    fun getRetailPrices_parsesLatestWeeklyRows() = runBlocking {
         val mockJson = """
             {
               "response": {
@@ -52,7 +52,7 @@ class EiaPetroleumClientTest {
             )
         }
         val client = EiaPetroleumClient(HttpClient(engine))
-        val prices = client.getStateRetailPrices("SCA", "test-key")
+        val prices = client.getRetailPrices("SCA", "test-key")
 
         assertEquals(2, prices.size)
         assertEquals(3.123, prices.find { it.fuelName == "SP95" }?.price)
@@ -61,9 +61,9 @@ class EiaPetroleumClientTest {
     }
 
     @Test
-    fun getStateRetailPrices_blankApiKey_returnsEmpty() = runBlocking {
+    fun getRetailPrices_blankApiKey_returnsEmpty() = runBlocking {
         val client = EiaPetroleumClient(HttpClient(MockEngine { respond("{}", HttpStatusCode.OK) }))
-        assertEquals(emptyList(), client.getStateRetailPrices("SCA", ""))
+        assertEquals(emptyList(), client.getRetailPrices("SCA", ""))
     }
 
     @Test
@@ -78,7 +78,7 @@ class EiaPetroleumClientTest {
             )
         }
         val client = EiaPetroleumClient(HttpClient(engine))
-        client.getStateRetailPrices("SNY", "key-123")
+        client.getRetailPrices("SNY", "key-123")
 
         // Expected order might vary but parameters must be present.
         // We check the base and key parameters.

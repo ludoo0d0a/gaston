@@ -23,7 +23,7 @@ import kotlin.math.PI
  * Queries nodes/ways by OSM tags (e.g. amenity=toilets, amenity=drinking_water).
  * No API key required. Use responsibly (rate limit ~2 req/s on public instances).
  */
-class OverpassClient(
+open class OverpassClient(
     private val client: HttpClient,
     private val baseUrl: String = "https://overpass-api.de/api/interpreter"
 ) {
@@ -97,12 +97,12 @@ class OverpassClient(
      * Fetch POI nodes and ways matching the given tag filters (e.g. amenity=truck_stop, highway=rest_area).
      * Ways are returned with a representative point (center). Use for categories that are often mapped as ways.
      */
-    suspend fun queryNodesAndWaysWithTagFilters(
+    open suspend fun queryNodesAndWaysWithTagFilters(
         latitude: Double,
         longitude: Double,
         radiusKm: Int = 5,
         tagFilters: List<Pair<String, Set<String>>>,
-        limit: Int = 100
+        limit: Int = 100,
     ): List<OverpassElement> {
         val flat = tagFilters.map { (key, values) -> values.map { v -> key to v } }.flatten()
         if (flat.isEmpty()) return emptyList()
