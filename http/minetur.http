@@ -1,0 +1,23 @@
+### Minetur API (Spain)
+### Official fuel prices for all stations in Spain
+### Docs: https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/help
+
+@baseUrl = https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes
+
+### Get all terrestrial stations in Spain (Large response ~5-10MB)
+GET {{baseUrl}}/EstacionesTerrestres/
+Accept: application/json
+
+### Get fuel prices by Province (e.g. Madrid = 28)
+@provinceId = 28
+GET {{baseUrl}}/EstacionesTerrestres/FiltroProvincia/{{provinceId}}
+Accept: application/json
+
+### Get fuel prices by Municipality (e.g. Madrid city = 4354)
+@municipalityId = 4354
+GET {{baseUrl}}/EstacionesTerrestres/FiltroMunicipio/{{municipalityId}}
+Accept: application/json
+
+### List of all products (fuels)
+GET {{baseUrl}}/ListadoProductos/
+Accept: application/json

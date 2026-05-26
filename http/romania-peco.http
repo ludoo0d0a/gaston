@@ -1,0 +1,18 @@
+### Peco Online API (Romania)
+### Parse REST API for fuel stations in Romania
+
+@baseUrl = https://pg-app-hnf14cfy2xb2v9x9eueuchcd2xyetd.scalabl.cloud/1/classes/farapret3
+@appId = {{ROMANIA_PECO_APPLICATION_ID}}
+@clientKey = {{ROMANIA_PECO_CLIENT_KEY}}
+
+### Get stations (first page)
+GET {{baseUrl}}?limit=100&skip=0&count=1&where={"Benzina_Regular":{"$gt":0,"$lt":999999}}
+X-Parse-Application-Id: {{appId}}
+X-Parse-Client-Key: {{clientKey}}
+Accept: application/json
+
+### Get stations (second page)
+GET {{baseUrl}}?limit=100&skip=100&count=1&where={"Benzina_Regular":{"$gt":0,"$lt":999999}}
+X-Parse-Application-Id: {{appId}}
+X-Parse-Client-Key: {{clientKey}}
+Accept: application/json

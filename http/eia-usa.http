@@ -1,0 +1,18 @@
+### EIA (US Energy Information Administration) API v2
+### Retail gasoline & diesel (weekly, $/gal)
+### Docs: https://www.eia.gov/opendata/browser/petroleum/pri
+
+@baseUrl = https://api.eia.gov/v2/petroleum/pri/gnd/data
+@apiKey = {{EIA_KEY}}
+
+### Get latest retail prices for California (SCA)
+GET {{baseUrl}}?api_key={{apiKey}}&frequency=weekly&data[0]=value&length=8&sort[0][column]=period&sort[0][direction]=desc&facets[duoarea][]=SCA&facets[process][]=PTE&facets[product][]=EPM0&facets[product][]=EPD2D
+Accept: application/json
+
+### Get latest retail prices for New York (SNY)
+GET {{baseUrl}}?api_key={{apiKey}}&frequency=weekly&data[0]=value&length=8&sort[0][column]=period&sort[0][direction]=desc&facets[duoarea][]=SNY&facets[process][]=PTE&facets[product][]=EPM0&facets[product][]=EPD2D
+Accept: application/json
+
+### Get latest retail prices for Texas (STX)
+GET {{baseUrl}}?api_key={{apiKey}}&frequency=weekly&data[0]=value&length=8&sort[0][column]=period&sort[0][direction]=desc&facets[duoarea][]=STX&facets[process][]=PTE&facets[product][]=EPM0&facets[product][]=EPD2D
+Accept: application/json
