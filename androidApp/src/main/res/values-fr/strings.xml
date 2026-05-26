@@ -48,6 +48,7 @@
     <string name="action_start">Démarrer</string>
     <string name="action_start_nav">Lancer la navigation</string>
     <string name="action_suggest_correction">Suggérer une correction</string>
+    <string name="action_toggle_theme">Basculer le thème</string>
     <string name="action_update">Mettre à jour</string>
     <string name="action_upgrade_premium">Passer à Premium</string>
     <string name="action_use_current_location">Utiliser la position actuelle</string>
