@@ -2,6 +2,7 @@ package fr.geoking.gaston
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.content.ContextCompat
 import android.app.Activity
 import android.content.Intent
@@ -288,6 +289,33 @@ private fun MainActivityComposeRoot(
         contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
         onResult = { isGranted -> hasLocationPermission = isGranted }
     )
+
+    var hasNotificationPermission by remember(context) {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+        )
+    }
+    val notificationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted -> hasNotificationPermission = isGranted },
+    )
+    val disclaimerAccepted = settings.lastAcceptedDisclaimerVersion >= BuildConfig.VERSION_CODE
+    LaunchedEffect(disclaimerAccepted, hasNotificationPermission) {
+        if (
+            disclaimerAccepted &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !hasNotificationPermission
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     val installStatus by inAppUpdateHelper.installStatus.collectAsState()
     val isUpdateInProgress = remember(installStatus) {

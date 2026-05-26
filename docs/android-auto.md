@@ -37,10 +37,10 @@ Minimum API level: **7** (`minCarApiLevel` meta-data in manifest).
 Connectivity/border alerts use **phone notifications** mirrored to the car, not `AppManager.showAlert()`:
 
 - `Alert` / `showAlert()` only works inside `NavigationTemplate` (navigation apps). POI apps must use HUN via notifications.
-- Extend with `CarAppExtender` and set `setImportance(IMPORTANCE_HIGH)` for a car-screen HUN.
+- Extend with `CarAppExtender`, `setImportance(IMPORTANCE_HIGH)` (projected Auto), and `setChannelId` (Automotive OS).
 - Post with `CarNotificationManager.notify()`, not `NotificationManager.notify()`.
 - Declare `POST_NOTIFICATIONS` and request runtime permission on API 33+ (phone host; car still needs the notification posted from the device).
-- Use a category eligible for HUN (`CATEGORY_MESSAGE`, `CATEGORY_CALL`, or `CATEGORY_NAVIGATION` on Automotive OS).
+- For `CATEGORY_MESSAGE` on Automotive OS, use `MessagingStyle` plus a mark-as-read action (`SEMANTIC_ACTION_MARK_AS_READ`, no UI).
 
 Reference: [CarAppExtender](https://developer.android.com/reference/androidx/car/app/notification/CarAppExtender), [navigation alerts vs HUN](https://developer.android.com/training/cars/apps/navigation#display-in-context-navigation-alerts).
 

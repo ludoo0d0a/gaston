@@ -70,6 +70,7 @@
     <string name="amenity_truck_stop">Aire de poids lourds</string>
     <string name="amenity_viewpoint">Point de vue</string>
     <string name="app_name">Gaston</string>
+    <string name="notification_mark_read">Fermer</string>
     <string name="cd_copy_error">Copier l\'erreur</string>
     <string name="cd_data_sources">Sources de données</string>
     <string name="cd_favorites">Favoris</string>

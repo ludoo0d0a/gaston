@@ -18,6 +18,7 @@
     <string name="amenity_truck_stop">Truck stop</string>
     <string name="amenity_viewpoint">Viewpoint</string>
     <string name="app_name">Gaston</string>
+    <string name="notification_mark_read">Dismiss</string>
     <string name="charging_station">Charging station</string>
     <string name="cheapest_stations_title">Cheapest Stations</string>
     <string name="connectors_label">Connectors: %1$s</string>
