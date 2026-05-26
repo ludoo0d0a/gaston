@@ -486,11 +486,19 @@ fun MainUI(
                         settingsManager = settingsManager,
                         onBack = { showFavorites = false },
                         onSelectPoi = { poi ->
+                            dashboardSelectedLocation = fr.geoking.gaston.api.geocoding.GeocodedPlace(poi.name, poi.latitude, poi.longitude)
+                            showFavorites = false
+                        },
+                        onNavigateToPoi = { poi ->
                             pendingMapPoi = poi
                             showMap = true
                             showFavorites = false
                         },
                         onSelectLocation = { loc ->
+                            dashboardSelectedLocation = loc
+                            showFavorites = false
+                        },
+                        onNavigateToLocation = { loc ->
                             initialNavDestination = NavDestination(address = loc.label, latitude = loc.latitude, longitude = loc.longitude)
                             showRoutePlanning = true
                             showMap = true
@@ -624,11 +632,19 @@ fun MainUI(
                         settingsManager = settingsManager,
                         onBack = { showFavorites = false },
                         onSelectPoi = { poi ->
+                            dashboardSelectedLocation = fr.geoking.gaston.api.geocoding.GeocodedPlace(poi.name, poi.latitude, poi.longitude)
+                            showFavorites = false
+                        },
+                        onNavigateToPoi = { poi ->
                             pendingMapPoi = poi
                             showMap = true
                             showFavorites = false
                         },
                         onSelectLocation = { loc ->
+                            dashboardSelectedLocation = loc
+                            showFavorites = false
+                        },
+                        onNavigateToLocation = { loc ->
                             initialNavDestination = NavDestination(address = loc.label, latitude = loc.latitude, longitude = loc.longitude)
                             showRoutePlanning = true
                             showMap = true
