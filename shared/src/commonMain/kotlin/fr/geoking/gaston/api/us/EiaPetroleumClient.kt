@@ -1,6 +1,7 @@
 package fr.geoking.gaston.api.us
 
 import fr.geoking.gaston.poi.FuelPrice
+import fr.geoking.gaston.shared.logging.log
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -26,13 +27,17 @@ class EiaPetroleumClient(
      * Returns empty list when [apiKey] is blank or the API returns no rows.
      */
     suspend fun getStateRetailPrices(duoArea: String, apiKey: String): List<FuelPrice> {
-        if (apiKey.isBlank()) return emptyList()
+        if (apiKey.isBlank()) {
+            log.w { "[EiaPetroleumClient] API key is blank, skipping request" }
+            return emptyList()
+        }
 
         val url = buildDataUrl(
             apiKey = apiKey,
             duoArea = duoArea,
             products = RETAIL_PRODUCTS,
         )
+        log.d { "[EiaPetroleumClient] GET ${url.replace(apiKey, "REDACTED")}" }
         val response = client.get(url)
         val body = response.bodyAsText()
         if (response.status.value != 200) {
@@ -80,7 +85,7 @@ class EiaPetroleumClient(
     }
 
     companion object {
-        const val DEFAULT_BASE_URL = "https://api.eia.gov/v2/petroleum/pri/gnd/data/"
+        const val DEFAULT_BASE_URL = "https://api.eia.gov/v2/petroleum/pri/gnd/data"
 
         /** Total gasoline (all grades) and No. 2 diesel — retail sales (PTE). */
         private val RETAIL_PRODUCTS = listOf("EPM0", "EPD2D")

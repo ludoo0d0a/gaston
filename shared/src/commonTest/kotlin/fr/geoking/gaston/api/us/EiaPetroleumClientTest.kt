@@ -10,6 +10,7 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class EiaPetroleumClientTest {
 
@@ -63,5 +64,28 @@ class EiaPetroleumClientTest {
     fun getStateRetailPrices_blankApiKey_returnsEmpty() = runBlocking {
         val client = EiaPetroleumClient(HttpClient(MockEngine { respond("{}", HttpStatusCode.OK) }))
         assertEquals(emptyList(), client.getStateRetailPrices("SCA", ""))
+    }
+
+    @Test
+    fun buildDataUrl_constructsCorrectUrl() = runBlocking {
+        var capturedUrl = ""
+        val engine = MockEngine { request ->
+            capturedUrl = request.url.toString()
+            respond(
+                content = "{\"response\":{\"data\":[]}}",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            )
+        }
+        val client = EiaPetroleumClient(HttpClient(engine))
+        client.getStateRetailPrices("SNY", "key-123")
+
+        // Expected order might vary but parameters must be present.
+        // We check the base and key parameters.
+        assertTrue(capturedUrl.startsWith("https://api.eia.gov/v2/petroleum/pri/gnd/data"))
+        assertTrue(capturedUrl.contains("api_key=key-123"))
+        assertTrue(capturedUrl.contains("facets%5Bduoarea%5D%5B%5D=SNY"))
+        assertTrue(capturedUrl.contains("facets%5Bproduct%5D%5B%5D=EPM0"))
+        assertTrue(capturedUrl.contains("facets%5Bproduct%5D%5B%5D=EPD2D"))
     }
 }
