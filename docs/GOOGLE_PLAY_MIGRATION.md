@@ -64,6 +64,7 @@ Checklist:
 - Add an **Android app** with:
   - Package: `fr.geoking.gaston`
 - Register **SHA-1** and **SHA-256** fingerprints for debug and release signing keys on the Android app in Project settings.
+- For **Play Store installs** (Play App Signing ON), register the **App signing key certificate** SHA-1/SHA-256 — see [`FIREBASE_PLAY_SIGNING_SYNC.md`](FIREBASE_PLAY_SIGNING_SYNC.md) and `./scripts/sync_firebase_play_signing.sh --check`.
 - Download `google-services.json`
   - Place it at `androidApp/google-services.json`
   - **Do not commit it** (ignored by `.gitignore`)
@@ -96,6 +97,8 @@ Where to put it:
 Never commit:
 - `local.properties`
 - `androidApp/google-services.json`
+- `androidApp/service-account.json`
+- `androidApp/deployment_cert.der`
 - any keystore files
 - any base64-encoded keystore dumps
 
