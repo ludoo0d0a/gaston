@@ -23,10 +23,10 @@ class EiaPetroleumClient(
     private val json = Json { ignoreUnknownKeys = true }
 
     /**
-     * Latest weekly retail prices for [duoArea] (state-level EIA code, e.g. SCA).
+     * Latest weekly retail prices for [duoArea] (state or metro EIA code, e.g. SCA, YBOS).
      * Returns empty list when [apiKey] is blank or the API returns no rows.
      */
-    suspend fun getStateRetailPrices(duoArea: String, apiKey: String): List<FuelPrice> {
+    suspend fun getRetailPrices(duoArea: String, apiKey: String): List<FuelPrice> {
         if (apiKey.isBlank()) {
             log.w { "[EiaPetroleumClient] API key is blank, skipping request" }
             return emptyList()
@@ -46,6 +46,7 @@ class EiaPetroleumClient(
 
         val parsed = json.decodeFromString<EiaDataResponse>(body)
         val rows = parsed.response?.data.orEmpty()
+        log.d { "[EiaPetroleumClient] duoarea=$duoArea rows=${rows.size}" }
         if (rows.isEmpty()) return emptyList()
 
         val latestByProduct = linkedMapOf<String, EiaPriceRow>()
