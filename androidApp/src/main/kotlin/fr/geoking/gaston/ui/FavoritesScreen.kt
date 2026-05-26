@@ -38,7 +38,9 @@ fun FavoritesScreen(
     billingManager: BillingManager = koinInject(),
     onBack: () -> Unit,
     onSelectPoi: (Poi) -> Unit,
-    onSelectLocation: (GeocodedPlace) -> Unit
+    onNavigateToPoi: (Poi) -> Unit,
+    onSelectLocation: (GeocodedPlace) -> Unit,
+    onNavigateToLocation: (GeocodedPlace) -> Unit
 ) {
     BackHandler(onBack = onBack)
     val scope = rememberCoroutineScope()
@@ -102,6 +104,7 @@ fun FavoritesScreen(
                 0 -> FavoritePoisList(
                     pois = favoritePois,
                     onSelect = onSelectPoi,
+                    onNavigate = onNavigateToPoi,
                     onRemove = { poi ->
                         scope.launch {
                             favoritesRepo.removeFavorite(poi.id)
@@ -112,6 +115,7 @@ fun FavoritesScreen(
                 1 -> FavoriteLocationsList(
                     locations = settings.favoriteLocations,
                     onSelect = onSelectLocation,
+                    onNavigate = onNavigateToLocation,
                     onRemove = { loc ->
                         settingsManager.toggleFavoriteLocation(loc)
                     }
@@ -125,6 +129,7 @@ fun FavoritesScreen(
 private fun FavoritePoisList(
     pois: List<Poi>,
     onSelect: (Poi) -> Unit,
+    onNavigate: (Poi) -> Unit,
     onRemove: (Poi) -> Unit
 ) {
     if (pois.isEmpty()) {
@@ -144,8 +149,13 @@ private fun FavoritePoisList(
                         )
                     },
                     trailingContent = {
-                        IconButton(onClick = { onRemove(poi) }) {
-                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_remove), tint = MaterialTheme.colorScheme.error)
+                        Row {
+                            IconButton(onClick = { onNavigate(poi) }) {
+                                Icon(Icons.Default.Directions, contentDescription = stringResource(R.string.cd_route), tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = { onRemove(poi) }) {
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_remove), tint = MaterialTheme.colorScheme.error)
+                            }
                         }
                     }
                 )
@@ -159,6 +169,7 @@ private fun FavoritePoisList(
 private fun FavoriteLocationsList(
     locations: List<GeocodedPlace>,
     onSelect: (GeocodedPlace) -> Unit,
+    onNavigate: (GeocodedPlace) -> Unit,
     onRemove: (GeocodedPlace) -> Unit
 ) {
     if (locations.isEmpty()) {
@@ -175,7 +186,7 @@ private fun FavoriteLocationsList(
                     },
                     trailingContent = {
                         Row {
-                            IconButton(onClick = { onSelect(loc) }) {
+                            IconButton(onClick = { onNavigate(loc) }) {
                                 Icon(Icons.Default.Directions, contentDescription = stringResource(R.string.cd_route), tint = MaterialTheme.colorScheme.primary)
                             }
                             IconButton(onClick = { onRemove(loc) }) {
