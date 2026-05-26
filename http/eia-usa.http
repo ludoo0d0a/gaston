@@ -1,0 +1,48 @@
+### EIA (US Energy Information Administration) API v2
+### Retail gasoline & diesel (weekly, $/gal)
+### Docs: https://www.eia.gov/opendata/browser/petroleum/pri
+
+@baseUrl = https://api.eia.gov/v2/petroleum/pri/gnd/data
+@apiKey = {{EIA_KEY}}
+
+### Get latest retail prices for California (SCA)
+GET {{baseUrl}}?api_key={{apiKey}}&frequency=weekly&data[0]=value&length=8&sort[0][column]=period&sort[0][direction]=desc&facets[duoarea][]=SCA&facets[process][]=PTE&facets[product][]=EPM0&facets[product][]=EPD2D
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Response body structure", function() {
+        client.assert(response.body.hasOwnProperty("response"), "Missing 'response' field");
+        client.assert(Array.isArray(response.body.response.data), "Missing 'data' array");
+        client.assert(response.body.response.data.length > 0, "Data array is empty");
+    });
+    client.test("Data row structure", function() {
+        var row = response.body.response.data[0];
+        client.assert(row.hasOwnProperty("period"), "Row missing 'period'");
+        client.assert(row.hasOwnProperty("product"), "Row missing 'product'");
+        client.assert(row.hasOwnProperty("value"), "Row missing 'value'");
+        client.assert(!isNaN(parseFloat(row.value)), "Value is not a number");
+    });
+%}
+
+### Get latest retail prices for New York (SNY)
+GET {{baseUrl}}?api_key={{apiKey}}&frequency=weekly&data[0]=value&length=8&sort[0][column]=period&sort[0][direction]=desc&facets[duoarea][]=SNY&facets[process][]=PTE&facets[product][]=EPM0&facets[product][]=EPD2D
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Get latest retail prices for Texas (STX)
+GET {{baseUrl}}?api_key={{apiKey}}&frequency=weekly&data[0]=value&length=8&sort[0][column]=period&sort[0][direction]=desc&facets[duoarea][]=STX&facets[process][]=PTE&facets[product][]=EPM0&facets[product][]=EPD2D
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}

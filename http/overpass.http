@@ -1,0 +1,65 @@
+### Overpass API (OpenStreetMap)
+### Query nodes and ways by OSM tags
+### Docs: https://wiki.openstreetmap.org/wiki/Overpass_API
+
+@baseUrl = https://overpass-api.de/api/interpreter
+
+### Find fuel stations near Paris (approximate bbox)
+POST {{baseUrl}}
+Content-Type: application/x-www-form-urlencoded
+
+data=[out:json][timeout:25];
+(
+  node["amenity"="fuel"](48.8,2.3,48.9,2.4);
+  way["amenity"="fuel"](48.8,2.3,48.9,2.4);
+);
+out center qt 50;
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Response contains elements", function() {
+        client.assert(Array.isArray(response.body.elements), "Response body missing 'elements' array");
+        client.assert(response.body.elements.length > 0, "No elements found");
+    });
+    client.test("Element object structure", function() {
+        var element = response.body.elements[0];
+        client.assert(element.hasOwnProperty("id"), "Element missing 'id'");
+        client.assert(element.hasOwnProperty("type"), "Element missing 'type'");
+        client.assert(typeof element.lat === "number" || (element.center && typeof element.center.lat === "number"), "Element missing latitude");
+    });
+%}
+
+### Find EV charging stations near London
+POST {{baseUrl}}
+Content-Type: application/x-www-form-urlencoded
+
+data=[out:json][timeout:25];
+(
+  node["amenity"="charging_station"](51.45,-0.2,51.55,0.0);
+  way["amenity"="charging_station"](51.45,-0.2,51.55,0.0);
+);
+out center qt 50;
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Find drinking water near Rome
+POST {{baseUrl}}
+Content-Type: application/x-www-form-urlencoded
+
+data=[out:json][timeout:25];
+(
+  node["amenity"="drinking_water"](41.8,12.4,42.0,12.6);
+);
+out body qt 100;
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}

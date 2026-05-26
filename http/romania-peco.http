@@ -1,0 +1,40 @@
+### Peco Online API (Romania)
+### Parse REST API for fuel stations in Romania
+
+@baseUrl = https://pg-app-hnf14cfy2xb2v9x9eueuchcd2xyetd.scalabl.cloud/1/classes/farapret3
+@appId = {{ROMANIA_PECO_APPLICATION_ID}}
+@clientKey = {{ROMANIA_PECO_CLIENT_KEY}}
+
+### Get stations (first page)
+GET {{baseUrl}}?limit=100&skip=0&count=1&where={"Benzina_Regular":{"$gt":0,"$lt":999999}}
+X-Parse-Application-Id: {{appId}}
+X-Parse-Client-Key: {{clientKey}}
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Response contains results", function() {
+        client.assert(Array.isArray(response.body.results), "Response body missing 'results' array");
+        client.assert(response.body.results.length > 0, "No results found");
+    });
+    client.test("Result object structure", function() {
+        var station = response.body.results[0];
+        client.assert(station.hasOwnProperty("objectId"), "Station missing 'objectId'");
+        client.assert(typeof station.lat === "number", "Station 'lat' is not a number");
+        client.assert(typeof station.lng === "number", "Station 'lng' is not a number");
+    });
+%}
+
+### Get stations (second page)
+GET {{baseUrl}}?limit=100&skip=100&count=1&where={"Benzina_Regular":{"$gt":0,"$lt":999999}}
+X-Parse-Application-Id: {{appId}}
+X-Parse-Client-Key: {{clientKey}}
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}

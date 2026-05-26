@@ -1,0 +1,25 @@
+### MIMIT API (Italy)
+### Open data fuel stations and prices (CSV format)
+### Docs: https://www.mimit.gov.it/index.php/it/open-data/elenco-dataset/carburanti-prezzi-praticati-e-anagrafica-impianti
+
+@baseUrl = https://www.mimit.gov.it/images/exportCSV
+
+### Get active stations registry (CSV)
+GET {{baseUrl}}/anagrafica_impianti_attivi.csv
+Accept: text/csv
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Get latest daily prices (CSV)
+GET {{baseUrl}}/prezzo_alle_8.csv
+Accept: text/csv
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}

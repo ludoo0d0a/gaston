@@ -1,0 +1,56 @@
+### DataGouv Prix Carburant API (France)
+### Real-time fuel prices from data.economie.gouv.fr
+### Docs: https://data.economie.gouv.fr/explore/dataset/prix-des-carburants-en-france-flux-instantane-v2/api/
+
+@baseUrl = https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2
+
+### Get stations near Paris (10km radius)
+GET {{baseUrl}}/records?where=within_distance(geom, geom'POINT(2.3522 48.8566)', 10km)&limit=50
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Response contains records", function() {
+        client.assert(Array.isArray(response.body.results), "Response body missing 'results' array");
+        client.assert(response.body.results.length > 0, "No results found");
+    });
+    client.test("Result object structure", function() {
+        var station = response.body.results[0];
+        client.assert(station.hasOwnProperty("id") || station.hasOwnProperty("id_"), "Station missing ID");
+        client.assert(typeof station.latitude === "number", "Station 'latitude' is not a number");
+        client.assert(typeof station.longitude === "number", "Station 'longitude' is not a number");
+    });
+%}
+
+### Get stations near Lyon (10km radius)
+GET {{baseUrl}}/records?where=within_distance(geom, geom'POINT(4.8357 45.7640)', 10km)&limit=50
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Get national averages (sample of 100 records)
+GET {{baseUrl}}/records?limit=100
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Get a specific station by ID (replace ID)
+@stationId = 75015001
+GET {{baseUrl}}/records?where=id="{{stationId}}"
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
