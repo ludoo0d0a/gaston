@@ -106,7 +106,7 @@ class NativeMapPoiScreen(
         }
     }
 
-    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "NativeMapPoiScreen") {
+    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "NativeMapPoiScreen", "PlaceListMapTemplate") {
         val actionStrip = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
@@ -197,7 +197,8 @@ class NativeMapPoiScreen(
                     availability = availability,
                     effectiveEnergyTypes = effectiveEnergies,
                     effectivePowerLevels = effectivePowerLevels,
-                    distanceFromLatLon = searchLat to searchLon
+                    distanceFromLatLon = searchLat to searchLon,
+                    includePlace = true
                 ) {
                     screenManager.push(
                         PoiDetailScreen(

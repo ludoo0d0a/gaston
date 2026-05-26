@@ -76,7 +76,7 @@ class AutoPoiSearchScreen(
         }
     }
 
-    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoPoiSearchScreen") {
+    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoPoiSearchScreen", "SearchTemplate") {
         val filteredPois = if (searchText.isBlank()) {
             emptyList()
         } else {
@@ -99,7 +99,8 @@ class AutoPoiSearchScreen(
                     availability = availability,
                     effectiveEnergyTypes = effectiveEnergies,
                     effectivePowerLevels = effectivePowerLevels,
-                    distanceFromLatLon = searchLat to searchLon
+                    distanceFromLatLon = searchLat to searchLon,
+                    includePlace = false
                 ) {
                     screenManager.push(
                         PoiDetailScreen(
