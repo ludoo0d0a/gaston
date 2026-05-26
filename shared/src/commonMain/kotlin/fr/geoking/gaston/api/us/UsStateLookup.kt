@@ -3,8 +3,8 @@ package fr.geoking.gaston.api.us
 import fr.geoking.gaston.shared.location.haversineKm
 
 /**
- * Resolves a US location to an EIA [duoarea] code (e.g. SCA = California) for petroleum/pri/gnd.
- * Uses nearest state centroid; prices are state-level weekly retail averages from EIA.
+ * Resolves a US location to a state/territory and EIA state [duoarea] (e.g. SCA = California).
+ * For metro-aware pricing use [UsEiaAreaLookup.resolve]; this type is the state-level fallback.
  */
 object UsStateLookup {
 
@@ -25,7 +25,8 @@ object UsStateLookup {
         State("CO", "SCO", 39.059811, -105.311104),
         State("CT", "SCT", 41.597782, -72.755371),
         State("DE", "SDE", 39.318523, -75.507141),
-        State("DC", "SDC", 38.897438, -77.026817),
+        // EIA petroleum/pri/gnd has no SDC series; DC retail averages use Maryland (SMD).
+        State("DC", "SMD", 38.897438, -77.026817),
         State("FL", "SFL", 27.766279, -81.686783),
         State("GA", "SGA", 33.040619, -83.643074),
         State("HI", "SHI", 21.094318, -157.498337),
