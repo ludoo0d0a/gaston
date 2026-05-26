@@ -121,6 +121,7 @@ data class AppSettings(
     val cacheWarmAmenityTypes: Set<String> = emptySet(),
     val phoneMapEngine: MapEngine = MapEngine.Google,
     val mapTheme: MapTheme = MapTheme.Dark,
+    val mapThemeMode: ThemeMode = ThemeMode.System,
     val vehicleType: VehicleType = VehicleType.Car,
     val carMapMode: CarMapMode = CarMapMode.Native,
     val googleUserName: String? = null,
@@ -242,6 +243,10 @@ open class SettingsManager(
             ThemeMode.valueOf(prefs.getString("ui_theme_mode", ThemeMode.System.name) ?: ThemeMode.System.name)
         } catch (_: Exception) { ThemeMode.System }
 
+        val mapThemeMode = try {
+            ThemeMode.valueOf(prefs.getString("map_theme_mode", ThemeMode.System.name) ?: ThemeMode.System.name)
+        } catch (_: Exception) { ThemeMode.System }
+
         val selectedMapEnergyTypes = prefs.getStringSet("map_energy_types", null)?.toSet() ?: DEFAULT_MAP_ENERGY_TYPES
 
         val mapEnergyMode = try {
@@ -292,6 +297,7 @@ open class SettingsManager(
                 ?: emptySet(),
             phoneMapEngine = phoneMapEngine,
             mapTheme = mapTheme,
+            mapThemeMode = mapThemeMode,
             vehicleType = vehicleType,
             carMapMode = carMapMode,
             googleUserName = prefs.getString("google_user_name", null),
@@ -326,6 +332,7 @@ open class SettingsManager(
         _settings.value = sanitized
         prefs.edit()
             .putString("ui_theme_mode", sanitized.uiThemeMode.name)
+            .putString("map_theme_mode", sanitized.mapThemeMode.name)
             .putString("vehicle_brand", settings.vehicleBrand)
             .putString("vehicle_model", settings.vehicleModel)
             .putString("vehicle_energy", settings.vehicleEnergy)

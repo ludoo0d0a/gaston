@@ -94,9 +94,13 @@ import fr.geoking.gaston.ui.anim.AnimationPalettes
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.StationMapFilters
+import fr.geoking.gaston.api.geocoding.GeocodedPlace
+import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProvidersAt
+import fr.geoking.gaston.ui.dashboard.GastonTheme
+import fr.geoking.gaston.ui.dashboard.PhoneDashboardDestinationSearch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -149,6 +153,7 @@ fun MapScreen(
     palette: AnimationPalette,
     onBack: () -> Unit,
     onPlanRoute: (() -> Unit)? = null,
+    geocodingClient: GeocodingClient? = null,
     communityRepo: CommunityPoiRepository? = null,
     favoritesRepo: FavoritesRepository? = null,
     initialSelectedPoi: Poi? = null,
@@ -170,6 +175,7 @@ fun MapScreen(
     var addPoiInitialLng by remember { mutableStateOf<Double?>(null) }
     var addPoiExistingCommunityId by remember { mutableStateOf<String?>(null) }
     var showFavoritesOnly by remember { mutableStateOf(false) }
+    var showAddressSearch by remember { mutableStateOf(false) }
     var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val billingManager = org.koin.compose.koinInject<fr.geoking.gaston.premium.BillingManager>()
     var showPaywallForFavorite by remember { mutableStateOf(false) }
@@ -279,308 +285,336 @@ fun MapScreen(
 
     val currentSearchMode = rememberSearchMode(settings)
 
-    MapScaffold(
-        title = stringResource(R.string.map_title_gas_stations),
-        settingsManager = settingsManager,
-        mapCenterLatitude = cameraPositionState.position.target.latitude,
-        mapCenterLongitude = cameraPositionState.position.target.longitude,
-        onBack = onBack,
-        onRefresh = {
-            mapActions.refresh(true, currentMapCameraSample())
-        },
-        onLocateMe = {
-            scope.launch {
-                val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                cameraPositionState.animate(
-                    CameraUpdateFactory.newLatLngZoom(
-                        LatLng(lat, lon),
-                        12f
-                    )
-                )
-            }
-        },
-        onShowSettings = {
-            initialSettingsPage = SettingsScreenPage.MapConfig
-            showMapSettings = true
-        },
-        onShowSources = {
-            initialSettingsPage = SettingsScreenPage.Sources
-            showMapSettings = true
-        },
-        onPlanRoute = onPlanRoute,
-        showFavoritesOnly = showFavoritesOnly,
-        onShowFavoritesOnlyChange = { showFavoritesOnly = it },
-        favoritesFilterEnabled = settings.isLoggedIn && favoritesRepo != null,
-        isLoading = mapData.isLoading,
-        palette = palette,
-        showAds = showAds,
-        floatingActionButton = {
-            if (currentSearchMode == SearchMode.Fuel && poisInView.any { !it.fuelPrices.isNullOrEmpty() }) {
-                FloatingActionButton(
-                    onClick = {
-                        val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
-                        val cheapest = poisInView.mapNotNull { poi ->
-                            val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                                ?.minOfOrNull { it.price }
-                            if (minPrice != null) Pair(poi, minPrice) else null
-                        }.minByOrNull { it.second }?.first
-
-                        if (cheapest != null) {
-                            poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Price
-                            selectedPoi = cheapest
-                        }
-                    },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PriceCheck,
-                        contentDescription = stringResource(R.string.action_show_cheapest_list)
+    GastonTheme(themeMode = settings.uiThemeMode) {
+        MapScaffold(
+            title = stringResource(R.string.map_title_gas_stations),
+            settingsManager = settingsManager,
+            mapCenterLatitude = cameraPositionState.position.target.latitude,
+            mapCenterLongitude = cameraPositionState.position.target.longitude,
+            onBack = onBack,
+            onRefresh = {
+                mapActions.refresh(true, currentMapCameraSample())
+            },
+            onLocateMe = {
+                scope.launch {
+                    val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                    cameraPositionState.animate(
+                        CameraUpdateFactory.newLatLngZoom(
+                            LatLng(lat, lon),
+                            12f
+                        )
                     )
                 }
+            },
+            onShowSettings = {
+                initialSettingsPage = SettingsScreenPage.MapConfig
+                showMapSettings = true
+            },
+            onShowSources = {
+                initialSettingsPage = SettingsScreenPage.Sources
+                showMapSettings = true
+            },
+            onPlanRoute = onPlanRoute,
+            onLocatePlace = { showAddressSearch = !showAddressSearch },
+            showFavoritesOnly = showFavoritesOnly,
+            onShowFavoritesOnlyChange = { showFavoritesOnly = it },
+            favoritesFilterEnabled = settings.isLoggedIn && favoritesRepo != null,
+            isLoading = mapData.isLoading,
+            palette = palette,
+            showAds = showAds,
+            floatingActionButton = {
+                if (currentSearchMode == SearchMode.Fuel && poisInView.any { !it.fuelPrices.isNullOrEmpty() }) {
+                    FloatingActionButton(
+                        onClick = {
+                            val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+                            val cheapest = poisInView.mapNotNull { poi ->
+                                val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                                    ?.minOfOrNull { it.price }
+                                if (minPrice != null) Pair(poi, minPrice) else null
+                            }.minByOrNull { it.second }?.first
+
+                            if (cheapest != null) {
+                                poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Price
+                                selectedPoi = cheapest
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PriceCheck,
+                            contentDescription = stringResource(R.string.action_show_cheapest_list)
+                        )
+                    }
+                }
             }
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
+        ) { padding ->
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .fillMaxSize()
+                    .padding(padding)
             ) {
-                SearchModeSelector(
-                    currentMode = currentSearchMode,
-                    settingsManager = settingsManager
-                )
-                SearchCategorySelector(
-                    currentMode = currentSearchMode,
-                    settings = settings,
-                    settingsManager = settingsManager,
-                    onOpenSettings = { pages ->
-                        initialSettingsPage = pages?.firstOrNull() ?: SettingsScreenPage.MapConfig
-                        showMapSettings = true
-                    }
-                )
-            }
-
-            mapData.mapErrorMessage?.let { msg ->
-                val onCopy = rememberErrorClipboardCopyHandler(msg)
-                MapErrorBanner(
-                    message = msg,
-                    onCopy = onCopy,
-                    onIgnore = mapActions.clearError,
-                    onRetry = { mapActions.retry(currentMapCameraSample()) }
-                )
-            }
-
-            if (settings.isLoggedIn && (communityRepo != null || favoritesRepo != null)) {
-                LazyRow(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    contentPadding = PaddingValues(horizontal = 16.dp)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (communityRepo != null) {
-                        item {
-                            FilterChip(
-                                selected = false,
-                                onClick = {
-                                    addPoiInitialLat = cameraPositionState.position.target.latitude
-                                    addPoiInitialLng = cameraPositionState.position.target.longitude
-                                    addPoiLinkedOfficialId = null
-                                    addPoiExistingCommunityId = null
-                                    addPoiInitialName = ""
-                                    addPoiInitialAddress = ""
-                                    showAddPoiSheet = true
-                                },
-                                label = { Text(stringResource(R.string.action_add_poi)) },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Add,
-                                        null,
-                                        Modifier.size(18.dp)
-                                    )
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .onSizeChanged { mapSizePx = it }
-            ) {
-                val configuration = LocalConfiguration.current
-                val mapPaddingBottom = if (selectedPoi != null) (configuration.screenHeightDp * 0.4f).dp else 0.dp
-
-                GoogleMap(
-                    modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraPositionState,
-                    properties = MapProperties(
-                        isMyLocationEnabled = hasLocationPermission,
-                        isTrafficEnabled = settings.mapTrafficEnabled,
-                        mapStyleOptions = run {
-                            val dark = when (settings.uiThemeMode) {
-                                ThemeMode.Dark -> true
-                                ThemeMode.Light -> false
-                                ThemeMode.System -> androidx.compose.foundation.isSystemInDarkTheme()
-                            }
-                            if (dark) MapStyleOptions.loadRawResourceStyle(context, R.raw.google_map_style_dark)
-                            else null
-                        }
-                    ),
-                    uiSettings = MapUiSettings(myLocationButtonEnabled = hasLocationPermission),
-                    contentPadding = PaddingValues(bottom = mapPaddingBottom)
-                ) {
-                    val zoom = cameraPositionState.position.zoom
-                    val sizePx = remember(zoom) { markerSizePxForZoom(zoom) }
-
-                    val effectiveEnergies = settings.effectiveMapEnergyFilterIds()
-                    val effectivePowerLevels = settings.effectiveIrvePowerLevels()
-
-                    val poisToShow = if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
-                        poisInView.filter { it.id in favoriteIds }
-                    } else {
-                        poisInView
-                    }
-
-                    val fuelIdsForCheapest = effectiveEnergies - "electric"
-                    val top3Prices = remember(poisToShow, fuelIdsForCheapest) {
-                        if (fuelIdsForCheapest.isEmpty()) emptyList<Double>()
-                        else {
-                            poisToShow.flatMap { poi ->
-                                poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
-                                    ?.map { it.price } ?: emptyList()
-                            }.distinct().sorted().take(3)
-                        }
-                    }
-
-                    poisToShow.forEach { poi ->
-                        val availability = mapData.availabilityByPoiId[poi.id]
-                        val isPoiSelected = selectedPoi?.id == poi.id
-                        val cheapestRank = remember(poi, top3Prices, fuelIdsForCheapest) {
-                            val minPoiPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
-                                ?.minOfOrNull { it.price }
-                            if (minPoiPrice == null) null
-                            else {
-                                val idx = top3Prices.indexOf(minPoiPrice)
-                                if (idx != -1) idx + 1 else null
-                            }
-                        }
-                        val markerBitmap = remember(poi, effectiveEnergies, effectivePowerLevels, isPoiSelected, cheapestRank, sizePx, availability) {
-                            BitmapDescriptorFactory.fromBitmap(
-                                PoiMarkerHelper.getMarkerBitmap(
-                                    context = context,
-                                    poi = poi,
-                                    effectiveEnergyTypes = effectiveEnergies,
-                                    effectivePowerLevels = effectivePowerLevels,
-                                    isSelected = isPoiSelected,
-                                    cheapestRank = cheapestRank,
-                                    sizePx = sizePx,
-                                    availability = availability,
-                                    markerStyle = MarkerStyle.Bubble
-                                )
-                            )
-                        }
-
-                        Marker(
-                            state = MarkerState(position = LatLng(poi.latitude, poi.longitude)),
-                            title = poi.name,
-                            snippet = poi.address,
-                            icon = markerBitmap,
-                            anchor = Offset(0.5f, 1f),
-                            onClick = {
-                                if (selectedPoi == null) {
-                                    poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
-                                }
-                                selectedPoi = poi
-                                true
-                            }
-                        )
-                    }
-                    mapData.trafficInfo?.events?.forEach { event ->
-                        val bbox = event.bbox ?: return@forEach
-                        val lat = (bbox.latMin + bbox.latMax) / 2
-                        val lon = (bbox.lonMin + bbox.lonMax) / 2
-                        val hue = when (event.severity) {
-                            TrafficSeverity.Normal -> 120f
-                            TrafficSeverity.Congestion -> 30f
-                            TrafficSeverity.Closure, TrafficSeverity.Accident, TrafficSeverity.Roadworks -> 0f
-                            TrafficSeverity.Unknown -> 60f
-                        }
-                        Marker(
-                            state = MarkerState(position = LatLng(lat, lon)),
-                            title = "${event.roadRef}${event.direction?.let { " ($it)" } ?: ""}",
-                            snippet = event.message,
-                            icon = BitmapDescriptorFactory.defaultMarker(hue),
-                            onClick = { true }
-                        )
-                    }
-                }
-
-                if (settings.debugLoggingEnabled) {
-                    val detectedCountries = remember(cameraPositionState.position.target) {
-                        fr.geoking.gaston.countryDisplayLabelAtMapPosition(
-                            cameraPositionState.position.target.latitude,
-                            cameraPositionState.position.target.longitude
-                        )
-                    }
-                    DebugLogOverlay(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 80.dp) // Below the top bar
-                            .zIndex(2f),
-                        detectedCountries = detectedCountries
+                    SearchModeSelector(
+                        currentMode = currentSearchMode,
+                        settingsManager = settingsManager
                     )
+                    SearchCategorySelector(
+                        currentMode = currentSearchMode,
+                        settings = settings,
+                        settingsManager = settingsManager,
+                        onOpenSettings = { pages ->
+                            initialSettingsPage = pages?.firstOrNull() ?: SettingsScreenPage.MapConfig
+                            showMapSettings = true
+                        }
+                    )
+
+                    if (showAddressSearch) {
+                        PhoneDashboardDestinationSearch(
+                            geocodingClient = geocodingClient,
+                            hasLocationPermission = hasLocationPermission,
+                            userLat = cameraPositionState.position.target.latitude,
+                            userLon = cameraPositionState.position.target.longitude,
+                            selectedSearchLocation = null,
+                            settings = settings,
+                            onLocationSelected = { loc ->
+                                if (loc != null) {
+                                    scope.launch {
+                                        cameraPositionState.animate(
+                                            CameraUpdateFactory.newLatLngZoom(
+                                                LatLng(loc.latitude, loc.longitude),
+                                                15f
+                                            )
+                                        )
+                                    }
+                                    showAddressSearch = false
+                                }
+                            },
+                            onOpenRoutes = { _, _ -> },
+                            onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) }
+                        )
+                    }
+                }
+
+                mapData.mapErrorMessage?.let { msg ->
+                    val onCopy = rememberErrorClipboardCopyHandler(msg)
+                    MapErrorBanner(
+                        message = msg,
+                        onCopy = onCopy,
+                        onIgnore = mapActions.clearError,
+                        onRetry = { mapActions.retry(currentMapCameraSample()) }
+                    )
+                }
+
+                if (settings.isLoggedIn && (communityRepo != null || favoritesRepo != null)) {
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        if (communityRepo != null) {
+                            item {
+                                FilterChip(
+                                    selected = false,
+                                    onClick = {
+                                        addPoiInitialLat = cameraPositionState.position.target.latitude
+                                        addPoiInitialLng = cameraPositionState.position.target.longitude
+                                        addPoiLinkedOfficialId = null
+                                        addPoiExistingCommunityId = null
+                                        addPoiInitialName = ""
+                                        addPoiInitialAddress = ""
+                                        showAddPoiSheet = true
+                                    },
+                                    label = { Text(stringResource(R.string.action_add_poi)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            null,
+                                            Modifier.size(18.dp)
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onSizeChanged { mapSizePx = it }
+                ) {
+                    val configuration = LocalConfiguration.current
+                    val mapPaddingBottom = if (selectedPoi != null) (configuration.screenHeightDp * 0.4f).dp else 0.dp
+
+                    GoogleMap(
+                        modifier = Modifier.fillMaxSize(),
+                        cameraPositionState = cameraPositionState,
+                        properties = MapProperties(
+                            isMyLocationEnabled = hasLocationPermission,
+                            isTrafficEnabled = settings.mapTrafficEnabled,
+                            mapStyleOptions = run {
+                                val dark = when (settings.mapThemeMode) {
+                                    ThemeMode.Dark -> true
+                                    ThemeMode.Light -> false
+                                    ThemeMode.System -> androidx.compose.foundation.isSystemInDarkTheme()
+                                }
+                                if (dark) MapStyleOptions.loadRawResourceStyle(context, R.raw.google_map_style_dark)
+                                else null
+                            }
+                        ),
+                        uiSettings = MapUiSettings(myLocationButtonEnabled = hasLocationPermission),
+                        contentPadding = PaddingValues(bottom = mapPaddingBottom)
+                    ) {
+                        val zoom = cameraPositionState.position.zoom
+                        val sizePx = remember(zoom) { markerSizePxForZoom(zoom) }
+
+                        val effectiveEnergies = settings.effectiveMapEnergyFilterIds()
+                        val effectivePowerLevels = settings.effectiveIrvePowerLevels()
+
+                        val poisToShow = if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
+                            poisInView.filter { it.id in favoriteIds }
+                        } else {
+                            poisInView
+                        }
+
+                        val fuelIdsForCheapest = effectiveEnergies - "electric"
+                        val top3Prices = remember(poisToShow, fuelIdsForCheapest) {
+                            if (fuelIdsForCheapest.isEmpty()) emptyList<Double>()
+                            else {
+                                poisToShow.flatMap { poi ->
+                                    poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
+                                        ?.map { it.price } ?: emptyList()
+                                }.distinct().sorted().take(3)
+                            }
+                        }
+
+                        poisToShow.forEach { poi ->
+                            val availability = mapData.availabilityByPoiId[poi.id]
+                            val isPoiSelected = selectedPoi?.id == poi.id
+                            val cheapestRank = remember(poi, top3Prices, fuelIdsForCheapest) {
+                                val minPoiPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
+                                    ?.minOfOrNull { it.price }
+                                if (minPoiPrice == null) null
+                                else {
+                                    val idx = top3Prices.indexOf(minPoiPrice)
+                                    if (idx != -1) idx + 1 else null
+                                }
+                            }
+                            val markerBitmap = remember(poi, effectiveEnergies, effectivePowerLevels, isPoiSelected, cheapestRank, sizePx, availability) {
+                                BitmapDescriptorFactory.fromBitmap(
+                                    PoiMarkerHelper.getMarkerBitmap(
+                                        context = context,
+                                        poi = poi,
+                                        effectiveEnergyTypes = effectiveEnergies,
+                                        effectivePowerLevels = effectivePowerLevels,
+                                        isSelected = isPoiSelected,
+                                        cheapestRank = cheapestRank,
+                                        sizePx = sizePx,
+                                        availability = availability,
+                                        markerStyle = MarkerStyle.Bubble
+                                    )
+                                )
+                            }
+
+                            Marker(
+                                state = MarkerState(position = LatLng(poi.latitude, poi.longitude)),
+                                title = poi.name,
+                                snippet = poi.address,
+                                icon = markerBitmap,
+                                anchor = Offset(0.5f, 1f),
+                                onClick = {
+                                    if (selectedPoi == null) {
+                                        poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
+                                    }
+                                    selectedPoi = poi
+                                    true
+                                }
+                            )
+                        }
+                        mapData.trafficInfo?.events?.forEach { event ->
+                            val bbox = event.bbox ?: return@forEach
+                            val lat = (bbox.latMin + bbox.latMax) / 2
+                            val lon = (bbox.lonMin + bbox.lonMax) / 2
+                            val hue = when (event.severity) {
+                                TrafficSeverity.Normal -> 120f
+                                TrafficSeverity.Congestion -> 30f
+                                TrafficSeverity.Closure, TrafficSeverity.Accident, TrafficSeverity.Roadworks -> 0f
+                                TrafficSeverity.Unknown -> 60f
+                            }
+                            Marker(
+                                state = MarkerState(position = LatLng(lat, lon)),
+                                title = "${event.roadRef}${event.direction?.let { " ($it)" } ?: ""}",
+                                snippet = event.message,
+                                icon = BitmapDescriptorFactory.defaultMarker(hue),
+                                onClick = { true }
+                            )
+                        }
+                    }
+
+                    if (settings.debugLoggingEnabled) {
+                        val detectedCountries = remember(cameraPositionState.position.target) {
+                            fr.geoking.gaston.countryDisplayLabelAtMapPosition(
+                                cameraPositionState.position.target.latitude,
+                                cameraPositionState.position.target.longitude
+                            )
+                        }
+                        DebugLogOverlay(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 80.dp) // Below the top bar
+                                .zIndex(2f),
+                            detectedCountries = detectedCountries
+                        )
+                    }
                 }
             }
         }
-    }
 
-    PoiOverlayHost(
-        context = context,
-        settingsManager = settingsManager,
-        settings = settings,
-        availabilityByPoiId = mapData.availabilityByPoiId,
-        favoritesRepo = favoritesRepo,
-        favoriteIds = favoriteIds,
-        setFavoriteIds = { favoriteIds = it },
-        communityRepo = communityRepo,
-        selectedPoi = selectedPoi,
-        onSelectedPoiChange = {
-            selectedPoi = it
-            if (it == null) {
-                poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
-            }
-        },
-        sortOrder = poiSortOrder,
-        poisForOverlay = if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
-            poisInView.filter { it.id in favoriteIds }
-        } else {
-            poisInView
-        },
-        onCenterMapOnPoi = { poi ->
-            scope.launch {
-                cameraPositionState.animate(
-                    CameraUpdateFactory.newLatLng(
-                        LatLng(poi.latitude, poi.longitude)
+        PoiOverlayHost(
+            context = context,
+            settingsManager = settingsManager,
+            settings = settings,
+            availabilityByPoiId = mapData.availabilityByPoiId,
+            favoritesRepo = favoritesRepo,
+            favoriteIds = favoriteIds,
+            setFavoriteIds = { favoriteIds = it },
+            communityRepo = communityRepo,
+            selectedPoi = selectedPoi,
+            onSelectedPoiChange = {
+                selectedPoi = it
+                if (it == null) {
+                    poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
+                }
+            },
+            sortOrder = poiSortOrder,
+            poisForOverlay = if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
+                poisInView.filter { it.id in favoriteIds }
+            } else {
+                poisInView
+            },
+            onCenterMapOnPoi = { poi ->
+                scope.launch {
+                    cameraPositionState.animate(
+                        CameraUpdateFactory.newLatLng(
+                            LatLng(poi.latitude, poi.longitude)
+                        )
                     )
-                )
-            }
-        },
-        onInvalidate = { mapActions.invalidate() },
-        initialSelectedPoi = initialSelectedPoi
-    )
-
+                }
+            },
+            onInvalidate = { mapActions.invalidate() },
+            initialSelectedPoi = initialSelectedPoi
+        )
+    }
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF0F172A)

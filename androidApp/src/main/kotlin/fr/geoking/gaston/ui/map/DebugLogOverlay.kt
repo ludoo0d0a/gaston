@@ -113,7 +113,7 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
                                 Icon(Icons.Default.CleaningServices, "Clear Cache", tint = MaterialTheme.colorScheme.onSurface)
                             }
                             IconButton(onClick = { DebugLogStore.clearAll() }) {
-                                Icon(Icons.Default.Delete, "Clear Logs", tint = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Default.DeleteSweep, "Clear Logs", tint = MaterialTheme.colorScheme.onSurface)
                             }
                             IconButton(onClick = { isExpanded = false }) {
                                 Icon(Icons.Default.Close, "Close", tint = MaterialTheme.colorScheme.onSurface)
