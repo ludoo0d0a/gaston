@@ -14,7 +14,7 @@ import org.koin.core.context.GlobalContext
  * error instead of crashing the session (common with strict template validators in the library).
  *
  * Known Android Auto template constraints enforced here at build-time:
- * - Row.IMAGE_TYPE_LARGE cannot coexist with Metadata containing a Place.
+ * - Rows cannot have both a marker (Metadata containing a Place) and an image.
  * - MapWithContentTemplate ActionStrip: 1–4 actions, each with an icon (no title-only).
  * - ListTemplate inside MapWithContentTemplate: max rows from ConstraintManager (default 6).
  * - Navigation rows must call setBrowsable(true).

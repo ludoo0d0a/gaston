@@ -59,6 +59,7 @@ object AutoPoiUiHelper {
         effectiveEnergyTypes: Set<String> = emptySet(),
         effectivePowerLevels: Set<Int> = emptySet(),
         distanceFromLatLon: Pair<Double, Double>? = null,
+        includePlace: Boolean = false,
         onClick: () -> Unit
     ): Row {
         val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
@@ -66,23 +67,28 @@ object AutoPoiUiHelper {
         val iconResId = PoiMarkerHelper.headDrawableResId(poi, brandInfo)
         val carIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, iconResId)).build()
 
-        val place = Place.Builder(CarLocation.create(poi.latitude, poi.longitude))
-            .setMarker(
-                PlaceMarker.Builder()
-                    .setIcon(carIcon, PlaceMarker.TYPE_ICON)
-                    .build()
-            )
-            .build()
-
-        // IMAGE_TYPE_LARGE is forbidden when Metadata contains a Place (Car App Library constraint:
-        // "A row must not have both a large image and a place"). Use IMAGE_TYPE_SMALL so that the
-        // marker icon is still visible in the list while the Place metadata works for map pins.
         val rowBuilder = Row.Builder()
             .setTitle(title)
-            .setMetadata(Metadata.Builder().setPlace(place).build())
-            .setImage(carIcon, Row.IMAGE_TYPE_SMALL)
             .setBrowsable(true)
             .setOnClickListener(onClick)
+
+        if (includePlace) {
+            // If the template renders a map (like PlaceListMapTemplate), we MUST provide a Place
+            // with a marker in Metadata for the host to display the pin.
+            // Constraint: Rows can't have both a marker (in Metadata) and an image.
+            val place = Place.Builder(CarLocation.create(poi.latitude, poi.longitude))
+                .setMarker(
+                    PlaceMarker.Builder()
+                        .setIcon(carIcon, PlaceMarker.TYPE_ICON)
+                        .build()
+                )
+                .build()
+            rowBuilder.setMetadata(Metadata.Builder().setPlace(place).build())
+        } else {
+            // For screens where we render the map ourselves (CustomMapPoiScreen, MapLibrePoiScreen)
+            // or simple list/search screens, we use a Row image for the brand icon.
+            rowBuilder.setImage(carIcon, Row.IMAGE_TYPE_SMALL)
+        }
 
         val label = PoiMarkerHelper.getPoiLabel(poi, effectiveEnergyTypes, effectivePowerLevels)
         val interpunct = "\u00b7"
