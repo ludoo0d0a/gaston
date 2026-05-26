@@ -15,6 +15,15 @@ data=[out:json][timeout:25];
 );
 out center qt 50;
 
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Response contains elements", function() {
+        client.assert(Array.isArray(response.body.elements), "Response body missing 'elements' array");
+    });
+%}
+
 ### Find EV charging stations near London
 POST {{baseUrl}}
 Content-Type: application/x-www-form-urlencoded
@@ -26,6 +35,12 @@ data=[out:json][timeout:25];
 );
 out center qt 50;
 
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
 ### Find drinking water near Rome
 POST {{baseUrl}}
 Content-Type: application/x-www-form-urlencoded
@@ -35,3 +50,9 @@ data=[out:json][timeout:25];
   node["amenity"="drinking_water"](41.8,12.4,42.0,12.6);
 );
 out body qt 100;
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}

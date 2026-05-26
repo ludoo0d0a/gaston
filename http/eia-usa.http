@@ -9,10 +9,32 @@
 GET {{baseUrl}}?api_key={{apiKey}}&frequency=weekly&data[0]=value&length=8&sort[0][column]=period&sort[0][direction]=desc&facets[duoarea][]=SCA&facets[process][]=PTE&facets[product][]=EPM0&facets[product][]=EPD2D
 Accept: application/json
 
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Response contains data", function() {
+        client.assert(response.body.hasOwnProperty("response"), "Response body missing 'response' object");
+        client.assert(response.body.response.data.length > 0, "Response data array is empty");
+    });
+%}
+
 ### Get latest retail prices for New York (SNY)
 GET {{baseUrl}}?api_key={{apiKey}}&frequency=weekly&data[0]=value&length=8&sort[0][column]=period&sort[0][direction]=desc&facets[duoarea][]=SNY&facets[process][]=PTE&facets[product][]=EPM0&facets[product][]=EPD2D
 Accept: application/json
 
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
 ### Get latest retail prices for Texas (STX)
 GET {{baseUrl}}?api_key={{apiKey}}&frequency=weekly&data[0]=value&length=8&sort[0][column]=period&sort[0][direction]=desc&facets[duoarea][]=STX&facets[process][]=PTE&facets[product][]=EPM0&facets[product][]=EPD2D
 Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}

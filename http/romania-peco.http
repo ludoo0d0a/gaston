@@ -11,8 +11,23 @@ X-Parse-Application-Id: {{appId}}
 X-Parse-Client-Key: {{clientKey}}
 Accept: application/json
 
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Response contains results", function() {
+        client.assert(Array.isArray(response.body.results), "Response body missing 'results' array");
+    });
+%}
+
 ### Get stations (second page)
 GET {{baseUrl}}?limit=100&skip=100&count=1&where={"Benzina_Regular":{"$gt":0,"$lt":999999}}
 X-Parse-Application-Id: {{appId}}
 X-Parse-Client-Key: {{clientKey}}
 Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}

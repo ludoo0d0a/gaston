@@ -11,10 +11,25 @@ GET {{baseUrl}}/versions
 Authorization: Token {{token}}
 Accept: application/json
 
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
 ### List locations (page)
 GET {{baseUrl}}/locations?limit=10&offset=0
 Authorization: Token {{token}}
 Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Response contains data", function() {
+        client.assert(response.body.hasOwnProperty("data"), "Response body missing 'data' object");
+    });
+%}
 
 ### Location by id (replace with an id from the list response)
 @locationId = REPLACE_ME
@@ -22,9 +37,20 @@ GET {{baseUrl}}/location/{{locationId}}
 Authorization: Token {{token}}
 Accept: application/json
 
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
 ### EVSE by eMI3 id (replace with an evse_id from a location response)
 @evseId = REPLACE_ME
 GET {{baseUrl}}/evse/{{evseId}}
 Authorization: Token {{token}}
 Accept: application/json
 
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
