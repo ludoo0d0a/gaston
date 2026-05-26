@@ -50,13 +50,13 @@ fun MapScaffold(
     var navMenuExpanded by remember { mutableStateOf(false) }
     var moreMenuExpanded by remember { mutableStateOf(false) }
 
-    val toggleTheme = {
-        val nextMode = when (settings.uiThemeMode) {
+    val toggleMapTheme = {
+        val nextMode = when (settings.mapThemeMode) {
             ThemeMode.System -> ThemeMode.Light
             ThemeMode.Light -> ThemeMode.Dark
             ThemeMode.Dark -> ThemeMode.System
         }
-        settingsManager.saveSettings(settings.copy(uiThemeMode = nextMode))
+        settingsManager.saveSettings(settings.copy(mapThemeMode = nextMode))
     }
 
     Scaffold(
@@ -73,49 +73,21 @@ fun MapScaffold(
                     }
                 },
                 actions = {
-                    if (onPlanRoute != null || onLocatePlace != null || onRouteToDirection != null) {
-                        Box {
-                            IconButton(onClick = { navMenuExpanded = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.Directions,
-                                    contentDescription = stringResource(R.string.cd_navigation)
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = navMenuExpanded,
-                                onDismissRequest = { navMenuExpanded = false }
-                            ) {
-                                if (onPlanRoute != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.route_plan_menu)) },
-                                        leadingIcon = { Icon(Icons.Default.Directions, contentDescription = null) },
-                                        onClick = {
-                                            navMenuExpanded = false
-                                            onPlanRoute()
-                                        }
-                                    )
-                                }
-                                if (onLocatePlace != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.route_locate_place)) },
-                                        leadingIcon = { Icon(Icons.Default.Place, contentDescription = null) },
-                                        onClick = {
-                                            navMenuExpanded = false
-                                            onLocatePlace()
-                                        }
-                                    )
-                                }
-                                if (onRouteToDirection != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.route_to_direction)) },
-                                        leadingIcon = { Icon(Icons.Default.Directions, contentDescription = null) },
-                                        onClick = {
-                                            navMenuExpanded = false
-                                            onRouteToDirection()
-                                        }
-                                    )
-                                }
-                            }
+                    if (onLocatePlace != null) {
+                        IconButton(onClick = onLocatePlace) {
+                            Icon(
+                                painter = androidx.compose.ui.res.painterResource(R.drawable.ic_waypoint),
+                                contentDescription = stringResource(R.string.route_locate_place)
+                            )
+                        }
+                    }
+
+                    if (onRouteToDirection != null) {
+                        IconButton(onClick = onRouteToDirection) {
+                            Icon(
+                                imageVector = Icons.Default.Directions,
+                                contentDescription = stringResource(R.string.route_to_direction)
+                            )
                         }
                     }
 
@@ -137,11 +109,21 @@ fun MapScaffold(
                             expanded = moreMenuExpanded,
                             onDismissRequest = { moreMenuExpanded = false }
                         ) {
+                            if (onPlanRoute != null) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.route_plan_menu)) },
+                                    leadingIcon = { Icon(Icons.Default.Directions, contentDescription = null) },
+                                    onClick = {
+                                        moreMenuExpanded = false
+                                        onPlanRoute()
+                                    }
+                                )
+                            }
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.screen_theme)) },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = when (settings.uiThemeMode) {
+                                        imageVector = when (settings.mapThemeMode) {
                                             ThemeMode.System -> Icons.Default.BrightnessAuto
                                             ThemeMode.Light -> Icons.Default.LightMode
                                             ThemeMode.Dark -> Icons.Default.DarkMode
@@ -151,7 +133,7 @@ fun MapScaffold(
                                 },
                                 onClick = {
                                     moreMenuExpanded = false
-                                    toggleTheme()
+                                    toggleMapTheme()
                                 }
                             )
                             DropdownMenuItem(

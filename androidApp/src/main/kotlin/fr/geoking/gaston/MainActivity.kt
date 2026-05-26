@@ -563,6 +563,7 @@ fun MainUI(
                             pendingMapLocation = null
                         },
                         onPlanRoute = { showRoutePlanning = true },
+                        geocodingClient = mapDeps!!.geocodingClient,
                         communityRepo = mapDeps!!.communityRepo,
                         favoritesRepo = mapDeps!!.favoritesRepo,
                         initialSelectedPoi = pendingMapPoi,
@@ -705,6 +706,7 @@ fun MainUI(
                                 pendingMapLocation = null
                             },
                             onPlanRoute = { showRoutePlanning = true },
+                            geocodingClient = mapDeps!!.geocodingClient,
                             communityRepo = mapDeps!!.communityRepo,
                             favoritesRepo = mapDeps!!.favoritesRepo,
                             initialSelectedPoi = pendingMapPoi,

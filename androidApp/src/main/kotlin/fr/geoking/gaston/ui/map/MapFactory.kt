@@ -9,6 +9,7 @@ import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
+import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
@@ -28,6 +29,7 @@ fun MapFactory(
     palette: AnimationPalette,
     onBack: () -> Unit,
     onPlanRoute: (() -> Unit)? = null,
+    geocodingClient: GeocodingClient? = null,
     communityRepo: CommunityPoiRepository? = null,
     favoritesRepo: FavoritesRepository? = null,
     initialSelectedPoi: Poi? = null,
@@ -46,6 +48,7 @@ fun MapFactory(
             palette = palette,
             onBack = onBack,
             onPlanRoute = onPlanRoute,
+            geocodingClient = geocodingClient,
             communityRepo = communityRepo,
             favoritesRepo = favoritesRepo,
             initialSelectedPoi = initialSelectedPoi,
@@ -62,6 +65,7 @@ fun MapFactory(
             palette = palette,
             onBack = onBack,
             onPlanRoute = onPlanRoute,
+            geocodingClient = geocodingClient,
             communityRepo = communityRepo,
             favoritesRepo = favoritesRepo,
             initialSelectedPoi = initialSelectedPoi,
