@@ -17,6 +17,13 @@ Accept: application/json
     });
     client.test("Response contains results", function() {
         client.assert(Array.isArray(response.body.results), "Response body missing 'results' array");
+        client.assert(response.body.results.length > 0, "No results found");
+    });
+    client.test("Result object structure", function() {
+        var station = response.body.results[0];
+        client.assert(station.hasOwnProperty("objectId"), "Station missing 'objectId'");
+        client.assert(typeof station.lat === "number", "Station 'lat' is not a number");
+        client.assert(typeof station.lng === "number", "Station 'lng' is not a number");
     });
 %}
 

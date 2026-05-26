@@ -14,6 +14,13 @@ Accept: application/json
     });
     client.test("Response contains station list", function() {
         client.assert(Array.isArray(response.body.ListaEESSPrecio), "Response body missing 'ListaEESSPrecio' array");
+        client.assert(response.body.ListaEESSPrecio.length > 0, "No stations found");
+    });
+    client.test("Station object structure", function() {
+        var station = response.body.ListaEESSPrecio[0];
+        client.assert(station.hasOwnProperty("IDEESS"), "Station missing 'IDEESS'");
+        client.assert(station.hasOwnProperty("Latitud"), "Station missing 'Latitud'");
+        client.assert(station.hasOwnProperty("Longitud (WGS84)"), "Station missing 'Longitud (WGS84)'");
     });
 %}
 

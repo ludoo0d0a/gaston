@@ -14,6 +14,13 @@ Accept: application/json
     });
     client.test("Response contains records", function() {
         client.assert(Array.isArray(response.body.results), "Response body missing 'results' array");
+        client.assert(response.body.results.length > 0, "No results found");
+    });
+    client.test("Result object structure", function() {
+        var station = response.body.results[0];
+        client.assert(station.hasOwnProperty("id") || station.hasOwnProperty("id_"), "Station missing ID");
+        client.assert(typeof station.latitude === "number", "Station 'latitude' is not a number");
+        client.assert(typeof station.longitude === "number", "Station 'longitude' is not a number");
     });
 %}
 

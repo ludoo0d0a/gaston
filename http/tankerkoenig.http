@@ -16,6 +16,14 @@ Accept: application/json
     client.test("Response is OK", function() {
         client.assert(response.body.ok === true, "Tankerkoenig 'ok' field is not true");
         client.assert(Array.isArray(response.body.stations), "Response missing stations array");
+        client.assert(response.body.stations.length > 0, "No stations found");
+    });
+    client.test("Station object structure", function() {
+        var station = response.body.stations[0];
+        client.assert(station.hasOwnProperty("id"), "Station missing 'id'");
+        client.assert(station.hasOwnProperty("name"), "Station missing 'name'");
+        client.assert(typeof station.lat === "number", "Station 'lat' is not a number");
+        client.assert(typeof station.lng === "number", "Station 'lng' is not a number");
     });
 %}
 

@@ -10,8 +10,8 @@ Content-Type: application/x-www-form-urlencoded
 
 data=[out:json][timeout:25];
 (
-  node["amenity"="fuel"](48.8,-2.4,48.9,-2.3);
-  way["amenity"="fuel"](48.8,-2.4,48.9,-2.3);
+  node["amenity"="fuel"](48.8,2.3,48.9,2.4);
+  way["amenity"="fuel"](48.8,2.3,48.9,2.4);
 );
 out center qt 50;
 
@@ -21,6 +21,13 @@ out center qt 50;
     });
     client.test("Response contains elements", function() {
         client.assert(Array.isArray(response.body.elements), "Response body missing 'elements' array");
+        client.assert(response.body.elements.length > 0, "No elements found");
+    });
+    client.test("Element object structure", function() {
+        var element = response.body.elements[0];
+        client.assert(element.hasOwnProperty("id"), "Element missing 'id'");
+        client.assert(element.hasOwnProperty("type"), "Element missing 'type'");
+        client.assert(typeof element.lat === "number" || (element.center && typeof element.center.lat === "number"), "Element missing latitude");
     });
 %}
 
