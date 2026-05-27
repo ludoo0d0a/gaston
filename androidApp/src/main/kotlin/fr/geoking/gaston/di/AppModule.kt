@@ -203,6 +203,7 @@ val appModule = module {
         AndroidNetworkService(
             androidContext(),
             CoroutineScope(SupervisorJob() + Dispatchers.IO),
+            get(),
             get()
         )
     }
@@ -211,7 +212,8 @@ val appModule = module {
     single(createdAtStart = true) {
         ConnectivityManager(
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
-            networkService = get()
+            networkService = get(),
+            networkSettings = get<SettingsManager>()
         )
     }
 

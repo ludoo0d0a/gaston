@@ -114,8 +114,8 @@
     <string name="screen_route">Route</string>
     <string name="screen_routes">Routes</string>
     <string name="screen_plan_route">Plan route</string>
-    <string name="screen_network_location">Network &amp; location</string>
-    <string name="screen_network_location_info">Network &amp; Location Info</string>
+    <string name="screen_network_location">Connectivity &amp; location</string>
+    <string name="screen_network_location_info">Connectivity &amp; Location Info</string>
     <string name="screen_price_estimation">Price Estimation</string>
     <string name="screen_highway_toll">Highway toll</string>
     <string name="screen_error_log">Error log</string>

@@ -8,6 +8,7 @@ import fr.geoking.gaston.feature.settings.FirestoreSettingsSync
 import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.sanitizeUserPoiProviderSelection
+import fr.geoking.gaston.shared.network.NetworkSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -137,6 +138,11 @@ data class AppSettings(
     val lastKnownLat: Double? = null,
     val lastKnownLon: Double? = null,
     val lastAcceptedDisclaimerVersion: Int = 0,
+    val lastCountryCode: String? = null,
+    val lastCountryName: String? = null,
+    val lastOperatorName: String? = null,
+    val lastIsConnected: Boolean = false,
+    val lastIsRoaming: Boolean = false,
 ) {
     val hasPremiumFeatures: Boolean get() = isPremium || devSimulatePremium
 }
@@ -144,7 +150,7 @@ data class AppSettings(
 open class SettingsManager(
     context: Context,
     private val firestoreSync: FirestoreSettingsSync? = null
-) {
+) : NetworkSettings {
     // Keep legacy name so existing installs keep settings.
     private val prefs: SharedPreferences = context.getSharedPreferences("voice_ai_prefs", Context.MODE_PRIVATE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -311,7 +317,12 @@ open class SettingsManager(
             filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false),
             lastKnownLat = prefs.getString("last_known_lat", null)?.toDoubleOrNull(),
             lastKnownLon = prefs.getString("last_known_lon", null)?.toDoubleOrNull(),
-            lastAcceptedDisclaimerVersion = prefs.getInt("last_accepted_disclaimer_version", 0)
+            lastAcceptedDisclaimerVersion = prefs.getInt("last_accepted_disclaimer_version", 0),
+            lastCountryCode = prefs.getString("last_country_code", null),
+            lastCountryName = prefs.getString("last_country_name", null),
+            lastOperatorName = prefs.getString("last_operator_name", null),
+            lastIsConnected = prefs.getBoolean("last_is_connected", false),
+            lastIsRoaming = prefs.getBoolean("last_is_roaming", false),
         )
     }
 
@@ -375,6 +386,11 @@ open class SettingsManager(
             .putString("last_known_lat", sanitized.lastKnownLat?.toString())
             .putString("last_known_lon", sanitized.lastKnownLon?.toString())
             .putInt("last_accepted_disclaimer_version", sanitized.lastAcceptedDisclaimerVersion)
+            .putString("last_country_code", sanitized.lastCountryCode)
+            .putString("last_country_name", sanitized.lastCountryName)
+            .putString("last_operator_name", sanitized.lastOperatorName)
+            .putBoolean("last_is_connected", sanitized.lastIsConnected)
+            .putBoolean("last_is_roaming", sanitized.lastIsRoaming)
             .apply()
 
         if (upload) {
@@ -633,6 +649,46 @@ open class SettingsManager(
         }
         return map[poiId] ?: 0
     }
+
+    override var lastCountryCode: String?
+        get() = _settings.value.lastCountryCode
+        set(value) {
+            if (_settings.value.lastCountryCode != value) {
+                saveSettings(_settings.value.copy(lastCountryCode = value))
+            }
+        }
+
+    override var lastCountryName: String?
+        get() = _settings.value.lastCountryName
+        set(value) {
+            if (_settings.value.lastCountryName != value) {
+                saveSettings(_settings.value.copy(lastCountryName = value))
+            }
+        }
+
+    override var lastOperatorName: String?
+        get() = _settings.value.lastOperatorName
+        set(value) {
+            if (_settings.value.lastOperatorName != value) {
+                saveSettings(_settings.value.copy(lastOperatorName = value))
+            }
+        }
+
+    override var lastIsConnected: Boolean
+        get() = _settings.value.lastIsConnected
+        set(value) {
+            if (_settings.value.lastIsConnected != value) {
+                saveSettings(_settings.value.copy(lastIsConnected = value))
+            }
+        }
+
+    override var lastIsRoaming: Boolean
+        get() = _settings.value.lastIsRoaming
+        set(value) {
+            if (_settings.value.lastIsRoaming != value) {
+                saveSettings(_settings.value.copy(lastIsRoaming = value))
+            }
+        }
 
     open fun setPoiRating(poiId: String, rating: Int) {
         val raw = prefs.getString("poi_ratings", null)
