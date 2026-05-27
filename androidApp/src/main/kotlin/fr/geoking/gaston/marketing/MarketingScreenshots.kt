@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.R
 import fr.geoking.gaston.ThemeMode
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.MAP_ENERGY_OPTIONS
 import fr.geoking.gaston.ui.MAP_IRVE_POWER_OPTIONS
@@ -273,8 +274,6 @@ fun MarketingAndroidAutoListScreen() {
                 contentPadding = PaddingValues(vertical = 8.dp),
             ) {
                 items(pois, key = { it.id }) { poi ->
-                    val brandInfo = BrandHelper.getBrandInfo(poi.brand)
-                    val iconRes = PoiMarkerHelper.headDrawableResId(poi, brandInfo)
                     val label = PoiMarkerHelper.getPoiLabel(poi, emptySet(), setOf(200, 300))
                     val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name
                     val meters = haversineMeters(userLat, userLon, poi.latitude, poi.longitude)
@@ -292,7 +291,7 @@ fun MarketingAndroidAutoListScreen() {
                             Text(subtitle, color = AutoListMuted)
                         },
                         leadingContent = {
-                            MarketingBrandIcon(iconRes = iconRes)
+                            MarketingBrandIcon(poi = poi)
                         },
                         colors = ListItemDefaults.colors(containerColor = AutoListBackground),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
@@ -304,16 +303,21 @@ fun MarketingAndroidAutoListScreen() {
 }
 
 @Composable
-private fun MarketingBrandIcon(iconRes: Int, modifier: Modifier = Modifier.size(40.dp)) {
+private fun MarketingBrandIcon(poi: Poi, modifier: Modifier = Modifier.size(40.dp)) {
     val context = LocalContext.current
-    val image = remember(iconRes) {
-        val drawable = ContextCompat.getDrawable(context, iconRes) ?: return@remember null
-        val sizePx = 96
-        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, sizePx, sizePx)
-        drawable.draw(canvas)
-        bitmap.asImageBitmap()
+    val image = remember(poi.id) {
+        val brandInfo = BrandHelper.getBrandInfo(poi.brand)
+        val category = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
+        val categoryColor = PoiMarkerHelper.getPoiColor(poi, category, emptySet(), emptySet())
+
+        val bitmap = PoiMarkerHelper.getPoiHeadBitmap(
+            context = context,
+            poi = poi,
+            brandInfo = brandInfo,
+            sizePx = 128,
+            categoryColor = categoryColor
+        )
+        bitmap?.asImageBitmap()
     }
     if (image != null) {
         Image(bitmap = image, contentDescription = null, modifier = modifier)

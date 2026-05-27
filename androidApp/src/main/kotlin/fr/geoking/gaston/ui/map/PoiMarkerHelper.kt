@@ -291,7 +291,7 @@ object PoiMarkerHelper {
         }
     }
 
-    internal fun getPoiColor(
+    fun getPoiColor(
         poi: Poi,
         category: PoiCategory,
         effectiveEnergyTypes: Set<String>,
@@ -353,7 +353,7 @@ object PoiMarkerHelper {
         }
     }
 
-    internal fun getPoiHeadBitmap(
+    fun getPoiHeadBitmap(
         context: Context,
         poi: Poi,
         brandInfo: BrandHelper.BrandInfo?,
@@ -403,8 +403,8 @@ object PoiMarkerHelper {
         }
 
         // Previous was 4.8dp on each side for a 48dp circle. So 9.6dp total padding on 48dp = 20%.
-        // Let's use 8% on each side for a bigger image (16% total).
-        val innerPadding = sizePx * 0.08f
+        // Let's use 4% on each side for a bigger image (8% total).
+        val innerPadding = sizePx * 0.04f
         val iconSize = (sizePx - 2 * innerPadding).toInt()
 
         val iconDrawable = ContextCompat.getDrawable(context, iconResId)?.mutate() ?: return null
