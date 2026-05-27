@@ -249,8 +249,8 @@
     <string name="screen_more">Plus</string>
     <string name="screen_more_options">Plus d\'options</string>
     <string name="screen_navigate_to">Naviguer vers</string>
-    <string name="screen_network_location">Réseau et position</string>
-    <string name="screen_network_location_info">Réseau et position</string>
+    <string name="screen_network_location">Connectivité et position</string>
+    <string name="screen_network_location_info">Connectivité et position</string>
     <string name="screen_opentolldata">OpenTollData</string>
     <string name="screen_operator">Opérateur</string>
     <string name="screen_operators">Opérateurs</string>

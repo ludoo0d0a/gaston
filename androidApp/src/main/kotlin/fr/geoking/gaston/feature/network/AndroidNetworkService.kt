@@ -13,6 +13,7 @@ import android.os.Build
 import android.telephony.TelephonyManager
 import android.util.Log
 import com.google.android.gms.location.Priority
+import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.shared.network.CountrySource
 import fr.geoking.gaston.shared.network.NetworkService
@@ -35,7 +36,8 @@ private const val TAG = "AndroidNetworkService"
 class AndroidNetworkService(
     private val context: Context,
     private val scope: CoroutineScope,
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val settingsManager: SettingsManager
 ) : NetworkService {
 
     private var updateJob: Job? = null
@@ -129,17 +131,19 @@ class AndroidNetworkService(
                 }
             }
 
-            // Prefer GPS-based country code for cross-border accuracy, fallback to Telephony
-            val finalCountryCode = locationCountryCode ?: telephonyCountry
+            // Prefer GPS-based country code for cross-border accuracy, fallback to Telephony, then to persisted settings
+            val finalCountryCode = locationCountryCode ?: telephonyCountry ?: settingsManager.lastCountryCode
+            val finalCountryName = locationCountryName ?: settingsManager.lastCountryName
             val countrySource = when {
                 locationCountryCode != null -> CountrySource.LOCATION
                 telephonyCountry != null -> CountrySource.NETWORK
+                settingsManager.lastCountryCode != null -> CountrySource.NETWORK // Fallback to last known
                 else -> CountrySource.UNKNOWN
             }
 
             NetworkStatus(
                 countryCode = finalCountryCode,
-                countryName = locationCountryName, // Might be null if only telephony worked
+                countryName = finalCountryName, // Might be null if only telephony worked
                 countrySource = countrySource,
                 telephonyCountryCode = telephonyCountry,
                 networkType = networkType,

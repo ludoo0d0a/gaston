@@ -2,6 +2,7 @@ package fr.geoking.gaston.shared.location
 
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.logging.log
+import fr.geoking.gaston.shared.network.NetworkSettings
 import fr.geoking.gaston.shared.network.NetworkStatus
 import fr.geoking.gaston.shared.network.NetworkType
 import kotlinx.coroutines.CoroutineScope
@@ -24,9 +25,16 @@ data class ConnectivityEvent(
 
 class ConnectivityManager(
     private val scope: CoroutineScope,
-    private val networkService: NetworkService
+    private val networkService: NetworkService,
+    private val networkSettings: NetworkSettings
 ) {
-    private var lastStatus: NetworkStatus? = null
+    private var lastStatus: NetworkStatus? = NetworkStatus(
+        countryCode = networkSettings.lastCountryCode,
+        countryName = networkSettings.lastCountryName,
+        operatorName = networkSettings.lastOperatorName,
+        isConnected = networkSettings.lastIsConnected,
+        isRoaming = networkSettings.lastIsRoaming
+    )
 
     private val _connectivityEvents = MutableSharedFlow<ConnectivityEvent>()
     val connectivityEvents: SharedFlow<ConnectivityEvent> = _connectivityEvents.asSharedFlow()
@@ -53,15 +61,22 @@ class ConnectivityManager(
     }
 
     private suspend fun handleStatusChange(status: NetworkStatus) {
-        val last = lastStatus ?: return // Skip first emission to avoid noise on app start
+        val last = lastStatus ?: return
+
+        // Update persistent settings only if they changed to avoid redundant writes
+        if (status.countryCode != last.countryCode) networkSettings.lastCountryCode = status.countryCode
+        if (status.countryName != last.countryName) networkSettings.lastCountryName = status.countryName
+        if (status.operatorName != last.operatorName) networkSettings.lastOperatorName = status.operatorName
+        if (status.isConnected != last.isConnected) networkSettings.lastIsConnected = status.isConnected
+        if (status.isRoaming != last.isRoaming) networkSettings.lastIsRoaming = status.isRoaming
 
         // 1. Connection lost/regained
         if (status.isConnected != last.isConnected) {
             if (!status.isConnected) {
-                emitEvent(status, "Connectivity", "no network")
+                emitEvent(status, "Network Connectivity", "no network")
             } else {
                 val message = if (status.isRoaming) "roaming" else "ok again"
-                emitEvent(status, "Connectivity", message)
+                emitEvent(status, "Network Connectivity", message)
             }
             return
         }
@@ -77,14 +92,14 @@ class ConnectivityManager(
         // 3. Operator change
         if (status.operatorName != last.operatorName) {
             if (status.operatorName.isNullOrBlank()) {
-                emitEvent(status, "Connectivity", "no network")
+                emitEvent(status, "Network Connectivity", "no network")
             } else {
-                val message = if (last.operatorName.isNullOrBlank()) {
-                    status.operatorName
+                val title = if (last.operatorName.isNullOrBlank()) {
+                    "Network changed"
                 } else {
-                    "${status.operatorName} (${last.operatorName})"
+                    "${last.operatorName} → ${status.operatorName}"
                 }
-                emitEvent(status, "Network changed", message)
+                emitEvent(status, title, status.operatorName ?: "")
             }
             return
         }
