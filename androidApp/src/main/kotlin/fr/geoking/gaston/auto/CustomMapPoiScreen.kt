@@ -65,6 +65,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import fr.geoking.gaston.auto.maplibre.resolveAutoRasterTileUrl
 
 /**
  * POI map with a custom OSM surface renderer. Supports north-up and heading-up orientation
@@ -100,7 +101,6 @@ class CustomMapPoiScreen(
     private var mapHeightPx: Int = 480
 
     private var surfaceRenderer: AutoSurfaceRenderer? = null
-    private var themeCollectionJob: kotlinx.coroutines.Job? = null
     private var headingUpdateJob: Job? = null
     private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
     private var lastKnownBearingDegrees: Float = 0f
@@ -579,7 +579,6 @@ class CustomMapPoiScreen(
     override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
         Log.d("CustomMapPoiScreen", "onSurfaceAvailable")
         surfaceRenderer?.stop()
-        themeCollectionJob?.cancel()
         startHeadingUpdates()
         val surface = surfaceContainer.surface
         if (surface == null) {
@@ -606,26 +605,7 @@ class CustomMapPoiScreen(
         lastSyncedPoiIds = emptyList()
         syncRendererWithMapState()
         surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
-
-        themeCollectionJob = lifecycleScope.launch {
-            settingsManager.settings
-                .map { settings ->
-                    val dark = when (settings.uiThemeMode) {
-                        ThemeMode.Dark -> true
-                        ThemeMode.Light -> false
-                        ThemeMode.System -> carContext.isDarkMode
-                    }
-                    if (dark) {
-                        "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-                    } else {
-                        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    }
-                }
-                .distinctUntilChanged()
-                .collect { url ->
-                    surfaceRenderer?.setTileUrlTemplate(url)
-                }
-        }
+        surfaceRenderer?.setTileUrlTemplate(resolveAutoRasterTileUrl())
     }
 
     override fun onVisibleAreaChanged(visibleArea: Rect) {
@@ -645,7 +625,6 @@ class CustomMapPoiScreen(
         visibleAreaCameraJob?.cancel()
         surfaceRenderer?.stop()
         surfaceRenderer = null
-        themeCollectionJob?.cancel()
     }
 
     override fun onClick(x: Float, y: Float) {

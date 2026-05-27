@@ -30,6 +30,7 @@ import fr.geoking.gaston.feature.location.LocationHelper
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import fr.geoking.gaston.auto.maplibre.resolveAutoRasterTileUrl
 
 /**
  * Android Auto template lab: map surface + zoom controls for exercising the raster pipeline.
@@ -43,7 +44,6 @@ class AutoLibreMapLabScreen(carContext: CarContext) : Screen(carContext), Surfac
     private var searchLon = 2.3522
     private var zoom = 12
     private var surfaceRenderer: AutoSurfaceRenderer? = null
-    private var themeCollectionJob: kotlinx.coroutines.Job? = null
     private var isLoading = true
 
     init {
@@ -82,7 +82,6 @@ class AutoLibreMapLabScreen(carContext: CarContext) : Screen(carContext), Surfac
 
     override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
         surfaceRenderer?.stop()
-        themeCollectionJob?.cancel()
         val surface = surfaceContainer.surface
         if (surface == null) {
             Log.w("AutoLibreMapLabScreen", "SurfaceContainer.surface is null; skipping renderer start")
@@ -103,26 +102,14 @@ class AutoLibreMapLabScreen(carContext: CarContext) : Screen(carContext), Surfac
             updateLocation(searchLat, searchLon, zoom)
             updateUserLocation(searchLat, searchLon)
             updatePois(emptyList(), emptySet(), emptySet())
+            setTileUrlTemplate(resolveAutoRasterTileUrl(isLab = true))
             start()
-        }
-
-        themeCollectionJob = lifecycleScope.launch {
-            settingsManager.settings.collect { settings ->
-                val dark = when (settings.uiThemeMode) {
-                    ThemeMode.Dark -> true
-                    ThemeMode.Light -> false
-                    ThemeMode.System -> carContext.isDarkMode
-                }
-                val url = if (dark) "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png" else "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
-                surfaceRenderer?.setTileUrlTemplate(url)
-            }
         }
     }
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
         surfaceRenderer?.stop()
         surfaceRenderer = null
-        themeCollectionJob?.cancel()
     }
 
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
