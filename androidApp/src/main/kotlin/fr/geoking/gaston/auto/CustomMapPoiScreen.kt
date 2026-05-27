@@ -605,7 +605,6 @@ class CustomMapPoiScreen(
         }
         lastSyncedPoiIds = emptyList()
         syncRendererWithMapState()
-        registerSurfaceCallback()
         surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
 
         themeCollectionJob = lifecycleScope.launch {

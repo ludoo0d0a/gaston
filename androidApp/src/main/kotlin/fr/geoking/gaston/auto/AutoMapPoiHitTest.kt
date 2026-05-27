@@ -27,11 +27,12 @@ internal object AutoMapPoiHitTest {
         centerPxY: Float,
     ): Pair<Float, Float> {
         if (mapBearingDegrees == 0f) return screenX to screenY
+        // Canvas is rotated by -bearing. To get back to world coords, rotate screen offset by +bearing.
         val angleRad = Math.toRadians(mapBearingDegrees.toDouble())
         val dx = screenX - centerPxX
         val dy = screenY - centerPxY
-        val rx = dx * cos(angleRad) + dy * sin(angleRad)
-        val ry = -dx * sin(angleRad) + dy * cos(angleRad)
+        val rx = dx * cos(angleRad) - dy * sin(angleRad)
+        val ry = dx * sin(angleRad) + dy * cos(angleRad)
         return (centerPxX + rx).toFloat() to (centerPxY + ry).toFloat()
     }
 
@@ -83,14 +84,15 @@ internal object AutoMapPoiHitTest {
             centerPxX = centerPxX.toFloat(),
             centerPxY = centerPxY.toFloat(),
         )
-        val markerWidthPx = markerWidthForZoom(zoom)
+        val markerWidthPx = AutoSurfaceRenderer.POI_MARKER_WIDTH_PX
         val hitRadius = hitRadiusPx(markerWidthPx)
         val hitRadiusSq = hitRadius * hitRadius
 
         return pois.mapNotNull { poi ->
             val (px, py) = poiScreenPosition(poi, mapLat, mapLon, zoom, centerPxX, centerPxY)
             val dx = worldX - px
-            val dy = worldY - py
+            // Marker is bottom-center anchored. Hit circle should be centered on the icon body.
+            val dy = worldY - (py - hitRadius)
             val distSq = dx * dx + dy * dy
             if (distSq <= hitRadiusSq) poi to distSq else null
         }
@@ -112,15 +114,8 @@ internal object AutoMapPoiHitTest {
         val (ax, ay) = poiScreenPosition(a, mapLat, mapLon, zoom, centerPxX, centerPxY)
         val (bx, by) = poiScreenPosition(b, mapLat, mapLon, zoom, centerPxX, centerPxY)
         val clusterDist = hypot((ax - bx).toDouble(), (ay - by).toDouble())
-        val hitRadius = hitRadiusPx(markerWidthForZoom(zoom))
+        val hitRadius = hitRadiusPx(AutoSurfaceRenderer.POI_MARKER_WIDTH_PX)
         return clusterDist < hitRadius * 1.5
-    }
-
-    private fun markerWidthForZoom(zoom: Int): Int {
-        val baseWidth = AutoSurfaceRenderer.POI_MARKER_WIDTH_PX
-        val baseZoom = 13
-        val scale = 2.0.pow(zoom.toDouble() - baseZoom)
-        return (baseWidth * scale).toInt().coerceIn(32, 256)
     }
 
     private fun lonToTileX(lon: Double, zoom: Int): Double =
