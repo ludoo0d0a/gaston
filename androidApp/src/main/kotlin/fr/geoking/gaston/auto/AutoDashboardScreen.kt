@@ -53,8 +53,13 @@ class AutoDashboardScreen(
                 .setTitle(fuelTitle)
                 .setImage(carContext.dashboardFuelIcon())
                 .setOnClickListener {
-                    settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel)
-                    pushMapScreen(fuelTitle)
+                    screenManager.push(
+                        AutoFuelDashboardScreen(
+                            carContext = carContext,
+                            settingsManager = settingsManager,
+                            getMapDeps = getMapDeps
+                        )
+                    )
                 }
                 .build()
         )

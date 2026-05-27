@@ -119,7 +119,7 @@ class AutoSurfaceRenderer(
         private const val TAG = "AutoSurfaceRenderer"
         private val NAVIGATION_BLUE = Color.parseColor("#4285F4")
         private const val MIN_DRAW_INTERVAL_MS = 33L
-        const val POI_MARKER_WIDTH_PX = 120
+        const val POI_MARKER_WIDTH_PX = 96
     }
 
     fun start() {
