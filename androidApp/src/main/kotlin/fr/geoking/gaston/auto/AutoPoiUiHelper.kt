@@ -12,6 +12,7 @@ import androidx.car.app.model.Place
 import androidx.car.app.model.PlaceMarker
 import androidx.car.app.model.Row
 import androidx.core.graphics.drawable.IconCompat
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.R
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.poi.MapPoiFilter
@@ -37,16 +38,39 @@ object AutoPoiUiHelper {
         return r * c
     }
 
-    fun buildPlace(carContext: CarContext, poi: Poi): Place {
+    private fun buildPoiIcon(
+        carContext: CarContext,
+        poi: Poi,
+        effectiveEnergyTypes: Set<String> = emptySet(),
+        effectivePowerLevels: Set<Int> = emptySet(),
+        sizePx: Int = 128
+    ): CarIcon {
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
-        val iconResId = PoiMarkerHelper.headDrawableResId(poi, brandInfo)
+        val category = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
+        val categoryColor = PoiMarkerHelper.getPoiColor(poi, category, effectiveEnergyTypes, effectivePowerLevels)
+
+        val bitmap = PoiMarkerHelper.getPoiHeadBitmap(
+            context = carContext,
+            poi = poi,
+            brandInfo = brandInfo,
+            sizePx = sizePx,
+            categoryColor = categoryColor
+        )
+
+        return if (bitmap != null) {
+            CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
+        } else {
+            val iconResId = PoiMarkerHelper.headDrawableResId(poi, brandInfo)
+            CarIcon.Builder(IconCompat.createWithResource(carContext, iconResId)).build()
+        }
+    }
+
+    fun buildPlace(carContext: CarContext, poi: Poi): Place {
+        val carIcon = buildPoiIcon(carContext, poi)
         return Place.Builder(CarLocation.create(poi.latitude, poi.longitude))
             .setMarker(
                 PlaceMarker.Builder()
-                    .setIcon(
-                        CarIcon.Builder(IconCompat.createWithResource(carContext, iconResId)).build(),
-                        PlaceMarker.TYPE_ICON
-                    )
+                    .setIcon(carIcon, PlaceMarker.TYPE_ICON)
                     .build()
             )
             .build()
@@ -63,9 +87,7 @@ object AutoPoiUiHelper {
         onClick: () -> Unit
     ): Row {
         val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
-        val brandInfo = BrandHelper.getBrandInfo(poi.brand)
-        val iconResId = PoiMarkerHelper.headDrawableResId(poi, brandInfo)
-        val carIcon = CarIcon.Builder(IconCompat.createWithResource(carContext, iconResId)).build()
+        val carIcon = buildPoiIcon(carContext, poi, effectiveEnergyTypes, effectivePowerLevels)
 
         val rowBuilder = Row.Builder()
             .setTitle(title)
