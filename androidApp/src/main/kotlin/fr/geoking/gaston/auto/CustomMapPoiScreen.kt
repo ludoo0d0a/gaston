@@ -102,7 +102,7 @@ class CustomMapPoiScreen(
 
     private var surfaceRenderer: AutoSurfaceRenderer? = null
     private var headingUpdateJob: Job? = null
-    private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
+    private var orientationMode: MapOrientationMode = MapOrientationMode.HeadingUp
     private var lastKnownBearingDegrees: Float = 0f
     private var lastMapOrientationUpdateMillis: Long = 0
     private val historyPoints = mutableListOf<Pair<Double, Double>>()
@@ -201,7 +201,7 @@ class CustomMapPoiScreen(
         }
     }
 
-    private fun applyCameraForStations(userLat: Double, userLon: Double, stations: List<Poi>, searchZoom: Int) {
+    private fun applyCameraForStations(userLat: Double, userLon: Double, stations: List<Poi>, searchZoom: Int, preserveZoom: Boolean = false) {
         val (fitW, fitH) = mapFitSizePx()
         val camera = AutoMapCamera.fitToUserAndStations(
             userLat = userLat,
@@ -209,11 +209,11 @@ class CustomMapPoiScreen(
             stations = stations,
             mapWidthPx = fitW,
             mapHeightPx = fitH,
-            fallbackZoom = searchZoom,
+            fallbackZoom = if (preserveZoom) zoom else searchZoom,
         )
         searchLat = camera.centerLat
         searchLon = camera.centerLon
-        zoom = camera.zoom
+        zoom = if (preserveZoom) zoom else camera.zoom
         lastAppliedSearchLat = searchLat
         lastAppliedSearchLon = searchLon
         lastAppliedZoom = zoom
@@ -283,6 +283,7 @@ class CustomMapPoiScreen(
         userLat: Double,
         userLon: Double,
         settings: AppSettings,
+        preserveZoom: Boolean = false
     ): Pair<List<Poi>, List<PoiProviderError>> {
         if (itineraryPoints.isNotEmpty() && routePlanner != null) {
             val (fitW, fitH) = mapFitSizePx()
@@ -331,7 +332,7 @@ class CustomMapPoiScreen(
             if (lastFiltered.isNotEmpty()) break
         }
 
-        applyCameraForStations(userLat, userLon, lastFiltered, lastSearchZoom)
+        applyCameraForStations(userLat, userLon, lastFiltered, lastSearchZoom, preserveZoom)
         return lastResult.pois to lastResult.errors
     }
 
@@ -362,7 +363,7 @@ class CustomMapPoiScreen(
         lastAppliedZoom = zoom
     }
 
-    private fun loadPois() {
+    private fun loadPois(preserveZoom: Boolean = false) {
         lifecycleScope.launch {
             isLoading = true
             invalidate()
@@ -389,7 +390,7 @@ class CustomMapPoiScreen(
 
             try {
                 val settings = settingsManager.settings.value
-                val (loadedPois, loadedErrors) = searchPoisWithZoomOut(lat, lon, settings)
+                val (loadedPois, loadedErrors) = searchPoisWithZoomOut(lat, lon, settings, preserveZoom)
                 pois = loadedPois
                 errors = loadedErrors
 
@@ -530,7 +531,7 @@ class CustomMapPoiScreen(
                 surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
                 applyMapOrientationToRenderer()
             }
-            loadPois()
+            loadPois(preserveZoom = true)
         }
     }
 
@@ -690,14 +691,6 @@ class CustomMapPoiScreen(
         val actionStripBuilder = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
-                    .setTitle(carContext.getString(R.string.action_home))
-                    .setIcon(carContext.actionHomeIcon())
-                    .setOnClickListener { screenManager.popToRoot() }
-                    .build()
-            )
-            .addAction(
-                Action.Builder()
-                    .setTitle(carContext.getString(R.string.cd_settings))
                     .setIcon(carContext.actionSettingsIcon())
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
                     .build()

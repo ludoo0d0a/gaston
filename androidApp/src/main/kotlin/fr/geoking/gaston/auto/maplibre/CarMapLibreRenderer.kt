@@ -211,7 +211,7 @@ class CarMapLibreRenderer(
                     effectivePowerLevels = effectivePowerLevels,
                     isSelected = false,
                     cheapestRank = null,
-                    sizePx = 120,
+                    sizePx = 96,
                     availability = availabilityByPoiId[poi.id],
                     markerStyle = MarkerStyle.Bubble,
                 )
