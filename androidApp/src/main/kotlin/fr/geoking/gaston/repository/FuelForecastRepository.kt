@@ -212,7 +212,7 @@ class FuelForecastRepository(
                 locationKey = locKey,
                 allFuelsHistory = allHistories,
                 allFuelsForecast = allForecasts,
-                brentHistory = emptyList()
+                brentHistory = brent
             )
         }
 
