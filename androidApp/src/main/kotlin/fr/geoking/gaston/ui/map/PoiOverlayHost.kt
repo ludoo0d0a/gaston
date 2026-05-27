@@ -234,7 +234,7 @@ fun PoiOverlayHost(
         ) {
 
             val configuration = LocalConfiguration.current
-            val cardHeight = (configuration.screenHeightDp * 0.5f).dp
+            val cardHeight = (configuration.screenHeightDp * 0.4f).dp
             LazyRow(
                 state = lazyListState,
                 flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState),
