@@ -102,7 +102,6 @@ class MapLibrePoiScreen(
     private var mapHeightPx: Int = 480
 
     private var mapRenderer: CarMapLibreRenderer? = null
-    private var themeCollectionJob: kotlinx.coroutines.Job? = null
     private var headingUpdateJob: Job? = null
     private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
     private var lastKnownBearingDegrees: Float = 0f
@@ -585,7 +584,6 @@ class MapLibrePoiScreen(
     override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
         Log.d("MapLibrePoiScreen", "onSurfaceAvailable")
         mapRenderer?.detachSurface()
-        themeCollectionJob?.cancel()
         startHeadingUpdates()
         val surface = surfaceContainer.surface
         if (surface == null) {
@@ -603,13 +601,7 @@ class MapLibrePoiScreen(
         syncRendererWithMapState()
         registerSurfaceCallback()
         renderer.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
-
-        themeCollectionJob = lifecycleScope.launch {
-            settingsManager.settings
-                .map { resolveAutoMapStyleUrl(it, carContext) }
-                .distinctUntilChanged()
-                .collect { url -> mapRenderer?.setStyleUrl(url) }
-        }
+        renderer.setStyleUrl(resolveAutoMapStyleUrl(settingsManager.settings.value, carContext))
     }
 
     override fun onVisibleAreaChanged(visibleArea: Rect) {
@@ -627,7 +619,6 @@ class MapLibrePoiScreen(
         stopHeadingUpdates()
         visibleAreaCameraJob?.cancel()
         mapRenderer?.detachSurface()
-        themeCollectionJob?.cancel()
     }
 
     override fun onClick(x: Float, y: Float) {
