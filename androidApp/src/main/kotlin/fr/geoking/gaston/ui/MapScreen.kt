@@ -175,6 +175,7 @@ fun MapScreen(
     var addPoiInitialLng by remember { mutableStateOf<Double?>(null) }
     var addPoiExistingCommunityId by remember { mutableStateOf<String?>(null) }
     var showFavoritesOnly by remember { mutableStateOf(false) }
+    var isCheapestFilterActive by remember { mutableStateOf(false) }
     var showAddressSearch by remember { mutableStateOf(false) }
     var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val billingManager = org.koin.compose.koinInject<fr.geoking.gaston.premium.BillingManager>()
@@ -271,6 +272,29 @@ fun MapScreen(
         )
     }
 
+    val basePois = remember(poisInView, showFavoritesOnly, favoriteIds) {
+        if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
+            poisInView.filter { it.id in favoriteIds }
+        } else {
+            poisInView
+        }
+    }
+
+    val filteredPois = remember(basePois, isCheapestFilterActive, settings) {
+        if (isCheapestFilterActive) {
+            val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+            basePois.mapNotNull { poi ->
+                val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                    ?.minOfOrNull { it.price }
+                if (minPrice != null) Pair(poi, minPrice) else null
+            }.sortedBy { it.second }
+                .take(5)
+                .map { it.first }
+        } else {
+            basePois
+        }
+    }
+
     if (showMapSettings) {
         SettingsScreen(
             settingsManager = settingsManager,
@@ -323,17 +347,18 @@ fun MapScreen(
             palette = palette,
             showAds = showAds,
             floatingActionButton = {
-                if (currentSearchMode == SearchMode.Fuel && poisInView.any { !it.fuelPrices.isNullOrEmpty() }) {
+                if (currentSearchMode == SearchMode.Fuel && basePois.any { !it.fuelPrices.isNullOrEmpty() }) {
                     FloatingActionButton(
                         onClick = {
                             val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
-                            val cheapest = poisInView.mapNotNull { poi ->
+                            val cheapest = basePois.mapNotNull { poi ->
                                 val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
                                     ?.minOfOrNull { it.price }
                                 if (minPrice != null) Pair(poi, minPrice) else null
                             }.minByOrNull { it.second }?.first
 
                             if (cheapest != null) {
+                                isCheapestFilterActive = true
                                 poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Price
                                 selectedPoi = cheapest
                             }
@@ -481,17 +506,13 @@ fun MapScreen(
                         val effectiveEnergies = settings.effectiveMapEnergyFilterIds()
                         val effectivePowerLevels = settings.effectiveIrvePowerLevels()
 
-                        val poisToShow = if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
-                            poisInView.filter { it.id in favoriteIds }
-                        } else {
-                            poisInView
-                        }
+                        val poisToShow = filteredPois
 
                         val fuelIdsForCheapest = effectiveEnergies - "electric"
                         val top3Prices = remember(poisToShow, fuelIdsForCheapest) {
                             if (fuelIdsForCheapest.isEmpty()) emptyList<Double>()
                             else {
-                                poisToShow.flatMap { poi ->
+                                basePois.flatMap { poi ->
                                     poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }
                                         ?.map { it.price } ?: emptyList()
                                 }.distinct().sorted().take(3)
@@ -594,14 +615,11 @@ fun MapScreen(
                 selectedPoi = it
                 if (it == null) {
                     poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
+                    isCheapestFilterActive = false
                 }
             },
             sortOrder = poiSortOrder,
-            poisForOverlay = if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
-                poisInView.filter { it.id in favoriteIds }
-            } else {
-                poisInView
-            },
+            poisForOverlay = filteredPois,
             onCenterMapOnPoi = { poi ->
                 scope.launch {
                     cameraPositionState.animate(
