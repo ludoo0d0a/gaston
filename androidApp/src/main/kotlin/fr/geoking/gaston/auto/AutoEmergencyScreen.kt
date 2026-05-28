@@ -168,12 +168,6 @@ class AutoEmergencyScreen(
                     .setStartHeaderAction(Action.BACK)
                     .addEndHeaderAction(
                         Action.Builder()
-                            .setIcon(carContext.carIcon(R.drawable.ic_notifications, AutoCarIcons.primary))
-                            .setOnClickListener { connectivityManager.triggerManualBorderEvent() }
-                            .build()
-                    )
-                    .addEndHeaderAction(
-                        Action.Builder()
                             .setIcon(carContext.actionHistoryIcon())
                             .setOnClickListener { loadLocation() }
                             .build()
