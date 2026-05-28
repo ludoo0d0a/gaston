@@ -53,8 +53,13 @@ class AutoDashboardScreen(
                 .setTitle(fuelTitle)
                 .setImage(carContext.dashboardFuelIcon())
                 .setOnClickListener {
-                    settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel)
-                    pushMapScreen(fuelTitle)
+                    screenManager.push(
+                        AutoFuelDashboardScreen(
+                            carContext = carContext,
+                            settingsManager = settingsManager,
+                            getMapDeps = getMapDeps
+                        )
+                    )
                 }
                 .build()
         )
@@ -65,8 +70,13 @@ class AutoDashboardScreen(
                 .setTitle(evTitle)
                 .setImage(carContext.dashboardEvIcon())
                 .setOnClickListener {
-                    settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric)
-                    pushMapScreen(evTitle)
+                    screenManager.push(
+                        AutoEvDashboardScreen(
+                            carContext = carContext,
+                            settingsManager = settingsManager,
+                            getMapDeps = getMapDeps
+                        )
+                    )
                 }
                 .build()
         )
@@ -77,8 +87,13 @@ class AutoDashboardScreen(
                 .setTitle(myCarTitle)
                 .setImage(carContext.dashboardMyCarIcon())
                 .setOnClickListener {
-                    settingsManager.setMyVehicleMode()
-                    pushMapScreen(myCarTitle)
+                    screenManager.push(
+                        AutoMyVehicleDashboardScreen(
+                            carContext = carContext,
+                            settingsManager = settingsManager,
+                            getMapDeps = getMapDeps
+                        )
+                    )
                 }
                 .build()
         )

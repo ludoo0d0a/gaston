@@ -149,7 +149,7 @@ object AutoPoiUiHelper {
 
         val shownFuelPrice = label?.startsWith("€") == true
         if (shownFuelPrice && bestPriceItem != null) {
-            secondaryDetails.add(bestPriceItem.fuelName)
+            // Fuel name removed as requested
         } else if (poi.isElectric) {
             poi.operator?.takeIf { it.isNotBlank() }?.let { secondaryDetails.add(it) }
         }
