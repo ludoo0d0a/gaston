@@ -56,8 +56,7 @@ class ConnectivityManager(
 
     private suspend fun emitWelcomeEvent(status: NetworkStatus) {
         val country = status.countryName ?: status.countryCode ?: "Unknown"
-        val message = if (status.isRoaming) "roaming" else "ok again"
-        emitEvent(status, "Welcome to $country", message)
+        emitEvent(status, "welcome to $country", "")
     }
 
     private suspend fun handleStatusChange(status: NetworkStatus) {
@@ -70,14 +69,8 @@ class ConnectivityManager(
         if (status.isConnected != last.isConnected) networkSettings.lastIsConnected = status.isConnected
         if (status.isRoaming != last.isRoaming) networkSettings.lastIsRoaming = status.isRoaming
 
-        // 1. Connection lost/regained
+        // 1. Connection lost/regained (Follow state anyway, but no notification)
         if (status.isConnected != last.isConnected) {
-            if (!status.isConnected) {
-                emitEvent(status, "Network Connectivity", "no network")
-            } else {
-                val message = if (status.isRoaming) "roaming" else "ok again"
-                emitEvent(status, "Network Connectivity", message)
-            }
             return
         }
 
@@ -91,23 +84,13 @@ class ConnectivityManager(
 
         // 3. Operator change
         if (status.operatorName != last.operatorName) {
-            if (status.operatorName.isNullOrBlank()) {
-                emitEvent(status, "Network Connectivity", "no network")
-            } else {
-                val title = if (last.operatorName.isNullOrBlank()) {
-                    "Network changed"
-                } else {
-                    "${last.operatorName} → ${status.operatorName}"
-                }
-                emitEvent(status, title, status.operatorName ?: "")
+            if (!status.operatorName.isNullOrBlank() && !last.operatorName.isNullOrBlank()) {
+                emitEvent(
+                    status,
+                    "Network changed from ${last.operatorName} to ${status.operatorName}.",
+                    status.operatorName
+                )
             }
-            return
-        }
-
-        // 4. Roaming change (same country, same operator - rare but possible)
-        if (status.isRoaming != last.isRoaming) {
-            val message = if (status.isRoaming) "roaming" else "ok again"
-            emitEvent(status, "Network", message)
             return
         }
     }
