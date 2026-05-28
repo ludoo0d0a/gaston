@@ -96,6 +96,7 @@
     <string name="action_suggest_correction">Suggest correction</string>
     <string name="action_maybe_later">Maybe later</string>
     <string name="action_upgrade_premium">Upgrade to Premium</string>
+    <string name="action_search">Search</string>
     <string name="action_hide_on_map">Hide on map</string>
     <string name="action_show_cheapest">Show Cheapest</string>
     <string name="action_show_logs">Show Logs</string>

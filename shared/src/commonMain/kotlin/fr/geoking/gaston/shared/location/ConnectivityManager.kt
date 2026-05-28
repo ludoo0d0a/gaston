@@ -99,7 +99,7 @@ class ConnectivityManager(
                 } else {
                     "${last.operatorName} → ${status.operatorName}"
                 }
-                emitEvent(status, title, status.operatorName ?: "")
+                emitEvent(status, title, status.operatorName)
             }
             return
         }
