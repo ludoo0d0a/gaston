@@ -51,6 +51,7 @@
     <string name="action_toggle_theme">Basculer le thème</string>
     <string name="action_update">Mettre à jour</string>
     <string name="action_upgrade_premium">Passer à Premium</string>
+    <string name="action_search">Rechercher</string>
     <string name="action_use_current_location">Utiliser la position actuelle</string>
     <string name="action_zoom_in">Zoom avant</string>
     <string name="action_zoom_out">Zoom arrière</string>
