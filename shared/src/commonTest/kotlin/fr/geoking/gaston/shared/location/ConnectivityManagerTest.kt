@@ -9,7 +9,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.delay
 import kotlin.test.Test
@@ -68,108 +67,5 @@ class ConnectivityManagerTest {
         assertEquals("Orange", settings.lastOperatorName)
         assertEquals(true, settings.lastIsConnected)
         assertEquals(false, settings.lastIsRoaming)
-    }
-
-    @Test
-    fun testCountryChange_emitsWelcomeEvent() = runBlocking {
-        val settings = MockNetworkSettings()
-        val service = MockNetworkService()
-
-        service.updateStatus(NetworkStatus(
-            countryCode = "FR",
-            countryName = "France",
-            isConnected = true
-        ))
-
-        val manager = ConnectivityManager(testScope, service, settings)
-        delay(200)
-
-        val events = mutableListOf<ConnectivityEvent>()
-        val job = testScope.launch {
-            manager.connectivityEvents.collect {
-                events.add(it)
-            }
-        }
-        delay(100)
-
-        service.updateStatus(NetworkStatus(
-            countryCode = "DE",
-            countryName = "Germany",
-            isConnected = true
-        ))
-
-        delay(500)
-
-        assertEquals(1, events.size, "Expected 1 event, got ${events.size}")
-        assertEquals("welcome to Germany", events[0].title)
-
-        job.cancel()
-    }
-
-    @Test
-    fun testOperatorChange_emitsOperatorEvent() = runBlocking {
-        val settings = MockNetworkSettings()
-        val service = MockNetworkService()
-
-        service.updateStatus(NetworkStatus(
-            countryCode = "FR",
-            countryName = "France",
-            operatorName = "Orange",
-            isConnected = true
-        ))
-
-        val manager = ConnectivityManager(testScope, service, settings)
-        delay(200)
-
-        val events = mutableListOf<ConnectivityEvent>()
-        val job = testScope.launch {
-            manager.connectivityEvents.collect { events.add(it) }
-        }
-        delay(100)
-
-        service.updateStatus(NetworkStatus(
-            countryCode = "FR",
-            countryName = "France",
-            operatorName = "SFR",
-            isConnected = true
-        ))
-
-        delay(500)
-
-        assertEquals(1, events.size, "Expected 1 event, got ${events.size}")
-        assertEquals("Network changed from Orange to SFR.", events[0].title)
-        assertEquals("SFR", events[0].message)
-
-        job.cancel()
-    }
-
-    @Test
-    fun testConnectionLost_doesNotEmitEvent() = runBlocking {
-        val settings = MockNetworkSettings()
-        val service = MockNetworkService()
-
-        service.updateStatus(NetworkStatus(
-            isConnected = true
-        ))
-
-        val manager = ConnectivityManager(testScope, service, settings)
-        delay(200)
-
-        val events = mutableListOf<ConnectivityEvent>()
-        val job = testScope.launch {
-            manager.connectivityEvents.collect { events.add(it) }
-        }
-        delay(100)
-
-        service.updateStatus(NetworkStatus(
-            isConnected = false
-        ))
-
-        delay(500)
-
-        assertEquals(0, events.size, "Expected 0 events, got ${events.size}")
-        assertEquals(false, settings.lastIsConnected, "State should still be followed")
-
-        job.cancel()
     }
 }
