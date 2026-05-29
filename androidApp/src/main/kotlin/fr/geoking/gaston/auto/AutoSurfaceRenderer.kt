@@ -73,6 +73,7 @@ class AutoSurfaceRenderer(
     private val centerPxY: Double
         get() = visibleArea?.let { (it.top + it.bottom) / 2.0 } ?: (height / 2.0)
 
+    private var selectedPoiId: String? = null
     private var pois: List<Poi> = emptyList()
     private var poiIds: List<String> = emptyList()
     private var effectiveEnergyTypes: Set<String> = emptySet()
@@ -205,12 +206,14 @@ class AutoSurfaceRenderer(
     fun updatePois(
         newPois: List<Poi>,
         effectiveEnergyTypes: Set<String>,
-        effectivePowerLevels: Set<Int>
+        effectivePowerLevels: Set<Int>,
+        selectedId: String? = selectedPoiId
     ) {
         val newIds = newPois.map { it.id }
         if (poiIds == newIds &&
             this.effectiveEnergyTypes == effectiveEnergyTypes &&
-            this.effectivePowerLevels == effectivePowerLevels
+            this.effectivePowerLevels == effectivePowerLevels &&
+            this.selectedPoiId == selectedId
         ) {
             return
         }
@@ -218,6 +221,7 @@ class AutoSurfaceRenderer(
         poiIds = newIds
         this.effectiveEnergyTypes = effectiveEnergyTypes
         this.effectivePowerLevels = effectivePowerLevels
+        this.selectedPoiId = selectedId
         invalidate()
     }
 
@@ -382,6 +386,7 @@ class AutoSurfaceRenderer(
                 poi = poi,
                 effectiveEnergyTypes = effectiveEnergyTypes,
                 effectivePowerLevels = effectivePowerLevels,
+                isSelected = poi.id == selectedPoiId,
                 sizePx = markerWidthPx
             )
 
