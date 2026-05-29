@@ -45,6 +45,7 @@ class CarMapLibreRenderer(
     private var zoom: Int = AutoMapCamera.DEFAULT_ZOOM
     private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
     private var headingDegrees: Float = 0f
+    private var selectedPoiId: String? = null
     private var lastPois: List<Poi> = emptyList()
     private var effectiveEnergyTypes: Set<String> = emptySet()
     private var effectivePowerLevels: Set<Int> = emptySet()
@@ -105,11 +106,13 @@ class CarMapLibreRenderer(
         effectiveEnergyTypes: Set<String>,
         effectivePowerLevels: Set<Int>,
         availability: Map<String, StationAvailabilitySummary> = availabilityByPoiId,
+        selectedId: String? = selectedPoiId
     ) {
         lastPois = newPois
         this.effectiveEnergyTypes = effectiveEnergyTypes
         this.effectivePowerLevels = effectivePowerLevels
         availabilityByPoiId = availability
+        selectedPoiId = selectedId
         syncPoiLayer()
     }
 
@@ -209,7 +212,7 @@ class CarMapLibreRenderer(
                     poi = poi,
                     effectiveEnergyTypes = effectiveEnergyTypes,
                     effectivePowerLevels = effectivePowerLevels,
-                    isSelected = false,
+                    isSelected = poi.id == selectedPoiId,
                     cheapestRank = null,
                     sizePx = 96,
                     availability = availabilityByPoiId[poi.id],

@@ -20,6 +20,7 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.map.MarkerStyle
+import fr.geoking.gaston.shared.datetime.DateTimeUtils
 
 /**
  * Shared logic for mapping POIs to car UI components (rows, markers, icons).
@@ -174,5 +175,118 @@ object AutoPoiUiHelper {
         }
 
         return rowBuilder.build()
+    }
+
+    fun buildPoiDetailRows(
+        carContext: CarContext,
+        poi: Poi,
+        availability: StationAvailabilitySummary?,
+        effectiveEnergyTypes: Set<String> = emptySet(),
+        effectivePowerLevels: Set<Int> = emptySet()
+    ): List<Row> {
+        val rows = mutableListOf<Row>()
+
+        // 1. Brand / Name Row
+        val brandIcon = buildPoiIcon(carContext, poi, effectiveEnergyTypes, effectivePowerLevels)
+        val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
+        val brandInfo = BrandHelper.getBrandInfo(poi.brand)
+
+        val headerRow = Row.Builder()
+            .setTitle(title)
+            .setImage(brandIcon, Row.IMAGE_TYPE_SMALL)
+
+        brandInfo?.let {
+            if (title != it.displayName) {
+                headerRow.addText(it.displayName)
+            }
+        }
+        rows.add(headerRow.build())
+
+        // 2. Address Row
+        val addressSummary = mutableListOf<String>()
+        poi.addressLocal?.takeIf { it.isNotBlank() }?.let { addressSummary.add(it) }
+        listOf(poi.townLocal, poi.postcode).filter { !it.isNullOrBlank() }.joinToString(", ").takeIf { it.isNotBlank() }?.let { addressSummary.add(it) }
+        if (addressSummary.isEmpty() && poi.address.isNotBlank()) addressSummary.add(poi.address)
+
+        if (addressSummary.isNotEmpty()) {
+            rows.add(
+                Row.Builder()
+                    .setTitle(addressSummary.first())
+                    .apply {
+                        if (addressSummary.size > 1) {
+                            addText(addressSummary.drop(1).joinToString(", "))
+                        }
+                    }
+                    .setImage(
+                        CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build(),
+                        Row.IMAGE_TYPE_SMALL
+                    )
+                    .build()
+            )
+        }
+
+        // 3. Prices
+        poi.fuelPrices?.forEach { fp ->
+            val priceStr = if (fp.outOfStock) "—" else "€%.3f".format(fp.price)
+            val updated = fp.updatedAt?.let {
+                " (${DateTimeUtils.formatRelativeTime(it)})"
+            } ?: ""
+            rows.add(
+                Row.Builder()
+                    .setTitle(fp.fuelName)
+                    .addText("$priceStr$updated")
+                    .build()
+            )
+        }
+
+        // 4. IRVE Details
+        if (poi.isElectric) {
+            poi.operator?.takeIf { it.isNotBlank() }?.let {
+                rows.add(Row.Builder().setTitle(it).build())
+            }
+
+            val electricInfo = mutableListOf<String>()
+            poi.powerKw?.let { electricInfo.add(carContext.getString(R.string.power_kw_format, it.toInt())) }
+
+            poi.irveDetails?.let { d ->
+                if (d.connectorTypes.isNotEmpty()) {
+                    val labels = d.connectorTypes.sorted().map { BrandHelper.connectorTypeLabel(it) }.joinToString(", ")
+                    electricInfo.add(labels)
+                }
+            }
+
+            if (electricInfo.isNotEmpty()) {
+                rows.add(
+                    Row.Builder()
+                        .setTitle(electricInfo.joinToString(" • "))
+                        .build()
+                )
+            }
+
+            availability?.let { s ->
+                rows.add(Row.Builder().setTitle(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount)).build())
+            }
+        }
+
+        // 5. Amenities (one summarized row)
+        poi.amenities?.let { a ->
+            val ams = mutableListOf<String>()
+            if (a.open24h == true) ams.add(carContext.getString(R.string.amenity_24h))
+            if (a.shop == true) ams.add(carContext.getString(R.string.amenity_shop))
+            if (a.restaurant == true) ams.add(carContext.getString(R.string.amenity_restaurant))
+            if (a.toilets == true) ams.add(carContext.getString(R.string.amenity_toilets))
+            if (a.carWash == true) ams.add(carContext.getString(R.string.amenity_car_wash))
+
+            if (ams.isNotEmpty()) {
+                rows.add(
+                    Row.Builder()
+                        .setTitle(carContext.getString(R.string.poi_section_services))
+                        .addText(ams.joinToString(" • "))
+                        .build()
+                )
+            }
+        }
+
+        return rows
     }
 }

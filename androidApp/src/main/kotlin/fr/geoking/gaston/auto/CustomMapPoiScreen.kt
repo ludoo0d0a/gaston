@@ -118,6 +118,7 @@ class CustomMapPoiScreen(
     private var lastAppliedZoom: Int = zoom
     private var lastSyncedPoiIds: List<String> = emptyList()
     private var visibleAreaCameraJob: Job? = null
+    private var selectedPoi: Poi? = null
 
     init {
         lifecycle.addObserver(this)
@@ -275,6 +276,7 @@ class CustomMapPoiScreen(
             newPois = filteredPois,
             effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
             effectivePowerLevels = settings.effectiveIrvePowerLevels(),
+            selectedId = selectedPoi?.id
         )
         lastSyncedPoiIds = poiIds
     }
@@ -653,15 +655,16 @@ class CustomMapPoiScreen(
             clickedPois.first()
         }
 
-        val availability = availabilityByPoiId[poi.id]
-        screenManager.push(
-            PoiDetailScreen(
-                carContext = carContext,
-                poi = poi,
-                availabilitySummary = availability,
-                rating = null,
-            ),
+        selectedPoi = poi
+        val settings = settingsManager.settings.value
+        val filteredPois = getFilteredPois(settings)
+        surfaceRenderer?.updatePois(
+            newPois = filteredPois,
+            effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
+            effectivePowerLevels = settings.effectiveIrvePowerLevels(),
+            selectedId = poi.id
         )
+        invalidate()
     }
 
     private fun registerSurfaceCallback() {
@@ -706,92 +709,127 @@ class CustomMapPoiScreen(
         }
         val actionStrip = actionStripBuilder.build()
 
-        if (isLoading) {
-            return@safeCarTemplate MapWithContentTemplate.Builder()
-                .setContentTemplate(
-                    ListTemplate.Builder()
-                        .setLoading(true)
-                        .setHeader(mapContentHeaderBuilder(title).build())
-                        .build()
-                )
-                .setActionStrip(actionStrip)
-                .build()
-        }
-
         val currentSettings = settingsManager.settings.value
-
-        // Respect the host's list limit (varies by vehicle/API level, default 6).
-        val listLimit = try {
-            carContext.getCarService(ConstraintManager::class.java)
-                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
-        } catch (_: Exception) {
-            6
-        }
-
-        val itemListBuilder = ItemList.Builder()
-            .setNoItemsMessage("No POIs found")
-
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
-        val filteredPois = getFilteredPois(currentSettings)
 
-        val sortedPois = if (sortByPrice) {
-            val fuelIds = effectiveEnergies - "electric"
-            if (fuelIds.isEmpty()) {
-                filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
-            } else {
-                filteredPois.sortedWith { a, b ->
-                    val pricesA = a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                    val pricesB = b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-
-                    val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
-                    val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
-
-                    if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
-                        priceA.compareTo(priceB)
-                    } else {
-                        val distA = approxDistanceKm(searchLat, searchLon, a.latitude, a.longitude)
-                        val distB = approxDistanceKm(searchLat, searchLon, b.latitude, b.longitude)
-                        distA.compareTo(distB)
-                    }
-                }
-            }
+        val contentTemplate = if (isLoading) {
+            ListTemplate.Builder()
+                .setLoading(true)
+                .setHeader(mapContentHeaderBuilder(title).build())
+                .build()
         } else {
-            filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
-        }
-
-        val limitedPois = sortedPois.take(listLimit)
-        limitedPois.forEach { poi ->
-            val availability = availabilityByPoiId[poi.id]
-            itemListBuilder.addItem(
-                AutoPoiUiHelper.buildPoiRow(
+            val poi = selectedPoi
+            if (poi != null) {
+                val availability = availabilityByPoiId[poi.id]
+                val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
                     carContext = carContext,
                     poi = poi,
                     availability = availability,
                     effectiveEnergyTypes = effectiveEnergies,
-                    effectivePowerLevels = effectivePowerLevels,
-                    distanceFromLatLon = searchLat to searchLon,
-                    includePlace = false
-                ) {
-                    screenManager.push(
-                        PoiDetailScreen(
+                    effectivePowerLevels = effectivePowerLevels
+                )
+                val itemListBuilder = ItemList.Builder()
+                detailRows.forEach { itemListBuilder.addItem(it) }
+
+                val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
+                    data = fr.geoking.gaston.intent.IntentNavigationHelper.getNavigationUri(poi)
+                }
+
+                ListTemplate.Builder()
+                    .setHeader(
+                        Header.Builder()
+                            .setTitle(poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" })
+                            .setStartHeaderAction(Action.BACK)
+                            .addEndHeaderAction(
+                                Action.Builder()
+                                    .setTitle(carContext.getString(R.string.screen_navigate_to))
+                                    .setIcon(carContext.actionCompassIcon())
+                                    .setOnClickListener { carContext.startCarApp(navigateIntent) }
+                                    .build()
+                            )
+                            .addEndHeaderAction(
+                                Action.Builder()
+                                    .setTitle(carContext.getString(R.string.action_close))
+                                    .setOnClickListener {
+                                        selectedPoi = null
+                                        syncRendererWithMapState()
+                                        invalidate()
+                                    }
+                                    .build()
+                            )
+                            .build()
+                    )
+                    .setSingleList(itemListBuilder.build())
+                    .build()
+            } else {
+                // Respect the host's list limit (varies by vehicle/API level, default 6).
+                val listLimit = try {
+                    carContext.getCarService(ConstraintManager::class.java)
+                        .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+                } catch (_: Exception) {
+                    6
+                }
+
+                val itemListBuilder = ItemList.Builder()
+                    .setNoItemsMessage("No POIs found")
+
+                val filteredPois = getFilteredPois(currentSettings)
+
+                val sortedPois = if (sortByPrice) {
+                    val fuelIds = effectiveEnergies - "electric"
+                    if (fuelIds.isEmpty()) {
+                        filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
+                    } else {
+                        filteredPois.sortedWith { a, b ->
+                            val pricesA = a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                            val pricesB = b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+
+                            val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
+                            val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
+
+                            if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
+                                priceA.compareTo(priceB)
+                            } else {
+                                val distA = approxDistanceKm(searchLat, searchLon, a.latitude, a.longitude)
+                                val distB = approxDistanceKm(searchLat, searchLon, b.latitude, b.longitude)
+                                distA.compareTo(distB)
+                            }
+                        }
+                    }
+                } else {
+                    filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
+                }
+
+                val limitedPois = sortedPois.take(listLimit)
+                limitedPois.forEach { item ->
+                    val availability = availabilityByPoiId[item.id]
+                    itemListBuilder.addItem(
+                        AutoPoiUiHelper.buildPoiRow(
                             carContext = carContext,
-                            poi = poi,
-                            availabilitySummary = availability,
-                            rating = null
-                        )
+                            poi = item,
+                            availability = availability,
+                            effectiveEnergyTypes = effectiveEnergies,
+                            effectivePowerLevels = effectivePowerLevels,
+                            distanceFromLatLon = searchLat to searchLon,
+                            includePlace = false
+                        ) {
+                            selectedPoi = item
+                            syncRendererWithMapState()
+                            invalidate()
+                        }
                     )
                 }
-            )
+
+                ListTemplate.Builder()
+                    .setHeader(mapContentHeaderBuilder(title).build())
+                    .setSingleList(itemListBuilder.build())
+                    .build()
+            }
         }
 
-        val listTemplate = ListTemplate.Builder()
-            .setHeader(mapContentHeaderBuilder(title).build())
-            .setSingleList(itemListBuilder.build())
-            .build()
-
         MapWithContentTemplate.Builder()
-            .setContentTemplate(listTemplate)
+            .setContentTemplate(contentTemplate)
             .setActionStrip(actionStrip)
             .build()
     }
