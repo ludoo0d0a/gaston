@@ -1,21 +1,17 @@
 package fr.geoking.gaston.auto
 
-import android.util.Log
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
-import androidx.car.app.model.CarIcon
+import androidx.car.app.model.GridItem
+import androidx.car.app.model.GridTemplate
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
-import androidx.core.graphics.drawable.IconCompat
-import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
-import fr.geoking.gaston.poi.EnergyFilterMode
-import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.shared.location.ConnectivityManager
@@ -30,118 +26,93 @@ class AutoDashboardScreen(
     private val getMapDeps: () -> MapDeps?
 ) : Screen(carContext) {
 
-    init {
-        val screenNames = listOf(
-            "AutoFuelForecastScreen",
-            "AutoDashboardScreen",
-            "NativeMapPoiScreen",
-            "CustomMapPoiScreen",
-            "AutoRoutePlanningScreen",
-            "AutoNetworkLocationInfoScreen",
-            "AutoSettingsScreen",
-            "AutoTemplateLabScreen",
-        )
-        Log.d("gastonNavigation", "Android Auto Screens: ${screenNames.joinToString(", ")}")
-    }
+    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoDashboardScreen") {
+        val gridBuilder = ItemList.Builder()
 
-    override fun onGetTemplate(): Template {
-        val listBuilder = ItemList.Builder()
-
-        val fuelTitle = carContext.getString(R.string.search_mode_fuel)
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(fuelTitle)
+        // 1. Fuel
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.search_mode_fuel))
                 .setImage(carContext.dashboardFuelIcon())
                 .setOnClickListener {
-                    screenManager.push(
-                        AutoFuelDashboardScreen(
-                            carContext = carContext,
-                            settingsManager = settingsManager,
-                            getMapDeps = getMapDeps
-                        )
-                    )
+                    screenManager.push(AutoFuelDashboardScreen(carContext, settingsManager, getMapDeps))
                 }
                 .build()
         )
 
-        val evTitle = carContext.getString(R.string.search_mode_ev)
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(evTitle)
+        // 2. EV
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.search_mode_ev))
                 .setImage(carContext.dashboardEvIcon())
                 .setOnClickListener {
-                    screenManager.push(
-                        AutoEvDashboardScreen(
-                            carContext = carContext,
-                            settingsManager = settingsManager,
-                            getMapDeps = getMapDeps
-                        )
-                    )
+                    screenManager.push(AutoEvDashboardScreen(carContext, settingsManager, getMapDeps))
                 }
                 .build()
         )
 
-        val myCarTitle = carContext.getString(R.string.search_mode_my_car)
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(myCarTitle)
+        // 3. My Vehicle
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.search_mode_my_car))
                 .setImage(carContext.dashboardMyCarIcon())
                 .setOnClickListener {
-                    screenManager.push(
-                        AutoMyVehicleDashboardScreen(
-                            carContext = carContext,
-                            settingsManager = settingsManager,
-                            getMapDeps = getMapDeps
-                        )
-                    )
+                    screenManager.push(AutoMyVehicleDashboardScreen(carContext, settingsManager, getMapDeps))
                 }
                 .build()
         )
 
+        // 4. Other
         val otherTitle = carContext.getString(R.string.search_mode_other)
-        listBuilder.addItem(
-            Row.Builder()
+        gridBuilder.addItem(
+            GridItem.Builder()
                 .setTitle(otherTitle)
                 .setImage(carContext.dashboardOtherIcon())
                 .setOnClickListener {
                     settingsManager.setOtherMode()
-                    pushMapScreen(otherTitle)
-                }
-                .build()
-        )
-
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(carContext.getString(R.string.dashboard_routes))
-                .setImage(carContext.dashboardRoutesIcon())
-                .setOnClickListener {
                     val mapDeps = getMapDeps()
                     if (mapDeps != null) {
-                        screenManager.push(
-                            AutoRoutePlanningScreen(
-                                carContext = carContext,
-                                routePlanner = mapDeps.routePlanner,
-                                routingClient = mapDeps.routingClient,
-                                poiProvider = mapDeps.poiProvider,
-                                geocodingClient = mapDeps.geocodingClient,
-                                settingsManager = settingsManager
-                            )
-                        )
+                        pushMapScreen(settingsManager, mapDeps, otherTitle)
                     }
                 }
                 .build()
         )
 
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(carContext.getString(R.string.dashboard_network))
-                .setImage(carContext.dashboardNetworkIcon())
-                .setOnClickListener { screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService, connectivityManager)) }
+        // 5. Routes
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.dashboard_routes))
+                .setImage(carContext.dashboardRoutesIcon())
+                .setOnClickListener {
+                    val mapDeps = getMapDeps() ?: return@setOnClickListener
+                    screenManager.push(
+                        AutoRoutePlanningScreen(
+                            carContext = carContext,
+                            routePlanner = mapDeps.routePlanner,
+                            routingClient = mapDeps.routingClient,
+                            poiProvider = mapDeps.poiProvider,
+                            geocodingClient = mapDeps.geocodingClient,
+                            settingsManager = settingsManager
+                        )
+                    )
+                }
                 .build()
         )
 
-        listBuilder.addItem(
-            Row.Builder()
+        // 6. Connectivity
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.dashboard_network))
+                .setImage(carContext.dashboardNetworkIcon())
+                .setOnClickListener {
+                    screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService, connectivityManager))
+                }
+                .build()
+        )
+
+        // 7. Emergency
+        gridBuilder.addItem(
+            GridItem.Builder()
                 .setTitle(carContext.getString(R.string.dashboard_emergency))
                 .setImage(carContext.dashboardEmergencyIcon())
                 .setOnClickListener {
@@ -150,109 +121,78 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(carContext.getString(R.string.screen_more_options))
+        // 8. More
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.screen_more))
                 .setImage(carContext.dashboardSettingsIcon())
                 .setOnClickListener {
-                    screenManager.push(
-                        object : Screen(carContext) {
-                            override fun onGetTemplate(): Template {
-                                val moreList = ItemList.Builder()
-                                    .addItem(
-                                        Row.Builder()
-                                            .setTitle(carContext.getString(R.string.screen_fuel_outlook))
-                                            .setImage(carContext.dashboardFuelIcon())
-                                            .setOnClickListener {
-                                                screenManager.push(
-                                                    AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository)
-                                                )
-                                            }
-                                            .build()
-                                    )
-                                    .addItem(
-                                        Row.Builder()
-                                            .setTitle(carContext.getString(R.string.screen_template_lab))
-                                            .setImage(carContext.carIconUntinted(R.mipmap.ic_launcher))
-                                            .setOnClickListener { screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps)) }
-                                            .build()
-                                    )
-                                    .addItem(
-                                        Row.Builder()
-                                            .setTitle(carContext.getString(R.string.cd_settings))
-                                            .setImage(carContext.dashboardSettingsIcon())
-                                            .setOnClickListener { screenManager.push(AutoSettingsScreen(carContext, settingsManager)) }
-                                            .build()
-                                    )
-                                    .build()
-
-                                return ListTemplate.Builder()
-                                    .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_more_options)).setStartHeaderAction(Action.BACK).build())
-                                    .setSingleList(moreList)
-                                    .build()
-                            }
-                        }
-                    )
+                    pushMoreOptionsScreen()
                 }
                 .build()
         )
 
-        val title = if (settingsManager.settings.value.hasPremiumFeatures) "Gaston Premium" else "Gaston"
-        return ListTemplate.Builder()
-            .setSingleList(listBuilder.build())
+        val appTitle = if (settingsManager.settings.value.hasPremiumFeatures) "Gaston Premium" else "Gaston"
+        GridTemplate.Builder()
+            .setSingleList(gridBuilder.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle(title)
+                    .setTitle(appTitle)
                     .setStartHeaderAction(Action.APP_ICON)
                     .build()
             )
             .build()
     }
 
-    private fun pushMapScreen(title: String? = null) {
-        val mapDeps = getMapDeps()
-        if (mapDeps != null) {
-            val finalTitle = title ?: "Nearby Stations"
-            val screen = when (settingsManager.settings.value.carMapMode) {
-                CarMapMode.Native -> NativeMapPoiScreen(
-                    carContext = carContext,
-                    poiProvider = mapDeps.poiProvider,
-                    availabilityProviderFactory = mapDeps.availabilityProviderFactory,
-                    settingsManager = settingsManager,
-                    communityRepo = mapDeps.communityRepo,
-                    favoritesRepo = mapDeps.favoritesRepo,
-                    title = finalTitle
-                )
-                CarMapMode.Custom -> CustomMapPoiScreen(
-                    carContext = carContext,
-                    poiProvider = mapDeps.poiProvider,
-                    availabilityProviderFactory = mapDeps.availabilityProviderFactory,
-                    settingsManager = settingsManager,
-                    routePlanner = mapDeps.routePlanner,
-                    routingClient = mapDeps.routingClient,
-                    tollCalculator = mapDeps.tollCalculator,
-                    trafficProviderFactory = mapDeps.trafficProviderFactory,
-                    geocodingClient = mapDeps.geocodingClient,
-                    communityRepo = mapDeps.communityRepo,
-                    favoritesRepo = mapDeps.favoritesRepo,
-                    title = finalTitle
-                )
-                CarMapMode.MapLibre -> MapLibrePoiScreen(
-                    carContext = carContext,
-                    poiProvider = mapDeps.poiProvider,
-                    availabilityProviderFactory = mapDeps.availabilityProviderFactory,
-                    settingsManager = settingsManager,
-                    routePlanner = mapDeps.routePlanner,
-                    routingClient = mapDeps.routingClient,
-                    tollCalculator = mapDeps.tollCalculator,
-                    trafficProviderFactory = mapDeps.trafficProviderFactory,
-                    geocodingClient = mapDeps.geocodingClient,
-                    communityRepo = mapDeps.communityRepo,
-                    favoritesRepo = mapDeps.favoritesRepo,
-                    title = finalTitle
-                )
+    private fun pushMoreOptionsScreen() {
+        screenManager.push(
+            object : Screen(carContext) {
+                override fun onGetTemplate(): Template {
+                    val moreList = ItemList.Builder()
+                        .addItem(
+                            Row.Builder()
+                                .setTitle(carContext.getString(R.string.screen_fuel_outlook))
+                                .setImage(carContext.dashboardFuelIcon())
+                                .setOnClickListener {
+                                    screenManager.push(AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository))
+                                }
+                                .build()
+                        )
+                        .addItem(
+                            Row.Builder()
+                                .setTitle(carContext.getString(R.string.cd_map_settings))
+                                .setImage(carContext.dashboardSettingsIcon())
+                                .setOnClickListener {
+                                    screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
+                                }
+                                .build()
+                        )
+                        .addItem(
+                            Row.Builder()
+                                .setTitle(carContext.getString(R.string.screen_template_lab))
+                                .setImage(carContext.carIconUntinted(R.mipmap.ic_launcher))
+                                .setOnClickListener {
+                                    screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps))
+                                }
+                                .build()
+                        )
+                        .addItem(
+                            Row.Builder()
+                                .setTitle(carContext.getString(R.string.screen_about))
+                                .setImage(carContext.carIconUntinted(R.drawable.ic_launcher_foreground))
+                                .setOnClickListener {
+                                    screenManager.push(AutoAboutScreen(carContext))
+                                }
+                                .build()
+                        )
+                        .build()
+
+                    return ListTemplate.Builder()
+                        .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_more)).setStartHeaderAction(Action.BACK).build())
+                        .setSingleList(moreList)
+                        .build()
+                }
             }
-            screenManager.push(screen)
-        }
+        )
     }
 }
