@@ -280,6 +280,11 @@ fun MapScreen(
         }
     }
 
+    /**
+     * The list of POIs currently displayed on the map and in the bottom sheet.
+     * When [isCheapestFilterActive] is true, we filter this list to only include the top 5 cheapest stations
+     * among those currently in the viewport.
+     */
     val filteredPois = remember(basePois, isCheapestFilterActive, settings) {
         if (isCheapestFilterActive) {
             val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
@@ -347,24 +352,20 @@ fun MapScreen(
             palette = palette,
             showAds = showAds,
             floatingActionButton = {
-                if (currentSearchMode == SearchMode.Fuel && basePois.any { !it.fuelPrices.isNullOrEmpty() }) {
+                if (currentSearchMode == SearchMode.Fuel && (isCheapestFilterActive || basePois.any { !it.fuelPrices.isNullOrEmpty() })) {
                     FloatingActionButton(
                         onClick = {
-                            val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
-                            val cheapest = basePois.mapNotNull { poi ->
-                                val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                                    ?.minOfOrNull { it.price }
-                                if (minPrice != null) Pair(poi, minPrice) else null
-                            }.minByOrNull { it.second }?.first
-
-                            if (cheapest != null) {
+                            if (isCheapestFilterActive) {
+                                isCheapestFilterActive = false
+                                poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
+                                selectedPoi = null
+                            } else {
                                 isCheapestFilterActive = true
                                 poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Price
-                                selectedPoi = cheapest
                             }
                         },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        containerColor = if (isCheapestFilterActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = if (isCheapestFilterActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
                     ) {
                         Icon(
                             imageVector = Icons.Default.PriceCheck,
@@ -554,7 +555,7 @@ fun MapScreen(
                                 icon = markerBitmap,
                                 anchor = Offset(0.5f, 1f),
                                 onClick = {
-                                    if (selectedPoi == null) {
+                                    if (selectedPoi == null && !isCheapestFilterActive) {
                                         poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
                                     }
                                     selectedPoi = poi
@@ -613,9 +614,8 @@ fun MapScreen(
             selectedPoi = selectedPoi,
             onSelectedPoiChange = {
                 selectedPoi = it
-                if (it == null) {
+                if (it == null && !isCheapestFilterActive) {
                     poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
-                    isCheapestFilterActive = false
                 }
             },
             sortOrder = poiSortOrder,
