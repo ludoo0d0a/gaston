@@ -24,6 +24,9 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -81,7 +84,9 @@ class SelectorPoiProvider(
     private val poiCacheDao: PoiCacheDao,
     private val settingsManager: SettingsManager,
     private val historyRepo: StationPriceHistoryRepository? = null
-) : PoiProvider {
+) : PoiProvider, CoroutineScope {
+
+    override val coroutineContext = SupervisorJob() + Dispatchers.IO
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -810,13 +815,20 @@ class SelectorPoiProvider(
         return searchResult(request).pois
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         synchronized(cacheLock) {
             loadedRegions.clear()
             cachedPois.clear()
             poiSeenAtMs.clear()
             lastCacheKey = null
         }
+
+        try {
+            poiCacheDao.clearCache()
+        } catch (e: Exception) {
+            Log.e("SelectorPoiProvider", "Failed to clear DB cache", e)
+        }
+
         routex.clearCache()
         dataGouvPrixCarburant.clearCache()
         gasApi.clearCache()

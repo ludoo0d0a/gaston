@@ -126,7 +126,7 @@ class PortugalDgegProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cache = null
         lastFetch = 0
     }

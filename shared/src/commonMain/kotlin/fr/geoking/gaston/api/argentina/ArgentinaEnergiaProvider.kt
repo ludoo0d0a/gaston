@@ -83,7 +83,7 @@ class ArgentinaEnergiaProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedData = null
     }
 }

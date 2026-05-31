@@ -224,7 +224,7 @@ class FueloProvider(
         val prices: List<FuelPrice>
     )
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedStations.clear()
     }
 }

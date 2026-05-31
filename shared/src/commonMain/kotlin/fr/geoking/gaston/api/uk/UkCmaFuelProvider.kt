@@ -64,7 +64,7 @@ class UkCmaFuelProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedStations = emptyList()
         cachedAtMs = 0L
     }

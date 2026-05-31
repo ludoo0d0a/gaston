@@ -157,7 +157,14 @@ class OverpassProvider(
         latitude: Double,
         longitude: Double,
         viewport: MapViewport?
-    ): List<Poi> = emptyList()
+    ): List<Poi> = search(
+        PoiSearchRequest(
+            latitude = latitude,
+            longitude = longitude,
+            viewport = viewport,
+            categories = setOf(PoiCategory.Gas, PoiCategory.Irve, PoiCategory.BatterySwap)
+        )
+    )
 
     private fun categoryToOsmAmenity(c: PoiCategory): String? = when (c) {
         PoiCategory.Gas -> "fuel"

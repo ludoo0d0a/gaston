@@ -5,12 +5,13 @@ import fr.geoking.gaston.categoryFromAmenityId
 import fr.geoking.gaston.effectiveAllowedCategories
 import fr.geoking.gaston.isOtherModeActive
 import fr.geoking.gaston.shared.location.haversineKm
+import java.util.Calendar
 
-/** Fuel / EV station data (prices, availability) — refresh often. */
-const val POI_CACHE_TTL_ENERGY_MS = 12L * 60 * 60 * 1000L
+/** Fuel / EV station data (prices, availability) — refreshed daily for prices, static data kept for 7 days. */
+const val POI_CACHE_TTL_ENERGY_MS = 7L * 24 * 60 * 60 * 1000L
 
 /** OSM amenities (parking, toilets, …) — stable for days. */
-const val POI_CACHE_TTL_AMENITY_MS = 3L * 24 * 60 * 60 * 1000L
+const val POI_CACHE_TTL_AMENITY_MS = 7L * 24 * 60 * 60 * 1000L
 
 /** Disk retention and geo-region bounds use the longest TTL. */
 const val POI_CACHE_DISK_RETENTION_MS = POI_CACHE_TTL_AMENITY_MS
@@ -43,8 +44,17 @@ fun poiPrimaryCategory(poi: Poi): PoiCategory {
 
 fun cacheTtlMsForPoi(poi: Poi): Long = cacheTtlMsForCategory(poiPrimaryCategory(poi))
 
-fun isPoiCacheEntryExpired(poi: Poi, seenAtMs: Long, nowMs: Long): Boolean =
-    nowMs - seenAtMs > cacheTtlMsForPoi(poi)
+fun isPoiCacheEntryExpired(poi: Poi, seenAtMs: Long, nowMs: Long): Boolean {
+    // Static data should be cached for 7 days.
+    if (nowMs - seenAtMs > cacheTtlMsForPoi(poi)) return true
+
+    // Prices should be cached for the current day.
+    if (!poi.fuelPrices.isNullOrEmpty() || poi.isElectric) {
+        if (!isSameDay(seenAtMs, nowMs)) return true
+    }
+
+    return false
+}
 
 fun categoryCacheStillFresh(
     category: PoiCategory,
@@ -53,7 +63,23 @@ fun categoryCacheStillFresh(
 ): Boolean {
     if (category !in region.loadedCategories) return false
     val loadedAt = region.categoryLoadedAtMs[category] ?: region.loadedAtMs
+
+    // Prices should be cached for the current day.
+    if (category == PoiCategory.Gas || category == PoiCategory.Irve || category == PoiCategory.BatterySwap) {
+        if (!isSameDay(loadedAt, nowMs)) return false
+    }
+
     return nowMs - loadedAt <= cacheTtlMsForCategory(category)
+}
+
+fun isSameDay(t1: Long, t2: Long): Boolean {
+    val dayMillis = 24 * 60 * 60 * 1000L
+    if (Math.abs(t1 - t2) > dayMillis) return false
+
+    val cal1 = Calendar.getInstance().apply { timeInMillis = t1 }
+    val cal2 = Calendar.getInstance().apply { timeInMillis = t2 }
+    return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+            cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
 }
 
 data class PoiCoverageResult(
@@ -150,6 +176,12 @@ fun providersForIncrementalFetch(
     }
     if (needsAmenityFetch && PoiProviderType.Overpass in allProviders) {
         result += PoiProviderType.Overpass
+    }
+    // If Overpass is an explicit provider for Gas or Irve, and they are missing, include it.
+    if (PoiProviderType.Overpass in allProviders) {
+        if (PoiCategory.Gas in missingCategories || PoiCategory.Irve in missingCategories) {
+            result += PoiProviderType.Overpass
+        }
     }
     return result
 }

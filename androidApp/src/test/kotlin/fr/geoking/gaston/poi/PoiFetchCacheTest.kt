@@ -252,9 +252,9 @@ class PoiFetchCacheTest {
     }
 
     @Test
-    fun cacheTtl_parkingLastsLongerThanFuel() {
-        assertTrue(POI_CACHE_TTL_AMENITY_MS > POI_CACHE_TTL_ENERGY_MS)
-        assertEquals(3L * 24 * 60 * 60 * 1000L, POI_CACHE_TTL_AMENITY_MS)
+    fun cacheTtl_parkingAndFuelLastSevenDays() {
+        assertEquals(7L * 24 * 60 * 60 * 1000L, POI_CACHE_TTL_AMENITY_MS)
+        assertEquals(7L * 24 * 60 * 60 * 1000L, POI_CACHE_TTL_ENERGY_MS)
     }
 
     @Test

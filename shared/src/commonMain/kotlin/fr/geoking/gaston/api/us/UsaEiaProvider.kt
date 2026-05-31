@@ -73,7 +73,7 @@ class UsaEiaProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         priceCache.clear()
     }
 

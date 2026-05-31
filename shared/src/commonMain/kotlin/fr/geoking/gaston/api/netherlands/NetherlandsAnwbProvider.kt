@@ -90,7 +90,7 @@ class NetherlandsAnwbProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedStations.clear()
     }
 }

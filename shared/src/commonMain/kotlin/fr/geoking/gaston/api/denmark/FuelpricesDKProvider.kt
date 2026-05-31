@@ -93,7 +93,7 @@ class FuelpricesDKProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedStations = null
     }
 }

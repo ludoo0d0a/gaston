@@ -58,7 +58,7 @@ class GorivaSiProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedAllStations = emptyList()
         cachedAtMs = 0L
     }

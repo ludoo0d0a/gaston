@@ -120,7 +120,7 @@ class SerbiaNisProvider(
         return null
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedStations = null
         cachedBrandPrices = null
     }
