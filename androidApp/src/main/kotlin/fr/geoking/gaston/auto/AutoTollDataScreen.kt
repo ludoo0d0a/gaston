@@ -38,12 +38,12 @@ class AutoTollDataScreen(
 
         if (isDownloading) {
             val progressText = when {
-                downloadError != null -> "Error: $downloadError"
+                downloadError != null -> "${carContext.getString(R.string.route_error)}: $downloadError"
                 downloadTotal != null && downloadTotal!! > 0 -> {
                     val pct = (100 * downloadBytes / downloadTotal!!).toInt()
-                    "Downloading toll data… $pct%"
+                    carContext.getString(R.string.toll_downloading_percent, pct)
                 }
-                else -> "Downloading toll data… ${downloadBytes / (1024 * 1024)} MB"
+                else -> carContext.getString(R.string.toll_downloading_mb, (downloadBytes / (1024 * 1024)).toInt())
             }
             val cancelAction = Action.Builder().setTitle(carContext.getString(R.string.action_cancel)).setOnClickListener {
                 isDownloading = false
@@ -53,7 +53,7 @@ class AutoTollDataScreen(
             return MessageTemplate.Builder(progressText)
                 .setHeader(
                     Header.Builder()
-                        .setTitle("OpenTollData")
+                        .setTitle(carContext.getString(R.string.screen_opentolldata))
                         .setStartHeaderAction(Action.BACK)
                         .addEndHeaderAction(cancelAction)
                         .build()
@@ -62,7 +62,7 @@ class AutoTollDataScreen(
         }
 
         val isDownloaded = helper.isTollDataDownloaded(settings)
-        val subtitle = if (isDownloaded) "Downloaded" else "Tap to download French highway toll data"
+        val subtitle = if (isDownloaded) carContext.getString(R.string.toll_downloaded) else carContext.getString(R.string.toll_tap_to_download)
 
         val listBuilder = ItemList.Builder()
         listBuilder.addItem(
@@ -99,7 +99,7 @@ class AutoTollDataScreen(
                                     settingsManager.saveSettings(current.copy(tollDataPath = path))
                                 },
                                 onFailure = { e ->
-                                    downloadError = e.message ?: "Download failed"
+                                    downloadError = e.message ?: carContext.getString(R.string.download_failed)
                                 }
                             )
                             invalidate()

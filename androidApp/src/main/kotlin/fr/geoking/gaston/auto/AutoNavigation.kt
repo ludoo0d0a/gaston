@@ -14,7 +14,7 @@ fun Screen.pushMapScreen(
     mapDeps: MapDeps,
     title: String? = null
 ) {
-    val finalTitle = title ?: "Nearby Stations"
+    val finalTitle = title ?: carContext.getString(R.string.dashboard_nearby_stations)
     val screen = when (settingsManager.settings.value.carMapMode) {
         CarMapMode.Native -> NativeMapPoiScreen(
             carContext = carContext,

@@ -59,7 +59,7 @@ class AutoEvDashboardScreen(
     private fun pushMapScreen(title: String? = null) {
         val mapDeps = getMapDeps()
         if (mapDeps != null) {
-            val finalTitle = title ?: "Nearby Stations"
+            val finalTitle = title ?: carContext.getString(R.string.dashboard_nearby_stations)
             val screen = when (settingsManager.settings.value.carMapMode) {
                 CarMapMode.Native -> NativeMapPoiScreen(
                     carContext = carContext,

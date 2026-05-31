@@ -47,7 +47,7 @@ class AutoFuelForecastScreen(
             try {
                 val loc = withContext(Dispatchers.IO) { LocationHelper.getCurrentLocation(carContext) }
                 if (loc == null) {
-                    loadError = "Location unavailable"
+                    loadError = carContext.getString(R.string.location_not_available)
                     uiState = FuelForecastUiState(
                         fuelId = "gazole",
                         locationKey = "",
@@ -230,11 +230,11 @@ class AutoFuelForecastScreen(
 }
 
 private fun fuelTitle(fuelId: String): String = when (fuelId) {
-    "gazole" -> "Gazole"
-    "sp95" -> "SP95 / E10"
-    "sp98" -> "SP98"
-    "gplc" -> "GPLc"
-    "e85" -> "E85"
+    "gazole" -> carContext.getString(R.string.fuel_gazole)
+    "sp95" -> carContext.getString(R.string.fuel_sp95_slash)
+    "sp98" -> carContext.getString(R.string.fuel_sp98)
+    "gplc" -> carContext.getString(R.string.fuel_gplc)
+    "e85" -> carContext.getString(R.string.fuel_e85)
     else -> fuelId
 }
 

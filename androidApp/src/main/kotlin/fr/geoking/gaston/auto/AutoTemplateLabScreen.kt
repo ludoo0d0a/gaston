@@ -58,7 +58,7 @@ class AutoTemplateLabScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.screen_map_settings))
-                .addText("Current mode: ${settingsManager.settings.value.carMapMode.name}")
+                .addText(carContext.getString(R.string.template_lab_current_mode, settingsManager.settings.value.carMapMode.name))
                 .setOnClickListener {
                     settingsManager.setCarMapMode(settingsManager.settings.value.carMapMode.next())
                     invalidate()
@@ -132,7 +132,7 @@ class AutoTemplateLabFeaturesScreen(
             if (deps != null) screenManager.push(CustomMapPoiScreen(carContext, deps.poiProvider, deps.availabilityProviderFactory, settingsManager, deps.routePlanner, deps.routingClient, deps.tollCalculator, deps.trafficProviderFactory, deps.geocodingClient, deps.communityRepo, deps.favoritesRepo))
         }.build())
 
-        listBuilder.addItem(Row.Builder().setTitle("MapLibre POI map").setOnClickListener {
+        listBuilder.addItem(Row.Builder().setTitle(carContext.getString(R.string.map_libre_poi_map)).setOnClickListener {
             val deps = getMapDeps()
             if (deps != null) {
                 screenManager.push(

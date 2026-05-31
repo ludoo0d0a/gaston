@@ -50,7 +50,7 @@ class NativeMapPoiScreen(
     private val settingsManager: SettingsManager,
     private val communityRepo: CommunityPoiRepository? = null,
     private val favoritesRepo: FavoritesRepository? = null,
-    private val title: String = "Nearby Stations"
+    private val title: String = carContext.getString(R.string.dashboard_nearby_stations)
 ) : Screen(carContext), DefaultLifecycleObserver {
 
     private var pois: List<Poi> = emptyList()

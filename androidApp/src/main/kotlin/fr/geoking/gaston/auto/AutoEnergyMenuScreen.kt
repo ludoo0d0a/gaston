@@ -28,7 +28,7 @@ class AutoEnergyMenuScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.search_mode_fuel))
-                .addText(if (isFuelMode) "Selected: ${fuels.joinToString(", ")}" else "Tap to select fuel types")
+                .addText(if (isFuelMode) "${carContext.getString(R.string.filter_selected)}: ${fuels.joinToString(", ")}" else carContext.getString(R.string.fuel_tap_to_select))
                 .setOnClickListener {
                     if (!hasFuel) {
                         settingsManager.setMapEnergyTypes(setOf("sp95"))
@@ -44,7 +44,7 @@ class AutoEnergyMenuScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.energy_electric))
-                .addText(if (isElectricMode) "Selected: Power and connectors" else "Tap for EV settings")
+                .addText(if (isElectricMode) carContext.getString(R.string.energy_ev_all_selected) else carContext.getString(R.string.ev_tap_for_settings))
                 .setOnClickListener {
                     if (!hasElectric) {
                         settingsManager.setMapEnergyTypes(setOf("electric"))
@@ -59,8 +59,8 @@ class AutoEnergyMenuScreen(
         // Hybrid Row
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Hybrid")
-                .addText(if (isHybridMode) "Selected: Fuel + Electric" else "Fuel + Electric")
+                .setTitle(carContext.getString(R.string.energy_hybrid))
+                .addText(if (isHybridMode) carContext.getString(R.string.energy_hybrid_selected) else carContext.getString(R.string.energy_hybrid_summary))
                 .setOnClickListener {
                     val nextFuels = if (fuels.isEmpty()) setOf("sp95") else fuels
                     settingsManager.setMapEnergyTypes(nextFuels + "electric")
@@ -73,7 +73,7 @@ class AutoEnergyMenuScreen(
             .setSingleList(listBuilder.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle("Energy")
+                    .setTitle(carContext.getString(R.string.energy_label))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

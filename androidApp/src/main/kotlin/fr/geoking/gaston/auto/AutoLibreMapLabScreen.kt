@@ -164,14 +164,14 @@ class AutoLibreMapLabScreen(carContext: CarContext) : Screen(carContext), Surfac
             .addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.action_zoom_in))
-                    .addText("Level $zoom")
+                    .addText(carContext.getString(R.string.map_level, zoom))
                     .setOnClickListener { bumpZoom(1) }
                     .build()
             )
             .addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.action_zoom_out))
-                    .addText("Level $zoom")
+                    .addText(carContext.getString(R.string.map_level, zoom))
                     .setOnClickListener { bumpZoom(-1) }
                     .build()
             )
