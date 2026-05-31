@@ -108,7 +108,7 @@ class DkvOcpiProvider(
             }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedLocations = emptyList()
         cacheTimestampMs = 0L
     }

@@ -86,7 +86,7 @@ class AustraliaNswFuelCheckProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedData = null
     }
 }

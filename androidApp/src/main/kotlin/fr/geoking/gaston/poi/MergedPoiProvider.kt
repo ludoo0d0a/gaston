@@ -65,7 +65,7 @@ class MergedPoiProvider(
         return search(PoiSearchRequest(latitude, longitude, viewport, emptySet()))
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         base.clearCache()
     }
 }

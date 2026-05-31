@@ -484,7 +484,7 @@ interface PoiProvider {
     ): List<Poi>
 
     /** Clears any internal cache this provider may have. */
-    fun clearCache() {}
+    suspend fun clearCache() {}
 }
 
 private fun Poi.ensureCategory(): Poi = copy(

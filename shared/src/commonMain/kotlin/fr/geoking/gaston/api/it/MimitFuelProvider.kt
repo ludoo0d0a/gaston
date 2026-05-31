@@ -76,7 +76,7 @@ class MimitFuelProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedAtMs = 0L
         cachedStations = emptyMap()
         cachedPrices = emptyMap()

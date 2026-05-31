@@ -104,7 +104,7 @@ class MexicoCREProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedPlaces = null
         cachedPrices = null
     }

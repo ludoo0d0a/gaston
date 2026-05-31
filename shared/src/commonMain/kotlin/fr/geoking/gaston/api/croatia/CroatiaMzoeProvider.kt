@@ -92,7 +92,7 @@ class CroatiaMzoeProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedData = null
     }
 }

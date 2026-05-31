@@ -92,7 +92,7 @@ class FuelWatchProvider(
         }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedPois = null
     }
 }

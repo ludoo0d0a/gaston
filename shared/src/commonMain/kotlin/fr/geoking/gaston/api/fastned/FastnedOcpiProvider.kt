@@ -120,7 +120,7 @@ class FastnedOcpiProvider(
             }
     }
 
-    override fun clearCache() {
+    override suspend fun clearCache() {
         cachedLocations = emptyList()
         cachedTariffText = null
         cacheTimestampMs = 0L
