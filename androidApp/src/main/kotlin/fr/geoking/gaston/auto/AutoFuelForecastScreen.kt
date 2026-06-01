@@ -227,15 +227,15 @@ class AutoFuelForecastScreen(
             )
             .build()
     }
-}
 
-private fun fuelTitle(fuelId: String): String = when (fuelId) {
-    "gazole" -> carContext.getString(R.string.fuel_gazole)
-    "sp95" -> carContext.getString(R.string.fuel_sp95_slash)
-    "sp98" -> carContext.getString(R.string.fuel_sp98)
-    "gplc" -> carContext.getString(R.string.fuel_gplc)
-    "e85" -> carContext.getString(R.string.fuel_e85)
-    else -> fuelId
+    private fun fuelTitle(fuelId: String): String = when (fuelId) {
+        "gazole" -> carContext.getString(R.string.fuel_gazole)
+        "sp95" -> carContext.getString(R.string.fuel_sp95_slash)
+        "sp98" -> carContext.getString(R.string.fuel_sp98)
+        "gplc" -> carContext.getString(R.string.fuel_gplc)
+        "e85" -> carContext.getString(R.string.fuel_e85)
+        else -> fuelId
+    }
 }
 
 private fun Double.formatEurL(): String = String.format(Locale.US, "%.3f", this)
