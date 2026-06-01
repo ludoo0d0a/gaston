@@ -84,7 +84,7 @@ class MapLibrePoiScreen(
     private val geocodingClient: GeocodingClient? = null,
     private val communityRepo: CommunityPoiRepository? = null,
     private val favoritesRepo: FavoritesRepository? = null,
-    private val title: String = "Nearby Stations",
+    private val title: String = carContext.getString(R.string.dashboard_nearby_stations),
     private val itineraryPoints: List<Pair<Double, Double>> = emptyList()
 ) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
 
@@ -642,7 +642,7 @@ class MapLibrePoiScreen(
             )
         ) {
             carContext.getCarService(AppManager::class.java)
-                .showToast("Multiple stations here, zooming in...", CarToast.LENGTH_LONG)
+                .showToast(carContext.getString(R.string.error_multiple_stations), CarToast.LENGTH_LONG)
             bumpZoom(1)
             return
         } else {

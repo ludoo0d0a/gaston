@@ -18,7 +18,7 @@ class AutoMapElectricSelectionScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle("Battery Swap")
+                .setTitle(carContext.getString(R.string.filter_battery_swap_title))
                 .setToggle(
                     Toggle.Builder { checked ->
                         if (checked) {

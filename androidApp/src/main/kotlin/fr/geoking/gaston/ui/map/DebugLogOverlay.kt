@@ -97,8 +97,8 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
                     ) {
                         Text(
                             when (selectedTab) {
-                                DebugOverlayTab.Network -> "Network (${logs.size})"
-                                DebugOverlayTab.Providers -> "Providers (${providerTraces.size})"
+                                DebugOverlayTab.Network -> "${stringResource(R.string.dashboard_network)} (${logs.size})"
+                                DebugOverlayTab.Providers -> "${stringResource(R.string.debug_overlay_providers)} (${providerTraces.size})"
                             },
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
@@ -110,13 +110,13 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
                                     CacheManager.clearAllCaches(context)
                                 }
                             }) {
-                                Icon(Icons.Default.CleaningServices, "Clear Cache", tint = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Default.CleaningServices, stringResource(R.string.screen_clear_cache), tint = MaterialTheme.colorScheme.onSurface)
                             }
                             IconButton(onClick = { DebugLogStore.clearAll() }) {
-                                Icon(Icons.Default.DeleteSweep, "Clear Logs", tint = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Default.DeleteSweep, stringResource(R.string.settings_clear_logs), tint = MaterialTheme.colorScheme.onSurface)
                             }
                             IconButton(onClick = { isExpanded = false }) {
-                                Icon(Icons.Default.Close, "Close", tint = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Default.Close, stringResource(R.string.action_close), tint = MaterialTheme.colorScheme.onSurface)
                             }
                         }
                     }
@@ -130,12 +130,12 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
                         Tab(
                             selected = selectedTab == DebugOverlayTab.Network,
                             onClick = { selectedTab = DebugOverlayTab.Network },
-                            text = { Text("Network", fontSize = 12.sp) },
+                            text = { Text(stringResource(R.string.dashboard_network), fontSize = 12.sp) },
                         )
                         Tab(
                             selected = selectedTab == DebugOverlayTab.Providers,
                             onClick = { selectedTab = DebugOverlayTab.Providers },
-                            text = { Text("Providers", fontSize = 12.sp) },
+                            text = { Text(stringResource(R.string.debug_overlay_providers), fontSize = 12.sp) },
                         )
                     }
 
@@ -195,7 +195,7 @@ private fun NetworkDebugTab(
             ) {
                 item {
                     HostFilterChip(
-                        label = "All",
+                        label = stringResource(R.string.action_all),
                         selected = selectedHost == null,
                         onClick = { onHostSelected(null) },
                     )
@@ -256,7 +256,7 @@ private fun ProviderTraceTab(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                "No provider traces yet.\nPan the map or refresh POIs.",
+                stringResource(R.string.debug_overlay_no_traces),
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 12.sp,
             )
@@ -305,7 +305,7 @@ private fun ProviderTraceItem(trace: ProviderTraceEntry, onClick: () -> Unit) {
             trace.poiCount?.let { count ->
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "$count POIs",
+                    text = "$count ${stringResource(R.string.debug_overlay_pois)}",
                     color = Color.White.copy(alpha = 0.6f),
                     fontSize = 10.sp,
                 )
@@ -379,31 +379,31 @@ private fun ProviderTraceDetailsDialog(trace: ProviderTraceEntry, onDismiss: () 
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
         },
         title = {
-            Text("${trace.phase.name} — ${trace.provider ?: "POI providers"}", fontWeight = FontWeight.Bold)
+            Text("${trace.phase.name} — ${trace.provider ?: stringResource(R.string.debug_overlay_poi_providers)}", fontWeight = FontWeight.Bold)
         },
         text = {
             SelectionContainer {
                 LazyColumn {
                     item {
-                        DetailItem("Time", Date(trace.timestamp).toString())
-                        DetailItem("Message", trace.message)
-                        trace.provider?.let { DetailItem("Provider", it) }
-                        trace.poiCount?.let { DetailItem("POI count", it.toString()) }
-                        trace.durationMs?.let { DetailItem("Duration", "${it}ms") }
+                        DetailItem(stringResource(R.string.debug_overlay_time), Date(trace.timestamp).toString())
+                        DetailItem(stringResource(R.string.debug_overlay_message), trace.message)
+                        trace.provider?.let { DetailItem(stringResource(R.string.debug_overlay_provider), it) }
+                        trace.poiCount?.let { DetailItem(stringResource(R.string.debug_overlay_poi_count), it.toString()) }
+                        trace.durationMs?.let { DetailItem(stringResource(R.string.debug_overlay_duration), "${it}ms") }
                         if (trace.countries.isNotEmpty()) {
-                            DetailItem("Countries", trace.countries.joinToString(", "))
+                            DetailItem(stringResource(R.string.debug_overlay_countries), trace.countries.joinToString(", "))
                         }
                         if (trace.categories.isNotEmpty()) {
-                            DetailItem("Categories", trace.categories.joinToString(", "))
+                            DetailItem(stringResource(R.string.debug_overlay_categories), trace.categories.joinToString(", "))
                         }
                         if (trace.effectiveProviders.isNotEmpty()) {
-                            DetailItem("Effective", trace.effectiveProviders.joinToString(", "))
+                            DetailItem(stringResource(R.string.debug_overlay_effective), trace.effectiveProviders.joinToString(", "))
                         }
                         if (trace.fetchedProviders.isNotEmpty()) {
-                            DetailItem("Fetched", trace.fetchedProviders.joinToString(", "))
+                            DetailItem(stringResource(R.string.debug_overlay_fetched), trace.fetchedProviders.joinToString(", "))
                         }
                         trace.errors.forEach { err ->
-                            DetailItem("Error", err)
+                            DetailItem(stringResource(R.string.route_error), err)
                         }
                     }
                 }
@@ -488,21 +488,21 @@ private fun LogDetailsDialog(log: NetworkLog, onDismiss: () -> Unit) {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
         },
         title = {
-            Text("Request Details", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.action_request_details), fontSize = 18.sp, fontWeight = FontWeight.Bold)
         },
         text = {
             SelectionContainer {
                 LazyColumn(modifier = Modifier.fillMaxWidth()) {
                     item {
-                        DetailSection("General")
+                        DetailSection(stringResource(R.string.debug_overlay_general))
                         DetailItem("URL", log.url)
-                        DetailItem("Method", log.method)
-                        DetailItem("Status", log.statusCode?.toString() ?: "N/A")
-                        DetailItem("Duration", "${log.durationMs}ms")
-                        DetailItem("Timestamp", Date(log.timestamp).toString())
+                        DetailItem(stringResource(R.string.debug_overlay_method), log.method)
+                        DetailItem(stringResource(R.string.debug_overlay_status), log.statusCode?.toString() ?: "N/A")
+                        DetailItem(stringResource(R.string.debug_overlay_duration), "${log.durationMs}ms")
+                        DetailItem(stringResource(R.string.debug_overlay_time), Date(log.timestamp).toString())
 
                         Spacer(modifier = Modifier.height(16.dp))
-                        DetailSection("Request Headers")
+                        DetailSection(stringResource(R.string.debug_overlay_request_headers))
                         log.requestHeaders.forEach { (k, v) ->
                             DetailItem(k, v.joinToString(", "))
                         }
@@ -510,13 +510,13 @@ private fun LogDetailsDialog(log: NetworkLog, onDismiss: () -> Unit) {
                         val reqBody = log.safeRequestBody
                         if (reqBody.isNotBlank()) {
                             Spacer(modifier = Modifier.height(16.dp))
-                            DetailSection("Request Body")
+                            DetailSection(stringResource(R.string.debug_overlay_request_body))
                             BodyContent(reqBody, onFullscreen = { fullscreenBody = reqBody })
                         }
 
                         log.responseHeaders?.let { headers ->
                             Spacer(modifier = Modifier.height(16.dp))
-                            DetailSection("Response Headers")
+                            DetailSection(stringResource(R.string.debug_overlay_response_headers))
                             headers.forEach { (k, v) ->
                                 DetailItem(k, v.joinToString(", "))
                             }
@@ -525,7 +525,7 @@ private fun LogDetailsDialog(log: NetworkLog, onDismiss: () -> Unit) {
                         val respBody = log.safeResponseBody
                         if (respBody.isNotBlank()) {
                             Spacer(modifier = Modifier.height(16.dp))
-                            DetailSection("Response Body")
+                            DetailSection(stringResource(R.string.debug_overlay_response_body))
                             BodyContent(respBody, onFullscreen = { fullscreenBody = respBody })
                         }
                     }
@@ -566,7 +566,7 @@ private fun FullscreenBodyDialog(body: String, onDismiss: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Body Viewer", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.action_body_viewer), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 IconButton(onClick = onDismiss) {
                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_close))
                 }

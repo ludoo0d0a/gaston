@@ -194,7 +194,7 @@ fun SearchCategorySelector(
                                     ))
                                 }
                             },
-                            label = { Text("Swap") },
+                            label = { Text(stringResource(R.string.filter_battery_swap)) },
                             leadingIcon = {
                                 Icon(
                                     Icons.Rounded.SwapHoriz,
