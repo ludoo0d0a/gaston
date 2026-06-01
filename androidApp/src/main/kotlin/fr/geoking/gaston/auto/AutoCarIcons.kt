@@ -93,6 +93,9 @@ fun CarContext.actionHistoryIcon(): CarIcon = carIcon(R.drawable.ic_history, Aut
 
 fun CarContext.actionRefreshIcon(): CarIcon = carIcon(R.drawable.ic_refresh, AutoCarIcons.primary)
 
+fun CarContext.actionCheapestIcon(active: Boolean): CarIcon =
+    carIcon(R.drawable.ic_poi_gas, if (active) AutoCarIcons.fuel else AutoCarIcons.primary)
+
 fun CarContext.emergencyCategoryIcon(category: EmergencyCategory): CarIcon = when (category) {
     EmergencyCategory.GENERAL -> carIcon(R.drawable.ic_sos, AutoCarIcons.emergency)
     EmergencyCategory.POLICE -> carIcon(R.drawable.ic_local_police, AutoCarIcons.police)

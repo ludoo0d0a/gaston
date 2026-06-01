@@ -97,6 +97,7 @@ class MapLibrePoiScreen(
     private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
     private var zoom: Int = AutoMapCamera.DEFAULT_ZOOM
     private var sortByPrice: Boolean = false
+    private var isCheapestFilterActive: Boolean = false
     private var currentVisibleArea: Rect? = null
     private var mapWidthPx: Int = 800
     private var mapHeightPx: Int = 480
@@ -187,12 +188,25 @@ class MapLibrePoiScreen(
 
     private fun getFilteredPois(currentSettings: AppSettings): List<Poi> {
         val effectiveProviders = currentSettings.effectiveProvidersAt(searchLat, searchLon)
-        return StationMapFilters.apply(
+        val basePois = StationMapFilters.apply(
             settings = currentSettings,
             pois = pois,
             providers = effectiveProviders,
             skipWhenOnlyOverpass = true
         )
+
+        return if (isCheapestFilterActive) {
+            val fuelIds = currentSettings.effectiveMapEnergyFilterIds() - "electric"
+            basePois.mapNotNull { poi ->
+                val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                    ?.minOfOrNull { it.price }
+                if (minPrice != null) Pair(poi, minPrice) else null
+            }.sortedBy { it.second }
+                .take(5)
+                .map { it.first }
+        } else {
+            basePois
+        }
     }
 
     private fun mapFitSizePx(): Pair<Int, Int> {
@@ -686,6 +700,10 @@ class MapLibrePoiScreen(
         logTag = "MapLibrePoiScreen",
         templateName = "MapWithContentTemplate"
     ) {
+        val currentSettings = settingsManager.settings.value
+        val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
+        val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
+
         val actionStripBuilder = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
@@ -693,6 +711,26 @@ class MapLibrePoiScreen(
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
                     .build()
             )
+
+        if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionCheapestIcon(isCheapestFilterActive))
+                    .setOnClickListener {
+                        if (isCheapestFilterActive) {
+                            isCheapestFilterActive = false
+                            sortByPrice = false
+                            selectedPoi = null
+                        } else {
+                            isCheapestFilterActive = true
+                            sortByPrice = true
+                        }
+                        syncRendererWithMapState()
+                        invalidate()
+                    }
+                    .build()
+            )
+        }
 
         if (errors.isNotEmpty()) {
             actionStripBuilder.addAction(
@@ -704,8 +742,6 @@ class MapLibrePoiScreen(
         }
         val actionStrip = actionStripBuilder.build()
 
-        val currentSettings = settingsManager.settings.value
-        val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
         val contentTemplate = if (isLoading) {
