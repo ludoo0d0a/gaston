@@ -28,6 +28,7 @@ import fr.geoking.gaston.poi.PoiProviderType
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.FuelCard
+import fr.geoking.gaston.MapTheme
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.StationMapFilters
@@ -150,7 +151,8 @@ class MapLibrePoiScreen(
                         s.mapBrands,
                         s.selectedMapConnectorTypes,
                         s.vehicleGasTypes,
-                        s.vehiclePowerLevels
+                        s.vehiclePowerLevels,
+                        s.mapTheme
                     )
                 }
                 .distinctUntilChanged()
@@ -182,7 +184,8 @@ class MapLibrePoiScreen(
         val brands: Set<String>,
         val connectors: Set<String>,
         val vehicleGasTypes: Set<String>,
-        val vehiclePowerLevels: Set<Int>
+        val vehiclePowerLevels: Set<Int>,
+        val mapTheme: MapTheme
     )
 
     private fun getFilteredPois(currentSettings: AppSettings): List<Poi> {
@@ -261,6 +264,7 @@ class MapLibrePoiScreen(
     private fun syncRendererWithMapState() {
         val renderer = mapRenderer ?: return
         val settings = settingsManager.settings.value
+        renderer.setStyleUrl(resolveAutoMapStyleUrl(settings, carContext))
         val filteredPois = getFilteredPois(settings)
         val poiIds = filteredPois.map { it.id }
 
