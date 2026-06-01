@@ -32,6 +32,8 @@ import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.shared.location.approxDistanceKm
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -60,6 +62,7 @@ class NativeMapPoiScreen(
     private var searchLat: Double = settingsManager.settings.value.lastKnownLat ?: 48.8566
     private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
     private var sortByPrice: Boolean = false
+    private var refreshJob: Job? = null
 
     init {
         lifecycle.addObserver(this)
@@ -75,12 +78,18 @@ class NativeMapPoiScreen(
         }
     }
 
-    private fun loadPois() {
+    private fun loadPois(showLoading: Boolean = true, overrideLat: Double? = null, overrideLon: Double? = null) {
         lifecycleScope.launch {
-            isLoading = true
-            invalidate()
+            if (showLoading) {
+                isLoading = true
+                invalidate()
+            }
 
-            val (lat, lon) = LocationHelper.getInitialLocation(carContext, settingsManager)
+            val (lat, lon) = if (overrideLat != null && overrideLon != null) {
+                overrideLat to overrideLon
+            } else {
+                LocationHelper.getInitialLocation(carContext, settingsManager)
+            }
 
             searchLat = lat
             searchLon = lon
@@ -104,6 +113,34 @@ class NativeMapPoiScreen(
             isLoading = false
             invalidate()
         }
+    }
+
+    override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+        startRefreshLoop()
+    }
+
+    override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
+        stopRefreshLoop()
+    }
+
+    private fun startRefreshLoop() {
+        stopRefreshLoop()
+        refreshJob = lifecycleScope.launch {
+            while (true) {
+                delay(30_000)
+                val location = LocationHelper.getCurrentLocation(carContext)
+                if (location != null) {
+                    loadPois(showLoading = false, overrideLat = location.latitude, overrideLon = location.longitude)
+                } else {
+                    loadPois(showLoading = false)
+                }
+            }
+        }
+    }
+
+    private fun stopRefreshLoop() {
+        refreshJob?.cancel()
+        refreshJob = null
     }
 
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "NativeMapPoiScreen", "PlaceListMapTemplate") {

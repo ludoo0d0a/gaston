@@ -135,7 +135,7 @@ class CustomMapPoiScreen(
             }
                 .distinctUntilChanged()
                 .collectLatest {
-                    loadPois()
+                    loadPois(showLoading = pois.isEmpty())
                 }
         }
         lifecycleScope.launch {
@@ -365,10 +365,12 @@ class CustomMapPoiScreen(
         lastAppliedZoom = zoom
     }
 
-    private fun loadPois(preserveZoom: Boolean = false) {
+    private fun loadPois(preserveZoom: Boolean = false, showLoading: Boolean = true) {
         lifecycleScope.launch {
-            isLoading = true
-            invalidate()
+            if (showLoading) {
+                isLoading = true
+                invalidate()
+            }
 
             val location = LocationHelper.getCurrentLocation(carContext)
             val (lat, lon) = if (location != null) {
@@ -563,6 +565,12 @@ class CustomMapPoiScreen(
             val lat = location.latitude
             val lon = location.longitude
             lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+
+            // Recenter map on user location
+            searchLat = lat
+            searchLon = lon
+            searchCenterFlow.value = lat to lon
+            surfaceRenderer?.updateLocation(lat, lon, zoom)
             surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
 
             val last = historyPoints.lastOrNull()
