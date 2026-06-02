@@ -783,7 +783,17 @@ class CustomMapPoiScreen(
                     .setHeader(
                         Header.Builder()
                             .setTitle(poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" })
-                            .setStartHeaderAction(Action.BACK)
+                            .setStartHeaderAction(Action.APP_ICON)
+                            .addEndHeaderAction(
+                                Action.Builder()
+                                    .setIcon(carContext.carIcon(R.drawable.ic_arrow_back))
+                                    .setOnClickListener {
+                                        selectedPoi = null
+                                        syncRendererWithMapState()
+                                        invalidate()
+                                    }
+                                    .build()
+                            )
                             .addEndHeaderAction(
                                 Action.Builder()
                                     .setTitle(carContext.getString(R.string.screen_navigate_to))
