@@ -486,15 +486,15 @@ open class SettingsManager(
         )
     }
 
-    open fun setOtherMode() {
+    open fun setOtherMode(amenityType: String = "parking") {
         val current = _settings.value
         saveSettings(
             current.copy(
                 useVehicleFilter = false,
                 poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
                 selectedPoiProviders = setOf(PoiProviderType.Overpass),
-                selectedOverpassAmenityTypes = setOf("parking"),
-                cacheWarmAmenityTypes = current.cacheWarmAmenityTypes + "parking",
+                selectedOverpassAmenityTypes = setOf(amenityType),
+                cacheWarmAmenityTypes = current.cacheWarmAmenityTypes + amenityType,
             )
         )
     }
