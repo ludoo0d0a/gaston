@@ -18,6 +18,7 @@
     <string name="action_edit">Modifier</string>
     <string name="action_exit">Quitter</string>
     <string name="action_fullscreen">Plein écran</string>
+    <string name="action_view_full_error">Voir l\'erreur complète</string>
     <string name="action_hide_on_map">Masquer sur la carte</string>
     <string name="action_home">Accueil</string>
     <string name="action_recenter">Recentrer</string>
