@@ -24,6 +24,8 @@ class PoiDetailScreen(
     carContext: CarContext,
     private val poi: Poi,
     private val availabilitySummary: StationAvailabilitySummary? = null,
+    private val effectiveEnergyTypes: Set<String> = emptySet(),
+    private val effectivePowerLevels: Set<Int> = emptySet(),
     private val rating: Int? = null
 ) : Screen(carContext) {
 
@@ -43,7 +45,9 @@ class PoiDetailScreen(
         val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
             carContext = carContext,
             poi = poi,
-            availability = availabilitySummary
+            availability = availabilitySummary,
+            effectiveEnergyTypes = effectiveEnergyTypes,
+            effectivePowerLevels = effectivePowerLevels
         )
 
         val itemListBuilder = ItemList.Builder()

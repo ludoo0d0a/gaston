@@ -662,6 +662,19 @@ class MapLibrePoiScreen(
             clickedPois.first()
         }
 
+        if (selectedPoi?.id == poi.id) {
+            screenManager.push(
+                PoiDetailScreen(
+                    carContext = carContext,
+                    poi = poi,
+                    availabilitySummary = availabilityByPoiId[poi.id],
+                    effectiveEnergyTypes = settingsManager.settings.value.effectiveMapEnergyFilterIds(),
+                    effectivePowerLevels = settingsManager.settings.value.effectiveIrvePowerLevels()
+                )
+            )
+            return
+        }
+
         selectedPoi = poi
         val settings = settingsManager.settings.value
         val filteredPois = getFilteredPois(settings)
@@ -760,7 +773,18 @@ class MapLibrePoiScreen(
                     poi = poi,
                     availability = availability,
                     effectiveEnergyTypes = effectiveEnergies,
-                    effectivePowerLevels = effectivePowerLevels
+                    effectivePowerLevels = effectivePowerLevels,
+                    onHeaderClick = {
+                        screenManager.push(
+                            PoiDetailScreen(
+                                carContext = carContext,
+                                poi = poi,
+                                availabilitySummary = availability,
+                                effectiveEnergyTypes = effectiveEnergies,
+                                effectivePowerLevels = effectivePowerLevels
+                            )
+                        )
+                    }
                 )
                 val itemListBuilder = ItemList.Builder()
                 detailRows.forEach { itemListBuilder.addItem(it) }

@@ -422,7 +422,7 @@ class SelectorPoiProvider(
                 loadedRegions = loadedRegions,
             )
             if (settings.disableCache) {
-                PoiCoverageResult(fullyCovered = false, geoCovered = false) to null
+                PoiCoverageResult(coveringRegion = null, missingProviders = providers, missingCategories = categoriesToFetch) to null
             } else {
                 readCoverageAndCache(request, requiredRadiusKm, providers, categoriesToFetch, nowMs)
             }
@@ -672,7 +672,7 @@ class SelectorPoiProvider(
                 loadedRegions = loadedRegions,
             )
             if (settings.disableCache) {
-                PoiCoverageResult(fullyCovered = false, geoCovered = false) to null
+                PoiCoverageResult(coveringRegion = null, missingProviders = providers, missingCategories = categoriesToFetch) to null
             } else {
                 readCoverageAndCache(request, requiredRadiusKm, providers, categoriesToFetch, nowMs)
             }
@@ -689,7 +689,7 @@ class SelectorPoiProvider(
         }
 
         // Try persistent cache
-        if (settings.disableCache) return@run {
+        if (settings.disableCache) {
             val providersToFetch = providers
             val providerCategories = providersToFetch.associateWith { providerType ->
                 categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
@@ -700,7 +700,7 @@ class SelectorPoiProvider(
                 providerCategories = providerCategories,
                 allProviders = providers,
             )
-            PoiSearchResult(pois = applyPostFilters(rated, request, providers), errors = errors)
+            return PoiSearchResult(pois = applyPostFilters(rated, request, providers), errors = errors)
         }
 
         val latDelta = requiredRadiusKm / 111.0

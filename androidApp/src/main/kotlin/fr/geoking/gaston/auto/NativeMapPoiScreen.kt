@@ -233,6 +233,8 @@ class NativeMapPoiScreen(
                             carContext = carContext,
                             poi = poi,
                             availabilitySummary = availability,
+                            effectiveEnergyTypes = effectiveEnergies,
+                            effectivePowerLevels = effectivePowerLevels,
                             rating = null
                         )
                     )
