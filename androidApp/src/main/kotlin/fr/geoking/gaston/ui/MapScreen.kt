@@ -14,6 +14,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.res.stringResource
@@ -181,6 +183,7 @@ fun MapScreen(
     val billingManager = org.koin.compose.koinInject<fr.geoking.gaston.premium.BillingManager>()
     var showPaywallForFavorite by remember { mutableStateOf(false) }
     var poiSortOrder by remember { mutableStateOf(fr.geoking.gaston.ui.map.PoiSortOrder.Distance) }
+    var fullErrorMessageToShow by remember { mutableStateOf<String?>(null) }
 
 
     var hasLocationPermission by remember {
@@ -433,8 +436,27 @@ fun MapScreen(
                     MapErrorBanner(
                         message = msg,
                         onCopy = onCopy,
+                        onViewFullError = { fullErrorMessageToShow = msg },
                         onIgnore = mapActions.clearError,
                         onRetry = { mapActions.retry(currentMapCameraSample()) }
+                    )
+                }
+
+                fullErrorMessageToShow?.let { msg ->
+                    AlertDialog(
+                        onDismissRequest = { fullErrorMessageToShow = null },
+                        title = { Text(stringResource(R.string.route_error)) },
+                        text = {
+                            Text(
+                                text = msg,
+                                modifier = Modifier.verticalScroll(rememberScrollState())
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { fullErrorMessageToShow = null }) {
+                                Text(stringResource(R.string.action_ok))
+                            }
+                        }
                     )
                 }
 

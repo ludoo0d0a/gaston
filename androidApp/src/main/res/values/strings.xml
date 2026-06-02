@@ -101,6 +101,7 @@
     <string name="action_show_cheapest">Show Cheapest</string>
     <string name="action_show_logs">Show Logs</string>
     <string name="action_fullscreen">Fullscreen</string>
+    <string name="action_view_full_error">View Full Error</string>
     <string name="action_request_details">Request Details</string>
     <string name="action_show_cheapest_list">Show cheapest list</string>
     <string name="action_toggle_theme">Toggle theme</string>
