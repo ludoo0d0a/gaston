@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.car.app.CarContext
+import androidx.car.app.CarToast
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -141,6 +142,12 @@ class NativeMapPoiScreen(
                         } else {
                             isCheapestFilterActive = true
                             sortByPrice = true
+                            invalidate()
+                            val fuelIds = effectiveEnergies - "electric"
+                            val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
+                            val cheapestCount = MapPoiFilter.filterCheapest(pois, fuelIds, isLuxembourg).size
+                            carContext.getCarService(androidx.car.app.AppManager::class.java)
+                                .showToast(carContext.getString(R.string.cheapest_stations_toast, cheapestCount), CarToast.LENGTH_SHORT)
                         }
                         invalidate()
                     }
@@ -178,13 +185,8 @@ class NativeMapPoiScreen(
 
         val filteredPois = if (isCheapestFilterActive) {
             val fuelIds = effectiveEnergies - "electric"
-            pois.mapNotNull { poi ->
-                val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                    ?.minOfOrNull { it.price }
-                if (minPrice != null) Pair(poi, minPrice) else null
-            }.sortedBy { it.second }
-                .take(5)
-                .map { it.first }
+            val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
+            MapPoiFilter.filterCheapest(pois, fuelIds, isLuxembourg)
         } else {
             pois
         }

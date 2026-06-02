@@ -195,13 +195,8 @@ class CustomMapPoiScreen(
 
         return if (isCheapestFilterActive) {
             val fuelIds = currentSettings.effectiveMapEnergyFilterIds() - "electric"
-            basePois.mapNotNull { poi ->
-                val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                    ?.minOfOrNull { it.price }
-                if (minPrice != null) Pair(poi, minPrice) else null
-            }.sortedBy { it.second }
-                .take(5)
-                .map { it.first }
+            val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
+            MapPoiFilter.filterCheapest(basePois, fuelIds, isLuxembourg)
         } else {
             basePois
         }
@@ -730,6 +725,9 @@ class CustomMapPoiScreen(
                         } else {
                             isCheapestFilterActive = true
                             sortByPrice = true
+                            val filtered = getFilteredPois(currentSettings)
+                            carContext.getCarService(AppManager::class.java)
+                                .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
                         }
                         syncRendererWithMapState()
                         invalidate()

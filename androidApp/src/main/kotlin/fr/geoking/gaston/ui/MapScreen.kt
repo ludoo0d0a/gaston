@@ -9,6 +9,7 @@ import android.graphics.Canvas
 import android.location.LocationManager
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -280,23 +281,31 @@ fun MapScreen(
         }
     }
 
+    val isLuxembourg = remember(cameraPositionState.position.target) {
+        fr.geoking.gaston.countryCodesAtMapPosition(
+            cameraPositionState.position.target.latitude,
+            cameraPositionState.position.target.longitude
+        ).contains("LU")
+    }
+
     /**
      * The list of POIs currently displayed on the map and in the bottom sheet.
      * When [isCheapestFilterActive] is true, we filter this list to only include the top 5 cheapest stations
-     * among those currently in the viewport.
+     * (including ties) among those currently in the viewport.
      */
-    val filteredPois = remember(basePois, isCheapestFilterActive, settings) {
+    val filteredPois = remember(basePois, isCheapestFilterActive, settings, isLuxembourg) {
         if (isCheapestFilterActive) {
             val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
-            basePois.mapNotNull { poi ->
-                val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                    ?.minOfOrNull { it.price }
-                if (minPrice != null) Pair(poi, minPrice) else null
-            }.sortedBy { it.second }
-                .take(5)
-                .map { it.first }
+            MapPoiFilter.filterCheapest(basePois, fuelIds, isLuxembourg)
         } else {
             basePois
+        }
+    }
+
+    LaunchedEffect(isCheapestFilterActive) {
+        if (isCheapestFilterActive) {
+            val count = filteredPois.size
+            Toast.makeText(context, context.getString(R.string.cheapest_stations_toast, count), Toast.LENGTH_SHORT).show()
         }
     }
 

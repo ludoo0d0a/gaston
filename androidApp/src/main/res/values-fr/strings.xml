@@ -39,6 +39,7 @@
     <string name="action_save">Enregistrer</string>
     <string name="action_share">Partager</string>
     <string name="action_show_cheapest">Afficher les moins chers</string>
+    <string name="cheapest_stations_toast">%1$d stations avec les prix les moins chers</string>
     <string name="action_show_cheapest_list">Afficher la liste des moins chers</string>
     <string name="action_disable_swap">Désactiver l\'échange</string>
     <string name="action_show_logs">Afficher les journaux</string>
