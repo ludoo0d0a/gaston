@@ -36,14 +36,12 @@ class OverpassProvider(
         PoiCategory.Radar,
         PoiCategory.Parking,
         PoiCategory.Viewpoint,
-        PoiCategory.Gas,
-        PoiCategory.Irve,
         PoiCategory.BatterySwap
     )
 
     override suspend fun search(request: PoiSearchRequest): List<Poi> {
         val effectiveRadiusKm = request.viewport
-            ?.let { radiusKmFromMapViewport(request.latitude, request.longitude, it.zoom, it.mapWidthPx, it.mapHeightPx).coerceIn(1, 50) }
+            ?.let { radiusKmFromMapViewport(request.latitude, request.longitude, it.zoom, it.mapWidthPx, it.mapHeightPx).coerceIn(1, 30) }
             ?: radiusKm
 
         val cat = request.categories.ifEmpty { supportedCategories() }

@@ -224,6 +224,7 @@
     <string name="filter_capture_network_logs">Capture network logs on map</string>
     <string name="filter_simulate_premium">Simulate premium</string>
     <string name="filter_simulate_premium_subtitle">Unlock favorites, price estimation, and no ads</string>
+    <string name="settings_debug_disable_cache">Disable Cache</string>
     <string name="filter_itinerary">Itinerary</string>
     <string name="filter_search_radius">Search radius: %1$d m</string>
     <string name="filter_only_highway">Only highway stations</string>

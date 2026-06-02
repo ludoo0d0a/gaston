@@ -309,7 +309,8 @@ class SelectorPoiProvider(
             errors.addAll(searchResult.errors)
 
             if (providerType == PoiProviderType.Overpass && PoiCategory.CaravanSite in categories && dataGouvCamping != null) {
-                try {
+                val inFrance = ParkingRegion.containing(request.latitude, request.longitude)?.countryCode == "FR"
+                if (inFrance) try {
                     val extra = dataGouvCamping.search(effectiveRequest)
                     allPois.addAll(extra)
                 } catch (e: Exception) {
@@ -420,14 +421,18 @@ class SelectorPoiProvider(
                 lastKey = lastCacheKey,
                 loadedRegions = loadedRegions,
             )
-            readCoverageAndCache(request, requiredRadiusKm, providers, categoriesToFetch, nowMs)
+            if (settings.disableCache) {
+                PoiCoverageResult(fullyCovered = false, geoCovered = false) to null
+            } else {
+                readCoverageAndCache(request, requiredRadiusKm, providers, categoriesToFetch, nowMs)
+            }
         }
         val coverage = coverageAndCache.first
         var currentAlreadyCoveredResult = coverageAndCache.second
         if (currentAlreadyCoveredResult != null) {
             isFromMemory = true
         }
-        if (currentAlreadyCoveredResult == null) {
+        if (currentAlreadyCoveredResult == null && !settings.disableCache) {
             // Try persistent cache
             val latDelta = requiredRadiusKm / 111.0
             val lonDelta = requiredRadiusKm / (111.0 * cos(request.latitude * PI / 180.0))
@@ -666,7 +671,11 @@ class SelectorPoiProvider(
                 lastKey = lastCacheKey,
                 loadedRegions = loadedRegions,
             )
-            readCoverageAndCache(request, requiredRadiusKm, providers, categoriesToFetch, nowMs)
+            if (settings.disableCache) {
+                PoiCoverageResult(fullyCovered = false, geoCovered = false) to null
+            } else {
+                readCoverageAndCache(request, requiredRadiusKm, providers, categoriesToFetch, nowMs)
+            }
         }
         val coverage = coverageAndCache.first
         coverageAndCache.second?.let {
@@ -680,6 +689,20 @@ class SelectorPoiProvider(
         }
 
         // Try persistent cache
+        if (settings.disableCache) return@run {
+            val providersToFetch = providers
+            val providerCategories = providersToFetch.associateWith { providerType ->
+                categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
+            }.filterValues { it.isNotEmpty() }
+
+            val (rated, errors) = fetchPoisFromProviders(
+                request = request,
+                providerCategories = providerCategories,
+                allProviders = providers,
+            )
+            PoiSearchResult(pois = applyPostFilters(rated, request, providers), errors = errors)
+        }
+
         val latDelta = requiredRadiusKm / 111.0
         val lonDelta = requiredRadiusKm / (111.0 * cos(request.latitude * PI / 180.0))
         val dbPois = try {

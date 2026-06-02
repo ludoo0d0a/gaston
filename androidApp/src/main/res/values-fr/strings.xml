@@ -137,6 +137,7 @@
     <string name="filter_show_traffic">Afficher le trafic</string>
     <string name="filter_simulate_premium">Simuler Premium</string>
     <string name="filter_simulate_premium_subtitle">Débloquer favoris, estimation des prix et sans pub</string>
+    <string name="settings_debug_disable_cache">Désactiver le cache</string>
     <string name="filter_sources_off">%1$d sources inactives — appuyer pour tout activer</string>
     <string name="filter_sources_on">%1$d sources actives — appuyer pour tout désactiver</string>
     <string name="filter_sources_partial">%1$d / %2$d actives — appuyer pour tout activer</string>
