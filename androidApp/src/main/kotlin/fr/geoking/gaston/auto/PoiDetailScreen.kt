@@ -1,6 +1,9 @@
 package fr.geoking.gaston.auto
 
 import android.content.Intent
+import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.effectiveIrvePowerLevels
+import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -23,6 +26,7 @@ import fr.geoking.gaston.ui.BrandHelper
 class PoiDetailScreen(
     carContext: CarContext,
     private val poi: Poi,
+    private val settingsManager: SettingsManager,
     private val availabilitySummary: StationAvailabilitySummary? = null,
     private val effectiveEnergyTypes: Set<String> = emptySet(),
     private val effectivePowerLevels: Set<Int> = emptySet(),
@@ -41,6 +45,10 @@ class PoiDetailScreen(
                 carContext.startCarApp(navigateIntent)
             }
             .build()
+
+        val currentSettings = settingsManager.settings.value
+        val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
+        val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
         val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
             carContext = carContext,

@@ -106,6 +106,7 @@ class AutoPoiSearchScreen(
                         PoiDetailScreen(
                             carContext = carContext,
                             poi = poi,
+                            settingsManager = settingsManager,
                             availabilitySummary = availability,
                             effectiveEnergyTypes = effectiveEnergies,
                             effectivePowerLevels = effectivePowerLevels,

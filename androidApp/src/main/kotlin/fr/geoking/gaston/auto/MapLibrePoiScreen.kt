@@ -139,7 +139,7 @@ class MapLibrePoiScreen(
             }
                 .distinctUntilChanged()
                 .collectLatest {
-                    loadPois()
+                    loadPois(showLoading = pois.isEmpty())
                 }
         }
         lifecycleScope.launch {
@@ -381,10 +381,12 @@ class MapLibrePoiScreen(
         lastAppliedZoom = zoom
     }
 
-    private fun loadPois(preserveZoom: Boolean = false) {
+    private fun loadPois(preserveZoom: Boolean = false, showLoading: Boolean = true) {
         lifecycleScope.launch {
-            isLoading = true
-            invalidate()
+            if (showLoading) {
+                isLoading = true
+                invalidate()
+            }
 
             val location = LocationHelper.getCurrentLocation(carContext)
             val (lat, lon) = if (location != null) {
@@ -582,6 +584,12 @@ class MapLibrePoiScreen(
             val lat = location.latitude
             val lon = location.longitude
             lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+
+            // Recenter map on user location
+            searchLat = lat
+            searchLon = lon
+            searchCenterFlow.value = lat to lon
+            mapRenderer?.updateLocation(lat, lon, zoom)
             mapRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
 
             val last = historyPoints.lastOrNull()
@@ -797,7 +805,17 @@ class MapLibrePoiScreen(
                     .setHeader(
                         Header.Builder()
                             .setTitle(poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" })
-                            .setStartHeaderAction(Action.BACK)
+                            .setStartHeaderAction(Action.APP_ICON)
+                            .addEndHeaderAction(
+                                Action.Builder()
+                                    .setIcon(carContext.carIcon(R.drawable.ic_arrow_back))
+                                    .setOnClickListener {
+                                        selectedPoi = null
+                                        syncRendererWithMapState()
+                                        invalidate()
+                                    }
+                                    .build()
+                            )
                             .addEndHeaderAction(
                                 Action.Builder()
                                     .setTitle(carContext.getString(R.string.screen_navigate_to))

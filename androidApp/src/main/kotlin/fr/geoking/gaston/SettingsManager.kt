@@ -28,11 +28,12 @@ enum class CarMapMode {
 }
 enum class MapEngine { Google, MapLibre }
 enum class ThemeMode { System, Light, Dark }
-enum class MapTheme(val styleUrl: String, val rasterUrl: String) {
-    Dark("https://tiles.openfreemap.org/styles/dark", "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png"),
-    Voyager("https://tiles.openfreemap.org/styles/bright", "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"),
-    Standard("https://tiles.openfreemap.org/styles/liberty", "https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
-    Positron("https://tiles.openfreemap.org/styles/positron", "https://a.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png")
+enum class MapTheme(val styleUrl: String, val rasterUrl: String, val isDark: Boolean) {
+    Dark("https://tiles.openfreemap.org/styles/dark", "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png", true),
+    Voyager("https://tiles.openfreemap.org/styles/bright", "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", false),
+    Standard("https://tiles.openfreemap.org/styles/liberty", "https://tile.openstreetmap.org/{z}/{x}/{y}.png", false),
+    Positron("https://tiles.openfreemap.org/styles/positron", "https://a.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png", false),
+    Fiord("https://tiles.openfreemap.org/styles/fiord", "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png", true)
 }
 
 /** Energy/fuel types for map POI filter (multi-select). */

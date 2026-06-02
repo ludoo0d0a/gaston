@@ -79,6 +79,7 @@ class AutoFuelForecastScreen(
     }
 
     override fun onGetTemplate(): Template {
+        val carContext = carContext
         if (!settingsManager.settings.value.hasPremiumFeatures) {
             return MessageTemplate.Builder(carContext.getString(R.string.premium_required_message))
                 .setHeader(
@@ -115,7 +116,7 @@ class AutoFuelForecastScreen(
                     .build()
             )
         } else {
-            val fuelTitle = fuelTitle(uiState.fuelId)
+            val fuelTitle = fuelTitle(carContext, uiState.fuelId)
             val lastHist = uiState.historyPoints.maxByOrNull { it.day }
             val histLine = if (lastHist != null) {
                 carContext.getString(
