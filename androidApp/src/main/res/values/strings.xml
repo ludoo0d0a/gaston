@@ -410,9 +410,10 @@
     <string name="vehicle_preferred_power_range">Preferred power range</string>
     <string name="map_engine_google">Google</string>
     <string name="map_engine_maplibre">MapLibre</string>
-    <string name="map_theme_voyager">Voyager</string>
-    <string name="map_theme_positron">Positron</string>
-    <string name="map_theme_dark_matter">Dark Matter</string>
+    <string name="map_theme_voyager">Voyager (Light)</string>
+    <string name="map_theme_positron">Positron (Light, clear roads)</string>
+    <string name="map_theme_dark_matter">Dark Matter (Dark)</string>
+    <string name="map_theme_fiord">Fiord (Dark)</string>
     <string name="map_theme_osm">OSM</string>
     <string name="theme_mode_system">System</string>
     <string name="theme_mode_light">Light</string>
