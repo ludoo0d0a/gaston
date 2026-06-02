@@ -61,7 +61,7 @@ class AutoMapTemplateScreen(carContext: CarContext) : Screen(carContext), Surfac
         ).apply {
             updateLocation(lat, lon, zoom)
             updateUserLocation(lat, lon)
-            setTileUrlTemplate(resolveAutoRasterTileUrl())
+            setTileUrlTemplate(resolveAutoRasterTileUrl(settingsManager.settings.value))
             start()
         }
 

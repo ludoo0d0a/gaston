@@ -273,7 +273,7 @@ class CustomMapPoiScreen(
     private fun syncRendererWithMapState() {
         val renderer = surfaceRenderer ?: return
         val settings = settingsManager.settings.value
-        renderer.setTileUrlTemplate(resolveAutoRasterTileUrl())
+        renderer.setTileUrlTemplate(resolveAutoRasterTileUrl(settings))
         val filteredPois = getFilteredPois(settings)
         val poiIds = filteredPois.map { it.id }
 
@@ -623,7 +623,7 @@ class CustomMapPoiScreen(
         lastSyncedPoiIds = emptyList()
         syncRendererWithMapState()
         surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
-        surfaceRenderer?.setTileUrlTemplate(resolveAutoRasterTileUrl())
+        surfaceRenderer?.setTileUrlTemplate(resolveAutoRasterTileUrl(settingsManager.settings.value))
     }
 
     override fun onVisibleAreaChanged(visibleArea: Rect) {

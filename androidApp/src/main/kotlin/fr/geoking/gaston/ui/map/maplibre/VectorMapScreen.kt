@@ -360,7 +360,7 @@ fun VectorMapScreen(
                                 ThemeMode.Light -> false
                                 ThemeMode.System -> isSystemInDarkTheme()
                             }
-                            val theme = if (dark) MapTheme.Dark else MapTheme.Modern
+                            val theme = if (dark) MapTheme.Dark else MapTheme.Voyager
                             theme.styleUrl
                         },
                         initialCameraPosition = LatLng(defaultLat, defaultLng) to defaultZoom,

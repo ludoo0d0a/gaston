@@ -102,7 +102,7 @@ class AutoLibreMapLabScreen(carContext: CarContext) : Screen(carContext), Surfac
             updateLocation(searchLat, searchLon, zoom)
             updateUserLocation(searchLat, searchLon)
             updatePois(emptyList(), emptySet(), emptySet())
-            setTileUrlTemplate(resolveAutoRasterTileUrl(isLab = true))
+            setTileUrlTemplate(resolveAutoRasterTileUrl(settingsManager.settings.value, isLab = true))
             start()
         }
     }

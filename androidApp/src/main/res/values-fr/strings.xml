@@ -409,9 +409,10 @@
     <string name="vehicle_preferred_power_range">Plage de puissance préférée</string>
     <string name="map_engine_google">Google</string>
     <string name="map_engine_maplibre">MapLibre</string>
-    <string name="map_theme_dark">Sombre</string>
-    <string name="map_theme_modern">Moderne</string>
-    <string name="map_theme_standard">Standard</string>
+    <string name="map_theme_voyager">Voyager</string>
+    <string name="map_theme_positron">Positron</string>
+    <string name="map_theme_dark_matter">Dark Matter</string>
+    <string name="map_theme_osm">OSM</string>
     <string name="theme_mode_system">Système</string>
     <string name="theme_mode_light">Clair</string>
     <string name="theme_mode_dark">Sombre</string>
