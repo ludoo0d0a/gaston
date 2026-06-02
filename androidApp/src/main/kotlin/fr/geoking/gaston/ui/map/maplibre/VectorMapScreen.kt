@@ -377,13 +377,19 @@ fun VectorMapScreen(
                     LibreMap(
                         modifier = Modifier.fillMaxSize(),
                         styleUrl = run {
-                            val dark = when (settings.mapThemeMode) {
+                            val isDarkMode = when (settings.mapThemeMode) {
                                 ThemeMode.Dark -> true
                                 ThemeMode.Light -> false
                                 ThemeMode.System -> isSystemInDarkTheme()
                             }
-                            val theme = if (dark) MapTheme.Dark else MapTheme.Voyager
-                            theme.styleUrl
+                            // If user selected theme matches current dark mode, use it.
+                            // If they selected a dark theme but we are in light mode (or vice versa),
+                            // fall back to defaults for that mode.
+                            if (settings.mapTheme.isDark == isDarkMode) {
+                                settings.mapTheme.styleUrl
+                            } else {
+                                if (isDarkMode) MapTheme.Dark.styleUrl else MapTheme.Voyager.styleUrl
+                            }
                         },
                         initialCameraPosition = LatLng(defaultLat, defaultLng) to defaultZoom,
                         contentPaddingBottom = mapPaddingBottom,
