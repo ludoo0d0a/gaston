@@ -46,7 +46,10 @@ fun autoProvidersForCountries(
                 "CH" -> PoiProviderType.SwitzerlandComparis
                 "AU" -> PoiProviderType.AustraliaPetrolSpy
                 "US" -> PoiProviderType.UsaEia
-                "LU" -> PoiProviderType.OpenVanCamp
+                "LU" -> {
+                    resolved.add(PoiProviderType.NetherlandsAnwb)
+                    PoiProviderType.OpenVanCamp
+                }
                 else -> null
             }
         } else null
