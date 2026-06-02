@@ -46,14 +46,9 @@ fun cacheTtlMsForPoi(poi: Poi): Long = cacheTtlMsForCategory(poiPrimaryCategory(
 
 fun isPoiCacheEntryExpired(poi: Poi, seenAtMs: Long, nowMs: Long): Boolean {
     // Static data should be cached for 7 days.
-    if (nowMs - seenAtMs > cacheTtlMsForPoi(poi)) return true
-
-    // Prices should be cached for the current day.
-    if (!poi.fuelPrices.isNullOrEmpty() || poi.isElectric) {
-        if (!isSameDay(seenAtMs, nowMs)) return true
-    }
-
-    return false
+    // We allow price data to be stale (e.g. from previous days) for immediate display.
+    // Background refresh via categoryCacheStillFresh still triggers a new fetch daily.
+    return nowMs - seenAtMs > cacheTtlMsForPoi(poi)
 }
 
 fun categoryCacheStillFresh(

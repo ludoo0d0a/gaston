@@ -189,7 +189,7 @@ fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Se
 
 /** ISO country codes for [latitude]/[longitude] when it falls in known [ParkingRegion]s. */
 fun countryCodesAtMapPosition(latitude: Double, longitude: Double): List<String> =
-    ParkingRegion.allContaining(latitude, longitude).map { it.countryCode }
+    listOfNotNull(ParkingRegion.containing(latitude, longitude)?.countryCode)
 
 /** Human-readable countries for the map position (same regions as auto provider selection). */
 fun countryDisplayLabelAtMapPosition(
