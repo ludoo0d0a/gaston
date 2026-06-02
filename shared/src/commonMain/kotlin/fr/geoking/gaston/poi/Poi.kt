@@ -416,6 +416,35 @@ object MapPoiFilter {
                 else -> powerKw >= level
             }
         }
+
+    /**
+     * Filters [pois] to only include the cheapest stations based on [selectedFuelIds].
+     * Includes ties (e.g. if the 5th and 6th cheapest have the same price, both are included).
+     * In Luxembourg, all stations with prices are returned if [isLuxembourg] is true.
+     */
+    fun filterCheapest(
+        pois: List<Poi>,
+        selectedFuelIds: Set<String>,
+        isLuxembourg: Boolean
+    ): List<Poi> {
+        val pricedPois = pois.mapNotNull { poi ->
+            val minPrice = poi.fuelPrices?.filter { !it.outOfStock && fuelNameToId(it.fuelName) in selectedFuelIds }
+                ?.minOfOrNull { it.price }
+            if (minPrice != null) Pair(poi, minPrice) else null
+        }.sortedBy { it.second }
+
+        if (pricedPois.isEmpty()) return emptyList()
+
+        if (isLuxembourg) {
+            return pricedPois.map { it.first }
+        }
+
+        // We want at least top 5 stations, but including all ties for the 5th price.
+        if (pricedPois.size <= 5) return pricedPois.map { it.first }
+
+        val maxPrice = pricedPois[4].second
+        return pricedPois.filter { it.second <= maxPrice }.map { it.first }
+    }
 }
 
 /**
