@@ -8,14 +8,10 @@ import fr.geoking.gaston.auto.isDarkMode
 
 /** OpenFreeMap style URL aligned with phone [fr.geoking.gaston.ui.map.maplibre.VectorMapScreen]. */
 fun resolveAutoMapStyleUrl(settings: AppSettings, carContext: CarContext): String {
-    return MapTheme.Modern.styleUrl
+    return settings.mapTheme.styleUrl
 }
 
-/** Standard raster tile URLs for Android Auto. Always light theme. */
-fun resolveAutoRasterTileUrl(isLab: Boolean = false): String {
-    return if (isLab) {
-        "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
-    } else {
-        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-    }
+/** Standard raster tile URLs for Android Auto. Uses the user-selected theme. */
+fun resolveAutoRasterTileUrl(settings: AppSettings, isLab: Boolean = false): String {
+    return settings.mapTheme.rasterUrl
 }

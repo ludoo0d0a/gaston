@@ -112,14 +112,23 @@ class SelectorPoiProvider(
         return if (hasViewport) {
             val latDelta = radiusKm / 111.0
             val lonDelta = radiusKm / (111.0 * cos(latitude * PI / 180.0))
-            ParkingRegion.allInViewport(
-                latMin = latitude - latDelta,
-                latMax = latitude + latDelta,
-                lonMin = longitude - lonDelta,
-                lonMax = longitude + lonDelta
-            ).map { it.countryCode }
+            val latMin = latitude - latDelta
+            val latMax = latitude + latDelta
+            val lonMin = longitude - lonDelta
+            val lonMax = longitude + lonDelta
+
+            val allIn = ParkingRegion.allInViewport(latMin, latMax, lonMin, lonMax)
+
+            // If any region fully contains this viewport, pick the most specific one.
+            val containing = allIn.firstOrNull { r ->
+                latMin >= r.latMin && latMax <= r.latMax &&
+                        lonMin >= r.lonMin && lonMax <= r.lonMax
+            }
+            if (containing != null) return listOf(containing.countryCode)
+
+            allIn.map { it.countryCode }
         } else {
-            ParkingRegion.allContaining(latitude, longitude).map { it.countryCode }
+            listOfNotNull(ParkingRegion.containing(latitude, longitude)?.countryCode)
         }
     }
 

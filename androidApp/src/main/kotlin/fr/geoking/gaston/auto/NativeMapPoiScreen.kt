@@ -63,6 +63,7 @@ class NativeMapPoiScreen(
     private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
     private var sortByPrice: Boolean = false
     private var refreshJob: Job? = null
+    private var isCheapestFilterActive: Boolean = false
 
     init {
         lifecycle.addObserver(this)
@@ -144,7 +145,11 @@ class NativeMapPoiScreen(
     }
 
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "NativeMapPoiScreen", "PlaceListMapTemplate") {
-        val actionStrip = ActionStrip.Builder()
+        val currentSettings = settingsManager.settings.value
+        val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
+        val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
+
+        val actionStripBuilder = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
                     .setIcon(carContext.actionSettingsIcon())
@@ -161,7 +166,25 @@ class NativeMapPoiScreen(
                     }
                     .build()
             )
-            .build()
+
+        if (hasFuelFilter && (isCheapestFilterActive || pois.any { !it.fuelPrices.isNullOrEmpty() })) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionCheapestIcon(isCheapestFilterActive))
+                    .setOnClickListener {
+                        if (isCheapestFilterActive) {
+                            isCheapestFilterActive = false
+                            sortByPrice = false
+                        } else {
+                            isCheapestFilterActive = true
+                            sortByPrice = true
+                        }
+                        invalidate()
+                    }
+                    .build()
+            )
+        }
+        val actionStrip = actionStripBuilder.build()
 
         val anchorPlace = Place.Builder(CarLocation.create(searchLat, searchLon))
             .setMarker(PlaceMarker.Builder().setColor(CarColor.RED).build())
@@ -178,8 +201,6 @@ class NativeMapPoiScreen(
                 .build()
         }
 
-        val currentSettings = settingsManager.settings.value
-
         val listLimit = try {
             carContext.getCarService(ConstraintManager::class.java)
                 .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
@@ -190,15 +211,27 @@ class NativeMapPoiScreen(
         val itemListBuilder = ItemList.Builder()
             .setNoItemsMessage("No POIs found")
 
-        val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
+
+        val filteredPois = if (isCheapestFilterActive) {
+            val fuelIds = effectiveEnergies - "electric"
+            pois.mapNotNull { poi ->
+                val minPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                    ?.minOfOrNull { it.price }
+                if (minPrice != null) Pair(poi, minPrice) else null
+            }.sortedBy { it.second }
+                .take(5)
+                .map { it.first }
+        } else {
+            pois
+        }
 
         val sortedPois = if (sortByPrice) {
             val fuelIds = effectiveEnergies - "electric"
             if (fuelIds.isEmpty()) {
-                pois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
+                filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
             } else {
-                pois.sortedWith { a, b ->
+                filteredPois.sortedWith { a, b ->
                     val pricesA = a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
                     val pricesB = b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
 
@@ -215,7 +248,7 @@ class NativeMapPoiScreen(
                 }
             }
         } else {
-            pois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
+            filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
         }
 
         sortedPois.take(listLimit).forEach { poi ->

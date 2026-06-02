@@ -63,17 +63,12 @@ class AutoDashboardScreen(
         )
 
         // 4. Other
-        val otherTitle = carContext.getString(R.string.search_mode_other)
         gridBuilder.addItem(
             GridItem.Builder()
-                .setTitle(otherTitle)
+                .setTitle(carContext.getString(R.string.search_mode_other))
                 .setImage(carContext.dashboardOtherIcon())
                 .setOnClickListener {
-                    settingsManager.setOtherMode()
-                    val mapDeps = getMapDeps()
-                    if (mapDeps != null) {
-                        pushMapScreen(settingsManager, mapDeps, otherTitle)
-                    }
+                    screenManager.push(AutoOtherDashboardScreen(carContext, settingsManager, getMapDeps))
                 }
                 .build()
         )

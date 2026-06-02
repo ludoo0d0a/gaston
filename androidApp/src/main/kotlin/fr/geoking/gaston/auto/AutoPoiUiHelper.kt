@@ -7,6 +7,7 @@ import androidx.car.app.model.CarIcon
 import androidx.car.app.model.CarLocation
 import androidx.car.app.model.Distance
 import androidx.car.app.model.DistanceSpan
+import androidx.car.app.model.ForegroundCarColorSpan
 import androidx.car.app.model.Metadata
 import androidx.car.app.model.Place
 import androidx.car.app.model.PlaceMarker
@@ -164,11 +165,6 @@ object AutoPoiUiHelper {
             }
         }
 
-        val addressLocal = poi.addressLocal
-        if (secondaryDetails.isEmpty() && !addressLocal.isNullOrBlank()) {
-            secondaryDetails.add(addressLocal)
-        }
-
         val secondaryText = secondaryDetails.joinToString(" $interpunct ")
         if (secondaryText.isNotBlank()) {
             rowBuilder.addText(secondaryText)
@@ -202,39 +198,26 @@ object AutoPoiUiHelper {
         }
         rows.add(headerRow.build())
 
-        // 2. Address Row
-        val addressSummary = mutableListOf<String>()
-        poi.addressLocal?.takeIf { it.isNotBlank() }?.let { addressSummary.add(it) }
-        listOf(poi.townLocal, poi.postcode).filter { !it.isNullOrBlank() }.joinToString(", ").takeIf { it.isNotBlank() }?.let { addressSummary.add(it) }
-        if (addressSummary.isEmpty() && poi.address.isNotBlank()) addressSummary.add(poi.address)
-
-        if (addressSummary.isNotEmpty()) {
-            rows.add(
-                Row.Builder()
-                    .setTitle(addressSummary.first())
-                    .apply {
-                        if (addressSummary.size > 1) {
-                            addText(addressSummary.drop(1).joinToString(", "))
-                        }
-                    }
-                    .setImage(
-                        CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.ic_map)).build(),
-                        Row.IMAGE_TYPE_SMALL
-                    )
-                    .build()
-            )
-        }
-
         // 3. Prices
         poi.fuelPrices?.forEach { fp ->
+            val fuelId = MapPoiFilter.fuelNameToId(fp.fuelName)
+            val fuelColor = AutoCarIcons.fuelCarColor(fuelId)
+
             val priceStr = if (fp.outOfStock) "—" else "€%.3f".format(fp.price)
             val updated = fp.updatedAt?.let {
                 " (${DateTimeUtils.formatRelativeTime(it)})"
             } ?: ""
+
+            val titleSpannable = SpannableString(fp.fuelName)
+            titleSpannable.setSpan(ForegroundCarColorSpan.create(fuelColor), 0, titleSpannable.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
+
+            val textSpannable = SpannableString("$priceStr$updated")
+            textSpannable.setSpan(ForegroundCarColorSpan.create(fuelColor), 0, textSpannable.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
+
             rows.add(
                 Row.Builder()
-                    .setTitle(fp.fuelName)
-                    .addText("$priceStr$updated")
+                    .setTitle(titleSpannable)
+                    .addText(textSpannable)
                     .build()
             )
         }

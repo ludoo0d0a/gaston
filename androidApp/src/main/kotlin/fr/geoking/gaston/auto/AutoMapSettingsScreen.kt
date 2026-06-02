@@ -5,6 +5,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
 import fr.geoking.gaston.CarMapMode
+import fr.geoking.gaston.MapTheme
 import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.shared.network.NetworkService
@@ -49,6 +50,25 @@ class AutoMapSettingsScreen(
                         PoiProviderSelectionMode.Manual
                     }
                     settingsManager.setPoiProviderSelectionMode(next)
+                    invalidate()
+                }
+                .build()
+        )
+
+        val themeLabel = when (settings.mapTheme) {
+            MapTheme.Dark -> carContext.getString(R.string.map_theme_dark_matter)
+            MapTheme.Voyager -> carContext.getString(R.string.map_theme_voyager)
+            MapTheme.Standard -> carContext.getString(R.string.map_theme_osm)
+            MapTheme.Positron -> carContext.getString(R.string.map_theme_positron)
+        }
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.settings_map_theme))
+                .addText(themeLabel)
+                .setOnClickListener {
+                    val entries = MapTheme.entries
+                    val nextTheme = entries[(settings.mapTheme.ordinal + 1) % entries.size]
+                    settingsManager.setMapTheme(nextTheme)
                     invalidate()
                 }
                 .build()

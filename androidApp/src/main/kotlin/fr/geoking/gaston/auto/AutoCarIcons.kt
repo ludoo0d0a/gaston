@@ -35,6 +35,12 @@ object AutoCarIcons {
     private const val OTHER_LIGHT = 0xFF6A1B9A.toInt()
     private const val OTHER_DARK = 0xFFBA68C8.toInt()
 
+    private const val GAZOLE_COLOR = 0xFFEAB308.toInt()
+    private const val SP95_COLOR = 0xFF22C55E.toInt()
+    private const val SP98_COLOR = 0xFF15803D.toInt()
+    private const val E85_COLOR = 0xFFA855F7.toInt()
+    private const val GPL_COLOR = 0xFFF97316.toInt()
+
     val primary: CarColor = CarColor.createCustom(PRIMARY_LIGHT, PRIMARY_DARK)
     val fuel: CarColor = CarColor.createCustom(FUEL_LIGHT, FUEL_DARK)
     val ev: CarColor = CarColor.createCustom(EV_LIGHT, EV_DARK)
@@ -46,6 +52,21 @@ object AutoCarIcons {
     val fire: CarColor = CarColor.createCustom(FIRE_LIGHT, FIRE_DARK)
     val roadside: CarColor = CarColor.createCustom(ROADSIDE_LIGHT, ROADSIDE_DARK)
     val other: CarColor = CarColor.createCustom(OTHER_LIGHT, OTHER_DARK)
+
+    val gazole: CarColor = CarColor.createCustom(GAZOLE_COLOR, GAZOLE_COLOR)
+    val sp95: CarColor = CarColor.createCustom(SP95_COLOR, SP95_COLOR)
+    val sp98: CarColor = CarColor.createCustom(SP98_COLOR, SP98_COLOR)
+    val e85: CarColor = CarColor.createCustom(E85_COLOR, E85_COLOR)
+    val gpl: CarColor = CarColor.createCustom(GPL_COLOR, GPL_COLOR)
+
+    fun fuelCarColor(fuelId: String?): CarColor = when (fuelId) {
+        "gazole" -> gazole
+        "sp95" -> sp95
+        "sp98" -> sp98
+        "e85" -> e85
+        "gplc" -> gpl
+        else -> primary
+    }
 }
 
 fun CarContext.carIcon(
@@ -87,11 +108,16 @@ fun CarContext.actionZoomOutIcon(): CarIcon = carIcon(R.drawable.ic_remove, Auto
 
 fun CarContext.actionCompassIcon(): CarIcon = carIconUntinted(R.drawable.ic_compass)
 
+fun CarContext.actionNavigateToIcon(): CarIcon = carIcon(R.drawable.ic_navigate_to, AutoCarIcons.primary)
+
 fun CarContext.actionRecenterIcon(): CarIcon = carIcon(R.drawable.ic_gps_fixed, AutoCarIcons.primary)
 
 fun CarContext.actionHistoryIcon(): CarIcon = carIcon(R.drawable.ic_history, AutoCarIcons.muted)
 
 fun CarContext.actionRefreshIcon(): CarIcon = carIcon(R.drawable.ic_refresh, AutoCarIcons.primary)
+
+fun CarContext.actionCheapestIcon(active: Boolean): CarIcon =
+    carIcon(R.drawable.ic_poi_gas, if (active) AutoCarIcons.fuel else AutoCarIcons.primary)
 
 fun CarContext.emergencyCategoryIcon(category: EmergencyCategory): CarIcon = when (category) {
     EmergencyCategory.GENERAL -> carIcon(R.drawable.ic_sos, AutoCarIcons.emergency)
