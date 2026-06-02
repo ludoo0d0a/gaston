@@ -113,6 +113,7 @@ data class AppSettings(
     val selectedMapConnectorTypes: Set<String> = emptySet(),
     val mapTrafficEnabled: Boolean = false,
     val debugLoggingEnabled: Boolean = false,
+    val disableCache: Boolean = false,
     val evRangeKm: Int = DEFAULT_EV_RANGE_KM,
     val evConsumptionKwhPer100km: Float? = null,
     val batteryCapacityKwh: Float? = null,
@@ -293,6 +294,7 @@ open class SettingsManager(
             selectedMapConnectorTypes = prefs.getStringSet("map_connector_types", null)?.toSet() ?: emptySet(),
             mapTrafficEnabled = prefs.getBoolean("map_traffic_enabled", false),
             debugLoggingEnabled = prefs.getBoolean("debug_logging_enabled", false),
+            disableCache = prefs.getBoolean("disable_cache", false),
             evRangeKm = prefs.getInt("ev_range_km", DEFAULT_EV_RANGE_KM),
             evConsumptionKwhPer100km = sanitizeConsumption(prefs.getString("ev_consumption_kwh_per_100km", null)?.toFloatOrNull()),
             batteryCapacityKwh = prefs.getString("battery_capacity_kwh", null)?.toFloatOrNull(),
@@ -364,6 +366,7 @@ open class SettingsManager(
             .putStringSet("map_connector_types", settings.selectedMapConnectorTypes)
             .putBoolean("map_traffic_enabled", settings.mapTrafficEnabled)
             .putBoolean("debug_logging_enabled", settings.debugLoggingEnabled)
+            .putBoolean("disable_cache", settings.disableCache)
             .putInt("ev_range_km", sanitized.evRangeKm)
             .putString("ev_consumption_kwh_per_100km", sanitized.evConsumptionKwhPer100km?.toString())
             .putString("battery_capacity_kwh", sanitized.batteryCapacityKwh?.toString())
@@ -426,6 +429,10 @@ open class SettingsManager(
 
     open fun setMapTrafficEnabled(enabled: Boolean) {
         saveSettings(_settings.value.copy(mapTrafficEnabled = enabled))
+    }
+
+    open fun setDisableCache(disabled: Boolean) {
+        saveSettings(_settings.value.copy(disableCache = disabled))
     }
 
     open fun setSelectedMapEnergyTypes(types: Set<String>) {

@@ -57,6 +57,8 @@ private enum class DebugOverlayTab {
 private fun DebugLogOverlayContent(detectedCountries: String?) {
     var isExpanded by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(DebugOverlayTab.Network) }
+    val settingsManager = org.koin.compose.koinInject<fr.geoking.gaston.SettingsManager>()
+    val settings by settingsManager.settings.collectAsState()
     val logs by DebugLogStore.logs.collectAsState()
     val providerTraces by ProviderTraceStore.entries.collectAsState()
     var selectedLog by remember { mutableStateOf<NetworkLog?>(null) }
@@ -82,7 +84,7 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.6f),
+                    .fillMaxHeight(0.9f),
                 color = Color(0xFF0F172A).copy(alpha = 0.95f),
                 shape = RoundedCornerShape(16.dp),
                 border = BoxShadow(Color.White.copy(alpha = 0.2f))
@@ -104,7 +106,18 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                         )
-                        Row {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                stringResource(R.string.settings_debug_disable_cache),
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                            Switch(
+                                checked = settings.disableCache,
+                                onCheckedChange = { settingsManager.setDisableCache(it) },
+                                modifier = Modifier.scale(0.6f)
+                            )
                             IconButton(onClick = {
                                 scope.launch {
                                     CacheManager.clearAllCaches(context)

@@ -8,6 +8,8 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.Parameters
 import io.ktor.http.contentType
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -28,6 +30,7 @@ open class OverpassClient(
     private val baseUrl: String = "https://overpass-api.de/api/interpreter"
 ) {
     private val json = Json { ignoreUnknownKeys = true }
+    private val mutex = Mutex()
 
     /**
      * Fetch POI nodes matching the given OSM amenity tag values in the bounding box.
@@ -80,12 +83,14 @@ open class OverpassClient(
             out body qt ${limit.coerceIn(1, 500)};
         """.trimIndent()
 
-        val response = client.submitForm(
-            url = baseUrl,
-            formParameters = Parameters.build {
-                append("data", query)
-            }
-        )
+        val response = mutex.withLock {
+            client.submitForm(
+                url = baseUrl,
+                formParameters = Parameters.build {
+                    append("data", query)
+                }
+            )
+        }
         val body = response.bodyAsText()
         if (response.status.value != 200) {
             throw NetworkException(response.status.value, "Overpass API error: ${body.take(500)}")
@@ -124,12 +129,14 @@ open class OverpassClient(
             out center qt ${limit.coerceIn(1, 500)};
         """.trimIndent()
 
-        val response = client.submitForm(
-            url = baseUrl,
-            formParameters = Parameters.build {
-                append("data", query)
-            }
-        )
+        val response = mutex.withLock {
+            client.submitForm(
+                url = baseUrl,
+                formParameters = Parameters.build {
+                    append("data", query)
+                }
+            )
+        }
         val body = response.bodyAsText()
         if (response.status.value != 200) {
             throw NetworkException(response.status.value, "Overpass API error: ${body.take(500)}")
