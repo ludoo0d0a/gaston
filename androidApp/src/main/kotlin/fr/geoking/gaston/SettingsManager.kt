@@ -28,10 +28,11 @@ enum class CarMapMode {
 }
 enum class MapEngine { Google, MapLibre }
 enum class ThemeMode { System, Light, Dark }
-enum class MapTheme(val styleUrl: String) {
-    Dark("https://tiles.openfreemap.org/styles/dark"),
-    Modern("https://tiles.openfreemap.org/styles/bright"),
-    Standard("https://tiles.openfreemap.org/styles/liberty")
+enum class MapTheme(val styleUrl: String, val rasterUrl: String) {
+    Dark("https://tiles.openfreemap.org/styles/dark", "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png"),
+    Voyager("https://tiles.openfreemap.org/styles/bright", "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"),
+    Standard("https://tiles.openfreemap.org/styles/liberty", "https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
+    Positron("https://tiles.openfreemap.org/styles/positron", "https://a.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png")
 }
 
 /** Energy/fuel types for map POI filter (multi-select). */
@@ -121,7 +122,7 @@ data class AppSettings(
     /** Amenities to keep fetching in the background after the user leaves Other mode (cache warming). */
     val cacheWarmAmenityTypes: Set<String> = emptySet(),
     val phoneMapEngine: MapEngine = MapEngine.Google,
-    val mapTheme: MapTheme = MapTheme.Dark,
+    val mapTheme: MapTheme = MapTheme.Voyager,
     val mapThemeMode: ThemeMode = ThemeMode.System,
     val vehicleType: VehicleType = VehicleType.Car,
     val carMapMode: CarMapMode = CarMapMode.Native,
@@ -223,8 +224,8 @@ open class SettingsManager(
         } catch (_: Exception) { MapEngine.Google }
 
         val mapTheme = try {
-            MapTheme.valueOf(prefs.getString("map_theme", MapTheme.Dark.name) ?: MapTheme.Dark.name)
-        } catch (_: Exception) { MapTheme.Dark }
+            MapTheme.valueOf(prefs.getString("map_theme", MapTheme.Voyager.name) ?: MapTheme.Voyager.name)
+        } catch (_: Exception) { MapTheme.Voyager }
 
         val carMapMode = try {
             CarMapMode.valueOf(prefs.getString("car_map_mode", CarMapMode.Native.name) ?: CarMapMode.Native.name)

@@ -55,28 +55,24 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
-        if (settings.carMapMode == CarMapMode.MapLibre) {
-            val themeLabel = when (settings.mapTheme) {
-                MapTheme.Dark -> carContext.getString(R.string.map_theme_dark)
-                MapTheme.Modern -> carContext.getString(R.string.map_theme_modern)
-                MapTheme.Standard -> carContext.getString(R.string.map_theme_standard)
-            }
-            listBuilder.addItem(
-                Row.Builder()
-                    .setTitle(carContext.getString(R.string.settings_map_theme))
-                    .addText(themeLabel)
-                    .setOnClickListener {
-                        val nextTheme = when (settings.mapTheme) {
-                            MapTheme.Modern -> MapTheme.Standard
-                            MapTheme.Standard -> MapTheme.Dark
-                            MapTheme.Dark -> MapTheme.Modern
-                        }
-                        settingsManager.setMapTheme(nextTheme)
-                        invalidate()
-                    }
-                    .build()
-            )
+        val themeLabel = when (settings.mapTheme) {
+            MapTheme.Dark -> carContext.getString(R.string.map_theme_dark_matter)
+            MapTheme.Voyager -> carContext.getString(R.string.map_theme_voyager)
+            MapTheme.Standard -> carContext.getString(R.string.map_theme_osm)
+            MapTheme.Positron -> carContext.getString(R.string.map_theme_positron)
         }
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.settings_map_theme))
+                .addText(themeLabel)
+                .setOnClickListener {
+                    val entries = MapTheme.entries
+                    val nextTheme = entries[(settings.mapTheme.ordinal + 1) % entries.size]
+                    settingsManager.setMapTheme(nextTheme)
+                    invalidate()
+                }
+                .build()
+        )
 
         listBuilder.addItem(
             Row.Builder()

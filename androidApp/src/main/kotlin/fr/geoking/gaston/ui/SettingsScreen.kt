@@ -85,9 +85,10 @@ private fun MapEngine.displayLabel(): String = when (this) {
 
 @Composable
 private fun MapTheme.displayLabel(): String = when (this) {
-    MapTheme.Dark -> stringResource(R.string.map_theme_dark)
-    MapTheme.Modern -> stringResource(R.string.map_theme_modern)
-    MapTheme.Standard -> stringResource(R.string.map_theme_standard)
+    MapTheme.Dark -> stringResource(R.string.map_theme_dark_matter)
+    MapTheme.Voyager -> stringResource(R.string.map_theme_voyager)
+    MapTheme.Standard -> stringResource(R.string.map_theme_osm)
+    MapTheme.Positron -> stringResource(R.string.map_theme_positron)
 }
 
 @Composable
