@@ -20,19 +20,21 @@ class PoiFetchCacheTest {
     }
 
     @Test
-    fun resolveCategoriesToFetch_fuelModeOnlyGas() {
+    fun resolveCategoriesToFetch_fuelModeIncludesElectricForCaching() {
         val settings = AppSettings(mapEnergyMode = EnergyFilterMode.Fuel)
         val categories = resolveCategoriesToFetch(settings)
         assertTrue(PoiCategory.Gas in categories)
-        assertFalse(PoiCategory.Irve in categories)
+        // Now we always fetch both to keep cache ready
+        assertTrue(PoiCategory.Irve in categories)
     }
 
     @Test
-    fun resolveCategoriesToFetch_electricModeOnlyIrve() {
+    fun resolveCategoriesToFetch_electricModeIncludesFuelForCaching() {
         val settings = AppSettings(mapEnergyMode = EnergyFilterMode.Electric)
         val categories = resolveCategoriesToFetch(settings)
         assertTrue(PoiCategory.Irve in categories)
-        assertFalse(PoiCategory.Gas in categories)
+        // Now we always fetch both to keep cache ready
+        assertTrue(PoiCategory.Gas in categories)
     }
 
     @Test

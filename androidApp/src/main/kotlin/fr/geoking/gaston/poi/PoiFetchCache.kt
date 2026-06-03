@@ -106,12 +106,21 @@ fun invalidateRegionCoverageOnProviderSetChange(
     return key
 }
 
-fun resolveCategoriesToFetch(settings: AppSettings): Set<PoiCategory> {
+fun resolveCategoriesToFetch(settings: AppSettings, extraCategories: Set<PoiCategory> = emptySet()): Set<PoiCategory> {
     val categories = settings.cacheWarmAmenityTypes
         .mapNotNull { categoryFromAmenityId(it) }
         .toMutableSet()
-    // Energy (Gas / Irve / …) follows the active filter mode; amenities follow selection + vehicle.
+
+    // Always fetch both energy types for caching purposes if not in Other mode
+    if (!settings.isOtherModeActive()) {
+        categories.add(PoiCategory.Gas)
+        categories.add(PoiCategory.Irve)
+        categories.add(PoiCategory.BatterySwap)
+    }
+
+    // amenities follow selection + vehicle.
     categories += settings.effectiveAllowedCategories()
+    categories += extraCategories
     return categories
 }
 
