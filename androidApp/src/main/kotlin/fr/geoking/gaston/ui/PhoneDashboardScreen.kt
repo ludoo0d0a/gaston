@@ -113,8 +113,8 @@ fun PhoneDashboardScreen(
     var rawNearbyPois by remember { mutableStateOf<List<Poi>>(emptyList()) }
     var isLoadingPois by remember { mutableStateOf(false) }
     var searchError by remember { mutableStateOf<String?>(null) }
-    var userLat by remember { mutableStateOf<Double?>(null) }
-    var userLon by remember { mutableStateOf<Double?>(null) }
+    var userLat by remember { mutableStateOf<Double?>(settings.lastKnownLat) }
+    var userLon by remember { mutableStateOf<Double?>(settings.lastKnownLon) }
     var poiForDetails by remember { mutableStateOf<Poi?>(null) }
     var fuelForecastState by remember {
         mutableStateOf(
@@ -185,10 +185,21 @@ fun PhoneDashboardScreen(
                 if (selectedLoc != null) {
                     baseLat = selectedLoc.latitude
                     baseLon = selectedLoc.longitude
-                } else if (hasLocationPermission) {
-                    val loc = LocationHelper.getCurrentLocation(context)
-                    baseLat = loc?.latitude
-                    baseLon = loc?.longitude
+                } else if (hasLocationPermission || (userLat != null && userLon != null)) {
+                    // If we have a cached location, we use it immediately.
+                    // If we have permission, we also trigger a fresh location update in the background.
+                    if (hasLocationPermission) {
+                        scope.launch {
+                            val freshLoc = LocationHelper.getCurrentLocation(context)
+                            if (freshLoc != null && (freshLoc.latitude != userLat || freshLoc.longitude != userLon)) {
+                                userLat = freshLoc.latitude
+                                userLon = freshLoc.longitude
+                                settingsManager.saveLastKnownLocation(freshLoc.latitude, freshLoc.longitude)
+                            }
+                        }
+                    }
+                    baseLat = selectedLoc?.latitude ?: userLat
+                    baseLon = selectedLoc?.longitude ?: userLon
                 } else {
                     rawNearbyPois = emptyList()
                     searchError = "Location permission is required to find nearby stations."
@@ -201,26 +212,32 @@ fun PhoneDashboardScreen(
                     userLon = baseLon
 
                     try {
-                        rawNearbyPois = poiProvider.search(
+                        poiProvider.searchFlow(
                             PoiSearchRequest(
                                 latitude = baseLat,
                                 longitude = baseLon,
-                                categories = emptySet(),
+                                categories = setOf(fr.geoking.gaston.poi.PoiCategory.Gas, fr.geoking.gaston.poi.PoiCategory.Irve),
                                 skipFilters = true
                             )
-                        )
+                        ).collect { result ->
+                            rawNearbyPois = if (rawNearbyPois.isEmpty()) {
+                                result.pois
+                            } else {
+                                fr.geoking.gaston.poi.PoiMerger.mergeInto(rawNearbyPois, result.pois)
+                            }
+                            isLoadingPois = false
+                        }
                     } catch (e: Exception) {
                         android.util.Log.e("PhoneDashboardScreen", "Failed to fetch nearby POIs", e)
-                        searchError = "Unable to fetch nearby stations. Please check your connection."
-                        rawNearbyPois = emptyList()
+                        if (rawNearbyPois.isEmpty()) {
+                            searchError = "Unable to fetch nearby stations. Please check your connection."
+                        }
                     }
                 } else {
                     searchError = "Unable to determine your location."
                     rawNearbyPois = emptyList()
                 }
-                if (showLoadingIndicator) {
-                    isLoadingPois = false
-                }
+                isLoadingPois = false
             }
     }
 

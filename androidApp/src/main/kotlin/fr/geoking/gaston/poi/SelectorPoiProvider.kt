@@ -399,7 +399,7 @@ class SelectorPoiProvider(
             return@channelFlow
         }
 
-        val categoriesToFetch = resolveCategoriesToFetch(settings)
+        val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
         traceProviderResolved(
             source = "searchFlow",
             providers = providers,
@@ -650,7 +650,7 @@ class SelectorPoiProvider(
             return PoiSearchResult()
         }
 
-        val categoriesToFetch = resolveCategoriesToFetch(settings)
+        val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
         traceProviderResolved(
             source = "searchResult",
             providers = providers,
