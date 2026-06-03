@@ -179,7 +179,8 @@ object AutoPoiUiHelper {
         availability: StationAvailabilitySummary?,
         effectiveEnergyTypes: Set<String> = emptySet(),
         effectivePowerLevels: Set<Int> = emptySet(),
-        onHeaderClick: (() -> Unit)? = null
+        onHeaderClick: (() -> Unit)? = null,
+        maxRows: Int = 6
     ): List<Row> {
         val rows = mutableListOf<Row>()
 
@@ -205,8 +206,61 @@ object AutoPoiUiHelper {
 
         rows.add(headerRow.build())
 
-        // 3. Prices
-        poi.fuelPrices?.forEach { fp ->
+        // 2. Prepare non-fuel sections to know how much space is left for fuel
+        val irveRows = mutableListOf<Row>()
+        if (poi.isElectric) {
+            val electricInfo = mutableListOf<String>()
+            poi.operator?.takeIf { it.isNotBlank() }?.let { electricInfo.add(it) }
+            poi.powerKw?.let { electricInfo.add(carContext.getString(R.string.power_kw_format, it.toInt())) }
+
+            if (electricInfo.isNotEmpty()) {
+                irveRows.add(Row.Builder().setTitle(electricInfo.joinToString(" • ")).build())
+            }
+
+            val connectorInfo = mutableListOf<String>()
+            poi.irveDetails?.let { d ->
+                if (d.connectorTypes.isNotEmpty()) {
+                    connectorInfo.add(d.connectorTypes.sorted().joinToString(", ") { BrandHelper.connectorTypeLabel(it) })
+                }
+            }
+            availability?.let { s ->
+                connectorInfo.add(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
+            }
+
+            if (connectorInfo.isNotEmpty()) {
+                irveRows.add(Row.Builder().setTitle(connectorInfo.joinToString(" • ")).build())
+            }
+        }
+
+        val amenityRows = mutableListOf<Row>()
+        poi.amenities?.let { a ->
+            val ams = mutableListOf<String>()
+            if (a.open24h == true) ams.add(carContext.getString(R.string.amenity_24h))
+            if (a.shop == true) ams.add(carContext.getString(R.string.amenity_shop))
+            if (a.restaurant == true) ams.add(carContext.getString(R.string.amenity_restaurant))
+            if (a.toilets == true) ams.add(carContext.getString(R.string.amenity_toilets))
+            if (a.carWash == true) ams.add(carContext.getString(R.string.amenity_car_wash))
+
+            if (ams.isNotEmpty()) {
+                amenityRows.add(
+                    Row.Builder()
+                        .setTitle(carContext.getString(R.string.poi_section_services))
+                        .addText(ams.joinToString(" • "))
+                        .build()
+                )
+            }
+        }
+
+        // 3. Fuels (limited by remaining space)
+        val fuelIdsFilter = effectiveEnergyTypes - "electric"
+        val fuelPrices = (poi.fuelPrices ?: emptyList())
+            .sortedWith(compareByDescending<fr.geoking.gaston.poi.FuelPrice> { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsFilter }
+                .thenBy { it.price })
+
+        val fixedRowCount = 1 + irveRows.size + amenityRows.size
+        val maxFuelRows = (maxRows - fixedRowCount).coerceAtLeast(0)
+
+        fuelPrices.take(maxFuelRows).forEach { fp ->
             val fuelId = MapPoiFilter.fuelNameToId(fp.fuelName)
             val fuelColor = AutoCarIcons.fuelCarColor(fuelId)
 
@@ -219,6 +273,7 @@ object AutoPoiUiHelper {
             titleSpannable.setSpan(ForegroundCarColorSpan.create(fuelColor), 0, titleSpannable.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
 
             val textSpannable = SpannableString("$priceStr$updated")
+            // Note: Colors in secondary text are sometimes ignored by hosts but valid in library.
             textSpannable.setSpan(ForegroundCarColorSpan.create(fuelColor), 0, textSpannable.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
 
             rows.add(
@@ -229,54 +284,10 @@ object AutoPoiUiHelper {
             )
         }
 
-        // 4. IRVE Details
-        if (poi.isElectric) {
-            poi.operator?.takeIf { it.isNotBlank() }?.let {
-                rows.add(Row.Builder().setTitle(it).build())
-            }
+        // 4. Add IRVE and Amenities
+        rows.addAll(irveRows)
+        rows.addAll(amenityRows)
 
-            val electricInfo = mutableListOf<String>()
-            poi.powerKw?.let { electricInfo.add(carContext.getString(R.string.power_kw_format, it.toInt())) }
-
-            poi.irveDetails?.let { d ->
-                if (d.connectorTypes.isNotEmpty()) {
-                    val labels = d.connectorTypes.sorted().map { BrandHelper.connectorTypeLabel(it) }.joinToString(", ")
-                    electricInfo.add(labels)
-                }
-            }
-
-            if (electricInfo.isNotEmpty()) {
-                rows.add(
-                    Row.Builder()
-                        .setTitle(electricInfo.joinToString(" • "))
-                        .build()
-                )
-            }
-
-            availability?.let { s ->
-                rows.add(Row.Builder().setTitle(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount)).build())
-            }
-        }
-
-        // 5. Amenities (one summarized row)
-        poi.amenities?.let { a ->
-            val ams = mutableListOf<String>()
-            if (a.open24h == true) ams.add(carContext.getString(R.string.amenity_24h))
-            if (a.shop == true) ams.add(carContext.getString(R.string.amenity_shop))
-            if (a.restaurant == true) ams.add(carContext.getString(R.string.amenity_restaurant))
-            if (a.toilets == true) ams.add(carContext.getString(R.string.amenity_toilets))
-            if (a.carWash == true) ams.add(carContext.getString(R.string.amenity_car_wash))
-
-            if (ams.isNotEmpty()) {
-                rows.add(
-                    Row.Builder()
-                        .setTitle(carContext.getString(R.string.poi_section_services))
-                        .addText(ams.joinToString(" • "))
-                        .build()
-                )
-            }
-        }
-
-        return rows
+        return rows.take(maxRows)
     }
 }

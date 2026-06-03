@@ -491,25 +491,8 @@ class CustomMapPoiScreen(
                 .setOnClickListener { toggleMapOrientation() }
                 .build()
         )
-        builder.addEndHeaderAction(
-            Action.Builder()
-                .setTitle(carContext.getString(R.string.action_recenter))
-                .setIcon(carContext.actionRecenterIcon())
-                .setOnClickListener { recenterMap() }
-                .build()
-        )
-        builder.addEndHeaderAction(
-            Action.Builder()
-                .setIcon(carContext.actionZoomInIcon())
-                .setOnClickListener { bumpZoom(1) }
-                .build()
-        )
-        builder.addEndHeaderAction(
-            Action.Builder()
-                .setIcon(carContext.actionZoomOutIcon())
-                .setOnClickListener { bumpZoom(-1) }
-                .build()
-        )
+        // Android Auto Header allows at most 2 end actions.
+        // Recenter and Zoom actions are moved to ActionStrip or removed from header to avoid host rejection.
         return builder
     }
 
@@ -732,6 +715,12 @@ class CustomMapPoiScreen(
                 Action.Builder()
                     .setIcon(carContext.actionSettingsIcon())
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionRecenterIcon())
+                    .setOnClickListener { recenterMap() }
                     .build()
             )
 
