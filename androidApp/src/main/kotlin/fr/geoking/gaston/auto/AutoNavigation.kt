@@ -3,7 +3,6 @@ package fr.geoking.gaston.auto
 import androidx.car.app.Screen
 import fr.geoking.gaston.R
 import fr.geoking.gaston.CarMapMode
-import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.di.MapDeps
 

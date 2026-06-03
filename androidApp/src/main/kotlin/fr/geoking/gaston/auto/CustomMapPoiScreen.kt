@@ -678,6 +678,7 @@ class CustomMapPoiScreen(
                 PoiDetailScreen(
                     carContext = carContext,
                     poi = poi,
+                    settingsManager = settingsManager,
                     availabilitySummary = availabilityByPoiId[poi.id],
                     effectiveEnergyTypes = settingsManager.settings.value.effectiveMapEnergyFilterIds(),
                     effectivePowerLevels = settingsManager.settings.value.effectiveIrvePowerLevels()
@@ -789,6 +790,7 @@ class CustomMapPoiScreen(
                             PoiDetailScreen(
                                 carContext = carContext,
                                 poi = poi,
+                                settingsManager = settingsManager,
                                 availabilitySummary = availability,
                                 effectiveEnergyTypes = effectiveEnergies,
                                 effectivePowerLevels = effectivePowerLevels
