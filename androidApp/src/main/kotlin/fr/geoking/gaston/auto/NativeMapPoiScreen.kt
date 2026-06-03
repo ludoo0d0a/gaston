@@ -255,57 +255,54 @@ class NativeMapPoiScreen(
             pois
         }
 
-        val sortedPois = if (sortByPrice) {
-            val fuelIds = effectiveEnergies - "electric"
-            if (fuelIds.isEmpty()) {
-                filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
-            } else {
-                filteredPois.sortedWith { a, b ->
-                    val pricesA = a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                    val pricesB = b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-
-                    val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
-                    val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
-
-                    if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
-                        priceA.compareTo(priceB)
-                    } else {
-                        val distA = approxDistanceKm(searchLat, searchLon, a.latitude, a.longitude)
-                        val distB = approxDistanceKm(searchLat, searchLon, b.latitude, b.longitude)
-                        distA.compareTo(distB)
-                    }
-                }
-            }
-        } else {
-            filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
-        }
-
-        sortedPois.take(listLimit).forEach { poi ->
-            val availability = availabilityByPoiId[poi.id]
-            itemListBuilder.addItem(
-                AutoPoiUiHelper.buildPoiRow(
-                    carContext = carContext,
-                    poi = poi,
-                    availability = availability,
-                    effectiveEnergyTypes = effectiveEnergies,
-                    effectivePowerLevels = effectivePowerLevels,
-                    distanceFromLatLon = searchLat to searchLon,
-                    includePlace = true
-                ) {
+        if (poi != null) {
+            val availability = selectedPoiAvailability ?: availabilityByPoiId[poi.id]
+            val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
+                carContext = carContext,
+                poi = poi,
+                availability = availability,
+                effectiveEnergyTypes = effectiveEnergies,
+                effectivePowerLevels = effectivePowerLevels,
+                onHeaderClick = {
                     screenManager.push(
                         PoiDetailScreen(
                             carContext = carContext,
                             poi = poi,
+                            settingsManager = settingsManager,
                             availabilitySummary = availability,
                             effectiveEnergyTypes = effectiveEnergies,
-                            effectivePowerLevels = effectivePowerLevels,
-                            rating = null
+                            effectivePowerLevels = effectivePowerLevels
                         )
                     )
                 }
             )
             detailRows.forEach { itemListBuilder.addItem(it) }
         } else {
+            val sortedPois = if (sortByPrice) {
+                val fuelIds = effectiveEnergies - "electric"
+                if (fuelIds.isEmpty()) {
+                    filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
+                } else {
+                    filteredPois.sortedWith { a, b ->
+                        val pricesA = a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                        val pricesB = b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+
+                        val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
+                        val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
+
+                        if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
+                            priceA.compareTo(priceB)
+                        } else {
+                            val distA = approxDistanceKm(searchLat, searchLon, a.latitude, a.longitude)
+                            val distB = approxDistanceKm(searchLat, searchLon, b.latitude, b.longitude)
+                            distA.compareTo(distB)
+                        }
+                    }
+                }
+            } else {
+                filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
+            }
+
             sortedPois.take(listLimit).forEach { item ->
                 val availability = availabilityByPoiId[item.id]
                 itemListBuilder.addItem(
