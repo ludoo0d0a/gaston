@@ -28,6 +28,8 @@ class PoiDetailScreen(
     private val poi: Poi,
     private val settingsManager: SettingsManager,
     private val availabilitySummary: StationAvailabilitySummary? = null,
+    private val effectiveEnergyTypes: Set<String> = emptySet(),
+    private val effectivePowerLevels: Set<Int> = emptySet(),
     private val rating: Int? = null
 ) : Screen(carContext) {
 
@@ -52,7 +54,7 @@ class PoiDetailScreen(
             carContext = carContext,
             poi = poi,
             availability = availabilitySummary,
-            effectiveEnergyTypes = effectiveEnergies,
+            effectiveEnergyTypes = effectiveEnergyTypes,
             effectivePowerLevels = effectivePowerLevels
         )
 

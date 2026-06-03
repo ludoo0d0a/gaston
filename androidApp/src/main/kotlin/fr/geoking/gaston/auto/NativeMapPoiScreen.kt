@@ -280,13 +280,29 @@ class NativeMapPoiScreen(
             filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
         }
 
-        if (poi != null) {
-            val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
-                carContext = carContext,
-                poi = poi,
-                availability = selectedPoiAvailability,
-                effectiveEnergyTypes = effectiveEnergies,
-                effectivePowerLevels = effectivePowerLevels
+        sortedPois.take(listLimit).forEach { poi ->
+            val availability = availabilityByPoiId[poi.id]
+            itemListBuilder.addItem(
+                AutoPoiUiHelper.buildPoiRow(
+                    carContext = carContext,
+                    poi = poi,
+                    availability = availability,
+                    effectiveEnergyTypes = effectiveEnergies,
+                    effectivePowerLevels = effectivePowerLevels,
+                    distanceFromLatLon = searchLat to searchLon,
+                    includePlace = true
+                ) {
+                    screenManager.push(
+                        PoiDetailScreen(
+                            carContext = carContext,
+                            poi = poi,
+                            availabilitySummary = availability,
+                            effectiveEnergyTypes = effectiveEnergies,
+                            effectivePowerLevels = effectivePowerLevels,
+                            rating = null
+                        )
+                    )
+                }
             )
             detailRows.forEach { itemListBuilder.addItem(it) }
         } else {

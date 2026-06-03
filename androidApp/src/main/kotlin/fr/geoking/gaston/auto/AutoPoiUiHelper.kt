@@ -178,7 +178,8 @@ object AutoPoiUiHelper {
         poi: Poi,
         availability: StationAvailabilitySummary?,
         effectiveEnergyTypes: Set<String> = emptySet(),
-        effectivePowerLevels: Set<Int> = emptySet()
+        effectivePowerLevels: Set<Int> = emptySet(),
+        onHeaderClick: (() -> Unit)? = null
     ): List<Row> {
         val rows = mutableListOf<Row>()
 
@@ -196,6 +197,12 @@ object AutoPoiUiHelper {
                 headerRow.addText(it.displayName)
             }
         }
+
+        if (onHeaderClick != null) {
+            headerRow.setOnClickListener(onHeaderClick)
+            headerRow.setBrowsable(true)
+        }
+
         rows.add(headerRow.build())
 
         // 3. Prices

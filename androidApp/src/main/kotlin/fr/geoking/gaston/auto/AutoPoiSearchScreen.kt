@@ -108,6 +108,8 @@ class AutoPoiSearchScreen(
                             poi = poi,
                             settingsManager = settingsManager,
                             availabilitySummary = availability,
+                            effectiveEnergyTypes = effectiveEnergies,
+                            effectivePowerLevels = effectivePowerLevels,
                             rating = null
                         )
                     )
