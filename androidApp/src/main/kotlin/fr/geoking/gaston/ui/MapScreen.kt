@@ -380,7 +380,7 @@ fun MapScreen(
                         contentColor = if (isCheapestFilterActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
                     ) {
                         Icon(
-                            imageVector = Icons.Default.PriceCheck,
+                            painter = androidx.compose.ui.res.painterResource(R.drawable.ic_cheapest_price),
                             contentDescription = stringResource(R.string.action_show_cheapest_list)
                         )
                     }
