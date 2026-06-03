@@ -415,6 +415,8 @@
     <string name="map_theme_dark_matter">Dark Matter (Dark)</string>
     <string name="map_theme_fiord">Fiord (Dark)</string>
     <string name="map_theme_osm">OSM</string>
+    <string name="map_theme_osm_fr">OSM France (High contrast)</string>
+    <string name="map_theme_hot">Humanitarian (High contrast)</string>
     <string name="theme_mode_system">System</string>
     <string name="theme_mode_light">Light</string>
     <string name="theme_mode_dark">Dark</string>

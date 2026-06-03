@@ -90,6 +90,8 @@ private fun MapTheme.displayLabel(): String = when (this) {
     MapTheme.Standard -> stringResource(R.string.map_theme_osm)
     MapTheme.Positron -> stringResource(R.string.map_theme_positron)
     MapTheme.Fiord -> stringResource(R.string.map_theme_fiord)
+    MapTheme.OsmFr -> stringResource(R.string.map_theme_osm_fr)
+    MapTheme.Hot -> stringResource(R.string.map_theme_hot)
 }
 
 @Composable

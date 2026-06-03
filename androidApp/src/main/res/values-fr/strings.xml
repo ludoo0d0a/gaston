@@ -417,6 +417,8 @@
     <string name="map_theme_dark_matter">Dark Matter (Sombre)</string>
     <string name="map_theme_fiord">Fiord (Sombre)</string>
     <string name="map_theme_osm">OSM</string>
+    <string name="map_theme_osm_fr">OSM France (Contraste élevé)</string>
+    <string name="map_theme_hot">Humanitaire (Contraste élevé)</string>
     <string name="theme_mode_system">Système</string>
     <string name="theme_mode_light">Clair</string>
     <string name="theme_mode_dark">Sombre</string>
