@@ -110,6 +110,7 @@ fun VectorMapScreen(
     favoritesRepo: FavoritesRepository? = null,
     initialSelectedPoi: Poi? = null,
     initialCenter: com.google.android.gms.maps.model.LatLng? = null,
+    initialZoom: Float? = null,
     showAds: Boolean = false
 ) {
     BackHandler { onBack() }
@@ -156,7 +157,7 @@ fun VectorMapScreen(
 
     val defaultLat = initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: settings.lastKnownLat ?: 48.8566
     val defaultLng = initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: settings.lastKnownLon ?: 2.3522
-    val defaultZoom = if (initialSelectedPoi != null || initialCenter != null) 15.0 else 12.0
+    val defaultZoom = (initialZoom?.toDouble()) ?: if (initialSelectedPoi != null || initialCenter != null) 15.0 else 12.0
 
     LaunchedEffect(favoritesRepo) {
         if (favoritesRepo != null) {

@@ -90,7 +90,7 @@ fun PhoneDashboardMainContent(
     fuelForecastRepository: FuelForecastRepository?,
     fuelForecastState: FuelForecastUiState,
     fuelForecastLoading: Boolean,
-    onOpenMap: (Poi?) -> Unit,
+    onOpenMap: (Poi?, Float?) -> Unit,
     onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
     onOpenFuelForecast: () -> Unit,
     onOpenEmergency: () -> Unit,
@@ -225,7 +225,7 @@ private fun PhoneDashboardNearbyCheapestSection(
     currentMode: DashboardMode,
     settings: AppSettings,
     onPoiSelected: (Poi) -> Unit,
-    onOpenMap: (Poi?) -> Unit
+    onOpenMap: (Poi?, Float?) -> Unit
 ) {
     val energyMode = settings.effectiveEnergyFilterMode()
     val isHybrid = energyMode == EnergyFilterMode.Hybrid
@@ -290,7 +290,7 @@ private fun PhoneDashboardNearbyCheapestSection(
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(
-                        onClick = { onOpenMap(null) },
+                        onClick = { onOpenMap(null, 12.5f) },
                         modifier = Modifier.size(24.dp),
                     ) {
                         Icon(
@@ -329,7 +329,7 @@ private fun PhoneDashboardNearbyCheapestSection(
                     userLongitude = userLon,
                     selectedEnergyIds = energyFilterIds - "electric",
                     onClick = onPoiSelected,
-                    onMapClick = { onOpenMap(null) },
+                    onMapClick = { onOpenMap(null, 12.5f) },
                     modifier = cardModifier,
                     emptyMessage = searchError,
                     title = titleFuel
@@ -340,7 +340,7 @@ private fun PhoneDashboardNearbyCheapestSection(
                     userLongitude = userLon,
                     selectedEnergyIds = setOf("electric"),
                     onClick = onPoiSelected,
-                    onMapClick = { onOpenMap(null) },
+                    onMapClick = { onOpenMap(null, 12.5f) },
                     modifier = cardModifier,
                     emptyMessage = searchError,
                     title = titleElectric
@@ -354,7 +354,7 @@ private fun PhoneDashboardNearbyCheapestSection(
                 userLongitude = userLon,
                 selectedEnergyIds = energyFilterIds,
                 onClick = onPoiSelected,
-                onMapClick = { onOpenMap(null) },
+                onMapClick = { onOpenMap(null, 12.5f) },
                 modifier = cardModifier,
                 emptyMessage = searchError,
                 title = titleGeneric

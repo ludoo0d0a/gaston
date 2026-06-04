@@ -85,7 +85,7 @@ fun PhoneDashboardScreen(
     geocodingClient: GeocodingClient? = null,
     isUpdateInProgress: Boolean = false,
     showAds: Boolean = false,
-    onOpenMap: (Poi?) -> Unit,
+    onOpenMap: (Poi?, Float?) -> Unit,
     onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
     onOpenFavorites: () -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
@@ -270,6 +270,7 @@ fun PhoneDashboardScreen(
                 providers = currentProviders,
                 skipWhenOnlyOverpass = true
             )
+                .filter { approxDistanceKm(baseLat, baseLon, it.latitude, it.longitude) <= 10.0 }
                 .sortedWith { a, b ->
                     val pricesA = if (fuelIds.isEmpty()) a.fuelPrices else a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
                     val pricesB = if (fuelIds.isEmpty()) b.fuelPrices else b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
@@ -312,6 +313,7 @@ fun PhoneDashboardScreen(
                 providers = currentProviders,
                 skipWhenOnlyOverpass = true
             )
+                .filter { approxDistanceKm(baseLat, baseLon, it.latitude, it.longitude) <= 10.0 }
                 .sortedBy { approxDistanceKm(baseLat, baseLon, it.latitude, it.longitude) }
                 .take(5)
         }
@@ -429,7 +431,7 @@ fun PhoneDashboardScreen(
                 context.startActivity(Intent(Intent.ACTION_VIEW, uri))
             },
             onShowOnMap = {
-                onOpenMap(it)
+                onOpenMap(it, null)
                 poiForDetails = null
             },
             onDismiss = { poiForDetails = null }
