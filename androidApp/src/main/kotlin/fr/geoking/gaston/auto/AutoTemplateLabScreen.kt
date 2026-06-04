@@ -120,6 +120,13 @@ class AutoTemplateLabFeaturesScreen(
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoTemplateLabFeaturesScreen") {
         val listBuilder = ItemList.Builder()
 
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.about_current_project))
+                .addText(carContext.getString(R.string.app_name))
+                .build()
+        )
+
         listBuilder.addItem(Row.Builder().setTitle(carContext.getString(R.string.map_native_poi)).setOnClickListener {
             val deps = getMapDeps()
             if (deps != null) screenManager.push(NativeMapPoiScreen(carContext, deps.poiProvider, deps.availabilityProviderFactory, settingsManager, deps.communityRepo, deps.favoritesRepo))

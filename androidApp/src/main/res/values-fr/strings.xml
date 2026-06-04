@@ -387,6 +387,7 @@
     <string name="toll_error">Erreur : %1$s</string>
     <string name="download_failed">Échec du téléchargement</string>
     <string name="about_used_apis">API et services utilisés</string>
+    <string name="about_current_project">Projet actuel</string>
     <string name="about_version_name">Nom de version</string>
     <string name="about_version_code">Code de version</string>
     <string name="about_build_date">Date de build</string>

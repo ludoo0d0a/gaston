@@ -385,6 +385,7 @@
     <string name="toll_error">Error: %1$s</string>
     <string name="download_failed">Download failed</string>
     <string name="about_used_apis">Used APIs &amp; services</string>
+    <string name="about_current_project">Current Project</string>
     <string name="about_premium_mode">Premium mode</string>
     <string name="about_premium_mode_subtitle">Unlock all features for testing</string>
     <string name="about_version_name">Version name</string>
