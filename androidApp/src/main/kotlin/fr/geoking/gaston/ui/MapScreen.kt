@@ -161,6 +161,7 @@ fun MapScreen(
     favoritesRepo: FavoritesRepository? = null,
     initialSelectedPoi: Poi? = null,
     initialCenter: LatLng? = null,
+    initialZoom: Float? = null,
     showAds: Boolean = false
 ) {
     BackHandler { onBack() }
@@ -205,7 +206,7 @@ fun MapScreen(
 
     val defaultLat = initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: settings.lastKnownLat ?: 48.8566
     val defaultLng = initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: settings.lastKnownLon ?: 2.3522
-    val defaultZoom = if (initialSelectedPoi != null || initialCenter != null) 15f else 12f
+    val defaultZoom = initialZoom ?: if (initialSelectedPoi != null || initialCenter != null) 15f else 12f
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(defaultLat, defaultLng), defaultZoom)
@@ -305,10 +306,10 @@ fun MapScreen(
         }
     }
 
+    val cheapestStationsToast = stringResource(R.string.cheapest_stations_toast, filteredPois.size)
     LaunchedEffect(isCheapestFilterActive) {
         if (isCheapestFilterActive) {
-            val count = filteredPois.size
-            Toast.makeText(context, context.getString(R.string.cheapest_stations_toast, count), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, cheapestStationsToast, Toast.LENGTH_SHORT).show()
         }
     }
 

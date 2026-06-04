@@ -34,6 +34,7 @@ fun MapFactory(
     favoritesRepo: FavoritesRepository? = null,
     initialSelectedPoi: Poi? = null,
     initialCenter: LatLng? = null,
+    initialZoom: Float? = null,
     showAds: Boolean = false
 ) {
     val settings by settingsManager.settings.collectAsState()
@@ -53,6 +54,7 @@ fun MapFactory(
             favoritesRepo = favoritesRepo,
             initialSelectedPoi = initialSelectedPoi,
             initialCenter = initialCenter,
+            initialZoom = initialZoom,
             showAds = showAds
         )
         MapEngine.Google -> MapScreen(
@@ -70,6 +72,7 @@ fun MapFactory(
             favoritesRepo = favoritesRepo,
             initialSelectedPoi = initialSelectedPoi,
             initialCenter = initialCenter,
+            initialZoom = initialZoom,
             showAds = showAds
         )
     }

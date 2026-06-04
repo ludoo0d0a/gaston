@@ -378,6 +378,7 @@ fun MainUI(
     var showDirectionsMap by remember { mutableStateOf(false) }
     var showFuelForecast by remember { mutableStateOf(false) }
     var pendingMapPoi by remember { mutableStateOf<Poi?>(null) }
+    var pendingMapZoom by remember { mutableStateOf<Float?>(null) }
     var pendingMapLocation by remember { mutableStateOf<com.google.android.gms.maps.model.LatLng?>(null) }
     var dashboardSelectedLocation by remember { mutableStateOf<fr.geoking.gaston.api.geocoding.GeocodedPlace?>(null) }
 
@@ -575,6 +576,7 @@ fun MainUI(
                     BackHandler {
                         showMap = false
                         pendingMapPoi = null
+                        pendingMapZoom = null
                         pendingMapLocation = null
                     }
                     MapFactory(
@@ -588,6 +590,7 @@ fun MainUI(
                         onBack = {
                             showMap = false
                             pendingMapPoi = null
+                            pendingMapZoom = null
                             pendingMapLocation = null
                         },
                         onPlanRoute = { showRoutePlanning = true },
@@ -596,6 +599,7 @@ fun MainUI(
                         favoritesRepo = mapDeps!!.favoritesRepo,
                         initialSelectedPoi = pendingMapPoi,
                         initialCenter = pendingMapLocation,
+                        initialZoom = pendingMapZoom,
                         showAds = isPlaystoreDistribution
                     )
                 }
@@ -610,8 +614,9 @@ fun MainUI(
                         geocodingClient = mapDeps?.geocodingClient,
                         isUpdateInProgress = isUpdateInProgress,
                         showAds = true,
-                        onOpenMap = { poi ->
+                        onOpenMap = { poi, zoom ->
                             pendingMapPoi = poi
+                            pendingMapZoom = zoom
                             showMap = true
                         },
                         onOpenRoutes = { destination, origin ->
@@ -717,6 +722,7 @@ fun MainUI(
                     BackHandler {
                         showMap = false
                         pendingMapPoi = null
+                        pendingMapZoom = null
                         pendingMapLocation = null
                     }
                     if (mapDeps != null) {
@@ -731,6 +737,7 @@ fun MainUI(
                             onBack = {
                                 showMap = false
                                 pendingMapPoi = null
+                                pendingMapZoom = null
                                 pendingMapLocation = null
                             },
                             onPlanRoute = { showRoutePlanning = true },
@@ -739,6 +746,7 @@ fun MainUI(
                             favoritesRepo = mapDeps!!.favoritesRepo,
                             initialSelectedPoi = pendingMapPoi,
                             initialCenter = pendingMapLocation,
+                            initialZoom = pendingMapZoom,
                             showAds = isPlaystoreDistribution
                         )
                     } else {
@@ -766,8 +774,9 @@ fun MainUI(
                             geocodingClient = mapDeps?.geocodingClient,
                             isUpdateInProgress = isUpdateInProgress,
                             showAds = isPlaystoreDistribution,
-                            onOpenMap = { poi ->
+                            onOpenMap = { poi, zoom ->
                                 pendingMapPoi = poi
+                                pendingMapZoom = zoom
                                 showMap = true
                             },
                         onOpenRoutes = { destination, origin ->
