@@ -474,25 +474,53 @@ class CustomMapPoiScreen(
         )
     }
 
-    private fun mapContentHeaderBuilder(title: String): Header.Builder {
+    private fun mapContentHeaderBuilder(title: String, currentSettings: AppSettings): Header.Builder {
         val builder = Header.Builder()
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
 
-        val compassTitle = if (orientationMode == MapOrientationMode.NorthUp) {
-            carContext.getString(R.string.map_orientation_my_direction)
-        } else {
-            carContext.getString(R.string.map_orientation_north_up)
-        }
+        // Android Auto Header allows at most 2 end actions.
         builder.addEndHeaderAction(
             Action.Builder()
-                .setTitle(compassTitle)
-                .setIcon(carContext.actionCompassIcon())
-                .setOnClickListener { toggleMapOrientation() }
+                .setIcon(carContext.actionRecenterIcon())
+                .setOnClickListener { recenterMap() }
                 .build()
         )
-        // Android Auto Header allows at most 2 end actions.
-        // Recenter and Zoom actions are moved to ActionStrip or removed from header to avoid host rejection.
+
+        if (errors.isNotEmpty()) {
+            builder.addEndHeaderAction(
+                Action.Builder()
+                    .setIcon(carContext.actionErrorIcon())
+                    .setOnClickListener { pushApiErrorsDetailScreen() }
+                    .build()
+            )
+        } else {
+            val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
+            val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
+            if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
+                builder.addEndHeaderAction(
+                    Action.Builder()
+                        .setIcon(carContext.actionCheapestIcon(isCheapestFilterActive))
+                        .setOnClickListener {
+                            if (isCheapestFilterActive) {
+                                isCheapestFilterActive = false
+                                sortByPrice = false
+                                selectedPoi = null
+                            } else {
+                                isCheapestFilterActive = true
+                                sortByPrice = true
+                                val filtered = getFilteredPois(currentSettings)
+                                carContext.getCarService(AppManager::class.java)
+                                    .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
+                            }
+                            syncRendererWithMapState()
+                            invalidate()
+                        }
+                        .build()
+                )
+            }
+        }
+
         return builder
     }
 
@@ -710,6 +738,12 @@ class CustomMapPoiScreen(
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
 
+        val compassTitle = if (orientationMode == MapOrientationMode.NorthUp) {
+            carContext.getString(R.string.map_orientation_my_direction)
+        } else {
+            carContext.getString(R.string.map_orientation_north_up)
+        }
+
         val actionStripBuilder = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
@@ -731,42 +765,11 @@ class CustomMapPoiScreen(
             )
             .addAction(
                 Action.Builder()
-                    .setIcon(carContext.actionRecenterIcon())
-                    .setOnClickListener { recenterMap() }
+                    .setTitle(compassTitle)
+                    .setIcon(carContext.actionCompassIcon())
+                    .setOnClickListener { toggleMapOrientation() }
                     .build()
             )
-
-        if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionCheapestIcon(isCheapestFilterActive))
-                    .setOnClickListener {
-                        if (isCheapestFilterActive) {
-                            isCheapestFilterActive = false
-                            sortByPrice = false
-                            selectedPoi = null
-                        } else {
-                            isCheapestFilterActive = true
-                            sortByPrice = true
-                            val filtered = getFilteredPois(currentSettings)
-                            carContext.getCarService(AppManager::class.java)
-                                .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
-                        }
-                        syncRendererWithMapState()
-                        invalidate()
-                    }
-                    .build()
-            )
-        }
-
-        if (errors.isNotEmpty()) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionErrorIcon())
-                    .setOnClickListener { pushApiErrorsDetailScreen() }
-                    .build()
-            )
-        }
         val actionStrip = actionStripBuilder.build()
 
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
@@ -774,7 +777,7 @@ class CustomMapPoiScreen(
         val contentTemplate = if (isLoading) {
             ListTemplate.Builder()
                 .setLoading(true)
-                .setHeader(mapContentHeaderBuilder(title).build())
+                .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
                 .build()
         } else {
             val filteredPoisForSorting = getFilteredPois(currentSettings)
@@ -786,6 +789,13 @@ class CustomMapPoiScreen(
                 selectedFuelIds = effectiveEnergies - "electric"
             )
 
+            val listLimit = try {
+                carContext.getCarService(ConstraintManager::class.java)
+                    .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+            } catch (_: Exception) {
+                6
+            }
+
             val poi = selectedPoi
             if (poi != null) {
                 val availability = availabilityByPoiId[poi.id]
@@ -796,6 +806,7 @@ class CustomMapPoiScreen(
                     effectiveEnergyTypes = effectiveEnergies,
                     effectivePowerLevels = effectivePowerLevels,
                     distanceFromLatLon = searchLat to searchLon,
+                    maxRows = listLimit,
                     onHeaderClick = {
                         screenManager.push(
                             PoiDetailScreen(
@@ -846,29 +857,11 @@ class CustomMapPoiScreen(
                                     .setOnClickListener { carContext.startCarApp(navigateIntent) }
                                     .build()
                             )
-                            .addEndHeaderAction(
-                                Action.Builder()
-                                    .setTitle(carContext.getString(R.string.action_close))
-                                    .setOnClickListener {
-                                        selectedPoi = null
-                                        syncRendererWithMapState()
-                                        invalidate()
-                                    }
-                                    .build()
-                            )
                             .build()
                     )
                     .setSingleList(itemListBuilder.build())
                     .build()
             } else {
-                // Respect the host's list limit (varies by vehicle/API level, default 6).
-                val listLimit = try {
-                    carContext.getCarService(ConstraintManager::class.java)
-                        .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
-                } catch (_: Exception) {
-                    6
-                }
-
                 val itemListBuilder = ItemList.Builder()
                     .setNoItemsMessage("No POIs found")
 
@@ -893,7 +886,7 @@ class CustomMapPoiScreen(
                 }
 
                 ListTemplate.Builder()
-                    .setHeader(mapContentHeaderBuilder(title).build())
+                    .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
                     .setSingleList(itemListBuilder.build())
                     .build()
             }
