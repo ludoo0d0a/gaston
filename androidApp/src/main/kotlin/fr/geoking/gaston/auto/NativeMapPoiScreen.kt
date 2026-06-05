@@ -272,6 +272,7 @@ class NativeMapPoiScreen(
                 effectiveEnergyTypes = effectiveEnergies,
                 effectivePowerLevels = effectivePowerLevels,
                 distanceFromLatLon = searchLat to searchLon,
+                maxRows = listLimit,
                 onHeaderClick = {
                     screenManager.push(
                         PoiDetailScreen(
