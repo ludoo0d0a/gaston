@@ -110,6 +110,12 @@ fun CarContext.actionCompassIcon(): CarIcon = carIconUntinted(R.drawable.ic_comp
 
 fun CarContext.actionNavigateToIcon(): CarIcon = carIcon(R.drawable.ic_navigate_to, AutoCarIcons.primary)
 
+fun CarContext.actionPreviousIcon(): CarIcon = carIcon(R.drawable.ic_chevron_left, AutoCarIcons.primary)
+
+fun CarContext.actionNextIcon(): CarIcon = carIcon(R.drawable.ic_chevron_right, AutoCarIcons.primary)
+
+fun CarContext.actionCloseIcon(): CarIcon = carIcon(R.drawable.ic_close, AutoCarIcons.primary)
+
 fun CarContext.actionRecenterIcon(): CarIcon = carIcon(R.drawable.ic_gps_fixed, AutoCarIcons.primary)
 
 fun CarContext.actionHistoryIcon(): CarIcon = carIcon(R.drawable.ic_history, AutoCarIcons.muted)

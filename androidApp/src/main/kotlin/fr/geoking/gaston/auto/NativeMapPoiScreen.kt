@@ -255,6 +255,14 @@ class NativeMapPoiScreen(
             pois
         }
 
+        val sortedPois = MapPoiFilter.sortPois(
+            pois = filteredPois,
+            lat = searchLat,
+            lon = searchLon,
+            sortByPrice = sortByPrice,
+            selectedFuelIds = effectiveEnergies - "electric"
+        )
+
         if (poi != null) {
             val availability = selectedPoiAvailability ?: availabilityByPoiId[poi.id]
             val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
@@ -263,6 +271,7 @@ class NativeMapPoiScreen(
                 availability = availability,
                 effectiveEnergyTypes = effectiveEnergies,
                 effectivePowerLevels = effectivePowerLevels,
+                distanceFromLatLon = searchLat to searchLon,
                 onHeaderClick = {
                     screenManager.push(
                         PoiDetailScreen(
@@ -271,38 +280,21 @@ class NativeMapPoiScreen(
                             settingsManager = settingsManager,
                             availabilitySummary = availability,
                             effectiveEnergyTypes = effectiveEnergies,
-                            effectivePowerLevels = effectivePowerLevels
+                            effectivePowerLevels = effectivePowerLevels,
+                            poiList = sortedPois,
+                            initialPoiIndex = sortedPois.indexOfFirst { it.id == poi.id },
+                            availabilityByPoiId = availabilityByPoiId,
+                            onPoiSelected = { newPoi ->
+                                selectedPoi = newPoi
+                                selectedPoiAvailability = availabilityByPoiId[newPoi.id]
+                                invalidate()
+                            }
                         )
                     )
                 }
             )
             detailRows.forEach { itemListBuilder.addItem(it) }
         } else {
-            val sortedPois = if (sortByPrice) {
-                val fuelIds = effectiveEnergies - "electric"
-                if (fuelIds.isEmpty()) {
-                    filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
-                } else {
-                    filteredPois.sortedWith { a, b ->
-                        val pricesA = a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                        val pricesB = b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-
-                        val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
-                        val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
-
-                        if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
-                            priceA.compareTo(priceB)
-                        } else {
-                            val distA = approxDistanceKm(searchLat, searchLon, a.latitude, a.longitude)
-                            val distB = approxDistanceKm(searchLat, searchLon, b.latitude, b.longitude)
-                            distA.compareTo(distB)
-                        }
-                    }
-                }
-            } else {
-                filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
-            }
-
             sortedPois.take(listLimit).forEach { item ->
                 val availability = availabilityByPoiId[item.id]
                 itemListBuilder.addItem(

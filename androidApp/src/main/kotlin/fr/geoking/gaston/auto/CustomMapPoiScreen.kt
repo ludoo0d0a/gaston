@@ -765,6 +765,15 @@ class CustomMapPoiScreen(
                 .setHeader(mapContentHeaderBuilder(title).build())
                 .build()
         } else {
+            val filteredPoisForSorting = getFilteredPois(currentSettings)
+            val sortedPois = MapPoiFilter.sortPois(
+                pois = filteredPoisForSorting,
+                lat = searchLat,
+                lon = searchLon,
+                sortByPrice = sortByPrice,
+                selectedFuelIds = effectiveEnergies - "electric"
+            )
+
             val poi = selectedPoi
             if (poi != null) {
                 val availability = availabilityByPoiId[poi.id]
@@ -774,6 +783,7 @@ class CustomMapPoiScreen(
                     availability = availability,
                     effectiveEnergyTypes = effectiveEnergies,
                     effectivePowerLevels = effectivePowerLevels,
+                    distanceFromLatLon = searchLat to searchLon,
                     onHeaderClick = {
                         screenManager.push(
                             PoiDetailScreen(
@@ -782,7 +792,15 @@ class CustomMapPoiScreen(
                                 settingsManager = settingsManager,
                                 availabilitySummary = availability,
                                 effectiveEnergyTypes = effectiveEnergies,
-                                effectivePowerLevels = effectivePowerLevels
+                                effectivePowerLevels = effectivePowerLevels,
+                                poiList = sortedPois,
+                                initialPoiIndex = sortedPois.indexOfFirst { it.id == poi.id },
+                                availabilityByPoiId = availabilityByPoiId,
+                                onPoiSelected = { newPoi ->
+                                    selectedPoi = newPoi
+                                    syncRendererWithMapState()
+                                    invalidate()
+                                }
                             )
                         )
                     }
@@ -841,33 +859,6 @@ class CustomMapPoiScreen(
 
                 val itemListBuilder = ItemList.Builder()
                     .setNoItemsMessage("No POIs found")
-
-                val filteredPois = getFilteredPois(currentSettings)
-
-                val sortedPois = if (sortByPrice) {
-                    val fuelIds = effectiveEnergies - "electric"
-                    if (fuelIds.isEmpty()) {
-                        filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
-                    } else {
-                        filteredPois.sortedWith { a, b ->
-                            val pricesA = a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                            val pricesB = b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-
-                            val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
-                            val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
-
-                            if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
-                                priceA.compareTo(priceB)
-                            } else {
-                                val distA = approxDistanceKm(searchLat, searchLon, a.latitude, a.longitude)
-                                val distB = approxDistanceKm(searchLat, searchLon, b.latitude, b.longitude)
-                                distA.compareTo(distB)
-                            }
-                        }
-                    }
-                } else {
-                    filteredPois.sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
-                }
 
                 val limitedPois = sortedPois.take(listLimit)
                 limitedPois.forEach { item ->

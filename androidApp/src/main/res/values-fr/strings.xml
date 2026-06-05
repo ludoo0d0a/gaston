@@ -17,6 +17,8 @@
     <string name="action_done">Terminé</string>
     <string name="action_edit">Modifier</string>
     <string name="action_exit">Quitter</string>
+    <string name="action_previous">Précédent</string>
+    <string name="action_next">Suivant</string>
     <string name="action_fullscreen">Plein écran</string>
     <string name="action_view_full_error">Voir l\'erreur complète</string>
     <string name="action_hide_on_map">Masquer sur la carte</string>

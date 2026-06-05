@@ -1,6 +1,7 @@
 package fr.geoking.gaston.poi
 
 import fr.geoking.gaston.api.routex.PoiAmenities
+import fr.geoking.gaston.shared.location.approxDistanceKm
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
@@ -444,6 +445,37 @@ object MapPoiFilter {
 
         val maxPrice = pricedPois[4].second
         return pricedPois.filter { it.second <= maxPrice }.map { it.first }
+    }
+
+    /**
+     * Sorts [pois] by price (if [sortByPrice] and fuels selected) or distance from [lat]/[lon].
+     */
+    fun sortPois(
+        pois: List<Poi>,
+        lat: Double,
+        lon: Double,
+        sortByPrice: Boolean,
+        selectedFuelIds: Set<String>
+    ): List<Poi> {
+        return if (sortByPrice && selectedFuelIds.isNotEmpty()) {
+            pois.sortedWith { a, b ->
+                val pricesA = a.fuelPrices?.filter { fuelNameToId(it.fuelName) in selectedFuelIds }
+                val pricesB = b.fuelPrices?.filter { fuelNameToId(it.fuelName) in selectedFuelIds }
+
+                val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
+                val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
+
+                if (priceA != priceB && (priceA != Double.MAX_VALUE || priceB != Double.MAX_VALUE)) {
+                    priceA.compareTo(priceB)
+                } else {
+                    val distA = approxDistanceKm(lat, lon, a.latitude, a.longitude)
+                    val distB = approxDistanceKm(lat, lon, b.latitude, b.longitude)
+                    distA.compareTo(distB)
+                }
+            }
+        } else {
+            pois.sortedBy { approxDistanceKm(lat, lon, it.latitude, it.longitude) }
+        }
     }
 }
 

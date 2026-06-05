@@ -179,6 +179,7 @@ object AutoPoiUiHelper {
         availability: StationAvailabilitySummary?,
         effectiveEnergyTypes: Set<String> = emptySet(),
         effectivePowerLevels: Set<Int> = emptySet(),
+        distanceFromLatLon: Pair<Double, Double>? = null,
         onHeaderClick: (() -> Unit)? = null,
         maxRows: Int = 6
     ): List<Row> {
@@ -199,12 +200,35 @@ object AutoPoiUiHelper {
             }
         }
 
+        if (distanceFromLatLon != null) {
+            val (lat, lon) = distanceFromLatLon
+            val meters = distanceMeters(lat, lon, poi.latitude, poi.longitude)
+            val distance = if (meters >= 1000.0) {
+                Distance.create(meters / 1000.0, Distance.UNIT_KILOMETERS)
+            } else {
+                Distance.create(meters, Distance.UNIT_METERS)
+            }
+            val s = SpannableString(" ")
+            s.setSpan(DistanceSpan.create(distance), 0, 1, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
+            headerRow.addText(s)
+        }
+
         if (onHeaderClick != null) {
             headerRow.setOnClickListener(onHeaderClick)
             headerRow.setBrowsable(true)
         }
 
         rows.add(headerRow.build())
+
+        // 1b. Address Row
+        if (poi.address.isNotBlank()) {
+            rows.add(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.poi_section_address))
+                    .addText(poi.address)
+                    .build()
+            )
+        }
 
         // 2. Prepare non-fuel sections to know how much space is left for fuel
         val irveRows = mutableListOf<Row>()
@@ -240,6 +264,10 @@ object AutoPoiUiHelper {
             if (a.restaurant == true) ams.add(carContext.getString(R.string.amenity_restaurant))
             if (a.toilets == true) ams.add(carContext.getString(R.string.amenity_toilets))
             if (a.carWash == true) ams.add(carContext.getString(R.string.amenity_car_wash))
+            if (a.wifi == true) ams.add(carContext.getString(R.string.poi_amenity_wifi))
+            if (a.atm == true) ams.add(carContext.getString(R.string.poi_amenity_atm))
+            if (a.showers == true) ams.add(carContext.getString(R.string.amenity_showers))
+            if (a.drinkingWater == true) ams.add(carContext.getString(R.string.amenity_drinking_water))
 
             if (ams.isNotEmpty()) {
                 amenityRows.add(
