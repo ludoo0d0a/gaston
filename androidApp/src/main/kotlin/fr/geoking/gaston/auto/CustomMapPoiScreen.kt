@@ -719,6 +719,18 @@ class CustomMapPoiScreen(
             )
             .addAction(
                 Action.Builder()
+                    .setIcon(carContext.actionZoomInIcon())
+                    .setOnClickListener { bumpZoom(1) }
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionZoomOutIcon())
+                    .setOnClickListener { bumpZoom(-1) }
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
                     .setIcon(carContext.actionRecenterIcon())
                     .setOnClickListener { recenterMap() }
                     .build()
