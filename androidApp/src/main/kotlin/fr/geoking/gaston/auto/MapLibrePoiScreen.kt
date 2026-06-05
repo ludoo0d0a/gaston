@@ -501,30 +501,18 @@ class MapLibrePoiScreen(
                     .build()
             )
         } else {
-            val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
-            val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
-            if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
-                builder.addEndHeaderAction(
-                    Action.Builder()
-                        .setIcon(carContext.actionCheapestIcon(isCheapestFilterActive))
-                        .setOnClickListener {
-                            if (isCheapestFilterActive) {
-                                isCheapestFilterActive = false
-                                sortByPrice = false
-                                selectedPoi = null
-                            } else {
-                                isCheapestFilterActive = true
-                                sortByPrice = true
-                                val filtered = getFilteredPois(currentSettings)
-                                carContext.getCarService(AppManager::class.java)
-                                    .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
-                            }
-                            syncRendererWithMapState()
-                            invalidate()
-                        }
-                        .build()
-                )
+            val compassTitle = if (orientationMode == MapOrientationMode.NorthUp) {
+                carContext.getString(R.string.map_orientation_my_direction)
+            } else {
+                carContext.getString(R.string.map_orientation_north_up)
             }
+            builder.addEndHeaderAction(
+                Action.Builder()
+                    .setTitle(compassTitle)
+                    .setIcon(carContext.actionCompassIcon())
+                    .setOnClickListener { toggleMapOrientation() }
+                    .build()
+            )
         }
 
         return builder
@@ -734,13 +722,6 @@ class MapLibrePoiScreen(
     ) {
         val currentSettings = settingsManager.settings.value
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
-        val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
-
-        val compassTitle = if (orientationMode == MapOrientationMode.NorthUp) {
-            carContext.getString(R.string.map_orientation_my_direction)
-        } else {
-            carContext.getString(R.string.map_orientation_north_up)
-        }
 
         val actionStripBuilder = ActionStrip.Builder()
             .addAction(
@@ -761,13 +742,30 @@ class MapLibrePoiScreen(
                     .setOnClickListener { bumpZoom(-1) }
                     .build()
             )
-            .addAction(
+
+        val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
+        if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
+            actionStripBuilder.addAction(
                 Action.Builder()
-                    .setTitle(compassTitle)
-                    .setIcon(carContext.actionCompassIcon())
-                    .setOnClickListener { toggleMapOrientation() }
+                    .setIcon(carContext.actionCheapestIcon(isCheapestFilterActive))
+                    .setOnClickListener {
+                        if (isCheapestFilterActive) {
+                            isCheapestFilterActive = false
+                            sortByPrice = false
+                            selectedPoi = null
+                        } else {
+                            isCheapestFilterActive = true
+                            sortByPrice = true
+                            val filtered = getFilteredPois(currentSettings)
+                            carContext.getCarService(AppManager::class.java)
+                                .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
+                        }
+                        syncRendererWithMapState()
+                        invalidate()
+                    }
                     .build()
             )
+        }
         val actionStrip = actionStripBuilder.build()
 
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
