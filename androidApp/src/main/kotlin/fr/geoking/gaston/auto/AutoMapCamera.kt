@@ -16,7 +16,7 @@ import kotlin.math.tan
  */
 object AutoMapCamera {
 
-    const val DEFAULT_ZOOM = 13
+    const val DEFAULT_ZOOM = 14
     const val MIN_ZOOM = 4
     const val MAX_ZOOM = 18
     const val MAX_ZOOM_OUT_ATTEMPTS = 3
