@@ -67,6 +67,7 @@ import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.poi.PoiSearchResult
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.MapPoiFilter
+import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.anyProvidesFuel
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
@@ -110,7 +111,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
 import fr.geoking.gaston.ui.map.MapCameraSample
 import fr.geoking.gaston.ui.map.MapErrorBanner
 import fr.geoking.gaston.ui.map.rememberErrorClipboardCopyHandler
@@ -269,12 +269,25 @@ fun MapScreen(
     )
 
     val poisInView = remember(mapData.cachedPois, cameraPositionState.position.target, cameraPositionState.position.zoom, mapSizePx, settings, effectiveProviders) {
-        StationMapFilters.apply(
+        val filteredByFilters = StationMapFilters.apply(
             settings = settings,
             pois = mapData.cachedPois,
             providers = effectiveProviders,
             skipWhenOnlyOverpass = true
         )
+
+        if (mapSizePx.width > 0 && mapSizePx.height > 0) {
+            val viewport = calculateBoundsFromMapViewport(
+                cameraPositionState.position.target.latitude,
+                cameraPositionState.position.target.longitude,
+                cameraPositionState.position.zoom,
+                mapSizePx.width,
+                mapSizePx.height
+            )
+            filteredByFilters.filter { viewport.contains(it.latitude, it.longitude) }
+        } else {
+            filteredByFilters
+        }
     }
 
     val basePois = remember(poisInView, showFavoritesOnly, favoriteIds) {

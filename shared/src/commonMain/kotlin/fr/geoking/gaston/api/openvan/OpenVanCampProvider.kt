@@ -1,7 +1,7 @@
 package fr.geoking.gaston.api.openvan
 
 import fr.geoking.gaston.api.overpass.OverpassClient
-import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
+import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.parking.ParkingRegion
 import fr.geoking.gaston.poi.FuelPriceRegistry
 import fr.geoking.gaston.poi.MapViewport

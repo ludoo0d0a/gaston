@@ -27,31 +27,6 @@ const val ROUTEX_MAX_POIS = 20
 /** Minimum radius (km) sent to the API so edge stations (e.g. Terville) are returned and not dropped by tight viewport. */
 const val ROUTEX_MIN_REQUEST_RADIUS_KM = 3
 
-/**
- * Computes the search radius in km that covers the visible map area from center, zoom and size.
- * Uses Web Mercator: at zoom z the world is 256*2^z pixels wide; latitude scale varies with cos(lat).
- * Returns half the diagonal of the visible rectangle in km, so the API scope matches the view.
- */
-fun radiusKmFromMapViewport(
-    centerLat: Double,
-    centerLng: Double,
-    zoom: Float,
-    mapWidthPx: Int,
-    mapHeightPx: Int
-): Int {
-    val z = zoom.toDouble().coerceIn(0.0, 24.0)
-    val scale = 256.0 * 2.0.pow(z)
-    val latRad = centerLat * PI / 180.0
-    val cosLat = cos(latRad).coerceIn(0.01, 1.0)
-    // Visible span in degrees (Web Mercator)
-    val halfLngDeg = (mapWidthPx / 2.0) * 360.0 / scale
-    val halfLatDeg = (mapHeightPx / 2.0) * 360.0 * cosLat / scale
-    // Convert to km at center latitude (1° lat ≈ 111 km, 1° lng ≈ 111*cos(lat) km)
-    val halfLngKm = halfLngDeg * 111.0 * cosLat
-    val halfLatKm = halfLatDeg * 111.0
-    val radiusKm = sqrt(halfLngKm * halfLngKm + halfLatKm * halfLatKm)
-    return radiusKm.toInt().coerceAtLeast(1)
-}
 
 /**
  * Client for the Routex (Wigeogis) SiteFinder API.
@@ -391,9 +366,23 @@ class RoutexClient(
      * Response structure is not fully documented; we parse flexibly from either
      * a "results"/"sites" array or GeoJSON-style "features".
      */
-    suspend fun getResults(latitude: Double, longitude: Double, radiusKm: Int = 5): List<RoutexSite> {
-        val requestRadiusKm = maxOf(radiusKm, ROUTEX_MIN_REQUEST_RADIUS_KM)
-        val requestBox = boundsBoxFromCenter(latitude, longitude, requestRadiusKm)
+    suspend fun getResults(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int = 5,
+        minLat: Double? = null,
+        maxLat: Double? = null,
+        minLng: Double? = null,
+        maxLng: Double? = null
+    ): List<RoutexSite> {
+        val requestBox = if (minLat != null && maxLat != null && minLng != null && maxLng != null) {
+            BoundsBox(minLng, minLat, maxLng, maxLat)
+        } else {
+            val requestRadiusKm = maxOf(radiusKm, ROUTEX_MIN_REQUEST_RADIUS_KM)
+            boundsBoxFromCenter(latitude, longitude, requestRadiusKm)
+        }
+        val requestRadiusKm = if (minLat != null) radiusKm else maxOf(radiusKm, ROUTEX_MIN_REQUEST_RADIUS_KM)
+
         // Filter using the same box we requested so we don't drop stations the API returned
         // (e.g. edge stations like Terville that fall just outside a tight viewport radius).
         val filterBox = requestBox

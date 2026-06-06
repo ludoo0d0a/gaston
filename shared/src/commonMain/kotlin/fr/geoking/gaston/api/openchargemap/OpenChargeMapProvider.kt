@@ -1,6 +1,6 @@
 package fr.geoking.gaston.api.openchargemap
 
-import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
+import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.poi.IrveDetails
 import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi

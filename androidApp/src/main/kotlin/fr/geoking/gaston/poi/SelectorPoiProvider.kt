@@ -19,7 +19,6 @@ import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.shared.logging.ProviderTraceEntry
 import fr.geoking.gaston.shared.logging.ProviderTracePhase
 import fr.geoking.gaston.shared.logging.ProviderTraceStore
-import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlinx.serialization.json.Json

@@ -4,6 +4,7 @@ import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.shared.logging.log
 import io.ktor.client.HttpClient
 
@@ -37,7 +38,15 @@ class RoutexProvider(
         } else {
             radiusKm
         }
-        val sites = routexClient.getResults(latitude, longitude, radius)
+        val sites = routexClient.getResults(
+            latitude = latitude,
+            longitude = longitude,
+            radiusKm = radius,
+            minLat = viewport?.minLat,
+            maxLat = viewport?.maxLat,
+            minLng = viewport?.minLng,
+            maxLng = viewport?.maxLng
+        )
         log.d { "[RoutexProvider] getGasStations lat=$latitude lon=$longitude radius=$radius -> ${sites.size} sites" }
         return sites.map { site ->
             Poi(

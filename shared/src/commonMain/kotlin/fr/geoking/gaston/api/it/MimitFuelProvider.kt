@@ -1,7 +1,7 @@
 package fr.geoking.gaston.api.it
 
 import fr.geoking.gaston.api.common.CsvUtils
-import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
+import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.poi.FuelPrice
 import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi

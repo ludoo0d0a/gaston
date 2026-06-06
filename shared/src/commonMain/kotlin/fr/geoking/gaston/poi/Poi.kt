@@ -2,6 +2,11 @@ package fr.geoking.gaston.poi
 
 import fr.geoking.gaston.api.routex.PoiAmenities
 import fr.geoking.gaston.shared.location.approxDistanceKm
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sqrt
+import kotlin.math.ceil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
@@ -293,8 +298,74 @@ data class Poi(
 data class MapViewport(
     val zoom: Float,
     val mapWidthPx: Int,
-    val mapHeightPx: Int
-)
+    val mapHeightPx: Int,
+    val minLat: Double? = null,
+    val maxLat: Double? = null,
+    val minLng: Double? = null,
+    val maxLng: Double? = null
+) {
+    /** True if this viewport contains the given coordinates. */
+    fun contains(lat: Double, lng: Double): Boolean {
+        if (minLat == null || maxLat == null || minLng == null || maxLng == null) return true
+        return lat in minLat..maxLat && lng in minLng..maxLng
+    }
+}
+
+/**
+ * Computes the search radius in km that covers the visible map area from center, zoom and size.
+ * Uses Web Mercator: at zoom z the world is 256*2^z pixels wide; latitude scale varies with cos(lat).
+ * Returns half the diagonal of the visible rectangle in km, so the API scope matches the view.
+ * We use ceil to ensure the radius fully covers the viewport corners.
+ */
+fun radiusKmFromMapViewport(
+    centerLat: Double,
+    centerLng: Double,
+    zoom: Float,
+    mapWidthPx: Int,
+    mapHeightPx: Int
+): Int {
+    val z = zoom.toDouble().coerceIn(0.0, 24.0)
+    val scale = 256.0 * 2.0.pow(z)
+    val latRad = centerLat * PI / 180.0
+    val cosLat = cos(latRad).coerceIn(0.01, 1.0)
+    // Visible span in degrees (Web Mercator)
+    val halfLngDeg = (mapWidthPx / 2.0) * 360.0 / scale
+    val halfLatDeg = (mapHeightPx / 2.0) * 360.0 * cosLat / scale
+    // Convert to km at center latitude (1° lat ≈ 111 km, 1° lng ≈ 111*cos(lat) km)
+    val halfLngKm = halfLngDeg * 111.0 * cosLat
+    val halfLatKm = halfLatDeg * 111.0
+    val radiusKm = sqrt(halfLngKm * halfLngKm + halfLatKm * halfLatKm)
+    return ceil(radiusKm).toInt().coerceAtLeast(1)
+}
+
+/**
+ * Calculates the bounding box for a given map viewport.
+ */
+fun calculateBoundsFromMapViewport(
+    centerLat: Double,
+    centerLng: Double,
+    zoom: Float,
+    mapWidthPx: Int,
+    mapHeightPx: Int
+): MapViewport {
+    val z = zoom.toDouble().coerceIn(0.0, 24.0)
+    val scale = 256.0 * 2.0.pow(z)
+    val latRad = centerLat * PI / 180.0
+    val cosLat = cos(latRad).coerceIn(0.01, 1.0)
+
+    val halfLngDeg = (mapWidthPx / 2.0) * 360.0 / scale
+    val halfLatDeg = (mapHeightPx / 2.0) * 360.0 * cosLat / scale
+
+    return MapViewport(
+        zoom = zoom,
+        mapWidthPx = mapWidthPx,
+        mapHeightPx = mapHeightPx,
+        minLat = centerLat - halfLatDeg,
+        maxLat = centerLat + halfLatDeg,
+        minLng = centerLng - halfLngDeg,
+        maxLng = centerLng + halfLngDeg
+    )
+}
 
 /**
  * Unified POI search request. Used by [PoiProvider.search] for gas, IRVE, toilets, water, etc.
