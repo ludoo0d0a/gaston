@@ -1,6 +1,6 @@
 package fr.geoking.gaston.poi
 
-import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
+import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.community.CommunityPoiRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

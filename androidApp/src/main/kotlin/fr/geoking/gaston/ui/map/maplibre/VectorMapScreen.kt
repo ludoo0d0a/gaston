@@ -91,7 +91,6 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
-import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
 
 @OptIn(ExperimentalMaterial3Api::class, kotlinx.coroutines.FlowPreview::class)
 @Composable
