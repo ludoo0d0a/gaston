@@ -54,6 +54,10 @@ class UsaEiaProviderTest {
                 radiusKm: Int,
                 tagFilters: List<Pair<String, Set<String>>>,
                 limit: Int,
+                minLat: Double?,
+                maxLat: Double?,
+                minLng: Double?,
+                maxLng: Double?
             ): List<OverpassElement> = listOf(
                 OverpassElement(1, 40.7580, -73.9855, mapOf("amenity" to "fuel", "name" to "NYC Pump")),
                 OverpassElement(2, 40.2204, -74.4115, mapOf("amenity" to "fuel", "name" to "NJ Pump")),
@@ -87,6 +91,10 @@ class UsaEiaProviderTest {
                 radiusKm: Int,
                 tagFilters: List<Pair<String, Set<String>>>,
                 limit: Int,
+                minLat: Double?,
+                maxLat: Double?,
+                minLng: Double?,
+                maxLng: Double?
             ): List<OverpassElement> = listOf(
                 OverpassElement(1, 42.3601, -71.0589, mapOf("amenity" to "fuel")),
             )
@@ -115,6 +123,10 @@ class UsaEiaProviderTest {
                 radiusKm: Int,
                 tagFilters: List<Pair<String, Set<String>>>,
                 limit: Int,
+                minLat: Double?,
+                maxLat: Double?,
+                minLng: Double?,
+                maxLng: Double?
             ): List<OverpassElement> = listOf(
                 OverpassElement(1, 42.58, -72.85, mapOf("amenity" to "fuel", "name" to "Rural")),
             )

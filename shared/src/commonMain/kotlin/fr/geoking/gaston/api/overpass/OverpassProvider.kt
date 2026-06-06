@@ -1,6 +1,6 @@
 package fr.geoking.gaston.api.overpass
 
-import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
+import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.api.routex.PoiAmenities
 import fr.geoking.gaston.poi.IrveDetails
@@ -73,7 +73,11 @@ class OverpassProvider(
                 longitude = request.longitude,
                 radiusKm = effectiveRadiusKm,
                 tagFilters = tagFilters,
-                limit = limit
+                limit = limit,
+                minLat = request.viewport?.minLat,
+                maxLat = request.viewport?.maxLat,
+                minLng = request.viewport?.minLng,
+                maxLng = request.viewport?.maxLng
             )
         } else {
             client.queryNodesWithTagFilters(
@@ -81,7 +85,11 @@ class OverpassProvider(
                 longitude = request.longitude,
                 radiusKm = effectiveRadiusKm,
                 tagFilters = tagFilters,
-                limit = limit
+                limit = limit,
+                minLat = request.viewport?.minLat,
+                maxLat = request.viewport?.maxLat,
+                minLng = request.viewport?.minLng,
+                maxLng = request.viewport?.maxLng
             )
         }
         return elements.mapNotNull { el ->

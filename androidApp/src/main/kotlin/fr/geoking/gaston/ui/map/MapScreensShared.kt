@@ -44,7 +44,6 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.belib.matchAvailabilityToPois
-import fr.geoking.gaston.api.routex.radiusKmFromMapViewport
 import fr.geoking.gaston.api.traffic.TrafficInfo
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.api.traffic.TrafficRequest
@@ -54,6 +53,8 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.poi.PoiSearchRequest
+import fr.geoking.gaston.poi.radiusKmFromMapViewport
+import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.shared.network.NetworkException
@@ -168,6 +169,14 @@ fun rememberMapDataState(
             val centerLng = sample.centerLon
             val zoom = sample.zoom
 
+            val viewport = calculateBoundsFromMapViewport(
+                centerLat,
+                centerLng,
+                zoom,
+                mapWidthPx,
+                mapHeightPx
+            )
+
             val requiredRadiusKm = radiusKmFromMapViewport(
                 centerLat,
                 centerLng,
@@ -177,12 +186,6 @@ fun rememberMapDataState(
             ).coerceIn(1, 50)
 
             mapErrorMessage = null
-
-            val viewport = MapViewport(
-                zoom = zoom,
-                mapWidthPx = mapWidthPx,
-                mapHeightPx = mapHeightPx
-            )
 
             try {
                 isLoading = true

@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.routex
 
+import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

@@ -61,17 +61,25 @@ open class OverpassClient(
         longitude: Double,
         radiusKm: Int = 5,
         tagFilters: List<Pair<String, Set<String>>>,
-        limit: Int = 100
+        limit: Int = 100,
+        minLat: Double? = null,
+        maxLat: Double? = null,
+        minLng: Double? = null,
+        maxLng: Double? = null
     ): List<OverpassElement> {
         val flat = tagFilters.map { (key, values) -> values.map { v -> key to v } }.flatten()
         if (flat.isEmpty()) return emptyList()
-        val deltaLat = radiusKm / 111.0
-        val deltaLng = radiusKm / (111.0 * cos(latitude * PI / 180)).coerceAtLeast(0.01)
-        val south = latitude - deltaLat
-        val north = latitude + deltaLat
-        val west = longitude - deltaLng
-        val east = longitude + deltaLng
-        val bbox = "$south,$west,$north,$east"
+        val bbox = if (minLat != null && maxLat != null && minLng != null && maxLng != null) {
+            "$minLat,$minLng,$maxLat,$maxLng"
+        } else {
+            val deltaLat = radiusKm / 111.0
+            val deltaLng = radiusKm / (111.0 * cos(latitude * PI / 180)).coerceAtLeast(0.01)
+            val south = latitude - deltaLat
+            val north = latitude + deltaLat
+            val west = longitude - deltaLng
+            val east = longitude + deltaLng
+            "$south,$west,$north,$east"
+        }
         val unionParts = flat.joinToString("\n") { (key, value) ->
             """  node["$key"="$value"]($bbox);"""
         }
@@ -108,16 +116,24 @@ open class OverpassClient(
         radiusKm: Int = 5,
         tagFilters: List<Pair<String, Set<String>>>,
         limit: Int = 100,
+        minLat: Double? = null,
+        maxLat: Double? = null,
+        minLng: Double? = null,
+        maxLng: Double? = null
     ): List<OverpassElement> {
         val flat = tagFilters.map { (key, values) -> values.map { v -> key to v } }.flatten()
         if (flat.isEmpty()) return emptyList()
-        val deltaLat = radiusKm / 111.0
-        val deltaLng = radiusKm / (111.0 * cos(latitude * PI / 180)).coerceAtLeast(0.01)
-        val south = latitude - deltaLat
-        val north = latitude + deltaLat
-        val west = longitude - deltaLng
-        val east = longitude + deltaLng
-        val bbox = "$south,$west,$north,$east"
+        val bbox = if (minLat != null && maxLat != null && minLng != null && maxLng != null) {
+            "$minLat,$minLng,$maxLat,$maxLng"
+        } else {
+            val deltaLat = radiusKm / 111.0
+            val deltaLng = radiusKm / (111.0 * cos(latitude * PI / 180)).coerceAtLeast(0.01)
+            val south = latitude - deltaLat
+            val north = latitude + deltaLat
+            val west = longitude - deltaLng
+            val east = longitude + deltaLng
+            "$south,$west,$north,$east"
+        }
         val unionParts = flat.joinToString("\n") { (key, value) ->
             """  node["$key"="$value"]($bbox);  way["$key"="$value"]($bbox);"""
         }
