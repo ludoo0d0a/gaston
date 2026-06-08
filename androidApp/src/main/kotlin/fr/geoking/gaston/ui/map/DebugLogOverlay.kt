@@ -3,7 +3,6 @@ package fr.geoking.gaston.ui.map
 import fr.geoking.gaston.R
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.draw.scale
@@ -11,6 +10,10 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
@@ -45,8 +48,47 @@ fun DebugLogOverlay(
     modifier: Modifier = Modifier,
     detectedCountries: String? = null
 ) {
+    var isExpanded by remember { mutableStateOf(false) }
+
     Box(modifier = modifier) {
-        DebugLogOverlayContent(detectedCountries)
+        DebugLogOverlayContent(
+            isExpanded = isExpanded,
+            onExpandedChange = { isExpanded = it },
+            detectedCountries = detectedCountries,
+            modifier = Modifier.padding(16.dp)
+        )
+
+        if (isExpanded) {
+            Popup(
+                onDismissRequest = { isExpanded = false },
+                properties = PopupProperties(focusable = true)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { isExpanded = false }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    DebugLogOverlayContent(
+                        isExpanded = true,
+                        onExpandedChange = { isExpanded = it },
+                        detectedCountries = detectedCountries,
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = { /* Consume clicks to prevent dismissal */ }
+                            )
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -56,8 +98,12 @@ private enum class DebugOverlayTab {
 }
 
 @Composable
-private fun DebugLogOverlayContent(detectedCountries: String?) {
-    var isExpanded by remember { mutableStateOf(false) }
+private fun DebugLogOverlayContent(
+    isExpanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    detectedCountries: String?,
+    modifier: Modifier = Modifier
+) {
     var selectedTab by remember { mutableStateOf(DebugOverlayTab.Network) }
     val settingsManager = org.koin.compose.koinInject<fr.geoking.gaston.SettingsManager>()
     val settings by settingsManager.settings.collectAsState()
@@ -72,10 +118,10 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    Box(modifier = Modifier.padding(16.dp).zIndex(2f)) {
+    Box(modifier = modifier.zIndex(2f)) {
         if (!isExpanded) {
             FloatingActionButton(
-                onClick = { isExpanded = true },
+                onClick = { onExpandedChange(true) },
                 containerColor = Color(0xFF334155).copy(alpha = 0.8f),
                 contentColor = Color.White,
                 modifier = Modifier.size(48.dp)
@@ -86,7 +132,12 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.9f),
+                    .fillMaxHeight(0.9f)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { /* Consume click to prevent closing when tapping inside */ }
+                    ),
                 color = Color(0xFF0F172A).copy(alpha = 0.95f),
                 shape = RoundedCornerShape(16.dp),
                 border = BoxShadow(Color.White.copy(alpha = 0.2f))
@@ -130,7 +181,7 @@ private fun DebugLogOverlayContent(detectedCountries: String?) {
                             IconButton(onClick = { DebugLogStore.clearAll() }) {
                                 Icon(Icons.Default.DeleteSweep, stringResource(R.string.settings_clear_logs), tint = MaterialTheme.colorScheme.onSurface)
                             }
-                            IconButton(onClick = { isExpanded = false }) {
+                            IconButton(onClick = { onExpandedChange(false) }) {
                                 Icon(Icons.Default.Close, stringResource(R.string.action_close), tint = MaterialTheme.colorScheme.onSurface)
                             }
                         }
