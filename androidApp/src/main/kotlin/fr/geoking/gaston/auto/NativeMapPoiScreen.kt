@@ -32,6 +32,7 @@ import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.belib.matchAvailabilityToPois
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
+import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import kotlinx.coroutines.Job
@@ -65,6 +66,7 @@ class NativeMapPoiScreen(
     private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
     private var sortByPrice: Boolean = false
     private var refreshJob: Job? = null
+    private var loadPoisJob: Job? = null
     private var isCheapestFilterActive: Boolean = false
     private var selectedPoi: Poi? = null
     private var selectedPoiAvailability: StationAvailabilitySummary? = null
@@ -74,7 +76,11 @@ class NativeMapPoiScreen(
         lifecycleScope.launch {
             settingsManager.settings
                 .map { s ->
-                    s.selectedPoiProviders to s.selectedMapEnergyTypes
+                    Triple(
+                        s.selectedPoiProviders,
+                        s.selectedMapEnergyTypes,
+                        s.effectiveProvidersAt(searchLat, searchLon)
+                    )
                 }
                 .distinctUntilChanged()
                 .collectLatest {
@@ -84,7 +90,8 @@ class NativeMapPoiScreen(
     }
 
     private fun loadPois(showLoading: Boolean = true, overrideLat: Double? = null, overrideLon: Double? = null) {
-        lifecycleScope.launch {
+        loadPoisJob?.cancel()
+        loadPoisJob = lifecycleScope.launch {
             if (showLoading) {
                 isLoading = true
                 invalidate()
@@ -100,23 +107,28 @@ class NativeMapPoiScreen(
             searchLon = lon
 
             try {
-                val result = poiProvider.searchResult(PoiSearchRequest(lat, lon, null, emptySet()))
-                pois = result.pois
                 favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
-                val provider = availabilityProviderFactory.getProvider(lat, lon)
-                if (provider != null) {
-                    val availabilities = try {
-                        provider.getAvailability(lat, lon, 10)
-                    } catch (e: Exception) {
-                        emptyList()
+                poiProvider.searchFlow(PoiSearchRequest(lat, lon, null, emptySet(), skipFilters = true)).collect { result ->
+                    pois = result.pois
+                    val provider = availabilityProviderFactory.getProvider(lat, lon)
+                    if (provider != null) {
+                        val availabilities = try {
+                            provider.getAvailability(lat, lon, 10)
+                        } catch (e: Exception) {
+                            if (e is kotlinx.coroutines.CancellationException) throw e
+                            emptyList()
+                        }
+                        availabilityByPoiId = availabilityByPoiId + matchAvailabilityToPois(availabilities, pois)
                     }
-                    availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
+                    isLoading = false
+                    invalidate()
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 Log.e("NativeMapPoiScreen", "loadPois failed", e)
+                isLoading = false
+                invalidate()
             }
-            isLoading = false
-            invalidate()
         }
     }
 
