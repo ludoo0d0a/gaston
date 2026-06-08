@@ -30,7 +30,7 @@ Prerequisites: JDK 17+, `local.properties` with `sdk.dir` (and optional `GOOGLE_
 - New country/API feed → `shared/.../api/<country>/` following existing `*Client` + `*Provider` pairs
 - POI merge/selection → `shared/.../poi/`
 - Phone map/UI → `androidApp/.../ui/`
-- Android Auto screens → `androidApp/.../auto/`
+- Android Auto screens → `androidApp/.../auto/` (template constraints: [`docs/android-auto.md`](docs/android-auto.md), Cursor rule `.cursor/rules/android-auto-constraints.mdc`)
 - On-device DB → `androidApp/.../persistence/`
 
 ## Behavioral guidelines (Karpathy)

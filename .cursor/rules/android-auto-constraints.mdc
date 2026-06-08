@@ -1,0 +1,96 @@
+---
+description: Android Auto template host constraints — avoid runtime crashes and rejections
+globs: androidApp/**/auto/**/*.kt
+alwaysApply: false
+---
+
+# Android Auto host constraints
+
+Full reference: [`docs/android-auto.md`](../../docs/android-auto.md). Official: [template restrictions](https://developer.android.com/training/cars/apps/library/template-restrictions).
+
+## Required patterns (every Screen)
+
+- Wrap `onGetTemplate()` in `safeCarTemplate(carContext, logTag, templateName) { … }` (`CarTemplateSafe.kt`).
+- Never hardcode list limits — use `ConstraintManager.getContentLimit(CONTENT_LIMIT_TYPE_LIST)` (fallback `6`).
+- Rows that push a screen: `.setBrowsable(true)` + `setOnClickListener { screenManager.push(…) }`.
+- Toggle/action rows (zoom, sort): **not** browsable.
+
+## Template quota (per task)
+
+- Max **5 template steps** per task; last step must be `NavigationTemplate`, `PaneTemplate`, `MessageTemplate`, `MediaPlaybackTemplate`, `SignInTemplate`, or `LongMessageTemplate`.
+- Same-type refresh with same main content does **not** count. `NavigationTemplate` resets quota.
+- Popped screens must return the **same template type** they last returned.
+
+## Message content
+
+| Template | Use for | Body limit |
+|----------|---------|------------|
+| `MessageTemplate` | Short status/errors | **~500 chars** — always `.take(500)` |
+| `LongMessageTemplate` | Station detail, about, scrollable text | **~5000 chars** — `.take(5000)` |
+
+- Use **plain `String`** bodies — avoid `SpannableString` / style spans (strict hosts reject them).
+- `LongMessageTemplate`: `setTitle` + `setHeaderAction(BACK)` + `addAction` for primary actions (not `Header.addEndHeaderAction`).
+- `MessageTemplate`: max **2** `addAction()`; optional icon.
+
+## Row rules
+
+- **Forbidden**: `Row.IMAGE_TYPE_LARGE` + `Metadata.setPlace()` on same row → use `IMAGE_TYPE_SMALL`.
+- `PlaceListMapTemplate` rows: must include `Metadata.setPlace(...)` for map pins; use `includePlace = true` in `AutoPoiUiHelper.buildPoiRow`.
+- `MapWithContentTemplate` list rows: `includePlace = false` (app draws map); row uses `setImage`.
+- Max **2** `addText()` per row.
+- Include `DistanceSpan` on list rows when distance is shown (`AutoPoiUiHelper` pattern).
+
+## ListTemplate / PlaceListMapTemplate
+
+- `setLoading(true)` and item list are **mutually exclusive**.
+- Header: `setStartHeaderAction(BACK)` or `APP_ICON` (root).
+- End header actions: max 2 (prefer 1 on strict hosts).
+
+## ActionStrip
+
+| Template | Max actions |
+|----------|-------------|
+| List, Grid, Pane, Message, SignIn… | **2** |
+| MapWithContent, PlaceListMap, Navigation | **4** |
+
+- Map templates: **icon required** on every action (title-only rejected).
+- Max **1 label button** (title visible) per strip; rest icon-only.
+- `Action.BACK` / `Action.APP_ICON` → header only, never in ActionStrip.
+- Gaston map screens: keep ActionStrip minimal (settings ± errors); put zoom/recenter on nested `Header` end actions.
+
+## MapWithContentTemplate (CustomMapPoiScreen, MapLibrePoiScreen)
+
+- Permissions: `MAP_TEMPLATES` + `ACCESS_SURFACE`; `minCarApiLevel` **7**.
+- Content: `ListTemplate` | `GridTemplate` | `PaneTemplate` | `MessageTemplate` only.
+- Register `SurfaceCallback` in `onStart`, stop renderer in `onStop`.
+
+## PlaceListMapTemplate (NativeMapPoiScreen)
+
+- Host-rendered map — app cannot control bearing/zoom. Use `CustomMapPoiScreen` for orientation toggle.
+- Set anchor `Place` for user location. Loading vs item list mutually exclusive.
+
+## TabTemplate
+
+- Nested `ListTemplate` inside `TabContents` must **not** have header or title.
+
+## POI category (Gaston)
+
+- Category: `androidx.car.app.category.POI` — no `NavigationTemplate`, no `AppManager.showAlert()`.
+- Alerts: phone notifications + `CarAppExtender` / HUN (see `docs/android-auto.md`).
+
+## Common runtime failures
+
+1. Long text in `MessageTemplate` → `LongMessageTemplate`
+2. Row image + Place metadata → `IMAGE_TYPE_SMALL` or split image vs place
+3. >6 list rows without `ConstraintManager` → `.take(listLimit)`
+4. Map ActionStrip title-only → add icon
+5. Screen push row missing `setBrowsable(true)`
+6. Template quota >5 pushes → flatten navigation or use refresh
+7. Host rejection after `onGetTemplate()` returns → not catchable; check `adb logcat -s CarApp`
+
+## Examples in codebase
+
+- Safe wrapper: `CarTemplateSafe.kt`
+- POI rows: `AutoPoiUiHelper.kt`
+- Long detail: `PoiDetailScreen.kt` (`ListTemplate` rows), `AutoAboutScreen.kt` (`LongMessageTemplate`)
+- Map + list: `CustomMapPoiScreen.kt`, `NativeMapPoiScreen.kt`

@@ -164,6 +164,43 @@ The action strip is a row of icon/label buttons rendered at the top-right of the
 
 ---
 
+## MessageTemplate vs LongMessageTemplate
+
+| Template | Use for | Body limit |
+|----------|---------|------------|
+| `MessageTemplate` | Short status, errors, confirmations | **~500 chars** — always `.take(500)` |
+| `LongMessageTemplate` | Station detail, about text, scrollable content | **~5000 chars** — `.take(5000)` |
+
+Additional rules:
+
+- Use **plain `String`** for message bodies. Avoid `SpannableString` and style spans — strict host
+  validators may reject styled text and crash the session.
+- `LongMessageTemplate` uses `setTitle()` + `setHeaderAction(Action.BACK)` + `addAction()` for
+  actions. Do not use `Header.addEndHeaderAction()` on this template type.
+- `MessageTemplate` supports at most **2** `addAction()` calls and an optional icon.
+
+Reference implementations: `AutoAboutScreen.kt` (long scrollable text), `PoiDetailScreen.kt` (structured rows via `ListTemplate`), `ErrorScreen.kt` (short status).
+
+---
+
+## TabTemplate
+
+- Nested `ListTemplate` inside `TabContents` must **not** set a header or title on the inner list
+  (see `AutoTabTemplateScreen.kt`).
+
+---
+
+## Gaston map screen layout
+
+`CustomMapPoiScreen` / `MapLibrePoiScreen` split controls across templates:
+
+- **ActionStrip** (top-right): minimal — settings icon, optional API-errors icon (max 1–2 actions).
+- **Nested ListTemplate Header** end actions: zoom, recenter, compass/orientation (icon + title where needed).
+
+Do not put all map controls on the ActionStrip; strict hosts reject overloaded strips.
+
+---
+
 ## safeCarTemplate wrapper
 
 `CarTemplateSafe.kt` wraps every `onGetTemplate()` call:
@@ -186,6 +223,8 @@ The action strip is a row of icon/label buttons rendered at the top-right of the
 2. Watch logcat: `adb logcat -s CarApp:V CustomMapPoiScreen:V NativeMapPoiScreen:V`.
 3. When a `MessageTemplate` error overlay appears on the head unit, the DiagnosticStore on the phone holds the full stack trace.
 4. Common rejection causes:
+   - Long text in `MessageTemplate` → use `LongMessageTemplate` and cap at 5000 chars
+   - `SpannableString` / styled spans in template body → use plain `String`
    - `IMAGE_TYPE_LARGE` + Place metadata on the same Row → use `IMAGE_TYPE_SMALL`
    - ActionStrip with more than 2 actions on a non-map template (or more than 4 on a map template) → trim actions
    - ActionStrip with a title-only action (no icon) on a map template → always add an icon
@@ -193,3 +232,10 @@ The action strip is a row of icon/label buttons rendered at the top-right of the
    - More than 6 rows in a ListTemplate → use `ConstraintManager`
    - Navigation rows missing `setIsBrowsable(true)` → add it to all screen-pushing rows
    - Template quota exceeded (> 5 steps) → restructure navigation flow
+   - Inner `ListTemplate` in `TabTemplate` with header/title → remove header from nested list
+
+---
+
+## Agent / IDE memory
+
+Cursor rule (auto-loaded when editing `androidApp/.../auto/`): `.cursor/rules/android-auto-constraints.mdc`

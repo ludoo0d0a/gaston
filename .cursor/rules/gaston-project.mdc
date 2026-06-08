@@ -23,7 +23,7 @@ Kotlin Multiplatform fuel & EV station finder — `:shared` (models, networking,
 
 - Match surrounding Kotlin: explicit types when clarity helps, avoid drive-by refactors
 - Phone UI: Jetpack Compose + Material 3 in `androidApp/.../ui/`
-- Android Auto: Car App Library templates in `androidApp/.../auto/` — keep templates safe and minimal while driving
+- Android Auto: Car App Library templates in `androidApp/.../auto/` — wrap in `safeCarTemplate`, follow `.cursor/rules/android-auto-constraints.mdc` and `docs/android-auto.md`
 - Networking: Ktor in `:shared`; DI via Koin
 - Persistence: Room in `:androidApp` for on-device cache/history
 - Prefer extending an existing provider/client over new parallel abstractions

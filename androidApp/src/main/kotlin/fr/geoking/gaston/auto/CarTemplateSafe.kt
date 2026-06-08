@@ -19,6 +19,9 @@ import org.koin.core.context.GlobalContext
  * - ListTemplate inside MapWithContentTemplate: max rows from ConstraintManager (default 6).
  * - Navigation rows must call setBrowsable(true).
  * - MapWithContentTemplate requires MAP_TEMPLATES + ACCESS_SURFACE permissions and minCarApiLevel 7.
+ * - MessageTemplate body ~500 chars; LongMessageTemplate ~5000 chars; plain String only (no spans).
+ *
+ * Full list: docs/android-auto.md and .cursor/rules/android-auto-constraints.mdc
  */
 internal fun safeCarTemplate(
     carContext: CarContext,
