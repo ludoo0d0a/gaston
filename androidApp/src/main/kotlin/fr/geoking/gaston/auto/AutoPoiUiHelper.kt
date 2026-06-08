@@ -181,9 +181,13 @@ object AutoPoiUiHelper {
         effectivePowerLevels: Set<Int> = emptySet(),
         distanceFromLatLon: Pair<Double, Double>? = null,
         onHeaderClick: (() -> Unit)? = null,
-        maxRows: Int = 6
+        maxRows: Int = 6,
+        includePlace: Boolean = false
     ): List<Row> {
         val rows = mutableListOf<Row>()
+        val metadata = if (includePlace) {
+            Metadata.Builder().setPlace(buildPlace(carContext, poi)).build()
+        } else null
 
         // 1. Brand / Name Row
         val brandIcon = buildPoiIcon(carContext, poi, effectiveEnergyTypes, effectivePowerLevels)
@@ -192,7 +196,12 @@ object AutoPoiUiHelper {
 
         val headerRow = Row.Builder()
             .setTitle(title)
-            .setImage(brandIcon, Row.IMAGE_TYPE_SMALL)
+
+        if (includePlace) {
+            headerRow.setMetadata(metadata!!)
+        } else {
+            headerRow.setImage(brandIcon, Row.IMAGE_TYPE_SMALL)
+        }
 
         brandInfo?.let {
             if (title != it.displayName) {
@@ -222,12 +231,12 @@ object AutoPoiUiHelper {
 
         // 1b. Address Row
         if (poi.address.isNotBlank()) {
-            rows.add(
-                Row.Builder()
-                    .setTitle(carContext.getString(R.string.poi_section_address))
-                    .addText(poi.address)
-                    .build()
-            )
+            val addressRow = Row.Builder()
+                .setTitle(carContext.getString(R.string.poi_section_address))
+                .addText(poi.address)
+
+            if (includePlace) addressRow.setMetadata(metadata!!)
+            rows.add(addressRow.build())
         }
 
         // 2. Prepare non-fuel sections to know how much space is left for fuel
@@ -238,7 +247,9 @@ object AutoPoiUiHelper {
             poi.powerKw?.let { electricInfo.add(carContext.getString(R.string.power_kw_format, it.toInt())) }
 
             if (electricInfo.isNotEmpty()) {
-                irveRows.add(Row.Builder().setTitle(electricInfo.joinToString(" • ")).build())
+                val row = Row.Builder().setTitle(electricInfo.joinToString(" • "))
+                if (includePlace) row.setMetadata(metadata!!)
+                irveRows.add(row.build())
             }
 
             val connectorInfo = mutableListOf<String>()
@@ -252,7 +263,9 @@ object AutoPoiUiHelper {
             }
 
             if (connectorInfo.isNotEmpty()) {
-                irveRows.add(Row.Builder().setTitle(connectorInfo.joinToString(" • ")).build())
+                val row = Row.Builder().setTitle(connectorInfo.joinToString(" • "))
+                if (includePlace) row.setMetadata(metadata!!)
+                irveRows.add(row.build())
             }
         }
 
@@ -270,12 +283,12 @@ object AutoPoiUiHelper {
             if (a.drinkingWater == true) ams.add(carContext.getString(R.string.amenity_drinking_water))
 
             if (ams.isNotEmpty()) {
-                amenityRows.add(
-                    Row.Builder()
-                        .setTitle(carContext.getString(R.string.poi_section_services))
-                        .addText(ams.joinToString(" • "))
-                        .build()
-                )
+                val row = Row.Builder()
+                    .setTitle(carContext.getString(R.string.poi_section_services))
+                    .addText(ams.joinToString(" • "))
+
+                if (includePlace) row.setMetadata(metadata!!)
+                amenityRows.add(row.build())
             }
         }
 
@@ -304,12 +317,12 @@ object AutoPoiUiHelper {
             // Note: Colors in secondary text are sometimes ignored by hosts but valid in library.
             textSpannable.setSpan(ForegroundCarColorSpan.create(fuelColor), 0, textSpannable.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
 
-            rows.add(
-                Row.Builder()
-                    .setTitle(titleSpannable)
-                    .addText(textSpannable)
-                    .build()
-            )
+            val fuelRow = Row.Builder()
+                .setTitle(titleSpannable)
+                .addText(textSpannable)
+
+            if (includePlace) fuelRow.setMetadata(metadata!!)
+            rows.add(fuelRow.build())
         }
 
         // 4. Add IRVE and Amenities

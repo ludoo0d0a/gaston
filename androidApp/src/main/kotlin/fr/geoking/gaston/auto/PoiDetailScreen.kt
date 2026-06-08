@@ -44,7 +44,6 @@ class PoiDetailScreen(
         }
 
         val navigateAction = Action.Builder()
-            .setTitle(carContext.getString(R.string.screen_navigate_to))
             .setIcon(carContext.actionNavigateToIcon())
             .setOnClickListener {
                 carContext.startCarApp(navigateIntent)
@@ -52,8 +51,10 @@ class PoiDetailScreen(
             .build()
 
         val actionStripBuilder = ActionStrip.Builder()
+        var actionCount = 0
 
         if (poiList.isNotEmpty() && currentIndex > 0) {
+            actionCount++
             actionStripBuilder.addAction(
                 Action.Builder()
                     .setTitle(carContext.getString(R.string.action_previous))
@@ -70,6 +71,7 @@ class PoiDetailScreen(
         }
 
         if (poiList.isNotEmpty() && currentIndex < poiList.size - 1 && currentIndex != -1) {
+            actionCount++
             actionStripBuilder.addAction(
                 Action.Builder()
                     .setTitle(carContext.getString(R.string.action_next))
@@ -105,7 +107,7 @@ class PoiDetailScreen(
         val itemListBuilder = ItemList.Builder()
         detailRows.forEach { itemListBuilder.addItem(it) }
 
-        return ListTemplate.Builder()
+        val builder = ListTemplate.Builder()
             .setHeader(
                 Header.Builder()
                     .setTitle(title)
@@ -113,8 +115,12 @@ class PoiDetailScreen(
                     .addEndHeaderAction(navigateAction)
                     .build()
             )
-            .setActionStrip(actionStripBuilder.build())
             .setSingleList(itemListBuilder.build())
-            .build()
+
+        if (actionCount > 0) {
+            builder.setActionStrip(actionStripBuilder.build())
+        }
+
+        return builder.build()
     }
 }
