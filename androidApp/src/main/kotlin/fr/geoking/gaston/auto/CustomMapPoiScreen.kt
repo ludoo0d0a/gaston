@@ -375,8 +375,11 @@ class CustomMapPoiScreen(
         lastAppliedZoom = zoom
     }
 
+    private var loadPoisJob: Job? = null
+
     private fun loadPois(preserveZoom: Boolean = false, showLoading: Boolean = true) {
-        lifecycleScope.launch {
+        loadPoisJob?.cancel()
+        loadPoisJob = lifecycleScope.launch {
             if (showLoading) {
                 isLoading = true
                 invalidate()
@@ -403,43 +406,101 @@ class CustomMapPoiScreen(
             applyMapOrientationToRenderer()
 
             try {
-                val settings = settingsManager.settings.value
-                val (loadedPois, loadedErrors) = searchPoisWithZoomOut(lat, lon, settings, preserveZoom)
-                pois = loadedPois
-                errors = loadedErrors
-
-                val filteredPois = getFilteredPois(settings)
-                surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
-                lastSyncedPoiIds = emptyList()
-                syncRendererWithMapState()
-
-                Log.d(
-                    "CustomMapPoiScreen",
-                    "pois loaded: ${pois.size} filtered=${filteredPois.size} zoom=$zoom center=$searchLat,$searchLon errors=${errors.size}"
-                )
                 favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
-                val provider = availabilityProviderFactory.getProvider(lat, lon)
-                if (provider != null) {
-                    try {
-                        val availabilities = provider.getAvailability(lat, lon, 10)
+                val settings = settingsManager.settings.value
+
+                if (itineraryPoints.isNotEmpty() && routePlanner != null) {
+                    val result = routePlanner.getStationsAlongRoute(
+                        points = itineraryPoints,
+                        poiProvider = poiProvider
+                    )
+                    pois = result.getOrDefault(emptyList())
+                    errors = emptyList()
+                    val filteredPois = getFilteredPois(settings)
+                    applyCameraForItinerary(lat, lon, filteredPois)
+                    surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+                    syncRendererWithMapState()
+                    isLoading = false
+                    refitCameraForVisibleAreaIfNeeded()
+                    invalidate()
+
+                    // Availability for itinerary stations
+                    val provider = availabilityProviderFactory.getProvider(lat, lon)
+                    if (provider != null) {
+                        val availabilities = try {
+                            provider.getAvailability(lat, lon, 10)
+                        } catch (e: Exception) {
+                            if (e is kotlinx.coroutines.CancellationException) throw e
+                            emptyList()
+                        }
                         availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
-                    } catch (e: Exception) {
-                        if (e is kotlinx.coroutines.CancellationException) throw e
-                        availabilityByPoiId = emptyMap()
+                        syncRendererWithMapState()
+                        invalidate()
                     }
                 } else {
-                    availabilityByPoiId = emptyMap()
+                    val (fitW, fitH) = mapFitSizePx()
+                    var currentSearchZoom = if (preserveZoom) zoom else AutoMapCamera.DEFAULT_ZOOM
+                    val searchZoomLevels = if (preserveZoom) listOf(zoom) else AutoMapCamera.searchZoomLevels()
+
+                    for (searchZoom in searchZoomLevels) {
+                        currentSearchZoom = searchZoom
+                        var foundPoisAtThisZoom = false
+
+                        val viewport = MapViewport(
+                            zoom = searchZoom.toFloat(),
+                            mapWidthPx = fitW.coerceAtLeast(1),
+                            mapHeightPx = fitH.coerceAtLeast(1),
+                        )
+
+                        poiProvider.searchFlow(
+                            PoiSearchRequest(
+                                latitude = lat,
+                                longitude = lon,
+                                viewport = viewport,
+                                categories = emptySet(),
+                                skipFilters = true,
+                            )
+                        ).collect { result ->
+                            pois = result.pois
+                            errors = result.errors
+                            val filteredPois = getFilteredPois(settings)
+
+                            if (filteredPois.isNotEmpty()) {
+                                foundPoisAtThisZoom = true
+                            }
+
+                            applyCameraForStations(lat, lon, filteredPois, currentSearchZoom, preserveZoom)
+                            surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+                            syncRendererWithMapState()
+                            isLoading = false
+                            refitCameraForVisibleAreaIfNeeded()
+                            invalidate()
+
+                            // Update availability incrementally
+                            val provider = availabilityProviderFactory.getProvider(lat, lon)
+                            if (provider != null) {
+                                val availabilities = try {
+                                    provider.getAvailability(lat, lon, 10)
+                                } catch (e: Exception) {
+                                    if (e is kotlinx.coroutines.CancellationException) throw e
+                                    emptyList()
+                                }
+                                availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
+                                syncRendererWithMapState()
+                                invalidate()
+                            }
+                        }
+                        if (foundPoisAtThisZoom) break
+                    }
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                Log.e("CustomMapPoiScreen", "getGasStations failed", e)
+                Log.e("CustomMapPoiScreen", "loadPois failed", e)
                 pois = emptyList()
                 errors = listOf(PoiProviderError("System", e.message ?: "Unknown error", isCritical = true))
-                availabilityByPoiId = emptyMap()
+                isLoading = false
+                invalidate()
             }
-            isLoading = false
-            refitCameraForVisibleAreaIfNeeded()
-            invalidate()
         }
     }
 
