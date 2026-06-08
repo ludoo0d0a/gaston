@@ -6,6 +6,7 @@ import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.Header
@@ -44,9 +45,18 @@ class PoiDetailScreen(
         }
 
         val navigateAction = Action.Builder()
+            .setTitle(carContext.getString(R.string.screen_navigate_to))
             .setIcon(carContext.actionNavigateToIcon())
             .setOnClickListener {
                 carContext.startCarApp(navigateIntent)
+            }
+            .build()
+
+        val closeAction = Action.Builder()
+            .setTitle(carContext.getString(R.string.action_close))
+            .setIcon(carContext.actionCloseIcon())
+            .setOnClickListener {
+                screenManager.pop()
             }
             .build()
 
@@ -91,6 +101,13 @@ class PoiDetailScreen(
         val resolvedEnergyTypes = if (effectiveEnergyTypes.isNotEmpty()) effectiveEnergyTypes else currentSettings.effectiveMapEnergyFilterIds()
         val resolvedPowerLevels = if (effectivePowerLevels.isNotEmpty()) effectivePowerLevels else currentSettings.effectiveIrvePowerLevels()
 
+        val listLimit = try {
+            carContext.getCarService(ConstraintManager::class.java)
+                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+        } catch (_: Exception) {
+            6
+        }
+
         val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
             carContext = carContext,
             poi = poi,
@@ -101,7 +118,8 @@ class PoiDetailScreen(
                 currentSettings.lastKnownLon?.let { lon ->
                     lat to lon
                 }
-            }
+            },
+            maxRows = listLimit
         )
 
         val itemListBuilder = ItemList.Builder()
@@ -113,6 +131,7 @@ class PoiDetailScreen(
                     .setTitle(title)
                     .setStartHeaderAction(Action.BACK)
                     .addEndHeaderAction(navigateAction)
+                    .addEndHeaderAction(closeAction)
                     .build()
             )
             .setSingleList(itemListBuilder.build())
