@@ -192,6 +192,11 @@ configure<ApplicationExtension> {
 // Après un bundle*Release, le mapping est copié dans build/deobfuscation/
 // pour upload Play Console ou crash reporting.
 afterEvaluate {
+    // Lint UAST analysis can crash when it races Kotlin compile (AGP/Kotlin 2.3); run after compile.
+    tasks.matching { it.name.startsWith("lintAnalyze") }.configureEach {
+        mustRunAfter(tasks.matching { it.name.startsWith("compile") })
+    }
+
     val appExt = extensions.getByType(com.android.build.api.dsl.ApplicationExtension::class.java)
     val versionName = appExt.defaultConfig.versionName ?: "unknown"
     val copyMappings = tasks.register("copyReleaseMappings") {
