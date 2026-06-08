@@ -848,7 +848,6 @@ class MapLibrePoiScreen(
                             )
                             .addEndHeaderAction(
                                 Action.Builder()
-                                    .setTitle(carContext.getString(R.string.screen_navigate_to))
                                     .setIcon(carContext.actionNavigateToIcon())
                                     .setOnClickListener { carContext.startCarApp(navigateIntent) }
                                     .build()

@@ -222,9 +222,15 @@ class NativeMapPoiScreen(
         }
         val actionStrip = actionStripBuilder.build()
 
-        val anchorPlace = Place.Builder(CarLocation.create(searchLat, searchLon))
-            .setMarker(PlaceMarker.Builder().setColor(CarColor.RED).build())
-            .build()
+        val anchorPlace = if (poi != null) {
+            Place.Builder(CarLocation.create(poi.latitude, poi.longitude))
+                .setMarker(PlaceMarker.Builder().setColor(CarColor.RED).build())
+                .build()
+        } else {
+            Place.Builder(CarLocation.create(searchLat, searchLon))
+                .setMarker(PlaceMarker.Builder().setColor(CarColor.RED).build())
+                .build()
+        }
 
         // PlaceListMapTemplate: loading and item list are mutually exclusive (see Builder.build()).
         if (isLoading) {
@@ -273,6 +279,7 @@ class NativeMapPoiScreen(
                 effectivePowerLevels = effectivePowerLevels,
                 distanceFromLatLon = searchLat to searchLon,
                 maxRows = listLimit,
+                includePlace = true,
                 onHeaderClick = {
                     screenManager.push(
                         PoiDetailScreen(
