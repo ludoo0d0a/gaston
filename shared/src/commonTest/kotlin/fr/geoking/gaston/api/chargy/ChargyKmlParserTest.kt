@@ -75,4 +75,23 @@ class ChargyKmlParserTest {
         assertEquals(1, stations[0].availableConnectors)
         assertEquals(11.0, stations[0].maxPowerKw)
     }
+
+    @Test
+    fun parse_withNamespacedPlacemark_works() {
+        val kml = """
+            <kml xmlns:kml="http://www.opengis.net/kml/2.2">
+                <kml:Placemark>
+                    <kml:name>Namespaced Station</kml:name>
+                    <kml:Point>
+                        <kml:coordinates>6.15,49.65,0</kml:coordinates>
+                    </kml:Point>
+                </kml:Placemark>
+            </kml>
+        """.trimIndent()
+        val stations = ChargyKmlParser.parse(kml)
+        assertEquals(1, stations.size)
+        assertEquals("Namespaced Station", stations[0].name)
+        assertEquals(49.65, stations[0].latitude)
+        assertEquals(6.15, stations[0].longitude)
+    }
 }

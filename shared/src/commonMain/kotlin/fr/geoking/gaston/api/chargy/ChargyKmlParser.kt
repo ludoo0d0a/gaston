@@ -18,24 +18,21 @@ object ChargyKmlParser {
         val stations = mutableListOf<ChargyStation>()
         var offset = 0
         while (true) {
-            // Find start of Placemark tag, allowing for attributes/namespaces
-            val startPlacemark = kml.indexOf("<Placemark", offset)
-            if (startPlacemark == -1) break
+            // Find start of Placemark tag, allowing for attributes/namespaces (e.g. <Placemark or <ns:Placemark)
+            val match = "<(?:[a-zA-Z0-9]+:)?Placemark\\b".toRegex().find(kml, offset)
+            if (match == null) break
 
-            // Ensure it's exactly <Placemark or <Placemark plus a separator
-            val nextChar = kml.getOrNull(startPlacemark + 10)
-            if (nextChar != null && nextChar != '>' && !nextChar.isWhitespace()) {
-                offset = startPlacemark + 10
-                continue
-            }
+            val startPlacemark = match.range.first
+            val actualTag = match.value.substring(1)
 
-            val endPlacemark = kml.indexOf("</Placemark>", startPlacemark)
+            val endTag = "</$actualTag>"
+            val endPlacemark = kml.indexOf(endTag, startPlacemark)
             if (endPlacemark == -1) break
 
             val placemarkContent = kml.substring(startPlacemark, endPlacemark)
             parsePlacemark(placemarkContent)?.let { stations.add(it) }
 
-            offset = endPlacemark + "</Placemark>".length
+            offset = endPlacemark + endTag.length
         }
         return stations
     }
