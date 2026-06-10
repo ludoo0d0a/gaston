@@ -22,8 +22,8 @@ import fr.geoking.gaston.api.belib.StationAvailabilitySummary
  * Android Auto screen showing full POI details and a "Go to this station" action
  * that starts navigation (e.g. to Android Auto driving app).
  *
- * Uses [ListTemplate] rows (not [androidx.car.app.model.MessageTemplate]) so details stay
- * within host row limits; [safeCarTemplate] avoids session crashes on validation errors.
+ * Uses [ListTemplate] rows (not MessageTemplate) so details stay within host row limits;
+ * [safeCarTemplate] avoids session crashes on validation errors.
  */
 class PoiDetailScreen(
     carContext: CarContext,
