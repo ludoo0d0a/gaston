@@ -7,7 +7,6 @@ import androidx.car.app.model.CarIcon
 import androidx.car.app.model.CarLocation
 import androidx.car.app.model.Distance
 import androidx.car.app.model.DistanceSpan
-import androidx.car.app.model.ForegroundCarColorSpan
 import androidx.car.app.model.Metadata
 import androidx.car.app.model.Place
 import androidx.car.app.model.PlaceMarker
@@ -302,24 +301,14 @@ object AutoPoiUiHelper {
         val maxFuelRows = (maxRows - fixedRowCount).coerceAtLeast(0)
 
         fuelPrices.take(maxFuelRows).forEach { fp ->
-            val fuelId = MapPoiFilter.fuelNameToId(fp.fuelName)
-            val fuelColor = AutoCarIcons.fuelCarColor(fuelId)
-
             val priceStr = if (fp.outOfStock) "—" else "€%.3f".format(fp.price)
             val updated = fp.updatedAt?.let {
                 " (${DateTimeUtils.formatRelativeTime(it)})"
             } ?: ""
 
-            val titleSpannable = SpannableString(fp.fuelName)
-            titleSpannable.setSpan(ForegroundCarColorSpan.create(fuelColor), 0, titleSpannable.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-
-            val textSpannable = SpannableString("$priceStr$updated")
-            // Note: Colors in secondary text are sometimes ignored by hosts but valid in library.
-            textSpannable.setSpan(ForegroundCarColorSpan.create(fuelColor), 0, textSpannable.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-
             val fuelRow = Row.Builder()
-                .setTitle(titleSpannable)
-                .addText(textSpannable)
+                .setTitle(fp.fuelName)
+                .addText("$priceStr$updated")
 
             if (includePlace) fuelRow.setMetadata(metadata!!)
             rows.add(fuelRow.build())
