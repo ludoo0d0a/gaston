@@ -106,7 +106,7 @@ print_header "2. USB device"
 
 # Only count lines ending with "device" (ready), not "unauthorized" or "offline"
 DEVICE_LINE=$(adb devices | grep -E '^[[:graph:]]+[[:space:]]+device$' || true)
-DEVICE_COUNT=$(echo "$DEVICE_LINE" | grep -c . 2>/dev/null || echo 0)
+DEVICE_COUNT=$(echo "$DEVICE_LINE" | grep -c . 2>/dev/null || true)
 
 if [[ "$DEVICE_COUNT" -eq 0 ]]; then
   print_fail "No device connected via USB."
