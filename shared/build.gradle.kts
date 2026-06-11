@@ -17,7 +17,7 @@ kotlin {
     @Suppress("DEPRECATION")
     androidLibrary {
         namespace = "fr.geoking.gaston.shared"
-        compileSdk = 36
+        compileSdk = 37
         minSdk = 26
 
         // Creates androidHostTest (unit tests on JVM); required for commonTest expect/actual helpers.

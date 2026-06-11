@@ -19,7 +19,7 @@ plugins {
 
 configure<ApplicationExtension> {
     namespace = "fr.geoking.gaston"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "fr.geoking.gaston"
