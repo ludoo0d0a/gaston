@@ -21,12 +21,17 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.MapViewport
+import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.belib.matchAvailabilityToPois
@@ -89,6 +94,24 @@ class NativeMapPoiScreen(
         }
     }
 
+    private fun getFilteredPois(currentSettings: AppSettings): List<Poi> {
+        val effectiveProviders = currentSettings.effectiveProvidersAt(searchLat, searchLon)
+        val basePois = StationMapFilters.apply(
+            settings = currentSettings,
+            pois = pois,
+            providers = effectiveProviders,
+            skipWhenOnlyOverpass = true
+        )
+
+        return if (isCheapestFilterActive) {
+            val fuelIds = currentSettings.effectiveMapEnergyFilterIds() - "electric"
+            val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
+            MapPoiFilter.filterCheapest(basePois, fuelIds, isLuxembourg)
+        } else {
+            basePois
+        }
+    }
+
     private fun loadPois(showLoading: Boolean = true, overrideLat: Double? = null, overrideLon: Double? = null) {
         loadPoisJob?.cancel()
         loadPoisJob = lifecycleScope.launch {
@@ -108,8 +131,9 @@ class NativeMapPoiScreen(
 
             try {
                 favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
-                poiProvider.searchFlow(PoiSearchRequest(lat, lon, null, emptySet(), skipFilters = true)).collect { result ->
-                    pois = result.pois
+                val viewport = calculateBoundsFromMapViewport(lat, lon, 14f, 800, 480)
+                poiProvider.searchFlow(PoiSearchRequest(lat, lon, viewport, emptySet(), skipFilters = true)).collect { result ->
+                    pois = PoiMerger.mergeInto(pois, result.pois)
                     val provider = availabilityProviderFactory.getProvider(lat, lon)
                     if (provider != null) {
                         val availabilities = try {
@@ -208,7 +232,8 @@ class NativeMapPoiScreen(
             )
         }
 
-        if (hasFuelFilter && (isCheapestFilterActive || pois.any { !it.fuelPrices.isNullOrEmpty() })) {
+        val fuelIdsForFilter = effectiveEnergies - "electric"
+        if (hasFuelFilter && (isCheapestFilterActive || pois.any { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForFilter } == true })) {
             actionStripBuilder.addAction(
                 Action.Builder()
                     .setIcon(carContext.actionCheapestIcon(isCheapestFilterActive))
@@ -264,20 +289,15 @@ class NativeMapPoiScreen(
         val itemListBuilder = ItemList.Builder()
             .setNoItemsMessage("No POIs found")
 
-        val filteredPois = if (isCheapestFilterActive) {
-            val fuelIds = effectiveEnergies - "electric"
-            val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
-            MapPoiFilter.filterCheapest(pois, fuelIds, isLuxembourg)
-        } else {
-            pois
-        }
+        val filteredPois = getFilteredPois(currentSettings)
 
+        val fuelIds = effectiveEnergies - "electric"
         val sortedPois = MapPoiFilter.sortPois(
             pois = filteredPois,
             lat = searchLat,
             lon = searchLon,
             sortByPrice = sortByPrice,
-            selectedFuelIds = effectiveEnergies - "electric"
+            selectedFuelIds = fuelIds
         )
 
         if (poi != null) {
@@ -314,7 +334,15 @@ class NativeMapPoiScreen(
             )
             detailRows.forEach { itemListBuilder.addItem(it) }
         } else {
-            sortedPois.take(listLimit).forEach { item ->
+            val poisWithPrices = if (fuelIds.isNotEmpty()) {
+                sortedPois.filter { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds } == true }
+                    .take(listLimit.coerceAtMost(5))
+            } else emptyList()
+
+            val otherPois = sortedPois.filter { it !in poisWithPrices }.take(listLimit - poisWithPrices.size)
+            val displayPois = (poisWithPrices + otherPois).sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
+
+            displayPois.take(listLimit).forEach { item ->
                 val availability = availabilityByPoiId[item.id]
                 itemListBuilder.addItem(
                     AutoPoiUiHelper.buildPoiRow(
