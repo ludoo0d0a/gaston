@@ -150,9 +150,22 @@ echo ""
 if [[ "$DO_BUILD" == true ]]; then
   print_header "4. Build & install ($VARIANT)"
 
-  print_info "Running: ./gradlew :${MODULE}:installFullDebug ..."
-  if ! ./gradlew ":${MODULE}:installFullDebug" --no-daemon -q; then
-    print_fail "Build or install failed."
+  APK_PATH="${PROJECT_ROOT}/androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk"
+
+  print_info "Running: ./gradlew :${MODULE}:assembleFullDebug ..."
+  if ! ./gradlew ":${MODULE}:assembleFullDebug" --no-daemon -q; then
+    print_fail "Build failed."
+    exit 1
+  fi
+
+  if [[ ! -f "$APK_PATH" ]]; then
+    print_fail "APK not found: $APK_PATH"
+    exit 1
+  fi
+
+  print_info "Installing: adb -s $DEVICE_SERIAL install -r -d ..."
+  if ! adb -s "$DEVICE_SERIAL" install -r -d "$APK_PATH"; then
+    print_fail "Install failed."
     exit 1
   fi
   print_ok "Installed $VARIANT on device."
