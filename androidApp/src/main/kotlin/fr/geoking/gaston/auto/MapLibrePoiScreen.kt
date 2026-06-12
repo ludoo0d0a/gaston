@@ -35,7 +35,9 @@ import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.VehicleType
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.poi.MapViewport
+import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.poi.PoiSearchResult
 import fr.geoking.gaston.poi.PoiProviderError
@@ -452,7 +454,9 @@ class MapLibrePoiScreen(
                         currentSearchZoom = searchZoom
                         var foundPoisAtThisZoom = false
 
-                        val viewport = MapViewport(
+                        val viewport = calculateBoundsFromMapViewport(
+                            centerLat = lat,
+                            centerLng = lon,
                             zoom = searchZoom.toFloat(),
                             mapWidthPx = fitW.coerceAtLeast(1),
                             mapHeightPx = fitH.coerceAtLeast(1),
@@ -467,7 +471,7 @@ class MapLibrePoiScreen(
                                 skipFilters = true,
                             )
                         ).collect { result ->
-                            pois = result.pois
+                            pois = PoiMerger.mergeInto(pois, result.pois)
                             errors = result.errors
                             val filteredPois = getFilteredPois(settings)
 
