@@ -39,6 +39,27 @@ object AutoPoiUiHelper {
         return r * c
     }
 
+    private fun applyDistanceSpan(
+        rowBuilder: Row.Builder,
+        distanceFromLatLon: Pair<Double, Double>?,
+        poi: Poi,
+        label: String? = null
+    ) {
+        if (distanceFromLatLon == null) return
+        val (lat, lon) = distanceFromLatLon
+        val meters = distanceMeters(lat, lon, poi.latitude, poi.longitude)
+        val distance = if (meters >= 1000.0) {
+            Distance.create(meters / 1000.0, Distance.UNIT_KILOMETERS)
+        } else {
+            Distance.create(meters, Distance.UNIT_METERS)
+        }
+        val interpunct = "\u00b7"
+        val text = if (label != null) "  $interpunct $label" else " "
+        val s = SpannableString(text)
+        s.setSpan(DistanceSpan.create(distance), 0, 1, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
+        rowBuilder.addText(s)
+    }
+
     private fun buildPoiIcon(
         carContext: CarContext,
         poi: Poi,
@@ -114,22 +135,11 @@ object AutoPoiUiHelper {
         }
 
         val label = PoiMarkerHelper.getPoiLabel(poi, effectiveEnergyTypes, effectivePowerLevels)
-        val interpunct = "\u00b7"
 
         // PlaceList* templates require DistanceSpan on non-browsable rows; some hosts are strict even
         // when rows are browsable. Including a DistanceSpan makes the row universally valid.
         if (distanceFromLatLon != null) {
-            val (lat, lon) = distanceFromLatLon
-            val meters = distanceMeters(lat, lon, poi.latitude, poi.longitude)
-            val distance = if (meters >= 1000.0) {
-                Distance.create(meters / 1000.0, Distance.UNIT_KILOMETERS)
-            } else {
-                Distance.create(meters, Distance.UNIT_METERS)
-            }
-            val text = if (label != null) "  $interpunct $label" else " "
-            val s = SpannableString(text)
-            s.setSpan(DistanceSpan.create(distance), 0, 1, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-            rowBuilder.addText(s)
+            applyDistanceSpan(rowBuilder, distanceFromLatLon, poi, label)
         } else if (label != null) {
             rowBuilder.addText(label)
         }
@@ -164,7 +174,7 @@ object AutoPoiUiHelper {
             }
         }
 
-        val secondaryText = secondaryDetails.joinToString(" $interpunct ")
+        val secondaryText = secondaryDetails.joinToString(" \u00b7 ")
         if (secondaryText.isNotBlank()) {
             rowBuilder.addText(secondaryText)
         }
@@ -209,16 +219,7 @@ object AutoPoiUiHelper {
         }
 
         if (distanceFromLatLon != null) {
-            val (lat, lon) = distanceFromLatLon
-            val meters = distanceMeters(lat, lon, poi.latitude, poi.longitude)
-            val distance = if (meters >= 1000.0) {
-                Distance.create(meters / 1000.0, Distance.UNIT_KILOMETERS)
-            } else {
-                Distance.create(meters, Distance.UNIT_METERS)
-            }
-            val s = SpannableString(" ")
-            s.setSpan(DistanceSpan.create(distance), 0, 1, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
-            headerRow.addText(s)
+            applyDistanceSpan(headerRow, distanceFromLatLon, poi)
         }
 
         if (onHeaderClick != null) {
@@ -234,7 +235,10 @@ object AutoPoiUiHelper {
                 .setTitle(carContext.getString(R.string.poi_section_address))
                 .addText(poi.address)
 
-            if (includePlace) addressRow.setMetadata(metadata!!)
+            if (includePlace) {
+                addressRow.setMetadata(metadata!!)
+                applyDistanceSpan(addressRow, distanceFromLatLon, poi)
+            }
             rows.add(addressRow.build())
         }
 
@@ -247,7 +251,10 @@ object AutoPoiUiHelper {
 
             if (electricInfo.isNotEmpty()) {
                 val row = Row.Builder().setTitle(electricInfo.joinToString(" • "))
-                if (includePlace) row.setMetadata(metadata!!)
+                if (includePlace) {
+                    row.setMetadata(metadata!!)
+                    applyDistanceSpan(row, distanceFromLatLon, poi)
+                }
                 irveRows.add(row.build())
             }
 
@@ -263,7 +270,10 @@ object AutoPoiUiHelper {
 
             if (connectorInfo.isNotEmpty()) {
                 val row = Row.Builder().setTitle(connectorInfo.joinToString(" • "))
-                if (includePlace) row.setMetadata(metadata!!)
+                if (includePlace) {
+                    row.setMetadata(metadata!!)
+                    applyDistanceSpan(row, distanceFromLatLon, poi)
+                }
                 irveRows.add(row.build())
             }
         }
@@ -286,7 +296,10 @@ object AutoPoiUiHelper {
                     .setTitle(carContext.getString(R.string.poi_section_services))
                     .addText(ams.joinToString(" • "))
 
-                if (includePlace) row.setMetadata(metadata!!)
+                if (includePlace) {
+                    row.setMetadata(metadata!!)
+                    applyDistanceSpan(row, distanceFromLatLon, poi)
+                }
                 amenityRows.add(row.build())
             }
         }
@@ -310,7 +323,10 @@ object AutoPoiUiHelper {
                 .setTitle(fp.fuelName)
                 .addText("$priceStr$updated")
 
-            if (includePlace) fuelRow.setMetadata(metadata!!)
+            if (includePlace) {
+                fuelRow.setMetadata(metadata!!)
+                applyDistanceSpan(fuelRow, distanceFromLatLon, poi)
+            }
             rows.add(fuelRow.build())
         }
 

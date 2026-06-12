@@ -392,7 +392,11 @@ class AutoRoutePlanningScreen(
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             setPackage("com.google.android.apps.maps")
         }
-        carContext.startActivity(intent)
+        try {
+            carContext.startCarApp(intent)
+        } catch (e: Exception) {
+            Log.e("AutoRoutePlanning", "startCarApp failed", e)
+        }
     }
 
     private fun compute() {
