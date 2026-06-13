@@ -39,6 +39,10 @@ object AutoPoiUiHelper {
         return r * c
     }
 
+    private fun formatDistanceText(meters: Double): String =
+        if (meters >= 1000.0) "%.1f km".format(meters / 1000.0)
+        else "%.0f m".format(meters)
+
     private fun applyDistanceSpan(
         rowBuilder: Row.Builder,
         distanceFromLatLon: Pair<Double, Double>?,
@@ -335,5 +339,112 @@ object AutoPoiUiHelper {
         rows.addAll(amenityRows)
 
         return rows.take(maxRows)
+    }
+
+    /**
+     * Builds the full station detail as a plain-text body for [androidx.car.app.model.LongMessageTemplate].
+     *
+     * `LongMessageTemplate` is the host-approved *terminal* template for "station detail" (see
+     * docs/android-auto.md): it scrolls, so it shows every fuel price without the ~6-row
+     * `ListTemplate` cap, and it is one of the template types allowed as the last step of a task.
+     * Body is plain `String` (no spans — strict hosts reject styled text) and capped at 5000 chars.
+     */
+    fun buildPoiDetailText(
+        carContext: CarContext,
+        poi: Poi,
+        availability: StationAvailabilitySummary?,
+        effectiveEnergyTypes: Set<String> = emptySet(),
+        effectivePowerLevels: Set<Int> = emptySet(),
+        distanceFromLatLon: Pair<Double, Double>? = null
+    ): String {
+        val sb = StringBuilder()
+
+        // Headline: brand · distance · best-price/power label
+        val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
+        val brandInfo = BrandHelper.getBrandInfo(poi.brand)
+        val headlineParts = mutableListOf<String>()
+        brandInfo?.displayName?.takeIf { it.isNotBlank() && it != title }?.let { headlineParts.add(it) }
+        distanceFromLatLon?.let { (lat, lon) ->
+            headlineParts.add(formatDistanceText(distanceMeters(lat, lon, poi.latitude, poi.longitude)))
+        }
+        PoiMarkerHelper.getPoiLabel(poi, effectiveEnergyTypes, effectivePowerLevels)
+            ?.takeIf { it.isNotBlank() }?.let { headlineParts.add(it) }
+        if (headlineParts.isNotEmpty()) {
+            sb.appendLine(headlineParts.joinToString("  ·  "))
+            sb.appendLine()
+        }
+
+        // Address
+        if (poi.address.isNotBlank()) {
+            sb.appendLine(carContext.getString(R.string.poi_section_address))
+            sb.appendLine(poi.address)
+            sb.appendLine()
+        }
+
+        // Fuel prices (filtered fuels first, then by price; all prices listed — no row cap)
+        val fuelIdsFilter = effectiveEnergyTypes - "electric"
+        val fuelPrices = (poi.fuelPrices ?: emptyList())
+            .sortedWith(
+                compareByDescending<fr.geoking.gaston.poi.FuelPrice> {
+                    MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsFilter
+                }.thenBy { it.price }
+            )
+        if (fuelPrices.isNotEmpty()) {
+            sb.appendLine(carContext.getString(R.string.poi_section_prices))
+            fuelPrices.forEach { fp ->
+                val priceStr = if (fp.outOfStock) "—" else "€%.3f".format(fp.price)
+                val updated = fp.updatedAt?.let { " (${DateTimeUtils.formatRelativeTime(it)})" } ?: ""
+                sb.appendLine("${fp.fuelName}: $priceStr$updated")
+            }
+            sb.appendLine()
+        }
+
+        // Charging details (electric)
+        if (poi.isElectric) {
+            val charging = mutableListOf<String>()
+            poi.operator?.takeIf { it.isNotBlank() }?.let { charging.add(it) }
+            poi.powerKw?.let { charging.add(carContext.getString(R.string.power_kw_format, it.toInt())) }
+            poi.chargePointCount?.let { n ->
+                charging.add(
+                    if (n == 1) carContext.getString(R.string.poi_charge_point_one)
+                    else carContext.getString(R.string.poi_charge_points, n)
+                )
+            }
+            poi.irveDetails?.let { d ->
+                if (d.connectorTypes.isNotEmpty()) {
+                    charging.add(d.connectorTypes.sorted().joinToString(", ") { BrandHelper.connectorTypeLabel(it) })
+                }
+            }
+            availability?.let { s ->
+                charging.add(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
+            }
+            if (charging.isNotEmpty()) {
+                sb.appendLine(carContext.getString(R.string.poi_section_charging_details))
+                charging.forEach { sb.appendLine(it) }
+                sb.appendLine()
+            }
+        }
+
+        // Services / amenities
+        poi.amenities?.let { a ->
+            val ams = mutableListOf<String>()
+            if (a.open24h == true) ams.add(carContext.getString(R.string.amenity_24h))
+            if (a.shop == true) ams.add(carContext.getString(R.string.amenity_shop))
+            if (a.restaurant == true) ams.add(carContext.getString(R.string.amenity_restaurant))
+            if (a.toilets == true) ams.add(carContext.getString(R.string.amenity_toilets))
+            if (a.carWash == true) ams.add(carContext.getString(R.string.amenity_car_wash))
+            if (a.wifi == true) ams.add(carContext.getString(R.string.poi_amenity_wifi))
+            if (a.atm == true) ams.add(carContext.getString(R.string.poi_amenity_atm))
+            if (a.showers == true) ams.add(carContext.getString(R.string.amenity_showers))
+            if (a.drinkingWater == true) ams.add(carContext.getString(R.string.amenity_drinking_water))
+            if (ams.isNotEmpty()) {
+                sb.appendLine(carContext.getString(R.string.poi_section_services))
+                sb.appendLine(ams.joinToString(" • "))
+                sb.appendLine()
+            }
+        }
+
+        val text = sb.toString().trim()
+        return text.ifBlank { carContext.getString(R.string.poi_no_extra_details) }.take(5000)
     }
 }

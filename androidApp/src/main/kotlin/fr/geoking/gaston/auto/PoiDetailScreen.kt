@@ -6,12 +6,8 @@ import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
-import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
-import androidx.car.app.model.ActionStrip
-import androidx.car.app.model.Header
-import androidx.car.app.model.ItemList
-import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.LongMessageTemplate
 import androidx.car.app.model.Template
 import fr.geoking.gaston.R
 import fr.geoking.gaston.intent.IntentNavigationHelper
@@ -19,11 +15,14 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 
 /**
- * Android Auto screen showing full POI details and a "Go to this station" action
- * that starts navigation (e.g. to Android Auto driving app).
+ * Android Auto screen showing full POI details and a "Navigate" action that starts navigation
+ * (e.g. handing off to the Android Auto driving app).
  *
- * Uses [ListTemplate] rows (not MessageTemplate) so details stay within host row limits;
- * [safeCarTemplate] avoids session crashes on validation errors.
+ * Uses [LongMessageTemplate] — the host-approved *terminal* template for station detail
+ * (docs/android-auto.md). A `ListTemplate` is NOT a valid last step of a task, which is why the
+ * detail screen was rejected by the host when reached from the map. `LongMessageTemplate` also
+ * scrolls, so every fuel price is shown without the ~6-row list cap. [safeCarTemplate] still wraps
+ * the build to surface validation errors instead of crashing the session.
  */
 class PoiDetailScreen(
     carContext: CarContext,
@@ -44,67 +43,18 @@ class PoiDetailScreen(
     override fun onGetTemplate(): Template = safeCarTemplate(
         carContext = carContext,
         logTag = "PoiDetailScreen",
-        templateName = "ListTemplate",
+        templateName = "LongMessageTemplate",
     ) {
         val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
         val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
             data = IntentNavigationHelper.getNavigationUri(poi)
         }
 
-        val navigateAction = Action.Builder()
-            .setIcon(carContext.actionNavigateToIcon())
-            .setOnClickListener {
-                carContext.startCarApp(navigateIntent)
-            }
-            .build()
-
-        val actionStripBuilder = ActionStrip.Builder()
-        var actionCount = 0
-
-        if (poiList.isNotEmpty() && currentIndex > 0) {
-            actionCount++
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionPreviousIcon())
-                    .setOnClickListener {
-                        currentIndex--
-                        poi = poiList[currentIndex]
-                        availabilitySummary = availabilityByPoiId[poi.id]
-                        onPoiSelected?.invoke(poi)
-                        invalidate()
-                    }
-                    .build()
-            )
-        }
-
-        if (poiList.isNotEmpty() && currentIndex < poiList.size - 1 && currentIndex != -1) {
-            actionCount++
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionNextIcon())
-                    .setOnClickListener {
-                        currentIndex++
-                        poi = poiList[currentIndex]
-                        availabilitySummary = availabilityByPoiId[poi.id]
-                        onPoiSelected?.invoke(poi)
-                        invalidate()
-                    }
-                    .build()
-            )
-        }
-
         val currentSettings = settingsManager.settings.value
         val resolvedEnergyTypes = if (effectiveEnergyTypes.isNotEmpty()) effectiveEnergyTypes else currentSettings.effectiveMapEnergyFilterIds()
         val resolvedPowerLevels = if (effectivePowerLevels.isNotEmpty()) effectivePowerLevels else currentSettings.effectiveIrvePowerLevels()
 
-        val listLimit = try {
-            carContext.getCarService(ConstraintManager::class.java)
-                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
-        } catch (_: Exception) {
-            6
-        }
-
-        val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
+        val body = AutoPoiUiHelper.buildPoiDetailText(
             carContext = carContext,
             poi = poi,
             availability = availabilitySummary,
@@ -114,27 +64,50 @@ class PoiDetailScreen(
                 currentSettings.lastKnownLon?.let { lon ->
                     lat to lon
                 }
-            },
-            maxRows = listLimit
+            }
         )
 
-        val itemListBuilder = ItemList.Builder()
-        detailRows.forEach { itemListBuilder.addItem(it) }
-
-        val builder = ListTemplate.Builder()
-            .setHeader(
-                Header.Builder()
-                    .setTitle(title)
-                    .setStartHeaderAction(Action.BACK)
-                    .addEndHeaderAction(navigateAction)
+        val builder = LongMessageTemplate.Builder(body)
+            .setTitle(title)
+            .setHeaderAction(Action.BACK)
+            .addAction(
+                Action.Builder()
+                    .setTitle(carContext.getString(R.string.navigate))
+                    .setOnClickListener { carContext.startCarApp(navigateIntent) }
                     .build()
             )
-            .setSingleList(itemListBuilder.build())
 
-        if (actionCount > 0) {
-            builder.setActionStrip(actionStripBuilder.build())
+        // LongMessageTemplate caps actions at 2 and Navigate is primary, so we expose a single
+        // browse action: step to the next station while one exists, otherwise step back. The
+        // station list itself remains the place to browse freely; Back returns to it.
+        when {
+            poiList.isNotEmpty() && currentIndex in 0 until poiList.size - 1 -> {
+                builder.addAction(
+                    Action.Builder()
+                        .setTitle(carContext.getString(R.string.action_next))
+                        .setOnClickListener { moveTo(currentIndex + 1) }
+                        .build()
+                )
+            }
+            poiList.isNotEmpty() && currentIndex > 0 -> {
+                builder.addAction(
+                    Action.Builder()
+                        .setTitle(carContext.getString(R.string.action_previous))
+                        .setOnClickListener { moveTo(currentIndex - 1) }
+                        .build()
+                )
+            }
         }
 
         builder.build()
+    }
+
+    private fun moveTo(index: Int) {
+        if (index !in poiList.indices) return
+        currentIndex = index
+        poi = poiList[index]
+        availabilitySummary = availabilityByPoiId[poi.id]
+        onPoiSelected?.invoke(poi)
+        invalidate()
     }
 }
