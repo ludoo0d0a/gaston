@@ -356,6 +356,24 @@ class NativeMapPoiScreen(
                     ) {
                         selectedPoi = item
                         selectedPoiAvailability = availability
+                        screenManager.push(
+                            PoiDetailScreen(
+                                carContext = carContext,
+                                poi = item,
+                                settingsManager = settingsManager,
+                                availabilitySummary = availability,
+                                effectiveEnergyTypes = effectiveEnergies,
+                                effectivePowerLevels = effectivePowerLevels,
+                                poiList = sortedPois,
+                                initialPoiIndex = sortedPois.indexOfFirst { it.id == item.id },
+                                availabilityByPoiId = availabilityByPoiId,
+                                onPoiSelected = { newPoi ->
+                                    selectedPoi = newPoi
+                                    selectedPoiAvailability = availabilityByPoiId[newPoi.id]
+                                    invalidate()
+                                }
+                            )
+                        )
                         invalidate()
                     }
                 )

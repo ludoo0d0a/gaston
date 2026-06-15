@@ -99,6 +99,7 @@ class AutoEvDashboardScreen(
                     title = finalTitle
                 )
             }
+            screenManager.pop()
             screenManager.push(screen)
         }
     }

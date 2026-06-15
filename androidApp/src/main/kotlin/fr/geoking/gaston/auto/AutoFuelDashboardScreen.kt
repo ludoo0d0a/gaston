@@ -104,6 +104,7 @@ class AutoFuelDashboardScreen(
                     title = finalTitle
                 )
             }
+            screenManager.pop()
             screenManager.push(screen)
         }
     }
