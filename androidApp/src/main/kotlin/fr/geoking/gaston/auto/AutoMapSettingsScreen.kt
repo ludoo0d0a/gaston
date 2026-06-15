@@ -114,6 +114,7 @@ class AutoMapSettingsScreen(
                 .setTitle(carContext.getString(R.string.screen_vehicle_and_range))
                 .addText("${settings.vehicleType.name}, ${settings.evRangeKm} km")
                 .setOnClickListener {
+                    screenManager.pop()
                     screenManager.push(AutoVehicleSettingsScreen(carContext, settingsManager))
                 }
                 .build()

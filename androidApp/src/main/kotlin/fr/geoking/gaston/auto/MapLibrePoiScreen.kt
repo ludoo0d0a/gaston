@@ -734,29 +734,40 @@ class MapLibrePoiScreen(
             clickedPois.first()
         }
 
-        if (selectedPoi?.id == poi.id) {
-            screenManager.push(
-                PoiDetailScreen(
-                    carContext = carContext,
-                    poi = poi,
-                    settingsManager = settingsManager,
-                    availabilitySummary = availabilityByPoiId[poi.id],
-                    effectiveEnergyTypes = settingsManager.settings.value.effectiveMapEnergyFilterIds(),
-                    effectivePowerLevels = settingsManager.settings.value.effectiveIrvePowerLevels()
-                )
-            )
-            return
-        }
-
         selectedPoi = poi
         val settings = settingsManager.settings.value
         val filteredPois = getFilteredPois(settings)
+        val sortedPois = MapPoiFilter.sortPois(
+            pois = filteredPois,
+            lat = searchLat,
+            lon = searchLon,
+            sortByPrice = sortByPrice,
+            selectedFuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+        )
         mapRenderer?.updatePois(
             newPois = filteredPois,
             effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
             effectivePowerLevels = settings.effectiveIrvePowerLevels(),
             availability = availabilityByPoiId,
             selectedId = poi.id
+        )
+        screenManager.push(
+            PoiDetailScreen(
+                carContext = carContext,
+                poi = poi,
+                settingsManager = settingsManager,
+                availabilitySummary = availabilityByPoiId[poi.id],
+                effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
+                effectivePowerLevels = settings.effectiveIrvePowerLevels(),
+                poiList = sortedPois,
+                initialPoiIndex = sortedPois.indexOfFirst { it.id == poi.id },
+                availabilityByPoiId = availabilityByPoiId,
+                onPoiSelected = { newPoi ->
+                    selectedPoi = newPoi
+                    syncRendererWithMapState()
+                    invalidate()
+                }
+            )
         )
         invalidate()
     }
@@ -940,9 +951,27 @@ class MapLibrePoiScreen(
                         ) {
                             selectedPoi = item
                             syncRendererWithMapState()
-                            invalidate()
-                        }
-                    )
+                        screenManager.push(
+                            PoiDetailScreen(
+                                carContext = carContext,
+                                poi = item,
+                                settingsManager = settingsManager,
+                                availabilitySummary = availabilityByPoiId[item.id],
+                                effectiveEnergyTypes = effectiveEnergies,
+                                effectivePowerLevels = effectivePowerLevels,
+                                poiList = sortedPois,
+                                initialPoiIndex = sortedPois.indexOfFirst { it.id == item.id },
+                                availabilityByPoiId = availabilityByPoiId,
+                                onPoiSelected = { newPoi ->
+                                    selectedPoi = newPoi
+                                    syncRendererWithMapState()
+                                    invalidate()
+                                }
+                            )
+                        )
+                        invalidate()
+                    }
+                )
                 }
 
                 ListTemplate.Builder()

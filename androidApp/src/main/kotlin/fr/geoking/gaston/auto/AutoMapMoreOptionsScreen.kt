@@ -54,6 +54,7 @@ class AutoMapMoreOptionsScreen(
                     .setTitle(carContext.getString(R.string.cd_settings))
                     .setImage(carContext.actionSettingsIcon())
                     .setOnClickListener {
+                        screenManager.pop()
                         screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
                     }
                     .build()

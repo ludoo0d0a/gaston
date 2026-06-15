@@ -34,6 +34,7 @@ class AutoOtherDashboardScreen(
                         settingsManager.setOtherMode(id)
                         val mapDeps = getMapDeps()
                         if (mapDeps != null) {
+                            screenManager.pop()
                             pushMapScreen(settingsManager, mapDeps, label)
                         }
                     }

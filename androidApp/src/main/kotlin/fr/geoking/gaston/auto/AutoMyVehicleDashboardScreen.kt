@@ -37,6 +37,7 @@ class AutoMyVehicleDashboardScreen(
                     .setImage(carContext.dashboardFuelIcon())
                     .setOnClickListener {
                         settingsManager.setMyVehicleMode()
+                        screenManager.pop()
                         screenManager.push(AutoFuelDashboardScreen(carContext, settingsManager, getMapDeps))
                     }
                     .build()
@@ -48,6 +49,7 @@ class AutoMyVehicleDashboardScreen(
                     .setImage(carContext.dashboardEvIcon())
                     .setOnClickListener {
                         settingsManager.setMyVehicleMode()
+                        screenManager.pop()
                         screenManager.push(AutoEvDashboardScreen(carContext, settingsManager, getMapDeps))
                     }
                     .build()
