@@ -11,7 +11,9 @@ Full reference: [`docs/android-auto.md`](../../docs/android-auto.md). Official: 
 ## Required patterns (every Screen)
 
 - Wrap `onGetTemplate()` in `safeCarTemplate(carContext, logTag, templateName) { … }` (`CarTemplateSafe.kt`).
-- Never hardcode list limits — use `ConstraintManager.getContentLimit(CONTENT_LIMIT_TYPE_LIST)` (fallback `6`).
+- Never hardcode item limits — use `ConstraintManager.getContentLimit(type)` (car API 6+, wrap in try/catch with the minimum as fallback): `LIST`=6, `GRID`=6, `PLACE_LIST`=6, `PANE`=4, `ROUTE_LIST`=3.
+- `onGetTemplate()` runs on the main thread — do async work in `init`/`onStart` and `invalidate()` when ready (never block).
+- Category `POI`: allowed templates are `PlaceListMap`, `MapWithContent`, `List`, `Grid`, `Pane`, `Message`, `LongMessage`, `Search`, `SignIn`, `Tab` — **no** `NavigationTemplate`.
 - Rows that push a screen: `.setBrowsable(true)` + `setOnClickListener { screenManager.push(…) }`.
 - Toggle/action rows (zoom, sort): **not** browsable.
 
@@ -30,6 +32,7 @@ Full reference: [`docs/android-auto.md`](../../docs/android-auto.md). Official: 
 
 - Use **plain `String`** bodies — avoid `SpannableString` / style spans (strict hosts reject them).
 - `LongMessageTemplate`: `setTitle` + `setHeaderAction(BACK)` + `addAction` for primary actions (not `Header.addEndHeaderAction`).
+- `LongMessageTemplate` body actions (`addAction`) **must** use `ParkedOnlyOnClickListener.create { … }` — a plain `setOnClickListener` throws `IllegalArgumentException` at build time and the host rejects the screen.
 - `MessageTemplate`: max **2** `addAction()`; optional icon.
 
 ## Row rules
@@ -69,6 +72,16 @@ Full reference: [`docs/android-auto.md`](../../docs/android-auto.md). Official: 
 - Host-rendered map — app cannot control bearing/zoom. Use `CustomMapPoiScreen` for orientation toggle.
 - Set anchor `Place` for user location. Loading vs item list mutually exclusive.
 
+## GridTemplate
+
+- Items: cap at `CONTENT_LIMIT_TYPE_GRID` (min 6). Each `GridItem` needs a title + image (`IMAGE_TYPE_LARGE`/`IMAGE_TYPE_ICON`); no `Place` metadata.
+- `setLoading(true)` and item list mutually exclusive.
+
+## PaneTemplate
+
+- Rows: cap at `CONTENT_LIMIT_TYPE_PANE` (min 4); rows **not** browsable. Pane actions: max **2** (one may be `FLAG_PRIMARY`).
+- Valid as a terminal (last-step) template.
+
 ## TabTemplate
 
 - Nested `ListTemplate` inside `TabContents` must **not** have header or title.
@@ -87,10 +100,11 @@ Full reference: [`docs/android-auto.md`](../../docs/android-auto.md). Official: 
 5. Screen push row missing `setBrowsable(true)`
 6. Template quota >5 pushes → flatten navigation or use refresh
 7. Host rejection after `onGetTemplate()` returns → not catchable; check `adb logcat -s CarApp`
+8. `LongMessageTemplate` `addAction` with plain `setOnClickListener` → use `ParkedOnlyOnClickListener.create { … }`
 
 ## Examples in codebase
 
 - Safe wrapper: `CarTemplateSafe.kt`
 - POI rows: `AutoPoiUiHelper.kt`
-- Long detail: `PoiDetailScreen.kt` (`ListTemplate` rows), `AutoAboutScreen.kt` (`LongMessageTemplate`)
+- Long detail: `PoiDetailScreen.kt` (`LongMessageTemplate` + `ParkedOnlyOnClickListener` actions), `AutoAboutScreen.kt` (`LongMessageTemplate`, no actions)
 - Map + list: `CustomMapPoiScreen.kt`, `NativeMapPoiScreen.kt`

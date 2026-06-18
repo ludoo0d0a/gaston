@@ -8,6 +8,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.LongMessageTemplate
+import androidx.car.app.model.ParkedOnlyOnClickListener
 import androidx.car.app.model.Template
 import fr.geoking.gaston.R
 import fr.geoking.gaston.intent.IntentNavigationHelper
@@ -73,7 +74,7 @@ class PoiDetailScreen(
             .addAction(
                 Action.Builder()
                     .setTitle(carContext.getString(R.string.navigate))
-                    .setOnClickListener { carContext.startCarApp(navigateIntent) }
+                    .setOnClickListener(ParkedOnlyOnClickListener.create { carContext.startCarApp(navigateIntent) })
                     .build()
             )
 
@@ -85,7 +86,7 @@ class PoiDetailScreen(
                 builder.addAction(
                     Action.Builder()
                         .setTitle(carContext.getString(R.string.action_next))
-                        .setOnClickListener { moveTo(currentIndex + 1) }
+                        .setOnClickListener(ParkedOnlyOnClickListener.create { moveTo(currentIndex + 1) })
                         .build()
                 )
             }
@@ -93,7 +94,7 @@ class PoiDetailScreen(
                 builder.addAction(
                     Action.Builder()
                         .setTitle(carContext.getString(R.string.action_previous))
-                        .setOnClickListener { moveTo(currentIndex - 1) }
+                        .setOnClickListener(ParkedOnlyOnClickListener.create { moveTo(currentIndex - 1) })
                         .build()
                 )
             }

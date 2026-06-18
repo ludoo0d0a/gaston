@@ -5,6 +5,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.LongMessageTemplate
+import androidx.car.app.model.ParkedOnlyOnClickListener
 import androidx.car.app.model.Template
 
 class AutoLongMessageTemplateScreen(carContext: CarContext) : Screen(carContext) {
@@ -17,13 +18,13 @@ class AutoLongMessageTemplateScreen(carContext: CarContext) : Screen(carContext)
             .addAction(
                 Action.Builder()
                     .setTitle(carContext.getString(R.string.action_accept))
-                    .setOnClickListener { screenManager.pop() }
+                    .setOnClickListener(ParkedOnlyOnClickListener.create { screenManager.pop() })
                     .build()
             )
             .addAction(
                 Action.Builder()
                     .setTitle(carContext.getString(R.string.action_decline))
-                    .setOnClickListener { screenManager.pop() }
+                    .setOnClickListener(ParkedOnlyOnClickListener.create { screenManager.pop() })
                     .build()
             )
             .build()

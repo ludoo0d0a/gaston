@@ -32,6 +32,33 @@ Required permissions:
 
 Minimum API level: **7** (`minCarApiLevel` meta-data in manifest).
 
+### Categories & allowed templates
+
+A car app declares exactly one category in its `CarAppService` intent filter. The category determines
+which templates the host accepts.
+
+| Category | Templates allowed |
+|---|---|
+| `androidx.car.app.category.POI` (Gaston) | `PlaceListMapTemplate`, `MapWithContentTemplate`, `ListTemplate`, `GridTemplate`, `PaneTemplate`, `MessageTemplate`, `LongMessageTemplate`, `SearchTemplate`, `SignInTemplate`, `TabTemplate`. **No** `NavigationTemplate`. |
+| `androidx.car.app.category.NAVIGATION` | All of the above **plus** `NavigationTemplate`, `RoutePreviewNavigationTemplate`, `MapWithContentTemplate` with turn-by-turn, `Alert`/`showAlert()`. Requires `NAVIGATION_TEMPLATES` permission. |
+| `androidx.car.app.category.PARKING` / `CHARGING` | **Deprecated** since Car App Library 1.3 — use `POI` instead. |
+
+POI-app consequences (enforced in Gaston):
+- No `NavigationTemplate` and no `AppManager.showAlert()` — use phone HUN notifications (below).
+- `PlaceListMapTemplate` / `MapWithContentTemplate` require the `MAP_TEMPLATES` permission.
+
+### Per-template minimum car API level (`@RequiresCarApi`)
+
+| Template / API | Min car API level |
+|---|---|
+| `ListTemplate`, `GridTemplate`, `MessageTemplate`, `PaneTemplate`, `PlaceListMapTemplate`, `SearchTemplate` | 1 |
+| `LongMessageTemplate`, `SignInTemplate`, `ParkedOnlyOnClickListener` | 2 |
+| `TabTemplate`, `ConstraintManager.getContentLimit` | 6 |
+| `MapWithContentTemplate`, `setMapController`, surface pan/zoom controls | 7 |
+
+Gaston targets `minCarApiLevel 7`, so all of the above are available. Guard anything newer with
+`carContext.carAppApiLevel`.
+
 ### Heads-up notifications (HUN)
 
 Connectivity/border alerts use **phone notifications** mirrored to the car, not `AppManager.showAlert()`:
@@ -82,6 +109,65 @@ Unregister (stop the renderer) in `Screen.onStop()`.
 - **Header**: must call `setStartHeaderAction(Action.BACK)` (or `Action.APP_ICON` for root).
 - **End header actions**: supported (max 2), but keep to 1 for compatibility with strict hosts.
 - Loading state (`setLoading(true)`) and item list are **mutually exclusive**: set one or the other.
+
+---
+
+## ConstraintManager content limits
+
+The host caps the number of items per template. **Never hardcode** these — query at runtime via
+`carContext.getCarService(ConstraintManager::class.java).getContentLimit(type)` (requires car API 6).
+The values below are the **minimum** guaranteed by the library (`integers.xml`); a host may allow more.
+
+| Constant | Value | Applies to | Minimum |
+|---|---|---|---|
+| `CONTENT_LIMIT_TYPE_LIST` | 0 | `ListTemplate`, generic uniform lists | **6** |
+| `CONTENT_LIMIT_TYPE_GRID` | 1 | `GridTemplate` | **6** |
+| `CONTENT_LIMIT_TYPE_PLACE_LIST` | 2 | `PlaceListMapTemplate` POI rows | **6** |
+| `CONTENT_LIMIT_TYPE_ROUTE_LIST` | 3 | `RoutePreviewNavigationTemplate` rows | **3** |
+| `CONTENT_LIMIT_TYPE_PANE` | 4 | `PaneTemplate` rows | **4** |
+
+Always wrap the lookup in `try { … } catch (_: Exception) { <minimum> }` (the service is missing on
+older hosts) and add the most relevant items first, since the list may be truncated.
+
+---
+
+## GridTemplate
+
+- Items: cap at `CONTENT_LIMIT_TYPE_GRID` (min 6).
+- Each `GridItem` requires a title and an image (`setImage`); image type `IMAGE_TYPE_LARGE` or
+  `IMAGE_TYPE_ICON`. No `Place`/`Metadata` markers (grid is not a map list).
+- `setLoading(true)` and the item list are mutually exclusive.
+- Header + ActionStrip follow the standard 2-action rule.
+
+---
+
+## PaneTemplate
+
+- Rows: cap at `CONTENT_LIMIT_TYPE_PANE` (min 4); rows are **not** browsable (no screen push).
+- Pane actions: **at most 2** via `Pane.Builder().addAction(...)`; one may be primary
+  (`Action.FLAG_PRIMARY`). Actions need a title or icon.
+- A row may carry an image (`IMAGE_TYPE_LARGE` allowed here since panes have no Place metadata).
+- Valid as the **last step** of a task (one of the allowed terminal templates).
+
+---
+
+## SearchTemplate
+
+- Provide a `SearchTemplate.SearchCallback` (`onSearchTextChanged`, `onSearchSubmitted`).
+- Header action: `Action.BACK` or `Action.APP_ICON` only.
+- Results list follows the `CONTENT_LIMIT_TYPE_LIST` cap.
+- `setLoading(true)` and the item list are mutually exclusive.
+- Reference: `AutoPoiSearchScreen.kt`.
+
+---
+
+## SignInTemplate
+
+- Requires car API 2; valid as a terminal template.
+- Sign-in methods (`InputSignInMethod`, `PinSignInMethod`, `ProviderSignInMethod`,
+  `QRCodeSignInMethod` — QR needs car API 4).
+- Body text and an instruction/footer are plain `String` only.
+- Not used by Gaston today (no account flow) — listed for completeness.
 
 ---
 
@@ -177,9 +263,13 @@ Additional rules:
   validators may reject styled text and crash the session.
 - `LongMessageTemplate` uses `setTitle()` + `setHeaderAction(Action.BACK)` + `addAction()` for
   actions. Do not use `Header.addEndHeaderAction()` on this template type.
+- `LongMessageTemplate` body actions added via `addAction()` **must** wrap their click listener in
+  `ParkedOnlyOnClickListener.create { … }`. A plain `setOnClickListener` throws
+  `IllegalArgumentException` when the template is built, which the host surfaces as a rejected
+  screen (see `PoiDetailScreen.kt`).
 - `MessageTemplate` supports at most **2** `addAction()` calls and an optional icon.
 
-Reference implementations: `AutoAboutScreen.kt` (long scrollable text), `PoiDetailScreen.kt` (structured rows via `ListTemplate`), `ErrorScreen.kt` (short status).
+Reference implementations: `AutoAboutScreen.kt` (long scrollable text, no actions), `PoiDetailScreen.kt` (`LongMessageTemplate` with `ParkedOnlyOnClickListener` actions), `ErrorScreen.kt` (short status).
 
 ---
 
@@ -198,6 +288,19 @@ Reference implementations: `AutoAboutScreen.kt` (long scrollable text), `PoiDeta
 - **Nested ListTemplate Header** end actions: zoom, recenter, compass/orientation (icon + title where needed).
 
 Do not put all map controls on the ActionStrip; strict hosts reject overloaded strips.
+
+---
+
+## Screen lifecycle & threading
+
+- `onGetTemplate()` runs on the **main thread** and must return quickly — never block on I/O.
+  Kick off async work (network, location) from `init`/`onStart` via `lifecycleScope`, keep state in
+  fields, and call `invalidate()` to re-render when data arrives (see `AutoPoiSearchScreen.kt`).
+- `invalidate()` requests a fresh `onGetTemplate()`; returning the **same template type with the same
+  main content** is treated as a refresh and does not consume template quota.
+- Register `SurfaceCallback` in `onStart`, stop the renderer in `onStop` (map screens).
+- A `Screen` must always return a non-null `Template`; throwing escapes to the host unless wrapped by
+  `safeCarTemplate`.
 
 ---
 
