@@ -164,15 +164,6 @@ class AutoDashboardScreen(
                         )
                         .addItem(
                             Row.Builder()
-                                .setTitle(carContext.getString(R.string.screen_template_lab))
-                                .setImage(carContext.carIconUntinted(R.mipmap.ic_launcher))
-                                .setOnClickListener {
-                                    screenManager.push(AutoTemplateLabScreen(carContext, settingsManager, getMapDeps))
-                                }
-                                .build()
-                        )
-                        .addItem(
-                            Row.Builder()
                                 .setTitle(carContext.getString(R.string.screen_about))
                                 .setImage(carContext.carIconUntinted(R.drawable.ic_launcher_foreground))
                                 .setOnClickListener {

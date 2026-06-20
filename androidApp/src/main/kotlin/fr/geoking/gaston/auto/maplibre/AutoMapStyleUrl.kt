@@ -12,6 +12,6 @@ fun resolveAutoMapStyleUrl(settings: AppSettings, carContext: CarContext): Strin
 }
 
 /** Standard raster tile URLs for Android Auto. Uses the user-selected theme. */
-fun resolveAutoRasterTileUrl(settings: AppSettings, isLab: Boolean = false): String {
+fun resolveAutoRasterTileUrl(settings: AppSettings): String {
     return settings.mapTheme.rasterUrl
 }

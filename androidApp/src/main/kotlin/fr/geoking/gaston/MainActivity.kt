@@ -83,8 +83,6 @@ class MainActivity : ComponentActivity() {
     private val inAppUpdateHelper by lazy { InAppUpdateHelper(applicationContext) }
     private val mapDepsState = MutableStateFlow<MapDeps?>(null)
     private val pendingNavDestination = MutableStateFlow<NavDestination?>(null)
-    /** Set from [handleIntent] when the host opens [gaston://map/libremap] (e.g. Android Auto lab). */
-    private val pendingLibreMapLab = MutableStateFlow(false)
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -96,10 +94,6 @@ class MainActivity : ComponentActivity() {
         val nav = IntentNavigationHelper.parseNavIntent(intent)
         if (nav != null) {
             pendingNavDestination.value = nav
-        }
-        val data = intent.data
-        if (data?.scheme == "gaston" && data.host == "map" && data.path == "/libremap") {
-            pendingLibreMapLab.value = true
         }
     }
 
@@ -218,7 +212,6 @@ class MainActivity : ComponentActivity() {
                     inAppUpdateHelper = inAppUpdateHelper,
                     updateResultLauncher = updateResultLauncher,
                     pendingNavDestination = pendingNavDestination,
-                    pendingLibreMapLab = pendingLibreMapLab,
                     isPlaystoreDistribution = isPlaystoreDistribution
                 )
             }
@@ -250,7 +243,6 @@ private fun MainActivityComposeRoot(
     inAppUpdateHelper: InAppUpdateHelper,
     updateResultLauncher: ActivityResultLauncher<IntentSenderRequest>,
     pendingNavDestination: MutableStateFlow<NavDestination?>,
-    pendingLibreMapLab: MutableStateFlow<Boolean>,
     isPlaystoreDistribution: Boolean
 ) {
     android.util.Log.d("MainActivity", "Compose setContent block running")
@@ -336,7 +328,6 @@ private fun MainActivityComposeRoot(
         onStartUpdate = { info -> inAppUpdateHelper.startUpdate(info, updateResultLauncher) },
         isUpdateInProgress = isUpdateInProgress,
         pendingNavDestinationFlow = pendingNavDestination,
-        pendingLibreMapLab = pendingLibreMapLab,
         isPlaystoreDistribution = isPlaystoreDistribution,
         hasLocationPermission = hasLocationPermission,
         onRequestLocationPermission = {
@@ -358,7 +349,6 @@ fun MainUI(
     onStartUpdate: (AppUpdateInfo) -> Unit = {},
     isUpdateInProgress: Boolean = false,
     pendingNavDestinationFlow: kotlinx.coroutines.flow.MutableStateFlow<NavDestination?>? = null,
-    pendingLibreMapLab: MutableStateFlow<Boolean>? = null,
     isPlaystoreDistribution: Boolean = false,
     hasLocationPermission: Boolean = false,
     onRequestLocationPermission: () -> Unit = {}
@@ -403,17 +393,6 @@ fun MainUI(
                 showRoutePlanning = true
                 showMap = true
                 pendingNavFlow.value = null
-            }
-        }
-    }
-
-    val libreMapLabFlow = pendingLibreMapLab ?: remember { MutableStateFlow(false) }
-    LaunchedEffect(Unit) {
-        libreMapLabFlow.collect { open ->
-            if (open) {
-                settingsManager.setPhoneMapEngine(MapEngine.MapLibre)
-                showMap = true
-                libreMapLabFlow.value = false
             }
         }
     }

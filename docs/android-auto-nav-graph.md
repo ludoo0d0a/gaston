@@ -55,7 +55,6 @@ graph TD
     subgraph More Menu
         More --> FuelOutlook[AutoFuelForecastScreen]
         More --> MapSettingsMenu[AutoMapSettingsScreen]
-        More --> Lab[AutoTemplateLabScreen]
         More --> About[AutoAboutScreen]
     end
 
