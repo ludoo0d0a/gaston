@@ -7,6 +7,7 @@ import androidx.car.app.model.CarIcon
 import androidx.car.app.model.CarLocation
 import androidx.car.app.model.Distance
 import androidx.car.app.model.DistanceSpan
+import androidx.car.app.model.ForegroundCarColorSpan
 import androidx.car.app.model.Metadata
 import androidx.car.app.model.Place
 import androidx.car.app.model.PlaceMarker
@@ -15,6 +16,7 @@ import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.R
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.poi.FuelPrice
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.BrandHelper
@@ -42,6 +44,60 @@ object AutoPoiUiHelper {
     private fun formatDistanceText(meters: Double): String =
         if (meters >= 1000.0) "%.1f km".format(meters / 1000.0)
         else "%.0f m".format(meters)
+
+    private fun sortedFuelPrices(poi: Poi, fuelIdsFilter: Set<String>): List<FuelPrice> =
+        (poi.fuelPrices ?: emptyList()).sortedWith(
+            compareByDescending<FuelPrice> { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsFilter }
+                .thenBy { it.price }
+        )
+
+    private fun formatFuelPriceText(fp: FuelPrice): String {
+        val priceStr = if (fp.outOfStock) "—" else "€%.3f".format(fp.price)
+        val updated = fp.updatedAt?.let { " (${DateTimeUtils.formatRelativeTime(it)})" } ?: ""
+        return "$priceStr$updated"
+    }
+
+    /**
+     * One fuel price row for map detail lists. Uses a tinted pump icon when [includePlace] is false
+     * (Custom/MapLibre map); on PlaceListMap rows cannot carry an image, so the fuel name is tinted
+     * via [ForegroundCarColorSpan] instead (same palette as phone [fr.geoking.gaston.ui.ColorHelper]).
+     */
+    private fun buildFuelPriceRow(
+        carContext: CarContext,
+        fp: FuelPrice,
+        includePlace: Boolean,
+        metadata: Metadata?,
+        distanceFromLatLon: Pair<Double, Double>?,
+        poi: Poi,
+    ): Row {
+        val fuelId = MapPoiFilter.fuelNameToId(fp.fuelName)
+        val fuelColor = AutoCarIcons.fuelCarColor(fuelId)
+        val rowBuilder = Row.Builder()
+
+        if (includePlace) {
+            val titleSpannable = SpannableString(fp.fuelName)
+            titleSpannable.setSpan(
+                ForegroundCarColorSpan.create(fuelColor),
+                0,
+                titleSpannable.length,
+                Spanned.SPAN_INCLUSIVE_INCLUSIVE,
+            )
+            rowBuilder.setTitle(titleSpannable)
+        } else {
+            rowBuilder.setImage(
+                carContext.carIcon(R.drawable.ic_poi_gas, fuelColor),
+                Row.IMAGE_TYPE_SMALL,
+            )
+            rowBuilder.setTitle(fp.fuelName)
+        }
+        rowBuilder.addText(formatFuelPriceText(fp))
+
+        if (includePlace) {
+            metadata?.let { rowBuilder.setMetadata(it) }
+            applyDistanceSpan(rowBuilder, distanceFromLatLon, poi)
+        }
+        return rowBuilder.build()
+    }
 
     private fun applyDistanceSpan(
         rowBuilder: Row.Builder,
@@ -233,7 +289,28 @@ object AutoPoiUiHelper {
 
         rows.add(headerRow.build())
 
-        // 1b. Address Row
+        val fuelIdsFilter = effectiveEnergyTypes - "electric"
+        val fuelPrices = sortedFuelPrices(poi, fuelIdsFilter)
+
+        // Gas stations: show fuel prices first (map detail is row-capped; full list is in PoiDetailScreen).
+        if (fuelPrices.isNotEmpty()) {
+            val maxFuelRows = (maxRows - rows.size).coerceAtLeast(0)
+            fuelPrices.take(maxFuelRows).forEach { fp ->
+                rows.add(
+                    buildFuelPriceRow(
+                        carContext = carContext,
+                        fp = fp,
+                        includePlace = includePlace,
+                        metadata = metadata,
+                        distanceFromLatLon = distanceFromLatLon,
+                        poi = poi,
+                    )
+                )
+            }
+            return rows.take(maxRows)
+        }
+
+        // 1b. Address Row (non-fuel POIs)
         if (poi.address.isNotBlank()) {
             val addressRow = Row.Builder()
                 .setTitle(carContext.getString(R.string.poi_section_address))
@@ -308,33 +385,7 @@ object AutoPoiUiHelper {
             }
         }
 
-        // 3. Fuels (limited by remaining space)
-        val fuelIdsFilter = effectiveEnergyTypes - "electric"
-        val fuelPrices = (poi.fuelPrices ?: emptyList())
-            .sortedWith(compareByDescending<fr.geoking.gaston.poi.FuelPrice> { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsFilter }
-                .thenBy { it.price })
-
-        val fixedRowCount = 1 + irveRows.size + amenityRows.size
-        val maxFuelRows = (maxRows - fixedRowCount).coerceAtLeast(0)
-
-        fuelPrices.take(maxFuelRows).forEach { fp ->
-            val priceStr = if (fp.outOfStock) "—" else "€%.3f".format(fp.price)
-            val updated = fp.updatedAt?.let {
-                " (${DateTimeUtils.formatRelativeTime(it)})"
-            } ?: ""
-
-            val fuelRow = Row.Builder()
-                .setTitle(fp.fuelName)
-                .addText("$priceStr$updated")
-
-            if (includePlace) {
-                fuelRow.setMetadata(metadata!!)
-                applyDistanceSpan(fuelRow, distanceFromLatLon, poi)
-            }
-            rows.add(fuelRow.build())
-        }
-
-        // 4. Add IRVE and Amenities
+        // 3. Add IRVE and Amenities
         rows.addAll(irveRows)
         rows.addAll(amenityRows)
 
@@ -383,18 +434,13 @@ object AutoPoiUiHelper {
 
         // Fuel prices (filtered fuels first, then by price; all prices listed — no row cap)
         val fuelIdsFilter = effectiveEnergyTypes - "electric"
-        val fuelPrices = (poi.fuelPrices ?: emptyList())
-            .sortedWith(
-                compareByDescending<fr.geoking.gaston.poi.FuelPrice> {
-                    MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsFilter
-                }.thenBy { it.price }
-            )
+        val fuelPrices = sortedFuelPrices(poi, fuelIdsFilter)
         if (fuelPrices.isNotEmpty()) {
             sb.appendLine(carContext.getString(R.string.poi_section_prices))
+            val nameWidth = fuelPrices.maxOf { it.fuelName.length }.coerceIn(4, 14)
             fuelPrices.forEach { fp ->
-                val priceStr = if (fp.outOfStock) "—" else "€%.3f".format(fp.price)
-                val updated = fp.updatedAt?.let { " (${DateTimeUtils.formatRelativeTime(it)})" } ?: ""
-                sb.appendLine("${fp.fuelName}: $priceStr$updated")
+                val priceStr = formatFuelPriceText(fp)
+                sb.appendLine("${fp.fuelName.padEnd(nameWidth)}  $priceStr")
             }
             sb.appendLine()
         }
