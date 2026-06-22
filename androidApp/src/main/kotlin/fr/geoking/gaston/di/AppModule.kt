@@ -167,7 +167,7 @@ val appModule = module {
     }
     single<SettingsManager> { SettingsManager(androidContext(), getOrNull()) }
 
-    single { BillingManager() }
+    single { BillingManager().also { it.attachCustomerInfoListener() } }
 
     single<DiagnosticStore> { DiagnosticStore() }
 

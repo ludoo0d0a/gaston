@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import fr.geoking.gaston.premium.BillingManager
+import fr.geoking.gaston.premium.PremiumPurchaseResult
 import kotlinx.coroutines.launch
 
 @Composable
@@ -22,6 +23,7 @@ fun PremiumPaywallPopup(
     val scope = rememberCoroutineScope()
     var isPurchasing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val paymentPendingMessage = stringResource(R.string.premium_payment_pending)
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -59,12 +61,20 @@ fun PremiumPaywallPopup(
                         isPurchasing = true
                         error = null
                         scope.launch {
-                            billingManager.purchasePremium()
-                                .onSuccess { onPurchaseSuccess() }
-                                .onFailure {
-                                    error = it.message ?: "Purchase failed"
+                            when (val result = billingManager.purchasePremium()) {
+                                PremiumPurchaseResult.Success -> onPurchaseSuccess()
+                                PremiumPurchaseResult.Cancelled -> {
                                     isPurchasing = false
                                 }
+                                PremiumPurchaseResult.Pending -> {
+                                    error = paymentPendingMessage
+                                    isPurchasing = false
+                                }
+                                is PremiumPurchaseResult.Error -> {
+                                    error = result.message
+                                    isPurchasing = false
+                                }
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -75,6 +85,31 @@ fun PremiumPaywallPopup(
                     } else {
                         Text(stringResource(R.string.action_upgrade_premium))
                     }
+                }
+
+                TextButton(
+                    onClick = {
+                        isPurchasing = true
+                        error = null
+                        scope.launch {
+                            when (val result = billingManager.restorePurchases()) {
+                                PremiumPurchaseResult.Success -> onPurchaseSuccess()
+                                PremiumPurchaseResult.Cancelled -> isPurchasing = false
+                                PremiumPurchaseResult.Pending -> {
+                                    error = paymentPendingMessage
+                                    isPurchasing = false
+                                }
+                                is PremiumPurchaseResult.Error -> {
+                                    error = result.message
+                                    isPurchasing = false
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isPurchasing
+                ) {
+                    Text(stringResource(R.string.action_restore_purchases))
                 }
 
                 TextButton(

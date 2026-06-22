@@ -48,6 +48,10 @@ import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.isUserSelectablePoiDataSource
 import fr.geoking.gaston.CacheManager
+import fr.geoking.gaston.premium.BillingManager
+import fr.geoking.gaston.premium.PremiumSubscriptionNotice
+import org.koin.compose.koinInject
+import java.text.DateFormat
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.UsedApisList
 import fr.geoking.gaston.poi.FuelPriceRegistry
@@ -809,6 +813,48 @@ private fun save(settingsManager: SettingsManager, s: AppSettings) {
 }
 
 @Composable
+private fun PremiumSubscriptionNoticeCard(notice: PremiumSubscriptionNotice) {
+    val (containerColor, contentColor, message) = when (notice) {
+        PremiumSubscriptionNotice.BillingIssue -> Triple(
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.onErrorContainer,
+            stringResource(R.string.premium_billing_issue),
+        )
+        is PremiumSubscriptionNotice.ExpiresOn -> {
+            val formattedDate = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(notice.expirationDateMillis))
+            Triple(
+                MaterialTheme.colorScheme.tertiaryContainer,
+                MaterialTheme.colorScheme.onTertiaryContainer,
+                stringResource(R.string.premium_expires_on, formattedDate),
+            )
+        }
+    }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                tint = contentColor,
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = contentColor,
+            )
+        }
+    }
+}
+
+@Composable
 private fun MainMenu(
     settings: AppSettings,
     authManager: GoogleAuthManager?,
@@ -817,6 +863,8 @@ private fun MainMenu(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val billingManager = koinInject<BillingManager>()
+    val subscriptionNotice by billingManager.subscriptionNotice.collectAsState()
     var showClearCacheConfirm by remember { mutableStateOf(false) }
 
     if (showClearCacheConfirm) {
@@ -893,6 +941,10 @@ private fun MainMenu(
                         }
                     }
                 }
+            }
+
+            if (settings.isPremium && subscriptionNotice != null) {
+                PremiumSubscriptionNoticeCard(notice = subscriptionNotice!!)
             }
 
             Card(

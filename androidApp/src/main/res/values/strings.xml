@@ -302,6 +302,10 @@
     <string name="premium_active">Premium Active</string>
     <string name="premium_simulated">Premium (simulated)</string>
     <string name="premium_thanks">Thank you for supporting Gaston!</string>
+    <string name="premium_billing_issue">There\'s a problem with your payment method. Update it in Google Play to keep Premium.</string>
+    <string name="premium_expires_on">Premium ends on %1$s</string>
+    <string name="premium_payment_pending">Your payment is being processed. Premium will unlock when it completes.</string>
+    <string name="action_restore_purchases">Restore purchases</string>
     <string name="premium_dev_override">Dev/test override — disable in Map settings</string>
     <string name="selection_manual_full">Manual selection</string>
     <string name="hello_user">Hello, %1$s</string>

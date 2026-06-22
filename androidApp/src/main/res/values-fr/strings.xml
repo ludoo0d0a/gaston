@@ -188,6 +188,10 @@
     <string name="premium_active">Premium actif</string>
     <string name="premium_simulated">Premium (simulé)</string>
     <string name="premium_thanks">Merci de soutenir Gaston !</string>
+    <string name="premium_billing_issue">Un problème est survenu avec votre moyen de paiement. Mettez-le à jour dans Google Play pour conserver Premium.</string>
+    <string name="premium_expires_on">Premium se termine le %1$s</string>
+    <string name="premium_payment_pending">Votre paiement est en cours de traitement. Premium sera activé une fois terminé.</string>
+    <string name="action_restore_purchases">Restaurer les achats</string>
     <string name="premium_dev_override">Mode test dev — désactiver dans les paramètres carte</string>
     <string name="selection_manual_full">Sélection manuelle</string>
     <string name="hello_user">Bonjour, %1$s</string>
