@@ -1,0 +1,16 @@
+appId: fr.geoking.gaston
+---
+- launchApp
+- assertVisible: "Gaston"
+- assertVisible:
+    id: "dashboard_search_field"
+- assertVisible:
+    id: "mode_fuel"
+- tapOn:
+    id: "mode_ev"
+- assertVisible:
+    id: "mode_ev"
+- tapOn:
+    id: "mode_fuel"
+- assertVisible:
+    id: "mode_fuel"

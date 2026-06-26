@@ -1,0 +1,9 @@
+appId: fr.geoking.gaston
+---
+- launchApp
+- tapOn:
+    id: "dashboard_settings_btn"
+- assertVisible: "Settings"
+- back
+- assertVisible:
+    id: "dashboard_search_field"

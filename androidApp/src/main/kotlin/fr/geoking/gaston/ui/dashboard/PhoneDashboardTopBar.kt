@@ -28,6 +28,7 @@ import fr.geoking.gaston.SettingsManager
 import org.koin.compose.koinInject
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,10 +77,16 @@ fun PhoneDashboardTopBar(
             }
         },
         actions = {
-            IconButton(onClick = onOpenFavorites) {
+            IconButton(
+                onClick = onOpenFavorites,
+                modifier = Modifier.testTag("dashboard_favorites_btn")
+            ) {
                 Icon(painterResource(R.drawable.ic_star), contentDescription = stringResource(R.string.cd_favorites))
             }
-            IconButton(onClick = onOpenSettings) {
+            IconButton(
+                onClick = onOpenSettings,
+                modifier = Modifier.testTag("dashboard_settings_btn")
+            ) {
                 Icon(painterResource(R.drawable.ic_settings), contentDescription = stringResource(R.string.cd_settings))
             }
         },

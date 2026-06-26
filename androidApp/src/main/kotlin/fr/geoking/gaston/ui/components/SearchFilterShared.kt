@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
@@ -104,11 +105,19 @@ fun SearchModeSelector(
         ) {
             quickActions.forEach { action ->
                 val isSelected = action.mode == currentMode
+                val testTag = when (action.mode) {
+                    SearchMode.Fuel -> "mode_fuel"
+                    SearchMode.EV -> "mode_ev"
+                    SearchMode.MyVehicle -> "mode_my_vehicle"
+                    SearchMode.Other -> "mode_other"
+                    else -> "mode_unknown"
+                }
                 Surface(
                     onClick = action.onClick,
                     modifier = Modifier
                         .weight(1f)
-                        .height(56.dp),
+                        .height(56.dp)
+                        .testTag(testTag),
                     color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                     shape = MaterialTheme.shapes.extraLarge
                 ) {
