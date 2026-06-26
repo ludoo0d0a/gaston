@@ -234,18 +234,21 @@ fun PhoneDashboardDestinationSearch(
                             Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.action_clear))
                         }
                     }
-                    IconButton(onClick = {
-                        onOpenRoutes(
-                            null,
-                            selectedSearchLocation?.let {
-                                NavDestination(
-                                    address = it.label,
-                                    latitude = it.latitude,
-                                    longitude = it.longitude
-                                )
-                            }
-                        )
-                    }) {
+                    IconButton(
+                        onClick = {
+                            onOpenRoutes(
+                                null,
+                                selectedSearchLocation?.let {
+                                    NavDestination(
+                                        address = it.label,
+                                        latitude = it.latitude,
+                                        longitude = it.longitude
+                                    )
+                                }
+                            )
+                        },
+                        modifier = Modifier.testTag("dashboard_open_routes_btn")
+                    ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_directions),
                             contentDescription = stringResource(R.string.action_open_routes),

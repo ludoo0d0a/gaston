@@ -38,7 +38,8 @@ data class SearchRow(
     val iconResId: Int? = null,
     val onClick: () -> Unit,
     val enabled: Boolean = true,
-    val mode: SearchMode? = null
+    val mode: SearchMode? = null,
+    val testTag: String? = null
 )
 
 @Composable
@@ -69,6 +70,7 @@ fun SearchModeSelector(
             subtitle = stringResource(R.string.search_mode_fuel),
             iconResId = R.drawable.ic_poi_gas,
             mode = SearchMode.Fuel,
+            testTag = "mode_fuel",
             onClick = { settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel) }
         ),
         SearchRow(
@@ -76,6 +78,7 @@ fun SearchModeSelector(
             subtitle = stringResource(R.string.search_mode_ev),
             iconResId = R.drawable.ic_poi_electric,
             mode = SearchMode.EV,
+            testTag = "mode_ev",
             onClick = { settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric) }
         ),
         SearchRow(
@@ -83,6 +86,7 @@ fun SearchModeSelector(
             subtitle = stringResource(R.string.search_mode_my_car),
             iconResId = R.drawable.ic_directions_car,
             mode = SearchMode.MyVehicle,
+            testTag = "mode_my_vehicle",
             onClick = { settingsManager.setMyVehicleMode() }
         ),
         SearchRow(
@@ -90,6 +94,7 @@ fun SearchModeSelector(
             subtitle = stringResource(R.string.search_mode_other),
             iconResId = R.drawable.ic_category,
             mode = SearchMode.Other,
+            testTag = "mode_other",
             onClick = { settingsManager.setOtherMode() }
         )
     )
@@ -105,19 +110,12 @@ fun SearchModeSelector(
         ) {
             quickActions.forEach { action ->
                 val isSelected = action.mode == currentMode
-                val testTag = when (action.mode) {
-                    SearchMode.Fuel -> "mode_fuel"
-                    SearchMode.EV -> "mode_ev"
-                    SearchMode.MyVehicle -> "mode_my_vehicle"
-                    SearchMode.Other -> "mode_other"
-                    else -> "mode_unknown"
-                }
                 Surface(
                     onClick = action.onClick,
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp)
-                        .testTag(testTag),
+                        .then(if (action.testTag != null) Modifier.testTag(action.testTag) else Modifier),
                     color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                     shape = MaterialTheme.shapes.extraLarge
                 ) {

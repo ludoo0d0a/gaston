@@ -1,0 +1,9 @@
+appId: fr.geoking.gaston
+---
+- launchApp
+- tapOn:
+    id: "dashboard_forecast_btn"
+- assertVisible: "Fuel price outlook"
+- back
+- assertVisible:
+    id: "dashboard_forecast_btn"

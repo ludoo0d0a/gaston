@@ -166,7 +166,8 @@ fun PhoneDashboardMainContent(
                     title = stringResource(R.string.dashboard_network),
                     subtitle = stringResource(R.string.dashboard_network),
                     iconResId = R.drawable.ic_signal_cellular,
-                    onClick = onOpenNetworkDiagnostics
+                    onClick = onOpenNetworkDiagnostics,
+                    testTag = "dashboard_network_btn"
                 )
             )
 
@@ -178,7 +179,8 @@ fun PhoneDashboardMainContent(
                         title = stringResource(R.string.dashboard_price_estimation),
                         subtitle = if (fuelForecastLoading && latestPrice == null) "..." else if (latestPrice != null) "€%.3f".format(latestPrice) else "—",
                         iconResId = R.drawable.ic_poi_gas,
-                        onClick = onOpenFuelForecast
+                        onClick = onOpenFuelForecast,
+                        testTag = "dashboard_forecast_btn"
                     )
                 )
             }
@@ -371,7 +373,7 @@ private fun PhoneDashboardEmergencyCard(onOpenEmergency: () -> Unit) {
     val onEmergency = Color.White
     Card(
         onClick = onOpenEmergency,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag("dashboard_emergency_card"),
         colors = CardDefaults.cardColors(containerColor = emergencyRed),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -420,7 +422,10 @@ private fun PhoneDashboardOtherActionsGrid(otherActions: List<DashboardRow>) {
                     Card(
                         onClick = action.onClick,
                         enabled = action.enabled,
-                        modifier = Modifier.weight(1f).height(100.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(100.dp)
+                            .then(if (action.testTag != null) Modifier.testTag(action.testTag) else Modifier),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface,
                             disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)

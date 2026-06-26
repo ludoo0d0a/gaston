@@ -1,0 +1,10 @@
+appId: fr.geoking.gaston
+---
+- launchApp
+- tapOn:
+    id: "dashboard_emergency_card"
+- assertVisible: "Emergency"
+- assertVisible: "Call Emergency: 112"
+- back
+- assertVisible:
+    id: "dashboard_emergency_card"

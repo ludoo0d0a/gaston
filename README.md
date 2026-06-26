@@ -166,6 +166,9 @@ To run tests:
    maestro test .maestro/dashboard.yaml
    maestro test .maestro/map_navigation.yaml
    maestro test .maestro/settings_navigation.yaml
+   maestro test .maestro/emergency.yaml
+   maestro test .maestro/fuel_forecast.yaml
+   maestro test .maestro/route_planning.yaml
    ```
 
 ### Configuration
