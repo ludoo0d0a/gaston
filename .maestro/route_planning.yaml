@@ -1,0 +1,11 @@
+appId: fr.geoking.gaston
+---
+- launchApp
+- tapOn:
+    id: "dashboard_open_routes_btn"
+- assertVisible: "Plan route"
+- assertVisible: "Origin"
+- assertVisible: "Destination"
+- back
+- assertVisible:
+    id: "dashboard_open_routes_btn"

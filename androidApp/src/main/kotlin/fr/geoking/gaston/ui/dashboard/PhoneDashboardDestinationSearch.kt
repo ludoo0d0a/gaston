@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
@@ -148,6 +149,7 @@ fun PhoneDashboardDestinationSearch(
             placeholder = { Text(stringResource(R.string.route_where_to)) },
             modifier = Modifier
                 .fillMaxWidth()
+                .testTag("dashboard_search_field")
                 .onFocusChanged {
                     destFocused = it.isFocused
                 }
@@ -232,18 +234,21 @@ fun PhoneDashboardDestinationSearch(
                             Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.action_clear))
                         }
                     }
-                    IconButton(onClick = {
-                        onOpenRoutes(
-                            null,
-                            selectedSearchLocation?.let {
-                                NavDestination(
-                                    address = it.label,
-                                    latitude = it.latitude,
-                                    longitude = it.longitude
-                                )
-                            }
-                        )
-                    }) {
+                    IconButton(
+                        onClick = {
+                            onOpenRoutes(
+                                null,
+                                selectedSearchLocation?.let {
+                                    NavDestination(
+                                        address = it.label,
+                                        latitude = it.latitude,
+                                        longitude = it.longitude
+                                    )
+                                }
+                            )
+                        },
+                        modifier = Modifier.testTag("dashboard_open_routes_btn")
+                    ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_directions),
                             contentDescription = stringResource(R.string.action_open_routes),

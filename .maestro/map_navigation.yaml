@@ -1,0 +1,9 @@
+appId: fr.geoking.gaston
+---
+- launchApp
+- tapOn:
+    id: "dashboard_open_map_btn"
+- assertVisible: "Gas Stations"
+- back
+- assertVisible:
+    id: "dashboard_search_field"

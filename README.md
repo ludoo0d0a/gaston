@@ -154,6 +154,23 @@ Quick access to road-trip essentials when something goes wrong, plus highway tol
 ./gradlew :androidApp:assembleFullDebug
 ```
 
+### E2E Testing (Maestro)
+
+Gaston uses **Maestro** for end-to-end UI testing. Tests are located in the `.maestro/` directory.
+
+To run tests:
+1. [Install Maestro](https://maestro.mobile.dev/getting-started/installing-maestro)
+2. Start an Android emulator or connect a device
+3. Run the flows:
+   ```bash
+   maestro test .maestro/dashboard.yaml
+   maestro test .maestro/map_navigation.yaml
+   maestro test .maestro/settings_navigation.yaml
+   maestro test .maestro/emergency.yaml
+   maestro test .maestro/fuel_forecast.yaml
+   maestro test .maestro/route_planning.yaml
+   ```
+
 ### Configuration
 
 Create / update `local.properties` (not committed):

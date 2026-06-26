@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
@@ -37,7 +38,8 @@ data class SearchRow(
     val iconResId: Int? = null,
     val onClick: () -> Unit,
     val enabled: Boolean = true,
-    val mode: SearchMode? = null
+    val mode: SearchMode? = null,
+    val testTag: String? = null
 )
 
 @Composable
@@ -68,6 +70,7 @@ fun SearchModeSelector(
             subtitle = stringResource(R.string.search_mode_fuel),
             iconResId = R.drawable.ic_poi_gas,
             mode = SearchMode.Fuel,
+            testTag = "mode_fuel",
             onClick = { settingsManager.setEnergyFilterMode(EnergyFilterMode.Fuel) }
         ),
         SearchRow(
@@ -75,6 +78,7 @@ fun SearchModeSelector(
             subtitle = stringResource(R.string.search_mode_ev),
             iconResId = R.drawable.ic_poi_electric,
             mode = SearchMode.EV,
+            testTag = "mode_ev",
             onClick = { settingsManager.setEnergyFilterMode(EnergyFilterMode.Electric) }
         ),
         SearchRow(
@@ -82,6 +86,7 @@ fun SearchModeSelector(
             subtitle = stringResource(R.string.search_mode_my_car),
             iconResId = R.drawable.ic_directions_car,
             mode = SearchMode.MyVehicle,
+            testTag = "mode_my_vehicle",
             onClick = { settingsManager.setMyVehicleMode() }
         ),
         SearchRow(
@@ -89,6 +94,7 @@ fun SearchModeSelector(
             subtitle = stringResource(R.string.search_mode_other),
             iconResId = R.drawable.ic_category,
             mode = SearchMode.Other,
+            testTag = "mode_other",
             onClick = { settingsManager.setOtherMode() }
         )
     )
@@ -108,7 +114,8 @@ fun SearchModeSelector(
                     onClick = action.onClick,
                     modifier = Modifier
                         .weight(1f)
-                        .height(56.dp),
+                        .height(56.dp)
+                        .then(if (action.testTag != null) Modifier.testTag(action.testTag) else Modifier),
                     color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                     shape = MaterialTheme.shapes.extraLarge
                 ) {
