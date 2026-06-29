@@ -6,9 +6,14 @@ import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.LongMessageTemplate
 import androidx.car.app.model.ParkedOnlyOnClickListener
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import fr.geoking.gaston.R
 import fr.geoking.gaston.intent.IntentNavigationHelper
@@ -44,13 +49,84 @@ class PoiDetailScreen(
     override fun onGetTemplate(): Template = safeCarTemplate(
         carContext = carContext,
         logTag = "PoiDetailScreen",
-        templateName = "LongMessageTemplate",
+        templateName = "ListTemplate",
     ) {
         val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
         val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
             data = IntentNavigationHelper.getNavigationUri(poi)
         }
 
+        val currentSettings = settingsManager.settings.value
+        val resolvedEnergyTypes = if (effectiveEnergyTypes.isNotEmpty()) effectiveEnergyTypes else currentSettings.effectiveMapEnergyFilterIds()
+        val resolvedPowerLevels = if (effectivePowerLevels.isNotEmpty()) effectivePowerLevels else currentSettings.effectiveIrvePowerLevels()
+
+        val listLimit = try {
+            carContext.getCarService(ConstraintManager::class.java)
+                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+        } catch (_: Exception) { 6 }
+
+        val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
+            carContext = carContext,
+            poi = poi,
+            availability = availabilitySummary,
+            effectiveEnergyTypes = resolvedEnergyTypes,
+            effectivePowerLevels = resolvedPowerLevels,
+            distanceFromLatLon = currentSettings.lastKnownLat?.let { lat ->
+                currentSettings.lastKnownLon?.let { lon ->
+                    lat to lon
+                }
+            },
+            maxRows = listLimit - 1 // Leave room for "More details"
+        )
+
+        val itemListBuilder = ItemList.Builder()
+        detailRows.forEach { itemListBuilder.addItem(it) }
+
+        // Structured list is better for the car, but we keep the full text view as a fallback
+        itemListBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.screen_more_options))
+                .addText(carContext.getString(R.string.about_view_disclaimer))
+                .setOnClickListener(ParkedOnlyOnClickListener.create { showFullDetailText() })
+                .setBrowsable(true)
+                .build()
+        )
+
+        val actionStripBuilder = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setTitle(carContext.getString(R.string.navigate))
+                    .setIcon(carContext.actionNavigateToIcon())
+                    .setOnClickListener(ParkedOnlyOnClickListener.create { carContext.startCarApp(navigateIntent) })
+                    .build()
+            )
+
+        // Previous / Next actions in ActionStrip (max 2 for ListTemplate)
+        if (poiList.isNotEmpty() && currentIndex > 0) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionPreviousIcon())
+                    .setOnClickListener(ParkedOnlyOnClickListener.create { moveTo(currentIndex - 1) })
+                    .build()
+            )
+        } else if (poiList.isNotEmpty() && currentIndex < poiList.size - 1) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionNextIcon())
+                    .setOnClickListener(ParkedOnlyOnClickListener.create { moveTo(currentIndex + 1) })
+                    .build()
+            )
+        }
+
+        ListTemplate.Builder()
+            .setTitle(title)
+            .setHeaderAction(Action.BACK)
+            .setSingleList(itemListBuilder.build())
+            .setActionStrip(actionStripBuilder.build())
+            .build()
+    }
+
+    private fun showFullDetailText() {
         val currentSettings = settingsManager.settings.value
         val resolvedEnergyTypes = if (effectiveEnergyTypes.isNotEmpty()) effectiveEnergyTypes else currentSettings.effectiveMapEnergyFilterIds()
         val resolvedPowerLevels = if (effectivePowerLevels.isNotEmpty()) effectivePowerLevels else currentSettings.effectiveIrvePowerLevels()
@@ -68,39 +144,16 @@ class PoiDetailScreen(
             }
         )
 
-        val builder = LongMessageTemplate.Builder(body)
-            .setTitle(title)
-            .setHeaderAction(Action.BACK)
-            .addAction(
-                Action.Builder()
-                    .setTitle(carContext.getString(R.string.navigate))
-                    .setOnClickListener(ParkedOnlyOnClickListener.create { carContext.startCarApp(navigateIntent) })
+        val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
+
+        screenManager.push(
+            object : Screen(carContext) {
+                override fun onGetTemplate(): Template = LongMessageTemplate.Builder(body)
+                    .setTitle(title)
+                    .setHeaderAction(Action.BACK)
                     .build()
-            )
-
-        // LongMessageTemplate caps actions at 2 and Navigate is primary, so we expose a single
-        // browse action: step to the next station while one exists, otherwise step back. The
-        // station list itself remains the place to browse freely; Back returns to it.
-        when {
-            poiList.isNotEmpty() && currentIndex in 0 until poiList.size - 1 -> {
-                builder.addAction(
-                    Action.Builder()
-                        .setTitle(carContext.getString(R.string.action_next))
-                        .setOnClickListener(ParkedOnlyOnClickListener.create { moveTo(currentIndex + 1) })
-                        .build()
-                )
             }
-            poiList.isNotEmpty() && currentIndex > 0 -> {
-                builder.addAction(
-                    Action.Builder()
-                        .setTitle(carContext.getString(R.string.action_previous))
-                        .setOnClickListener(ParkedOnlyOnClickListener.create { moveTo(currentIndex - 1) })
-                        .build()
-                )
-            }
-        }
-
-        builder.build()
+        )
     }
 
     private fun moveTo(index: Int) {
