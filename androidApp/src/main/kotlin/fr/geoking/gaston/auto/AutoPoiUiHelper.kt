@@ -258,136 +258,122 @@ object AutoPoiUiHelper {
             Metadata.Builder().setPlace(buildPlace(carContext, poi)).build()
         } else null
 
+        fun canAddRow() = rows.size < maxRows
+
         // 1. Brand / Name Row
         val brandIcon = buildPoiIcon(carContext, poi, effectiveEnergyTypes, effectivePowerLevels)
         val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
 
-        val headerRow = Row.Builder()
-            .setTitle(title)
-
-        if (includePlace) {
-            headerRow.setMetadata(metadata!!)
-        } else {
-            headerRow.setImage(brandIcon, Row.IMAGE_TYPE_SMALL)
-        }
-
-        brandInfo?.let {
-            if (title != it.displayName) {
-                headerRow.addText(it.displayName)
-            }
-        }
-
-        if (distanceFromLatLon != null) {
-            applyDistanceSpan(headerRow, distanceFromLatLon, poi)
-        }
-
-        if (onHeaderClick != null) {
-            headerRow.setOnClickListener(onHeaderClick)
-            headerRow.setBrowsable(true)
-        }
-
+        val headerRow = Row.Builder().setTitle(title)
+        if (includePlace) headerRow.setMetadata(metadata!!) else headerRow.setImage(brandIcon, Row.IMAGE_TYPE_SMALL)
+        brandInfo?.let { if (title != it.displayName) headerRow.addText(it.displayName) }
+        if (distanceFromLatLon != null) applyDistanceSpan(headerRow, distanceFromLatLon, poi)
+        if (onHeaderClick != null) { headerRow.setOnClickListener(onHeaderClick); headerRow.setBrowsable(true) }
         rows.add(headerRow.build())
 
+        // 1b. Address Row
+        if (canAddRow()) {
+            val streetAddress = poi.addressLocal?.takeIf { it.isNotBlank() } ?: poi.address.takeIf { it.isNotBlank() }
+            if (!streetAddress.isNullOrBlank()) {
+                val addressRow = Row.Builder().setTitle(carContext.getString(R.string.poi_section_address)).addText(streetAddress)
+                if (includePlace) { addressRow.setMetadata(metadata!!); applyDistanceSpan(addressRow, distanceFromLatLon, poi) }
+                rows.add(addressRow.build())
+            }
+        }
+
+        // 2. Price Rating
+        if (canAddRow() && !poi.isElectric && poi.priceRating != null) {
+            val rating = poi.priceRating!!
+            val ratingLabel = when {
+                rating >= 8.5 -> carContext.getString(R.string.poi_rating_very_cheap)
+                rating >= 7.0 -> carContext.getString(R.string.poi_rating_cheap)
+                rating >= 4.0 -> carContext.getString(R.string.poi_rating_average)
+                rating >= 2.0 -> carContext.getString(R.string.poi_rating_expensive)
+                else -> carContext.getString(R.string.poi_rating_very_expensive)
+            }
+            val row = Row.Builder()
+                .setTitle(carContext.getString(R.string.poi_section_price_rating))
+                .addText(carContext.getString(R.string.poi_rating_format_label, rating, ratingLabel))
+            if (includePlace) { row.setMetadata(metadata!!); applyDistanceSpan(row, distanceFromLatLon, poi) }
+            rows.add(row.build())
+        }
+
+        // 3. Fuel prices
         val fuelIdsFilter = effectiveEnergyTypes - "electric"
         val fuelPrices = sortedFuelPrices(poi, fuelIdsFilter)
-
-        // Gas stations: show fuel prices first (map detail is row-capped; full list is in PoiDetailScreen).
         if (fuelPrices.isNotEmpty()) {
-            val maxFuelRows = (maxRows - rows.size).coerceAtLeast(0)
-            fuelPrices.take(maxFuelRows).forEach { fp ->
-                rows.add(
-                    buildFuelPriceRow(
-                        carContext = carContext,
-                        fp = fp,
-                        includePlace = includePlace,
-                        metadata = metadata,
-                        distanceFromLatLon = distanceFromLatLon,
-                        poi = poi,
-                    )
-                )
-            }
-            return rows.take(maxRows)
-        }
-
-        // 1b. Address Row (non-fuel POIs)
-        if (poi.address.isNotBlank()) {
-            val addressRow = Row.Builder()
-                .setTitle(carContext.getString(R.string.poi_section_address))
-                .addText(poi.address)
-
-            if (includePlace) {
-                addressRow.setMetadata(metadata!!)
-                applyDistanceSpan(addressRow, distanceFromLatLon, poi)
-            }
-            rows.add(addressRow.build())
-        }
-
-        // 2. Prepare non-fuel sections to know how much space is left for fuel
-        val irveRows = mutableListOf<Row>()
-        if (poi.isElectric) {
-            val electricInfo = mutableListOf<String>()
-            poi.operator?.takeIf { it.isNotBlank() }?.let { electricInfo.add(it) }
-            poi.powerKw?.let { electricInfo.add(carContext.getString(R.string.power_kw_format, it.toInt())) }
-
-            if (electricInfo.isNotEmpty()) {
-                val row = Row.Builder().setTitle(electricInfo.joinToString(" • "))
-                if (includePlace) {
-                    row.setMetadata(metadata!!)
-                    applyDistanceSpan(row, distanceFromLatLon, poi)
+            // When includePlace is true (map detail), cap fuels to leave room for others.
+            // When false (full detail screen), we show more but still cap slightly to allow variety.
+            val cap = if (includePlace) 3 else (maxRows - rows.size - 1).coerceAtLeast(2)
+            fuelPrices.take(cap).forEach { fp ->
+                if (canAddRow()) {
+                    rows.add(buildFuelPriceRow(carContext, fp, includePlace, metadata, distanceFromLatLon, poi))
                 }
-                irveRows.add(row.build())
-            }
-
-            val connectorInfo = mutableListOf<String>()
-            poi.irveDetails?.let { d ->
-                if (d.connectorTypes.isNotEmpty()) {
-                    connectorInfo.add(d.connectorTypes.sorted().joinToString(", ") { BrandHelper.connectorTypeLabel(it) })
-                }
-            }
-            availability?.let { s ->
-                connectorInfo.add(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
-            }
-
-            if (connectorInfo.isNotEmpty()) {
-                val row = Row.Builder().setTitle(connectorInfo.joinToString(" • "))
-                if (includePlace) {
-                    row.setMetadata(metadata!!)
-                    applyDistanceSpan(row, distanceFromLatLon, poi)
-                }
-                irveRows.add(row.build())
             }
         }
 
-        val amenityRows = mutableListOf<Row>()
-        poi.amenities?.let { a ->
-            val ams = mutableListOf<String>()
-            if (a.open24h == true) ams.add(carContext.getString(R.string.amenity_24h))
-            if (a.shop == true) ams.add(carContext.getString(R.string.amenity_shop))
-            if (a.restaurant == true) ams.add(carContext.getString(R.string.amenity_restaurant))
-            if (a.toilets == true) ams.add(carContext.getString(R.string.amenity_toilets))
-            if (a.carWash == true) ams.add(carContext.getString(R.string.amenity_car_wash))
-            if (a.wifi == true) ams.add(carContext.getString(R.string.poi_amenity_wifi))
-            if (a.atm == true) ams.add(carContext.getString(R.string.poi_amenity_atm))
-            if (a.showers == true) ams.add(carContext.getString(R.string.amenity_showers))
-            if (a.drinkingWater == true) ams.add(carContext.getString(R.string.amenity_drinking_water))
+        // 4. IRVE Details
+        if (poi.isElectric && canAddRow()) {
+            val charging = mutableListOf<String>()
+            poi.operator?.takeIf { it.isNotBlank() }?.let { charging.add(it) }
+            poi.powerKw?.let { charging.add(carContext.getString(R.string.power_kw_format, it.toInt())) }
 
-            if (ams.isNotEmpty()) {
-                val row = Row.Builder()
-                    .setTitle(carContext.getString(R.string.poi_section_services))
-                    .addText(ams.joinToString(" • "))
+            if (charging.isNotEmpty()) {
+                val row = Row.Builder().setTitle(charging.joinToString(" • "))
+                if (includePlace) { row.setMetadata(metadata!!); applyDistanceSpan(row, distanceFromLatLon, poi) }
+                rows.add(row.build())
+            }
 
-                if (includePlace) {
-                    row.setMetadata(metadata!!)
-                    applyDistanceSpan(row, distanceFromLatLon, poi)
+            if (canAddRow()) {
+                val connectors = mutableListOf<String>()
+                poi.irveDetails?.let { d ->
+                    if (d.connectorTypes.isNotEmpty()) {
+                        connectors.add(d.connectorTypes.sorted().joinToString(", ") { BrandHelper.connectorTypeLabel(it) })
+                    }
                 }
-                amenityRows.add(row.build())
+                availability?.let { s -> connectors.add(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount)) }
+                if (connectors.isNotEmpty()) {
+                    val row = Row.Builder().setTitle(connectors.joinToString(" • "))
+                    if (includePlace) { row.setMetadata(metadata!!); applyDistanceSpan(row, distanceFromLatLon, poi) }
+                    rows.add(row.build())
+                }
             }
         }
 
-        // 3. Add IRVE and Amenities
-        rows.addAll(irveRows)
-        rows.addAll(amenityRows)
+        // 5. Restaurant
+        if (canAddRow()) {
+            poi.restaurantDetails?.let { d ->
+                val res = mutableListOf<String>()
+                if (d.isFastFood) res.add(carContext.getString(R.string.poi_fast_food))
+                d.cuisine?.takeIf { it.isNotBlank() }?.let { res.add(it) }
+                if (res.isNotEmpty()) {
+                    val row = Row.Builder().setTitle(carContext.getString(R.string.poi_section_restaurant)).addText(res.joinToString(" • "))
+                    if (includePlace) { row.setMetadata(metadata!!); applyDistanceSpan(row, distanceFromLatLon, poi) }
+                    rows.add(row.build())
+                }
+            }
+        }
+
+        // 6. Amenities
+        if (canAddRow()) {
+            poi.amenities?.let { a ->
+                val ams = mutableListOf<String>()
+                if (a.open24h == true) ams.add(carContext.getString(R.string.amenity_24h))
+                if (a.shop == true) ams.add(carContext.getString(R.string.amenity_shop))
+                if (a.restaurant == true) ams.add(carContext.getString(R.string.amenity_restaurant))
+                if (a.toilets == true) ams.add(carContext.getString(R.string.amenity_toilets))
+                if (a.carWash == true) ams.add(carContext.getString(R.string.amenity_car_wash))
+                if (a.wifi == true) ams.add(carContext.getString(R.string.poi_amenity_wifi))
+                if (a.atm == true) ams.add(carContext.getString(R.string.poi_amenity_atm))
+
+                if (ams.isNotEmpty()) {
+                    val row = Row.Builder().setTitle(carContext.getString(R.string.poi_section_services)).addText(ams.joinToString(" • "))
+                    if (includePlace) { row.setMetadata(metadata!!); applyDistanceSpan(row, distanceFromLatLon, poi) }
+                    rows.add(row.build())
+                }
+            }
+        }
 
         return rows.take(maxRows)
     }
@@ -425,10 +411,32 @@ object AutoPoiUiHelper {
             sb.appendLine()
         }
 
+        // Price Rating
+        if (!poi.isElectric && poi.priceRating != null) {
+            val rating = poi.priceRating!!
+            val ratingLabel = when {
+                rating >= 8.5 -> carContext.getString(R.string.poi_rating_very_cheap)
+                rating >= 7.0 -> carContext.getString(R.string.poi_rating_cheap)
+                rating >= 4.0 -> carContext.getString(R.string.poi_rating_average)
+                rating >= 2.0 -> carContext.getString(R.string.poi_rating_expensive)
+                else -> carContext.getString(R.string.poi_rating_very_expensive)
+            }
+            sb.appendLine(carContext.getString(R.string.poi_section_price_rating))
+            sb.appendLine(carContext.getString(R.string.poi_rating_format_label, rating, ratingLabel))
+            sb.appendLine()
+        }
+
         // Address
-        if (poi.address.isNotBlank()) {
+        val locationSummary = listOfNotNull(poi.townLocal, poi.postcode).joinToString(", ").takeIf { it.isNotBlank() }
+        val streetAddress = poi.addressLocal?.takeIf { it.isNotBlank() } ?: poi.address.takeIf { it.isNotBlank() }
+        val addressLines = mutableListOf<String>()
+        if (!streetAddress.isNullOrBlank()) addressLines.add(streetAddress)
+        if (!locationSummary.isNullOrBlank() && locationSummary != streetAddress) addressLines.add(locationSummary)
+        poi.countryLocal?.takeIf { it.isNotBlank() }?.let { addressLines.add(it) }
+
+        if (addressLines.isNotEmpty()) {
             sb.appendLine(carContext.getString(R.string.poi_section_address))
-            sb.appendLine(poi.address)
+            addressLines.forEach { sb.appendLine(it) }
             sb.appendLine()
         }
 
@@ -441,6 +449,13 @@ object AutoPoiUiHelper {
             fuelPrices.forEach { fp ->
                 val priceStr = formatFuelPriceText(fp)
                 sb.appendLine("${fp.fuelName.padEnd(nameWidth)}  $priceStr")
+            }
+
+            val overallLastUpdate = poi.sourceUpdates?.values?.maxOrNull()
+                ?: fuelPrices.mapNotNull { it.updatedAt }.maxOrNull()
+            overallLastUpdate?.let { timestamp ->
+                sb.appendLine()
+                sb.appendLine(carContext.getString(R.string.poi_last_updated, DateTimeUtils.formatRelativeTime(timestamp)))
             }
             sb.appendLine()
         }
@@ -458,8 +473,22 @@ object AutoPoiUiHelper {
             }
             poi.irveDetails?.let { d ->
                 if (d.connectorTypes.isNotEmpty()) {
-                    charging.add(d.connectorTypes.sorted().joinToString(", ") { BrandHelper.connectorTypeLabel(it) })
+                    charging.add(carContext.getString(R.string.poi_label_connectors) + ": " + d.connectorTypes.sorted().joinToString(", ") { BrandHelper.connectorTypeLabel(it) })
                 }
+                if (d.gratuit == true) {
+                    charging.add(carContext.getString(R.string.poi_free))
+                }
+                d.tarification?.takeIf { it.isNotBlank() }?.let { charging.add(carContext.getString(R.string.poi_label_pricing) + ": " + it) }
+                d.openingHours?.takeIf { it.isNotBlank() }?.let { charging.add(carContext.getString(R.string.poi_label_hours) + ": " + it) }
+                if (d.reservation == true) {
+                    charging.add(carContext.getString(R.string.poi_reservation_possible))
+                }
+                listOfNotNull(
+                    if (d.paymentActe == true) carContext.getString(R.string.poi_payment_on_site) else null,
+                    if (d.paymentCb == true) carContext.getString(R.string.poi_payment_card) else null,
+                    if (d.paymentAutre == true) carContext.getString(R.string.poi_payment_other) else null
+                ).joinToString(", ").takeIf { it.isNotBlank() }?.let { charging.add(carContext.getString(R.string.poi_label_payment) + ": " + it) }
+                d.conditionAcces?.takeIf { it.isNotBlank() }?.let { charging.add(carContext.getString(R.string.poi_label_access) + ": " + it) }
             }
             availability?.let { s ->
                 charging.add(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
@@ -467,6 +496,21 @@ object AutoPoiUiHelper {
             if (charging.isNotEmpty()) {
                 sb.appendLine(carContext.getString(R.string.poi_section_charging_details))
                 charging.forEach { sb.appendLine(it) }
+                sb.appendLine()
+            }
+        }
+
+        // Restaurant details
+        poi.restaurantDetails?.let { d ->
+            val restaurant = mutableListOf<String>()
+            if (d.isFastFood) restaurant.add(carContext.getString(R.string.poi_fast_food))
+            d.brand?.takeIf { it.isNotBlank() }?.let { restaurant.add(carContext.getString(R.string.poi_brand_prefix, it)) }
+            d.cuisine?.takeIf { it.isNotBlank() }?.let { restaurant.add(carContext.getString(R.string.poi_cuisine_prefix, it)) }
+            d.openingHours?.takeIf { it.isNotBlank() }?.let { restaurant.add(carContext.getString(R.string.poi_hours_prefix, it)) }
+
+            if (restaurant.isNotEmpty()) {
+                sb.appendLine(carContext.getString(R.string.poi_section_restaurant))
+                restaurant.forEach { sb.appendLine(it) }
                 sb.appendLine()
             }
         }
@@ -488,6 +532,21 @@ object AutoPoiUiHelper {
                 sb.appendLine(ams.joinToString(" • "))
                 sb.appendLine()
             }
+        }
+
+        // Sources
+        val sources = poi.source?.split("+")?.map { it.trim() }?.filter { it.isNotBlank() }?.distinct() ?: emptyList()
+        if (sources.isNotEmpty()) {
+            sb.appendLine(carContext.getString(R.string.screen_sources))
+            sources.forEach { s ->
+                val updateTime = poi.sourceUpdates?.get(s)
+                if (updateTime != null) {
+                    sb.appendLine("• $s (${DateTimeUtils.formatRelativeTime(updateTime)})")
+                } else {
+                    sb.appendLine("• $s")
+                }
+            }
+            sb.appendLine()
         }
 
         val text = sb.toString().trim()
