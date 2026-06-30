@@ -311,26 +311,7 @@ class NativeMapPoiScreen(
                 distanceFromLatLon = searchLat to searchLon,
                 maxRows = listLimit,
                 includePlace = true,
-                onHeaderClick = {
-                    screenManager.push(
-                        PoiDetailScreen(
-                            carContext = carContext,
-                            poi = poi,
-                            settingsManager = settingsManager,
-                            availabilitySummary = availability,
-                            effectiveEnergyTypes = effectiveEnergies,
-                            effectivePowerLevels = effectivePowerLevels,
-                            poiList = sortedPois,
-                            initialPoiIndex = sortedPois.indexOfFirst { it.id == poi.id },
-                            availabilityByPoiId = availabilityByPoiId,
-                            onPoiSelected = { newPoi ->
-                                selectedPoi = newPoi
-                                selectedPoiAvailability = availabilityByPoiId[newPoi.id]
-                                invalidate()
-                            }
-                        )
-                    )
-                }
+                onHeaderClick = null
             )
             detailRows.forEach { itemListBuilder.addItem(it) }
         } else {
@@ -356,24 +337,6 @@ class NativeMapPoiScreen(
                     ) {
                         selectedPoi = item
                         selectedPoiAvailability = availability
-                        screenManager.push(
-                            PoiDetailScreen(
-                                carContext = carContext,
-                                poi = item,
-                                settingsManager = settingsManager,
-                                availabilitySummary = availability,
-                                effectiveEnergyTypes = effectiveEnergies,
-                                effectivePowerLevels = effectivePowerLevels,
-                                poiList = sortedPois,
-                                initialPoiIndex = sortedPois.indexOfFirst { it.id == item.id },
-                                availabilityByPoiId = availabilityByPoiId,
-                                onPoiSelected = { newPoi ->
-                                    selectedPoi = newPoi
-                                    selectedPoiAvailability = availabilityByPoiId[newPoi.id]
-                                    invalidate()
-                                }
-                            )
-                        )
                         invalidate()
                     }
                 )
