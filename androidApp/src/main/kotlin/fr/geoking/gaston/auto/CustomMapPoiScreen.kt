@@ -123,6 +123,24 @@ class CustomMapPoiScreen(
     private var visibleAreaCameraJob: Job? = null
     private var selectedPoi: Poi? = null
 
+    private val detailBackHandler = AutoPoiDetailBackHandler(carContext, this) {
+        clearSelectedPoi()
+    }
+
+    private fun clearSelectedPoi() {
+        selectedPoi = null
+        detailBackHandler.setDetailVisible(false)
+        syncRendererWithMapState()
+        invalidate()
+    }
+
+    private fun selectPoi(poi: Poi) {
+        selectedPoi = poi
+        detailBackHandler.setDetailVisible(true)
+        syncRendererWithMapState()
+        invalidate()
+    }
+
     init {
         lifecycle.addObserver(this)
         lifecycleScope.launch {
@@ -738,6 +756,7 @@ class CustomMapPoiScreen(
         }
 
         selectedPoi = poi
+        detailBackHandler.setDetailVisible(true)
         val settings = settingsManager.settings.value
         val filteredPois = getFilteredPois(settings)
         surfaceRenderer?.updatePois(
@@ -805,7 +824,7 @@ class CustomMapPoiScreen(
                         if (isCheapestFilterActive) {
                             isCheapestFilterActive = false
                             sortByPrice = false
-                            selectedPoi = null
+                            clearSelectedPoi()
                         } else {
                             isCheapestFilterActive = true
                             sortByPrice = true
@@ -868,18 +887,8 @@ class CustomMapPoiScreen(
                 ListTemplate.Builder()
                     .setHeader(
                         Header.Builder()
-                            .setTitle(poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" })
-                            .setStartHeaderAction(Action.APP_ICON)
-                            .addEndHeaderAction(
-                                Action.Builder()
-                                    .setIcon(carContext.carIcon(R.drawable.ic_arrow_back))
-                                    .setOnClickListener {
-                                        selectedPoi = null
-                                        syncRendererWithMapState()
-                                        invalidate()
-                                    }
-                                    .build()
-                            )
+                            .setTitle(AutoPoiUiHelper.poiDetailTitle(poi))
+                            .setStartHeaderAction(Action.BACK)
                             .addEndHeaderAction(
                                 Action.Builder()
                                     .setIcon(carContext.actionNavigateToIcon())
@@ -907,11 +916,9 @@ class CustomMapPoiScreen(
                             distanceFromLatLon = searchLat to searchLon,
                             includePlace = false
                         ) {
-                            selectedPoi = item
-                            syncRendererWithMapState()
-                        invalidate()
-                    }
-                )
+                            selectPoi(item)
+                        }
+                    )
                 }
 
                 ListTemplate.Builder()

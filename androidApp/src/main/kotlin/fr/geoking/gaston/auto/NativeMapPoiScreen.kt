@@ -76,6 +76,24 @@ class NativeMapPoiScreen(
     private var selectedPoi: Poi? = null
     private var selectedPoiAvailability: StationAvailabilitySummary? = null
 
+    private val detailBackHandler = AutoPoiDetailBackHandler(carContext, this) {
+        clearSelectedPoi()
+    }
+
+    private fun clearSelectedPoi() {
+        selectedPoi = null
+        selectedPoiAvailability = null
+        detailBackHandler.setDetailVisible(false)
+        invalidate()
+    }
+
+    private fun selectPoi(poi: Poi, availability: StationAvailabilitySummary?) {
+        selectedPoi = poi
+        selectedPoiAvailability = availability
+        detailBackHandler.setDetailVisible(true)
+        invalidate()
+    }
+
     init {
         lifecycle.addObserver(this)
         lifecycleScope.launch {
@@ -194,16 +212,6 @@ class NativeMapPoiScreen(
 
         val poi = selectedPoi
         if (poi != null) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.carIcon(R.drawable.ic_arrow_back))
-                    .setOnClickListener {
-                        selectedPoi = null
-                        selectedPoiAvailability = null
-                        invalidate()
-                    }
-                    .build()
-            )
             val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
                 data = fr.geoking.gaston.intent.IntentNavigationHelper.getNavigationUri(poi)
             }
@@ -335,16 +343,14 @@ class NativeMapPoiScreen(
                         distanceFromLatLon = searchLat to searchLon,
                         includePlace = true
                     ) {
-                        selectedPoi = item
-                        selectedPoiAvailability = availability
-                        invalidate()
+                        selectPoi(item, availability)
                     }
                 )
             }
         }
 
         PlaceListMapTemplate.Builder()
-            .setTitle(poi?.let { it.siteName?.takeIf { it.isNotBlank() } ?: it.name.ifBlank { "POI" } } ?: title)
+            .setTitle(poi?.let { AutoPoiUiHelper.poiDetailTitle(it) } ?: title)
             .setHeaderAction(Action.BACK)
             .setActionStrip(actionStrip)
             .setLoading(false)

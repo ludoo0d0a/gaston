@@ -29,6 +29,15 @@ import fr.geoking.gaston.shared.datetime.DateTimeUtils
  */
 object AutoPoiUiHelper {
 
+    fun poiDisplayName(poi: Poi): String =
+        poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
+
+    fun poiDetailTitle(poi: Poi): String {
+        val name = poiDisplayName(poi)
+        val streetAddress = poi.addressLocal?.takeIf { it.isNotBlank() } ?: poi.address.takeIf { it.isNotBlank() }
+        return if (!streetAddress.isNullOrBlank()) "$name \u00b7 $streetAddress" else name
+    }
+
     private fun distanceMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         // Haversine distance (meters). Good enough for on-screen "distance" spans.
         val r = 6371000.0
@@ -168,9 +177,7 @@ object AutoPoiUiHelper {
         includePlace: Boolean = false,
         onClick: () -> Unit
     ): Row {
-        val name = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
-        val streetAddress = poi.addressLocal?.takeIf { it.isNotBlank() } ?: poi.address.takeIf { it.isNotBlank() }
-        val title = if (!streetAddress.isNullOrBlank()) "$name \u00b7 $streetAddress" else name
+        val title = poiDisplayName(poi)
         val carIcon = buildPoiIcon(carContext, poi, effectiveEnergyTypes, effectivePowerLevels)
 
         val rowBuilder = Row.Builder()
@@ -262,9 +269,8 @@ object AutoPoiUiHelper {
 
         fun canAddRow() = rows.size < maxRows
 
-        // 1. Address Row (Title used to be name, now address to avoid repetition with template title)
-        val streetAddress = poi.addressLocal?.takeIf { it.isNotBlank() } ?: poi.address.takeIf { it.isNotBlank() }
-        val title = streetAddress ?: poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
+        // 1. Station name + address (template title is name-only on map detail screens)
+        val title = poiDetailTitle(poi)
         val brandIcon = buildPoiIcon(carContext, poi, effectiveEnergyTypes, effectivePowerLevels)
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
 
