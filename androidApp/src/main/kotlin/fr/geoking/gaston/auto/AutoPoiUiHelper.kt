@@ -168,7 +168,9 @@ object AutoPoiUiHelper {
         includePlace: Boolean = false,
         onClick: () -> Unit
     ): Row {
-        val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
+        val name = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
+        val streetAddress = poi.addressLocal?.takeIf { it.isNotBlank() } ?: poi.address.takeIf { it.isNotBlank() }
+        val title = if (!streetAddress.isNullOrBlank()) "$name \u00b7 $streetAddress" else name
         val carIcon = buildPoiIcon(carContext, poi, effectiveEnergyTypes, effectivePowerLevels)
 
         val rowBuilder = Row.Builder()
@@ -260,27 +262,28 @@ object AutoPoiUiHelper {
 
         fun canAddRow() = rows.size < maxRows
 
-        // 1. Brand / Name Row
+        // 1. Address Row (Title used to be name, now address to avoid repetition with template title)
+        val streetAddress = poi.addressLocal?.takeIf { it.isNotBlank() } ?: poi.address.takeIf { it.isNotBlank() }
+        val title = streetAddress ?: poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
         val brandIcon = buildPoiIcon(carContext, poi, effectiveEnergyTypes, effectivePowerLevels)
-        val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
 
         val headerRow = Row.Builder().setTitle(title)
-        if (includePlace) headerRow.setMetadata(metadata!!) else headerRow.setImage(brandIcon, Row.IMAGE_TYPE_SMALL)
-        brandInfo?.let { if (title != it.displayName) headerRow.addText(it.displayName) }
-        if (distanceFromLatLon != null) applyDistanceSpan(headerRow, distanceFromLatLon, poi)
-        if (onHeaderClick != null) { headerRow.setOnClickListener(onHeaderClick); headerRow.setBrowsable(true) }
-        rows.add(headerRow.build())
-
-        // 1b. Address Row
-        if (canAddRow()) {
-            val streetAddress = poi.addressLocal?.takeIf { it.isNotBlank() } ?: poi.address.takeIf { it.isNotBlank() }
-            if (!streetAddress.isNullOrBlank()) {
-                val addressRow = Row.Builder().setTitle(carContext.getString(R.string.poi_section_address)).addText(streetAddress)
-                if (includePlace) { addressRow.setMetadata(metadata!!); applyDistanceSpan(addressRow, distanceFromLatLon, poi) }
-                rows.add(addressRow.build())
-            }
+        // For PlaceListMapTemplate (includePlace=true), we MUST provide a Place in Metadata and NO image.
+        if (includePlace) {
+            headerRow.setMetadata(metadata!!)
+        } else {
+            headerRow.setImage(brandIcon, Row.IMAGE_TYPE_SMALL)
         }
+        // Add brand name as secondary text if it differs from the address/name
+        brandInfo?.let { if (title != it.displayName) headerRow.addText(it.displayName) }
+        // Distance info is required for PlaceListMapTemplate rows
+        if (distanceFromLatLon != null) applyDistanceSpan(headerRow, distanceFromLatLon, poi)
+        if (onHeaderClick != null) {
+            headerRow.setOnClickListener(onHeaderClick)
+            headerRow.setBrowsable(true)
+        }
+        rows.add(headerRow.build())
 
         // 2. Price Rating
         if (canAddRow() && !poi.isElectric && poi.priceRating != null) {
