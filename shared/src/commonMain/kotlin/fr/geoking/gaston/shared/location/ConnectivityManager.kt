@@ -4,6 +4,9 @@ import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkSettings
 import fr.geoking.gaston.shared.network.NetworkStatus
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -12,6 +15,9 @@ class ConnectivityManager(
     private val networkService: NetworkService,
     private val networkSettings: NetworkSettings
 ) {
+    private val _borderCrossingEvents = MutableSharedFlow<String>()
+    val borderCrossingEvents: SharedFlow<String> = _borderCrossingEvents.asSharedFlow()
+
     private var lastStatus: NetworkStatus? = NetworkStatus(
         countryCode = networkSettings.lastCountryCode,
         countryName = networkSettings.lastCountryName,
@@ -31,6 +37,14 @@ class ConnectivityManager(
 
     private fun handleStatusChange(status: NetworkStatus) {
         val last = lastStatus ?: return
+
+        // Border crossing detection: countryCode changed from a valid value to another valid value
+        if (status.countryCode != null && last.countryCode != null && status.countryCode != last.countryCode) {
+            val countryName = status.countryName ?: status.countryCode
+            scope.launch {
+                _borderCrossingEvents.emit(countryName)
+            }
+        }
 
         // Update persistent settings only if they changed to avoid redundant writes
         if (status.countryCode != last.countryCode) networkSettings.lastCountryCode = status.countryCode

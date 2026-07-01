@@ -40,6 +40,7 @@ import fr.geoking.gaston.premium.BillingManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.koin.android.ext.koin.androidContext
@@ -202,11 +203,19 @@ val appModule = module {
 
     // Initialize ConnectivityManager here so it starts at app launch
     single(createdAtStart = true) {
+        val notificationHelper = get<NotificationHelper>()
         ConnectivityManager(
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
             networkService = get(),
             networkSettings = get<SettingsManager>()
-        )
+        ).also { manager ->
+            // Observe border crossing events to show notifications
+            CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {
+                manager.borderCrossingEvents.collect { countryName ->
+                    notificationHelper.showBorderCrossingNotification(countryName)
+                }
+            }
+        }
     }
 
     single { FuelForecastRepository(http = get(), db = get()) }
