@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.AfterTest
@@ -67,5 +69,39 @@ class ConnectivityManagerTest {
         assertEquals("Orange", settings.lastOperatorName)
         assertEquals(true, settings.lastIsConnected)
         assertEquals(false, settings.lastIsRoaming)
+    }
+
+    @Test
+    fun testCountryChange_emitsBorderCrossingEvent() = runBlocking {
+        val settings = MockNetworkSettings()
+        settings.lastCountryCode = "FR"
+        settings.lastCountryName = "France"
+
+        val service = MockNetworkService()
+        service.updateStatus(NetworkStatus(countryCode = "FR", countryName = "France"))
+
+        val manager = ConnectivityManager(testScope, service, settings)
+
+        // Give it a moment to initialize with the initial status
+        delay(100)
+
+        val crossingEvents = mutableListOf<String>()
+        val job = launch {
+            manager.borderCrossingEvents.collect {
+                crossingEvents.add(it)
+            }
+        }
+
+        // Change country
+        service.updateStatus(NetworkStatus(countryCode = "BE", countryName = "Belgium"))
+
+        // Wait for event
+        delay(200)
+
+        assertEquals(1, crossingEvents.size)
+        assertEquals("Belgium", crossingEvents[0])
+        assertEquals("BE", settings.lastCountryCode)
+
+        job.cancel()
     }
 }
