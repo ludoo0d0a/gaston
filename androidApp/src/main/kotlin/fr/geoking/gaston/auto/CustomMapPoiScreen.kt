@@ -303,7 +303,7 @@ class CustomMapPoiScreen(
         }
         renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
         renderer.updatePois(
-            newPois = filteredPois,
+            newPois = if (selectedPoi != null) listOf(selectedPoi!!) else filteredPois,
             effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
             effectivePowerLevels = settings.effectiveIrvePowerLevels(),
             selectedId = selectedPoi?.id
