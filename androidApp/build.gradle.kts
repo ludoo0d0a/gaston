@@ -37,11 +37,6 @@ configure<ApplicationExtension> {
         fun prop(key: String, default: String = "") =
             localProps.getProperty(key) ?: System.getenv(key) ?: default
 
-        fun requireProp(key: String): String {
-            return localProps.getProperty(key) ?: System.getenv(key)
-            ?: throw GradleException("Missing mandatory property: $key. Please set it in local.properties or as an environment variable.")
-        }
-
         // Sanitize for Java string literal: trim, strip newlines, escape backslash and double-quote
         fun sanitizeBuildConfigString(s: String): String =
             s.trim().replace("\\", "\\\\").replace("\"", "\\\"").replace(Regex("[\r\n]+"), " ")
@@ -65,24 +60,24 @@ configure<ApplicationExtension> {
 
         // Optional: GitHub PAT for in-app GitHub features (user can also configure at runtime).
         val githubToken = sanitizeBuildConfigString(prop("GITHUB_TOKEN"))
-        val googleWebClientId = sanitizeBuildConfigString(requireProp("GOOGLE_WEB_CLIENT_ID"))
-        val mobiliteitLuxembourgKey = sanitizeBuildConfigString(requireProp("MOBILITEIT_LUXEMBOURG_KEY"))
-        val tomtomKey = sanitizeBuildConfigString(requireProp("TOMTOM_KEY"))
-        val openChargeMapKey = sanitizeBuildConfigString(requireProp("OPENCHARGEMAP_KEY"))
-        val chargyApiKey = sanitizeBuildConfigString(requireProp("CHARGY_API_KEY"))
-        val germanyTankerkoenigKey = sanitizeBuildConfigString(requireProp("GERMANY_TANKERKOENIG_KEY"))
-        val fastnedUkKey = sanitizeBuildConfigString(requireProp("FASTNED_UK_KEY"))
-        val romaniaPecoApplicationId = sanitizeBuildConfigString(requireProp("ROMANIA_PECO_APPLICATION_ID"))
-        val romaniaPecoClientKey = sanitizeBuildConfigString(requireProp("ROMANIA_PECO_CLIENT_KEY"))
-        val dkvSubscriptionKey = sanitizeBuildConfigString(requireProp("DKV_SUBSCRIPTION_KEY"))
-        val dkvAuthorization = sanitizeBuildConfigString(requireProp("DKV_AUTHORIZATION"))
-        val ecoMovementKey = sanitizeBuildConfigString(requireProp("ECO_MOVEMENT_KEY"))
-        val revenueCatApiKey = sanitizeBuildConfigString(requireProp("REVENUECAT_API_KEY"))
-        val fuelpricesDkKey = sanitizeBuildConfigString(requireProp("FUELPRICES_DK_KEY"))
-        val nswFuelCheckKey = sanitizeBuildConfigString(requireProp("NSW_FUELCHECK_KEY"))
-        val nswFuelCheckSecret = sanitizeBuildConfigString(requireProp("NSW_FUELCHECK_SECRET"))
+        val googleWebClientId = sanitizeBuildConfigString(prop("GOOGLE_WEB_CLIENT_ID"))
+        val mobiliteitLuxembourgKey = sanitizeBuildConfigString(prop("MOBILITEIT_LUXEMBOURG_KEY"))
+        val tomtomKey = sanitizeBuildConfigString(prop("TOMTOM_KEY"))
+        val openChargeMapKey = sanitizeBuildConfigString(prop("OPENCHARGEMAP_KEY"))
+        val chargyApiKey = sanitizeBuildConfigString(prop("CHARGY_API_KEY"))
+        val germanyTankerkoenigKey = sanitizeBuildConfigString(prop("GERMANY_TANKERKOENIG_KEY"))
+        val fastnedUkKey = sanitizeBuildConfigString(prop("FASTNED_UK_KEY"))
+        val romaniaPecoApplicationId = sanitizeBuildConfigString(prop("ROMANIA_PECO_APPLICATION_ID"))
+        val romaniaPecoClientKey = sanitizeBuildConfigString(prop("ROMANIA_PECO_CLIENT_KEY"))
+        val dkvSubscriptionKey = sanitizeBuildConfigString(prop("DKV_SUBSCRIPTION_KEY"))
+        val dkvAuthorization = sanitizeBuildConfigString(prop("DKV_AUTHORIZATION"))
+        val ecoMovementKey = sanitizeBuildConfigString(prop("ECO_MOVEMENT_KEY"))
+        val revenueCatApiKey = sanitizeBuildConfigString(prop("REVENUECAT_API_KEY"))
+        val fuelpricesDkKey = sanitizeBuildConfigString(prop("FUELPRICES_DK_KEY"))
+        val nswFuelCheckKey = sanitizeBuildConfigString(prop("NSW_FUELCHECK_KEY"))
+        val nswFuelCheckSecret = sanitizeBuildConfigString(prop("NSW_FUELCHECK_SECRET"))
         val eiaKey = sanitizeBuildConfigString(prop("EIA_KEY"))
-        val mapsApiKey = requireProp("GOOGLE_MAPS_KEY")
+        val mapsApiKey = prop("GOOGLE_MAPS_KEY")
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
 
         // AdMob (Play Store): defaults to Google-provided test IDs when not configured.
