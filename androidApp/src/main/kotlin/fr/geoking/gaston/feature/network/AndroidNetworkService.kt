@@ -114,7 +114,9 @@ class AndroidNetworkService(
 
             if (permissionManager.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
                 val now = System.currentTimeMillis()
-                if (now - lastLocationCountryUpdateMs < 600_000L && cachedLocationCountryCode != null) {
+                // Invalidate cache if telephony country changed (likely border crossing) or after 1 minute.
+                val countryMismatch = telephonyCountry != null && cachedLocationCountryCode != null && telephonyCountry != cachedLocationCountryCode
+                if (now - lastLocationCountryUpdateMs < 60_000L && cachedLocationCountryCode != null && !countryMismatch) {
                     locationCountryCode = cachedLocationCountryCode
                     locationCountryName = cachedLocationCountryName
                 } else {
