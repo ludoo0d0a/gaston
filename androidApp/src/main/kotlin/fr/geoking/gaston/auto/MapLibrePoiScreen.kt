@@ -790,6 +790,7 @@ class MapLibrePoiScreen(
         logTag = "MapLibrePoiScreen",
         templateName = "MapWithContentTemplate"
     ) {
+        detailBackHandler.syncDetailVisible(selectedPoi != null)
         val currentSettings = settingsManager.settings.value
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
 
@@ -889,6 +890,12 @@ class MapLibrePoiScreen(
                             .setStartHeaderAction(Action.BACK)
                             .addEndHeaderAction(
                                 Action.Builder()
+                                    .setIcon(carContext.carIcon(R.drawable.ic_arrow_back))
+                                    .setOnClickListener { clearSelectedPoi() }
+                                    .build()
+                            )
+                            .addEndHeaderAction(
+                                Action.Builder()
                                     .setIcon(carContext.actionNavigateToIcon())
                                     .setOnClickListener { carContext.startCarApp(navigateIntent) }
                                     .build()
@@ -912,7 +919,8 @@ class MapLibrePoiScreen(
                             effectiveEnergyTypes = effectiveEnergies,
                             effectivePowerLevels = effectivePowerLevels,
                             distanceFromLatLon = searchLat to searchLon,
-                            includePlace = false
+                            includePlace = false,
+                            browsable = false,
                         ) {
                             selectPoi(item)
                         }

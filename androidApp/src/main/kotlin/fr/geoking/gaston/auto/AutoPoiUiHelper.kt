@@ -175,6 +175,7 @@ object AutoPoiUiHelper {
         effectivePowerLevels: Set<Int> = emptySet(),
         distanceFromLatLon: Pair<Double, Double>? = null,
         includePlace: Boolean = false,
+        browsable: Boolean = true,
         onClick: () -> Unit
     ): Row {
         val title = poiDisplayName(poi)
@@ -182,8 +183,10 @@ object AutoPoiUiHelper {
 
         val rowBuilder = Row.Builder()
             .setTitle(title)
-            .setBrowsable(true)
             .setOnClickListener(onClick)
+        if (browsable) {
+            rowBuilder.setBrowsable(true)
+        }
 
         if (includePlace) {
             // If the template renders a map (like PlaceListMapTemplate), we MUST provide a Place
