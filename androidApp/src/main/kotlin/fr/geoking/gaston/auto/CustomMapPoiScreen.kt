@@ -36,8 +36,6 @@ import fr.geoking.gaston.VehicleType
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiMerger
-import fr.geoking.gaston.poi.MapViewport
-import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.poi.PoiSearchResult
 import fr.geoking.gaston.poi.PoiProviderError
@@ -231,16 +229,42 @@ class CustomMapPoiScreen(
         }
     }
 
-    private fun applyCameraForStations(userLat: Double, userLon: Double, stations: List<Poi>, searchZoom: Int, preserveZoom: Boolean = false) {
-        val (fitW, fitH) = mapFitSizePx()
-        val camera = AutoMapCamera.fitToUserAndStations(
+    private fun mapFocusStations(settings: AppSettings): List<Poi> {
+        val filtered = getFilteredPois(settings)
+        val (userLat, userLon) = searchCenterFlow.value
+        val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+        return AutoMapCamera.selectMapFocusStations(
             userLat = userLat,
             userLon = userLon,
-            stations = stations,
-            mapWidthPx = fitW,
-            mapHeightPx = fitH,
-            fallbackZoom = if (preserveZoom) zoom else searchZoom,
+            stations = filtered,
+            sortByPrice = sortByPrice,
+            selectedFuelIds = fuelIds,
         )
+    }
+
+    private fun applyCameraForStations(
+        userLat: Double,
+        userLon: Double,
+        stations: List<Poi>,
+        settings: AppSettings,
+        preserveZoom: Boolean = false,
+    ) {
+        val (fitW, fitH) = mapFitSizePx()
+        val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+        val camera = if (preserveZoom) {
+            AutoMapCamera.Camera(userLat, userLon, zoom)
+        } else {
+            AutoMapCamera.cameraForMapFocus(
+                userLat = userLat,
+                userLon = userLon,
+                stations = stations,
+                mapWidthPx = fitW,
+                mapHeightPx = fitH,
+                fallbackZoom = AutoMapCamera.DEFAULT_ZOOM,
+                sortByPrice = sortByPrice,
+                selectedFuelIds = fuelIds,
+            )
+        }
         searchLat = camera.centerLat
         searchLon = camera.centerLon
         zoom = if (preserveZoom) zoom else camera.zoom
@@ -270,7 +294,7 @@ class CustomMapPoiScreen(
         if (itineraryPoints.isNotEmpty()) {
             applyCameraForItinerary(userLat, userLon, filteredPois)
         } else {
-            applyCameraForStations(userLat, userLon, filteredPois, zoom)
+            applyCameraForStations(userLat, userLon, filteredPois, settings)
         }
         lastCameraFitWidth = area.width()
         lastCameraFitHeight = area.height()
@@ -302,8 +326,13 @@ class CustomMapPoiScreen(
             lastAppliedZoom = zoom
         }
         renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
+        val mapPois = when {
+            selectedPoi != null -> listOf(selectedPoi!!)
+            itineraryPoints.isNotEmpty() -> filteredPois
+            else -> mapFocusStations(settings)
+        }
         renderer.updatePois(
-            newPois = if (selectedPoi != null) listOf(selectedPoi!!) else filteredPois,
+            newPois = mapPois,
             effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
             effectivePowerLevels = settings.effectiveIrvePowerLevels(),
             selectedId = selectedPoi?.id
@@ -318,7 +347,6 @@ class CustomMapPoiScreen(
         preserveZoom: Boolean = false
     ): Pair<List<Poi>, List<PoiProviderError>> {
         if (itineraryPoints.isNotEmpty() && routePlanner != null) {
-            val (fitW, fitH) = mapFitSizePx()
             val result = routePlanner.getStationsAlongRoute(
                 points = itineraryPoints,
                 poiProvider = poiProvider
@@ -334,37 +362,31 @@ class CustomMapPoiScreen(
             return loadedPois to emptyList()
         }
 
-        val (fitW, fitH) = mapFitSizePx()
-        var lastResult = PoiSearchResult()
-        var lastFiltered = emptyList<Poi>()
-        var lastSearchZoom = AutoMapCamera.DEFAULT_ZOOM
+        if (preserveZoom) {
+            val filteredPois = getFilteredPois(settings)
+            applyCameraForStations(userLat, userLon, filteredPois, settings, preserveZoom = true)
+            return pois to errors
+        }
 
-        for (searchZoom in AutoMapCamera.searchZoomLevels()) {
-            lastSearchZoom = searchZoom
-            val viewport = MapViewport(
-                zoom = searchZoom.toFloat(),
-                mapWidthPx = fitW.coerceAtLeast(1),
-                mapHeightPx = fitH.coerceAtLeast(1),
+        var lastResult = PoiSearchResult()
+        poiProvider.searchFlow(
+            PoiSearchRequest(
+                latitude = userLat,
+                longitude = userLon,
+                viewport = null,
+                categories = emptySet(),
+                skipFilters = true,
             )
-            lastResult = poiProvider.searchResult(
-                PoiSearchRequest(
-                    latitude = userLat,
-                    longitude = userLon,
-                    viewport = viewport,
-                    categories = emptySet(),
-                    skipFilters = true,
-                )
-            )
-            lastFiltered = StationMapFilters.apply(
+        ).collect { result ->
+            lastResult = result
+            val filteredPois = StationMapFilters.apply(
                 settings = settings,
-                pois = lastResult.pois,
+                pois = result.pois,
                 providers = settings.effectiveProvidersAt(userLat, userLon),
                 skipWhenOnlyOverpass = true,
             )
-            if (lastFiltered.isNotEmpty()) break
+            applyCameraForStations(userLat, userLon, filteredPois, settings)
         }
-
-        applyCameraForStations(userLat, userLon, lastFiltered, lastSearchZoom, preserveZoom)
         return lastResult.pois to lastResult.errors
     }
 
@@ -457,62 +479,47 @@ class CustomMapPoiScreen(
                         syncRendererWithMapState()
                         invalidate()
                     }
+                } else if (preserveZoom) {
+                    val filteredPois = getFilteredPois(settings)
+                    applyCameraForStations(lat, lon, filteredPois, settings, preserveZoom = true)
+                    surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+                    syncRendererWithMapState()
+                    isLoading = false
+                    refitCameraForVisibleAreaIfNeeded()
+                    invalidate()
                 } else {
-                    val (fitW, fitH) = mapFitSizePx()
-                    var currentSearchZoom = if (preserveZoom) zoom else AutoMapCamera.DEFAULT_ZOOM
-                    val searchZoomLevels = if (preserveZoom) listOf(zoom) else AutoMapCamera.searchZoomLevels()
-
-                    for (searchZoom in searchZoomLevels) {
-                        currentSearchZoom = searchZoom
-                        var foundPoisAtThisZoom = false
-
-                        val viewport = calculateBoundsFromMapViewport(
-                            centerLat = lat,
-                            centerLng = lon,
-                            zoom = searchZoom.toFloat(),
-                            mapWidthPx = fitW.coerceAtLeast(1),
-                            mapHeightPx = fitH.coerceAtLeast(1),
+                    poiProvider.searchFlow(
+                        PoiSearchRequest(
+                            latitude = lat,
+                            longitude = lon,
+                            viewport = null,
+                            categories = emptySet(),
+                            skipFilters = true,
                         )
+                    ).collect { result ->
+                        pois = PoiMerger.mergeInto(pois, result.pois)
+                        errors = result.errors
+                        val filteredPois = getFilteredPois(settings)
 
-                        poiProvider.searchFlow(
-                            PoiSearchRequest(
-                                latitude = lat,
-                                longitude = lon,
-                                viewport = viewport,
-                                categories = emptySet(),
-                                skipFilters = true,
-                            )
-                        ).collect { result ->
-                            pois = PoiMerger.mergeInto(pois, result.pois)
-                            errors = result.errors
-                            val filteredPois = getFilteredPois(settings)
+                        applyCameraForStations(lat, lon, filteredPois, settings)
+                        surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+                        syncRendererWithMapState()
+                        isLoading = false
+                        refitCameraForVisibleAreaIfNeeded()
+                        invalidate()
 
-                            if (filteredPois.isNotEmpty()) {
-                                foundPoisAtThisZoom = true
+                        val provider = availabilityProviderFactory.getProvider(lat, lon)
+                        if (provider != null) {
+                            val availabilities = try {
+                                provider.getAvailability(lat, lon, 10)
+                            } catch (e: Exception) {
+                                if (e is kotlinx.coroutines.CancellationException) throw e
+                                emptyList()
                             }
-
-                            applyCameraForStations(lat, lon, filteredPois, currentSearchZoom, preserveZoom)
-                            surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+                            availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
                             syncRendererWithMapState()
-                            isLoading = false
-                            refitCameraForVisibleAreaIfNeeded()
                             invalidate()
-
-                            // Update availability incrementally
-                            val provider = availabilityProviderFactory.getProvider(lat, lon)
-                            if (provider != null) {
-                                val availabilities = try {
-                                    provider.getAvailability(lat, lon, 10)
-                                } catch (e: Exception) {
-                                    if (e is kotlinx.coroutines.CancellationException) throw e
-                                    emptyList()
-                                }
-                                availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
-                                syncRendererWithMapState()
-                                invalidate()
-                            }
                         }
-                        if (foundPoisAtThisZoom) break
                     }
                 }
             } catch (e: Exception) {
