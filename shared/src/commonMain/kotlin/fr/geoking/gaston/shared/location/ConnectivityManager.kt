@@ -40,7 +40,14 @@ class ConnectivityManager(
 
         // Border crossing detection: countryCode changed from a valid value to another valid value
         if (status.countryCode != null && last.countryCode != null && status.countryCode != last.countryCode) {
-            val countryName = status.countryName ?: status.countryCode
+            // Avoid using a country name that is identical to the previous one if the code changed,
+            // as it likely indicates stale data from geocoding or cache.
+            val countryName = if (status.countryName != null && status.countryName != last.countryName) {
+                status.countryName
+            } else {
+                status.countryCode
+            }
+
             scope.launch {
                 _borderCrossingEvents.emit(countryName)
             }
