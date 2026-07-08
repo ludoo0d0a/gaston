@@ -135,7 +135,19 @@ class AndroidNetworkService(
 
             // Prefer GPS-based country code for cross-border accuracy, fallback to Telephony, then to persisted settings
             val finalCountryCode = locationCountryCode ?: telephonyCountry ?: settingsManager.lastCountryCode
-            val finalCountryName = locationCountryName ?: settingsManager.lastCountryName
+
+            // Only use cached country name if it matches the final country code
+            val cachedCountryName = if (finalCountryCode != null && finalCountryCode == settingsManager.lastCountryCode) {
+                settingsManager.lastCountryName
+            } else null
+
+            var finalCountryName = locationCountryName ?: cachedCountryName
+
+            // Fallback to localized display name if we have a code but no name
+            if (finalCountryName == null && finalCountryCode != null) {
+                finalCountryName = Locale("", finalCountryCode).getDisplayCountry(Locale.getDefault())
+            }
+
             val countrySource = when {
                 locationCountryCode != null -> CountrySource.LOCATION
                 telephonyCountry != null -> CountrySource.NETWORK
