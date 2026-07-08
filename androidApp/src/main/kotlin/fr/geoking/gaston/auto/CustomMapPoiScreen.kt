@@ -558,41 +558,9 @@ class CustomMapPoiScreen(
     }
 
     private fun mapContentHeaderBuilder(title: String, currentSettings: AppSettings): Header.Builder {
-        val builder = Header.Builder()
+        return Header.Builder()
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
-
-        // Android Auto Header allows at most 2 end actions.
-        builder.addEndHeaderAction(
-            Action.Builder()
-                .setIcon(carContext.actionRecenterIcon())
-                .setOnClickListener { recenterMap() }
-                .build()
-        )
-
-        if (errors.isNotEmpty()) {
-            builder.addEndHeaderAction(
-                Action.Builder()
-                    .setIcon(carContext.actionErrorIcon())
-                    .setOnClickListener { pushApiErrorsDetailScreen() }
-                    .build()
-            )
-        } else {
-            val compassTitle = if (orientationMode == MapOrientationMode.NorthUp) {
-                carContext.getString(R.string.map_orientation_my_direction)
-            } else {
-                carContext.getString(R.string.map_orientation_north_up)
-            }
-            builder.addEndHeaderAction(
-                Action.Builder()
-                    .setTitle(compassTitle)
-                    .setIcon(carContext.actionCompassIcon())
-                    .setOnClickListener { toggleMapOrientation() }
-                    .build()
-            )
-        }
-
-        return builder
     }
 
     private fun applyMapOrientationToRenderer() {
@@ -889,12 +857,6 @@ class CustomMapPoiScreen(
                         Header.Builder()
                             .setTitle(AutoPoiUiHelper.poiDetailTitle(poi))
                             .setStartHeaderAction(Action.BACK)
-                            .addEndHeaderAction(
-                                Action.Builder()
-                                    .setIcon(carContext.actionNavigateToIcon())
-                                    .setOnClickListener { carContext.startCarApp(navigateIntent) }
-                                    .build()
-                            )
                             .build()
                     )
                     .setSingleList(itemListBuilder.build())
