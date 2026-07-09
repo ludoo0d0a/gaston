@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import kotlin.math.PI
 import kotlin.math.abs
@@ -19,8 +20,7 @@ object AutoMapCamera {
     const val DEFAULT_ZOOM = 14
     const val MIN_ZOOM = 4
     const val MAX_ZOOM = 18
-    const val MAX_ZOOM_OUT_ATTEMPTS = 3
-    const val ZOOM_OUT_STEP = 2
+    const val MAP_FOCUS_STATION_COUNT = 2
 
     data class Camera(
         val centerLat: Double,
@@ -28,16 +28,55 @@ object AutoMapCamera {
         val zoom: Int,
     )
 
-    /** Zoom levels used for POI search: initial zoom, then up to [MAX_ZOOM_OUT_ATTEMPTS] wider searches. */
-    fun searchZoomLevels(startZoom: Int = DEFAULT_ZOOM): List<Int> {
-        val levels = mutableListOf(startZoom.coerceIn(MIN_ZOOM, MAX_ZOOM))
-        var z = levels.first()
-        repeat(MAX_ZOOM_OUT_ATTEMPTS) {
-            z = (z - ZOOM_OUT_STEP).coerceAtLeast(MIN_ZOOM)
-            if (z == levels.last()) return@repeat
-            levels.add(z)
-        }
-        return levels
+    /**
+     * Picks up to [maxCount] stations to frame on the map (nearest first, or cheapest when [sortByPrice]).
+     */
+    fun selectMapFocusStations(
+        userLat: Double,
+        userLon: Double,
+        stations: List<Poi>,
+        maxCount: Int = MAP_FOCUS_STATION_COUNT,
+        sortByPrice: Boolean = false,
+        selectedFuelIds: Set<String> = emptySet(),
+    ): List<Poi> {
+        if (stations.isEmpty()) return emptyList()
+        return MapPoiFilter.sortPois(
+            pois = stations,
+            lat = userLat,
+            lon = userLon,
+            sortByPrice = sortByPrice,
+            selectedFuelIds = selectedFuelIds,
+        ).take(maxCount.coerceAtLeast(1))
+    }
+
+    /**
+     * Camera for Android Auto map: user-centered, zoom derived from 1–2 focus stations in [stations].
+     */
+    fun cameraForMapFocus(
+        userLat: Double,
+        userLon: Double,
+        stations: List<Poi>,
+        mapWidthPx: Int,
+        mapHeightPx: Int,
+        fallbackZoom: Int = DEFAULT_ZOOM,
+        sortByPrice: Boolean = false,
+        selectedFuelIds: Set<String> = emptySet(),
+    ): Camera {
+        val focus = selectMapFocusStations(
+            userLat = userLat,
+            userLon = userLon,
+            stations = stations,
+            sortByPrice = sortByPrice,
+            selectedFuelIds = selectedFuelIds,
+        )
+        return fitToUserAndStations(
+            userLat = userLat,
+            userLon = userLon,
+            stations = focus,
+            mapWidthPx = mapWidthPx,
+            mapHeightPx = mapHeightPx,
+            fallbackZoom = fallbackZoom,
+        )
     }
 
     /**

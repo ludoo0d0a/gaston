@@ -26,4 +26,11 @@ class AutoPoiDetailBackHandler(
     fun setDetailVisible(visible: Boolean) {
         callback.isEnabled = visible
     }
+
+    /** Keeps callback state aligned when detail visibility is derived in [onGetTemplate]. */
+    fun syncDetailVisible(visible: Boolean) {
+        if (callback.isEnabled != visible) {
+            callback.isEnabled = visible
+        }
+    }
 }

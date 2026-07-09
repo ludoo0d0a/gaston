@@ -11,15 +11,78 @@ import org.robolectric.RobolectricTestRunner
 class AutoMapCameraTest {
 
     @Test
-    fun searchZoomLevels_includesInitialAndThreeWiderSteps() {
-        val levels = AutoMapCamera.searchZoomLevels(13)
-        assertEquals(listOf(13, 11, 9, 7), levels)
+    fun selectMapFocusStations_returnsAtMostTwo_nearestFirst() {
+        val stations = listOf(
+            poiAt("far", 48.90, 2.50),
+            poiAt("near", 48.860, 2.352),
+            poiAt("mid", 48.870, 2.40),
+        )
+        val focus = AutoMapCamera.selectMapFocusStations(
+            userLat = 48.85,
+            userLon = 2.35,
+            stations = stations,
+        )
+        assertEquals(2, focus.size)
+        assertEquals("near", focus[0].id)
+        assertEquals("mid", focus[1].id)
     }
 
     @Test
-    fun searchZoomLevels_stopsAtMinZoom() {
-        val levels = AutoMapCamera.searchZoomLevels(5)
-        assertEquals(listOf(5, 4), levels)
+    fun selectMapFocusStations_emptyInput_returnsEmpty() {
+        assertTrue(
+            AutoMapCamera.selectMapFocusStations(48.85, 2.35, emptyList()).isEmpty()
+        )
+    }
+
+    @Test
+    fun cameraForMapFocus_noStations_usesDefaultZoom() {
+        val camera = AutoMapCamera.cameraForMapFocus(
+            userLat = 48.85,
+            userLon = 2.35,
+            stations = emptyList(),
+            mapWidthPx = 800,
+            mapHeightPx = 400,
+        )
+        assertEquals(48.85, camera.centerLat, 1e-6)
+        assertEquals(2.35, camera.centerLon, 1e-6)
+        assertEquals(AutoMapCamera.DEFAULT_ZOOM, camera.zoom)
+    }
+
+    @Test
+    fun cameraForMapFocus_distantStation_lowersZoom() {
+        val stations = listOf(poiAt("far", 48.90, 2.50))
+        val camera = AutoMapCamera.cameraForMapFocus(
+            userLat = 48.85,
+            userLon = 2.35,
+            stations = stations,
+            mapWidthPx = 800,
+            mapHeightPx = 400,
+        )
+        assertTrue(camera.zoom < AutoMapCamera.DEFAULT_ZOOM)
+    }
+
+    @Test
+    fun cameraForMapFocus_manyStations_zoomHigherThanFitAll() {
+        val userLat = 48.861
+        val userLon = 2.353
+        val stations = (0 until 20).map { i ->
+            poiAt("s$i", userLat + 0.001 * (i % 5), userLon + 0.001 * (i / 5))
+        }
+        val focusCamera = AutoMapCamera.cameraForMapFocus(
+            userLat = userLat,
+            userLon = userLon,
+            stations = stations,
+            mapWidthPx = 800,
+            mapHeightPx = 400,
+        )
+        val fitAllCamera = AutoMapCamera.fitToUserAndStations(
+            userLat = userLat,
+            userLon = userLon,
+            stations = stations,
+            mapWidthPx = 800,
+            mapHeightPx = 400,
+        )
+        assertTrue(focusCamera.zoom > fitAllCamera.zoom)
     }
 
     @Test
@@ -40,8 +103,8 @@ class AutoMapCameraTest {
     @Test
     fun fitToUserAndStations_includesDistantStation_lowersZoom() {
         val stations = listOf(
-            poiAt(48.86, 2.36),
-            poiAt(48.90, 2.50),
+            poiAt("a", 48.86, 2.36),
+            poiAt("b", 48.90, 2.50),
         )
         val camera = AutoMapCamera.fitToUserAndStations(
             userLat = 48.85,
@@ -58,8 +121,8 @@ class AutoMapCameraTest {
     @Test
     fun fitToUserAndStations_nearbyCluster_usesHigherZoom() {
         val stations = listOf(
-            poiAt(48.860, 2.352),
-            poiAt(48.862, 2.354),
+            poiAt("a", 48.860, 2.352),
+            poiAt("b", 48.862, 2.354),
         )
         val camera = AutoMapCamera.fitToUserAndStations(
             userLat = 48.861,
@@ -71,8 +134,8 @@ class AutoMapCameraTest {
         assertTrue(camera.zoom >= 12)
     }
 
-    private fun poiAt(lat: Double, lon: Double) = Poi(
-        id = "$lat,$lon",
+    private fun poiAt(id: String, lat: Double, lon: Double) = Poi(
+        id = id,
         name = "Test",
         latitude = lat,
         longitude = lon,

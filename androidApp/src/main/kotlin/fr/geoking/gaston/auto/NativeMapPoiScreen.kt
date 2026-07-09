@@ -1,7 +1,6 @@
 package fr.geoking.gaston.auto
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.car.app.CarContext
@@ -30,8 +29,6 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.poi.PoiProvider
-import fr.geoking.gaston.poi.MapViewport
-import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.belib.matchAvailabilityToPois
@@ -73,26 +70,6 @@ class NativeMapPoiScreen(
     private var refreshJob: Job? = null
     private var loadPoisJob: Job? = null
     private var isCheapestFilterActive: Boolean = false
-    private var selectedPoi: Poi? = null
-    private var selectedPoiAvailability: StationAvailabilitySummary? = null
-
-    private val detailBackHandler = AutoPoiDetailBackHandler(carContext, this) {
-        clearSelectedPoi()
-    }
-
-    private fun clearSelectedPoi() {
-        selectedPoi = null
-        selectedPoiAvailability = null
-        detailBackHandler.setDetailVisible(false)
-        invalidate()
-    }
-
-    private fun selectPoi(poi: Poi, availability: StationAvailabilitySummary?) {
-        selectedPoi = poi
-        selectedPoiAvailability = availability
-        detailBackHandler.setDetailVisible(true)
-        invalidate()
-    }
 
     init {
         lifecycle.addObserver(this)
@@ -149,8 +126,15 @@ class NativeMapPoiScreen(
 
             try {
                 favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
-                val viewport = calculateBoundsFromMapViewport(lat, lon, 14f, 800, 480)
-                poiProvider.searchFlow(PoiSearchRequest(lat, lon, viewport, emptySet(), skipFilters = true)).collect { result ->
+                poiProvider.searchFlow(
+                    PoiSearchRequest(
+                        latitude = lat,
+                        longitude = lon,
+                        viewport = null,
+                        categories = emptySet(),
+                        skipFilters = true,
+                    )
+                ).collect { result ->
                     pois = PoiMerger.mergeInto(pois, result.pois)
                     val provider = availabilityProviderFactory.getProvider(lat, lon)
                     if (provider != null) {
@@ -210,35 +194,22 @@ class NativeMapPoiScreen(
 
         val actionStripBuilder = ActionStrip.Builder()
 
-        val poi = selectedPoi
-        if (poi != null) {
-            val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
-                data = fr.geoking.gaston.intent.IntentNavigationHelper.getNavigationUri(poi)
-            }
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionNavigateToIcon())
-                    .setOnClickListener { carContext.startCarApp(navigateIntent) }
-                    .build()
-            )
-        } else {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionSettingsIcon())
-                    .setOnClickListener {
-                        screenManager.push(
-                            AutoMapMoreOptionsScreen(
-                                carContext = carContext,
-                                settingsManager = settingsManager,
-                                lat = searchLat,
-                                lon = searchLon,
-                                onRecenter = { loadPois() }
-                            )
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setIcon(carContext.actionSettingsIcon())
+                .setOnClickListener {
+                    screenManager.push(
+                        AutoMapMoreOptionsScreen(
+                            carContext = carContext,
+                            settingsManager = settingsManager,
+                            lat = searchLat,
+                            lon = searchLon,
+                            onRecenter = { loadPois() }
                         )
-                    }
-                    .build()
-            )
-        }
+                    )
+                }
+                .build()
+        )
 
         val fuelIdsForFilter = effectiveEnergies - "electric"
         if (hasFuelFilter && (isCheapestFilterActive || pois.any { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForFilter } == true })) {
@@ -266,15 +237,9 @@ class NativeMapPoiScreen(
         }
         val actionStrip = actionStripBuilder.build()
 
-        val anchorPlace = if (poi != null) {
-            Place.Builder(CarLocation.create(poi.latitude, poi.longitude))
-                .setMarker(PlaceMarker.Builder().setColor(CarColor.RED).build())
-                .build()
-        } else {
-            Place.Builder(CarLocation.create(searchLat, searchLon))
-                .setMarker(PlaceMarker.Builder().setColor(CarColor.RED).build())
-                .build()
-        }
+        val anchorPlace = Place.Builder(CarLocation.create(searchLat, searchLon))
+            .setMarker(PlaceMarker.Builder().setColor(CarColor.RED).build())
+            .build()
 
         // PlaceListMapTemplate: loading and item list are mutually exclusive (see Builder.build()).
         if (isLoading) {
@@ -308,49 +273,51 @@ class NativeMapPoiScreen(
             selectedFuelIds = fuelIds
         )
 
-        if (poi != null) {
-            val availability = selectedPoiAvailability ?: availabilityByPoiId[poi.id]
-            val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
-                carContext = carContext,
-                poi = poi,
-                availability = availability,
-                effectiveEnergyTypes = effectiveEnergies,
-                effectivePowerLevels = effectivePowerLevels,
-                distanceFromLatLon = searchLat to searchLon,
-                maxRows = listLimit,
-                includePlace = true,
-                onHeaderClick = null
+        val poisWithPrices = if (fuelIds.isNotEmpty()) {
+            sortedPois.filter { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds } == true }
+                .take(listLimit.coerceAtMost(5))
+        } else emptyList()
+
+        val otherPois = sortedPois.filter { it !in poisWithPrices }.take(listLimit - poisWithPrices.size)
+        val displayPois = (poisWithPrices + otherPois).sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
+
+        val focusIds = AutoMapCamera.selectMapFocusStations(
+            userLat = searchLat,
+            userLon = searchLon,
+            stations = filteredPois,
+            sortByPrice = sortByPrice,
+            selectedFuelIds = fuelIds,
+        ).map { it.id }.toSet()
+
+        displayPois.take(listLimit).forEach { item ->
+            val availability = availabilityByPoiId[item.id]
+            itemListBuilder.addItem(
+                AutoPoiUiHelper.buildPoiRow(
+                    carContext = carContext,
+                    poi = item,
+                    availability = availability,
+                    effectiveEnergyTypes = effectiveEnergies,
+                    effectivePowerLevels = effectivePowerLevels,
+                    distanceFromLatLon = searchLat to searchLon,
+                    includePlace = item.id in focusIds,
+                ) {
+                    screenManager.push(
+                        PlaceListMapStationDetailScreen(
+                            carContext = carContext,
+                            poi = item,
+                            availability = availability,
+                            searchLat = searchLat,
+                            searchLon = searchLon,
+                            effectiveEnergies = effectiveEnergies,
+                            effectivePowerLevels = effectivePowerLevels,
+                        )
+                    )
+                }
             )
-            detailRows.forEach { itemListBuilder.addItem(it) }
-        } else {
-            val poisWithPrices = if (fuelIds.isNotEmpty()) {
-                sortedPois.filter { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds } == true }
-                    .take(listLimit.coerceAtMost(5))
-            } else emptyList()
-
-            val otherPois = sortedPois.filter { it !in poisWithPrices }.take(listLimit - poisWithPrices.size)
-            val displayPois = (poisWithPrices + otherPois).sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
-
-            displayPois.take(listLimit).forEach { item ->
-                val availability = availabilityByPoiId[item.id]
-                itemListBuilder.addItem(
-                    AutoPoiUiHelper.buildPoiRow(
-                        carContext = carContext,
-                        poi = item,
-                        availability = availability,
-                        effectiveEnergyTypes = effectiveEnergies,
-                        effectivePowerLevels = effectivePowerLevels,
-                        distanceFromLatLon = searchLat to searchLon,
-                        includePlace = true
-                    ) {
-                        selectPoi(item, availability)
-                    }
-                )
-            }
         }
 
         PlaceListMapTemplate.Builder()
-            .setTitle(poi?.let { AutoPoiUiHelper.poiDetailTitle(it) } ?: title)
+            .setTitle(title)
             .setHeaderAction(Action.BACK)
             .setActionStrip(actionStrip)
             .setLoading(false)

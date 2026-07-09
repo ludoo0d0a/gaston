@@ -96,11 +96,45 @@ class ConnectivityManagerTest {
         service.updateStatus(NetworkStatus(countryCode = "BE", countryName = "Belgium"))
 
         // Wait for event
-        delay(200)
+        delay(500)
 
-        assertEquals(1, crossingEvents.size)
+        assertEquals(1, crossingEvents.size, "Expected 1 crossing event, got ${crossingEvents.size}")
         assertEquals("Belgium", crossingEvents[0])
         assertEquals("BE", settings.lastCountryCode)
+
+        job.cancel()
+    }
+
+    @Test
+    fun testCountryChange_withStaleName_emitsCorrectNameFromStatus() = runBlocking {
+        // This test reproduces the issue where ConnectivityManager just passes through whatever name is in NetworkStatus.
+        // If AndroidNetworkService provides a new countryCode but a stale countryName, ConnectivityManager currently emits it.
+        val settings = MockNetworkSettings()
+        settings.lastCountryCode = "FR"
+        settings.lastCountryName = "France"
+
+        val service = MockNetworkService()
+        service.updateStatus(NetworkStatus(countryCode = "FR", countryName = "France"))
+
+        val manager = ConnectivityManager(testScope, service, settings)
+
+        delay(100)
+
+        val crossingEvents = mutableListOf<String>()
+        val job = launch {
+            manager.borderCrossingEvents.collect {
+                crossingEvents.add(it)
+            }
+        }
+
+        // Simulate a border crossing where the status has a new code but a STALE name (e.g. if the service didn't update it yet)
+        service.updateStatus(NetworkStatus(countryCode = "BE", countryName = "France"))
+
+        delay(500)
+
+        assertEquals(1, crossingEvents.size, "Expected 1 crossing event, got ${crossingEvents.size}")
+        // Should fallback to country code "BE" because "France" matches the last country name but the code changed.
+        assertEquals("BE", crossingEvents[0])
 
         job.cancel()
     }
