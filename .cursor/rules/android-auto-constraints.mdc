@@ -17,11 +17,19 @@ Full reference: [`docs/android-auto.md`](../../docs/android-auto.md). Official: 
 - Rows that push a screen: `.setBrowsable(true)` + `setOnClickListener { screenManager.push(…) }`.
 - Toggle/action rows (zoom, sort): **not** browsable.
 
-## Template quota (per task)
+## Screen stack & template quota (5 steps per task)
 
-- Max **5 template steps** per task; last step must be `NavigationTemplate`, `PaneTemplate`, `MessageTemplate`, `MediaPlaybackTemplate`, `SignInTemplate`, or `LongMessageTemplate`.
-- Same-type refresh with same main content does **not** count. `NavigationTemplate` resets quota.
-- Popped screens must return the **same template type** they last returned.
+Official: [template restrictions — Template quota](https://developer.android.com/training/cars/apps/library/template-restrictions). Full Gaston guide: [`docs/android-auto.md`](../../docs/android-auto.md#screen-stack--template-quota-5-steps-per-task).
+
+- Each **task** = max **5 template steps**; exceeding quota **closes the app** (host-side, not catchable).
+- **Step** = host shows a template whose **type or main content** differs from the previous step. Each `screenManager.push()` to a new template usually +1.
+- **Refresh** (no step): same `Screen` + same template type + same main content via `invalidate()` (sort toggle, load data on same list).
+- **5th step must be terminal**: `PaneTemplate`, `MessageTemplate`, `LongMessageTemplate`, `SignInTemplate`, `MediaPlaybackTemplate`, or `NavigationTemplate` (Gaston POI: use `LongMessageTemplate` / `PaneTemplate` / `MessageTemplate` — no `NavigationTemplate`).
+- **Back restores quota**; resumed screen must return the **same template type** it last showed.
+- **POI has no navigation reset** — all flows must fit in 5 steps without `NavigationTemplate`.
+- Before adding `push()`: count steps from root (map/dashboard = 1). Flatten deep settings/filter chains; use `TabTemplate` or `invalidate()` instead of extra screens.
+- Debug: DHU template-step overlay; `adb logcat -s CarApp:V`.
+- Gaston pattern: `PlaceListMapStationDetailScreen` pushed for BACK nav (not in-place detail on browsable rows).
 
 ## Message content
 

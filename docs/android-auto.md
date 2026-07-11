@@ -4,16 +4,136 @@ Reference: https://developer.android.com/training/cars/apps/library/template-res
 
 ---
 
-## Template quota
+## Screen stack & template quota (5 steps per task)
 
-The host limits each **task** to at most **5 template steps**.  
-The last template must be one of: `NavigationTemplate`, `PaneTemplate`, `MessageTemplate`,
-`MediaPlaybackTemplate`, `SignInTemplate`, or `LongMessageTemplate`.
+**Official reference:** [Template restrictions](https://developer.android.com/training/cars/apps/library/template-restrictions) — see *Template quota*.
 
-- A **template refresh** (same type + same main content) does NOT count against the quota.
-- Popping back to a previous screen resets the quota by the number of steps undone, but the
-  resumed screen must return the **same template type** it last returned.
-- `NavigationTemplate` triggers a quota **reset** when reached, starting a new task.
+The Android Auto / Automotive OS **host** (not the app) enforces a hard cap on how many distinct
+templates the driver can traverse in one **task**. In Gaston this is the main constraint on
+`ScreenManager.push()` depth: each meaningful template change consumes one of five steps. Exceeding
+the budget closes the car session.
+
+### Terminology
+
+| Term | Meaning |
+|------|---------|
+| **Task** | One user flow from app launch (or intent) until quota reset. Gaston is `category.POI`, so tasks do **not** reset via `NavigationTemplate`. |
+| **Template step** | One host-visible template that differs from the previous step (type **or** main content). |
+| **Screen stack** | Car App Library `ScreenManager` LIFO stack (`push` / `pop`). Each pushed `Screen` maps to at least one step when its template is shown — unless the push is a **refresh** (see below). |
+| **Terminal template** | Allowed **last** (5th) step: `NavigationTemplate`, `PaneTemplate`, `MessageTemplate`, `MediaPlaybackTemplate`, `SignInTemplate`, or `LongMessageTemplate`. |
+
+### The 5-step rule
+
+1. A task allows **at most 5 template steps**.
+2. The **5th step must be terminal** (see table above). Non-terminal templates (`ListTemplate`,
+   `MapWithContentTemplate`, `PlaceListMapTemplate`, `GridTemplate`, `SearchTemplate`, `TabTemplate`, …)
+   cannot be the last step — the host rejects or closes the app.
+3. If the quota is exceeded, the host shows an error and **closes the app** (not catchable in
+   `safeCarTemplate` — rejection happens after `onGetTemplate()` returns).
+
+### What counts as a step
+
+**Counts (+1 step):**
+
+- `screenManager.push(NewScreen())` when the new screen returns a template with a **different type**
+  or **different main content** than the previous step.
+- Replacing content in a way the host treats as a new template (e.g. list → detail with a different
+  template class).
+
+**Does NOT count (refresh):**
+
+- `invalidate()` on the **same** `Screen` when `onGetTemplate()` returns the **same template type**
+  with the **same main content** (e.g. toggling sort, updating row text, loading → loaded on the
+  same list structure).
+- Re-showing identical template content after a pop (quota is restored — see below).
+
+**Ambiguous — treat as counting unless proven otherwise:**
+
+- Same template **type** but visibly different main content (e.g. `ListTemplate` with a wholly
+  different menu). When in doubt, assume +1 step.
+
+### Back navigation & quota restoration
+
+- **`screenManager.pop()`** / **`Action.BACK`**: undoes steps; quota is restored by the number of
+  steps popped.
+- **Resumed screen contract**: a screen that was popped back to must return the **same template
+  type** it returned when it was last visible. Changing type on resume (e.g. list was showing
+  `ListTemplate`, now returns `PaneTemplate`) violates host rules.
+- Gaston pattern: station detail on native map uses a **pushed** screen so BACK works correctly:
+
+  `NativeMapPoiScreen` → `PlaceListMapStationDetailScreen` (see comment in
+  `PlaceListMapStationDetailScreen.kt`). In-place detail inside `PlaceListMapTemplate` breaks BACK
+  when list rows are browsable.
+
+### Quota reset (not available to Gaston POI flows)
+
+- **`NavigationTemplate`**: entering navigation resets quota (navigation apps only — Gaston is POI).
+- **New launch intent** or **notification content intent**: starts a new task (quota reset).
+
+POI apps must design all flows within 5 steps without relying on navigation reset.
+
+### Terminal templates in Gaston (POI)
+
+Gaston cannot use `NavigationTemplate`. Use these as intentional **leaf** screens:
+
+| Template | Gaston usage |
+|----------|----------------|
+| `LongMessageTemplate` | Station detail (`PoiDetailScreen`), about/disclaimer/sources (`AutoAboutScreen`, …) |
+| `PaneTemplate` | Valid terminal; usable for compact detail panes |
+| `MessageTemplate` | Errors, short status (`ErrorScreen`, `safeCarTemplate` fallback) |
+| `SignInTemplate` | Not used (no account flow) |
+
+Plan deep flows so the **deepest** screen is terminal. Example valid 5-step POI chain:
+
+```
+Map (MapWithContent) → Settings list → Vehicle settings list → Capacity picker → LongMessage/detail
+  step 1                  step 2            step 3                 step 4            step 5 ✓
+```
+
+Invalid (6 steps — host closes app):
+
+```
+Dashboard → My vehicle → Vehicle settings → Gas tank → Consumption → Range picker
+  1            2              3                4            5            6 ✗
+```
+
+### Mitigations when approaching the limit
+
+1. **Flatten menus** — merge related pickers into one list (`TabTemplate`, section headers, or
+   multi-field rows) instead of one screen per field.
+2. **Prefer `invalidate()` over `push()`** when updating the current screen (filters applied, sort
+   changed, data loaded).
+3. **Use `TabTemplate`** for peer views at the same depth (e.g. fuel vs EV dashboard tabs) instead
+   of stacking two list screens.
+4. **Terminal detail early** — push `LongMessageTemplate` / `PaneTemplate` for read-only detail
+   rather than chaining another list underneath.
+5. **Replace instead of stack** — for wizard-like flows, pop then push (net zero depth) or reuse one
+   `Screen` with internal state instead of N pushed screens.
+6. **Audit before adding `push()`** — trace from root: map/dashboard = step 1; count every
+   browsable row that calls `screenManager.push`.
+
+High-risk Gaston areas (deep `push` chains):
+
+- `AutoDashboardScreen` → settings / vehicle / map settings → `AutoVehicleSettingsScreen` → per-field
+  selection screens (`AutoGasTankCapacitySelectionScreen`, …).
+- `AutoMapSettingsScreen` → `AutoGeneralFiltersScreen` → energy / brand / enseigne / services screens.
+- `AutoAdvancedFiltersScreen` → IRVE operator / power / connector / amenity pickers.
+
+### Debugging template steps
+
+1. **DHU debug overlay** — `./scripts/run-dhu.sh --adb`, enable *Show template steps* in Android Auto
+   developer settings. Overlay shows current step index (e.g. 3/5).
+2. **Logcat** — `adb logcat -s CarApp:V` for host rejection messages when quota is exceeded.
+3. **Manual trace** — from root, tap the deepest path and watch when the app closes or shows a
+   quota error.
+
+### Quick checklist for new screens
+
+- [ ] Count template steps from root to this screen (≤ 5).
+- [ ] Deepest screen uses a **terminal** template if it is step 5.
+- [ ] Rows that push call `.setBrowsable(true)` (see Row constraints).
+- [ ] Same-screen updates use `invalidate()`, not extra pushes.
+- [ ] Popped-back screens still return their previous template **type**.
 
 ---
 
@@ -334,7 +454,7 @@ Do not put all map controls on the ActionStrip; strict hosts reject overloaded s
    - More than 1 label button (title+icon or title-only) in the same ActionStrip → keep at most 1
    - More than 6 rows in a ListTemplate → use `ConstraintManager`
    - Navigation rows missing `setIsBrowsable(true)` → add it to all screen-pushing rows
-   - Template quota exceeded (> 5 steps) → restructure navigation flow
+   - Template quota exceeded (> 5 steps) → restructure navigation flow; see [Screen stack & template quota](#screen-stack--template-quota-5-steps-per-task)
    - Inner `ListTemplate` in `TabTemplate` with header/title → remove header from nested list
 
 ---
@@ -342,3 +462,7 @@ Do not put all map controls on the ActionStrip; strict hosts reject overloaded s
 ## Agent / IDE memory
 
 Cursor rule (auto-loaded when editing `androidApp/.../auto/`): `.cursor/rules/android-auto-constraints.mdc`
+
+Key constraint for navigation work: **5 template steps per task** — detailed semantics, Gaston
+examples, and mitigations in [Screen stack & template quota](#screen-stack--template-quota-5-steps-per-task)
+above. Official: [template restrictions](https://developer.android.com/training/cars/apps/library/template-restrictions).
