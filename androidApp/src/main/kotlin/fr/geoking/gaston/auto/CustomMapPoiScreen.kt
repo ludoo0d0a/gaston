@@ -118,24 +118,24 @@ class CustomMapPoiScreen(
     private var lastAppliedZoom: Int = zoom
     private var lastSyncedPoiIds: List<String> = emptyList()
     private var visibleAreaCameraJob: Job? = null
-    private var selectedPoi: Poi? = null
 
-    private val detailBackHandler = AutoPoiDetailBackHandler(carContext, this) {
-        clearSelectedPoi()
-    }
-
-    private fun clearSelectedPoi() {
-        selectedPoi = null
-        detailBackHandler.setDetailVisible(false)
-        syncRendererWithMapState()
-        invalidate()
-    }
-
-    private fun selectPoi(poi: Poi) {
-        selectedPoi = poi
-        detailBackHandler.setDetailVisible(true)
-        syncRendererWithMapState()
-        invalidate()
+    private fun openStationDetail(poi: Poi, availability: StationAvailabilitySummary?) {
+        val settings = settingsManager.settings.value
+        screenManager.push(
+            CustomMapStationDetailScreen(
+                carContext = carContext,
+                poi = poi,
+                availability = availability,
+                searchLat = searchLat,
+                searchLon = searchLon,
+                zoom = zoom,
+                orientationMode = orientationMode,
+                bearing = lastKnownBearingDegrees,
+                effectiveEnergies = settings.effectiveMapEnergyFilterIds(),
+                effectivePowerLevels = settings.effectiveIrvePowerLevels(),
+                settingsManager = settingsManager,
+            )
+        )
     }
 
     init {
@@ -325,16 +325,16 @@ class CustomMapPoiScreen(
             lastAppliedZoom = zoom
         }
         renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
-        val mapPois = when {
-            selectedPoi != null -> listOf(selectedPoi!!)
-            itineraryPoints.isNotEmpty() -> filteredPois
-            else -> mapFocusStations(settings)
+        val mapPois = if (itineraryPoints.isNotEmpty()) {
+            filteredPois
+        } else {
+            mapFocusStations(settings)
         }
         renderer.updatePois(
             newPois = mapPois,
             effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
             effectivePowerLevels = settings.effectiveIrvePowerLevels(),
-            selectedId = selectedPoi?.id
+            selectedId = null,
         )
         lastSyncedPoiIds = poiIds
     }
@@ -729,17 +729,7 @@ class CustomMapPoiScreen(
             clickedPois.first()
         }
 
-        selectedPoi = poi
-        detailBackHandler.setDetailVisible(true)
-        val settings = settingsManager.settings.value
-        val filteredPois = getFilteredPois(settings)
-        surfaceRenderer?.updatePois(
-            newPois = filteredPois,
-            effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
-            effectivePowerLevels = settings.effectiveIrvePowerLevels(),
-            selectedId = poi.id
-        )
-        invalidate()
+        openStationDetail(poi, availabilityByPoiId[poi.id])
     }
 
     private fun registerSurfaceCallback() {
@@ -766,7 +756,6 @@ class CustomMapPoiScreen(
         logTag = "CustomMapPoiScreen",
         templateName = "MapWithContentTemplate"
     ) {
-        detailBackHandler.syncDetailVisible(selectedPoi != null)
         val currentSettings = settingsManager.settings.value
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
 
@@ -799,7 +788,6 @@ class CustomMapPoiScreen(
                         if (isCheapestFilterActive) {
                             isCheapestFilterActive = false
                             sortByPrice = false
-                            clearSelectedPoi()
                         } else {
                             isCheapestFilterActive = true
                             sortByPrice = true
@@ -839,59 +827,32 @@ class CustomMapPoiScreen(
                 6
             }
 
-            val poi = selectedPoi
-            if (poi != null) {
-                val availability = availabilityByPoiId[poi.id]
-                val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
-                    carContext = carContext,
-                    poi = poi,
-                    availability = availability,
-                    effectiveEnergyTypes = effectiveEnergies,
-                    effectivePowerLevels = effectivePowerLevels,
-                    distanceFromLatLon = searchLat to searchLon,
-                    maxRows = listLimit,
-                    onHeaderClick = null
+            val itemListBuilder = ItemList.Builder()
+                .setNoItemsMessage("No POIs found")
+
+            val limitedPois = sortedPois.take(listLimit)
+            limitedPois.forEach { item ->
+                val availability = availabilityByPoiId[item.id]
+                itemListBuilder.addItem(
+                    AutoPoiUiHelper.buildPoiRow(
+                        carContext = carContext,
+                        poi = item,
+                        availability = availability,
+                        effectiveEnergyTypes = effectiveEnergies,
+                        effectivePowerLevels = effectivePowerLevels,
+                        distanceFromLatLon = searchLat to searchLon,
+                        includePlace = false,
+                        browsable = false,
+                    ) {
+                        openStationDetail(item, availability)
+                    }
                 )
-                val itemListBuilder = ItemList.Builder()
-                detailRows.forEach { itemListBuilder.addItem(it) }
-
-                ListTemplate.Builder()
-                    .setHeader(
-                        Header.Builder()
-                            .setTitle(AutoPoiUiHelper.poiDetailTitle(poi))
-                            .setStartHeaderAction(Action.BACK)
-                            .build()
-                    )
-                    .setSingleList(itemListBuilder.build())
-                    .build()
-            } else {
-                val itemListBuilder = ItemList.Builder()
-                    .setNoItemsMessage("No POIs found")
-
-                val limitedPois = sortedPois.take(listLimit)
-                limitedPois.forEach { item ->
-                    val availability = availabilityByPoiId[item.id]
-                    itemListBuilder.addItem(
-                        AutoPoiUiHelper.buildPoiRow(
-                            carContext = carContext,
-                            poi = item,
-                            availability = availability,
-                            effectiveEnergyTypes = effectiveEnergies,
-                            effectivePowerLevels = effectivePowerLevels,
-                            distanceFromLatLon = searchLat to searchLon,
-                            includePlace = false,
-                            browsable = false,
-                        ) {
-                            selectPoi(item)
-                        }
-                    )
-                }
-
-                ListTemplate.Builder()
-                    .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
-                    .setSingleList(itemListBuilder.build())
-                    .build()
             }
+
+            ListTemplate.Builder()
+                .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
+                .setSingleList(itemListBuilder.build())
+                .build()
         }
 
         MapWithContentTemplate.Builder()
