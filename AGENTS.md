@@ -61,6 +61,7 @@ Turn requests into verifiable outcomes (tests passing, lint clean, repro fixed).
 
 - Keep `:shared` free of Android UI dependencies; platform code stays in `:androidApp`
 - Android Auto changes must remain driver-safe (templates, large touch targets, no phone-only flows in car)
+- Android Auto **screen stack is capped at 5 template steps per task** (host-enforced); see [`docs/android-auto.md`](docs/android-auto.md#screen-stack--template-quota-5-steps-per-task) and [official template restrictions](https://developer.android.com/training/cars/apps/library/template-restrictions)
 - Do not commit API keys, `local.properties`, or Play service account JSON
 - Only create git commits or open PRs when the user explicitly asks
 
