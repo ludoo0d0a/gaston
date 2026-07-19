@@ -839,7 +839,7 @@ class MapLibrePoiScreen(
                         effectivePowerLevels = effectivePowerLevels,
                         distanceFromLatLon = searchLat to searchLon,
                         includePlace = false,
-                        browsable = false,
+                        browsable = true,
                     ) {
                         openStationDetail(item, availability)
                     }

@@ -1,12 +1,16 @@
 package fr.geoking.gaston.auto
 
+import android.content.Intent
 import androidx.annotation.DrawableRes
 import androidx.car.app.CarContext
+import androidx.car.app.model.Action
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.R
 import fr.geoking.gaston.feature.emergency.EmergencyCategory
+import fr.geoking.gaston.intent.IntentNavigationHelper
+import fr.geoking.gaston.poi.Poi
 
 /**
  * Tinted [CarIcon] helpers for Android Auto UI chrome (dashboard, action strips).
@@ -109,6 +113,25 @@ fun CarContext.actionZoomOutIcon(): CarIcon = carIcon(R.drawable.ic_remove, Auto
 fun CarContext.actionCompassIcon(): CarIcon = carIconUntinted(R.drawable.ic_compass)
 
 fun CarContext.actionNavigateToIcon(): CarIcon = carIcon(R.drawable.ic_navigate_to, AutoCarIcons.primary)
+
+/**
+ * Hands off to the host navigation app for [poi].
+ *
+ * @param withTitle when true (ActionStrip), shows [R.string.screen_navigate_to] — at most one
+ * labeled strip button. Header end actions should pass false (icon-only).
+ */
+fun CarContext.navigateToStationAction(poi: Poi, withTitle: Boolean = true): Action {
+    val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
+        data = IntentNavigationHelper.getNavigationUri(poi)
+    }
+    val builder = Action.Builder()
+        .setIcon(actionNavigateToIcon())
+        .setOnClickListener { startCarApp(navigateIntent) }
+    if (withTitle) {
+        builder.setTitle(getString(R.string.screen_navigate_to))
+    }
+    return builder.build()
+}
 
 fun CarContext.actionPreviousIcon(): CarIcon = carIcon(R.drawable.ic_chevron_left, AutoCarIcons.primary)
 

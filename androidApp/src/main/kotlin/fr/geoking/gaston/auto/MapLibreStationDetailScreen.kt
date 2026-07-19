@@ -1,6 +1,5 @@
 package fr.geoking.gaston.auto
 
-import android.content.Intent
 import android.graphics.Rect
 import android.util.Log
 import androidx.car.app.AppManager
@@ -22,7 +21,6 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.maplibre.CarMapLibreRenderer
 import fr.geoking.gaston.auto.maplibre.resolveAutoMapStyleUrl
-import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.Poi
 
 /**
@@ -79,16 +77,8 @@ class MapLibreStationDetailScreen(
         val itemListBuilder = ItemList.Builder()
         detailRows.forEach { itemListBuilder.addItem(it) }
 
-        val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
-            data = IntentNavigationHelper.getNavigationUri(poi)
-        }
         val actionStrip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionNavigateToIcon())
-                    .setOnClickListener { carContext.startCarApp(navigateIntent) }
-                    .build()
-            )
+            .addAction(carContext.navigateToStationAction(poi))
             .build()
 
         val contentTemplate = ListTemplate.Builder()
@@ -96,6 +86,7 @@ class MapLibreStationDetailScreen(
                 Header.Builder()
                     .setTitle(AutoPoiUiHelper.poiDetailTitle(poi))
                     .setStartHeaderAction(Action.BACK)
+                    .addEndHeaderAction(carContext.navigateToStationAction(poi, withTitle = false))
                     .build()
             )
             .setSingleList(itemListBuilder.build())

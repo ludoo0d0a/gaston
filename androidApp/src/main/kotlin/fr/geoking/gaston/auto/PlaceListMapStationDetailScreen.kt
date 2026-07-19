@@ -1,6 +1,5 @@
 package fr.geoking.gaston.auto
 
-import android.content.Intent
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
@@ -60,16 +59,8 @@ class PlaceListMapStationDetailScreen(
         val itemListBuilder = ItemList.Builder()
         detailRows.forEach { itemListBuilder.addItem(it) }
 
-        val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
-            data = fr.geoking.gaston.intent.IntentNavigationHelper.getNavigationUri(poi)
-        }
         val actionStrip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionNavigateToIcon())
-                    .setOnClickListener { carContext.startCarApp(navigateIntent) }
-                    .build()
-            )
+            .addAction(carContext.navigateToStationAction(poi))
             .build()
 
         val anchorPlace = Place.Builder(CarLocation.create(poi.latitude, poi.longitude))

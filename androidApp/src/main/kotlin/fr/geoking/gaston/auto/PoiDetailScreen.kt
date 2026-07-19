@@ -1,6 +1,5 @@
 package fr.geoking.gaston.auto
 
-import android.content.Intent
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
@@ -16,7 +15,6 @@ import androidx.car.app.model.ParkedOnlyOnClickListener
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import fr.geoking.gaston.R
-import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 
@@ -52,9 +50,6 @@ class PoiDetailScreen(
         templateName = "ListTemplate",
     ) {
         val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
-        val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
-            data = IntentNavigationHelper.getNavigationUri(poi)
-        }
 
         val currentSettings = settingsManager.settings.value
         val resolvedEnergyTypes = if (effectiveEnergyTypes.isNotEmpty()) effectiveEnergyTypes else currentSettings.effectiveMapEnergyFilterIds()
@@ -93,13 +88,8 @@ class PoiDetailScreen(
         )
 
         val actionStripBuilder = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setTitle(carContext.getString(R.string.navigate))
-                    .setIcon(carContext.actionNavigateToIcon())
-                    .setOnClickListener(ParkedOnlyOnClickListener.create { carContext.startCarApp(navigateIntent) })
-                    .build()
-            )
+            // Navigate must work while driving — do not wrap in ParkedOnlyOnClickListener.
+            .addAction(carContext.navigateToStationAction(poi))
 
         // Previous / Next actions in ActionStrip (max 2 for ListTemplate)
         if (poiList.isNotEmpty() && currentIndex > 0) {
