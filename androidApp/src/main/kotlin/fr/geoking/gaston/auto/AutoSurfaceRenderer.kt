@@ -81,6 +81,9 @@ class AutoSurfaceRenderer(
 
     private var historyPoints: List<Pair<Double, Double>> = emptyList()
     private var itineraryPoints: List<Pair<Double, Double>> = emptyList()
+    private var searchRadiusCenterLat: Double? = null
+    private var searchRadiusCenterLon: Double? = null
+    private var searchRadiusKm: Double? = null
 
     // Cache tile bitmaps (heading-up can need ~25+ tiles; 100 ≈ 25MB peak)
     private val tileCache = LruCache<String, Bitmap>(100)
@@ -94,6 +97,11 @@ class AutoSurfaceRenderer(
         strokeWidth = 4f
         strokeJoin = Paint.Join.ROUND
         strokeCap = Paint.Cap.ROUND
+    }
+    private val searchRadiusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.RED
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
     }
     private val userLocationPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = NAVIGATION_BLUE
@@ -235,6 +243,23 @@ class AutoSurfaceRenderer(
         invalidate()
     }
 
+    /**
+     * Draws a red stroke circle for the nearby station search boundary.
+     * Pass [radiusKm] null to hide.
+     */
+    fun updateSearchRadius(centerLat: Double, centerLon: Double, radiusKm: Double?) {
+        if (searchRadiusCenterLat == centerLat &&
+            searchRadiusCenterLon == centerLon &&
+            searchRadiusKm == radiusKm
+        ) {
+            return
+        }
+        searchRadiusCenterLat = centerLat
+        searchRadiusCenterLon = centerLon
+        searchRadiusKm = radiusKm
+        invalidate()
+    }
+
     fun addHistoryPoint(pLat: Double, pLon: Double) {
         val last = historyPoints.lastOrNull()
         if (last != null) {
@@ -285,6 +310,7 @@ class AutoSurfaceRenderer(
                     canvas.rotate(-bearing, cx, cy)
                 }
                 drawMapTiles(canvas)
+                drawSearchRadius(canvas)
                 drawPaths(canvas)
                 drawPois(canvas)
                 drawUserLocation(canvas)
@@ -303,6 +329,24 @@ class AutoSurfaceRenderer(
             return max(centerPxX, width - centerPxX).coerceAtLeast(max(centerPxY, height - centerPxY))
         }
         return hypot(width.toDouble(), height.toDouble()) / 2.0
+    }
+
+    private fun drawSearchRadius(canvas: Canvas) {
+        val radiusKm = searchRadiusKm ?: return
+        val cLat = searchRadiusCenterLat ?: return
+        val cLon = searchRadiusCenterLon ?: return
+        if (radiusKm <= 0.0) return
+
+        val tileSize = 256
+        val mapCenterX = lonToTileX(lon, zoom)
+        val mapCenterY = latToTileY(lat, zoom)
+        val tileX = lonToTileX(cLon, zoom)
+        val tileY = latToTileY(cLat, zoom)
+        val cx = ((tileX - mapCenterX) * tileSize + centerPxX).toFloat()
+        val cy = ((tileY - mapCenterY) * tileSize + centerPxY).toFloat()
+        val radiusPx = AutoMapCamera.radiusPxForKm(cLat, zoom, radiusKm)
+        if (radiusPx < 2f) return
+        canvas.drawCircle(cx, cy, radiusPx, searchRadiusPaint)
     }
 
     private fun drawPaths(canvas: Canvas) {

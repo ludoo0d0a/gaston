@@ -118,9 +118,20 @@ class CustomMapPoiScreen(
     private var lastAppliedZoom: Int = zoom
     private var lastSyncedPoiIds: List<String> = emptyList()
     private var visibleAreaCameraJob: Job? = null
+    /** When set, map markers are filtered to this station only (selection / detail handoff). */
+    private var mapSelectedPoi: Poi? = null
 
     private fun openStationDetail(poi: Poi, availability: StationAvailabilitySummary?) {
         val settings = settingsManager.settings.value
+        val energies = settings.effectiveMapEnergyFilterIds()
+        val powerLevels = settings.effectiveIrvePowerLevels()
+        mapSelectedPoi = poi
+        // Center + filter before push so a shared MapWithContent surface keeps only this station.
+        lastAppliedSearchLat = poi.latitude
+        lastAppliedSearchLon = poi.longitude
+        lastAppliedZoom = zoom
+        surfaceRenderer?.updateLocation(poi.latitude, poi.longitude, zoom)
+        syncRendererWithMapState()
         screenManager.push(
             CustomMapStationDetailScreen(
                 carContext = carContext,
@@ -131,8 +142,8 @@ class CustomMapPoiScreen(
                 zoom = zoom,
                 orientationMode = orientationMode,
                 bearing = lastKnownBearingDegrees,
-                effectiveEnergies = settings.effectiveMapEnergyFilterIds(),
-                effectivePowerLevels = settings.effectiveIrvePowerLevels(),
+                effectiveEnergies = energies,
+                effectivePowerLevels = powerLevels,
                 settingsManager = settingsManager,
             )
         )
@@ -228,19 +239,6 @@ class CustomMapPoiScreen(
         }
     }
 
-    private fun mapFocusStations(settings: AppSettings): List<Poi> {
-        val filtered = getFilteredPois(settings)
-        val (userLat, userLon) = searchCenterFlow.value
-        val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
-        return AutoMapCamera.selectMapFocusStations(
-            userLat = userLat,
-            userLon = userLon,
-            stations = filtered,
-            sortByPrice = sortByPrice,
-            selectedFuelIds = fuelIds,
-        )
-    }
-
     private fun applyCameraForStations(
         userLat: Double,
         userLon: Double,
@@ -325,16 +323,25 @@ class CustomMapPoiScreen(
             lastAppliedZoom = zoom
         }
         renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
-        val mapPois = if (itineraryPoints.isNotEmpty()) {
-            filteredPois
-        } else {
-            mapFocusStations(settings)
-        }
+        // Show the same filtered stations as the list; focus stations are only for zoom.
+        // When a station is selected, keep only that marker (detail handoff / shared surface).
+        val selected = mapSelectedPoi
+        val mapPois = if (selected != null) listOf(selected) else filteredPois
         renderer.updatePois(
             newPois = mapPois,
             effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
             effectivePowerLevels = settings.effectiveIrvePowerLevels(),
-            selectedId = null,
+            selectedId = selected?.id,
+        )
+        val (userLat, userLon) = searchCenterFlow.value
+        renderer.updateSearchRadius(
+            centerLat = userLat,
+            centerLon = userLon,
+            radiusKm = if (itineraryPoints.isEmpty()) {
+                AutoMapCamera.DEFAULT_NEARBY_SEARCH_RADIUS_KM.toDouble()
+            } else {
+                null
+            },
         )
         lastSyncedPoiIds = poiIds
     }
@@ -738,6 +745,9 @@ class CustomMapPoiScreen(
 
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
         registerSurfaceCallback()
+        // Returning from station detail: show all filtered pins again.
+        mapSelectedPoi = null
+        syncRendererWithMapState()
     }
 
     override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {

@@ -281,14 +281,6 @@ class NativeMapPoiScreen(
         val otherPois = sortedPois.filter { it !in poisWithPrices }.take(listLimit - poisWithPrices.size)
         val displayPois = (poisWithPrices + otherPois).sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
 
-        val focusIds = AutoMapCamera.selectMapFocusStations(
-            userLat = searchLat,
-            userLon = searchLon,
-            stations = filteredPois,
-            sortByPrice = sortByPrice,
-            selectedFuelIds = fuelIds,
-        ).map { it.id }.toSet()
-
         displayPois.take(listLimit).forEach { item ->
             val availability = availabilityByPoiId[item.id]
             itemListBuilder.addItem(
@@ -299,7 +291,7 @@ class NativeMapPoiScreen(
                     effectiveEnergyTypes = effectiveEnergies,
                     effectivePowerLevels = effectivePowerLevels,
                     distanceFromLatLon = searchLat to searchLon,
-                    includePlace = item.id in focusIds,
+                    includePlace = true,
                 ) {
                     screenManager.push(
                         PlaceListMapStationDetailScreen(
