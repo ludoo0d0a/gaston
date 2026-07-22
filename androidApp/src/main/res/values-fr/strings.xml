@@ -243,6 +243,7 @@
     <string name="screen_enseigne">Enseigne</string>
     <string name="screen_error_log">Journal des erreurs</string>
     <string name="screen_favorites">Favoris</string>
+    <string name="favorites_empty">Aucune station favorite. Ouvrez une station et touchez l\'étoile pour l\'enregistrer.</string>
     <string name="screen_fuel_consumption">Consommation carburant</string>
     <string name="screen_fuel_outlook">Perspectives carburant</string>
     <string name="screen_fuel_price_outlook">Perspectives prix carburant</string>

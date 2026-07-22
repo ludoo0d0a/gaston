@@ -12,8 +12,11 @@ import androidx.car.app.model.Place
 import androidx.car.app.model.PlaceListMapTemplate
 import androidx.car.app.model.PlaceMarker
 import androidx.car.app.model.Template
+import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.poi.Poi
+import kotlinx.coroutines.launch
 
 /**
  * Level-2 station detail for [NativeMapPoiScreen].
@@ -30,7 +33,25 @@ class PlaceListMapStationDetailScreen(
     private val searchLon: Double,
     private val effectiveEnergies: Set<String>,
     private val effectivePowerLevels: Set<Int>,
+    private val favoritesRepo: FavoritesRepository? = null,
 ) : Screen(carContext) {
+
+    private var isFavorite: Boolean = false
+
+    init {
+        lifecycleScope.launch {
+            isFavorite = favoritesRepo?.isFavorite(poi.id) == true
+            invalidate()
+        }
+    }
+
+    private fun toggleFavorite() {
+        val repo = favoritesRepo ?: return
+        lifecycleScope.launch {
+            isFavorite = repo.toggleFavorite(poi)
+            invalidate()
+        }
+    }
 
     override fun onGetTemplate(): Template = safeCarTemplate(
         carContext = carContext,
@@ -59,9 +80,14 @@ class PlaceListMapStationDetailScreen(
         val itemListBuilder = ItemList.Builder()
         detailRows.forEach { itemListBuilder.addItem(it) }
 
-        val actionStrip = ActionStrip.Builder()
+        val actionStripBuilder = ActionStrip.Builder()
             .addAction(carContext.navigateToStationAction(poi))
-            .build()
+        if (favoritesRepo != null) {
+            actionStripBuilder.addAction(
+                carContext.favoriteStationAction(isFavorite) { toggleFavorite() }
+            )
+        }
+        val actionStrip = actionStripBuilder.build()
 
         val anchorPlace = Place.Builder(CarLocation.create(poi.latitude, poi.longitude))
             .setMarker(PlaceMarker.Builder().setColor(CarColor.RED).build())

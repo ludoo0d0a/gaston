@@ -92,6 +92,8 @@ fun CarContext.dashboardOtherIcon(): CarIcon = carIcon(R.drawable.ic_category, A
 
 fun CarContext.dashboardRoutesIcon(): CarIcon = carIcon(R.drawable.ic_directions, AutoCarIcons.primary)
 
+fun CarContext.dashboardFavoritesIcon(): CarIcon = carIcon(R.drawable.ic_star, AutoCarIcons.fuel)
+
 fun CarContext.dashboardNetworkIcon(): CarIcon = carIcon(R.drawable.ic_signal_cellular, AutoCarIcons.primary)
 
 fun CarContext.dashboardEmergencyIcon(): CarIcon = carIcon(R.drawable.ic_sos, AutoCarIcons.emergency)
@@ -132,6 +134,25 @@ fun CarContext.navigateToStationAction(poi: Poi, withTitle: Boolean = true): Act
     }
     return builder.build()
 }
+
+/** Icon-only favorite toggle for ActionStrips (keeps Navigate as the single labeled action). */
+fun CarContext.favoriteStationAction(isFavorite: Boolean, onToggle: () -> Unit): Action {
+    return Action.Builder()
+        .setIcon(
+            carIcon(
+                if (isFavorite) R.drawable.ic_star else R.drawable.ic_star_border,
+                AutoCarIcons.fuel,
+            )
+        )
+        .setOnClickListener(onToggle)
+        .build()
+}
+
+fun CarContext.actionFavoriteIcon(isFavorite: Boolean): CarIcon =
+    carIcon(
+        if (isFavorite) R.drawable.ic_star else R.drawable.ic_star_border,
+        AutoCarIcons.fuel,
+    )
 
 fun CarContext.actionPreviousIcon(): CarIcon = carIcon(R.drawable.ic_chevron_left, AutoCarIcons.primary)
 

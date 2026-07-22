@@ -62,7 +62,6 @@ class NativeMapPoiScreen(
 
     private var pois: List<Poi> = emptyList()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
-    private var favoriteIds: Set<String> = emptySet()
     private var isLoading = true
     private var searchLat: Double = settingsManager.settings.value.lastKnownLat ?: 48.8566
     private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
@@ -125,7 +124,6 @@ class NativeMapPoiScreen(
             searchLon = lon
 
             try {
-                favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
                 poiProvider.searchFlow(
                     PoiSearchRequest(
                         latitude = lat,
@@ -302,6 +300,7 @@ class NativeMapPoiScreen(
                             searchLon = searchLon,
                             effectiveEnergies = effectiveEnergies,
                             effectivePowerLevels = effectivePowerLevels,
+                            favoritesRepo = favoritesRepo,
                         )
                     )
                 }

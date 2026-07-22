@@ -89,7 +89,6 @@ class CustomMapPoiScreen(
     private var pois: List<Poi> = emptyList()
     private var errors: List<PoiProviderError> = emptyList()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
-    private var favoriteIds: Set<String> = emptySet()
     private var isLoading = true
     private var isQueryPending = false
     private var queryGeneration: Int = 0
@@ -147,6 +146,7 @@ class CustomMapPoiScreen(
                 effectiveEnergies = energies,
                 effectivePowerLevels = powerLevels,
                 settingsManager = settingsManager,
+                favoritesRepo = favoritesRepo,
             )
         )
     }
@@ -482,7 +482,6 @@ class CustomMapPoiScreen(
                 surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
                 applyMapOrientationToRenderer()
 
-                favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
                 val settings = settingsManager.settings.value
 
                 if (itineraryPoints.isNotEmpty() && routePlanner != null) {
