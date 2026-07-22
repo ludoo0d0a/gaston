@@ -123,7 +123,7 @@ class MapLibreStationDetailScreen(
     }
 
     override fun onVisibleAreaChanged(visibleArea: Rect) {
-        // MapLibre renderer copies the full TextureView; no visible-area crop needed for detail.
+        mapRenderer.updateVisibleArea(visibleArea)
     }
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
