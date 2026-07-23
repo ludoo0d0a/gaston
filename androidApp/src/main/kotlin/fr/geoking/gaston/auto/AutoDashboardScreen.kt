@@ -132,12 +132,17 @@ class AutoDashboardScreen(
     private fun pushMoreOptionsScreen() {
         screenManager.push(
             object : Screen(carContext) {
-                override fun onGetTemplate(): Template {
+                override fun onGetTemplate(): Template = safeCarTemplate(
+                    carContext = carContext,
+                    logTag = "AutoMoreOptionsScreen",
+                    templateName = "ListTemplate",
+                ) {
                     val moreList = ItemList.Builder()
                         .addItem(
                             Row.Builder()
                                 .setTitle(carContext.getString(R.string.dashboard_routes))
                                 .setImage(carContext.dashboardRoutesIcon())
+                                .setBrowsable(true)
                                 .setOnClickListener {
                                     val mapDeps = getMapDeps() ?: return@setOnClickListener
                                     screenManager.push(
@@ -157,6 +162,7 @@ class AutoDashboardScreen(
                             Row.Builder()
                                 .setTitle(carContext.getString(R.string.screen_fuel_outlook))
                                 .setImage(carContext.dashboardFuelIcon())
+                                .setBrowsable(true)
                                 .setOnClickListener {
                                     screenManager.push(AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository))
                                 }
@@ -166,6 +172,7 @@ class AutoDashboardScreen(
                             Row.Builder()
                                 .setTitle(carContext.getString(R.string.cd_map_settings))
                                 .setImage(carContext.dashboardSettingsIcon())
+                                .setBrowsable(true)
                                 .setOnClickListener {
                                     screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
                                 }
@@ -175,6 +182,7 @@ class AutoDashboardScreen(
                             Row.Builder()
                                 .setTitle(carContext.getString(R.string.screen_about))
                                 .setImage(carContext.carIconUntinted(R.drawable.ic_launcher_foreground))
+                                .setBrowsable(true)
                                 .setOnClickListener {
                                     screenManager.push(AutoAboutScreen(carContext))
                                 }
@@ -182,8 +190,13 @@ class AutoDashboardScreen(
                         )
                         .build()
 
-                    return ListTemplate.Builder()
-                        .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_more)).setStartHeaderAction(Action.BACK).build())
+                    ListTemplate.Builder()
+                        .setHeader(
+                            Header.Builder()
+                                .setTitle(carContext.getString(R.string.screen_more))
+                                .setStartHeaderAction(Action.BACK)
+                                .build()
+                        )
                         .setSingleList(moreList)
                         .build()
                 }
