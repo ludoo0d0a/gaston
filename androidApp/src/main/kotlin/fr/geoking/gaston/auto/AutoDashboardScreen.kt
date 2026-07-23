@@ -73,28 +73,7 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 5. Routes
-        gridBuilder.addItem(
-            GridItem.Builder()
-                .setTitle(carContext.getString(R.string.dashboard_routes))
-                .setImage(carContext.dashboardRoutesIcon())
-                .setOnClickListener {
-                    val mapDeps = getMapDeps() ?: return@setOnClickListener
-                    screenManager.push(
-                        AutoRoutePlanningScreen(
-                            carContext = carContext,
-                            routePlanner = mapDeps.routePlanner,
-                            routingClient = mapDeps.routingClient,
-                            poiProvider = mapDeps.poiProvider,
-                            geocodingClient = mapDeps.geocodingClient,
-                            settingsManager = settingsManager
-                        )
-                    )
-                }
-                .build()
-        )
-
-        // 6. Favorites
+        // 5. Favorites
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.screen_favorites))
@@ -105,7 +84,7 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 7. Connectivity
+        // 6. Connectivity
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.dashboard_network))
@@ -116,7 +95,7 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 8. Emergency
+        // 7. Emergency
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.dashboard_emergency))
@@ -127,7 +106,7 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 9. More
+        // 8. More
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.screen_more))
@@ -155,6 +134,25 @@ class AutoDashboardScreen(
             object : Screen(carContext) {
                 override fun onGetTemplate(): Template {
                     val moreList = ItemList.Builder()
+                        .addItem(
+                            Row.Builder()
+                                .setTitle(carContext.getString(R.string.dashboard_routes))
+                                .setImage(carContext.dashboardRoutesIcon())
+                                .setOnClickListener {
+                                    val mapDeps = getMapDeps() ?: return@setOnClickListener
+                                    screenManager.push(
+                                        AutoRoutePlanningScreen(
+                                            carContext = carContext,
+                                            routePlanner = mapDeps.routePlanner,
+                                            routingClient = mapDeps.routingClient,
+                                            poiProvider = mapDeps.poiProvider,
+                                            geocodingClient = mapDeps.geocodingClient,
+                                            settingsManager = settingsManager
+                                        )
+                                    )
+                                }
+                                .build()
+                        )
                         .addItem(
                             Row.Builder()
                                 .setTitle(carContext.getString(R.string.screen_fuel_outlook))
