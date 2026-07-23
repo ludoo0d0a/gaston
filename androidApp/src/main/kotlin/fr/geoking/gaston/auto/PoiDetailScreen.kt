@@ -1,6 +1,5 @@
 package fr.geoking.gaston.auto
 
-import android.content.Intent
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
@@ -15,10 +14,12 @@ import androidx.car.app.model.LongMessageTemplate
 import androidx.car.app.model.ParkedOnlyOnClickListener
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
-import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.community.FavoritesRepository
+import kotlinx.coroutines.launch
 
 /**
  * Android Auto screen showing full POI details and a "Navigate" action that starts navigation
@@ -41,10 +42,31 @@ class PoiDetailScreen(
     private val poiList: List<Poi> = emptyList(),
     private val initialPoiIndex: Int = -1,
     private val availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap(),
-    private val onPoiSelected: ((Poi) -> Unit)? = null
+    private val onPoiSelected: ((Poi) -> Unit)? = null,
+    private val favoritesRepo: FavoritesRepository? = null,
 ) : Screen(carContext) {
 
     private var currentIndex = initialPoiIndex
+    private var isFavorite: Boolean = false
+
+    init {
+        lifecycleScope.launch {
+            refreshFavoriteState()
+        }
+    }
+
+    private suspend fun refreshFavoriteState() {
+        isFavorite = favoritesRepo?.isFavorite(poi.id) == true
+        invalidate()
+    }
+
+    private fun toggleFavorite() {
+        val repo = favoritesRepo ?: return
+        lifecycleScope.launch {
+            isFavorite = repo.toggleFavorite(poi)
+            invalidate()
+        }
+    }
 
     override fun onGetTemplate(): Template = safeCarTemplate(
         carContext = carContext,
@@ -52,9 +74,6 @@ class PoiDetailScreen(
         templateName = "ListTemplate",
     ) {
         val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
-        val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
-            data = IntentNavigationHelper.getNavigationUri(poi)
-        }
 
         val currentSettings = settingsManager.settings.value
         val resolvedEnergyTypes = if (effectiveEnergyTypes.isNotEmpty()) effectiveEnergyTypes else currentSettings.effectiveMapEnergyFilterIds()
@@ -64,6 +83,14 @@ class PoiDetailScreen(
             carContext.getCarService(ConstraintManager::class.java)
                 .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
         } catch (_: Exception) { 6 }
+
+        val hasPrevOrNext = poiList.isNotEmpty() &&
+            (currentIndex > 0 || currentIndex < poiList.size - 1)
+        // ListTemplate ActionStrip max 2: Navigate + (star OR prev/next).
+        // When prev/next occupies the second slot, expose favorite as a list row instead.
+        val favoriteOnStrip = favoritesRepo != null && !hasPrevOrNext
+        val favoriteAsRow = favoritesRepo != null && hasPrevOrNext
+        val reservedRows = 1 + if (favoriteAsRow) 1 else 0
 
         val detailRows = AutoPoiUiHelper.buildPoiDetailRows(
             carContext = carContext,
@@ -76,11 +103,25 @@ class PoiDetailScreen(
                     lat to lon
                 }
             },
-            maxRows = listLimit - 1 // Leave room for "More details"
+            maxRows = listLimit - reservedRows
         )
 
         val itemListBuilder = ItemList.Builder()
         detailRows.forEach { itemListBuilder.addItem(it) }
+
+        if (favoriteAsRow) {
+            itemListBuilder.addItem(
+                Row.Builder()
+                    .setTitle(
+                        carContext.getString(
+                            if (isFavorite) R.string.route_remove_favorite else R.string.route_add_favorite
+                        )
+                    )
+                    .setImage(carContext.actionFavoriteIcon(isFavorite))
+                    .setOnClickListener { toggleFavorite() }
+                    .build()
+            )
+        }
 
         // Structured list is better for the car, but we keep the full text view as a fallback
         itemListBuilder.addItem(
@@ -93,16 +134,15 @@ class PoiDetailScreen(
         )
 
         val actionStripBuilder = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setTitle(carContext.getString(R.string.navigate))
-                    .setIcon(carContext.actionNavigateToIcon())
-                    .setOnClickListener(ParkedOnlyOnClickListener.create { carContext.startCarApp(navigateIntent) })
-                    .build()
-            )
+            // Navigate must work while driving — do not wrap in ParkedOnlyOnClickListener.
+            .addAction(carContext.navigateToStationAction(poi))
 
-        // Previous / Next actions in ActionStrip (max 2 for ListTemplate)
-        if (poiList.isNotEmpty() && currentIndex > 0) {
+        if (favoriteOnStrip) {
+            actionStripBuilder.addAction(
+                carContext.favoriteStationAction(isFavorite) { toggleFavorite() }
+            )
+        } else if (poiList.isNotEmpty() && currentIndex > 0) {
+            // Previous / Next actions in ActionStrip (max 2 for ListTemplate)
             actionStripBuilder.addAction(
                 Action.Builder()
                     .setIcon(carContext.actionPreviousIcon())
@@ -162,6 +202,8 @@ class PoiDetailScreen(
         poi = poiList[index]
         availabilitySummary = availabilityByPoiId[poi.id]
         onPoiSelected?.invoke(poi)
-        invalidate()
+        lifecycleScope.launch {
+            refreshFavoriteState()
+        }
     }
 }

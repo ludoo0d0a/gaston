@@ -94,7 +94,18 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 6. Connectivity
+        // 6. Favorites
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.screen_favorites))
+                .setImage(carContext.dashboardFavoritesIcon())
+                .setOnClickListener {
+                    screenManager.push(AutoFavoritesScreen(carContext, settingsManager, getMapDeps))
+                }
+                .build()
+        )
+
+        // 7. Connectivity
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.dashboard_network))
@@ -105,7 +116,7 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 7. Emergency
+        // 8. Emergency
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.dashboard_emergency))
@@ -116,7 +127,7 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 8. More
+        // 9. More
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.screen_more))

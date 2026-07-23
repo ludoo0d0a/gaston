@@ -134,6 +134,90 @@ class AutoMapCameraTest {
         assertTrue(camera.zoom >= 12)
     }
 
+    @Test
+    fun circleLatLngRing_closedAndApproxRadius() {
+        val centerLat = 48.8566
+        val centerLon = 2.3522
+        val radiusKm = 10.0
+        val ring = AutoMapCamera.circleLatLngRing(centerLat, centerLon, radiusKm, steps = 64)
+        assertEquals(65, ring.size)
+        assertEquals(ring.first().first, ring.last().first, 1e-9)
+        assertEquals(ring.first().second, ring.last().second, 1e-9)
+        val north = ring.maxOf { it.first }
+        val approxKm = (north - centerLat) * 111.0
+        assertEquals(radiusKm, approxKm, 0.05)
+    }
+
+    @Test
+    fun radiusPxForKm_growsWhenZoomingIn() {
+        val at14 = AutoMapCamera.radiusPxForKm(48.85, 14, 10.0)
+        val at15 = AutoMapCamera.radiusPxForKm(48.85, 15, 10.0)
+        assertTrue(at14 > 10f)
+        assertTrue(at15 > at14)
+    }
+
+    @Test
+    fun searchRadiusKm_zoomedOut_largerThanDefaultNearby() {
+        // At zoom 10 on a typical Auto visible area, radius must exceed the fixed 10 km default.
+        val radius = AutoMapCamera.searchRadiusKm(
+            centerLat = 48.8566,
+            centerLon = 2.3522,
+            zoom = 10,
+            mapWidthPx = 800,
+            mapHeightPx = 400,
+        )
+        assertTrue(radius > AutoMapCamera.DEFAULT_NEARBY_SEARCH_RADIUS_KM)
+        assertTrue(radius <= AutoMapCamera.MAX_NEARBY_SEARCH_RADIUS_KM)
+    }
+
+    @Test
+    fun searchRadiusKm_zoomedIn_keepsDefaultNearbyFloor() {
+        val radius = AutoMapCamera.searchRadiusKm(
+            centerLat = 48.8566,
+            centerLon = 2.3522,
+            zoom = 16,
+            mapWidthPx = 800,
+            mapHeightPx = 400,
+        )
+        assertEquals(AutoMapCamera.DEFAULT_NEARBY_SEARCH_RADIUS_KM, radius)
+    }
+
+    @Test
+    fun searchViewportOrNull_zoomedIn_returnsNull() {
+        val viewport = AutoMapCamera.searchViewportOrNull(
+            centerLat = 48.8566,
+            centerLon = 2.3522,
+            zoom = 16,
+            mapWidthPx = 800,
+            mapHeightPx = 400,
+        )
+        assertEquals(null, viewport)
+    }
+
+    @Test
+    fun searchViewportOrNull_zoomedOut_returnsBounds() {
+        val viewport = AutoMapCamera.searchViewportOrNull(
+            centerLat = 48.8566,
+            centerLon = 2.3522,
+            zoom = 10,
+            mapWidthPx = 800,
+            mapHeightPx = 400,
+        )
+        requireNotNull(viewport)
+        assertEquals(10f, viewport.zoom, 0.01f)
+        assertEquals(800, viewport.mapWidthPx)
+        assertEquals(400, viewport.mapHeightPx)
+        assertTrue(viewport.contains(48.8566, 2.3522))
+    }
+
+    @Test
+    fun searchRadiusKm_higherZoom_notBelowDefault() {
+        val at12 = AutoMapCamera.searchRadiusKm(48.0, 2.0, 12, 400, 400)
+        val at14 = AutoMapCamera.searchRadiusKm(48.0, 2.0, 14, 400, 400)
+        assertTrue(at14 <= at12)
+        assertTrue(at14 >= AutoMapCamera.DEFAULT_NEARBY_SEARCH_RADIUS_KM)
+    }
+
     private fun poiAt(id: String, lat: Double, lon: Double) = Poi(
         id = id,
         name = "Test",

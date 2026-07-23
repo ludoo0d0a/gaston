@@ -1,6 +1,5 @@
 package fr.geoking.gaston.auto
 
-import android.content.Intent
 import android.graphics.Rect
 import android.util.Log
 import androidx.car.app.AppManager
@@ -18,11 +17,13 @@ import androidx.car.app.model.Template
 import androidx.car.app.navigation.model.MapWithContentTemplate
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.maplibre.resolveAutoRasterTileUrl
-import fr.geoking.gaston.intent.IntentNavigationHelper
+import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.poi.Poi
+import kotlinx.coroutines.launch
 
 /**
  * Level-2 station detail for [CustomMapPoiScreen].
@@ -43,12 +44,26 @@ class CustomMapStationDetailScreen(
     private val effectiveEnergies: Set<String>,
     private val effectivePowerLevels: Set<Int>,
     private val settingsManager: SettingsManager,
+    private val favoritesRepo: FavoritesRepository? = null,
 ) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
 
     private var surfaceRenderer: AutoSurfaceRenderer? = null
+    private var isFavorite: Boolean = false
 
     init {
         lifecycle.addObserver(this)
+        lifecycleScope.launch {
+            isFavorite = favoritesRepo?.isFavorite(poi.id) == true
+            invalidate()
+        }
+    }
+
+    private fun toggleFavorite() {
+        val repo = favoritesRepo ?: return
+        lifecycleScope.launch {
+            isFavorite = repo.toggleFavorite(poi)
+            invalidate()
+        }
     }
 
     override fun onGetTemplate(): Template = safeCarTemplate(
@@ -78,23 +93,21 @@ class CustomMapStationDetailScreen(
         val itemListBuilder = ItemList.Builder()
         detailRows.forEach { itemListBuilder.addItem(it) }
 
-        val navigateIntent = Intent(CarContext.ACTION_NAVIGATE).apply {
-            data = IntentNavigationHelper.getNavigationUri(poi)
-        }
-        val actionStrip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionNavigateToIcon())
-                    .setOnClickListener { carContext.startCarApp(navigateIntent) }
-                    .build()
+        val actionStripBuilder = ActionStrip.Builder()
+            .addAction(carContext.navigateToStationAction(poi))
+        if (favoritesRepo != null) {
+            actionStripBuilder.addAction(
+                carContext.favoriteStationAction(isFavorite) { toggleFavorite() }
             )
-            .build()
+        }
+        val actionStrip = actionStripBuilder.build()
 
         val contentTemplate = ListTemplate.Builder()
             .setHeader(
                 Header.Builder()
                     .setTitle(AutoPoiUiHelper.poiDetailTitle(poi))
                     .setStartHeaderAction(Action.BACK)
+                    .addEndHeaderAction(carContext.navigateToStationAction(poi, withTitle = false))
                     .build()
             )
             .setSingleList(itemListBuilder.build())

@@ -1,10 +1,10 @@
 package fr.geoking.gaston.auto
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
-import android.content.Context
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
@@ -12,8 +12,6 @@ import android.util.Log
 import android.util.LruCache
 import android.view.Surface
 import fr.geoking.gaston.poi.Poi
-import fr.geoking.gaston.poi.PoiCategory
-import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import java.net.HttpURLConnection
 import java.net.URL
@@ -28,8 +26,6 @@ import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.ln
 import kotlin.math.max
-import kotlin.math.pow
-import kotlin.math.sin
 import kotlin.math.tan
 
 /**
@@ -37,6 +33,7 @@ import kotlin.math.tan
  *
  * It uses an LRU cache for bitmaps and a fixed thread pool to fetch tiles efficiently.
  * Supports north-up and heading-up via [setMapOrientation].
+ * Same-zoom pans reuse a composed basemap framebuffer (scroll + edge fill).
  */
 class AutoSurfaceRenderer(
     private val context: Context,
@@ -68,10 +65,18 @@ class AutoSurfaceRenderer(
         get() = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
 
     private val centerPxX: Double
-        get() = visibleArea?.let { (it.left + it.right) / 2.0 } ?: (width / 2.0)
+        get() = followFocalPoint().x
 
     private val centerPxY: Double
-        get() = visibleArea?.let { (it.top + it.bottom) / 2.0 } ?: (height / 2.0)
+        get() = followFocalPoint().y
+
+    private fun followFocalPoint(): AutoMapFollowFocalPoint.FocalPoint =
+        AutoMapFollowFocalPoint.focalPointPx(
+            visibleArea = visibleArea,
+            surfaceWidth = width,
+            surfaceHeight = height,
+            headingUp = orientationMode == MapOrientationMode.HeadingUp,
+        )
 
     private var selectedPoiId: String? = null
     private var pois: List<Poi> = emptyList()
@@ -81,11 +86,29 @@ class AutoSurfaceRenderer(
 
     private var historyPoints: List<Pair<Double, Double>> = emptyList()
     private var itineraryPoints: List<Pair<Double, Double>> = emptyList()
+    private var searchRadiusCenterLat: Double? = null
+    private var searchRadiusCenterLon: Double? = null
+    private var searchRadiusKm: Double? = null
+    private var queryPending: Boolean = false
 
     // Cache tile bitmaps (heading-up can need ~25+ tiles; 100 ≈ 25MB peak)
     private val tileCache = LruCache<String, Bitmap>(100)
     private val pendingRequests = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
     private val executor = Executors.newFixedThreadPool(4)
+
+    /** Composed north-up basemap; scrolled on same-zoom pans. */
+    private val basemapLock = Any()
+    private var basemapBitmap: Bitmap? = null
+    private var basemapScratch: Bitmap? = null
+    private var composedZoom: Int = Int.MIN_VALUE
+    private var composedCenterTileX: Double = Double.NaN
+    private var composedCenterTileY: Double = Double.NaN
+    private var composedBearing: Float = Float.NaN
+    private var composedCenterPxX: Double = Double.NaN
+    private var composedCenterPxY: Double = Double.NaN
+    private var composedMapOriginX: Double = Double.NaN
+    private var composedMapOriginY: Double = Double.NaN
+    private var basemapDirty: Boolean = true
 
     private val backgroundPaint = Paint().apply { color = Color.LTGRAY }
     private val routePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -94,6 +117,11 @@ class AutoSurfaceRenderer(
         strokeWidth = 4f
         strokeJoin = Paint.Join.ROUND
         strokeCap = Paint.Cap.ROUND
+    }
+    private val searchRadiusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.RED
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
     }
     private val userLocationPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = NAVIGATION_BLUE
@@ -120,6 +148,7 @@ class AutoSurfaceRenderer(
         private const val TAG = "AutoSurfaceRenderer"
         private val NAVIGATION_BLUE = Color.parseColor("#4285F4")
         private const val MIN_DRAW_INTERVAL_MS = 33L
+        private const val TILE_SIZE = 256
         const val POI_MARKER_WIDTH_PX = 96
     }
 
@@ -134,6 +163,7 @@ class AutoSurfaceRenderer(
         }
         executor.shutdownNow()
         try { drawThread.join(500) } catch (_: Exception) {}
+        recycleBasemap()
     }
 
     fun invalidate(force: Boolean = false) {
@@ -185,6 +215,8 @@ class AutoSurfaceRenderer(
         synchronized(tileCache) {
             tileCache.evictAll()
         }
+        recycleBasemap()
+        basemapDirty = true
         invalidate()
     }
 
@@ -233,6 +265,30 @@ class AutoSurfaceRenderer(
     fun setItinerary(points: List<Pair<Double, Double>>) {
         itineraryPoints = points.toList()
         invalidate()
+    }
+
+    /**
+     * Draws a red stroke circle for the nearby station search boundary.
+     * Pass [radiusKm] null to hide.
+     */
+    fun updateSearchRadius(centerLat: Double, centerLon: Double, radiusKm: Double?) {
+        if (searchRadiusCenterLat == centerLat &&
+            searchRadiusCenterLon == centerLon &&
+            searchRadiusKm == radiusKm
+        ) {
+            return
+        }
+        searchRadiusCenterLat = centerLat
+        searchRadiusCenterLon = centerLon
+        searchRadiusKm = radiusKm
+        invalidate()
+    }
+
+    /** Shows a small spinner overlay while a POI query is in flight. */
+    fun setQueryPending(pending: Boolean) {
+        if (queryPending == pending) return
+        queryPending = pending
+        invalidate(force = true)
     }
 
     fun addHistoryPoint(pLat: Double, pLon: Double) {
@@ -284,15 +340,28 @@ class AutoSurfaceRenderer(
                     canvas.save()
                     canvas.rotate(-bearing, cx, cy)
                 }
-                drawMapTiles(canvas)
+                drawBasemap(canvas)
+                drawSearchRadius(canvas)
                 drawPaths(canvas)
                 drawPois(canvas)
                 drawUserLocation(canvas)
                 if (bearing != 0f) {
                     canvas.restore()
                 }
+                if (queryPending) {
+                    AutoMapQueryLoader.draw(
+                        canvas = canvas,
+                        visibleArea = visibleArea,
+                        surfaceWidth = width,
+                        surfaceHeight = height,
+                        nowMs = lastDrawMillis,
+                    )
+                }
             } finally {
                 try { surface.unlockCanvasAndPost(canvas) } catch (_: Exception) {}
+            }
+            if (queryPending) {
+                invalidate()
             }
         }
     }
@@ -305,10 +374,316 @@ class AutoSurfaceRenderer(
         return hypot(width.toDouble(), height.toDouble()) / 2.0
     }
 
+    /**
+     * Basemap size covers the tile fetch radius so heading-up rotation still has corner tiles.
+     * Origin of map-space (0,0) on the bitmap is stored in [composedMapOriginX]/[composedMapOriginY].
+     */
+    private fun basemapDimensions(): Pair<Int, Int> {
+        if (mapBearingDegrees == 0f) {
+            return width to height
+        }
+        val side = ceil(hypot(width.toDouble(), height.toDouble())).toInt().coerceAtLeast(max(width, height))
+        return side to side
+    }
+
+    private fun recycleBasemap() {
+        synchronized(basemapLock) {
+            basemapBitmap?.recycle()
+            basemapScratch?.recycle()
+            basemapBitmap = null
+            basemapScratch = null
+            composedZoom = Int.MIN_VALUE
+            composedCenterTileX = Double.NaN
+            composedCenterTileY = Double.NaN
+            composedBearing = Float.NaN
+            composedCenterPxX = Double.NaN
+            composedCenterPxY = Double.NaN
+            composedMapOriginX = Double.NaN
+            composedMapOriginY = Double.NaN
+            basemapDirty = true
+        }
+    }
+
+    private fun ensureBasemapBitmapsLocked(bw: Int, bh: Int): Bitmap {
+        val existing = basemapBitmap
+        if (existing != null && !existing.isRecycled && existing.width == bw && existing.height == bh) {
+            val scratch = basemapScratch
+            if (scratch == null || scratch.isRecycled || scratch.width != bw || scratch.height != bh) {
+                scratch?.recycle()
+                basemapScratch = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
+            }
+            return existing
+        }
+        basemapBitmap?.recycle()
+        basemapScratch?.recycle()
+        basemapBitmap = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
+        basemapScratch = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
+        composedZoom = Int.MIN_VALUE
+        composedCenterTileX = Double.NaN
+        composedCenterTileY = Double.NaN
+        composedBearing = Float.NaN
+        composedCenterPxX = Double.NaN
+        composedCenterPxY = Double.NaN
+        composedMapOriginX = Double.NaN
+        composedMapOriginY = Double.NaN
+        basemapDirty = true
+        return basemapBitmap!!
+    }
+
+    private fun drawBasemap(canvas: Canvas) {
+        synchronized(basemapLock) {
+            updateComposedBasemapLocked()
+            val basemap = basemapBitmap ?: return
+            val originX = composedMapOriginX
+            val originY = composedMapOriginY
+            if (originX.isNaN() || originY.isNaN()) return
+            canvas.drawBitmap(basemap, -originX.toFloat(), -originY.toFloat(), null)
+        }
+    }
+
+    private fun updateComposedBasemapLocked() {
+        val (bw, bh) = basemapDimensions()
+        val basemap = ensureBasemapBitmapsLocked(bw, bh)
+        val bearing = mapBearingDegrees
+        val cx = centerPxX
+        val cy = centerPxY
+        val centerTileX = lonToTileX(lon, zoom)
+        val centerTileY = latToTileY(lat, zoom)
+
+        // Map-space origin of the basemap bitmap (surface 0,0 relative).
+        val mapOriginX: Double
+        val mapOriginY: Double
+        if (bearing == 0f) {
+            mapOriginX = 0.0
+            mapOriginY = 0.0
+        } else {
+            mapOriginX = cx - bw / 2.0
+            mapOriginY = cy - bh / 2.0
+        }
+
+        val canScroll = !basemapDirty &&
+            composedZoom == zoom &&
+            composedBearing == bearing &&
+            composedCenterPxX == cx &&
+            composedCenterPxY == cy &&
+            !composedCenterTileX.isNaN() &&
+            !composedCenterTileY.isNaN()
+
+        if (canScroll) {
+            val dx = (composedCenterTileX - centerTileX) * TILE_SIZE
+            val dy = (composedCenterTileY - centerTileY) * TILE_SIZE
+            if (dx == 0.0 && dy == 0.0) {
+                return
+            }
+            if (abs(dx) < bw && abs(dy) < bh) {
+                scrollBasemapLocked(dx, dy, centerTileX, centerTileY, cx, cy, mapOriginX, mapOriginY)
+                return
+            }
+        }
+
+        composeBasemapFullLocked(basemap, centerTileX, centerTileY, cx, cy, bearing, mapOriginX, mapOriginY)
+    }
+
+    private fun composeBasemapFullLocked(
+        basemap: Bitmap,
+        centerTileX: Double,
+        centerTileY: Double,
+        cx: Double,
+        cy: Double,
+        bearing: Float,
+        mapOriginX: Double,
+        mapOriginY: Double,
+    ) {
+        val canvas = Canvas(basemap)
+        canvas.drawRect(0f, 0f, basemap.width.toFloat(), basemap.height.toFloat(), backgroundPaint)
+        drawTilesInto(
+            canvas = canvas,
+            centerTileX = centerTileX,
+            centerTileY = centerTileY,
+            mapCenterPxX = cx,
+            mapCenterPxY = cy,
+            mapOriginX = mapOriginX,
+            mapOriginY = mapOriginY,
+            clipLeft = 0,
+            clipTop = 0,
+            clipRight = basemap.width,
+            clipBottom = basemap.height,
+        )
+        composedZoom = zoom
+        composedCenterTileX = centerTileX
+        composedCenterTileY = centerTileY
+        composedBearing = bearing
+        composedCenterPxX = cx
+        composedCenterPxY = cy
+        composedMapOriginX = mapOriginX
+        composedMapOriginY = mapOriginY
+        basemapDirty = false
+    }
+
+    private fun scrollBasemapLocked(
+        dx: Double,
+        dy: Double,
+        newCenterTileX: Double,
+        newCenterTileY: Double,
+        cx: Double,
+        cy: Double,
+        mapOriginX: Double,
+        mapOriginY: Double,
+    ) {
+        val basemap = basemapBitmap ?: return
+        val scratch = basemapScratch ?: return
+        val bw = basemap.width
+        val bh = basemap.height
+        val dxF = dx.toFloat()
+        val dyF = dy.toFloat()
+
+        scratch.eraseColor(Color.LTGRAY)
+        Canvas(scratch).drawBitmap(basemap, dxF, dyF, null)
+
+        // Swap
+        basemapBitmap = scratch
+        basemapScratch = basemap
+
+        val scrolled = basemapBitmap!!
+        val canvas = Canvas(scrolled)
+
+        // Newly exposed strips in bitmap coordinates.
+        if (dx > 0) {
+            // Content moved right → left strip exposed
+            val stripW = ceil(dx).toInt().coerceIn(1, bw)
+            drawTilesInto(
+                canvas, newCenterTileX, newCenterTileY, cx, cy, mapOriginX, mapOriginY,
+                clipLeft = 0, clipTop = 0, clipRight = stripW, clipBottom = bh,
+            )
+        } else if (dx < 0) {
+            val stripW = ceil(-dx).toInt().coerceIn(1, bw)
+            drawTilesInto(
+                canvas, newCenterTileX, newCenterTileY, cx, cy, mapOriginX, mapOriginY,
+                clipLeft = bw - stripW, clipTop = 0, clipRight = bw, clipBottom = bh,
+            )
+        }
+        if (dy > 0) {
+            val stripH = ceil(dy).toInt().coerceIn(1, bh)
+            drawTilesInto(
+                canvas, newCenterTileX, newCenterTileY, cx, cy, mapOriginX, mapOriginY,
+                clipLeft = 0, clipTop = 0, clipRight = bw, clipBottom = stripH,
+            )
+        } else if (dy < 0) {
+            val stripH = ceil(-dy).toInt().coerceIn(1, bh)
+            drawTilesInto(
+                canvas, newCenterTileX, newCenterTileY, cx, cy, mapOriginX, mapOriginY,
+                clipLeft = 0, clipTop = bh - stripH, clipRight = bw, clipBottom = bh,
+            )
+        }
+
+        composedCenterTileX = newCenterTileX
+        composedCenterTileY = newCenterTileY
+        composedCenterPxX = cx
+        composedCenterPxY = cy
+        composedMapOriginX = mapOriginX
+        composedMapOriginY = mapOriginY
+        basemapDirty = false
+    }
+
+    /**
+     * Draws tiles whose bitmap rect intersects the clip rect (bitmap coordinates).
+     * [mapCenterPxX]/[mapCenterPxY] are surface map-space coords of the camera center;
+     * [mapOriginX]/[mapOriginY] are the surface coords of bitmap (0,0).
+     */
+    private fun drawTilesInto(
+        canvas: Canvas,
+        centerTileX: Double,
+        centerTileY: Double,
+        mapCenterPxX: Double,
+        mapCenterPxY: Double,
+        mapOriginX: Double,
+        mapOriginY: Double,
+        clipLeft: Int,
+        clipTop: Int,
+        clipRight: Int,
+        clipBottom: Int,
+    ) {
+        if (clipLeft >= clipRight || clipTop >= clipBottom) return
+
+        // Bitmap pixel (bx, by) corresponds to surface map-space (bx + mapOriginX, by + mapOriginY).
+        // Tile x draws at surface: (x - centerTileX) * TILE + mapCenterPxX
+        // In bitmap coords: that minus mapOrigin.
+        val bitmapCenterX = mapCenterPxX - mapOriginX
+        val bitmapCenterY = mapCenterPxY - mapOriginY
+
+        val startTileX = floor((clipLeft - bitmapCenterX) / TILE_SIZE + centerTileX).toInt()
+        val endTileX = ceil((clipRight - bitmapCenterX) / TILE_SIZE + centerTileX).toInt()
+        val startTileY = floor((clipTop - bitmapCenterY) / TILE_SIZE + centerTileY).toInt()
+        val endTileY = ceil((clipBottom - bitmapCenterY) / TILE_SIZE + centerTileY).toInt()
+
+        canvas.save()
+        canvas.clipRect(clipLeft, clipTop, clipRight, clipBottom)
+        for (x in startTileX..endTileX) {
+            for (y in startTileY..endTileY) {
+                val bitmap = getTile(x, y, zoom)
+                val drawX = ((x - centerTileX) * TILE_SIZE + bitmapCenterX).toFloat()
+                val drawY = ((y - centerTileY) * TILE_SIZE + bitmapCenterY).toFloat()
+                if (bitmap != null) {
+                    canvas.drawBitmap(bitmap, drawX, drawY, null)
+                } else {
+                    canvas.drawRect(
+                        drawX,
+                        drawY,
+                        drawX + TILE_SIZE,
+                        drawY + TILE_SIZE,
+                        backgroundPaint
+                    )
+                }
+            }
+        }
+        canvas.restore()
+    }
+
+    /** Patch a newly fetched tile into the composed basemap when still valid for current zoom. */
+    private fun patchTileIntoBasemap(tileX: Int, tileY: Int, tileZ: Int, tileBitmap: Bitmap) {
+        synchronized(basemapLock) {
+            val basemap = basemapBitmap ?: return
+            if (basemap.isRecycled || basemapDirty) return
+            if (composedZoom != tileZ) return
+            if (composedCenterTileX.isNaN() || composedCenterTileY.isNaN()) return
+            if (composedMapOriginX.isNaN() || composedMapOriginY.isNaN()) return
+
+            val bitmapCenterX = composedCenterPxX - composedMapOriginX
+            val bitmapCenterY = composedCenterPxY - composedMapOriginY
+            val drawX = ((tileX - composedCenterTileX) * TILE_SIZE + bitmapCenterX).toFloat()
+            val drawY = ((tileY - composedCenterTileY) * TILE_SIZE + bitmapCenterY).toFloat()
+
+            // Skip if completely outside basemap.
+            if (drawX >= basemap.width || drawY >= basemap.height ||
+                drawX + TILE_SIZE <= 0 || drawY + TILE_SIZE <= 0
+            ) {
+                return
+            }
+
+            Canvas(basemap).drawBitmap(tileBitmap, drawX, drawY, null)
+        }
+    }
+
+    private fun drawSearchRadius(canvas: Canvas) {
+        val radiusKm = searchRadiusKm ?: return
+        val cLat = searchRadiusCenterLat ?: return
+        val cLon = searchRadiusCenterLon ?: return
+        if (radiusKm <= 0.0) return
+
+        val mapCenterX = lonToTileX(lon, zoom)
+        val mapCenterY = latToTileY(lat, zoom)
+        val tileX = lonToTileX(cLon, zoom)
+        val tileY = latToTileY(cLat, zoom)
+        val cx = ((tileX - mapCenterX) * TILE_SIZE + centerPxX).toFloat()
+        val cy = ((tileY - mapCenterY) * TILE_SIZE + centerPxY).toFloat()
+        val radiusPx = AutoMapCamera.radiusPxForKm(cLat, zoom, radiusKm)
+        if (radiusPx < 2f) return
+        canvas.drawCircle(cx, cy, radiusPx, searchRadiusPaint)
+    }
+
     private fun drawPaths(canvas: Canvas) {
         if (historyPoints.isEmpty() && itineraryPoints.isEmpty()) return
 
-        val tileSize = 256
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
 
@@ -319,8 +694,8 @@ class AutoSurfaceRenderer(
             points.forEach { (pLat, pLon) ->
                 val tileX = lonToTileX(pLon, zoom)
                 val tileY = latToTileY(pLat, zoom)
-                val x = ((tileX - centerX) * tileSize + centerPxX).toFloat()
-                val y = ((tileY - centerY) * tileSize + centerPxY).toFloat()
+                val x = ((tileX - centerX) * TILE_SIZE + centerPxX).toFloat()
+                val y = ((tileY - centerY) * TILE_SIZE + centerPxY).toFloat()
                 if (first) {
                     reusablePath.moveTo(x, y)
                     first = false
@@ -335,39 +710,7 @@ class AutoSurfaceRenderer(
         drawPoints(historyPoints)
     }
 
-    private fun drawMapTiles(canvas: Canvas) {
-        val tileSize = 256
-        val centerX = lonToTileX(lon, zoom)
-        val centerY = latToTileY(lat, zoom)
-        val radiusPx = tileFetchRadiusPx()
-
-        val startTileX = floor(centerX - radiusPx / tileSize).toInt()
-        val endTileX = ceil(centerX + radiusPx / tileSize).toInt()
-        val startTileY = floor(centerY - radiusPx / tileSize).toInt()
-        val endTileY = ceil(centerY + radiusPx / tileSize).toInt()
-
-        for (x in startTileX..endTileX) {
-            for (y in startTileY..endTileY) {
-                val bitmap = getTile(x, y, zoom)
-                val drawX = ((x - centerX) * tileSize + centerPxX).toFloat()
-                val drawY = ((y - centerY) * tileSize + centerPxY).toFloat()
-                if (bitmap != null) {
-                    canvas.drawBitmap(bitmap, drawX, drawY, null)
-                } else {
-                    canvas.drawRect(
-                        drawX,
-                        drawY,
-                        drawX + tileSize,
-                        drawY + tileSize,
-                        backgroundPaint
-                    )
-                }
-            }
-        }
-    }
-
     private fun drawPois(canvas: Canvas) {
-        val tileSize = 256
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
         val bearing = mapBearingDegrees
@@ -378,8 +721,8 @@ class AutoSurfaceRenderer(
             val tileX = lonToTileX(poi.longitude, zoom)
             val tileY = latToTileY(poi.latitude, zoom)
 
-            val drawX = ((tileX - centerX) * tileSize + centerPxX).toFloat()
-            val drawY = ((tileY - centerY) * tileSize + centerPxY).toFloat()
+            val drawX = ((tileX - centerX) * TILE_SIZE + centerPxX).toFloat()
+            val drawY = ((tileY - centerY) * TILE_SIZE + centerPxY).toFloat()
 
             val bitmap = PoiMarkerHelper.getMarkerBitmap(
                 context = context,
@@ -439,15 +782,14 @@ class AutoSurfaceRenderer(
         val uLat = userLat ?: return
         val uLon = userLon ?: return
 
-        val tileSize = 256
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
 
         val tileX = lonToTileX(uLon, zoom)
         val tileY = latToTileY(uLat, zoom)
 
-        val drawX = ((tileX - centerX) * tileSize + centerPxX).toFloat()
-        val drawY = ((tileY - centerY) * tileSize + centerPxY).toFloat()
+        val drawX = ((tileX - centerX) * TILE_SIZE + centerPxX).toFloat()
+        val drawY = ((tileY - centerY) * TILE_SIZE + centerPxY).toFloat()
 
         val rotation = userHeadingDegrees
 
@@ -485,6 +827,7 @@ class AutoSurfaceRenderer(
                             synchronized(tileCache) {
                                 tileCache.put(key, bitmap)
                             }
+                            patchTileIntoBasemap(x, y, z, bitmap)
                             scheduleTileRedraw()
                         }
                     }

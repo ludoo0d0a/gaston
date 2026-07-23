@@ -89,8 +89,9 @@ class CustomMapPoiScreen(
     private var pois: List<Poi> = emptyList()
     private var errors: List<PoiProviderError> = emptyList()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
-    private var favoriteIds: Set<String> = emptySet()
     private var isLoading = true
+    private var isQueryPending = false
+    private var queryGeneration: Int = 0
     private var searchLat: Double = settingsManager.settings.value.lastKnownLat ?: 48.8566
     private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
     private var zoom: Int = AutoMapCamera.DEFAULT_ZOOM
@@ -118,9 +119,20 @@ class CustomMapPoiScreen(
     private var lastAppliedZoom: Int = zoom
     private var lastSyncedPoiIds: List<String> = emptyList()
     private var visibleAreaCameraJob: Job? = null
+    /** When set, map markers are filtered to this station only (selection / detail handoff). */
+    private var mapSelectedPoi: Poi? = null
 
     private fun openStationDetail(poi: Poi, availability: StationAvailabilitySummary?) {
         val settings = settingsManager.settings.value
+        val energies = settings.effectiveMapEnergyFilterIds()
+        val powerLevels = settings.effectiveIrvePowerLevels()
+        mapSelectedPoi = poi
+        // Center + filter before push so a shared MapWithContent surface keeps only this station.
+        lastAppliedSearchLat = poi.latitude
+        lastAppliedSearchLon = poi.longitude
+        lastAppliedZoom = zoom
+        surfaceRenderer?.updateLocation(poi.latitude, poi.longitude, zoom)
+        syncRendererWithMapState()
         screenManager.push(
             CustomMapStationDetailScreen(
                 carContext = carContext,
@@ -131,9 +143,10 @@ class CustomMapPoiScreen(
                 zoom = zoom,
                 orientationMode = orientationMode,
                 bearing = lastKnownBearingDegrees,
-                effectiveEnergies = settings.effectiveMapEnergyFilterIds(),
-                effectivePowerLevels = settings.effectiveIrvePowerLevels(),
+                effectiveEnergies = energies,
+                effectivePowerLevels = powerLevels,
                 settingsManager = settingsManager,
+                favoritesRepo = favoritesRepo,
             )
         )
     }
@@ -228,17 +241,26 @@ class CustomMapPoiScreen(
         }
     }
 
-    private fun mapFocusStations(settings: AppSettings): List<Poi> {
-        val filtered = getFilteredPois(settings)
-        val (userLat, userLon) = searchCenterFlow.value
-        val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
-        return AutoMapCamera.selectMapFocusStations(
-            userLat = userLat,
-            userLon = userLon,
-            stations = filtered,
-            sortByPrice = sortByPrice,
-            selectedFuelIds = fuelIds,
+    /** Viewport sized to the host-visible map boundary when zoomed out; null when default nearby radius covers the screen. */
+    private fun currentSearchViewport() = mapFitSizePx().let { (w, h) ->
+        AutoMapCamera.searchViewportOrNull(
+            centerLat = searchLat,
+            centerLon = searchLon,
+            zoom = zoom,
+            mapWidthPx = w,
+            mapHeightPx = h,
         )
+    }
+
+    /** Search radius matching the visible map (at least the default nearby radius). */
+    private fun currentSearchRadiusKm(): Double = mapFitSizePx().let { (w, h) ->
+        AutoMapCamera.searchRadiusKm(
+            centerLat = searchLat,
+            centerLon = searchLon,
+            zoom = zoom,
+            mapWidthPx = w,
+            mapHeightPx = h,
+        ).toDouble()
     }
 
     private fun applyCameraForStations(
@@ -325,17 +347,27 @@ class CustomMapPoiScreen(
             lastAppliedZoom = zoom
         }
         renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
-        val mapPois = if (itineraryPoints.isNotEmpty()) {
-            filteredPois
-        } else {
-            mapFocusStations(settings)
-        }
+        // Show the same filtered stations as the list; focus stations are only for zoom.
+        // When a station is selected, keep only that marker (detail handoff / shared surface).
+        val selected = mapSelectedPoi
+        val mapPois = if (selected != null) listOf(selected) else filteredPois
         renderer.updatePois(
             newPois = mapPois,
             effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
             effectivePowerLevels = settings.effectiveIrvePowerLevels(),
-            selectedId = null,
+            selectedId = selected?.id,
         )
+        val (userLat, userLon) = searchCenterFlow.value
+        renderer.updateSearchRadius(
+            centerLat = userLat,
+            centerLon = userLon,
+            radiusKm = if (itineraryPoints.isEmpty()) {
+                currentSearchRadiusKm()
+            } else {
+                null
+            },
+        )
+        renderer.setQueryPending(isQueryPending)
         lastSyncedPoiIds = poiIds
     }
 
@@ -372,7 +404,7 @@ class CustomMapPoiScreen(
             PoiSearchRequest(
                 latitude = userLat,
                 longitude = userLon,
-                viewport = null,
+                viewport = currentSearchViewport(),
                 categories = emptySet(),
                 skipFilters = true,
             )
@@ -420,34 +452,36 @@ class CustomMapPoiScreen(
 
     private fun loadPois(preserveZoom: Boolean = false, showLoading: Boolean = true) {
         loadPoisJob?.cancel()
+        val gen = ++queryGeneration
         loadPoisJob = lifecycleScope.launch {
+            isQueryPending = true
+            syncRendererWithMapState()
             if (showLoading) {
                 isLoading = true
                 invalidate()
             }
 
-            val location = LocationHelper.getCurrentLocation(carContext)
-            val (lat, lon) = if (location != null) {
-                settingsManager.saveLastKnownLocation(location.latitude, location.longitude)
-                location.latitude to location.longitude
-            } else {
-                LocationHelper.getInitialLocation(carContext, settingsManager)
-            }
-
-            searchCenterFlow.value = lat to lon
-            lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
-            Log.d("CustomMapPoiScreen", "loadPois search center lat=$lat lon=$lon bearing=$lastKnownBearingDegrees")
-
-            if (itineraryPoints.isEmpty()) {
-                searchLat = lat
-                searchLon = lon
-            }
-
-            surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
-            applyMapOrientationToRenderer()
-
             try {
-                favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
+                val location = LocationHelper.getCurrentLocation(carContext)
+                val (lat, lon) = if (location != null) {
+                    settingsManager.saveLastKnownLocation(location.latitude, location.longitude)
+                    location.latitude to location.longitude
+                } else {
+                    LocationHelper.getInitialLocation(carContext, settingsManager)
+                }
+
+                searchCenterFlow.value = lat to lon
+                lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+                Log.d("CustomMapPoiScreen", "loadPois search center lat=$lat lon=$lon bearing=$lastKnownBearingDegrees")
+
+                if (itineraryPoints.isEmpty()) {
+                    searchLat = lat
+                    searchLon = lon
+                }
+
+                surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+                applyMapOrientationToRenderer()
+
                 val settings = settingsManager.settings.value
 
                 if (itineraryPoints.isNotEmpty() && routePlanner != null) {
@@ -478,47 +512,55 @@ class CustomMapPoiScreen(
                         syncRendererWithMapState()
                         invalidate()
                     }
-                } else if (preserveZoom) {
-                    val filteredPois = getFilteredPois(settings)
-                    applyCameraForStations(lat, lon, filteredPois, settings, preserveZoom = true)
-                    surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
-                    syncRendererWithMapState()
-                    isLoading = false
-                    refitCameraForVisibleAreaIfNeeded()
-                    invalidate()
                 } else {
-                    poiProvider.searchFlow(
-                        PoiSearchRequest(
-                            latitude = lat,
-                            longitude = lon,
-                            viewport = null,
-                            categories = emptySet(),
-                            skipFilters = true,
-                        )
-                    ).collect { result ->
-                        pois = PoiMerger.mergeInto(pois, result.pois)
-                        errors = result.errors
-                        val filteredPois = getFilteredPois(settings)
+                    suspend fun collectNearbySearch(preserveCameraZoom: Boolean) {
+                        poiProvider.searchFlow(
+                            PoiSearchRequest(
+                                latitude = lat,
+                                longitude = lon,
+                                viewport = currentSearchViewport(),
+                                categories = emptySet(),
+                                skipFilters = true,
+                            )
+                        ).collect { result ->
+                            pois = PoiMerger.mergeInto(pois, result.pois)
+                            errors = result.errors
+                            val filteredPois = getFilteredPois(settings)
 
-                        applyCameraForStations(lat, lon, filteredPois, settings)
-                        surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
-                        syncRendererWithMapState()
-                        isLoading = false
-                        refitCameraForVisibleAreaIfNeeded()
-                        invalidate()
-
-                        val provider = availabilityProviderFactory.getProvider(lat, lon)
-                        if (provider != null) {
-                            val availabilities = try {
-                                provider.getAvailability(lat, lon, 10)
-                            } catch (e: Exception) {
-                                if (e is kotlinx.coroutines.CancellationException) throw e
-                                emptyList()
-                            }
-                            availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
+                            applyCameraForStations(
+                                userLat = lat,
+                                userLon = lon,
+                                stations = filteredPois,
+                                settings = settings,
+                                preserveZoom = preserveCameraZoom,
+                            )
+                            surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
                             syncRendererWithMapState()
+                            isLoading = false
+                            refitCameraForVisibleAreaIfNeeded()
                             invalidate()
+
+                            val provider = availabilityProviderFactory.getProvider(lat, lon)
+                            if (provider != null) {
+                                val availabilityRadiusKm = currentSearchRadiusKm().toInt().coerceIn(10, 20)
+                                val availabilities = try {
+                                    provider.getAvailability(lat, lon, availabilityRadiusKm)
+                                } catch (e: Exception) {
+                                    if (e is kotlinx.coroutines.CancellationException) throw e
+                                    emptyList()
+                                }
+                                availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
+                                syncRendererWithMapState()
+                                invalidate()
+                            }
                         }
+                    }
+
+                    val radiusBeforeCameraKm = currentSearchRadiusKm()
+                    collectNearbySearch(preserveCameraZoom = preserveZoom)
+                    // Camera may zoom out to frame focus stations; re-query for that wider visible boundary.
+                    if (!preserveZoom && currentSearchRadiusKm() > radiusBeforeCameraKm) {
+                        collectNearbySearch(preserveCameraZoom = true)
                     }
                 }
             } catch (e: Exception) {
@@ -526,8 +568,13 @@ class CustomMapPoiScreen(
                 Log.e("CustomMapPoiScreen", "loadPois failed", e)
                 pois = emptyList()
                 errors = listOf(PoiProviderError("System", e.message ?: "Unknown error", isCritical = true))
-                isLoading = false
-                invalidate()
+            } finally {
+                if (gen == queryGeneration) {
+                    isQueryPending = false
+                    isLoading = false
+                    syncRendererWithMapState()
+                    invalidate()
+                }
             }
         }
     }
@@ -738,6 +785,9 @@ class CustomMapPoiScreen(
 
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
         registerSurfaceCallback()
+        // Returning from station detail: show all filtered pins again.
+        mapSelectedPoi = null
+        syncRendererWithMapState()
     }
 
     override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
@@ -745,10 +795,17 @@ class CustomMapPoiScreen(
     }
 
     private fun bumpZoom(delta: Int) {
-        zoom = (zoom + delta).coerceIn(4, 18)
+        val prevZoom = zoom
+        zoom = (zoom + delta).coerceIn(AutoMapCamera.MIN_ZOOM, AutoMapCamera.MAX_ZOOM)
         lastAppliedZoom = zoom
         surfaceRenderer?.updateLocation(searchLat, searchLon, zoom)
-        invalidate()
+        if (zoom < prevZoom) {
+            // Wider visible boundary — re-query stations for the new map diameter.
+            loadPois(preserveZoom = true, showLoading = false)
+        } else {
+            syncRendererWithMapState()
+            invalidate()
+        }
     }
 
     override fun onGetTemplate(): Template = safeCarTemplate(
@@ -842,7 +899,7 @@ class CustomMapPoiScreen(
                         effectivePowerLevels = effectivePowerLevels,
                         distanceFromLatLon = searchLat to searchLon,
                         includePlace = false,
-                        browsable = false,
+                        browsable = true,
                     ) {
                         openStationDetail(item, availability)
                     }

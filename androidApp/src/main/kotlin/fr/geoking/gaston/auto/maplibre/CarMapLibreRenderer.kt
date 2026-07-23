@@ -2,6 +2,7 @@ package fr.geoking.gaston.auto.maplibre
 
 import android.graphics.Canvas
 import android.graphics.PointF
+import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -11,7 +12,9 @@ import androidx.car.app.SurfaceContainer
 import androidx.lifecycle.Lifecycle
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.AutoMapCamera
+import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
 import fr.geoking.gaston.auto.AutoMapHeading
+import fr.geoking.gaston.auto.AutoMapQueryLoader
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.map.MarkerStyle
@@ -21,11 +24,13 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
+import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 
 /**
@@ -51,6 +56,21 @@ class CarMapLibreRenderer(
     private var effectivePowerLevels: Set<Int> = emptySet()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
     private var frameListenersAttached = false
+    private var searchRadiusCenterLat: Double? = null
+    private var searchRadiusCenterLon: Double? = null
+    private var searchRadiusKm: Double? = null
+    private var visibleArea: Rect? = null
+    private var surfaceWidth: Int = 0
+    private var surfaceHeight: Int = 0
+    private var queryPending: Boolean = false
+
+    private val loaderAnimRunnable = object : Runnable {
+        override fun run() {
+            if (!queryPending || surfaceContainer == null) return
+            drawOnSurface()
+            uiHandler.postDelayed(this, 50L)
+        }
+    }
 
     val map: MapLibreMap?
         get() = mapContainer.mapLibreMapInstance
@@ -62,10 +82,12 @@ class CarMapLibreRenderer(
                 map.setStyle(url) {
                     applyCamera(map)
                     syncPoiLayer()
+                    syncSearchRadiusLayer()
                 }
             } else {
                 applyCamera(map)
                 syncPoiLayer()
+                syncSearchRadiusLayer()
             }
         }
     }
@@ -94,6 +116,12 @@ class CarMapLibreRenderer(
         mapContainer.mapLibreMapInstance?.let { applyCamera(it) }
     }
 
+    fun updateVisibleArea(area: Rect) {
+        if (visibleArea?.equals(area) == true) return
+        visibleArea = Rect(area)
+        mapContainer.mapLibreMapInstance?.let { applyCamera(it) }
+    }
+
     fun bumpZoom(delta: Int) {
         zoom = (zoom + delta).coerceIn(AutoMapCamera.MIN_ZOOM, AutoMapCamera.MAX_ZOOM)
         mapContainer.mapLibreMapInstance?.let { map ->
@@ -116,6 +144,35 @@ class CarMapLibreRenderer(
         syncPoiLayer()
     }
 
+    /**
+     * Draws a red stroke circle for the nearby station search boundary.
+     * Pass [radiusKm] null to hide.
+     */
+    fun updateSearchRadius(centerLat: Double, centerLon: Double, radiusKm: Double?) {
+        if (searchRadiusCenterLat == centerLat &&
+            searchRadiusCenterLon == centerLon &&
+            searchRadiusKm == radiusKm
+        ) {
+            return
+        }
+        searchRadiusCenterLat = centerLat
+        searchRadiusCenterLon = centerLon
+        searchRadiusKm = radiusKm
+        syncSearchRadiusLayer()
+    }
+
+    /** Shows a small spinner overlay while a POI query is in flight. */
+    fun setQueryPending(pending: Boolean) {
+        if (queryPending == pending) return
+        queryPending = pending
+        uiHandler.removeCallbacks(loaderAnimRunnable)
+        if (pending) {
+            uiHandler.post(loaderAnimRunnable)
+        } else {
+            drawOnSurface()
+        }
+    }
+
     fun findPoisAt(screenX: Float, screenY: Float): List<Poi> {
         val map = mapContainer.mapLibreMapInstance ?: return emptyList()
         val features = map.queryRenderedFeatures(PointF(screenX, screenY), POI_LAYER_ID)
@@ -129,10 +186,17 @@ class CarMapLibreRenderer(
 
     fun mapLonForHitTest(): Double = centerLon
 
+    fun centerPxXForHitTest(): Double = followFocalPoint().x
+
+    fun centerPxYForHitTest(): Double = followFocalPoint().y
+
     fun attachSurface(container: SurfaceContainer) {
         surfaceContainer = container
+        surfaceWidth = container.width
+        surfaceHeight = container.height
         mapContainer.setSurfaceSize(container.width, container.height)
         attachFrameListeners()
+        mapContainer.mapLibreMapInstance?.let { applyCamera(it) }
         drawOnSurface()
     }
 
@@ -141,6 +205,14 @@ class CarMapLibreRenderer(
         surfaceContainer = null
         uiHandler.removeCallbacksAndMessages(null)
     }
+
+    private fun followFocalPoint(): AutoMapFollowFocalPoint.FocalPoint =
+        AutoMapFollowFocalPoint.focalPointPx(
+            visibleArea = visibleArea,
+            surfaceWidth = surfaceWidth,
+            surfaceHeight = surfaceHeight,
+            headingUp = orientationMode == MapOrientationMode.HeadingUp,
+        )
 
     fun onScale(focusX: Float, focusY: Float, scaleFactor: Float) {
         mapContainer.onScale(focusX, focusY, scaleFactor)
@@ -176,9 +248,18 @@ class CarMapLibreRenderer(
     private fun drawMapOnCanvas(mapView: MapView, canvas: Canvas) {
         val textureView = mapView.takeIf { it.childCount > 0 }?.getChildAt(0) as? TextureView
         textureView?.bitmap?.let { canvas.drawBitmap(it, 0f, 0f, null) }
+        if (queryPending) {
+            AutoMapQueryLoader.draw(
+                canvas = canvas,
+                visibleArea = visibleArea,
+                surfaceWidth = surfaceWidth,
+                surfaceHeight = surfaceHeight,
+            )
+        }
     }
 
     private fun applyCamera(map: MapLibreMap) {
+        applyFollowPadding(map)
         val bearing = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
         map.moveCamera(
             CameraUpdateFactory.newCameraPosition(
@@ -189,6 +270,17 @@ class CarMapLibreRenderer(
                     .build(),
             ),
         )
+    }
+
+    private fun applyFollowPadding(map: MapLibreMap) {
+        if (surfaceWidth <= 0 || surfaceHeight <= 0) return
+        val padding = AutoMapFollowFocalPoint.mapLibrePadding(
+            visibleArea = visibleArea,
+            surfaceWidth = surfaceWidth,
+            surfaceHeight = surfaceHeight,
+            headingUp = orientationMode == MapOrientationMode.HeadingUp,
+        )
+        map.setPadding(padding.left, padding.top, padding.right, padding.bottom)
     }
 
     private fun syncPoiLayer() {
@@ -229,10 +321,53 @@ class CarMapLibreRenderer(
         }
     }
 
+    private fun syncSearchRadiusLayer() {
+        val map = mapContainer.mapLibreMapInstance ?: return
+        map.getStyle { style ->
+            if (style.getSource(SEARCH_RADIUS_SOURCE_ID) == null) {
+                style.addSource(GeoJsonSource(SEARCH_RADIUS_SOURCE_ID))
+            }
+            if (style.getLayer(SEARCH_RADIUS_LAYER_ID) == null) {
+                val layer = LineLayer(SEARCH_RADIUS_LAYER_ID, SEARCH_RADIUS_SOURCE_ID).withProperties(
+                    PropertyFactory.lineColor("#FF0000"),
+                    PropertyFactory.lineWidth(2.5f),
+                    PropertyFactory.lineOpacity(0.9f),
+                )
+                if (style.getLayer(POI_LAYER_ID) != null) {
+                    style.addLayerBelow(layer, POI_LAYER_ID)
+                } else {
+                    style.addLayer(layer)
+                }
+            }
+            val radiusKm = searchRadiusKm
+            val cLat = searchRadiusCenterLat
+            val cLon = searchRadiusCenterLon
+            val source = style.getSourceAs<GeoJsonSource>(SEARCH_RADIUS_SOURCE_ID) ?: return@getStyle
+            if (radiusKm == null || radiusKm <= 0.0 || cLat == null || cLon == null) {
+                source.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+                return@getStyle
+            }
+            val ring = AutoMapCamera.circleLatLngRing(cLat, cLon, radiusKm).map { (lat, lon) ->
+                Point.fromLngLat(lon, lat)
+            }
+            if (ring.size < 4) {
+                source.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+                return@getStyle
+            }
+            source.setGeoJson(
+                FeatureCollection.fromFeature(
+                    Feature.fromGeometry(LineString.fromLngLats(ring)),
+                ),
+            )
+        }
+    }
+
     companion object {
         private const val TAG = "CarMapLibreRenderer"
         private const val POI_SOURCE_ID = "poi-source"
         private const val POI_LAYER_ID = "poi-layer"
         private const val POI_ID_PROPERTY = "poi-id"
+        private const val SEARCH_RADIUS_SOURCE_ID = "search-radius-source"
+        private const val SEARCH_RADIUS_LAYER_ID = "search-radius-layer"
     }
 }
