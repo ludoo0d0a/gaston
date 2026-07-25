@@ -108,7 +108,6 @@ class MapLibreStationDetailScreen(
                 Header.Builder()
                     .setTitle(AutoPoiUiHelper.poiDetailTitle(poi))
                     .setStartHeaderAction(Action.BACK)
-                    .addEndHeaderAction(carContext.navigateToStationAction(poi, withTitle = false))
                     .build()
             )
             .setSingleList(itemListBuilder.build())
