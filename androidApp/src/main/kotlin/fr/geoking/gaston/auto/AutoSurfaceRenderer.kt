@@ -91,8 +91,6 @@ class AutoSurfaceRenderer(
     private var searchRadiusKm: Double? = null
     private var queryPending: Boolean = false
 
-    // Cache tile bitmaps (heading-up can need ~25+ tiles; 100 ≈ 25MB peak)
-    private val tileCache = LruCache<String, Bitmap>(100)
     private val pendingRequests = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
     private val executor = Executors.newFixedThreadPool(4)
 
@@ -150,6 +148,10 @@ class AutoSurfaceRenderer(
         private const val MIN_DRAW_INTERVAL_MS = 33L
         private const val TILE_SIZE = 256
         const val POI_MARKER_WIDTH_PX = 96
+
+        // Shared LRU cache for tiles across all instances of AutoSurfaceRenderer
+        private val sharedTileCache = LruCache<String, Bitmap>(250)
+        private val failedTiles = ConcurrentHashMap<String, Long>()
     }
 
     fun start() {
@@ -212,8 +214,8 @@ class AutoSurfaceRenderer(
     fun setTileUrlTemplate(template: String) {
         if (tileUrlTemplate == template) return
         tileUrlTemplate = template
-        synchronized(tileCache) {
-            tileCache.evictAll()
+        synchronized(sharedTileCache) {
+            sharedTileCache.evictAll()
         }
         recycleBasemap()
         basemapDirty = true
@@ -611,10 +613,10 @@ class AutoSurfaceRenderer(
         val bitmapCenterX = mapCenterPxX - mapOriginX
         val bitmapCenterY = mapCenterPxY - mapOriginY
 
-        val startTileX = floor((clipLeft - bitmapCenterX) / TILE_SIZE + centerTileX).toInt()
-        val endTileX = ceil((clipRight - bitmapCenterX) / TILE_SIZE + centerTileX).toInt()
-        val startTileY = floor((clipTop - bitmapCenterY) / TILE_SIZE + centerTileY).toInt()
-        val endTileY = ceil((clipBottom - bitmapCenterY) / TILE_SIZE + centerTileY).toInt()
+        val startTileX = floor((clipLeft - bitmapCenterX) / TILE_SIZE + centerTileX).toInt() - 1
+        val endTileX = ceil((clipRight - bitmapCenterX) / TILE_SIZE + centerTileX).toInt() + 1
+        val startTileY = floor((clipTop - bitmapCenterY) / TILE_SIZE + centerTileY).toInt() - 1
+        val endTileY = ceil((clipBottom - bitmapCenterY) / TILE_SIZE + centerTileY).toInt() + 1
 
         canvas.save()
         canvas.clipRect(clipLeft, clipTop, clipRight, clipBottom)
@@ -803,9 +805,25 @@ class AutoSurfaceRenderer(
     }
 
     private fun getTile(x: Int, y: Int, z: Int): Bitmap? {
-        val key = "$z/$x/$y"
-        synchronized(tileCache) {
-            tileCache.get(key)?.let { return it }
+        val maxTiles = 1 shl z
+        val wrappedX = (x % maxTiles + maxTiles) % maxTiles
+        if (y < 0 || y >= maxTiles) return null
+
+        val key = "$tileUrlTemplate/$z/$wrappedX/$y"
+        synchronized(sharedTileCache) {
+            sharedTileCache.get(key)?.let { return it }
+        }
+
+        val now = System.currentTimeMillis()
+        val lastFailureTime = failedTiles[key]
+        if (lastFailureTime != null && now - lastFailureTime < 15000L) {
+            return null
+        }
+
+        // Prune expired entries from failedTiles occasionally to prevent memory leak
+        if (failedTiles.size > 200) {
+            val threshold = now - 15000L
+            failedTiles.entries.removeIf { it.value < threshold }
         }
 
         if (pendingRequests.add(key)) {
@@ -813,7 +831,7 @@ class AutoSurfaceRenderer(
                 try {
                     val urlString = tileUrlTemplate
                         .replace("{z}", z.toString())
-                        .replace("{x}", x.toString())
+                        .replace("{x}", wrappedX.toString())
                         .replace("{y}", y.toString())
                     val url = URL(urlString)
                     val connection = url.openConnection() as HttpURLConnection
@@ -824,15 +842,21 @@ class AutoSurfaceRenderer(
                     if (connection.responseCode == 200) {
                         val bitmap = BitmapFactory.decodeStream(connection.inputStream)
                         if (bitmap != null) {
-                            synchronized(tileCache) {
-                                tileCache.put(key, bitmap)
+                            synchronized(sharedTileCache) {
+                                sharedTileCache.put(key, bitmap)
                             }
+                            failedTiles.remove(key)
                             patchTileIntoBasemap(x, y, z, bitmap)
                             scheduleTileRedraw()
+                        } else {
+                            failedTiles[key] = System.currentTimeMillis()
                         }
+                    } else {
+                        failedTiles[key] = System.currentTimeMillis()
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to fetch tile $key", e)
+                    failedTiles[key] = System.currentTimeMillis()
                 } finally {
                     pendingRequests.remove(key)
                 }
