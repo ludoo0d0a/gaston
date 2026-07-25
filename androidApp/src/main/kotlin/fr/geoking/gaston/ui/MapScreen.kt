@@ -533,15 +533,7 @@ fun MapScreen(
                         properties = MapProperties(
                             isMyLocationEnabled = hasLocationPermission,
                             isTrafficEnabled = settings.mapTrafficEnabled,
-                            mapStyleOptions = run {
-                                val dark = when (settings.mapThemeMode) {
-                                    ThemeMode.Dark -> true
-                                    ThemeMode.Light -> false
-                                    ThemeMode.System -> androidx.compose.foundation.isSystemInDarkTheme()
-                                }
-                                if (dark) MapStyleOptions.loadRawResourceStyle(context, R.raw.google_map_style_dark)
-                                else null
-                            }
+                            mapStyleOptions = null // On phone, keep map in day theme
                         ),
                         uiSettings = MapUiSettings(myLocationButtonEnabled = hasLocationPermission),
                         contentPadding = PaddingValues(bottom = mapPaddingBottom)
