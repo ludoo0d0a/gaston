@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.MapTheme
 import fr.geoking.gaston.api.routing.RouteResult
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
@@ -106,7 +107,14 @@ fun DirectionsMapScreen(
         ) {
             MapLibreView(
                 modifier = Modifier.fillMaxSize(),
-                styleUrl = settings.mapTheme.styleUrl,
+                styleUrl = run {
+                    val isDarkMode = false // On phone, keep map in day theme
+                    if (settings.mapTheme.isDark == isDarkMode) {
+                        settings.mapTheme.styleUrl
+                    } else {
+                        MapTheme.Voyager.styleUrl
+                    }
+                },
                 cameraPosition = initialCameraPosition,
                 onMapReady = { map ->
                     mapLibreMap = map

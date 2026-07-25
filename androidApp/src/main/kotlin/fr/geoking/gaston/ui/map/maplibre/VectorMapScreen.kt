@@ -377,11 +377,7 @@ fun VectorMapScreen(
                     LibreMap(
                         modifier = Modifier.fillMaxSize(),
                         styleUrl = run {
-                            val isDarkMode = when (settings.mapThemeMode) {
-                                ThemeMode.Dark -> true
-                                ThemeMode.Light -> false
-                                ThemeMode.System -> isSystemInDarkTheme()
-                            }
+                            val isDarkMode = false // On phone, keep map in day theme
                             // If user selected theme matches current dark mode, use it.
                             // If they selected a dark theme but we are in light mode (or vice versa),
                             // fall back to defaults for that mode.
