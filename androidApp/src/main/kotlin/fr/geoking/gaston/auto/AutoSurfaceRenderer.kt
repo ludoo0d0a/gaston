@@ -62,6 +62,7 @@ class AutoSurfaceRenderer(
     private var headingDegrees: Float = 0f
     private var hasMissingTiles = false
     private var lastMissingTileCheckTime = 0L
+    private var lastPositionUpdateTime = 0L
 
     private val mapBearingDegrees: Float
         get() = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
@@ -195,7 +196,8 @@ class AutoSurfaceRenderer(
         lat = newLat
         lon = newLon
         zoom = newZoom
-        invalidate(force = true) // User interaction or explicit move should be immediate
+        lastPositionUpdateTime = System.currentTimeMillis()
+        invalidate() // Throttled to prevent too frequent redraws when position is moving
     }
 
     fun setMapOrientation(mode: MapOrientationMode, headingDegrees: Float = this.headingDegrees) {
@@ -230,6 +232,7 @@ class AutoSurfaceRenderer(
         userLat = newLat
         userLon = newLon
         userHeadingDegrees = normalizedHeading
+        lastPositionUpdateTime = System.currentTimeMillis()
         invalidate()
     }
 
@@ -311,22 +314,24 @@ class AutoSurfaceRenderer(
                 while (running) {
                     val now = System.currentTimeMillis()
                     val timeSinceLastDraw = now - lastDrawMillis
-                    val canDraw = forceRedraw || (needsRedraw && timeSinceLastDraw >= MIN_DRAW_INTERVAL_MS)
+                    val isMoving = now - lastPositionUpdateTime < 2000L
+                    val currentMinInterval = if (isMoving) 2000L else MIN_DRAW_INTERVAL_MS
+                    val canDraw = forceRedraw || (needsRedraw && timeSinceLastDraw >= currentMinInterval)
 
                     if (canDraw) break
 
                     try {
                         if (needsRedraw && !forceRedraw) {
-                            val waitTime = MIN_DRAW_INTERVAL_MS - timeSinceLastDraw
+                            val waitTime = currentMinInterval - timeSinceLastDraw
                             if (waitTime > 0) {
                                 (this as java.lang.Object).wait(waitTime)
                                 continue
                             }
                         }
-                        val nextCheckTime = lastMissingTileCheckTime + 3000L
-                        val remaining = nextCheckTime - now
+                        val nextCheckTime = lastMissingTileCheckTime + 2000L
+                        val remaining = nextCheckTime - System.currentTimeMillis()
                         if (hasMissingTiles && remaining > 0) {
-                            (this as java.lang.Object).wait(remaining.coerceAtMost(3000L))
+                            (this as java.lang.Object).wait(remaining.coerceAtMost(2000L))
                         } else {
                             (this as java.lang.Object).wait()
                         }
@@ -376,7 +381,7 @@ class AutoSurfaceRenderer(
 
             if (hasMissingTiles) {
                 val now = System.currentTimeMillis()
-                if (now - lastMissingTileCheckTime >= 3000L) {
+                if (now - lastMissingTileCheckTime >= 2000L) {
                     lastMissingTileCheckTime = now
                     val threshold = now - 15000L
                     failedTiles.entries.removeIf { it.value < threshold }
@@ -460,7 +465,7 @@ class AutoSurfaceRenderer(
             val originX = composedMapOriginX
             val originY = composedMapOriginY
             if (originX.isNaN() || originY.isNaN()) return
-            canvas.drawBitmap(basemap, originX.toFloat(), originY.toFloat(), null)
+            canvas.drawBitmap(basemap, -originX.toFloat(), -originY.toFloat(), null)
         }
     }
 
@@ -699,6 +704,7 @@ class AutoSurfaceRenderer(
 
                         val childZ1 = zoom + 1
                         val maxTilesC1 = 1 shl childZ1
+                        val subSize1 = TILE_SIZE / 2
                         var childDrawnCount = 0
                         for (dx in 0..1) {
                             for (dy in 0..1) {
@@ -709,10 +715,10 @@ class AutoSurfaceRenderer(
                                 val childBitmap = synchronized(sharedTileCache) { sharedTileCache.get(childKey) }
                                 if (childBitmap != null) {
                                     val dstRect = Rect(
-                                        (drawX + dx * 128).toInt(),
-                                        (drawY + dy * 128).toInt(),
-                                        (drawX + (dx + 1) * 128).toInt(),
-                                        (drawY + (dy + 1) * 128).toInt()
+                                        (drawX + dx * subSize1).toInt(),
+                                        (drawY + dy * subSize1).toInt(),
+                                        (drawX + (dx + 1) * subSize1).toInt(),
+                                        (drawY + (dy + 1) * subSize1).toInt()
                                     )
                                     canvas.drawBitmap(childBitmap, null, dstRect, null)
                                     childDrawnCount++
@@ -724,6 +730,7 @@ class AutoSurfaceRenderer(
                         if (childDrawnCount == 0) {
                             val childZ2 = zoom + 2
                             val maxTilesC2 = 1 shl childZ2
+                            val subSize2 = TILE_SIZE / 4
                             for (dx in 0..3) {
                                 for (dy in 0..3) {
                                     val childX = x * 4 + dx
@@ -733,10 +740,10 @@ class AutoSurfaceRenderer(
                                     val childBitmap = synchronized(sharedTileCache) { sharedTileCache.get(childKey) }
                                     if (childBitmap != null) {
                                         val dstRect = Rect(
-                                            (drawX + dx * 64).toInt(),
-                                            (drawY + dy * 64).toInt(),
-                                            (drawX + (dx + 1) * 64).toInt(),
-                                            (drawY + (dy + 1) * 64).toInt()
+                                            (drawX + dx * subSize2).toInt(),
+                                            (drawY + dy * subSize2).toInt(),
+                                            (drawX + (dx + 1) * subSize2).toInt(),
+                                            (drawY + (dy + 1) * subSize2).toInt()
                                         )
                                         canvas.drawBitmap(childBitmap, null, dstRect, null)
                                     }
