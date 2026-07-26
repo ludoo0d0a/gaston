@@ -60,6 +60,8 @@ class AutoSurfaceRenderer(
     private var visibleArea: Rect? = null
     private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
     private var headingDegrees: Float = 0f
+    private var hasMissingTiles = false
+    private var lastMissingTileCheckTime = 0L
 
     private val mapBearingDegrees: Float
         get() = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
@@ -321,7 +323,13 @@ class AutoSurfaceRenderer(
                                 continue
                             }
                         }
-                        (this as java.lang.Object).wait()
+                        val nextCheckTime = lastMissingTileCheckTime + 3000L
+                        val remaining = nextCheckTime - now
+                        if (hasMissingTiles && remaining > 0) {
+                            (this as java.lang.Object).wait(remaining.coerceAtMost(3000L))
+                        } else {
+                            (this as java.lang.Object).wait()
+                        }
                     } catch (e: InterruptedException) {
                         return
                     }
@@ -364,6 +372,19 @@ class AutoSurfaceRenderer(
             }
             if (queryPending) {
                 invalidate()
+            }
+
+            if (hasMissingTiles) {
+                val now = System.currentTimeMillis()
+                if (now - lastMissingTileCheckTime >= 3000L) {
+                    lastMissingTileCheckTime = now
+                    val threshold = now - 15000L
+                    failedTiles.entries.removeIf { it.value < threshold }
+                    synchronized(basemapLock) {
+                        basemapDirty = true
+                    }
+                    invalidate(force = true)
+                }
             }
         }
     }
@@ -439,7 +460,7 @@ class AutoSurfaceRenderer(
             val originX = composedMapOriginX
             val originY = composedMapOriginY
             if (originX.isNaN() || originY.isNaN()) return
-            canvas.drawBitmap(basemap, -originX.toFloat(), -originY.toFloat(), null)
+            canvas.drawBitmap(basemap, originX.toFloat(), originY.toFloat(), null)
         }
     }
 
@@ -451,6 +472,8 @@ class AutoSurfaceRenderer(
         val cy = centerPxY
         val centerTileX = lonToTileX(lon, zoom)
         val centerTileY = latToTileY(lat, zoom)
+
+        hasMissingTiles = false
 
         // Map-space origin of the basemap bitmap (surface 0,0 relative).
         val mapOriginX: Double
@@ -628,6 +651,7 @@ class AutoSurfaceRenderer(
                 if (bitmap != null) {
                     canvas.drawBitmap(bitmap, drawX, drawY, null)
                 } else {
+                    hasMissingTiles = true
                     var fallbackDrawn = false
                     // 1. Try lower zoom levels (parent tiles) first to fill the entire tile area
                     for (levelDiff in 1..4) {
