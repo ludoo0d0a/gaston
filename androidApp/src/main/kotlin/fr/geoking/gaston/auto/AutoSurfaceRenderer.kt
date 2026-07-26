@@ -60,6 +60,9 @@ class AutoSurfaceRenderer(
     private var visibleArea: Rect? = null
     private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
     private var headingDegrees: Float = 0f
+    private var hasMissingTiles = false
+    private var lastMissingTileCheckTime = 0L
+    private var lastPositionUpdateTime = 0L
 
     private val mapBearingDegrees: Float
         get() = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
@@ -193,7 +196,8 @@ class AutoSurfaceRenderer(
         lat = newLat
         lon = newLon
         zoom = newZoom
-        invalidate(force = true) // User interaction or explicit move should be immediate
+        lastPositionUpdateTime = System.currentTimeMillis()
+        invalidate() // Throttled to prevent too frequent redraws when position is moving
     }
 
     fun setMapOrientation(mode: MapOrientationMode, headingDegrees: Float = this.headingDegrees) {
@@ -228,6 +232,7 @@ class AutoSurfaceRenderer(
         userLat = newLat
         userLon = newLon
         userHeadingDegrees = normalizedHeading
+        lastPositionUpdateTime = System.currentTimeMillis()
         invalidate()
     }
 
@@ -309,19 +314,27 @@ class AutoSurfaceRenderer(
                 while (running) {
                     val now = System.currentTimeMillis()
                     val timeSinceLastDraw = now - lastDrawMillis
-                    val canDraw = forceRedraw || (needsRedraw && timeSinceLastDraw >= MIN_DRAW_INTERVAL_MS)
+                    val isMoving = now - lastPositionUpdateTime < 2000L
+                    val currentMinInterval = if (isMoving) 2000L else MIN_DRAW_INTERVAL_MS
+                    val canDraw = forceRedraw || (needsRedraw && timeSinceLastDraw >= currentMinInterval)
 
                     if (canDraw) break
 
                     try {
                         if (needsRedraw && !forceRedraw) {
-                            val waitTime = MIN_DRAW_INTERVAL_MS - timeSinceLastDraw
+                            val waitTime = currentMinInterval - timeSinceLastDraw
                             if (waitTime > 0) {
                                 (this as java.lang.Object).wait(waitTime)
                                 continue
                             }
                         }
-                        (this as java.lang.Object).wait()
+                        val nextCheckTime = lastMissingTileCheckTime + 2000L
+                        val remaining = nextCheckTime - System.currentTimeMillis()
+                        if (hasMissingTiles && remaining > 0) {
+                            (this as java.lang.Object).wait(remaining.coerceAtMost(2000L))
+                        } else {
+                            (this as java.lang.Object).wait()
+                        }
                     } catch (e: InterruptedException) {
                         return
                     }
@@ -364,6 +377,19 @@ class AutoSurfaceRenderer(
             }
             if (queryPending) {
                 invalidate()
+            }
+
+            if (hasMissingTiles) {
+                val now = System.currentTimeMillis()
+                if (now - lastMissingTileCheckTime >= 2000L) {
+                    lastMissingTileCheckTime = now
+                    val threshold = now - 15000L
+                    failedTiles.entries.removeIf { it.value < threshold }
+                    synchronized(basemapLock) {
+                        basemapDirty = true
+                    }
+                    invalidate(force = true)
+                }
             }
         }
     }
@@ -451,6 +477,8 @@ class AutoSurfaceRenderer(
         val cy = centerPxY
         val centerTileX = lonToTileX(lon, zoom)
         val centerTileY = latToTileY(lat, zoom)
+
+        hasMissingTiles = false
 
         // Map-space origin of the basemap bitmap (surface 0,0 relative).
         val mapOriginX: Double
@@ -628,13 +656,101 @@ class AutoSurfaceRenderer(
                 if (bitmap != null) {
                     canvas.drawBitmap(bitmap, drawX, drawY, null)
                 } else {
-                    canvas.drawRect(
-                        drawX,
-                        drawY,
-                        drawX + TILE_SIZE,
-                        drawY + TILE_SIZE,
-                        backgroundPaint
-                    )
+                    hasMissingTiles = true
+                    var fallbackDrawn = false
+                    // 1. Try lower zoom levels (parent tiles) first to fill the entire tile area
+                    for (levelDiff in 1..4) {
+                        val fallbackZ = zoom - levelDiff
+                        if (fallbackZ < 0) break
+                        val scale = 1 shl levelDiff
+                        val pX = if (x < 0 && x % scale != 0) x / scale - 1 else x / scale
+                        val pY = y shr levelDiff
+                        val maxTilesP = 1 shl fallbackZ
+                        val wrappedPX = (pX % maxTilesP + maxTilesP) % maxTilesP
+                        val parentKey = "$tileUrlTemplate/$fallbackZ/$wrappedPX/$pY"
+                        val parentBitmap = synchronized(sharedTileCache) { sharedTileCache.get(parentKey) }
+                        if (parentBitmap != null) {
+                            val subX = x - pX * scale
+                            val subY = y - pY * scale
+                            val subSize = TILE_SIZE.toDouble() / scale
+                            val srcRect = Rect(
+                                (subX * subSize).toInt(),
+                                (subY * subSize).toInt(),
+                                ((subX + 1) * subSize).toInt(),
+                                ((subY + 1) * subSize).toInt()
+                            )
+                            val dstRect = Rect(
+                                drawX.toInt(),
+                                drawY.toInt(),
+                                (drawX + TILE_SIZE).toInt(),
+                                (drawY + TILE_SIZE).toInt()
+                            )
+                            canvas.drawBitmap(parentBitmap, srcRect, dstRect, null)
+                            fallbackDrawn = true
+                            break
+                        }
+                    }
+
+                    // 2. If no parent tile was found, try higher zoom levels (child tiles)
+                    if (!fallbackDrawn) {
+                        // Fill with background paint first in case only some child tiles are available
+                        canvas.drawRect(
+                            drawX,
+                            drawY,
+                            drawX + TILE_SIZE,
+                            drawY + TILE_SIZE,
+                            backgroundPaint
+                        )
+
+                        val childZ1 = zoom + 1
+                        val maxTilesC1 = 1 shl childZ1
+                        val subSize1 = TILE_SIZE / 2
+                        var childDrawnCount = 0
+                        for (dx in 0..1) {
+                            for (dy in 0..1) {
+                                val childX = x * 2 + dx
+                                val childY = y * 2 + dy
+                                val wrappedChildX = (childX % maxTilesC1 + maxTilesC1) % maxTilesC1
+                                val childKey = "$tileUrlTemplate/$childZ1/$wrappedChildX/$childY"
+                                val childBitmap = synchronized(sharedTileCache) { sharedTileCache.get(childKey) }
+                                if (childBitmap != null) {
+                                    val dstRect = Rect(
+                                        (drawX + dx * subSize1).toInt(),
+                                        (drawY + dy * subSize1).toInt(),
+                                        (drawX + (dx + 1) * subSize1).toInt(),
+                                        (drawY + (dy + 1) * subSize1).toInt()
+                                    )
+                                    canvas.drawBitmap(childBitmap, null, dstRect, null)
+                                    childDrawnCount++
+                                }
+                            }
+                        }
+
+                        // 3. If still no child tiles at zoom + 1, check zoom + 2
+                        if (childDrawnCount == 0) {
+                            val childZ2 = zoom + 2
+                            val maxTilesC2 = 1 shl childZ2
+                            val subSize2 = TILE_SIZE / 4
+                            for (dx in 0..3) {
+                                for (dy in 0..3) {
+                                    val childX = x * 4 + dx
+                                    val childY = y * 4 + dy
+                                    val wrappedChildX = (childX % maxTilesC2 + maxTilesC2) % maxTilesC2
+                                    val childKey = "$tileUrlTemplate/$childZ2/$wrappedChildX/$childY"
+                                    val childBitmap = synchronized(sharedTileCache) { sharedTileCache.get(childKey) }
+                                    if (childBitmap != null) {
+                                        val dstRect = Rect(
+                                            (drawX + dx * subSize2).toInt(),
+                                            (drawY + dy * subSize2).toInt(),
+                                            (drawX + (dx + 1) * subSize2).toInt(),
+                                            (drawY + (dy + 1) * subSize2).toInt()
+                                        )
+                                        canvas.drawBitmap(childBitmap, null, dstRect, null)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
