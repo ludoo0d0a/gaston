@@ -462,7 +462,15 @@ class AutoSurfaceRenderer(
         if (mapBearingDegrees == 0f) {
             return width to height
         }
-        val side = ceil(hypot(width.toDouble(), height.toDouble())).toInt().coerceAtLeast(max(width, height))
+        val cx = centerPxX
+        val cy = centerPxY
+        val maxDistance = maxOf(
+            hypot(cx, cy),
+            hypot(width - cx, cy),
+            hypot(cx, height - cy),
+            hypot(width - cx, height - cy)
+        )
+        val side = ceil(2.0 * maxDistance).toInt().coerceAtLeast(max(width, height))
         return side to side
     }
 
@@ -977,7 +985,14 @@ class AutoSurfaceRenderer(
             val bw = bitmap.width.toFloat()
             val bh = bitmap.height.toFloat()
             val pad = markerWidthPx * 2f
-            if (drawX < -pad || drawX > width + pad || drawY < -pad || drawY > height + pad) {
+            val maxDistance = maxOf(
+                hypot(centerPxX, centerPxY),
+                hypot(width - centerPxX, centerPxY),
+                hypot(centerPxX, height - centerPxY),
+                hypot(width - centerPxX, height - centerPxY)
+            )
+            val dist = hypot(drawX - centerPxX, drawY - centerPxY)
+            if (dist > maxDistance + pad) {
                 return@forEach
             }
 
