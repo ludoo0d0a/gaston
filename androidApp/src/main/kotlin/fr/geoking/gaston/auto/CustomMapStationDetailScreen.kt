@@ -138,6 +138,7 @@ class CustomMapStationDetailScreen(
             updateLocation(poi.latitude, poi.longitude, zoom)
             setMapOrientation(orientationMode, bearing)
             setTileUrlTemplate(resolveAutoRasterTileUrl(settingsManager.settings.value))
+            setMapTileDebugEnabled(settingsManager.settings.value.mapTileDebugEnabled)
             updatePois(
                 newPois = listOf(poi),
                 effectiveEnergyTypes = effectiveEnergies,
