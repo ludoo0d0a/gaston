@@ -334,6 +334,7 @@ class CustomMapPoiScreen(
         val renderer = surfaceRenderer ?: return
         val settings = settingsManager.settings.value
         renderer.setTileUrlTemplate(resolveAutoRasterTileUrl(settings))
+        renderer.setMapTileDebugEnabled(settings.mapTileDebugEnabled)
         val filteredPois = getFilteredPois(settings)
         val poiIds = filteredPois.map { it.id }
 

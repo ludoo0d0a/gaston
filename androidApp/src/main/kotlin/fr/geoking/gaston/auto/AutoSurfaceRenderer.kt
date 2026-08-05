@@ -28,6 +28,13 @@ import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.tan
 
+data class TileError(
+    val url: String,
+    val statusCode: Int,
+    val errorMessage: String,
+    val timestamp: Long
+)
+
 /**
  * Map renderer for Android Auto surface using OpenStreetMap tiles.
  *
@@ -47,6 +54,8 @@ class AutoSurfaceRenderer(
 ) {
     @Volatile
     private var running = true
+    @Volatile
+    private var mapTileDebugEnabled = false
     private var needsRedraw = false
     private var forceRedraw = false
     private var tileRedrawPending = false
@@ -145,6 +154,13 @@ class AutoSurfaceRenderer(
     private val reusablePath = Path()
     private val drawThread = Thread(::runDrawLoop, "AutoSurfaceRenderer")
 
+    private val debugTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.DKGRAY
+        textSize = 18f
+        textAlign = Paint.Align.CENTER
+        isFakeBoldText = true
+    }
+
     companion object {
         private const val TAG = "AutoSurfaceRenderer"
         private val NAVIGATION_BLUE = Color.parseColor("#4285F4")
@@ -155,6 +171,38 @@ class AutoSurfaceRenderer(
         // Shared LRU cache for tiles across all instances of AutoSurfaceRenderer
         private val sharedTileCache = LruCache<String, Bitmap>(250)
         private val failedTiles = ConcurrentHashMap<String, Long>()
+
+        // Tile retry tracking and diagnostics for debugging
+        val tileRetries = ConcurrentHashMap<String, Int>()
+        private val recentTileErrors = Collections.synchronizedList(mutableListOf<TileError>())
+
+        fun getRecentTileErrors(): List<TileError> = synchronized(recentTileErrors) {
+            recentTileErrors.toList()
+        }
+
+        fun clearRecentTileErrors() {
+            synchronized(recentTileErrors) {
+                recentTileErrors.clear()
+            }
+        }
+
+        fun logTileError(url: String, statusCode: Int, errorMessage: String) {
+            val error = TileError(url, statusCode, errorMessage, System.currentTimeMillis())
+            synchronized(recentTileErrors) {
+                recentTileErrors.add(0, error)
+                if (recentTileErrors.size > 20) {
+                    recentTileErrors.removeAt(recentTileErrors.size - 1)
+                }
+            }
+        }
+
+        fun clearTileCache() {
+            synchronized(sharedTileCache) {
+                sharedTileCache.evictAll()
+            }
+            failedTiles.clear()
+            tileRetries.clear()
+        }
     }
 
     fun start() {
@@ -218,11 +266,15 @@ class AutoSurfaceRenderer(
     fun setTileUrlTemplate(template: String) {
         if (tileUrlTemplate == template) return
         tileUrlTemplate = template
-        synchronized(sharedTileCache) {
-            sharedTileCache.evictAll()
-        }
+        clearTileCache()
         recycleBasemap()
         basemapDirty = true
+        invalidate()
+    }
+
+    fun setMapTileDebugEnabled(enabled: Boolean) {
+        if (mapTileDebugEnabled == enabled) return
+        mapTileDebugEnabled = enabled
         invalidate()
     }
 
@@ -620,6 +672,47 @@ class AutoSurfaceRenderer(
      * [mapCenterPxX]/[mapCenterPxY] are surface map-space coords of the camera center;
      * [mapOriginX]/[mapOriginY] are the surface coords of bitmap (0,0).
      */
+    private fun drawTileDebugGrid(
+        canvas: Canvas,
+        drawX: Float,
+        drawY: Float,
+        x: Int,
+        y: Int,
+        z: Int,
+        key: String,
+        isLoaded: Boolean
+    ) {
+        val isPending = pendingRequests.contains(key)
+        val isFailed = failedTiles.containsKey(key)
+
+        val borderPaint = Paint().apply {
+            color = when {
+                isLoaded -> Color.GREEN
+                isPending -> Color.YELLOW
+                isFailed -> Color.RED
+                else -> Color.GRAY
+            }
+            style = Paint.Style.STROKE
+            strokeWidth = 3f
+        }
+        canvas.drawRect(drawX, drawY, drawX + TILE_SIZE, drawY + TILE_SIZE, borderPaint)
+
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.MAGENTA
+            textSize = 14f
+            textAlign = Paint.Align.LEFT
+            isFakeBoldText = true
+        }
+        val statusText = when {
+            isLoaded -> "OK"
+            isPending -> "Loading..."
+            isFailed -> "Failed"
+            else -> "Not Requested"
+        }
+        canvas.drawText("Z:$z X:$x Y:$y", drawX + 10f, drawY + 25f, textPaint)
+        canvas.drawText("Status: $statusText", drawX + 10f, drawY + 45f, textPaint)
+    }
+
     private fun drawTilesInto(
         canvas: Canvas,
         centerTileX: Double,
@@ -653,102 +746,132 @@ class AutoSurfaceRenderer(
                 val bitmap = getTile(x, y, zoom)
                 val drawX = ((x - centerTileX) * TILE_SIZE + bitmapCenterX).toFloat()
                 val drawY = ((y - centerTileY) * TILE_SIZE + bitmapCenterY).toFloat()
+
+                val maxTiles = 1 shl zoom
+                val wrappedX = (x % maxTiles + maxTiles) % maxTiles
+                val isValidY = y in 0 until maxTiles
+                val key = "$tileUrlTemplate/$zoom/$wrappedX/$y"
+
                 if (bitmap != null) {
                     canvas.drawBitmap(bitmap, drawX, drawY, null)
+
+                    if (mapTileDebugEnabled) {
+                        drawTileDebugGrid(canvas, drawX, drawY, x, y, zoom, key, isLoaded = true)
+                    }
                 } else {
                     hasMissingTiles = true
-                    var fallbackDrawn = false
-                    // 1. Try lower zoom levels (parent tiles) first to fill the entire tile area
-                    for (levelDiff in 1..4) {
-                        val fallbackZ = zoom - levelDiff
-                        if (fallbackZ < 0) break
-                        val scale = 1 shl levelDiff
-                        val pX = if (x < 0 && x % scale != 0) x / scale - 1 else x / scale
-                        val pY = y shr levelDiff
-                        val maxTilesP = 1 shl fallbackZ
-                        val wrappedPX = (pX % maxTilesP + maxTilesP) % maxTilesP
-                        val parentKey = "$tileUrlTemplate/$fallbackZ/$wrappedPX/$pY"
-                        val parentBitmap = synchronized(sharedTileCache) { sharedTileCache.get(parentKey) }
-                        if (parentBitmap != null) {
-                            val subX = x - pX * scale
-                            val subY = y - pY * scale
-                            val subSize = TILE_SIZE.toDouble() / scale
-                            val srcRect = Rect(
-                                (subX * subSize).toInt(),
-                                (subY * subSize).toInt(),
-                                ((subX + 1) * subSize).toInt(),
-                                ((subY + 1) * subSize).toInt()
-                            )
-                            val dstRect = Rect(
-                                drawX.toInt(),
-                                drawY.toInt(),
-                                (drawX + TILE_SIZE).toInt(),
-                                (drawY + TILE_SIZE).toInt()
-                            )
-                            canvas.drawBitmap(parentBitmap, srcRect, dstRect, null)
-                            fallbackDrawn = true
-                            break
-                        }
-                    }
+                    val retries = if (isValidY) tileRetries[key] ?: 0 else 0
 
-                    // 2. If no parent tile was found, try higher zoom levels (child tiles)
-                    if (!fallbackDrawn) {
-                        // Fill with background paint first in case only some child tiles are available
-                        canvas.drawRect(
-                            drawX,
-                            drawY,
-                            drawX + TILE_SIZE,
-                            drawY + TILE_SIZE,
-                            backgroundPaint
+                    if (retries > 0) {
+                        canvas.drawRect(drawX, drawY, drawX + TILE_SIZE, drawY + TILE_SIZE, backgroundPaint)
+                        canvas.drawText(
+                            "loading $retries",
+                            drawX + TILE_SIZE / 2f,
+                            drawY + TILE_SIZE / 2f + debugTextPaint.textSize / 2f,
+                            debugTextPaint
                         )
 
-                        val childZ1 = zoom + 1
-                        val maxTilesC1 = 1 shl childZ1
-                        val subSize1 = TILE_SIZE / 2
-                        var childDrawnCount = 0
-                        for (dx in 0..1) {
-                            for (dy in 0..1) {
-                                val childX = x * 2 + dx
-                                val childY = y * 2 + dy
-                                val wrappedChildX = (childX % maxTilesC1 + maxTilesC1) % maxTilesC1
-                                val childKey = "$tileUrlTemplate/$childZ1/$wrappedChildX/$childY"
-                                val childBitmap = synchronized(sharedTileCache) { sharedTileCache.get(childKey) }
-                                if (childBitmap != null) {
-                                    val dstRect = Rect(
-                                        (drawX + dx * subSize1).toInt(),
-                                        (drawY + dy * subSize1).toInt(),
-                                        (drawX + (dx + 1) * subSize1).toInt(),
-                                        (drawY + (dy + 1) * subSize1).toInt()
-                                    )
-                                    canvas.drawBitmap(childBitmap, null, dstRect, null)
-                                    childDrawnCount++
-                                }
+                        if (mapTileDebugEnabled) {
+                            drawTileDebugGrid(canvas, drawX, drawY, x, y, zoom, key, isLoaded = false)
+                        }
+                    } else {
+                        var fallbackDrawn = false
+                        // 1. Try lower zoom levels (parent tiles) first to fill the entire tile area
+                        for (levelDiff in 1..4) {
+                            val fallbackZ = zoom - levelDiff
+                            if (fallbackZ < 0) break
+                            val scale = 1 shl levelDiff
+                            val pX = if (x < 0 && x % scale != 0) x / scale - 1 else x / scale
+                            val pY = y shr levelDiff
+                            val maxTilesP = 1 shl fallbackZ
+                            val wrappedPX = (pX % maxTilesP + maxTilesP) % maxTilesP
+                            val parentKey = "$tileUrlTemplate/$fallbackZ/$wrappedPX/$pY"
+                            val parentBitmap = synchronized(sharedTileCache) { sharedTileCache.get(parentKey) }
+                            if (parentBitmap != null) {
+                                val subX = x - pX * scale
+                                val subY = y - pY * scale
+                                val subSize = TILE_SIZE.toDouble() / scale
+                                val srcRect = Rect(
+                                    (subX * subSize).toInt(),
+                                    (subY * subSize).toInt(),
+                                    ((subX + 1) * subSize).toInt(),
+                                    ((subY + 1) * subSize).toInt()
+                                )
+                                val dstRect = Rect(
+                                    drawX.toInt(),
+                                    drawY.toInt(),
+                                    (drawX + TILE_SIZE).toInt(),
+                                    (drawY + TILE_SIZE).toInt()
+                                )
+                                canvas.drawBitmap(parentBitmap, srcRect, dstRect, null)
+                                fallbackDrawn = true
+                                break
                             }
                         }
 
-                        // 3. If still no child tiles at zoom + 1, check zoom + 2
-                        if (childDrawnCount == 0) {
-                            val childZ2 = zoom + 2
-                            val maxTilesC2 = 1 shl childZ2
-                            val subSize2 = TILE_SIZE / 4
-                            for (dx in 0..3) {
-                                for (dy in 0..3) {
-                                    val childX = x * 4 + dx
-                                    val childY = y * 4 + dy
-                                    val wrappedChildX = (childX % maxTilesC2 + maxTilesC2) % maxTilesC2
-                                    val childKey = "$tileUrlTemplate/$childZ2/$wrappedChildX/$childY"
+                        // 2. If no parent tile was found, try higher zoom levels (child tiles)
+                        if (!fallbackDrawn) {
+                            // Fill with background paint first in case only some child tiles are available
+                            canvas.drawRect(
+                                drawX,
+                                drawY,
+                                drawX + TILE_SIZE,
+                                drawY + TILE_SIZE,
+                                backgroundPaint
+                            )
+
+                            val childZ1 = zoom + 1
+                            val maxTilesC1 = 1 shl childZ1
+                            val subSize1 = TILE_SIZE / 2
+                            var childDrawnCount = 0
+                            for (dx in 0..1) {
+                                for (dy in 0..1) {
+                                    val childX = x * 2 + dx
+                                    val childY = y * 2 + dy
+                                    val wrappedChildX = (childX % maxTilesC1 + maxTilesC1) % maxTilesC1
+                                    val childKey = "$tileUrlTemplate/$childZ1/$wrappedChildX/$childY"
                                     val childBitmap = synchronized(sharedTileCache) { sharedTileCache.get(childKey) }
                                     if (childBitmap != null) {
                                         val dstRect = Rect(
-                                            (drawX + dx * subSize2).toInt(),
-                                            (drawY + dy * subSize2).toInt(),
-                                            (drawX + (dx + 1) * subSize2).toInt(),
-                                            (drawY + (dy + 1) * subSize2).toInt()
+                                            (drawX + dx * subSize1).toInt(),
+                                            (drawY + dy * subSize1).toInt(),
+                                            (drawX + (dx + 1) * subSize1).toInt(),
+                                            (drawY + (dy + 1) * subSize1).toInt()
                                         )
                                         canvas.drawBitmap(childBitmap, null, dstRect, null)
+                                        childDrawnCount++
                                     }
                                 }
                             }
+
+                            // 3. If still no child tiles at zoom + 1, check zoom + 2
+                            if (childDrawnCount == 0) {
+                                val childZ2 = zoom + 2
+                                val maxTilesC2 = 1 shl childZ2
+                                val subSize2 = TILE_SIZE / 4
+                                for (dx in 0..3) {
+                                    for (dy in 0..3) {
+                                        val childX = x * 4 + dx
+                                        val childY = y * 4 + dy
+                                        val wrappedChildX = (childX % maxTilesC2 + maxTilesC2) % maxTilesC2
+                                        val childKey = "$tileUrlTemplate/$childZ2/$wrappedChildX/$childY"
+                                        val childBitmap = synchronized(sharedTileCache) { sharedTileCache.get(childKey) }
+                                        if (childBitmap != null) {
+                                            val dstRect = Rect(
+                                                (drawX + dx * subSize2).toInt(),
+                                                (drawY + dy * subSize2).toInt(),
+                                                (drawX + (dx + 1) * subSize2).toInt(),
+                                                (drawY + (dy + 1) * subSize2).toInt()
+                                            )
+                                            canvas.drawBitmap(childBitmap, null, dstRect, null)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (mapTileDebugEnabled) {
+                            drawTileDebugGrid(canvas, drawX, drawY, x, y, zoom, key, isLoaded = false)
                         }
                     }
                 }
@@ -944,11 +1067,11 @@ class AutoSurfaceRenderer(
 
         if (pendingRequests.add(key)) {
             executor.submit {
+                val urlString = tileUrlTemplate
+                    .replace("{z}", z.toString())
+                    .replace("{x}", wrappedX.toString())
+                    .replace("{y}", y.toString())
                 try {
-                    val urlString = tileUrlTemplate
-                        .replace("{z}", z.toString())
-                        .replace("{x}", wrappedX.toString())
-                        .replace("{y}", y.toString())
                     val url = URL(urlString)
                     val connection = url.openConnection() as HttpURLConnection
                     connection.setRequestProperty("User-Agent", "gaston-Android-Auto/1.0")
@@ -962,17 +1085,30 @@ class AutoSurfaceRenderer(
                                 sharedTileCache.put(key, bitmap)
                             }
                             failedTiles.remove(key)
+                            tileRetries.remove(key)
                             patchTileIntoBasemap(x, y, z, bitmap)
                             scheduleTileRedraw()
                         } else {
                             failedTiles[key] = System.currentTimeMillis()
+                            val count = (tileRetries[key] ?: 0) + 1
+                            tileRetries[key] = count
+                            logTileError(urlString, 200, "Failed to decode Bitmap stream")
+                            scheduleTileRedraw()
                         }
                     } else {
                         failedTiles[key] = System.currentTimeMillis()
+                        val count = (tileRetries[key] ?: 0) + 1
+                        tileRetries[key] = count
+                        logTileError(urlString, connection.responseCode, connection.responseMessage ?: "HTTP Error")
+                        scheduleTileRedraw()
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to fetch tile $key", e)
                     failedTiles[key] = System.currentTimeMillis()
+                    val count = (tileRetries[key] ?: 0) + 1
+                    tileRetries[key] = count
+                    logTileError(urlString, -1, e.message ?: "Unknown Connection Exception")
+                    scheduleTileRedraw()
                 } finally {
                     pendingRequests.remove(key)
                 }

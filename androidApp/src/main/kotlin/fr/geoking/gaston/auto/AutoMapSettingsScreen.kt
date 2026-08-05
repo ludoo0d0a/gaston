@@ -120,10 +120,81 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle("Map Debugging")
+                .addText("Show tile borders, coordinates, and diagnostics")
+                .setToggle(
+                    Toggle.Builder { checked ->
+                        settingsManager.setMapTileDebugEnabled(checked)
+                        invalidate()
+                    }.setChecked(settings.mapTileDebugEnabled).build()
+                )
+                .build()
+        )
+
+        if (settings.mapTileDebugEnabled) {
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle("Tile Diagnostics")
+                    .addText("View recent tile loading errors and network codes")
+                    .setOnClickListener {
+                        screenManager.push(AutoTileDiagnosticsScreen(carContext))
+                    }
+                    .build()
+            )
+
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle("Clear Tile Cache")
+                    .addText("Force a fresh redownload of all map tiles")
+                    .setOnClickListener {
+                        AutoSurfaceRenderer.clearTileCache()
+                        try {
+                            carContext.getCarService(androidx.car.app.AppManager::class.java)
+                                .showToast("Tile cache cleared", androidx.car.app.CarToast.LENGTH_SHORT)
+                        } catch (_: Exception) {}
+                        invalidate()
+                    }
+                    .build()
+            )
+        }
 
         return ListTemplate.Builder()
             .setSingleList(listBuilder.build())
             .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_map_settings)).setStartHeaderAction(Action.BACK).build())
+            .build()
+    }
+}
+
+class AutoTileDiagnosticsScreen(carContext: CarContext) : Screen(carContext) {
+    override fun onGetTemplate(): Template {
+        val errors = AutoSurfaceRenderer.getRecentTileErrors()
+        val contentText = if (errors.isEmpty()) {
+            "No tile download errors recorded."
+        } else {
+            errors.joinToString("\n\n") { err ->
+                val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(err.timestamp))
+                "[$time] HTTP ${err.statusCode}\nURL: ${err.url}\nError: ${err.errorMessage}"
+            }
+        }
+
+        return MessageTemplate.Builder(contentText)
+            .setHeader(
+                Header.Builder()
+                    .setTitle("Tile Diagnostics")
+                    .setStartHeaderAction(Action.BACK)
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
+                    .setTitle("Clear Logs")
+                    .setOnClickListener {
+                        AutoSurfaceRenderer.clearRecentTileErrors()
+                        invalidate()
+                    }
+                    .build()
+            )
             .build()
     }
 }
