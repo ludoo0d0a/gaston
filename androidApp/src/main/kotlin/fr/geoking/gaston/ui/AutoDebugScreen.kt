@@ -32,6 +32,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.auto.AutoSurfaceRenderer
 import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.poi.FuelPrice
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
@@ -61,18 +62,35 @@ fun AutoDebugScreen(
     var bearing by remember { mutableStateOf(0f) }
     var orientationMode by remember { mutableStateOf(MapOrientationMode.NorthUp) }
     var visibleAreaEnabled by remember { mutableStateOf(false) }
+    var mapTileDebugEnabled by remember { mutableStateOf(true) }
+
+    // Current user location state (for blue location arrow/dot)
+    var userLat by remember { mutableStateOf<Double?>(null) }
+    var userLon by remember { mutableStateOf<Double?>(null) }
 
     // Selected Mock POI
     var selectedPoiId by remember { mutableStateOf<String?>(null) }
 
-    // Mock POIs around Paris
-    val mockPois = remember {
+    // Retrieve initial/current location
+    LaunchedEffect(Unit) {
+        val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+        userLat = lat
+        userLon = lon
+        // Set map camera initial center to the user's location
+        mapLat = lat
+        mapLon = lon
+    }
+
+    // Mock POIs dynamically generated around current location or Paris
+    val mockPois = remember(userLat, userLon) {
+        val baseLat = userLat ?: 48.8566
+        val baseLon = userLon ?: 2.3522
         listOf(
             Poi(
                 id = "mock_station_1",
                 name = "TotalEnergies Paris Center",
-                latitude = 48.8584,
-                longitude = 2.3550,
+                latitude = baseLat + 0.0018,
+                longitude = baseLon + 0.0028,
                 address = "12 Rue de Rivoli, Paris",
                 isElectric = false,
                 poiCategory = PoiCategory.Gas,
@@ -85,8 +103,8 @@ fun AutoDebugScreen(
             Poi(
                 id = "mock_station_2",
                 name = "Chargy Paris Nord",
-                latitude = 48.8650,
-                longitude = 2.3522,
+                latitude = baseLat + 0.0084,
+                longitude = baseLon,
                 address = "85 Boulevard de Sébastopol, Paris",
                 isElectric = true,
                 poiCategory = PoiCategory.Irve,
@@ -95,8 +113,8 @@ fun AutoDebugScreen(
             Poi(
                 id = "mock_station_3",
                 name = "Tesla Supercharger Châtelet",
-                latitude = 48.8590,
-                longitude = 2.3410,
+                latitude = baseLat + 0.0024,
+                longitude = baseLon - 0.0112,
                 address = "Place du Châtelet, Paris",
                 isElectric = true,
                 poiCategory = PoiCategory.Irve,
@@ -124,14 +142,20 @@ fun AutoDebugScreen(
     }
 
     // Push states to renderer when updated
-    LaunchedEffect(mapLat, mapLon, zoom, bearing, orientationMode, visibleAreaRect, selectedPoiId) {
+    LaunchedEffect(mapLat, mapLon, zoom, bearing, orientationMode, visibleAreaRect, selectedPoiId, userLat, userLon, mapTileDebugEnabled) {
         val renderer = surfaceRendererRef ?: return@LaunchedEffect
         renderer.updateLocation(mapLat, mapLon, zoom)
         renderer.setMapOrientation(orientationMode, bearing)
+        renderer.setMapTileDebugEnabled(mapTileDebugEnabled)
         if (visibleAreaRect != null) {
             renderer.updateVisibleArea(visibleAreaRect)
         } else {
             renderer.updateVisibleArea(Rect(0, 0, surfaceWidth, surfaceHeight))
+        }
+        val uLat = userLat
+        val uLon = userLon
+        if (uLat != null && uLon != null) {
+            renderer.updateUserLocation(uLat, uLon)
         }
         renderer.updatePois(
             newPois = mockPois,
@@ -181,6 +205,8 @@ fun AutoDebugScreen(
                             onSelectPoi = { selectedPoiId = it },
                             visibleAreaEnabled = visibleAreaEnabled,
                             onToggleVisibleArea = { visibleAreaEnabled = it },
+                            mapTileDebugEnabled = mapTileDebugEnabled,
+                            onToggleMapTileDebug = { mapTileDebugEnabled = it },
                             orientationMode = orientationMode,
                             onToggleOrientationMode = {
                                 orientationMode = if (orientationMode == MapOrientationMode.NorthUp) {
@@ -203,8 +229,17 @@ fun AutoDebugScreen(
                             bearing = bearing,
                             mapLat = mapLat,
                             mapLon = mapLon,
+                            userLat = userLat,
+                            userLon = userLon,
                             onZoomChange = { zoom = it },
-                            onBearingChange = { bearing = it },
+                            onBearingChange = {
+                                bearing = it
+                                orientationMode = if (it == 0f) {
+                                    MapOrientationMode.NorthUp
+                                } else {
+                                    MapOrientationMode.HeadingUp
+                                }
+                            },
                             onMapPan = { dLat, dLon ->
                                 mapLat += dLat
                                 mapLon += dLon
@@ -234,8 +269,17 @@ fun AutoDebugScreen(
                             bearing = bearing,
                             mapLat = mapLat,
                             mapLon = mapLon,
+                            userLat = userLat,
+                            userLon = userLon,
                             onZoomChange = { zoom = it },
-                            onBearingChange = { bearing = it },
+                            onBearingChange = {
+                                bearing = it
+                                orientationMode = if (it == 0f) {
+                                    MapOrientationMode.NorthUp
+                                } else {
+                                    MapOrientationMode.HeadingUp
+                                }
+                            },
                             onMapPan = { dLat, dLon ->
                                 mapLat += dLat
                                 mapLon += dLon
@@ -266,6 +310,8 @@ fun AutoDebugScreen(
                             onSelectPoi = { selectedPoiId = it },
                             visibleAreaEnabled = visibleAreaEnabled,
                             onToggleVisibleArea = { visibleAreaEnabled = it },
+                            mapTileDebugEnabled = mapTileDebugEnabled,
+                            onToggleMapTileDebug = { mapTileDebugEnabled = it },
                             orientationMode = orientationMode,
                             onToggleOrientationMode = {
                                 orientationMode = if (orientationMode == MapOrientationMode.NorthUp) {
@@ -289,6 +335,8 @@ fun FloatingMenuContent(
     onSelectPoi: (String?) -> Unit,
     visibleAreaEnabled: Boolean,
     onToggleVisibleArea: (Boolean) -> Unit,
+    mapTileDebugEnabled: Boolean,
+    onToggleMapTileDebug: (Boolean) -> Unit,
     orientationMode: MapOrientationMode,
     onToggleOrientationMode: () -> Unit
 ) {
@@ -314,6 +362,19 @@ fun FloatingMenuContent(
                 checked = visibleAreaEnabled,
                 onCheckedChange = onToggleVisibleArea,
                 modifier = Modifier.testTag("toggle_visible_area_switch")
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Map Tile Debug Grid")
+            Switch(
+                checked = mapTileDebugEnabled,
+                onCheckedChange = onToggleMapTileDebug,
+                modifier = Modifier.testTag("toggle_map_tile_debug_switch")
             )
         }
 
@@ -428,6 +489,8 @@ fun MapSurfaceAndControls(
     bearing: Float,
     mapLat: Double,
     mapLon: Double,
+    userLat: Double?,
+    userLon: Double?,
     onZoomChange: (Int) -> Unit,
     onBearingChange: (Float) -> Unit,
     onMapPan: (Double, Double) -> Unit,
@@ -591,7 +654,13 @@ fun MapSurfaceAndControls(
             // Locate Me
             FloatingActionButton(
                 onClick = {
-                    onMapPan(48.8566 - mapLat, 2.3522 - mapLon)
+                    val uLat = userLat
+                    val uLon = userLon
+                    if (uLat != null && uLon != null) {
+                        onMapPan(uLat - mapLat, uLon - mapLon)
+                    } else {
+                        onMapPan(48.8566 - mapLat, 2.3522 - mapLon)
+                    }
                 },
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 modifier = Modifier.size(48.dp).testTag("action_strip_locate_btn")

@@ -525,7 +525,7 @@ class AutoSurfaceRenderer(
             val originX = composedMapOriginX
             val originY = composedMapOriginY
             if (originX.isNaN() || originY.isNaN()) return
-            canvas.drawBitmap(basemap, -originX.toFloat(), -originY.toFloat(), null)
+            canvas.drawBitmap(basemap, originX.toFloat(), originY.toFloat(), null)
         }
     }
 
