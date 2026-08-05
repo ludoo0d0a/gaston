@@ -39,6 +39,7 @@ import fr.geoking.gaston.ui.map.MapFactory
 import fr.geoking.gaston.ui.EmergencyScreen
 import fr.geoking.gaston.ui.PhoneNetworkLocationScreen
 import fr.geoking.gaston.ui.PhoneDashboardScreen
+import fr.geoking.gaston.ui.AutoDebugScreen
 import fr.geoking.gaston.ui.dashboard.GastonTheme
 import fr.geoking.gaston.ui.FavoritesScreen
 import fr.geoking.gaston.ui.RoutePlanningScreen
@@ -360,6 +361,7 @@ fun MainUI(
     /** Both flavors: dashboard home; map opens from there or from deep link. */
     var showMap by remember { mutableStateOf(false) }
     var showNetworkDiagnostics by remember { mutableStateOf(false) }
+    var showAutoDebug by remember { mutableStateOf(false) }
     var showEmergency by remember { mutableStateOf(false) }
     var showPlaystoreSettings by remember { mutableStateOf(false) }
     var playstoreSettingsInitialStack by remember { mutableStateOf<List<SettingsScreenPage>?>(null) }
@@ -450,6 +452,13 @@ fun MainUI(
                     PhoneNetworkLocationScreen(
                         networkService = networkService,
                         onBack = { showNetworkDiagnostics = false }
+                    )
+                }
+                showAutoDebug -> {
+                    BackHandler { showAutoDebug = false }
+                    AutoDebugScreen(
+                        settingsManager = settingsManager,
+                        onBack = { showAutoDebug = false }
                     )
                 }
                 showEmergency -> {
@@ -608,6 +617,7 @@ fun MainUI(
                             showFavorites = true
                         },
                         onOpenNetworkDiagnostics = { showNetworkDiagnostics = true },
+                        onOpenAutoDebug = { showAutoDebug = true },
                         onOpenFuelForecast = { showFuelForecast = true },
                         onOpenEmergency = { showEmergency = true },
                         onOpenSettings = { stack ->
@@ -768,6 +778,7 @@ fun MainUI(
                                 showFavorites = true
                             },
                             onOpenNetworkDiagnostics = { showNetworkDiagnostics = true },
+                            onOpenAutoDebug = { showAutoDebug = true },
                             onOpenFuelForecast = { showFuelForecast = true },
                             onOpenEmergency = { showEmergency = true },
                             onOpenSettings = { stack ->
