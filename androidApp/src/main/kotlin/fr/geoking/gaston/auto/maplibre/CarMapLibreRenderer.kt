@@ -17,24 +17,16 @@ import fr.geoking.gaston.auto.AutoMapHeading
 import fr.geoking.gaston.auto.AutoMapQueryLoader
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
-import fr.geoking.gaston.ui.map.MarkerStyle
-import fr.geoking.gaston.ui.map.PoiMarkerHelper
+import fr.geoking.gaston.ui.map.maplibre.MapLibreSharedHelper
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.style.layers.LineLayer
-import org.maplibre.android.style.layers.PropertyFactory
-import org.maplibre.android.style.layers.SymbolLayer
-import org.maplibre.android.style.sources.GeoJsonSource
-import org.maplibre.geojson.Feature
-import org.maplibre.geojson.FeatureCollection
-import org.maplibre.geojson.LineString
-import org.maplibre.geojson.Point
 
 /**
  * Copies MapLibre [TextureView] frames onto the Android Auto [SurfaceContainer] surface.
+ * Leverages the shared [MapLibreSharedHelper] for POI and search radius layer drawing.
  */
 class CarMapLibreRenderer(
     private val carContext: CarContext,
@@ -175,8 +167,8 @@ class CarMapLibreRenderer(
 
     fun findPoisAt(screenX: Float, screenY: Float): List<Poi> {
         val map = mapContainer.mapLibreMapInstance ?: return emptyList()
-        val features = map.queryRenderedFeatures(PointF(screenX, screenY), POI_LAYER_ID)
-        val ids = features.mapNotNull { it.getStringProperty(POI_ID_PROPERTY) }.toSet()
+        val features = map.queryRenderedFeatures(PointF(screenX, screenY), MapLibreSharedHelper.POI_LAYER_ID)
+        val ids = features.mapNotNull { it.getStringProperty(MapLibreSharedHelper.POI_ID_PROPERTY) }.toSet()
         return lastPois.filter { it.id in ids }
     }
 
@@ -285,89 +277,29 @@ class CarMapLibreRenderer(
 
     private fun syncPoiLayer() {
         val map = mapContainer.mapLibreMapInstance ?: return
-        map.getStyle { style ->
-            if (style.getSource(POI_SOURCE_ID) == null) {
-                style.addSource(GeoJsonSource(POI_SOURCE_ID))
-            }
-            if (style.getLayer(POI_LAYER_ID) == null) {
-                style.addLayer(
-                    SymbolLayer(POI_LAYER_ID, POI_SOURCE_ID).withProperties(
-                        PropertyFactory.iconImage("{$POI_ID_PROPERTY}"),
-                        PropertyFactory.iconAllowOverlap(true),
-                        PropertyFactory.iconIgnorePlacement(true),
-                    ),
-                )
-            }
-            val features = lastPois.map { poi ->
-                val bitmap = PoiMarkerHelper.getMarkerBitmap(
-                    context = carContext,
-                    poi = poi,
-                    effectiveEnergyTypes = effectiveEnergyTypes,
-                    effectivePowerLevels = effectivePowerLevels,
-                    isSelected = poi.id == selectedPoiId,
-                    cheapestRank = null,
-                    sizePx = 96,
-                    availability = availabilityByPoiId[poi.id],
-                    markerStyle = MarkerStyle.Bubble,
-                )
-                if (style.getImage(poi.id) != null) style.removeImage(poi.id)
-                style.addImage(poi.id, bitmap)
-                Feature.fromGeometry(Point.fromLngLat(poi.longitude, poi.latitude)).apply {
-                    addStringProperty(POI_ID_PROPERTY, poi.id)
-                }
-            }
-            style.getSourceAs<GeoJsonSource>(POI_SOURCE_ID)
-                ?.setGeoJson(FeatureCollection.fromFeatures(features))
-        }
+        MapLibreSharedHelper.syncPoiLayer(
+            context = carContext,
+            map = map,
+            pois = lastPois,
+            selectedPoiId = selectedPoiId,
+            availabilityByPoiId = availabilityByPoiId,
+            effectiveEnergyTypes = effectiveEnergyTypes,
+            effectivePowerLevels = effectivePowerLevels,
+            sizeProvider = { _, _ -> 96 }
+        )
     }
 
     private fun syncSearchRadiusLayer() {
         val map = mapContainer.mapLibreMapInstance ?: return
-        map.getStyle { style ->
-            if (style.getSource(SEARCH_RADIUS_SOURCE_ID) == null) {
-                style.addSource(GeoJsonSource(SEARCH_RADIUS_SOURCE_ID))
-            }
-            if (style.getLayer(SEARCH_RADIUS_LAYER_ID) == null) {
-                val layer = LineLayer(SEARCH_RADIUS_LAYER_ID, SEARCH_RADIUS_SOURCE_ID).withProperties(
-                    PropertyFactory.lineColor("#FF0000"),
-                    PropertyFactory.lineWidth(2.5f),
-                    PropertyFactory.lineOpacity(0.9f),
-                )
-                if (style.getLayer(POI_LAYER_ID) != null) {
-                    style.addLayerBelow(layer, POI_LAYER_ID)
-                } else {
-                    style.addLayer(layer)
-                }
-            }
-            val radiusKm = searchRadiusKm
-            val cLat = searchRadiusCenterLat
-            val cLon = searchRadiusCenterLon
-            val source = style.getSourceAs<GeoJsonSource>(SEARCH_RADIUS_SOURCE_ID) ?: return@getStyle
-            if (radiusKm == null || radiusKm <= 0.0 || cLat == null || cLon == null) {
-                source.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
-                return@getStyle
-            }
-            val ring = AutoMapCamera.circleLatLngRing(cLat, cLon, radiusKm).map { (lat, lon) ->
-                Point.fromLngLat(lon, lat)
-            }
-            if (ring.size < 4) {
-                source.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
-                return@getStyle
-            }
-            source.setGeoJson(
-                FeatureCollection.fromFeature(
-                    Feature.fromGeometry(LineString.fromLngLats(ring)),
-                ),
-            )
-        }
+        MapLibreSharedHelper.syncSearchRadiusLayer(
+            map = map,
+            centerLat = searchRadiusCenterLat,
+            centerLon = searchRadiusCenterLon,
+            radiusKm = searchRadiusKm
+        )
     }
 
     companion object {
         private const val TAG = "CarMapLibreRenderer"
-        private const val POI_SOURCE_ID = "poi-source"
-        private const val POI_LAYER_ID = "poi-layer"
-        private const val POI_ID_PROPERTY = "poi-id"
-        private const val SEARCH_RADIUS_SOURCE_ID = "search-radius-source"
-        private const val SEARCH_RADIUS_LAYER_ID = "search-radius-layer"
     }
 }
