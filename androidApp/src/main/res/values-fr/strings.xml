@@ -75,6 +75,10 @@
     <string name="amenity_toilets">Toilettes</string>
     <string name="amenity_truck_stop">Aire de poids lourds</string>
     <string name="amenity_viewpoint">Point de vue</string>
+    <string name="amenity_post_box">Boîte aux lettres</string>
+    <string name="amenity_water">Lac / Étang</string>
+    <string name="amenity_cafe">Café</string>
+    <string name="amenity_supermarket">Supermarché</string>
     <string name="app_name">Gaston</string>
     <string name="notification_mark_read">Fermer</string>
     <string name="notification_border_crossing_title">Passage de frontière</string>

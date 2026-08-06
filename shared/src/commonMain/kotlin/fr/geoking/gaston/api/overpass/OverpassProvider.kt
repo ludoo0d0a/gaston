@@ -37,7 +37,11 @@ class OverpassProvider(
         PoiCategory.Radar,
         PoiCategory.Parking,
         PoiCategory.Viewpoint,
-        PoiCategory.BatterySwap
+        PoiCategory.BatterySwap,
+        PoiCategory.PostBox,
+        PoiCategory.WaterBody,
+        PoiCategory.Cafe,
+        PoiCategory.Supermarket
     )
 
     override suspend fun search(request: PoiSearchRequest): List<Poi> {
@@ -51,10 +55,14 @@ class OverpassProvider(
         val amenityValues = wanted.mapNotNull { categoryToOsmAmenity(it) }.toSet()
         val tourismValues = wanted.mapNotNull { categoryToOsmTourism(it) }.toSet()
         val highwayValues = wanted.mapNotNull { categoryToOsmHighway(it) }.toSet()
+        val naturalValues = wanted.mapNotNull { categoryToOsmNatural(it) }.toSet()
+        val shopValues = wanted.mapNotNull { categoryToOsmShop(it) }.flatten().toSet()
         val tagFilters = buildList {
             if (amenityValues.isNotEmpty()) add("amenity" to amenityValues)
             if (tourismValues.isNotEmpty()) add("tourism" to tourismValues)
             if (highwayValues.isNotEmpty()) add("highway" to highwayValues)
+            if (naturalValues.isNotEmpty()) add("natural" to naturalValues)
+            if (shopValues.isNotEmpty()) add("shop" to shopValues)
             if (PoiCategory.BatterySwap in wanted) {
                 // Special case for battery swap stations that might not be tagged with amenity
                 add("charging_station:battery_swapping" to setOf("yes"))
@@ -67,7 +75,8 @@ class OverpassProvider(
         val needsWays = PoiCategory.TruckStop in wanted || PoiCategory.RestArea in wanted ||
             PoiCategory.Restaurant in wanted || PoiCategory.FastFood in wanted ||
             PoiCategory.Parking in wanted || PoiCategory.Gas in wanted || PoiCategory.Irve in wanted ||
-            PoiCategory.BatterySwap in wanted
+            PoiCategory.BatterySwap in wanted || PoiCategory.WaterBody in wanted ||
+            PoiCategory.Supermarket in wanted || PoiCategory.Cafe in wanted
         val elements = if (needsWays) {
             client.queryNodesAndWaysWithTagFilters(
                 latitude = request.latitude,
@@ -212,6 +221,8 @@ class OverpassProvider(
         PoiCategory.Restaurant -> "restaurant"
         PoiCategory.FastFood -> "fast_food"
         PoiCategory.Parking -> "parking"
+        PoiCategory.PostBox -> "post_box"
+        PoiCategory.Cafe -> "cafe"
         else -> null
     }
 
@@ -226,6 +237,16 @@ class OverpassProvider(
     private fun categoryToOsmHighway(c: PoiCategory): String? = when (c) {
         PoiCategory.RestArea -> "rest_area"
         PoiCategory.Radar -> "speed_camera"
+        else -> null
+    }
+
+    private fun categoryToOsmNatural(c: PoiCategory): String? = when (c) {
+        PoiCategory.WaterBody -> "water"
+        else -> null
+    }
+
+    private fun categoryToOsmShop(c: PoiCategory): Set<String>? = when (c) {
+        PoiCategory.Supermarket -> setOf("supermarket", "convenience")
         else -> null
     }
 
@@ -245,5 +266,9 @@ class OverpassProvider(
         PoiCategory.Gas -> OverpassTranslator.translate("Gas station", lang) ?: "Gas station"
         PoiCategory.Irve -> OverpassTranslator.translate("Charging station", lang) ?: "Charging station"
         PoiCategory.BatterySwap -> OverpassTranslator.translate("Battery swap", lang) ?: "Battery swap"
+        PoiCategory.PostBox -> OverpassTranslator.translate("Post box", lang) ?: "Post box"
+        PoiCategory.WaterBody -> OverpassTranslator.translate("Water body", lang) ?: "Water body"
+        PoiCategory.Cafe -> OverpassTranslator.translate("Cafe", lang) ?: "Cafe"
+        PoiCategory.Supermarket -> OverpassTranslator.translate("Supermarket", lang) ?: "Supermarket"
     }
 }

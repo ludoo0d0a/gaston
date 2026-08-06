@@ -103,4 +103,33 @@ class OverpassTranslationTest {
         val translatedCuisine = OverpassTranslator.translate(apiCuisine, "fr")
         assertEquals("Pizza, Italien", translatedCuisine)
     }
+
+    @Test
+    fun testNewAmenitiesTranslationAndMapping() {
+        // Test Post Box
+        assertEquals("Boîte aux lettres", OverpassTranslator.translate("Post box", "fr"))
+        assertEquals("Boîte aux lettres", OverpassTranslator.translate("post_box", "fr"))
+        assertEquals("Post box", OverpassTranslator.translate("Post box", "en"))
+        assertEquals("Post box", OverpassTranslator.translate("post_box", "en"))
+
+        // Test Water Body
+        assertEquals("Lac / Étang", OverpassTranslator.translate("Water body", "fr"))
+        assertEquals("Lac / Étang", OverpassTranslator.translate("water", "fr"))
+        assertEquals("Water body", OverpassTranslator.translate("Water body", "en"))
+        assertEquals("Water body", OverpassTranslator.translate("water", "en"))
+
+        // Test Cafe
+        assertEquals("Café", OverpassTranslator.translate("Cafe", "fr"))
+        assertEquals("Café", OverpassTranslator.translate("cafe", "fr"))
+        assertEquals("Cafe", OverpassTranslator.translate("Cafe", "en"))
+        assertEquals("Cafe", OverpassTranslator.translate("cafe", "en"))
+
+        // Test Supermarket
+        assertEquals("Supermarché", OverpassTranslator.translate("Supermarket", "fr"))
+        assertEquals("Supermarché", OverpassTranslator.translate("supermarket", "fr"))
+        assertEquals("Supérette", OverpassTranslator.translate("convenience", "fr"))
+        assertEquals("Supermarket", OverpassTranslator.translate("Supermarket", "en"))
+        assertEquals("Supermarket", OverpassTranslator.translate("supermarket", "en"))
+        assertEquals("Convenience store", OverpassTranslator.translate("convenience", "en"))
+    }
 }

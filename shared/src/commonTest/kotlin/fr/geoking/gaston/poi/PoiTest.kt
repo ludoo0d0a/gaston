@@ -92,4 +92,20 @@ class PoiTest {
             "Should show gas station with matching fuel prices"
         )
     }
+
+    @Test
+    fun testNewOsmTagCategoriesParsing() {
+        // Test Post Box
+        assertEquals(PoiCategory.PostBox, PoiCategory.fromOsmTags(mapOf("amenity" to "post_box")))
+
+        // Test Water Body
+        assertEquals(PoiCategory.WaterBody, PoiCategory.fromOsmTags(mapOf("natural" to "water")))
+
+        // Test Cafe
+        assertEquals(PoiCategory.Cafe, PoiCategory.fromOsmTags(mapOf("amenity" to "cafe")))
+
+        // Test Supermarket
+        assertEquals(PoiCategory.Supermarket, PoiCategory.fromOsmTags(mapOf("shop" to "supermarket")))
+        assertEquals(PoiCategory.Supermarket, PoiCategory.fromOsmTags(mapOf("shop" to "convenience")))
+    }
 }

@@ -41,6 +41,10 @@ fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
     "speed_camera" -> PoiCategory.Radar
     "parking" -> PoiCategory.Parking
     "viewpoint" -> PoiCategory.Viewpoint
+    "post_box" -> PoiCategory.PostBox
+    "water" -> PoiCategory.WaterBody
+    "cafe" -> PoiCategory.Cafe
+    "supermarket" -> PoiCategory.Supermarket
     else -> null
 }
 

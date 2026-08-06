@@ -49,7 +49,15 @@ enum class PoiCategory {
     /** Points of interest with a view (OSM tourism=viewpoint). */
     Viewpoint,
     /** Battery swap station (OSM charging_station:battery_swapping=yes). */
-    BatterySwap;
+    BatterySwap,
+    /** Mailboxes (OSM amenity=post_box). */
+    PostBox,
+    /** Water body / lake / pond (OSM natural=water). */
+    WaterBody,
+    /** Cafe (OSM amenity=cafe). */
+    Cafe,
+    /** Supermarket / convenience store (OSM shop=supermarket / shop=convenience). */
+    Supermarket;
     companion object {
         /** OSM amenity tag value for this category, when applicable. */
         fun fromOsmAmenity(amenity: String): PoiCategory? = when (amenity) {
@@ -61,6 +69,8 @@ enum class PoiCategory {
             "restaurant" -> Restaurant
             "fast_food" -> FastFood
             "parking" -> Parking
+            "post_box" -> PostBox
+            "cafe" -> Cafe
             else -> null
         }
         /** OSM tourism tag value for this category. */
@@ -91,6 +101,8 @@ enum class PoiCategory {
             tags["amenity"]?.let { fromOsmAmenity(it) }?.let { return it }
             tags["tourism"]?.let { fromOsmTourism(it) }?.let { return it }
             tags["highway"]?.let { fromOsmHighway(it) }?.let { return it }
+            tags["natural"]?.let { if (it == "water") return WaterBody }
+            tags["shop"]?.let { if (it == "supermarket" || it == "convenience") return Supermarket }
             return null
         }
     }
