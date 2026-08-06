@@ -28,7 +28,7 @@ fun LibreMap(
     poisInView: List<Poi>,
     selectedPoiId: String?,
     availabilityByPoiId: Map<String, StationAvailabilitySummary>,
-    onPoiClick: (Poi) -> Unit,
+    onPoiClick: (Poi?) -> Unit,
     effectiveEnergyTypes: Set<String>,
     effectivePowerLevels: Set<Int>
 ) {
@@ -58,9 +58,17 @@ fun LibreMap(
                 PointF(screenPoint.x.toFloat(), screenPoint.y.toFloat()),
                 MapLibreSharedHelper.POI_LAYER_ID
             )
-            val poiId = features.firstOrNull()?.getStringProperty(MapLibreSharedHelper.POI_ID_PROPERTY) ?: return@MapLibreView
-            val poi = poisInView.firstOrNull { it.id == poiId } ?: return@MapLibreView
-            onPoiClick(poi)
+            val poiId = features.firstOrNull()?.getStringProperty(MapLibreSharedHelper.POI_ID_PROPERTY)
+            if (poiId != null) {
+                val poi = poisInView.firstOrNull { it.id == poiId }
+                if (poi != null) {
+                    onPoiClick(poi)
+                } else {
+                    onPoiClick(null)
+                }
+            } else {
+                onPoiClick(null)
+            }
         },
         update = { map ->
             map.setPadding(0, 0, 0, paddingBottomPx)
