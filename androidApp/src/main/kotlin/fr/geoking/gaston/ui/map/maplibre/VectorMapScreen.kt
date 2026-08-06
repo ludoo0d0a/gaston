@@ -40,6 +40,7 @@ import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.ThemeMode
+import fr.geoking.gaston.filterPoisByViewport
 import fr.geoking.gaston.MapTheme
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.geocoding.GeocodingClient
@@ -227,11 +228,21 @@ fun VectorMapScreen(
     )
 
     val poisInView = remember(mapData.cachedPois, currentTarget, cameraPosition?.zoom, mapSizePx, settings, effectiveProviders) {
-        StationMapFilters.apply(
+        val filteredByFilters = StationMapFilters.apply(
             settings = settings,
             pois = mapData.cachedPois,
             providers = effectiveProviders,
             skipWhenOnlyOverpass = true
+        )
+
+        val currentZoom = (cameraPosition?.zoom ?: defaultZoom).toFloat()
+        filterPoisByViewport(
+            pois = filteredByFilters,
+            lat = currentTarget.latitude,
+            lon = currentTarget.longitude,
+            zoom = currentZoom,
+            widthPx = mapSizePx.width,
+            heightPx = mapSizePx.height
         )
     }
 
