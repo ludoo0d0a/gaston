@@ -9,6 +9,7 @@ import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.poi.RestaurantDetails
+import fr.geoking.gaston.shared.platform.getSystemLanguage
 
 /**
  * [PoiProvider] that fetches amenities (toilets, water, camping, caravan, picnic, etc.) from OpenStreetMap
@@ -92,15 +93,31 @@ class OverpassProvider(
                 maxLng = request.viewport?.maxLng
             )
         }
+        val lang = getSystemLanguage()
+
         return elements.mapNotNull { el ->
             val category = PoiCategory.fromOsmTags(el.tags) ?: return@mapNotNull null
             if (category !in wanted) return@mapNotNull null
 
+            val apiCuisine = el.cuisine(lang)
+            val cuisine = if (el.tags["cuisine:$lang"] != null) {
+                apiCuisine
+            } else {
+                OverpassTranslator.translate(apiCuisine, lang) ?: apiCuisine
+            }
+
+            val apiBrand = el.brand(lang)
+            val brand = if (el.tags["brand:$lang"] != null) {
+                apiBrand
+            } else {
+                OverpassTranslator.translate(apiBrand, lang) ?: apiBrand
+            }
+
             val restaurantDetails = when (category) {
                 PoiCategory.Restaurant, PoiCategory.FastFood -> RestaurantDetails(
                     openingHours = el.openingHours()?.takeIf { it.isNotBlank() },
-                    cuisine = el.cuisine()?.takeIf { it.isNotBlank() },
-                    brand = el.brand()?.takeIf { it.isNotBlank() },
+                    cuisine = cuisine?.takeIf { it.isNotBlank() },
+                    brand = brand?.takeIf { it.isNotBlank() },
                     isFastFood = category == PoiCategory.FastFood
                 )
                 else -> null
@@ -135,21 +152,35 @@ class OverpassProvider(
                 openingHoursFuel = el.openingHours()?.let { listOf(it) } ?: emptyList()
             )
 
-            val name = if (category == PoiCategory.Radar) {
-                el.tags["maxspeed"]?.let { "Radar $it km/h" } ?: el.name()
+            val apiName = if (category == PoiCategory.Radar) {
+                el.tags["maxspeed"]?.let { "Radar $it km/h" } ?: el.name(lang)
             } else {
-                el.name()
+                el.name(lang)
             }
+
+            val name = if (el.tags["name:$lang"] != null) {
+                apiName
+            } else {
+                OverpassTranslator.translate(apiName, lang) ?: apiName
+            }
+
+            val apiOperator = el.operator(lang)
+            val operator = if (el.tags["operator:$lang"] != null) {
+                apiOperator
+            } else {
+                OverpassTranslator.translate(apiOperator, lang) ?: apiOperator
+            }
+
             Poi(
                 id = "osm:${el.id}",
-                name = name?.takeIf { it.isNotBlank() } ?: categoryDisplayName(category),
+                name = name?.takeIf { it.isNotBlank() } ?: categoryDisplayName(category, lang),
                 address = el.address() ?: "",
                 latitude = el.lat,
                 longitude = el.lon,
                 poiCategory = category,
-                brand = el.brand()?.takeIf { it.isNotBlank() },
+                brand = brand?.takeIf { it.isNotBlank() },
                 powerKw = el.tags["maxpower"]?.toDoubleOrNull() ?: el.tags["socket:type2:output"]?.replace("kW", "")?.trim()?.toDoubleOrNull(),
-                operator = el.tags["operator"],
+                operator = operator,
                 chargePointCount = el.tags["capacity"]?.toIntOrNull(),
                 restaurantDetails = restaurantDetails,
                 irveDetails = irveDetails,
@@ -198,21 +229,21 @@ class OverpassProvider(
         else -> null
     }
 
-    private fun categoryDisplayName(c: PoiCategory): String = when (c) {
-        PoiCategory.Toilet -> "Toilets"
-        PoiCategory.DrinkingWater -> "Drinking water"
-        PoiCategory.Camping -> "Camping"
-        PoiCategory.CaravanSite -> "Aire camping-car"
-        PoiCategory.PicnicSite -> "Picnic area"
-        PoiCategory.TruckStop -> "Truck stop"
-        PoiCategory.RestArea -> "Rest area"
-        PoiCategory.Restaurant -> "Restaurant"
-        PoiCategory.FastFood -> "Fast food"
-        PoiCategory.Radar -> "Radar"
-        PoiCategory.Parking -> "Parking"
-        PoiCategory.Viewpoint -> "Viewpoint"
-        PoiCategory.Gas -> "Gas station"
-        PoiCategory.Irve -> "Charging station"
-        PoiCategory.BatterySwap -> "Battery swap"
+    private fun categoryDisplayName(c: PoiCategory, lang: String): String = when (c) {
+        PoiCategory.Toilet -> OverpassTranslator.translate("Toilets", lang) ?: "Toilets"
+        PoiCategory.DrinkingWater -> OverpassTranslator.translate("Drinking water", lang) ?: "Drinking water"
+        PoiCategory.Camping -> OverpassTranslator.translate("Camping", lang) ?: "Camping"
+        PoiCategory.CaravanSite -> OverpassTranslator.translate("Caravan site", lang) ?: "Caravan site"
+        PoiCategory.PicnicSite -> OverpassTranslator.translate("Picnic site", lang) ?: "Picnic site"
+        PoiCategory.TruckStop -> OverpassTranslator.translate("Truck stop", lang) ?: "Truck stop"
+        PoiCategory.RestArea -> OverpassTranslator.translate("Rest area", lang) ?: "Rest area"
+        PoiCategory.Restaurant -> OverpassTranslator.translate("Restaurant", lang) ?: "Restaurant"
+        PoiCategory.FastFood -> OverpassTranslator.translate("Fast food", lang) ?: "Fast food"
+        PoiCategory.Radar -> OverpassTranslator.translate("Radar", lang) ?: "Radar"
+        PoiCategory.Parking -> OverpassTranslator.translate("Parking", lang) ?: "Parking"
+        PoiCategory.Viewpoint -> OverpassTranslator.translate("Viewpoint", lang) ?: "Viewpoint"
+        PoiCategory.Gas -> OverpassTranslator.translate("Gas station", lang) ?: "Gas station"
+        PoiCategory.Irve -> OverpassTranslator.translate("Charging station", lang) ?: "Charging station"
+        PoiCategory.BatterySwap -> OverpassTranslator.translate("Battery swap", lang) ?: "Battery swap"
     }
 }
