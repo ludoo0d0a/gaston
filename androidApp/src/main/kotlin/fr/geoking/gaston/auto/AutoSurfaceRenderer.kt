@@ -415,6 +415,20 @@ class AutoSurfaceRenderer(
                 if (bearing != 0f) {
                     canvas.restore()
                 }
+
+                // Draw map overlay widgets (scale, compass, debug zoom)
+                AutoMapOverlayHelper.drawCompassAndScale(
+                    canvas = canvas,
+                    context = context,
+                    visibleArea = visibleArea,
+                    surfaceWidth = width,
+                    surfaceHeight = height,
+                    bearing = bearing,
+                    zoom = zoom.toFloat(),
+                    latitude = lat,
+                    mapTileDebugEnabled = mapTileDebugEnabled
+                )
+
                 if (queryPending) {
                     AutoMapQueryLoader.draw(
                         canvas = canvas,

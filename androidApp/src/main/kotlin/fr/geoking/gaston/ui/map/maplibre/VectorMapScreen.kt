@@ -75,6 +75,7 @@ import fr.geoking.gaston.ui.map.PoiDetailCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.AddPoiSheet
 import fr.geoking.gaston.ui.map.DebugLogOverlay
+import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.ui.map.MapCameraSample
 import fr.geoking.gaston.ui.map.MapErrorBanner
 import fr.geoking.gaston.ui.map.rememberErrorClipboardCopyHandler
@@ -174,8 +175,15 @@ fun VectorMapScreen(
             val idleListener = MapLibreMap.OnCameraIdleListener {
                 cameraPosition = map.cameraPosition
             }
+            val moveListener = MapLibreMap.OnCameraMoveListener {
+                cameraPosition = map.cameraPosition
+            }
             map.addOnCameraIdleListener(idleListener)
-            onDispose { map.removeOnCameraIdleListener(idleListener) }
+            map.addOnCameraMoveListener(moveListener)
+            onDispose {
+                map.removeOnCameraIdleListener(idleListener)
+                map.removeOnCameraMoveListener(moveListener)
+            }
         }
     }
 
@@ -400,6 +408,17 @@ fun VectorMapScreen(
                         effectivePowerLevels = settings.effectiveIrvePowerLevels()
                     )
 
+                    // Map overlay scale and compass widgets
+                    MapOverlayWidgets(
+                        bearing = (cameraPosition?.bearing ?: 0.0).toFloat(),
+                        zoom = (cameraPosition?.zoom ?: defaultZoom).toFloat(),
+                        latitude = currentTarget.latitude,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(top = 16.dp, start = 16.dp)
+                            .zIndex(1f)
+                    )
+
                     if (settings.debugLoggingEnabled) {
                         val detectedCountries = remember(currentTarget) {
                             fr.geoking.gaston.countryDisplayLabelAtMapPosition(
@@ -412,7 +431,8 @@ fun VectorMapScreen(
                                 .align(Alignment.TopEnd)
                                 .padding(top = 16.dp)
                                 .zIndex(2f),
-                            detectedCountries = detectedCountries
+                            detectedCountries = detectedCountries,
+                            zoomLevel = (cameraPosition?.zoom ?: defaultZoom).toFloat()
                         )
                     }
                 }

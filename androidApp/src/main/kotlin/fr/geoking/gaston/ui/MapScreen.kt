@@ -93,6 +93,7 @@ import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.DebugLogOverlay
+import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.ui.anim.AnimationPalette
 import fr.geoking.gaston.ui.anim.AnimationPalettes
 import fr.geoking.gaston.intent.IntentNavigationHelper
@@ -620,6 +621,17 @@ fun MapScreen(
                         }
                     }
 
+                    // Map overlay scale and compass widgets
+                    MapOverlayWidgets(
+                        bearing = cameraPositionState.position.bearing,
+                        zoom = cameraPositionState.position.zoom,
+                        latitude = cameraPositionState.position.target.latitude,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(top = 80.dp, start = 16.dp)
+                            .zIndex(1f)
+                    )
+
                     if (settings.debugLoggingEnabled) {
                         val detectedCountries = remember(cameraPositionState.position.target) {
                             fr.geoking.gaston.countryDisplayLabelAtMapPosition(
@@ -632,7 +644,8 @@ fun MapScreen(
                                 .align(Alignment.TopEnd)
                                 .padding(top = 80.dp) // Below the top bar
                                 .zIndex(2f),
-                            detectedCountries = detectedCountries
+                            detectedCountries = detectedCountries,
+                            zoomLevel = cameraPositionState.position.zoom
                         )
                     }
                 }
