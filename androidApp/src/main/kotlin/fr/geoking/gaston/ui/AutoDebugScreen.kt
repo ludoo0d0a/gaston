@@ -94,6 +94,13 @@ fun AutoDebugScreen(
     var userLat by remember { mutableStateOf<Double?>(null) }
     var userLon by remember { mutableStateOf<Double?>(null) }
 
+    // UI controls visibility states
+    var showRotationSlider by remember { mutableStateOf(true) }
+    var showStationsBottomSheet by remember { mutableStateOf(true) }
+    var isFabMenuExpanded by remember { mutableStateOf(false) }
+
+    val scaffoldState = rememberBottomSheetScaffoldState()
+
     // Real POIs state loaded via poiProvider
     var loadedPois by remember { mutableStateOf<List<Poi>>(emptyList()) }
     var isQueryPending by remember { mutableStateOf(false) }
@@ -326,90 +333,120 @@ fun AutoDebugScreen(
             TopAppBar(
                 title = { Text("AA Map Surface Debug") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        tooltip = { PlainTooltip { Text("Back") } },
+                        state = rememberTooltipState()
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 actions = {
                     // 1. Simulate Menu Action
-                    IconButton(
-                        onClick = { visibleAreaEnabled = !visibleAreaEnabled },
-                        modifier = Modifier.testTag("toggle_visible_area_btn")
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        tooltip = { PlainTooltip { Text("Simulate Menu") } },
+                        state = rememberTooltipState()
                     ) {
-                        Icon(
-                            imageVector = if (visibleAreaEnabled) Icons.Default.MenuOpen else Icons.Default.Menu,
-                            contentDescription = "Simulate Menu",
-                            tint = if (visibleAreaEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        IconButton(
+                            onClick = { visibleAreaEnabled = !visibleAreaEnabled },
+                            modifier = Modifier.testTag("toggle_visible_area_btn")
+                        ) {
+                            Icon(
+                                imageVector = if (visibleAreaEnabled) Icons.Default.MenuOpen else Icons.Default.Menu,
+                                contentDescription = "Simulate Menu",
+                                tint = if (visibleAreaEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     // 2. North-Up Toggle Action
-                    IconButton(
-                        onClick = {
-                            orientationMode = if (orientationMode == MapOrientationMode.NorthUp) {
-                                MapOrientationMode.HeadingUp
-                            } else {
-                                MapOrientationMode.NorthUp
-                            }
-                        },
-                        modifier = Modifier.testTag("toggle_orientation_mode_btn")
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        tooltip = { PlainTooltip { Text("Toggle Orientation") } },
+                        state = rememberTooltipState()
                     ) {
-                        Icon(
-                            imageVector = if (orientationMode == MapOrientationMode.NorthUp) Icons.Default.North else Icons.Default.Navigation,
-                            contentDescription = "Toggle Orientation",
-                            tint = if (orientationMode == MapOrientationMode.NorthUp) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
-                        )
+                        IconButton(
+                            onClick = {
+                                orientationMode = if (orientationMode == MapOrientationMode.NorthUp) {
+                                    MapOrientationMode.HeadingUp
+                                } else {
+                                    MapOrientationMode.NorthUp
+                                }
+                            },
+                            modifier = Modifier.testTag("toggle_orientation_mode_btn")
+                        ) {
+                            Icon(
+                                imageVector = if (orientationMode == MapOrientationMode.NorthUp) Icons.Default.North else Icons.Default.Navigation,
+                                contentDescription = "Toggle Orientation",
+                                tint = if (orientationMode == MapOrientationMode.NorthUp) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                            )
+                        }
                     }
 
                     // 3. Simulate Travel Action
-                    IconButton(
-                        onClick = {
-                            if (isSimulatingTravel) {
-                                isSimulatingTravel = false
-                            } else {
-                                val startLat = userLat ?: mapLat
-                                val startLon = userLon ?: mapLon
-                                // Generate winding short travel path
-                                val path = mutableListOf<Pair<Double, Double>>()
-                                path.add(startLat to startLon)
-                                val angleRad = Math.random() * 2 * Math.PI
-                                val steps = 15
-                                val stepDegrees = 0.015 / steps
-                                var currentLat = startLat
-                                var currentLon = startLon
-                                for (i in 1..steps) {
-                                    val turnAngle = (Math.random() - 0.5) * (Math.PI / 3)
-                                    val currentAngle = angleRad + turnAngle
-                                    currentLat += stepDegrees * cos(currentAngle)
-                                    currentLon += stepDegrees * sin(currentAngle)
-                                    path.add(currentLat to currentLon)
-                                }
-                                travelPath = path
-                                historyPoints = emptyList()
-                                currentPathIndex = 0
-                                orientationMode = MapOrientationMode.HeadingUp
-                                isSimulatingTravel = true
-                            }
-                        },
-                        modifier = Modifier.testTag("toggle_simulation_btn")
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        tooltip = { PlainTooltip { Text("Simulate Travel") } },
+                        state = rememberTooltipState()
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.DirectionsCar,
-                            contentDescription = "Simulate Travel",
-                            tint = if (isSimulatingTravel) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        IconButton(
+                            onClick = {
+                                if (isSimulatingTravel) {
+                                    isSimulatingTravel = false
+                                } else {
+                                    val startLat = userLat ?: mapLat
+                                    val startLon = userLon ?: mapLon
+                                    // Generate winding short travel path
+                                    val path = mutableListOf<Pair<Double, Double>>()
+                                    path.add(startLat to startLon)
+                                    val angleRad = Math.random() * 2 * Math.PI
+                                    val steps = 15
+                                    val stepDegrees = 0.015 / steps
+                                    var currentLat = startLat
+                                    var currentLon = startLon
+                                    for (i in 1..steps) {
+                                        val turnAngle = (Math.random() - 0.5) * (Math.PI / 3)
+                                        val currentAngle = angleRad + turnAngle
+                                        currentLat += stepDegrees * cos(currentAngle)
+                                        currentLon += stepDegrees * sin(currentAngle)
+                                        path.add(currentLat to currentLon)
+                                    }
+                                    travelPath = path
+                                    historyPoints = emptyList()
+                                    currentPathIndex = 0
+                                    orientationMode = MapOrientationMode.HeadingUp
+                                    isSimulatingTravel = true
+                                }
+                            },
+                            modifier = Modifier.testTag("toggle_simulation_btn")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DirectionsCar,
+                                contentDescription = "Simulate Travel",
+                                tint = if (isSimulatingTravel) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     // 4. Map Tile Debug Grid Action
-                    IconButton(
-                        onClick = { mapTileDebugEnabled = !mapTileDebugEnabled },
-                        modifier = Modifier.testTag("toggle_map_tile_debug_btn")
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        tooltip = { PlainTooltip { Text("Map Tile Debug Grid") } },
+                        state = rememberTooltipState()
                     ) {
-                        Icon(
-                            imageVector = if (mapTileDebugEnabled) Icons.Default.GridOn else Icons.Default.GridOff,
-                            contentDescription = "Map Tile Debug Grid",
-                            tint = if (mapTileDebugEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        IconButton(
+                            onClick = { mapTileDebugEnabled = !mapTileDebugEnabled },
+                            modifier = Modifier.testTag("toggle_map_tile_debug_btn")
+                        ) {
+                            Icon(
+                                imageVector = if (mapTileDebugEnabled) Icons.Default.GridOn else Icons.Default.GridOff,
+                                contentDescription = "Map Tile Debug Grid",
+                                tint = if (mapTileDebugEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -419,8 +456,8 @@ fun AutoDebugScreen(
         }
     ) { paddingValues ->
         BottomSheetScaffold(
-            scaffoldState = rememberBottomSheetScaffoldState(),
-            sheetPeekHeight = 140.dp,
+            scaffoldState = scaffoldState,
+            sheetPeekHeight = if (showStationsBottomSheet) 140.dp else 0.dp,
             sheetContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
             containerColor = Color.Transparent,
             sheetContent = {
@@ -560,6 +597,20 @@ fun AutoDebugScreen(
                         mapLon += dLon
                     },
                     visibleAreaRect = visibleAreaRect,
+                    bottomPadding = sheetPaddingValues.calculateBottomPadding(),
+                    showRotationSlider = showRotationSlider,
+                    showStationsBottomSheet = showStationsBottomSheet,
+                    onToggleRotationSlider = { showRotationSlider = !showRotationSlider },
+                    onToggleStationsBottomSheet = {
+                        showStationsBottomSheet = !showStationsBottomSheet
+                        if (!showStationsBottomSheet) {
+                            coroutineScope.launch {
+                                scaffoldState.bottomSheetState.partialExpand()
+                            }
+                        }
+                    },
+                    isFabMenuExpanded = isFabMenuExpanded,
+                    onToggleFabMenuExpanded = { isFabMenuExpanded = !isFabMenuExpanded },
                     onSurfaceCreated = { renderer, w, h ->
                         surfaceRendererRef = renderer
                         surfaceWidth = w
@@ -639,6 +690,13 @@ fun MapSurfaceAndControls(
     onBearingChange: (Float) -> Unit,
     onMapPan: (Double, Double) -> Unit,
     visibleAreaRect: Rect?,
+    bottomPadding: androidx.compose.ui.unit.Dp,
+    showRotationSlider: Boolean,
+    showStationsBottomSheet: Boolean,
+    onToggleRotationSlider: () -> Unit,
+    onToggleStationsBottomSheet: () -> Unit,
+    isFabMenuExpanded: Boolean,
+    onToggleFabMenuExpanded: () -> Unit,
     onSurfaceCreated: (AutoSurfaceRenderer, Int, Int) -> Unit,
     onSurfaceDestroyed: () -> Unit
 ) {
@@ -842,31 +900,108 @@ fun MapSurfaceAndControls(
         }
 
         // Rotation slider overlay at the bottom-right/center
-        Card(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(horizontal = 16.dp, vertical = 20.dp)
-                .width(220.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+        if (showRotationSlider) {
+            Card(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = bottomPadding + 20.dp)
+                    .width(220.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                )
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text("Rotate Map", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                    Text("${bearing.toInt()}°", style = MaterialTheme.typography.bodySmall)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Rotate Map", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        Text("${bearing.toInt()}°", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Slider(
+                        value = bearing,
+                        onValueChange = onBearingChange,
+                        valueRange = 0f..360f,
+                        modifier = Modifier.testTag("rotation_slider")
+                    )
                 }
-                Slider(
-                    value = bearing,
-                    onValueChange = onBearingChange,
-                    valueRange = 0f..360f,
-                    modifier = Modifier.testTag("rotation_slider")
+            }
+        }
+
+        // Floating Action Button Menu (Speed Dial) at the bottom-left
+        Column(
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = bottomPadding + 20.dp)
+        ) {
+            if (isFabMenuExpanded) {
+                // Action 1: Toggle Stations
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SmallFloatingActionButton(
+                        onClick = onToggleStationsBottomSheet,
+                        modifier = Modifier.testTag("fab_toggle_stations"),
+                        containerColor = if (showStationsBottomSheet) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                    ) {
+                        Icon(
+                            imageVector = if (showStationsBottomSheet) Icons.Default.LocalGasStation else Icons.Default.LocationOff,
+                            contentDescription = "Toggle Stations"
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+                        )
+                    ) {
+                        Text(
+                            text = if (showStationsBottomSheet) "Hide Stations" else "Show Stations",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                // Action 2: Toggle Rotation
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SmallFloatingActionButton(
+                        onClick = onToggleRotationSlider,
+                        modifier = Modifier.testTag("fab_toggle_rotation"),
+                        containerColor = if (showRotationSlider) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                    ) {
+                        Icon(
+                            imageVector = if (showRotationSlider) Icons.Default.ScreenRotation else Icons.Default.CropRotate,
+                            contentDescription = "Toggle Rotation"
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+                        )
+                    ) {
+                        Text(
+                            text = if (showRotationSlider) "Hide Rotation" else "Show Rotation",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            // Main Fab Button
+            FloatingActionButton(
+                onClick = onToggleFabMenuExpanded,
+                modifier = Modifier.testTag("fab_main_trigger"),
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(
+                    imageVector = if (isFabMenuExpanded) Icons.Default.Close else Icons.Default.MenuOpen,
+                    contentDescription = "Debug Actions"
                 )
             }
         }
