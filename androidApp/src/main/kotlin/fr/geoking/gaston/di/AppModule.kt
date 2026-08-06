@@ -13,6 +13,8 @@ import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.weather.WeatherLookup
 import fr.geoking.gaston.shared.platform.PermissionManager
 import fr.geoking.gaston.repository.FuelForecastRepository
+import fr.geoking.gaston.ui.dashboard.PhoneDashboardViewModel
+import org.koin.androidx.viewmodel.dsl.viewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import fr.geoking.gaston.feature.settings.FirestoreSettingsSync
@@ -219,6 +221,14 @@ val appModule = module {
     }
 
     single { FuelForecastRepository(http = get(), db = get()) }
+
+    viewModel {
+        PhoneDashboardViewModel(
+            settingsManager = get(),
+            fuelForecastRepository = getOrNull(),
+            context = androidContext()
+        )
+    }
 
     single<AppDatabase> {
         fun buildAndValidate(builder: androidx.room.RoomDatabase.Builder<AppDatabase>): AppDatabase? {
