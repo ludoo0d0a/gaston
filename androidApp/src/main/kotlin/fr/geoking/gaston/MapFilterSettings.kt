@@ -8,6 +8,7 @@ import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.autoProvidersForCountries
+import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 import java.util.Locale
 
 fun AppSettings.effectiveEnergyFilterMode(): EnergyFilterMode {
@@ -352,4 +353,17 @@ object StationMapFilters {
         return result
     }
 
+}
+
+fun filterPoisByViewport(
+    pois: List<Poi>,
+    lat: Double,
+    lon: Double,
+    zoom: Float,
+    widthPx: Int,
+    heightPx: Int
+): List<Poi> {
+    if (widthPx <= 0 || heightPx <= 0) return pois
+    val viewport = calculateBoundsFromMapViewport(lat, lon, zoom, widthPx, heightPx)
+    return pois.filter { viewport.contains(it.latitude, it.longitude) }
 }

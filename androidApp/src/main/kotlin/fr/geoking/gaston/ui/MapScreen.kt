@@ -67,7 +67,7 @@ import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.poi.PoiSearchResult
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.MapPoiFilter
-import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
+import fr.geoking.gaston.filterPoisByViewport
 import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.anyProvidesFuel
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
@@ -276,18 +276,14 @@ fun MapScreen(
             skipWhenOnlyOverpass = true
         )
 
-        if (mapSizePx.width > 0 && mapSizePx.height > 0) {
-            val viewport = calculateBoundsFromMapViewport(
-                cameraPositionState.position.target.latitude,
-                cameraPositionState.position.target.longitude,
-                cameraPositionState.position.zoom,
-                mapSizePx.width,
-                mapSizePx.height
-            )
-            filteredByFilters.filter { viewport.contains(it.latitude, it.longitude) }
-        } else {
-            filteredByFilters
-        }
+        filterPoisByViewport(
+            pois = filteredByFilters,
+            lat = cameraPositionState.position.target.latitude,
+            lon = cameraPositionState.position.target.longitude,
+            zoom = cameraPositionState.position.zoom,
+            widthPx = mapSizePx.width,
+            heightPx = mapSizePx.height
+        )
     }
 
     val basePois = remember(poisInView, showFavoritesOnly, favoriteIds) {

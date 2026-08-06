@@ -32,6 +32,7 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.ThemeMode
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.VehicleType
+import fr.geoking.gaston.filterPoisByViewport
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiMerger
@@ -223,12 +224,21 @@ class CustomMapPoiScreen(
             skipWhenOnlyOverpass = true
         )
 
+        val visiblePois = filterPoisByViewport(
+            pois = basePois,
+            lat = searchLat,
+            lon = searchLon,
+            zoom = zoom.toFloat(),
+            widthPx = mapWidthPx,
+            heightPx = mapHeightPx
+        )
+
         return if (isCheapestFilterActive) {
             val fuelIds = currentSettings.effectiveMapEnergyFilterIds() - "electric"
             val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
-            MapPoiFilter.filterCheapest(basePois, fuelIds, isLuxembourg)
+            MapPoiFilter.filterCheapest(visiblePois, fuelIds, isLuxembourg)
         } else {
-            basePois
+            visiblePois
         }
     }
 
