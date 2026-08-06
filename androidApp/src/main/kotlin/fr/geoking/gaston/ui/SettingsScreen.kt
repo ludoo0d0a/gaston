@@ -58,6 +58,9 @@ import fr.geoking.gaston.poi.FuelPriceRegistry
 import fr.geoking.gaston.shared.diagnostics.DetailedError
 import fr.geoking.gaston.ui.components.DisclaimerDialog
 import fr.geoking.gaston.ui.components.FuelFilterChip
+import fr.geoking.gaston.ui.map.maplibre.MapLibreView
+import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.camera.CameraPosition
 import fr.geoking.gaston.ui.components.PowerFilterChip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -309,14 +312,42 @@ private fun MapConfig(
 
         if (settings.phoneMapEngine == MapEngine.MapLibre) {
             // Map Theme (for MapLibre)
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     stringResource(R.string.settings_map_theme),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 12.dp)
                 )
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    val previewCenter = remember(settings.lastKnownLat, settings.lastKnownLon) {
+                        if (settings.lastKnownLat != null && settings.lastKnownLon != null) {
+                            LatLng(settings.lastKnownLat, settings.lastKnownLon)
+                        } else {
+                            LatLng(48.8566, 2.3522) // Paris as default
+                        }
+                    }
+                    MapLibreView(
+                        modifier = Modifier.fillMaxSize(),
+                        styleUrl = settings.mapTheme.styleUrl,
+                        cameraPosition = CameraPosition.Builder()
+                            .target(previewCenter)
+                            .zoom(11.0)
+                            .build()
+                    )
+                }
+
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     MapTheme.entries.forEach { theme ->
                         FilterChip(
                             selected = settings.mapTheme == theme,
