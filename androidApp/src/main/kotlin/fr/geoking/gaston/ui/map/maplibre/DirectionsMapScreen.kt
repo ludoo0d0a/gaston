@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.MapTheme
 import fr.geoking.gaston.api.routing.RouteResult
@@ -27,6 +28,7 @@ import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.components.CheapestStationHighlight
 import fr.geoking.gaston.ui.components.MapScaffold
+import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.maplibre.android.camera.CameraPosition
@@ -54,6 +56,29 @@ fun DirectionsMapScreen(
 
     val settings by settingsManager.settings.collectAsState()
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
+    var cameraPosition by remember { mutableStateOf<CameraPosition?>(null) }
+
+    DisposableEffect(mapLibreMap) {
+        val map = mapLibreMap
+        if (map == null) {
+            cameraPosition = null
+            onDispose { }
+        } else {
+            cameraPosition = map.cameraPosition
+            val idleListener = MapLibreMap.OnCameraIdleListener {
+                cameraPosition = map.cameraPosition
+            }
+            val moveListener = MapLibreMap.OnCameraMoveListener {
+                cameraPosition = map.cameraPosition
+            }
+            map.addOnCameraIdleListener(idleListener)
+            map.addOnCameraMoveListener(moveListener)
+            onDispose {
+                map.removeOnCameraIdleListener(idleListener)
+                map.removeOnCameraMoveListener(moveListener)
+            }
+        }
+    }
 
     val context = LocalContext.current
     val initialCameraPosition = remember(route) {
@@ -105,6 +130,17 @@ fun DirectionsMapScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Map overlay scale and compass widgets
+            MapOverlayWidgets(
+                bearing = (cameraPosition?.bearing ?: 0.0).toFloat(),
+                zoom = (cameraPosition?.zoom ?: 10.0).toFloat(),
+                latitude = cameraPosition?.target?.latitude ?: routeLat,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 16.dp, start = 16.dp)
+                    .zIndex(1f)
+            )
+
             MapLibreView(
                 modifier = Modifier.fillMaxSize(),
                 styleUrl = run {

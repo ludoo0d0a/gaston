@@ -46,7 +46,8 @@ import java.util.*
 @Composable
 fun DebugLogOverlay(
     modifier: Modifier = Modifier,
-    detectedCountries: String? = null
+    detectedCountries: String? = null,
+    zoomLevel: Float? = null
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -55,6 +56,7 @@ fun DebugLogOverlay(
             isExpanded = isExpanded,
             onExpandedChange = { isExpanded = it },
             detectedCountries = detectedCountries,
+            zoomLevel = zoomLevel,
             modifier = Modifier.padding(16.dp)
         )
 
@@ -78,6 +80,7 @@ fun DebugLogOverlay(
                         isExpanded = true,
                         onExpandedChange = { isExpanded = it },
                         detectedCountries = detectedCountries,
+                        zoomLevel = zoomLevel,
                         modifier = Modifier
                             .padding(16.dp)
                             .clickable(
@@ -102,6 +105,7 @@ private fun DebugLogOverlayContent(
     isExpanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     detectedCountries: String?,
+    zoomLevel: Float? = null,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableStateOf(DebugOverlayTab.Network) }
@@ -120,13 +124,30 @@ private fun DebugLogOverlayContent(
 
     Box(modifier = modifier.zIndex(2f)) {
         if (!isExpanded) {
-            FloatingActionButton(
-                onClick = { onExpandedChange(true) },
-                containerColor = Color(0xFF334155).copy(alpha = 0.8f),
-                contentColor = Color.White,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(Icons.Default.BugReport, contentDescription = "Show Logs")
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (zoomLevel != null) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.7f), shape = RoundedCornerShape(4.dp))
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = String.format("Z: %.1f", zoomLevel),
+                            color = Color.Yellow,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                FloatingActionButton(
+                    onClick = { onExpandedChange(true) },
+                    containerColor = Color(0xFF334155).copy(alpha = 0.8f),
+                    contentColor = Color.White,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(Icons.Default.BugReport, contentDescription = "Show Logs")
+                }
             }
         } else {
             Surface(
@@ -150,15 +171,26 @@ private fun DebugLogOverlayContent(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            when (selectedTab) {
-                                DebugOverlayTab.Network -> "${stringResource(R.string.dashboard_network)} (${logs.size})"
-                                DebugOverlayTab.Providers -> "${stringResource(R.string.debug_overlay_providers)} (${providerTraces.size})"
-                            },
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                when (selectedTab) {
+                                    DebugOverlayTab.Network -> "${stringResource(R.string.dashboard_network)} (${logs.size})"
+                                    DebugOverlayTab.Providers -> "${stringResource(R.string.debug_overlay_providers)} (${providerTraces.size})"
+                                },
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                            )
+                            if (zoomLevel != null) {
+                                Text(
+                                    text = String.format("Zoom: %.2f", zoomLevel),
+                                    color = Color.Yellow,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 stringResource(R.string.settings_debug_disable_cache),

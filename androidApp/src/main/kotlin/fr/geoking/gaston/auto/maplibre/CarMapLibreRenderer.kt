@@ -12,6 +12,7 @@ import androidx.car.app.SurfaceContainer
 import androidx.lifecycle.Lifecycle
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.AutoMapCamera
+import fr.geoking.gaston.auto.AutoMapOverlayHelper
 import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
 import fr.geoking.gaston.auto.AutoMapHeading
 import fr.geoking.gaston.auto.AutoMapQueryLoader
@@ -34,6 +35,7 @@ class CarMapLibreRenderer(
 ) {
     private val mapContainer = CarMapContainer(carContext, lifecycle)
     private val uiHandler = Handler(Looper.getMainLooper())
+    private val settingsManager = org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.SettingsManager>()
 
     private var surfaceContainer: SurfaceContainer? = null
     private var styleUrl: String? = null
@@ -248,6 +250,21 @@ class CarMapLibreRenderer(
                 surfaceHeight = surfaceHeight,
             )
         }
+
+        // Draw map overlay widgets (scale, compass, debug zoom)
+        val bearing = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
+        val mapTileDebugEnabled = settingsManager.settings.value.mapTileDebugEnabled
+        AutoMapOverlayHelper.drawCompassAndScale(
+            canvas = canvas,
+            context = carContext,
+            visibleArea = visibleArea,
+            surfaceWidth = surfaceWidth,
+            surfaceHeight = surfaceHeight,
+            bearing = bearing,
+            zoom = zoom.toFloat(),
+            latitude = centerLat,
+            mapTileDebugEnabled = mapTileDebugEnabled
+        )
     }
 
     private fun applyCamera(map: MapLibreMap) {
