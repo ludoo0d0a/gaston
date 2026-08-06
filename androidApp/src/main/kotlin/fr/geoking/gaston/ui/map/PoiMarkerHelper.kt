@@ -330,6 +330,10 @@ object PoiMarkerHelper {
             PoiCategory.Radar -> 0xFFDC3545.toInt()
             PoiCategory.Parking -> 0xFF007BFF.toInt() // Parking blue
             PoiCategory.Viewpoint -> 0xFF6C757D.toInt() // Viewpoint gray
+            PoiCategory.PostBox -> 0xFFF59E0B.toInt()
+            PoiCategory.WaterBody -> 0xFF0284C7.toInt()
+            PoiCategory.Cafe -> 0xFF78350F.toInt()
+            PoiCategory.Supermarket -> 0xFF8B5CF6.toInt()
             else -> 0xFF17A2B8.toInt()
         }
     }
@@ -349,6 +353,10 @@ object PoiMarkerHelper {
             PoiCategory.Radar -> R.drawable.ic_poi_radar_rounded
             PoiCategory.Parking -> R.drawable.ic_poi_parking_rounded
             PoiCategory.Viewpoint -> R.drawable.ic_map
+            PoiCategory.PostBox,
+            PoiCategory.WaterBody,
+            PoiCategory.Cafe,
+            PoiCategory.Supermarket -> R.drawable.ic_map
             else -> if (poi.isElectric) R.drawable.ic_poi_electric_rounded else R.drawable.ic_poi_gas_rounded
         }
     }
@@ -398,6 +406,10 @@ object PoiMarkerHelper {
                 PoiCategory.Radar -> R.drawable.ic_poi_radar
                 PoiCategory.Parking -> R.drawable.ic_poi_parking
                 PoiCategory.Viewpoint -> R.drawable.ic_map
+                PoiCategory.PostBox,
+                PoiCategory.WaterBody,
+                PoiCategory.Cafe,
+                PoiCategory.Supermarket -> R.drawable.ic_map
                 else -> if (poi.isElectric) R.drawable.ic_poi_electric else R.drawable.ic_poi_gas
             }
         }

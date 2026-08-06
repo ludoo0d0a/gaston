@@ -8,14 +8,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Fastfood
 import androidx.compose.material.icons.rounded.Forest
 import androidx.compose.material.icons.rounded.Landscape
+import androidx.compose.material.icons.rounded.LocalCafe
+import androidx.compose.material.icons.rounded.LocalGroceryStore
 import androidx.compose.material.icons.rounded.LocalParking
 import androidx.compose.material.icons.rounded.LocalShipping
 import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.Mail
 import androidx.compose.material.icons.rounded.OutdoorGrill
 import androidx.compose.material.icons.rounded.Restaurant
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.Water
 import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.rounded.Wc
 import androidx.compose.ui.graphics.asAndroidPath
@@ -57,6 +61,10 @@ object AmenityIconCatalog {
         "speed_camera" -> Icons.Rounded.Speed
         // Requested: viewpoint should be "jumelles" (closest Material icon)
         "viewpoint" -> Icons.Rounded.Visibility
+        "post_box" -> Icons.Rounded.Mail
+        "water" -> Icons.Rounded.Water
+        "cafe" -> Icons.Rounded.LocalCafe
+        "supermarket" -> Icons.Rounded.LocalGroceryStore
         else -> Icons.Rounded.LocationOn
     }
 
@@ -78,6 +86,10 @@ object AmenityIconCatalog {
         PoiCategory.Parking -> Style(Icons.Rounded.LocalParking, 0xFF1D4ED8.toInt())
         PoiCategory.Viewpoint -> Style(Icons.Rounded.Visibility, 0xFF6366F1.toInt())
         PoiCategory.BatterySwap -> Style(Icons.Rounded.SwapHoriz, 0xFFF59E0B.toInt())
+        PoiCategory.PostBox -> Style(Icons.Rounded.Mail, 0xFFF59E0B.toInt())
+        PoiCategory.WaterBody -> Style(Icons.Rounded.Water, 0xFF0284C7.toInt())
+        PoiCategory.Cafe -> Style(Icons.Rounded.LocalCafe, 0xFF78350F.toInt())
+        PoiCategory.Supermarket -> Style(Icons.Rounded.LocalGroceryStore, 0xFF8B5CF6.toInt())
         else -> null
     }
 

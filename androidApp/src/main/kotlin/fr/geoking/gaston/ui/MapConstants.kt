@@ -15,7 +15,11 @@ val OVERPASS_AMENITY_OPTIONS = listOf(
     "fast_food" to R.string.amenity_fast_food,
     "speed_camera" to R.string.amenity_speed_camera,
     "parking" to R.string.amenity_parking,
-    "viewpoint" to R.string.amenity_viewpoint
+    "viewpoint" to R.string.amenity_viewpoint,
+    "post_box" to R.string.amenity_post_box,
+    "water" to R.string.amenity_water,
+    "cafe" to R.string.amenity_cafe,
+    "supermarket" to R.string.amenity_supermarket
 )
 
 val VEHICLE_TYPE_OPTIONS = listOf(

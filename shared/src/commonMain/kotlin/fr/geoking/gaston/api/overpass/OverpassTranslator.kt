@@ -26,6 +26,10 @@ object OverpassTranslator {
             "Gas station" to "Station-service",
             "Charging station" to "Station de recharge",
             "Battery swap" to "Échange de batterie",
+            "Post box" to "Boîte aux lettres",
+            "Water body" to "Lac / Étang",
+            "Cafe" to "Café",
+            "Supermarket" to "Supermarché",
 
             // Common generic OSM names
             "toilets" to "Toilettes",
@@ -35,6 +39,11 @@ object OverpassTranslator {
             "water_point" to "Point d'eau",
             "water_tap" to "Robinet d'eau",
             "rest_area" to "Aire de repos",
+            "post_box" to "Boîte aux lettres",
+            "water" to "Lac / Étang",
+            "cafe" to "Café",
+            "supermarket" to "Supermarché",
+            "convenience" to "Supérette",
 
             // Cuisine values
             "burger" to "Burgers",
@@ -71,6 +80,10 @@ object OverpassTranslator {
             "Gas station" to "Gas station",
             "Charging station" to "Charging station",
             "Battery swap" to "Battery swap",
+            "Post box" to "Post box",
+            "Water body" to "Water body",
+            "Cafe" to "Cafe",
+            "Supermarket" to "Supermarket",
 
             "toilets" to "Toilets",
             "drinking_water" to "Drinking water",
@@ -79,6 +92,11 @@ object OverpassTranslator {
             "water_point" to "Water point",
             "water_tap" to "Water tap",
             "rest_area" to "Rest area",
+            "post_box" to "Post box",
+            "water" to "Water body",
+            "cafe" to "Cafe",
+            "supermarket" to "Supermarket",
+            "convenience" to "Convenience store",
 
             "burger" to "Burger",
             "pizza" to "Pizza",
