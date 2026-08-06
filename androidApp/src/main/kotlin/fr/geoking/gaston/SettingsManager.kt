@@ -35,7 +35,9 @@ enum class MapTheme(val styleUrl: String, val rasterUrl: String, val isDark: Boo
     Positron("https://tiles.openfreemap.org/styles/positron", "https://a.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png", false),
     Fiord("https://tiles.openfreemap.org/styles/fiord", "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png", true),
     OsmFr("https://tiles.openfreemap.org/styles/bright", "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", false),
-    Hot("https://tiles.openfreemap.org/styles/bright", "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", false)
+    Hot("https://tiles.openfreemap.org/styles/bright", "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", false),
+    Bright("https://tiles.openfreemap.org/styles/bright", "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", false),
+    Liberty("https://tiles.openfreemap.org/styles/liberty", "https://tile.openstreetmap.org/{z}/{x}/{y}.png", false)
 }
 
 /** Energy/fuel types for map POI filter (multi-select). */

@@ -373,6 +373,17 @@
     <string name="map_theme_osm">OSM</string>
     <string name="map_theme_osm_fr">OSM France (High contrast)</string>
     <string name="map_theme_hot">Humanitarian (High contrast)</string>
+    <string name="map_theme_bright">Bright (OpenFreeMap)</string>
+    <string name="map_theme_liberty">Liberty (OpenFreeMap)</string>
+    <string name="map_theme_dark_matter_desc">Dark vector style with minimal contrast, optimized for night use.</string>
+    <string name="map_theme_voyager_desc">Vibrant, general-purpose light theme with detailed terrain.</string>
+    <string name="map_theme_osm_desc">Classic OpenStreetMap styling with comprehensive map features.</string>
+    <string name="map_theme_positron_desc">Ultra-clean light vector style optimized for maximum legibility.</string>
+    <string name="map_theme_fiord_desc">Elegant dark vector style featuring Nordic cold tones.</string>
+    <string name="map_theme_osm_fr_desc">French localized OpenStreetMap design with distinct contrast.</string>
+    <string name="map_theme_hot_desc">Special humanitarian-oriented layout with high feature visibility.</string>
+    <string name="map_theme_bright_desc">Official OpenFreeMap Bright style with vibrant, modern vector lines.</string>
+    <string name="map_theme_liberty_desc">Official OpenFreeMap Liberty style designed for clear, readable routing.</string>
     <string name="theme_mode_system">System</string>
     <string name="theme_mode_light">Light</string>
     <string name="theme_mode_dark">Dark</string>

@@ -63,6 +63,8 @@ class AutoMapSettingsScreen(
             MapTheme.Fiord -> carContext.getString(R.string.map_theme_fiord)
             MapTheme.OsmFr -> carContext.getString(R.string.map_theme_osm_fr)
             MapTheme.Hot -> carContext.getString(R.string.map_theme_hot)
+            MapTheme.Bright -> carContext.getString(R.string.map_theme_bright)
+            MapTheme.Liberty -> carContext.getString(R.string.map_theme_liberty)
         }
         listBuilder.addItem(
             Row.Builder()
