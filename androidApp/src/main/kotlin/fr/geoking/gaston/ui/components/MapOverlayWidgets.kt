@@ -26,16 +26,12 @@ fun MapOverlayWidgets(
     latitude: Double,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Box(
         modifier = modifier
             .background(Color.Black.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp))
             .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        contentAlignment = Alignment.Center
     ) {
-        // 1. Compass widget (rotated needle pointing north)
-        MapCompassWidget(bearing = bearing)
-
         // 2. Scale widget (metric)
         MapScaleWidget(zoom = zoom, latitude = latitude)
     }

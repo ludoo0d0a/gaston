@@ -617,14 +617,14 @@ fun MapScreen(
                         }
                     }
 
-                    // Map overlay scale and compass widgets
+                    // Map overlay scale widget (placed at the bottom-left, shifts up if bottom sheet is shown)
                     MapOverlayWidgets(
                         bearing = cameraPositionState.position.bearing,
                         zoom = cameraPositionState.position.zoom,
                         latitude = cameraPositionState.position.target.latitude,
                         modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(top = 80.dp, start = 16.dp)
+                            .align(Alignment.BottomStart)
+                            .padding(start = 16.dp, bottom = mapPaddingBottom + 16.dp)
                             .zIndex(1f)
                     )
 

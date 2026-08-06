@@ -67,6 +67,12 @@ import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
 import fr.geoking.gaston.shared.network.NetworkException
 import fr.geoking.gaston.ui.SettingsScreen
 import fr.geoking.gaston.ui.SettingsScreenPage
+import android.widget.Toast
+import fr.geoking.gaston.ui.components.SearchMode
+import fr.geoking.gaston.ui.components.rememberSearchMode
+import fr.geoking.gaston.ui.components.SearchModeSelector
+import fr.geoking.gaston.ui.components.SearchCategorySelector
+import androidx.compose.foundation.background
 import fr.geoking.gaston.ui.components.MapScaffold
 import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
@@ -128,6 +134,8 @@ fun VectorMapScreen(
     var showAddressSearch by remember { mutableStateOf(false) }
     var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var fullErrorMessageToShow by remember { mutableStateOf<String?>(null) }
+    var isCheapestFilterActive by remember { mutableStateOf(false) }
+    var poiSortOrder by remember { mutableStateOf(fr.geoking.gaston.ui.map.PoiSortOrder.Distance) }
     val scope = rememberCoroutineScope()
 
     var hasLocationPermission by remember {
@@ -246,6 +254,42 @@ fun VectorMapScreen(
         )
     }
 
+    val basePois = remember(poisInView, showFavoritesOnly, favoriteIds) {
+        if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
+            poisInView.filter { it.id in favoriteIds }
+        } else {
+            poisInView
+        }
+    }
+
+    val isLuxembourg = remember(currentTarget) {
+        fr.geoking.gaston.countryCodesAtMapPosition(
+            currentTarget.latitude,
+            currentTarget.longitude
+        ).contains("LU")
+    }
+
+    /**
+     * The list of POIs currently displayed on the map and in the bottom sheet.
+     * When [isCheapestFilterActive] is true, we filter this list to only include the top 5 cheapest stations
+     * (including ties) among those currently in the viewport.
+     */
+    val filteredPois = remember(basePois, isCheapestFilterActive, settings, isLuxembourg) {
+        if (isCheapestFilterActive) {
+            val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+            fr.geoking.gaston.poi.MapPoiFilter.filterCheapest(basePois, fuelIds, isLuxembourg)
+        } else {
+            basePois
+        }
+    }
+
+    val cheapestStationsToast = stringResource(R.string.cheapest_stations_toast, filteredPois.size)
+    LaunchedEffect(isCheapestFilterActive) {
+        if (isCheapestFilterActive) {
+            Toast.makeText(context, cheapestStationsToast, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     if (showMapSettings) {
         SettingsScreen(
             settingsManager = settingsManager,
@@ -294,13 +338,87 @@ fun VectorMapScreen(
             favoritesFilterEnabled = settings.isLoggedIn && favoritesRepo != null,
             isLoading = mapData.isLoading,
             palette = palette,
-            showAds = showAds
+            showAds = showAds,
+            floatingActionButton = {
+                val currentSearchMode = rememberSearchMode(settings)
+                if (currentSearchMode == SearchMode.Fuel && (isCheapestFilterActive || basePois.any { !it.fuelPrices.isNullOrEmpty() })) {
+                    FloatingActionButton(
+                        onClick = {
+                            if (isCheapestFilterActive) {
+                                isCheapestFilterActive = false
+                                poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
+                                selectedPoi = null
+                            } else {
+                                isCheapestFilterActive = true
+                                poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Price
+                            }
+                        },
+                        containerColor = if (isCheapestFilterActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = if (isCheapestFilterActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+                    ) {
+                        Icon(
+                            painter = androidx.compose.ui.res.painterResource(R.drawable.ic_cheapest_price),
+                            contentDescription = stringResource(R.string.action_show_cheapest_list)
+                        )
+                    }
+                }
+            }
         ) { padding ->
+            val currentSearchMode = rememberSearchMode(settings)
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SearchModeSelector(
+                        currentMode = currentSearchMode,
+                        settingsManager = settingsManager
+                    )
+                    SearchCategorySelector(
+                        currentMode = currentSearchMode,
+                        settings = settings,
+                        settingsManager = settingsManager,
+                        onOpenSettings = { pages ->
+                            initialSettingsPage = pages?.firstOrNull() ?: SettingsScreenPage.MapConfig
+                            showMapSettings = true
+                        }
+                    )
+
+                    if (showAddressSearch) {
+                        PhoneDashboardDestinationSearch(
+                            geocodingClient = geocodingClient,
+                            hasLocationPermission = hasLocationPermission,
+                            userLat = currentTarget.latitude,
+                            userLon = currentTarget.longitude,
+                            selectedSearchLocation = null,
+                            settings = settings,
+                            onLocationSelected = { loc ->
+                                if (loc != null) {
+                                    scope.launch {
+                                        mapLibreMap?.animateCamera(
+                                            CameraUpdateFactory.newLatLngZoom(
+                                                LatLng(loc.latitude, loc.longitude),
+                                                15.0
+                                            )
+                                        )
+                                    }
+                                    showAddressSearch = false
+                                }
+                            },
+                            onOpenRoutes = { _, _ -> },
+                            onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) }
+                        )
+                    }
+                }
+
                 mapData.mapErrorMessage?.let { msg ->
                     val onCopy = rememberErrorClipboardCopyHandler(msg)
                     MapErrorBanner(
@@ -359,32 +477,6 @@ fun VectorMapScreen(
                     }
                 }
 
-                if (showAddressSearch) {
-                    PhoneDashboardDestinationSearch(
-                        geocodingClient = geocodingClient,
-                        hasLocationPermission = hasLocationPermission,
-                        userLat = currentTarget.latitude,
-                        userLon = currentTarget.longitude,
-                        selectedSearchLocation = null,
-                        settings = settings,
-                        onLocationSelected = { loc ->
-                            if (loc != null) {
-                                scope.launch {
-                                    mapLibreMap?.animateCamera(
-                                        CameraUpdateFactory.newLatLngZoom(
-                                            LatLng(loc.latitude, loc.longitude),
-                                            15.0
-                                        )
-                                    )
-                                }
-                                showAddressSearch = false
-                            }
-                        },
-                        onOpenRoutes = { _, _ -> },
-                        onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) }
-                    )
-                }
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -409,24 +501,27 @@ fun VectorMapScreen(
                         initialCameraPosition = LatLng(defaultLat, defaultLng) to defaultZoom,
                         contentPaddingBottom = mapPaddingBottom,
                         onMapReady = { mapLibreMap = it },
-                        poisInView = if (showFavoritesOnly && favoriteIds.isNotEmpty()) poisInView.filter { it.id in favoriteIds } else poisInView,
+                        poisInView = filteredPois,
                         selectedPoiId = selectedPoi?.id,
                         availabilityByPoiId = mapData.availabilityByPoiId,
                         onPoiClick = { poi ->
+                            if (selectedPoi == null && !isCheapestFilterActive) {
+                                poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
+                            }
                             selectedPoi = poi
                         },
                         effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
                         effectivePowerLevels = settings.effectiveIrvePowerLevels()
                     )
 
-                    // Map overlay scale and compass widgets
+                    // Map overlay scale widget (placed at the bottom-left, shifts up if bottom sheet is shown)
                     MapOverlayWidgets(
                         bearing = (cameraPosition?.bearing ?: 0.0).toFloat(),
                         zoom = (cameraPosition?.zoom ?: defaultZoom).toFloat(),
                         latitude = currentTarget.latitude,
                         modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(top = 16.dp, start = 16.dp)
+                            .align(Alignment.BottomStart)
+                            .padding(start = 16.dp, bottom = mapPaddingBottom + 16.dp)
                             .zIndex(1f)
                     )
 
@@ -460,12 +555,14 @@ fun VectorMapScreen(
             setFavoriteIds = { favoriteIds = it },
             communityRepo = communityRepo,
             selectedPoi = selectedPoi,
-            onSelectedPoiChange = { selectedPoi = it },
-            poisForOverlay = if (showFavoritesOnly && favoriteIds.isNotEmpty()) {
-                poisInView.filter { it.id in favoriteIds }
-            } else {
-                poisInView
+            onSelectedPoiChange = {
+                selectedPoi = it
+                if (it == null && !isCheapestFilterActive) {
+                    poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
+                }
             },
+            sortOrder = poiSortOrder,
+            poisForOverlay = filteredPois,
             onCenterMapOnPoi = { poi ->
                 scope.launch {
                     mapLibreMap?.animateCamera(
