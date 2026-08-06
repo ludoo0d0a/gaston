@@ -130,14 +130,14 @@ fun DirectionsMapScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Map overlay scale and compass widgets
+            // Map overlay scale widget (placed at the bottom-left)
             MapOverlayWidgets(
                 bearing = (cameraPosition?.bearing ?: 0.0).toFloat(),
                 zoom = (cameraPosition?.zoom ?: 10.0).toFloat(),
                 latitude = cameraPosition?.target?.latitude ?: routeLat,
                 modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(top = 16.dp, start = 16.dp)
+                    .align(Alignment.BottomStart)
+                    .padding(start = 16.dp, bottom = 16.dp)
                     .zIndex(1f)
             )
 
