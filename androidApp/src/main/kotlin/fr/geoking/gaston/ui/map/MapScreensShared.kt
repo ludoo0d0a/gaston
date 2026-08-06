@@ -121,7 +121,10 @@ fun rememberMapDataState(
     }
     actions.refresh = { clearCaches, atCenter ->
         scope.launch {
-            if (clearCaches) CacheManager.clearAllCaches(context)
+            if (clearCaches) {
+                CacheManager.clearAllCaches(context)
+                poiProvider.clearCache()
+            }
             cachedPois = emptyList()
             availabilityByPoiId = emptyMap()
             trafficInfo = null
