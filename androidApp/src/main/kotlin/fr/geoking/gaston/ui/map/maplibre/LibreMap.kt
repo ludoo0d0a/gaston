@@ -14,17 +14,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.poi.Poi
-import fr.geoking.gaston.ui.map.MarkerStyle
-import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.style.layers.PropertyFactory
-import org.maplibre.android.style.layers.SymbolLayer
-import org.maplibre.android.style.sources.GeoJsonSource
-import org.maplibre.geojson.Feature
-import org.maplibre.geojson.FeatureCollection
-import org.maplibre.geojson.Point
 
 @Composable
 fun LibreMap(
@@ -57,96 +49,31 @@ fun LibreMap(
             mapLibreMap = map
             map.setPadding(0, 0, 0, paddingBottomPx)
             onMapReady(map)
-
-            map.getStyle { style ->
-                if (style.getSource("poi-source") == null) {
-                    style.addSource(GeoJsonSource("poi-source"))
-                }
-                if (style.getLayer("poi-layer") == null) {
-                    style.addLayer(
-                        SymbolLayer("poi-layer", "poi-source").withProperties(
-                            PropertyFactory.iconImage("{poi-id}"),
-                            PropertyFactory.iconAllowOverlap(true),
-                            PropertyFactory.iconIgnorePlacement(true)
-                        )
-                    )
-                }
-            }
+            MapLibreSharedHelper.initPoiLayer(map)
         },
         onMapClick = { latLng ->
             val map = mapLibreMap ?: return@MapLibreView
             val screenPoint = map.projection.toScreenLocation(latLng)
-            val features = map.queryRenderedFeatures(PointF(screenPoint.x.toFloat(), screenPoint.y.toFloat()), "poi-layer")
-            val poiId = features.firstOrNull()?.getStringProperty("poi-id") ?: return@MapLibreView
+            val features = map.queryRenderedFeatures(
+                PointF(screenPoint.x.toFloat(), screenPoint.y.toFloat()),
+                MapLibreSharedHelper.POI_LAYER_ID
+            )
+            val poiId = features.firstOrNull()?.getStringProperty(MapLibreSharedHelper.POI_ID_PROPERTY) ?: return@MapLibreView
             val poi = poisInView.firstOrNull { it.id == poiId } ?: return@MapLibreView
             onPoiClick(poi)
         },
         update = { map ->
             map.setPadding(0, 0, 0, paddingBottomPx)
-            updatePoisAndIcons(
+            MapLibreSharedHelper.syncPoiLayer(
                 context = context,
                 map = map,
-                poisInView = poisInView,
+                pois = poisInView,
                 selectedPoiId = selectedPoiId,
                 availabilityByPoiId = availabilityByPoiId,
                 effectiveEnergyTypes = effectiveEnergyTypes,
-                effectivePowerLevels = effectivePowerLevels
+                effectivePowerLevels = effectivePowerLevels,
+                sizeProvider = { _, isSelected -> if (isSelected) 150 else 120 }
             )
         }
     )
 }
-
-private fun updatePoisAndIcons(
-    context: Context,
-    map: MapLibreMap,
-    poisInView: List<Poi>,
-    selectedPoiId: String?,
-    availabilityByPoiId: Map<String, StationAvailabilitySummary>,
-    effectiveEnergyTypes: Set<String>,
-    effectivePowerLevels: Set<Int>
-) {
-    map.getStyle { style ->
-        if (style.getSource("poi-source") == null) {
-            style.addSource(GeoJsonSource("poi-source"))
-        }
-        if (style.getLayer("poi-layer") == null) {
-            style.addLayer(
-                SymbolLayer("poi-layer", "poi-source").withProperties(
-                    PropertyFactory.iconImage("{poi-id}"),
-                    PropertyFactory.iconAllowOverlap(true),
-                    PropertyFactory.iconIgnorePlacement(true)
-                )
-            )
-        }
-
-        val features = poisInView.map { poi ->
-            val isSelected = poi.id == selectedPoiId
-            val availability = availabilityByPoiId[poi.id]
-
-            val markerBitmap = PoiMarkerHelper.getMarkerBitmap(
-                context = context,
-                poi = poi,
-                effectiveEnergyTypes = effectiveEnergyTypes,
-                effectivePowerLevels = effectivePowerLevels,
-                isSelected = isSelected,
-                cheapestRank = null,
-                sizePx = if (isSelected) 150 else 120,
-                availability = availability,
-                markerStyle = MarkerStyle.Bubble
-            )
-
-            if (style.getImage(poi.id) != null) {
-                style.removeImage(poi.id)
-            }
-            style.addImage(poi.id, markerBitmap)
-
-            Feature.fromGeometry(Point.fromLngLat(poi.longitude, poi.latitude)).apply {
-                addStringProperty("poi-id", poi.id)
-            }
-        }
-
-        style.getSourceAs<GeoJsonSource>("poi-source")
-            ?.setGeoJson(FeatureCollection.fromFeatures(features))
-    }
-}
-
