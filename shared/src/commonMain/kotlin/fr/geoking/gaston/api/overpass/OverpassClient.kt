@@ -206,13 +206,14 @@ data class OverpassElement(
     fun amenity(): String? = tags["amenity"]
     fun tourism(): String? = tags["tourism"]
     fun highway(): String? = tags["highway"]
-    fun name(): String? = tags["name"]
+    fun name(lang: String? = null): String? = lang?.let { tags["name:$it"] } ?: tags["name"]
     fun address(): String? = tags["addr:street"]?.let { street ->
         val house = tags["addr:housenumber"]
         val city = tags["addr:city"] ?: tags["addr:place"]
         listOfNotNull(house?.let { "$it $street" } ?: street, city).joinToString(", ")
     } ?: tags["address"]
     fun openingHours(): String? = tags["opening_hours"]
-    fun cuisine(): String? = tags["cuisine"]
-    fun brand(): String? = tags["brand"]
+    fun cuisine(lang: String? = null): String? = lang?.let { tags["cuisine:$it"] } ?: tags["cuisine"]
+    fun brand(lang: String? = null): String? = lang?.let { tags["brand:$it"] } ?: tags["brand"]
+    fun operator(lang: String? = null): String? = lang?.let { tags["operator:$it"] } ?: tags["operator"]
 }
