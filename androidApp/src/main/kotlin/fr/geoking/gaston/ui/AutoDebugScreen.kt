@@ -40,6 +40,7 @@ import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.auto.AutoMapCamera
 import fr.geoking.gaston.auto.AutoSurfaceRenderer
 import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProvidersAt
@@ -58,7 +59,6 @@ import org.koin.compose.koinInject
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
-import androidx.compose.ui.draw.scale
 
 /**
  * A highly interactive screen on phone to reuse and debug the mechanism
@@ -330,423 +330,245 @@ fun AutoDebugScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    // 1. Simulate Menu Action
+                    IconButton(
+                        onClick = { visibleAreaEnabled = !visibleAreaEnabled },
+                        modifier = Modifier.testTag("toggle_visible_area_btn")
+                    ) {
+                        Icon(
+                            imageVector = if (visibleAreaEnabled) Icons.Default.MenuOpen else Icons.Default.Menu,
+                            contentDescription = "Simulate Menu",
+                            tint = if (visibleAreaEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // 2. North-Up Toggle Action
+                    IconButton(
+                        onClick = {
+                            orientationMode = if (orientationMode == MapOrientationMode.NorthUp) {
+                                MapOrientationMode.HeadingUp
+                            } else {
+                                MapOrientationMode.NorthUp
+                            }
+                        },
+                        modifier = Modifier.testTag("toggle_orientation_mode_btn")
+                    ) {
+                        Icon(
+                            imageVector = if (orientationMode == MapOrientationMode.NorthUp) Icons.Default.North else Icons.Default.Navigation,
+                            contentDescription = "Toggle Orientation",
+                            tint = if (orientationMode == MapOrientationMode.NorthUp) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                        )
+                    }
+
+                    // 3. Simulate Travel Action
+                    IconButton(
+                        onClick = {
+                            if (isSimulatingTravel) {
+                                isSimulatingTravel = false
+                            } else {
+                                val startLat = userLat ?: mapLat
+                                val startLon = userLon ?: mapLon
+                                // Generate winding short travel path
+                                val path = mutableListOf<Pair<Double, Double>>()
+                                path.add(startLat to startLon)
+                                val angleRad = Math.random() * 2 * Math.PI
+                                val steps = 15
+                                val stepDegrees = 0.015 / steps
+                                var currentLat = startLat
+                                var currentLon = startLon
+                                for (i in 1..steps) {
+                                    val turnAngle = (Math.random() - 0.5) * (Math.PI / 3)
+                                    val currentAngle = angleRad + turnAngle
+                                    currentLat += stepDegrees * cos(currentAngle)
+                                    currentLon += stepDegrees * sin(currentAngle)
+                                    path.add(currentLat to currentLon)
+                                }
+                                travelPath = path
+                                historyPoints = emptyList()
+                                currentPathIndex = 0
+                                orientationMode = MapOrientationMode.HeadingUp
+                                isSimulatingTravel = true
+                            }
+                        },
+                        modifier = Modifier.testTag("toggle_simulation_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DirectionsCar,
+                            contentDescription = "Simulate Travel",
+                            tint = if (isSimulatingTravel) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // 4. Map Tile Debug Grid Action
+                    IconButton(
+                        onClick = { mapTileDebugEnabled = !mapTileDebugEnabled },
+                        modifier = Modifier.testTag("toggle_map_tile_debug_btn")
+                    ) {
+                        Icon(
+                            imageVector = if (mapTileDebugEnabled) Icons.Default.GridOn else Icons.Default.GridOff,
+                            contentDescription = "Map Tile Debug Grid",
+                            tint = if (mapTileDebugEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             )
         }
     ) { paddingValues ->
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            val isLandscape = maxWidth > maxHeight
-
-            // Render Layout based on orientation
-            if (isLandscape) {
-                Row(modifier = Modifier.fillMaxSize()) {
-                    // Left Floating Menu column
-                    Box(
-                        modifier = Modifier
-                            .width(340.dp)
-                            .fillMaxHeight()
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
-                            .padding(12.dp)
-                    ) {
-                        FloatingMenuContent(
-                            sortedPois = sortedPois,
-                            selectedPoi = selectedPoi,
-                            onSelectPoi = { selectedPoiId = it },
-                            visibleAreaEnabled = visibleAreaEnabled,
-                            onToggleVisibleArea = { visibleAreaEnabled = it },
-                            mapTileDebugEnabled = mapTileDebugEnabled,
-                            onToggleMapTileDebug = { mapTileDebugEnabled = it },
-                            orientationMode = orientationMode,
-                            onToggleOrientationMode = {
-                                orientationMode = if (orientationMode == MapOrientationMode.NorthUp) {
-                                    MapOrientationMode.HeadingUp
-                                } else {
-                                    MapOrientationMode.NorthUp
-                                }
-                            },
-                            isQueryPending = isQueryPending,
-                            isSimulatingTravel = isSimulatingTravel,
-                            onToggleSimulation = {
-                                if (isSimulatingTravel) {
-                                    isSimulatingTravel = false
-                                } else {
-                                    val startLat = userLat ?: mapLat
-                                    val startLon = userLon ?: mapLon
-                                    // Generate a winding short travel path
-                                    val path = mutableListOf<Pair<Double, Double>>()
-                                    path.add(startLat to startLon)
-                                    val angleRad = Math.random() * 2 * Math.PI
-                                    val steps = 15
-                                    val stepDegrees = 0.015 / steps
-                                    var currentLat = startLat
-                                    var currentLon = startLon
-                                    for (i in 1..steps) {
-                                        val turnAngle = (Math.random() - 0.5) * (Math.PI / 3)
-                                        val currentAngle = angleRad + turnAngle
-                                        currentLat += stepDegrees * cos(currentAngle)
-                                        currentLon += stepDegrees * sin(currentAngle)
-                                        path.add(currentLat to currentLon)
-                                    }
-                                    travelPath = path
-                                    historyPoints = emptyList()
-                                    currentPathIndex = 0
-                                    orientationMode = MapOrientationMode.HeadingUp
-                                    isSimulatingTravel = true
-                                }
-                            }
-                        )
-                    }
-
-                    // Map Surface area (remaining space)
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                    ) {
-                        MapSurfaceAndControls(
-                            zoom = zoom,
-                            bearing = bearing,
-                            mapLat = mapLat,
-                            mapLon = mapLon,
-                            userLat = userLat,
-                            userLon = userLon,
-                            onZoomChange = { zoom = it },
-                            onBearingChange = {
-                                bearing = it
-                                orientationMode = if (it == 0f) {
-                                    MapOrientationMode.NorthUp
-                                } else {
-                                    MapOrientationMode.HeadingUp
-                                }
-                            },
-                            onMapPan = { dLat, dLon ->
-                                mapLat += dLat
-                                mapLon += dLon
-                            },
-                            visibleAreaRect = visibleAreaRect,
-                            onSurfaceCreated = { renderer, w, h ->
-                                surfaceRendererRef = renderer
-                                surfaceWidth = w
-                                surfaceHeight = h
-                            },
-                            onSurfaceDestroyed = {
-                                surfaceRendererRef = null
-                            }
-                        )
-                    }
-                }
-            } else {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Map Surface area on top
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    ) {
-                        MapSurfaceAndControls(
-                            zoom = zoom,
-                            bearing = bearing,
-                            mapLat = mapLat,
-                            mapLon = mapLon,
-                            userLat = userLat,
-                            userLon = userLon,
-                            onZoomChange = { zoom = it },
-                            onBearingChange = {
-                                bearing = it
-                                orientationMode = if (it == 0f) {
-                                    MapOrientationMode.NorthUp
-                                } else {
-                                    MapOrientationMode.HeadingUp
-                                }
-                            },
-                            onMapPan = { dLat, dLon ->
-                                mapLat += dLat
-                                mapLon += dLon
-                            },
-                            visibleAreaRect = visibleAreaRect,
-                            onSurfaceCreated = { renderer, w, h ->
-                                surfaceRendererRef = renderer
-                                surfaceWidth = w
-                                surfaceHeight = h
-                            },
-                            onSurfaceDestroyed = {
-                                surfaceRendererRef = null
-                            }
-                        )
-                    }
-
-                    // Bottom Floating Menu column
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(280.dp)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
-                            .padding(12.dp)
-                    ) {
-                        FloatingMenuContent(
-                            sortedPois = sortedPois,
-                            selectedPoi = selectedPoi,
-                            onSelectPoi = { selectedPoiId = it },
-                            visibleAreaEnabled = visibleAreaEnabled,
-                            onToggleVisibleArea = { visibleAreaEnabled = it },
-                            mapTileDebugEnabled = mapTileDebugEnabled,
-                            onToggleMapTileDebug = { mapTileDebugEnabled = it },
-                            orientationMode = orientationMode,
-                            onToggleOrientationMode = {
-                                orientationMode = if (orientationMode == MapOrientationMode.NorthUp) {
-                                    MapOrientationMode.HeadingUp
-                                } else {
-                                    MapOrientationMode.NorthUp
-                                }
-                            },
-                            isQueryPending = isQueryPending,
-                            isSimulatingTravel = isSimulatingTravel,
-                            onToggleSimulation = {
-                                if (isSimulatingTravel) {
-                                    isSimulatingTravel = false
-                                } else {
-                                    val startLat = userLat ?: mapLat
-                                    val startLon = userLon ?: mapLon
-                                    // Generate a winding short travel path
-                                    val path = mutableListOf<Pair<Double, Double>>()
-                                    path.add(startLat to startLon)
-                                    val angleRad = Math.random() * 2 * Math.PI
-                                    val steps = 15
-                                    val stepDegrees = 0.015 / steps
-                                    var currentLat = startLat
-                                    var currentLon = startLon
-                                    for (i in 1..steps) {
-                                        val turnAngle = (Math.random() - 0.5) * (Math.PI / 3)
-                                        val currentAngle = angleRad + turnAngle
-                                        currentLat += stepDegrees * cos(currentAngle)
-                                        currentLon += stepDegrees * sin(currentAngle)
-                                        path.add(currentLat to currentLon)
-                                    }
-                                    travelPath = path
-                                    historyPoints = emptyList()
-                                    currentPathIndex = 0
-                                    orientationMode = MapOrientationMode.HeadingUp
-                                    isSimulatingTravel = true
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun FloatingMenuContent(
-    sortedPois: List<Poi>,
-    selectedPoi: Poi?,
-    onSelectPoi: (String?) -> Unit,
-    visibleAreaEnabled: Boolean,
-    onToggleVisibleArea: (Boolean) -> Unit,
-    mapTileDebugEnabled: Boolean,
-    onToggleMapTileDebug: (Boolean) -> Unit,
-    orientationMode: MapOrientationMode,
-    onToggleOrientationMode: () -> Unit,
-    isQueryPending: Boolean,
-    isSimulatingTravel: Boolean,
-    onToggleSimulation: () -> Unit
-) {
-    val scrollState = rememberScrollState()
-
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // Toggle Controls wrapped in a scrollable column to avoid clipping
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1.3f)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = "AA MAP CONTAINER SIMULATOR",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Simulate Menu Boundary", style = MaterialTheme.typography.bodyMedium)
-                Switch(
-                    checked = visibleAreaEnabled,
-                    onCheckedChange = onToggleVisibleArea,
-                    modifier = Modifier.scale(0.85f).testTag("toggle_visible_area_switch")
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Map Tile Debug Grid", style = MaterialTheme.typography.bodyMedium)
-                Switch(
-                    checked = mapTileDebugEnabled,
-                    onCheckedChange = onToggleMapTileDebug,
-                    modifier = Modifier.scale(0.85f).testTag("toggle_map_tile_debug_switch")
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Orientation", style = MaterialTheme.typography.bodyMedium)
-                Button(
-                    onClick = onToggleOrientationMode,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                    modifier = Modifier.testTag("toggle_orientation_mode_btn")
-                ) {
-                    Text(
-                        if (orientationMode == MapOrientationMode.NorthUp) "North-Up" else "Heading-Up",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Travel Itinerary", style = MaterialTheme.typography.bodyMedium)
-                Button(
-                    onClick = onToggleSimulation,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isSimulatingTravel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                    ),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                    modifier = Modifier.testTag("toggle_simulation_btn")
-                ) {
-                    Text(
-                        if (isSimulatingTravel) "Stop Sim" else "Start Sim",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-        }
-
-        Divider()
-
-        if (selectedPoi == null) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Stations List (${sortedPois.size})",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                if (isQueryPending) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp
-                    )
-                }
-            }
-
-            // Standardize LazyColumn with a scrollbar overlay
-            val listState = rememberLazyListState()
-            LazyColumnWithScrollbar(
-                state = listState,
-                modifier = Modifier.weight(1.7f)
-            ) {
-                items(sortedPois) { poi ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelectPoi(poi.id) },
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        )
-                    ) {
-                        ListItem(
-                            headlineContent = { Text(poi.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            supportingContent = { Text(poi.address, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            leadingContent = {
-                                Icon(
-                                    imageVector = if (poi.isElectric) Icons.Default.EvStation else Icons.Default.LocalGasStation,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        )
-                    }
-                }
-            }
-        } else {
-            // Mimic AA Station detail screen
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Station Detail View",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(onClick = { onSelectPoi(null) }) {
-                    Icon(Icons.Default.Close, contentDescription = "Close Detail")
-                }
-            }
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1.7f),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
+        BottomSheetScaffold(
+            scaffoldState = rememberBottomSheetScaffoldState(),
+            sheetPeekHeight = 140.dp,
+            sheetContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
+            containerColor = Color.Transparent,
+            sheetContent = {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(12.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        selectedPoi.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(selectedPoi.address, style = MaterialTheme.typography.bodyMedium)
-
-                    val prices = selectedPoi.fuelPrices
-                    if (!prices.isNullOrEmpty()) {
-                        Text("Fuel Prices:", fontWeight = FontWeight.Bold)
-                        prices.forEach { price ->
-                            Text(" • ${price.fuelName}: €${price.price}")
+                    if (selectedPoi == null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Stations List (${sortedPois.size})",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (isQueryPending) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
                         }
-                    } else if (selectedPoi.isElectric) {
-                        Text("EV Charging Details:", fontWeight = FontWeight.Bold)
-                        Text(" • Type 2, CCS connectors available")
-                        Text(" • Dynamic availability supported")
+
+                        val listState = rememberLazyListState()
+                        LazyColumnWithScrollbar(
+                            state = listState,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            items(sortedPois) { poi ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedPoiId = poi.id },
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surface
+                                    )
+                                ) {
+                                    ListItem(
+                                        headlineContent = { Text(poi.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                        supportingContent = { Text(poi.address, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                        leadingContent = {
+                                            Icon(
+                                                imageVector = if (poi.isElectric) Icons.Default.EvStation else Icons.Default.LocalGasStation,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Station Detail View",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            IconButton(onClick = { selectedPoiId = null }) {
+                                Icon(Icons.Default.Close, contentDescription = "Close Detail")
+                            }
+                        }
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(12.dp)
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    selectedPoi.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(selectedPoi.address, style = MaterialTheme.typography.bodyMedium)
+
+                                val prices = selectedPoi.fuelPrices
+                                if (!prices.isNullOrEmpty()) {
+                                    Text("Fuel Prices:", fontWeight = FontWeight.Bold)
+                                    prices.forEach { price ->
+                                        Text(" • ${price.fuelName}: €${price.price}")
+                                    }
+                                } else if (selectedPoi.isElectric) {
+                                    Text("EV Charging Details:", fontWeight = FontWeight.Bold)
+                                    Text(" • Type 2, CCS connectors available")
+                                    Text(" • Dynamic availability supported")
+                                }
+                            }
+                        }
                     }
                 }
+            }
+        ) { sheetPaddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                MapSurfaceAndControls(
+                    zoom = zoom,
+                    bearing = bearing,
+                    mapLat = mapLat,
+                    mapLon = mapLon,
+                    userLat = userLat,
+                    userLon = userLon,
+                    orientationMode = orientationMode,
+                    onZoomChange = { zoom = it },
+                    onBearingChange = {
+                        bearing = it
+                        orientationMode = if (it == 0f) {
+                            MapOrientationMode.NorthUp
+                        } else {
+                            MapOrientationMode.HeadingUp
+                        }
+                    },
+                    onMapPan = { dLat, dLon ->
+                        mapLat += dLat
+                        mapLon += dLon
+                    },
+                    visibleAreaRect = visibleAreaRect,
+                    onSurfaceCreated = { renderer, w, h ->
+                        surfaceRendererRef = renderer
+                        surfaceWidth = w
+                        surfaceHeight = h
+                    },
+                    onSurfaceDestroyed = {
+                        surfaceRendererRef = null
+                    }
+                )
             }
         }
     }
@@ -812,6 +634,7 @@ fun MapSurfaceAndControls(
     mapLon: Double,
     userLat: Double?,
     userLon: Double?,
+    orientationMode: MapOrientationMode,
     onZoomChange: (Int) -> Unit,
     onBearingChange: (Float) -> Unit,
     onMapPan: (Double, Double) -> Unit,
@@ -886,9 +709,12 @@ fun MapSurfaceAndControls(
             }
         )
 
-        // Overlay of Simulated Boundary (Visible Area)
-        if (visibleAreaRect != null) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
+        // Overlay Canvas for Simulated Boundary (Visible Area) and Red Circle Focal Point
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val surfaceWidth = size.width.toInt()
+            val surfaceHeight = size.height.toInt()
+
+            if (visibleAreaRect != null) {
                 val left = visibleAreaRect.left.toFloat()
                 val top = visibleAreaRect.top.toFloat()
                 val right = visibleAreaRect.right.toFloat()
@@ -929,6 +755,31 @@ fun MapSurfaceAndControls(
                     color = Color.Black.copy(alpha = 0.2f),
                     topLeft = Offset(left, bottom),
                     size = androidx.compose.ui.geometry.Size(right - left, size.height - bottom)
+                )
+            }
+
+            // Always draw the Red Circle at the Focal Point
+            if (surfaceWidth > 0 && surfaceHeight > 0) {
+                val focalPoint = AutoMapFollowFocalPoint.focalPointPx(
+                    visibleArea = visibleAreaRect,
+                    surfaceWidth = surfaceWidth,
+                    surfaceHeight = surfaceHeight,
+                    headingUp = (orientationMode == MapOrientationMode.HeadingUp)
+                )
+
+                // Outer red circle
+                drawCircle(
+                    color = Color.Red,
+                    radius = 24f,
+                    center = Offset(focalPoint.x.toFloat(), focalPoint.y.toFloat()),
+                    style = Stroke(width = 4f)
+                )
+
+                // Inner red dot
+                drawCircle(
+                    color = Color.Red,
+                    radius = 6f,
+                    center = Offset(focalPoint.x.toFloat(), focalPoint.y.toFloat())
                 )
             }
         }
