@@ -40,6 +40,7 @@ import fr.geoking.gaston.ui.EmergencyScreen
 import fr.geoking.gaston.ui.PhoneNetworkLocationScreen
 import fr.geoking.gaston.ui.PhoneDashboardScreen
 import fr.geoking.gaston.ui.AutoDebugScreen
+import fr.geoking.gaston.ui.components.NetworkStatusIcon
 import fr.geoking.gaston.ui.dashboard.GastonTheme
 import fr.geoking.gaston.ui.FavoritesScreen
 import fr.geoking.gaston.ui.RoutePlanningScreen
@@ -446,21 +447,32 @@ fun MainUI(
             )
         }
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            when {
-                showNetworkDiagnostics -> {
-                    BackHandler { showNetworkDiagnostics = false }
-                    PhoneNetworkLocationScreen(
-                        networkService = networkService,
-                        onBack = { showNetworkDiagnostics = false }
-                    )
-                }
-                showAutoDebug -> {
-                    BackHandler { showAutoDebug = false }
-                    AutoDebugScreen(
-                        settingsManager = settingsManager,
-                        onBack = { showAutoDebug = false }
-                    )
-                }
+            Box(modifier = Modifier.fillMaxSize()) {
+                when {
+                    showNetworkDiagnostics -> {
+                        BackHandler { showNetworkDiagnostics = false }
+                        PhoneNetworkLocationScreen(
+                            networkService = networkService,
+                            onBack = { showNetworkDiagnostics = false }
+                        )
+                    }
+                    showAutoDebug || settings.testAaMapSurfaceEnabled -> {
+                        BackHandler {
+                            showAutoDebug = false
+                            if (settings.testAaMapSurfaceEnabled) {
+                                settingsManager.setTestAaMapSurfaceEnabled(false)
+                            }
+                        }
+                        AutoDebugScreen(
+                            settingsManager = settingsManager,
+                            onBack = {
+                                showAutoDebug = false
+                                if (settings.testAaMapSurfaceEnabled) {
+                                    settingsManager.setTestAaMapSurfaceEnabled(false)
+                                }
+                            }
+                        )
+                    }
                 showEmergency -> {
                     BackHandler { showEmergency = false }
                     EmergencyScreen(
@@ -791,9 +803,25 @@ fun MainUI(
                         )
                     }
                 }
+
+                if (settings.networkFloatingBarEnabled) {
+                    val networkStatus by networkService.status.collectAsState()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 80.dp, end = 16.dp),
+                        contentAlignment = Alignment.TopEnd
+                    ) {
+                        NetworkStatusIcon(
+                            status = networkStatus,
+                            onClick = { showNetworkDiagnostics = true }
+                        )
+                    }
+                }
             }
         }
     }
+}
 
 @Composable
 private fun StartupErrorContent(error: Throwable) {

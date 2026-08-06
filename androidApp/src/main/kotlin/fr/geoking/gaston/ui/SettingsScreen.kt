@@ -81,7 +81,8 @@ enum class SettingsScreenPage {
     MapConfig,
     Sources,
     Theme,
-    About
+    About,
+    Developer
 }
 
 @Composable
@@ -223,6 +224,7 @@ fun SettingsScreen(
                             SettingsScreenPage.Sources -> stringResource(R.string.screen_sources)
                             SettingsScreenPage.Theme -> stringResource(R.string.screen_theme)
                             SettingsScreenPage.MapConfig -> stringResource(R.string.screen_map)
+                            SettingsScreenPage.Developer -> stringResource(R.string.screen_developer)
                         }
                     )
                 },
@@ -285,6 +287,10 @@ fun SettingsScreen(
                     onUpdate = { save(settingsManager, it) }
                 )
                 SettingsScreenPage.Theme -> ThemeConfig(
+                    settings = current,
+                    onUpdate = { save(settingsManager, it) }
+                )
+                SettingsScreenPage.Developer -> DeveloperSection(
                     settings = current,
                     onUpdate = { save(settingsManager, it) }
                 )
@@ -1155,6 +1161,13 @@ private fun MainMenu(
                     value = stringResource(R.string.settings_clear_cache_subtitle),
                     onClick = { showClearCacheConfirm = true }
                 )
+                if (BuildConfig.DEBUG_DEV) {
+                    SettingsItem(
+                        label = stringResource(R.string.screen_developer),
+                        value = "Developer options & testing tools",
+                        onClick = { onNavigate(SettingsScreenPage.Developer) }
+                    )
+                }
             }
 
             Spacer(Modifier.height(12.dp))
@@ -1995,6 +2008,84 @@ private fun ErrorLog(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DeveloperSection(
+    settings: AppSettings,
+    onUpdate: (AppSettings) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        // 1. premium mode
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.dev_premium_mode), style = MaterialTheme.typography.bodyLarge)
+                Text("Simulate premium features override", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(
+                checked = settings.devSimulatePremium,
+                onCheckedChange = { onUpdate(settings.copy(devSimulatePremium = it)) }
+            )
+        }
+
+        // 2. network floating bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.dev_network_floating_bar), style = MaterialTheme.typography.bodyLarge)
+                Text("Show a floating network status overlay", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(
+                checked = settings.networkFloatingBarEnabled,
+                onCheckedChange = { onUpdate(settings.copy(networkFloatingBarEnabled = it)) }
+            )
+        }
+
+        // 3. debug grid in map
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.dev_debug_grid), style = MaterialTheme.typography.bodyLarge)
+                Text("Draw debugging tile boundaries grid on map", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(
+                checked = settings.mapTileDebugEnabled,
+                onCheckedChange = { onUpdate(settings.copy(mapTileDebugEnabled = it)) }
+            )
+        }
+
+        // 4. test AA map surface
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.dev_test_aa_map_surface), style = MaterialTheme.typography.bodyLarge)
+                Text("Emulate the Android Auto map on your mobile device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(
+                checked = settings.testAaMapSurfaceEnabled,
+                onCheckedChange = { onUpdate(settings.copy(testAaMapSurfaceEnabled = it)) }
+            )
         }
     }
 }

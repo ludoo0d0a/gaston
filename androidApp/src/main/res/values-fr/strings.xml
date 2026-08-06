@@ -637,4 +637,11 @@
             <item quantity="one">%1$d/%2$d libre</item>
             <item quantity="other">%1$d/%2$d libres</item>
         </plurals>
+
+    <string name="screen_developer">developer</string>
+    <string name="dev_developer_settings">Paramètres développeur</string>
+    <string name="dev_premium_mode">mode premium</string>
+    <string name="dev_network_floating_bar">barre réseau flottante</string>
+    <string name="dev_debug_grid">grille de débogage sur la carte</string>
+    <string name="dev_test_aa_map_surface">tester la surface de carte AA</string>
 </resources>
