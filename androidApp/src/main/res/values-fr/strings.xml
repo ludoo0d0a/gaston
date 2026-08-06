@@ -375,6 +375,17 @@
     <string name="map_theme_osm">OSM</string>
     <string name="map_theme_osm_fr">OSM France (Contraste élevé)</string>
     <string name="map_theme_hot">Humanitaire (Contraste élevé)</string>
+    <string name="map_theme_bright">Bright (OpenFreeMap)</string>
+    <string name="map_theme_liberty">Liberty (OpenFreeMap)</string>
+    <string name="map_theme_dark_matter_desc">Style vectoriel sombre avec contraste minimal pour la nuit.</string>
+    <string name="map_theme_voyager_desc">Un thème clair coloré et polyvalent avec relief détaillé.</string>
+    <string name="map_theme_osm_desc">Style standard OpenStreetMap avec détails complets.</string>
+    <string name="map_theme_positron_desc">Style vectoriel clair et épuré optimisé pour la lisibilité.</string>
+    <string name="map_theme_fiord_desc">Style vectoriel sombre aux tons froids inspiré du design nordique.</string>
+    <string name="map_theme_osm_fr_desc">Style officiel OSM France avec contraste localisé.</string>
+    <string name="map_theme_hot_desc">Style à fort contraste conçu pour l\'aide humanitaire.</string>
+    <string name="map_theme_bright_desc">Style officiel OpenFreeMap Bright avec lignes vectorielles modernes et vibrantes.</string>
+    <string name="map_theme_liberty_desc">Style officiel OpenFreeMap Liberty conçu pour des itinéraires clairs et lisibles.</string>
     <string name="theme_mode_system">Système</string>
     <string name="theme_mode_light">Clair</string>
     <string name="theme_mode_dark">Sombre</string>

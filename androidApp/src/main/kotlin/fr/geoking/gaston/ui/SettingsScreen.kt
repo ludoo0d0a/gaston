@@ -99,6 +99,21 @@ private fun MapTheme.displayLabel(): String = when (this) {
     MapTheme.Fiord -> stringResource(R.string.map_theme_fiord)
     MapTheme.OsmFr -> stringResource(R.string.map_theme_osm_fr)
     MapTheme.Hot -> stringResource(R.string.map_theme_hot)
+    MapTheme.Bright -> stringResource(R.string.map_theme_bright)
+    MapTheme.Liberty -> stringResource(R.string.map_theme_liberty)
+}
+
+@Composable
+private fun MapTheme.displayDescription(): String = when (this) {
+    MapTheme.Dark -> stringResource(R.string.map_theme_dark_matter_desc)
+    MapTheme.Voyager -> stringResource(R.string.map_theme_voyager_desc)
+    MapTheme.Standard -> stringResource(R.string.map_theme_osm_desc)
+    MapTheme.Positron -> stringResource(R.string.map_theme_positron_desc)
+    MapTheme.Fiord -> stringResource(R.string.map_theme_fiord_desc)
+    MapTheme.OsmFr -> stringResource(R.string.map_theme_osm_fr_desc)
+    MapTheme.Hot -> stringResource(R.string.map_theme_hot_desc)
+    MapTheme.Bright -> stringResource(R.string.map_theme_bright_desc)
+    MapTheme.Liberty -> stringResource(R.string.map_theme_liberty_desc)
 }
 
 @Composable
@@ -317,43 +332,85 @@ private fun MapConfig(
                     stringResource(R.string.settings_map_theme),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 4.dp)
                 )
 
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    val previewCenter = remember(settings.lastKnownLat, settings.lastKnownLon) {
-                        if (settings.lastKnownLat != null && settings.lastKnownLon != null) {
-                            LatLng(settings.lastKnownLat, settings.lastKnownLon)
-                        } else {
-                            LatLng(48.8566, 2.3522) // Paris as default
-                        }
+                val previewCenter = remember(settings.lastKnownLat, settings.lastKnownLon) {
+                    if (settings.lastKnownLat != null && settings.lastKnownLon != null) {
+                        LatLng(settings.lastKnownLat, settings.lastKnownLon)
+                    } else {
+                        LatLng(48.8566, 2.3522) // Paris as default
                     }
-                    MapLibreView(
-                        modifier = Modifier.fillMaxSize(),
-                        styleUrl = settings.mapTheme.styleUrl,
-                        cameraPosition = CameraPosition.Builder()
-                            .target(previewCenter)
-                            .zoom(11.0)
-                            .build()
-                    )
                 }
 
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    MapTheme.entries.forEach { theme ->
-                        FilterChip(
-                            selected = settings.mapTheme == theme,
-                            onClick = { onUpdate(settings.copy(mapTheme = theme)) },
-                            label = { Text(theme.displayLabel()) },
+                MapTheme.entries.forEach { theme ->
+                    val isSelected = settings.mapTheme == theme
+                    OutlinedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onUpdate(settings.copy(mapTheme = theme)) },
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            width = if (isSelected) 2.dp else 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                        ),
+                        colors = CardDefaults.outlinedCardColors(
+                            containerColor = if (isSelected) {
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            }
                         )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Small map preview
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 90.dp, height = 70.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                MapLibreView(
+                                    modifier = Modifier.fillMaxSize(),
+                                    styleUrl = theme.styleUrl,
+                                    cameraPosition = CameraPosition.Builder()
+                                        .target(previewCenter)
+                                        .zoom(9.5)
+                                        .build()
+                                )
+                            }
+
+                            // Title & Description
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 12.dp)
+                            ) {
+                                Text(
+                                    text = theme.displayLabel(),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = theme.displayDescription(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            // Selection Indicator
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = { onUpdate(settings.copy(mapTheme = theme)) }
+                            )
+                        }
                     }
                 }
             }
