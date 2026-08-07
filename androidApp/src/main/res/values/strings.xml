@@ -644,4 +644,45 @@
     <string name="dev_network_floating_bar">network floating bar</string>
     <string name="dev_debug_grid">debug grid in map</string>
     <string name="dev_test_aa_map_surface">test AA map surface</string>
+
+    <!-- Station Details / Amenities -->
+    <string name="poi_station_details">Station details</string>
+    <string name="poi_station_label">Station</string>
+    <string name="poi_brand">Brand</string>
+    <string name="poi_cuisine">Cuisine</string>
+    <string name="poi_services_amenities">Services &amp; amenities</string>
+    <string name="poi_fuel_opening_hours">Fuel opening hours</string>
+
+    <string name="amenity_manned_24h">Manned 24h</string>
+    <string name="amenity_manned_automat_24h">Manned / automat 24h</string>
+    <string name="amenity_automat">Automat</string>
+    <string name="amenity_motorway">Motorway</string>
+    <string name="amenity_snackbar">Snackbar</string>
+    <string name="amenity_adblue_pump">AdBlue pump</string>
+    <string name="amenity_r4t_network">R4T network</string>
+    <string name="amenity_car_vignette">Car vignette</string>
+    <string name="amenity_highspeed_diesel">High-speed diesel</string>
+    <string name="amenity_truck_station">Truck station</string>
+    <string name="amenity_truck_parking">Truck parking</string>
+    <string name="amenity_truck_diesel">Truck diesel</string>
+    <string name="amenity_truck_lane">Truck lane</string>
+    <string name="amenity_diesel_bio">Diesel bio</string>
+    <string name="amenity_hvo100">HVO100</string>
+    <string name="amenity_lng">LNG</string>
+    <string name="amenity_lpg">LPG</string>
+    <string name="amenity_cng">CNG</string>
+    <string name="amenity_adblue_canister">AdBlue canister</string>
+    <string name="amenity_playground">Playground</string>
+    <string name="amenity_food">Food</string>
+
+    <string name="day_mon">Mon</string>
+    <string name="day_tue">Tue</string>
+    <string name="day_wed">Wed</string>
+    <string name="day_thu">Thu</string>
+    <string name="day_fri">Fri</string>
+    <string name="day_sat">Sat</string>
+    <string name="day_sun">Sun</string>
+
+    <string name="label_yes">Yes</string>
+    <string name="label_no">No</string>
 </resources>

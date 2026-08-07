@@ -80,7 +80,7 @@ fun PoiDetailsFullscreenDialog(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 TopAppBar(
-                    title = { Text(poi.name.takeIf { it.isNotBlank() } ?: "Station details") },
+                    title = { Text(poi.name.takeIf { it.isNotBlank() } ?: stringResource(R.string.poi_station_details)) },
                     navigationIcon = {
                         IconButton(onClick = onDismiss) {
                             Icon(
@@ -94,7 +94,7 @@ fun PoiDetailsFullscreenDialog(
                             IconButton(onClick = toggle) {
                                 Icon(
                                     painter = painterResource(if (isFavorite) R.drawable.ic_star else R.drawable.ic_star_border),
-                                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                                    contentDescription = if (isFavorite) stringResource(R.string.route_remove_favorite) else stringResource(R.string.route_add_favorite),
                                     tint = if (isFavorite) Color(0xFFFACC15) else MaterialTheme.colorScheme.onSurface
                                 )
                             }
@@ -132,7 +132,7 @@ fun PoiDetailsFullscreenDialog(
                     ) {
                         // Header Info
                         Text(
-                            text = poi.name.ifBlank { "Station" },
+                            text = poi.name.ifBlank { stringResource(R.string.poi_station_label) },
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
@@ -154,11 +154,11 @@ fun PoiDetailsFullscreenDialog(
                                 else -> Color(0xFFFF6B6B) // Red
                             }
                             val ratingLabel = when {
-                                rating >= 8.5 -> "Consistently very cheap"
-                                rating >= 7.0 -> "Consistently cheap"
-                                rating >= 4.0 -> "Average prices"
-                                rating >= 2.0 -> "Consistently expensive"
-                                else -> "Very expensive"
+                                rating >= 8.5 -> stringResource(R.string.poi_rating_very_cheap)
+                                rating >= 7.0 -> stringResource(R.string.poi_rating_cheap)
+                                rating >= 4.0 -> stringResource(R.string.poi_rating_average)
+                                rating >= 2.0 -> stringResource(R.string.poi_rating_expensive)
+                                else -> stringResource(R.string.poi_rating_very_expensive)
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Surface(
@@ -166,7 +166,7 @@ fun PoiDetailsFullscreenDialog(
                                     shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
                                 ) {
                                     Text(
-                                        text = "%.1f / 10".format(rating),
+                                        text = stringResource(R.string.poi_rating_format, rating),
                                         color = ratingColor,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
@@ -185,12 +185,12 @@ fun PoiDetailsFullscreenDialog(
                         if (poi.isElectric) {
                             listOfNotNull(
                                 poi.operator?.takeIf { it.isNotBlank() },
-                                if (poi.isOnHighway) "Autoroute" else null,
+                                if (poi.isOnHighway) stringResource(R.string.highway) else null,
                                 poi.chargePointCount?.let { n ->
-                                    if (n == 1) "1 point de charge" else "$n points de charge"
+                                    if (n == 1) stringResource(R.string.poi_charge_point_one) else stringResource(R.string.poi_charge_points, n)
                                 },
                                 availabilitySummary?.let { s ->
-                                    "${s.availableCount} / ${s.totalCount} disponibles"
+                                    stringResource(R.string.poi_availability, s.availableCount, s.totalCount)
                                 }
                             ).joinToString(" • ").takeIf { it.isNotBlank() }?.let { info ->
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -205,7 +205,7 @@ fun PoiDetailsFullscreenDialog(
                         // Fuel Prices
                         poi.fuelPrices?.let { prices ->
                             if (prices.isNotEmpty()) {
-                                SectionHeader("Prices")
+                                SectionHeader(stringResource(R.string.poi_section_prices))
                                 prices.forEach { fp ->
                                     val fuelId = MapPoiFilter.fuelNameToId(fp.fuelName)
                                     val matchColor = fuelId?.let { ColorHelper.getFuelColor(it) }
@@ -335,10 +335,10 @@ fun PoiDetailsFullscreenDialog(
 
                         // Restaurant Details
                         poi.restaurantDetails?.let { d ->
-                            SectionHeader("Restaurant")
+                            SectionHeader(stringResource(R.string.poi_section_restaurant))
                             if (d.isFastFood) {
                                 Text(
-                                    text = "Fast food",
+                                    text = stringResource(R.string.poi_fast_food),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium
@@ -346,10 +346,10 @@ fun PoiDetailsFullscreenDialog(
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
                             d.brand?.takeIf { it.isNotBlank() }?.let { text ->
-                                PoiDetailRowStr("Enseigne", text)
+                                PoiDetailRowStr(stringResource(R.string.poi_brand), text)
                             }
                             d.cuisine?.takeIf { it.isNotBlank() }?.let { text ->
-                                PoiDetailRowStr("Cuisine", text)
+                                PoiDetailRowStr(stringResource(R.string.poi_cuisine), text)
                             }
                             d.openingHours?.takeIf { it.isNotBlank() }?.let { text ->
                                 PoiDetailRowStr(stringResource(R.string.poi_label_hours), text)
@@ -358,47 +358,47 @@ fun PoiDetailsFullscreenDialog(
 
                         // Routex Details
                         poi.amenities?.let { details ->
-                            SectionHeader("Services & amenities")
-                            PoiDetailRow("Manned 24h", details.manned24h)
-                            PoiDetailRow("Manned / automat 24h", details.mannedAutomat24h)
-                            PoiDetailRow("Automat", details.automat)
-                            PoiDetailRow("Motorway", details.motorwayIndicator)
-                            PoiDetailRow("Restaurant", details.restaurant)
-                            PoiDetailRow("Shop", details.shop)
-                            PoiDetailRow("Snackbar", details.snackbar)
-                            PoiDetailRow("Car wash", details.carWash)
-                            PoiDetailRow("Showers", details.showers)
-                            PoiDetailRow("AdBlue pump", details.adBluePump)
-                            PoiDetailRow("R4T network", details.r4tNetwork)
-                            PoiDetailRow("Car vignette", details.carVignette)
-                            PoiDetailRow("High-speed diesel", details.highspeedDiesel)
-                            PoiDetailRow("Truck station", details.truckIndicator)
-                            PoiDetailRow("Truck parking", details.truckParking)
-                            PoiDetailRow("Truck diesel", details.truckDiesel)
-                            PoiDetailRow("Truck lane", details.truckLane)
-                            PoiDetailRow("Diesel bio", details.dieselBio)
-                            PoiDetailRow("HVO100", details.hvo100)
-                            PoiDetailRow("LNG", details.lng)
-                            PoiDetailRow("LPG", details.lpg)
-                            PoiDetailRow("CNG", details.cng)
-                            PoiDetailRow("AdBlue canister", details.adBlueCanister)
-                            PoiDetailRow("Open 24h", details.open24h)
+                            SectionHeader(stringResource(R.string.poi_services_amenities))
+                            PoiDetailRow(stringResource(R.string.amenity_manned_24h), details.manned24h)
+                            PoiDetailRow(stringResource(R.string.amenity_manned_automat_24h), details.mannedAutomat24h)
+                            PoiDetailRow(stringResource(R.string.amenity_automat), details.automat)
+                            PoiDetailRow(stringResource(R.string.amenity_motorway), details.motorwayIndicator)
+                            PoiDetailRow(stringResource(R.string.amenity_restaurant), details.restaurant)
+                            PoiDetailRow(stringResource(R.string.amenity_shop), details.shop)
+                            PoiDetailRow(stringResource(R.string.amenity_snackbar), details.snackbar)
+                            PoiDetailRow(stringResource(R.string.amenity_car_wash), details.carWash)
+                            PoiDetailRow(stringResource(R.string.amenity_showers), details.showers)
+                            PoiDetailRow(stringResource(R.string.amenity_adblue_pump), details.adBluePump)
+                            PoiDetailRow(stringResource(R.string.amenity_r4t_network), details.r4tNetwork)
+                            PoiDetailRow(stringResource(R.string.amenity_car_vignette), details.carVignette)
+                            PoiDetailRow(stringResource(R.string.amenity_highspeed_diesel), details.highspeedDiesel)
+                            PoiDetailRow(stringResource(R.string.amenity_truck_station), details.truckIndicator)
+                            PoiDetailRow(stringResource(R.string.amenity_truck_parking), details.truckParking)
+                            PoiDetailRow(stringResource(R.string.amenity_truck_diesel), details.truckDiesel)
+                            PoiDetailRow(stringResource(R.string.amenity_truck_lane), details.truckLane)
+                            PoiDetailRow(stringResource(R.string.amenity_diesel_bio), details.dieselBio)
+                            PoiDetailRow(stringResource(R.string.amenity_hvo100), details.hvo100)
+                            PoiDetailRow(stringResource(R.string.amenity_lng), details.lng)
+                            PoiDetailRow(stringResource(R.string.amenity_lpg), details.lpg)
+                            PoiDetailRow(stringResource(R.string.amenity_cng), details.cng)
+                            PoiDetailRow(stringResource(R.string.amenity_adblue_canister), details.adBlueCanister)
+                            PoiDetailRow(stringResource(R.string.amenity_24h), details.open24h)
 
-                            PoiDetailRow("Toilets", details.toilets)
-                            PoiDetailRow("Drinking water", details.drinkingWater)
-                            PoiDetailRow("Food", details.food)
-                            PoiDetailRow("Wifi", details.wifi)
-                            PoiDetailRow("ATM", details.atm)
-                            PoiDetailRow("Playground", details.playground)
+                            PoiDetailRow(stringResource(R.string.amenity_toilets), details.toilets)
+                            PoiDetailRow(stringResource(R.string.amenity_drinking_water), details.drinkingWater)
+                            PoiDetailRow(stringResource(R.string.amenity_food), details.food)
+                            PoiDetailRow(stringResource(R.string.poi_amenity_wifi), details.wifi)
+                            PoiDetailRow(stringResource(R.string.poi_amenity_atm), details.atm)
+                            PoiDetailRow(stringResource(R.string.amenity_playground), details.playground)
 
-                            SectionHeader("Fuel opening hours")
-                            PoiDetailRowStr("Mon", details.monOpenFuel?.let { o -> details.monCloseFuel?.let { c -> "$o – $c" } ?: o })
-                            PoiDetailRowStr("Tue", details.tueOpenFuel?.let { o -> details.tueCloseFuel?.let { c -> "$o – $c" } ?: o })
-                            PoiDetailRowStr("Wed", details.wedOpenFuel?.let { o -> details.wedCloseFuel?.let { c -> "$o – $c" } ?: o })
-                            PoiDetailRowStr("Thu", details.thuOpenFuel?.let { o -> details.thuCloseFuel?.let { c -> "$o – $c" } ?: o })
-                            PoiDetailRowStr("Fri", details.friOpenFuel?.let { o -> details.friCloseFuel?.let { c -> "$o – $c" } ?: o })
-                            PoiDetailRowStr("Sat", details.satOpenFuel?.let { o -> details.satCloseFuel?.let { c -> "$o – $c" } ?: o })
-                            PoiDetailRowStr("Sun", details.sunOpenFuel?.let { o -> details.sunCloseFuel?.let { c -> "$o – $c" } ?: o })
+                            SectionHeader(stringResource(R.string.poi_fuel_opening_hours))
+                            PoiDetailRowStr(stringResource(R.string.day_mon), details.monOpenFuel?.let { o -> details.monCloseFuel?.let { c -> "$o – $c" } ?: o })
+                            PoiDetailRowStr(stringResource(R.string.day_tue), details.tueOpenFuel?.let { o -> details.tueCloseFuel?.let { c -> "$o – $c" } ?: o })
+                            PoiDetailRowStr(stringResource(R.string.day_wed), details.wedOpenFuel?.let { o -> details.wedCloseFuel?.let { c -> "$o – $c" } ?: o })
+                            PoiDetailRowStr(stringResource(R.string.day_thu), details.thuOpenFuel?.let { o -> details.thuCloseFuel?.let { c -> "$o – $c" } ?: o })
+                            PoiDetailRowStr(stringResource(R.string.day_fri), details.friOpenFuel?.let { o -> details.friCloseFuel?.let { c -> "$o – $c" } ?: o })
+                            PoiDetailRowStr(stringResource(R.string.day_sat), details.satOpenFuel?.let { o -> details.satCloseFuel?.let { c -> "$o – $c" } ?: o })
+                            PoiDetailRowStr(stringResource(R.string.day_sun), details.sunOpenFuel?.let { o -> details.sunCloseFuel?.let { c -> "$o – $c" } ?: o })
                             if (details.openingHoursFuel.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 details.openingHoursFuel.forEach { line ->
@@ -408,7 +408,7 @@ fun PoiDetailsFullscreenDialog(
                         }
 
                         if (sources.isNotEmpty()) {
-                            SectionHeader("Sources")
+                            SectionHeader(stringResource(R.string.screen_sources))
                             sources.forEach { s ->
                                 val updateTime = poi.sourceUpdates?.get(s)
                                 Row(

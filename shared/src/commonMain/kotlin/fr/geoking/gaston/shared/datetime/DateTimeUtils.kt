@@ -1,5 +1,6 @@
 package fr.geoking.gaston.shared.datetime
 
+import fr.geoking.gaston.shared.platform.getSystemLanguage
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -48,18 +49,34 @@ object DateTimeUtils {
         val hours = duration.inWholeHours
         val days = duration.inWholeDays
 
+        val isFr = getSystemLanguage() == "fr"
+
         return when {
-            seconds < 60 -> "just now"
-            minutes < 60 -> "${minutes}min ago"
+            seconds < 60 -> if (isFr) "à l'instant" else "just now"
+            minutes < 60 -> if (isFr) "il y a ${minutes} min" else "${minutes}min ago"
             hours < 24 -> {
                 val remainingMinutes = minutes % 60
-                val hStr = if (hours == 1L) "hour" else "hours"
-                if (remainingMinutes > 0) "$hours $hStr ${remainingMinutes}min ago"
-                else "$hours $hStr ago"
+                val hStr = if (isFr) {
+                    if (hours == 1L) "heure" else "heures"
+                } else {
+                    if (hours == 1L) "hour" else "hours"
+                }
+                if (isFr) {
+                    if (remainingMinutes > 0) "il y a $hours $hStr et ${remainingMinutes} min"
+                    else "il y a $hours $hStr"
+                } else {
+                    if (remainingMinutes > 0) "$hours $hStr ${remainingMinutes}min ago"
+                    else "$hours $hStr ago"
+                }
             }
             days < 7 -> {
-                val dStr = if (days == 1L) "day" else "days"
-                "$days $dStr ago"
+                val dStr = if (isFr) {
+                    if (days == 1L) "jour" else "jours"
+                } else {
+                    if (days == 1L) "day" else "days"
+                }
+                if (isFr) "il y a $days $dStr"
+                else "$days $dStr ago"
             }
             else -> {
                 val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())

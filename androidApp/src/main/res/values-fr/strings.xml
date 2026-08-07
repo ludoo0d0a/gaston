@@ -644,4 +644,45 @@
     <string name="dev_network_floating_bar">barre réseau flottante</string>
     <string name="dev_debug_grid">grille de débogage sur la carte</string>
     <string name="dev_test_aa_map_surface">tester la surface de carte AA</string>
+
+    <!-- Station Details / Amenities -->
+    <string name="poi_station_details">Détails de la station</string>
+    <string name="poi_station_label">Station</string>
+    <string name="poi_brand">Enseigne</string>
+    <string name="poi_cuisine">Cuisine</string>
+    <string name="poi_services_amenities">Services &amp; commodités</string>
+    <string name="poi_fuel_opening_hours">Horaires d\'ouverture carburant</string>
+
+    <string name="amenity_manned_24h">Habitée 24h/24</string>
+    <string name="amenity_manned_automat_24h">Avec personnel / Automate 24h/24</string>
+    <string name="amenity_automat">Automate</string>
+    <string name="amenity_motorway">Autoroute</string>
+    <string name="amenity_snackbar">Cafétéria</string>
+    <string name="amenity_adblue_pump">Pompe AdBlue</string>
+    <string name="amenity_r4t_network">Réseau R4T</string>
+    <string name="amenity_car_vignette">Vignette automobile</string>
+    <string name="amenity_highspeed_diesel">Diesel haut débit</string>
+    <string name="amenity_truck_station">Station poids lourds</string>
+    <string name="amenity_truck_parking">Parking poids lourds</string>
+    <string name="amenity_truck_diesel">Gazole poids lourds</string>
+    <string name="amenity_truck_lane">Piste poids lourds</string>
+    <string name="amenity_diesel_bio">Biodiesel</string>
+    <string name="amenity_hvo100">HVO100</string>
+    <string name="amenity_lng">GNL</string>
+    <string name="amenity_lpg">GPL</string>
+    <string name="amenity_cng">GNC</string>
+    <string name="amenity_adblue_canister">Bidon d\'AdBlue</string>
+    <string name="amenity_playground">Aire de jeux</string>
+    <string name="amenity_food">Restauration</string>
+
+    <string name="day_mon">Lun</string>
+    <string name="day_tue">Mar</string>
+    <string name="day_wed">Mer</string>
+    <string name="day_thu">Jeu</string>
+    <string name="day_fri">Ven</string>
+    <string name="day_sat">Sam</string>
+    <string name="day_sun">Dim</string>
+
+    <string name="label_yes">Oui</string>
+    <string name="label_no">Non</string>
 </resources>
