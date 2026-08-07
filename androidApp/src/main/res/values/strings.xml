@@ -637,4 +637,11 @@
             <item quantity="one">%1$d/%2$d available</item>
             <item quantity="other">%1$d/%2$d available</item>
         </plurals>
+
+    <string name="screen_developer">developer</string>
+    <string name="dev_developer_settings">Developer Settings</string>
+    <string name="dev_premium_mode">premium mode</string>
+    <string name="dev_network_floating_bar">network floating bar</string>
+    <string name="dev_debug_grid">debug grid in map</string>
+    <string name="dev_test_aa_map_surface">test AA map surface</string>
 </resources>
