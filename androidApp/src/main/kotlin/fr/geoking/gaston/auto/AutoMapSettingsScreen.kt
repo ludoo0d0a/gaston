@@ -122,19 +122,6 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle("Map Debugging")
-                .addText("Show tile borders, coordinates, and diagnostics")
-                .setToggle(
-                    Toggle.Builder { checked ->
-                        settingsManager.setMapTileDebugEnabled(checked)
-                        invalidate()
-                    }.setChecked(settings.mapTileDebugEnabled).build()
-                )
-                .build()
-        )
-
         if (settings.mapTileDebugEnabled) {
             listBuilder.addItem(
                 Row.Builder()
