@@ -2,6 +2,10 @@ package fr.geoking.gaston.auto.maplibre
 
 import android.graphics.Canvas
 import android.graphics.PointF
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonNull
+import com.google.gson.JsonPrimitive
 import android.graphics.Rect
 import android.graphics.RectF
 import android.os.Handler
@@ -49,11 +53,21 @@ class CarMapLibreRenderer(
                 val prop = layer.textSize
                 if (prop.isExpression) {
                     val expr = prop.expression
-                    val newExpr = org.maplibre.android.style.expressions.Expression.product(
-                        expr,
-                        org.maplibre.android.style.expressions.Expression.literal(1.4f)
-                    )
-                    layer.setProperties(org.maplibre.android.style.layers.PropertyFactory.textSize(newExpr))
+                    try {
+                        val arrayRepr = expr?.toArray()
+                        if (arrayRepr != null) {
+                            val scaledArrayRepr = scaleExpressionArray(arrayRepr, 1.4f)
+                            val jsonElement = toJsonElement(scaledArrayRepr)
+                            if (jsonElement is JsonArray) {
+                                val newExpr = org.maplibre.android.style.expressions.Expression.Converter.convert(jsonElement)
+                                if (newExpr != null) {
+                                    layer.setProperties(org.maplibre.android.style.layers.PropertyFactory.textSize(newExpr))
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to scale text size expression for layer ${layer.id}", e)
+                    }
                 } else if (prop.isValue) {
                     val value = prop.value
                     if (value is Number) {
@@ -367,5 +381,130 @@ class CarMapLibreRenderer(
 
     companion object {
         private const val TAG = "CarMapLibreRenderer"
+
+        internal fun scaleExpressionArray(value: Any?, scale: Float): Any? {
+            if (scale == 1.0f) return value
+            return when (value) {
+                is Array<*> -> {
+                    val list = value.toList()
+                    scaleExpressionList(list, scale).toTypedArray()
+                }
+                is List<*> -> {
+                    scaleExpressionList(value, scale)
+                }
+                is Number -> {
+                    value.toFloat() * scale
+                }
+                else -> value
+            }
+        }
+
+        internal fun scaleExpressionList(list: List<*>, scale: Float): List<*> {
+            if (list.isEmpty()) return list
+            val op = list[0]
+            return when (op) {
+                "interpolate" -> {
+                    // [ "interpolate", type, input, stop1_input, stop1_output, ... ]
+                    // Outputs are at even indices starting from 4
+                    list.mapIndexed { index, item ->
+                        if (index >= 4 && index % 2 == 0) {
+                            scaleExpressionArray(item, scale)
+                        } else {
+                            scaleExpressionArray(item, 1.0f)
+                        }
+                    }
+                }
+                "step" -> {
+                    // [ "step", input, default_output, stop1_input, stop1_output, ... ]
+                    // Outputs are at index 2, and even indices >= 4
+                    list.mapIndexed { index, item ->
+                        if (index == 2 || (index >= 4 && index % 2 == 0)) {
+                            scaleExpressionArray(item, scale)
+                        } else {
+                            scaleExpressionArray(item, 1.0f)
+                        }
+                    }
+                }
+                "match" -> {
+                    // [ "match", input, label1, output1, label2, output2, ..., default_output ]
+                    // Outputs are odd indices starting from 3 up to size - 2, and the last index (size - 1)
+                    val size = list.size
+                    list.mapIndexed { index, item ->
+                        if ((index >= 3 && index < size - 1 && index % 2 != 0) || index == size - 1) {
+                            scaleExpressionArray(item, scale)
+                        } else {
+                            scaleExpressionArray(item, 1.0f)
+                        }
+                    }
+                }
+                "case" -> {
+                    // [ "case", condition1, output1, condition2, output2, ..., default_output ]
+                    // Outputs are even indices starting from 2, and the last index (size - 1)
+                    val size = list.size
+                    list.mapIndexed { index, item ->
+                        if ((index >= 2 && index < size - 1 && index % 2 == 0) || index == size - 1) {
+                            scaleExpressionArray(item, scale)
+                        } else {
+                            scaleExpressionArray(item, 1.0f)
+                        }
+                    }
+                }
+                "coalesce" -> {
+                    // [ "coalesce", output1, output2, ... ]
+                    // All arguments (except index 0) are potential outputs
+                    list.mapIndexed { index, item ->
+                        if (index > 0) {
+                            scaleExpressionArray(item, scale)
+                        } else {
+                            item
+                        }
+                    }
+                }
+                "literal" -> {
+                    list.mapIndexed { index, item ->
+                        if (index == 1) {
+                            scaleExpressionArray(item, scale)
+                        } else {
+                            item
+                        }
+                    }
+                }
+                else -> {
+                    // For other operators, just recursively process with scale 1.0f (no direct scaling)
+                    list.mapIndexed { index, item ->
+                        if (index > 0) {
+                            scaleExpressionArray(item, 1.0f)
+                        } else {
+                            item
+                        }
+                    }
+                }
+            }
+        }
+
+        internal fun toJsonElement(value: Any?): JsonElement {
+            return when (value) {
+                null -> JsonNull.INSTANCE
+                is Number -> JsonPrimitive(value)
+                is String -> JsonPrimitive(value)
+                is Boolean -> JsonPrimitive(value)
+                is Char -> JsonPrimitive(value)
+                is Array<*> -> {
+                    val arr = JsonArray()
+                    for (item in value) {
+                        arr.add(toJsonElement(item))
+                    }
+                    arr
+                }
+                is List<*> -> {
+                    val arr = JsonArray()
+                    for (item in value) {
+                        arr.add(toJsonElement(item))
+                    }
+                    arr
+                }
+                else -> JsonPrimitive(value.toString())
+            }
+        }
     }
 }
