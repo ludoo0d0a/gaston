@@ -3,6 +3,7 @@ package fr.geoking.gaston.auto.maplibre
 import android.graphics.Canvas
 import android.graphics.PointF
 import android.graphics.Rect
+import android.graphics.RectF
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -169,9 +170,24 @@ class CarMapLibreRenderer(
 
     fun findPoisAt(screenX: Float, screenY: Float): List<Poi> {
         val map = mapContainer.mapLibreMapInstance ?: return emptyList()
-        val features = map.queryRenderedFeatures(PointF(screenX, screenY), MapLibreSharedHelper.POI_LAYER_ID)
+        val tolerance = 32f // 32 pixels tolerance in all directions for easier tap targets on AA screens
+        val rect = RectF(
+            screenX - tolerance,
+            screenY - tolerance,
+            screenX + tolerance,
+            screenY + tolerance
+        )
+        val features = map.queryRenderedFeatures(rect, MapLibreSharedHelper.POI_LAYER_ID)
         val ids = features.mapNotNull { it.getStringProperty(MapLibreSharedHelper.POI_ID_PROPERTY) }.toSet()
-        return lastPois.filter { it.id in ids }
+        val matchedPois = lastPois.filter { it.id in ids }
+
+        // Sort matching POIs nearest-first by their screen-space distance to the touch point
+        return matchedPois.sortedBy { poi ->
+            val screenPos = map.projection.toScreenLocation(LatLng(poi.latitude, poi.longitude))
+            val dx = screenX - screenPos.x
+            val dy = screenY - screenPos.y
+            dx * dx + dy * dy
+        }
     }
 
     fun zoomForHitTest(): Int = zoom
