@@ -88,6 +88,7 @@ import fr.geoking.gaston.ui.map.MapErrorBanner
 import fr.geoking.gaston.ui.map.rememberErrorClipboardCopyHandler
 import fr.geoking.gaston.ui.map.rememberMapDataState
 import fr.geoking.gaston.ui.map.PoiOverlayHost
+import fr.geoking.gaston.ui.map.STATION_OVERLAY_CARD_HEIGHT
 import fr.geoking.gaston.ui.anim.AnimationPalette
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -482,8 +483,7 @@ fun VectorMapScreen(
                         .fillMaxSize()
                         .onSizeChanged { mapSizePx = it }
                 ) {
-                    val configuration = LocalConfiguration.current
-                    val mapPaddingBottom = if (selectedPoi != null) (configuration.screenHeightDp * 0.4f).dp else 0.dp
+                    val mapPaddingBottom = if (selectedPoi != null) STATION_OVERLAY_CARD_HEIGHT else 0.dp
 
                     LibreMap(
                         modifier = Modifier.fillMaxSize(),
@@ -505,7 +505,7 @@ fun VectorMapScreen(
                         selectedPoiId = selectedPoi?.id,
                         availabilityByPoiId = mapData.availabilityByPoiId,
                         onPoiClick = { poi ->
-                            if (selectedPoi == null && !isCheapestFilterActive) {
+                            if (poi != null && selectedPoi == null && !isCheapestFilterActive) {
                                 poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
                             }
                             selectedPoi = poi

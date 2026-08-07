@@ -6,6 +6,7 @@ import android.content.Intent
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -16,13 +17,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PriceCheck
-import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.zIndex
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,6 +57,8 @@ import org.koin.compose.koinInject
 import androidx.compose.runtime.snapshotFlow
 
 enum class PoiSortOrder { Distance, Price }
+
+val STATION_OVERLAY_CARD_HEIGHT = 220.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,7 +96,6 @@ fun PoiOverlayHost(
     var addPoiInitialLng by remember { mutableStateOf<Double?>(null) }
     var addPoiExistingCommunityId by remember { mutableStateOf<String?>(null) }
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val lazyListState = rememberLazyListState()
 
     if (showPaywallForFavorite && !settings.hasPremiumFeatures) {
@@ -108,12 +110,6 @@ fun PoiOverlayHost(
                 }
             }
         )
-    }
-
-    LaunchedEffect(initialSelectedPoi) {
-        if (initialSelectedPoi != null) {
-            sheetState.show()
-        }
     }
 
     LaunchedEffect(selectedPoi, poisForOverlay, favoriteIds, sortOrder) {
@@ -221,34 +217,28 @@ fun PoiOverlayHost(
             }
         }
 
-        ModalBottomSheet(
-            onDismissRequest = {
-                scope.launch { sheetState.hide() }
-                onSelectedPoiChange(null)
-                scrollRequestPoiId = null
-            },
-            sheetState = sheetState,
-            sheetGesturesEnabled = true,
-            containerColor = Color(0xFF0F172A),
-            dragHandle = { BottomSheetDefaults.DragHandle() }
+        val configuration = LocalConfiguration.current
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(5f),
+            contentAlignment = Alignment.BottomCenter
         ) {
-
-            val configuration = LocalConfiguration.current
-            val cardHeight = (configuration.screenHeightDp * 0.4f).dp
             LazyRow(
                 state = lazyListState,
                 flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 0.dp, bottom = 8.dp),
-                contentPadding = PaddingValues(bottom = 32.dp)
+                    .padding(bottom = 16.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(listToShow, key = { it.id }) { poi ->
                     val isFav = poi.id in favoriteIds
                     PoiDetailCard(
                         modifier = Modifier
-                            .width(configuration.screenWidthDp.dp)
-                            .height(cardHeight),
+                            .width((configuration.screenWidthDp - 32).dp)
+                            .height(STATION_OVERLAY_CARD_HEIGHT),
                         poi = poi,
                         availabilitySummary = availabilityByPoiId[poi.id],
                         highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),
@@ -336,7 +326,6 @@ fun PoiOverlayHost(
                     showAddPoiSheet = true
                     poiForDetailsDialog = null
                     onSelectedPoiChange(null)
-                    scope.launch { sheetState.hide() }
                 }
             } else null,
             onRemove = if (settings.isLoggedIn && isCommunityPoiId(poi.id) && communityRepo != null) {
@@ -346,7 +335,6 @@ fun PoiOverlayHost(
                         onInvalidate()
                         poiForDetailsDialog = null
                         onSelectedPoiChange(null)
-                        sheetState.hide()
                     }
                 }
             } else null,
@@ -357,7 +345,6 @@ fun PoiOverlayHost(
                         onInvalidate()
                         poiForDetailsDialog = null
                         onSelectedPoiChange(null)
-                        sheetState.hide()
                     }
                 }
             } else null,
@@ -372,7 +359,6 @@ fun PoiOverlayHost(
                     showAddPoiSheet = true
                     poiForDetailsDialog = null
                     onSelectedPoiChange(null)
-                    scope.launch { sheetState.hide() }
                 }
             } else null,
             onDismiss = { poiForDetailsDialog = null }

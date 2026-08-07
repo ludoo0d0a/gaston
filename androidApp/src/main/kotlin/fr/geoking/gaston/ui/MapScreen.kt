@@ -117,6 +117,7 @@ import fr.geoking.gaston.ui.map.MapErrorBanner
 import fr.geoking.gaston.ui.map.rememberErrorClipboardCopyHandler
 import fr.geoking.gaston.ui.map.rememberMapDataState
 import fr.geoking.gaston.ui.map.PoiOverlayHost
+import fr.geoking.gaston.ui.map.STATION_OVERLAY_CARD_HEIGHT
 
 /** Converts a vector drawable to a BitmapDescriptor for map markers (fromResource only supports bitmaps). Scales with zoom when sizePx varies. */
 private fun vectorDrawableToBitmapDescriptor(
@@ -521,8 +522,7 @@ fun MapScreen(
                         .fillMaxSize()
                         .onSizeChanged { mapSizePx = it }
                 ) {
-                    val configuration = LocalConfiguration.current
-                    val mapPaddingBottom = if (selectedPoi != null) (configuration.screenHeightDp * 0.4f).dp else 0.dp
+                    val mapPaddingBottom = if (selectedPoi != null) STATION_OVERLAY_CARD_HEIGHT else 0.dp
 
                     GoogleMap(
                         modifier = Modifier.fillMaxSize(),
@@ -533,7 +533,8 @@ fun MapScreen(
                             mapStyleOptions = null // On phone, keep map in day theme
                         ),
                         uiSettings = MapUiSettings(myLocationButtonEnabled = hasLocationPermission),
-                        contentPadding = PaddingValues(bottom = mapPaddingBottom)
+                        contentPadding = PaddingValues(bottom = mapPaddingBottom),
+                        onMapClick = { selectedPoi = null }
                     ) {
                         val zoom = cameraPositionState.position.zoom
                         val sizePx = remember(zoom) { markerSizePxForZoom(zoom) }
