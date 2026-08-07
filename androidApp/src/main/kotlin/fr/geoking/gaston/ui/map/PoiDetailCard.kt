@@ -141,7 +141,25 @@ fun PoiDetailCard(
                     verticalAlignment = Alignment.Top,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    val resId = brandInfo?.iconResId ?: if (poi.isElectric) R.drawable.ic_poi_electric else R.drawable.ic_poi_gas
+                    val resId = brandInfo?.iconResId ?: when (poi.poiCategory) {
+                        PoiCategory.Parking -> R.drawable.ic_poi_parking
+                        PoiCategory.Toilet -> R.drawable.ic_poi_toilet
+                        PoiCategory.DrinkingWater -> R.drawable.ic_poi_water
+                        PoiCategory.Camping -> R.drawable.ic_poi_camping
+                        PoiCategory.CaravanSite -> R.drawable.ic_poi_caravan
+                        PoiCategory.PicnicSite -> R.drawable.ic_poi_picnic
+                        PoiCategory.Radar -> R.drawable.ic_poi_radar
+                        PoiCategory.Viewpoint -> R.drawable.ic_poi_viewpoint
+                        PoiCategory.PostBox -> R.drawable.ic_poi_post_box
+                        PoiCategory.WaterBody -> R.drawable.ic_poi_water_body
+                        PoiCategory.Cafe -> R.drawable.ic_poi_cafe
+                        PoiCategory.Supermarket -> R.drawable.ic_poi_supermarket
+                        PoiCategory.Restaurant -> R.drawable.ic_poi_restaurant
+                        PoiCategory.FastFood -> R.drawable.ic_poi_fast_food
+                        PoiCategory.TruckStop -> R.drawable.ic_poi_truck
+                        PoiCategory.RestArea -> R.drawable.ic_poi_rest_area
+                        else -> if (poi.isElectric) R.drawable.ic_poi_electric else R.drawable.ic_poi_gas
+                    }
                     Icon(
                         painter = painterResource(id = resId),
                         contentDescription = brandInfo?.displayName ?: if (poi.isElectric) stringResource(R.string.charging_station) else stringResource(R.string.gas_station),

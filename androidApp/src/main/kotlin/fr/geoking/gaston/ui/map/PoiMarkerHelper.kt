@@ -352,11 +352,15 @@ object PoiMarkerHelper {
             PoiCategory.PicnicSite -> R.drawable.ic_poi_picnic_rounded
             PoiCategory.Radar -> R.drawable.ic_poi_radar_rounded
             PoiCategory.Parking -> R.drawable.ic_poi_parking_rounded
-            PoiCategory.Viewpoint -> R.drawable.ic_map
-            PoiCategory.PostBox,
-            PoiCategory.WaterBody,
-            PoiCategory.Cafe,
-            PoiCategory.Supermarket -> R.drawable.ic_map
+            PoiCategory.Viewpoint -> R.drawable.ic_poi_viewpoint_rounded
+            PoiCategory.PostBox -> R.drawable.ic_poi_post_box_rounded
+            PoiCategory.WaterBody -> R.drawable.ic_poi_water_body_rounded
+            PoiCategory.Cafe -> R.drawable.ic_poi_cafe_rounded
+            PoiCategory.Supermarket -> R.drawable.ic_poi_supermarket_rounded
+            PoiCategory.Restaurant -> R.drawable.ic_poi_restaurant_rounded
+            PoiCategory.FastFood -> R.drawable.ic_poi_fast_food_rounded
+            PoiCategory.TruckStop -> R.drawable.ic_poi_truck_rounded
+            PoiCategory.RestArea -> R.drawable.ic_poi_rest_area_rounded
             else -> if (poi.isElectric) R.drawable.ic_poi_electric_rounded else R.drawable.ic_poi_gas_rounded
         }
     }
@@ -405,11 +409,15 @@ object PoiMarkerHelper {
                 PoiCategory.PicnicSite -> R.drawable.ic_poi_picnic
                 PoiCategory.Radar -> R.drawable.ic_poi_radar
                 PoiCategory.Parking -> R.drawable.ic_poi_parking
-                PoiCategory.Viewpoint -> R.drawable.ic_map
-                PoiCategory.PostBox,
-                PoiCategory.WaterBody,
-                PoiCategory.Cafe,
-                PoiCategory.Supermarket -> R.drawable.ic_map
+                PoiCategory.Viewpoint -> R.drawable.ic_poi_viewpoint
+                PoiCategory.PostBox -> R.drawable.ic_poi_post_box
+                PoiCategory.WaterBody -> R.drawable.ic_poi_water_body
+                PoiCategory.Cafe -> R.drawable.ic_poi_cafe
+                PoiCategory.Supermarket -> R.drawable.ic_poi_supermarket
+                PoiCategory.Restaurant -> R.drawable.ic_poi_restaurant
+                PoiCategory.FastFood -> R.drawable.ic_poi_fast_food
+                PoiCategory.TruckStop -> R.drawable.ic_poi_truck
+                PoiCategory.RestArea -> R.drawable.ic_poi_rest_area
                 else -> if (poi.isElectric) R.drawable.ic_poi_electric else R.drawable.ic_poi_gas
             }
         }
