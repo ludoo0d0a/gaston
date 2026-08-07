@@ -45,6 +45,7 @@ class CustomMapStationDetailScreen(
     private val effectivePowerLevels: Set<Int>,
     private val settingsManager: SettingsManager,
     private val favoritesRepo: FavoritesRepository? = null,
+    private val onDisposed: (() -> Unit)? = null,
 ) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
 
     private var surfaceRenderer: AutoSurfaceRenderer? = null
@@ -166,5 +167,6 @@ class CustomMapStationDetailScreen(
 
     override fun onStop(owner: LifecycleOwner) {
         surfaceRenderer?.stop()
+        onDisposed?.invoke()
     }
 }
