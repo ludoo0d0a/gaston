@@ -46,6 +46,7 @@ class MapLibreStationDetailScreen(
     private val effectivePowerLevels: Set<Int>,
     private val settingsManager: SettingsManager,
     private val favoritesRepo: FavoritesRepository? = null,
+    private val onDisposed: (() -> Unit)? = null,
 ) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
 
     private val mapRenderer: CarMapLibreRenderer = CarMapLibreRenderer(carContext, lifecycle)
@@ -158,5 +159,6 @@ class MapLibreStationDetailScreen(
 
     override fun onStop(owner: LifecycleOwner) {
         mapRenderer.detachSurface()
+        onDisposed?.invoke()
     }
 }

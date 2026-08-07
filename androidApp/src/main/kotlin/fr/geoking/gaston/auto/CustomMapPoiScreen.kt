@@ -148,6 +148,10 @@ class CustomMapPoiScreen(
                 effectivePowerLevels = powerLevels,
                 settingsManager = settingsManager,
                 favoritesRepo = favoritesRepo,
+                onDisposed = {
+                    mapSelectedPoi = null
+                    syncRendererWithMapState()
+                }
             )
         )
     }
