@@ -130,6 +130,21 @@ private fun CheapestStationItem(
         val resId = when {
             brandInfo != null -> brandInfo.iconResId
             poi.poiCategory == PoiCategory.Parking -> R.drawable.ic_poi_parking
+            poi.poiCategory == PoiCategory.Toilet -> R.drawable.ic_poi_toilet
+            poi.poiCategory == PoiCategory.DrinkingWater -> R.drawable.ic_poi_water
+            poi.poiCategory == PoiCategory.Camping -> R.drawable.ic_poi_camping
+            poi.poiCategory == PoiCategory.CaravanSite -> R.drawable.ic_poi_caravan
+            poi.poiCategory == PoiCategory.PicnicSite -> R.drawable.ic_poi_picnic
+            poi.poiCategory == PoiCategory.Radar -> R.drawable.ic_poi_radar
+            poi.poiCategory == PoiCategory.Viewpoint -> R.drawable.ic_poi_viewpoint
+            poi.poiCategory == PoiCategory.PostBox -> R.drawable.ic_poi_post_box
+            poi.poiCategory == PoiCategory.WaterBody -> R.drawable.ic_poi_water_body
+            poi.poiCategory == PoiCategory.Cafe -> R.drawable.ic_poi_cafe
+            poi.poiCategory == PoiCategory.Supermarket -> R.drawable.ic_poi_supermarket
+            poi.poiCategory == PoiCategory.Restaurant -> R.drawable.ic_poi_restaurant
+            poi.poiCategory == PoiCategory.FastFood -> R.drawable.ic_poi_fast_food
+            poi.poiCategory == PoiCategory.TruckStop -> R.drawable.ic_poi_truck
+            poi.poiCategory == PoiCategory.RestArea -> R.drawable.ic_poi_rest_area
             poi.isElectric -> R.drawable.ic_poi_electric
             else -> R.drawable.ic_poi_gas
         }

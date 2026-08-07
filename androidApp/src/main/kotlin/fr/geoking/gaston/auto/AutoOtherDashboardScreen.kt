@@ -59,13 +59,17 @@ class AutoOtherDashboardScreen(
         "camp_site" -> R.drawable.ic_poi_camping
         "caravan_site" -> R.drawable.ic_poi_caravan
         "picnic_site" -> R.drawable.ic_poi_picnic
-        "truck_stop" -> R.drawable.ic_poi_gas
-        "rest_area" -> R.drawable.ic_poi_gas
-        "restaurant" -> R.drawable.ic_category
-        "fast_food" -> R.drawable.ic_category
+        "truck_stop" -> R.drawable.ic_poi_truck
+        "rest_area" -> R.drawable.ic_poi_rest_area
+        "restaurant" -> R.drawable.ic_poi_restaurant
+        "fast_food" -> R.drawable.ic_poi_fast_food
         "speed_camera" -> R.drawable.ic_poi_radar
         "parking" -> R.drawable.ic_poi_parking
-        "viewpoint" -> R.drawable.ic_map
+        "viewpoint" -> R.drawable.ic_poi_viewpoint
+        "post_box" -> R.drawable.ic_poi_post_box
+        "water" -> R.drawable.ic_poi_water_body
+        "cafe" -> R.drawable.ic_poi_cafe
+        "supermarket" -> R.drawable.ic_poi_supermarket
         else -> R.drawable.ic_category
     }
 }
