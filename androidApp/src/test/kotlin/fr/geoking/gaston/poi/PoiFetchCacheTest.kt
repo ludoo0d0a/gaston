@@ -1,7 +1,9 @@
 package fr.geoking.gaston.poi
 
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.FuelCard
 import fr.geoking.gaston.PoiProviderSelectionMode
+import fr.geoking.gaston.effectiveProviders
 import fr.geoking.gaston.poi.EnergyFilterMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -345,5 +347,19 @@ class PoiFetchCacheTest {
         assertTrue(PoiCategory.Gas in merged.loadedCategories)
         assertEquals(2L, merged.categoryLoadedAtMs[PoiCategory.Gas])
         assertEquals(1L, merged.categoryLoadedAtMs[PoiCategory.Parking])
+    }
+
+    @Test
+    fun effectiveProviders_withRoutexCardAndVehicleFilter_returnsBasePlusRoutexAndOverpass() {
+        val settings = AppSettings(
+            useVehicleFilter = true,
+            fuelCard = FuelCard.Routex,
+            poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+            selectedPoiProviders = setOf(PoiProviderType.DataGouv)
+        )
+        val providers = settings.effectiveProviders()
+        assertTrue(PoiProviderType.Routex in providers)
+        assertTrue(PoiProviderType.Overpass in providers)
+        assertTrue(PoiProviderType.DataGouv in providers)
     }
 }

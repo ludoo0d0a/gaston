@@ -169,10 +169,6 @@ fun AppSettings.effectiveIrveOperatorFilter(): Set<String> {
  * When [countryCodes] is empty, falls back to [selectedPoiProviders] (manual override).
  */
 fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Set<PoiProviderType> {
-    if (useVehicleFilter && fuelCard == FuelCard.Routex) {
-        return setOf(PoiProviderType.Routex, PoiProviderType.Overpass)
-    }
-
     val base = if (poiProviderSelectionMode == PoiProviderSelectionMode.Manual) {
         selectedPoiProviders
     } else {
@@ -188,6 +184,10 @@ fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Se
         } else {
             selectedPoiProviders
         }
+    }
+
+    if (useVehicleFilter && fuelCard == FuelCard.Routex) {
+        return base + setOf(PoiProviderType.Routex, PoiProviderType.Overpass)
     }
     return base
 }
