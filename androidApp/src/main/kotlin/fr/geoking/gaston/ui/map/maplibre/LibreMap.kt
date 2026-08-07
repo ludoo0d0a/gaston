@@ -2,6 +2,7 @@ package fr.geoking.gaston.ui.map.maplibre
 
 import android.content.Context
 import android.graphics.PointF
+import android.graphics.RectF
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,18 +55,27 @@ fun LibreMap(
         onMapClick = { latLng ->
             val map = mapLibreMap ?: return@MapLibreView
             val screenPoint = map.projection.toScreenLocation(latLng)
-            val features = map.queryRenderedFeatures(
-                PointF(screenPoint.x.toFloat(), screenPoint.y.toFloat()),
-                MapLibreSharedHelper.POI_LAYER_ID
+            val screenX = screenPoint.x.toFloat()
+            val screenY = screenPoint.y.toFloat()
+            val tolerance = 32f // pixels tolerance for easier tap targets on phone screen
+            val rect = RectF(
+                screenX - tolerance,
+                screenY - tolerance,
+                screenX + tolerance,
+                screenY + tolerance
             )
-            val poiId = features.firstOrNull()?.getStringProperty(MapLibreSharedHelper.POI_ID_PROPERTY)
-            if (poiId != null) {
-                val poi = poisInView.firstOrNull { it.id == poiId }
-                if (poi != null) {
-                    onPoiClick(poi)
-                } else {
-                    onPoiClick(null)
+            val features = map.queryRenderedFeatures(rect, MapLibreSharedHelper.POI_LAYER_ID)
+            val ids = features.mapNotNull { it.getStringProperty(MapLibreSharedHelper.POI_ID_PROPERTY) }.toSet()
+            val matchedPois = poisInView.filter { it.id in ids }
+
+            if (matchedPois.isNotEmpty()) {
+                val nearestPoi = matchedPois.minByOrNull { poi ->
+                    val screenPos = map.projection.toScreenLocation(LatLng(poi.latitude, poi.longitude))
+                    val dx = screenX - screenPos.x
+                    val dy = screenY - screenPos.y
+                    dx * dx + dy * dy
                 }
+                onPoiClick(nearestPoi)
             } else {
                 onPoiClick(null)
             }
