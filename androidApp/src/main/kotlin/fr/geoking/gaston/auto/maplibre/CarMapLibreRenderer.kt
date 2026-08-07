@@ -37,6 +37,32 @@ class CarMapLibreRenderer(
     private val mapContainer = CarMapContainer(carContext, lifecycle)
     private val uiHandler = Handler(Looper.getMainLooper())
     private val settingsManager = org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.SettingsManager>()
+    private val scaledStyles = java.util.Collections.synchronizedSet(
+        java.util.Collections.newSetFromMap(java.util.WeakHashMap<org.maplibre.android.maps.Style, Boolean>())
+    )
+
+    private fun adjustTextSizes(style: org.maplibre.android.maps.Style) {
+        if (!scaledStyles.add(style)) return
+        Log.d(TAG, "Scaling texts of new style: ${styleUrl ?: "default"}")
+        for (layer in style.layers) {
+            if (layer is org.maplibre.android.style.layers.SymbolLayer && layer.id != MapLibreSharedHelper.POI_LAYER_ID) {
+                val prop = layer.textSize
+                if (prop.isExpression) {
+                    val expr = prop.expression
+                    val newExpr = org.maplibre.android.style.expressions.Expression.product(
+                        expr,
+                        org.maplibre.android.style.expressions.Expression.literal(1.4f)
+                    )
+                    layer.setProperties(org.maplibre.android.style.layers.PropertyFactory.textSize(newExpr))
+                } else if (prop.isValue) {
+                    val value = prop.value
+                    if (value is Number) {
+                        layer.setProperties(org.maplibre.android.style.layers.PropertyFactory.textSize(value.toFloat() * 1.4f))
+                    }
+                }
+            }
+        }
+    }
 
     private var surfaceContainer: SurfaceContainer? = null
     private var styleUrl: String? = null
@@ -74,12 +100,16 @@ class CarMapLibreRenderer(
         mapContainer.onMapReady = { map ->
             val url = styleUrl
             if (url != null) {
-                map.setStyle(url) {
+                map.setStyle(url) { style ->
+                    adjustTextSizes(style)
                     applyCamera(map)
                     syncPoiLayer()
                     syncSearchRadiusLayer()
                 }
             } else {
+                map.getStyle { style ->
+                    adjustTextSizes(style)
+                }
                 applyCamera(map)
                 syncPoiLayer()
                 syncSearchRadiusLayer()
@@ -310,6 +340,9 @@ class CarMapLibreRenderer(
 
     private fun syncPoiLayer() {
         val map = mapContainer.mapLibreMapInstance ?: return
+        map.getStyle { style ->
+            adjustTextSizes(style)
+        }
         MapLibreSharedHelper.syncPoiLayer(
             context = carContext,
             map = map,
