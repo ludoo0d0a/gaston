@@ -438,43 +438,6 @@ private fun MapConfig(
             )
         }
 
-        // Debug Logging
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.filter_debug_logging), style = MaterialTheme.typography.titleSmall)
-                Text(stringResource(R.string.filter_capture_network_logs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Switch(
-                checked = settings.debugLoggingEnabled,
-                onCheckedChange = { onUpdate(settings.copy(debugLoggingEnabled = it)) },
-            )
-        }
-
-        if (BuildConfig.DEBUG) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.filter_simulate_premium), style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        stringResource(R.string.filter_simulate_premium_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Switch(
-                    checked = settings.devSimulatePremium,
-                    onCheckedChange = { onUpdate(settings.copy(devSimulatePremium = it)) },
-                )
-            }
-        }
-
         // Itinerary
         Column {
             Text(
@@ -1326,31 +1289,6 @@ private fun AboutContent(
         AboutRow(stringResource(R.string.about_version_code), BuildConfig.VERSION_CODE.toString())
         AboutRow(stringResource(R.string.about_build_date), BuildConfig.BUILD_DATE)
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    stringResource(R.string.about_premium_mode),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    stringResource(R.string.about_premium_mode_subtitle),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Switch(
-                checked = settings.devSimulatePremium,
-                onCheckedChange = { onUpdate(settings.copy(devSimulatePremium = it)) },
-            )
-        }
-
         Spacer(modifier = Modifier.height(16.dp))
         AboutRowClickable(
             label = stringResource(id = R.string.about_view_disclaimer),
@@ -2085,6 +2023,38 @@ private fun DeveloperSection(
             Switch(
                 checked = settings.testAaMapSurfaceEnabled,
                 onCheckedChange = { onUpdate(settings.copy(testAaMapSurfaceEnabled = it)) }
+            )
+        }
+
+        // 5. debug logging
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.filter_debug_logging), style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.filter_capture_network_logs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(
+                checked = settings.debugLoggingEnabled,
+                onCheckedChange = { onUpdate(settings.copy(debugLoggingEnabled = it)) }
+            )
+        }
+
+        // 6. disable cache
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.settings_debug_disable_cache), style = MaterialTheme.typography.bodyLarge)
+                Text("Bypass on-device caching of POI data", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(
+                checked = settings.disableCache,
+                onCheckedChange = { onUpdate(settings.copy(disableCache = it)) }
             )
         }
     }
