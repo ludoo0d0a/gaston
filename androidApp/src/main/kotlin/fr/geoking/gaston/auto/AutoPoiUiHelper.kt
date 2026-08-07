@@ -239,10 +239,13 @@ object AutoPoiUiHelper {
 
         if (poi.isElectric) {
             poi.chargePointCount?.let { n ->
-                secondaryDetails.add(if (n == 1) "1 point" else "$n points")
+                secondaryDetails.add(
+                    if (n == 1) carContext.getString(R.string.poi_charge_point_one)
+                    else carContext.getString(R.string.poi_charge_points, n)
+                )
             }
             availability?.let { s ->
-                secondaryDetails.add("${s.availableCount}/${s.totalCount} dispo")
+                secondaryDetails.add(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
             }
         }
 
