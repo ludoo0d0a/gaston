@@ -1,5 +1,23 @@
 package fr.geoking.gaston.parking
 
+import fr.geoking.gaston.shared.location.haversineKm
+
+data class SubBox(
+    val latMin: Double,
+    val latMax: Double,
+    val lonMin: Double,
+    val lonMax: Double
+) {
+    fun contains(lat: Double, lon: Double): Boolean =
+        lat in latMin..latMax && lon in lonMin..lonMax
+
+    fun distanceToKm(lat: Double, lon: Double): Double {
+        val closestLat = lat.coerceIn(latMin, latMax)
+        val closestLon = lon.coerceIn(lonMin, lonMax)
+        return haversineKm(lat, lon, closestLat, closestLon)
+    }
+}
+
 /**
  * Geographic region (country-level) for parking APIs. Used by [ParkingApiSelector] to choose
  * which providers to call based on user location. Smaller regions are checked first so e.g.
@@ -125,8 +143,21 @@ enum class ParkingRegion(
         countryCode = "US"
     );
 
+    val subBoxes: List<SubBox> = when (this.name) {
+        "Germany" -> listOf(
+            SubBox(50.5, 55.06, 5.87, 15.04),
+            SubBox(48.9, 50.5, 6.35, 15.04),
+            SubBox(47.27, 48.9, 7.4, 15.04)
+        )
+        "France" -> listOf(
+            SubBox(43.0, 51.09, -5.14, 8.25),
+            SubBox(41.33, 43.0, 8.5, 9.56)
+        )
+        else -> listOf(SubBox(latMin, latMax, lonMin, lonMax))
+    }
+
     fun contains(lat: Double, lon: Double): Boolean =
-        lat in latMin..latMax && lon in lonMin..lonMax
+        subBoxes.any { it.contains(lat, lon) }
 
     companion object {
         /** Order: smaller / more specific regions first so e.g. Luxembourg is chosen over Germany. */

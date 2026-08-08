@@ -42,13 +42,11 @@ class ParkingRegionTest {
     }
 
     @Test
-    fun allContaining_Metz_returnsFranceAndGermany() {
+    fun allContaining_Metz_returnsFrance() {
         // Metz: 49.11, 6.17
         val regions = ParkingRegion.allContaining(49.11, 6.17)
-        assertEquals(2, regions.size)
-        // Order by specificity (Germany then France in the current list, though both are "large")
-        // Actually Germany (index 6) comes before France (index 7) in bySpecificity list
-        assertEquals(setOf(ParkingRegion.France, ParkingRegion.Germany), regions.toSet())
+        assertEquals(1, regions.size)
+        assertEquals(setOf(ParkingRegion.France), regions.toSet())
     }
 
     @Test
