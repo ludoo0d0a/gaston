@@ -21,3 +21,15 @@ plugins {
 tasks.register("clean", Delete::class) {
     delete(rootProject.layout.buildDirectory)
 }
+
+allprojects {
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.jetbrains.kotlin") {
+                if (requested.name == "kotlin-stdlib" || requested.name == "kotlin-stdlib-common") {
+                    useVersion("2.4.0")
+                }
+            }
+        }
+    }
+}

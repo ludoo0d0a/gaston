@@ -323,7 +323,8 @@ class CarMapLibreRenderer(
             bearing = bearing,
             zoom = zoom.toFloat(),
             latitude = centerLat,
-            mapTileDebugEnabled = mapTileDebugEnabled
+            mapTileDebugEnabled = mapTileDebugEnabled,
+            isDensityScaled = true
         )
     }
 
