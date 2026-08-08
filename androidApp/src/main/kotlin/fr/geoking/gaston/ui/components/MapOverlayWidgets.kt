@@ -105,23 +105,19 @@ fun MapScaleWidget(
     latitude: Double,
     modifier: Modifier = Modifier
 ) {
-    val density = LocalDensity.current
-
     val (scaleWidthDp, distanceText) = remember(zoom, latitude) {
-        // Standard Mercator projection calculation
+        // Standard Mercator projection calculation (meters per coordinate pixel / DP)
         val metersPerPixel = 156543.03392 * cos(Math.toRadians(latitude)) / Math.pow(2.0, zoom.toDouble())
 
         // Target scale length on screen: about 80dp
-        val targetWidthPx = with(density) { 80.dp.toPx() }
-        val targetMeters = targetWidthPx * metersPerPixel
+        val targetMeters = 80.0 * metersPerPixel
 
         val distances = doubleArrayOf(
             1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0, 500.0,
             1000.0, 2000.0, 5000.0, 10000.0, 20000.0, 50000.0, 100000.0, 200000.0, 500000.0
         )
         val selectedDistance = distances.minByOrNull { Math.abs(it - targetMeters) } ?: 100.0
-        val widthPx = (selectedDistance / metersPerPixel).toFloat()
-        val widthDp = with(density) { widthPx.toDp() }
+        val widthDp = (selectedDistance / metersPerPixel).dp
 
         val text = if (selectedDistance >= 1000.0) {
             "${(selectedDistance / 1000.0).toInt()} km"

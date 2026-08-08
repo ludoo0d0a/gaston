@@ -426,7 +426,8 @@ class AutoSurfaceRenderer(
                     bearing = bearing,
                     zoom = zoom.toFloat(),
                     latitude = lat,
-                    mapTileDebugEnabled = mapTileDebugEnabled
+                    mapTileDebugEnabled = mapTileDebugEnabled,
+                    isDensityScaled = false
                 )
 
                 if (queryPending) {

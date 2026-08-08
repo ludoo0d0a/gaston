@@ -20,7 +20,8 @@ object AutoMapOverlayHelper {
         bearing: Float,
         zoom: Float,
         latitude: Double,
-        mapTileDebugEnabled: Boolean
+        mapTileDebugEnabled: Boolean,
+        isDensityScaled: Boolean
     ) {
         val density = context.resources.displayMetrics.density
         val area = visibleArea ?: Rect(0, 0, surfaceWidth, surfaceHeight)
@@ -29,7 +30,7 @@ object AutoMapOverlayHelper {
         drawCompass(canvas, area, bearing, density)
 
         // 2. Draw Scale (Bottom-Left of visible area)
-        drawScale(canvas, area, zoom, latitude, density)
+        drawScale(canvas, area, zoom, latitude, density, isDensityScaled)
 
         // 3. Draw Zoom debug layer if enabled (Top-Left of visible area, plus global, plus gros)
         if (mapTileDebugEnabled) {
@@ -117,20 +118,29 @@ object AutoMapOverlayHelper {
         canvas.restore()
     }
 
-    private fun drawScale(canvas: Canvas, area: Rect, zoom: Float, latitude: Double, density: Float) {
-        // Standard Mercator projection calculation
+    private fun drawScale(
+        canvas: Canvas,
+        area: Rect,
+        zoom: Float,
+        latitude: Double,
+        density: Float,
+        isDensityScaled: Boolean
+    ) {
+        // Standard Mercator projection calculation (meters per coordinate pixel / DP)
         val metersPerPixel = 156543.03392 * cos(Math.toRadians(latitude)) / Math.pow(2.0, zoom.toDouble())
+
+        val metersPerPixelOnScreen = if (isDensityScaled) metersPerPixel / density else metersPerPixel
 
         // Target scale length on screen: about 80dp
         val targetWidthPx = 80f * density
-        val targetMeters = targetWidthPx * metersPerPixel
+        val targetMeters = targetWidthPx * metersPerPixelOnScreen
 
         val distances = doubleArrayOf(
             1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0, 500.0,
             1000.0, 2000.0, 5000.0, 10000.0, 20000.0, 50000.0, 100000.0, 200000.0, 500000.0
         )
         val selectedDistance = distances.minByOrNull { Math.abs(it - targetMeters) } ?: 100.0
-        val scaleWidthPx = (selectedDistance / metersPerPixel).toFloat()
+        val scaleWidthPx = (selectedDistance / metersPerPixelOnScreen).toFloat()
 
         val distanceText = if (selectedDistance >= 1000.0) {
             "${(selectedDistance / 1000.0).toInt()} km"
