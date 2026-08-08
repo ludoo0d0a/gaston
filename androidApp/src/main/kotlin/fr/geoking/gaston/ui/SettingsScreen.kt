@@ -292,6 +292,7 @@ fun SettingsScreen(
                 )
                 SettingsScreenPage.Developer -> DeveloperSection(
                     settings = current,
+                    onNavigate = { screenStack = screenStack + it },
                     onUpdate = { save(settingsManager, it) }
                 )
             }
@@ -922,33 +923,6 @@ private fun MainMenu(
     val context = LocalContext.current
     val billingManager = koinInject<BillingManager>()
     val subscriptionNotice by billingManager.subscriptionNotice.collectAsState()
-    var showClearCacheConfirm by remember { mutableStateOf(false) }
-
-    if (showClearCacheConfirm) {
-        AlertDialog(
-            onDismissRequest = { showClearCacheConfirm = false },
-            title = { Text(stringResource(R.string.settings_clear_cache_title)) },
-            text = { Text(stringResource(R.string.settings_clear_cache_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showClearCacheConfirm = false
-                        scope.launch {
-                            CacheManager.clearAllCaches(context)
-                            snackbarHostState.showSnackbar(context.getString(R.string.cache_cleared))
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.action_clear), color = Color(0xFFFF6B6B))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showClearCacheConfirm = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
-    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -1105,11 +1079,6 @@ private fun MainMenu(
                     onClick = { onNavigate(SettingsScreenPage.TollData) }
                 )
                 SettingsItem(
-                    label = stringResource(R.string.screen_error_log),
-                    value = stringResource(R.string.settings_error_log_subtitle),
-                    onClick = { onNavigate(SettingsScreenPage.ErrorLog) }
-                )
-                SettingsItem(
                     label = stringResource(R.string.screen_theme),
                     value = settings.uiThemeMode.displayLabel(),
                     onClick = { onNavigate(SettingsScreenPage.Theme) }
@@ -1118,11 +1087,6 @@ private fun MainMenu(
                     label = stringResource(R.string.screen_about),
                     value = stringResource(R.string.settings_about_subtitle),
                     onClick = { onNavigate(SettingsScreenPage.About) }
-                )
-                SettingsItem(
-                    label = stringResource(R.string.screen_clear_cache),
-                    value = stringResource(R.string.settings_clear_cache_subtitle),
-                    onClick = { showClearCacheConfirm = true }
                 )
                 if (BuildConfig.DEBUG_DEV) {
                     SettingsItem(
@@ -1953,109 +1917,163 @@ private fun ErrorLog(
 @Composable
 private fun DeveloperSection(
     settings: AppSettings,
+    onNavigate: (SettingsScreenPage) -> Unit,
     onUpdate: (AppSettings) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        // 1. premium mode
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.dev_premium_mode), style = MaterialTheme.typography.bodyLarge)
-                Text("Simulate premium features override", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Switch(
-                checked = settings.devSimulatePremium,
-                onCheckedChange = { onUpdate(settings.copy(devSimulatePremium = it)) }
-            )
-        }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var showClearCacheConfirm by remember { mutableStateOf(false) }
 
-        // 2. network floating bar
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.dev_network_floating_bar), style = MaterialTheme.typography.bodyLarge)
-                Text("Show a floating network status overlay", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    if (showClearCacheConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearCacheConfirm = false },
+            title = { Text(stringResource(R.string.settings_clear_cache_title)) },
+            text = { Text(stringResource(R.string.settings_clear_cache_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearCacheConfirm = false
+                        scope.launch {
+                            CacheManager.clearAllCaches(context)
+                            snackbarHostState.showSnackbar(context.getString(R.string.cache_cleared))
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.action_clear), color = Color(0xFFFF6B6B))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearCacheConfirm = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
             }
-            Switch(
-                checked = settings.networkFloatingBarEnabled,
-                onCheckedChange = { onUpdate(settings.copy(networkFloatingBarEnabled = it)) }
-            )
-        }
+        )
+    }
 
-        // 3. debug grid in map
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.dev_debug_grid), style = MaterialTheme.typography.bodyLarge)
-                Text("Draw debugging tile boundaries grid on map", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                SettingsItem(
+                    label = stringResource(R.string.screen_error_log),
+                    value = stringResource(R.string.settings_error_log_subtitle),
+                    onClick = { onNavigate(SettingsScreenPage.ErrorLog) }
+                )
+                SettingsItem(
+                    label = stringResource(R.string.screen_clear_cache),
+                    value = stringResource(R.string.settings_clear_cache_subtitle),
+                    onClick = { showClearCacheConfirm = true }
+                )
             }
-            Switch(
-                checked = settings.mapTileDebugEnabled,
-                onCheckedChange = { onUpdate(settings.copy(mapTileDebugEnabled = it)) }
-            )
-        }
 
-        // 4. test AA map surface
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.dev_test_aa_map_surface), style = MaterialTheme.typography.bodyLarge)
-                Text("Emulate the Android Auto map on your mobile device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // 1. premium mode
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.dev_premium_mode), style = MaterialTheme.typography.bodyLarge)
+                    Text("Simulate premium features override", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.devSimulatePremium,
+                    onCheckedChange = { onUpdate(settings.copy(devSimulatePremium = it)) }
+                )
             }
-            Switch(
-                checked = settings.testAaMapSurfaceEnabled,
-                onCheckedChange = { onUpdate(settings.copy(testAaMapSurfaceEnabled = it)) }
-            )
-        }
 
-        // 5. debug logging
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.filter_debug_logging), style = MaterialTheme.typography.bodyLarge)
-                Text(stringResource(R.string.filter_capture_network_logs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // 2. network floating bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.dev_network_floating_bar), style = MaterialTheme.typography.bodyLarge)
+                    Text("Show a floating network status overlay", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.networkFloatingBarEnabled,
+                    onCheckedChange = { onUpdate(settings.copy(networkFloatingBarEnabled = it)) }
+                )
             }
-            Switch(
-                checked = settings.debugLoggingEnabled,
-                onCheckedChange = { onUpdate(settings.copy(debugLoggingEnabled = it)) }
-            )
-        }
 
-        // 6. disable cache
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.settings_debug_disable_cache), style = MaterialTheme.typography.bodyLarge)
-                Text("Bypass on-device caching of POI data", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // 3. debug grid in map
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.dev_debug_grid), style = MaterialTheme.typography.bodyLarge)
+                    Text("Draw debugging tile boundaries grid on map", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.mapTileDebugEnabled,
+                    onCheckedChange = { onUpdate(settings.copy(mapTileDebugEnabled = it)) }
+                )
             }
-            Switch(
-                checked = settings.disableCache,
-                onCheckedChange = { onUpdate(settings.copy(disableCache = it)) }
-            )
+
+            // 4. test AA map surface
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.dev_test_aa_map_surface), style = MaterialTheme.typography.bodyLarge)
+                    Text("Emulate the Android Auto map on your mobile device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.testAaMapSurfaceEnabled,
+                    onCheckedChange = { onUpdate(settings.copy(testAaMapSurfaceEnabled = it)) }
+                )
+            }
+
+            // 5. debug logging
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.filter_debug_logging), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.filter_capture_network_logs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.debugLoggingEnabled,
+                    onCheckedChange = { onUpdate(settings.copy(debugLoggingEnabled = it)) }
+                )
+            }
+
+            // 6. disable cache
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_debug_disable_cache), style = MaterialTheme.typography.bodyLarge)
+                    Text("Bypass on-device caching of POI data", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.disableCache,
+                    onCheckedChange = { onUpdate(settings.copy(disableCache = it)) }
+                )
+            }
         }
     }
 }
