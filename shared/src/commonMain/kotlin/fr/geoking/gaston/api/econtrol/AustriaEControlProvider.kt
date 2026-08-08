@@ -5,6 +5,8 @@ import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.AbstractPoiProvider
+import fr.geoking.gaston.poi.PoiProviderRules
 import fr.geoking.gaston.shared.logging.log
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -21,7 +23,9 @@ import kotlinx.serialization.json.Json
 class AustriaEControlProvider(
     private val client: HttpClient,
     private val limit: Int = 50
-) : PoiProvider {
+) : AbstractPoiProvider() {
+
+    override val usageRules = PoiProviderRules(countries = setOf("AT"))
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -32,6 +36,7 @@ class AustriaEControlProvider(
         longitude: Double,
         viewport: MapViewport?
     ): List<Poi> {
+        if (!shouldQuery(latitude, longitude, viewport)) return emptyList()
         // Fetch Diesel as representative for location search
         val url = "https://api.e-control.at/sprit/1.0/search/gas-stations/by-address?latitude=$latitude&longitude=$longitude&fuelType=DIE&includeClosed=true"
 

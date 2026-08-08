@@ -13,18 +13,14 @@ class CircularGeofencedPoiProvider(
     private val centerLat: Double,
     private val centerLon: Double,
     private val radiusKm: Double
-) : PoiProvider {
+) : AbstractPoiProvider() {
+
+    override val usageRules = PoiProviderRules(
+        circleCenter = Pair(centerLat, centerLon),
+        circleRadiusKm = radiusKm
+    )
 
     override fun supportedCategories(): Set<PoiCategory> = delegate.supportedCategories()
-
-    private fun shouldQuery(latitude: Double, longitude: Double, viewport: MapViewport?): Boolean {
-        val effectiveRadiusKm = viewport?.let { v ->
-            radiusKmFromMapViewport(latitude, longitude, v.zoom, v.mapWidthPx, v.mapHeightPx).coerceIn(1, 50)
-        } ?: 15
-
-        val dist = haversineKm(latitude, longitude, centerLat, centerLon)
-        return dist <= radiusKm + effectiveRadiusKm
-    }
 
     override fun searchFlow(request: PoiSearchRequest): Flow<PoiSearchResult> {
         if (!shouldQuery(request.latitude, request.longitude, request.viewport)) {
