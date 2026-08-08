@@ -27,7 +27,7 @@ configure<ApplicationExtension> {
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")
         }
-        targetSdk = 35
+        targetSdk = 36
         val ciRunNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
         val ciRunAttempt = System.getenv("GITHUB_RUN_ATTEMPT")?.toIntOrNull() ?: 1
         val localProps = rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
