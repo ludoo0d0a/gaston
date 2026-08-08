@@ -58,7 +58,7 @@ configure<ApplicationExtension> {
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
 
-        val debugDev = (project.findProperty("debug_dev") ?: "false").toString().toBoolean()
+        val debugDev = (project.findProperty("debug_dev") ?: System.getenv("DEBUG_DEV") ?: System.getenv("debug_dev") ?: "false").toString().toBoolean()
         buildConfigField("boolean", "DEBUG_DEV", "$debugDev")
 
         // Optional: GitHub PAT for in-app GitHub features (user can also configure at runtime).
