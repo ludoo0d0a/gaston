@@ -120,11 +120,27 @@ class AndroidNetworkService(
                     locationCountryCode = cachedLocationCountryCode
                     locationCountryName = cachedLocationCountryName
                 } else {
-                    val location = LocationHelper.getCurrentLocation(context, priority = Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+                    var location = LocationHelper.getCurrentLocation(context, priority = Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+                    if (location == null) {
+                        val settings = settingsManager.settings.value
+                        if (settings.lastKnownLat != null && settings.lastKnownLon != null) {
+                            location = Location("settings").apply {
+                                latitude = settings.lastKnownLat
+                                longitude = settings.lastKnownLon
+                            }
+                        }
+                    }
                     if (location != null) {
                         val address = getAddress(location)
                         locationCountryCode = address?.countryCode?.uppercase(Locale.US)
                         locationCountryName = address?.countryName
+
+                        if (locationCountryCode == null) {
+                            val offlineCodes = fr.geoking.gaston.countryCodesAtMapPosition(location.latitude, location.longitude)
+                            if (offlineCodes.isNotEmpty()) {
+                                locationCountryCode = offlineCodes.first()
+                            }
+                        }
 
                         cachedLocationCountryCode = locationCountryCode
                         cachedLocationCountryName = locationCountryName

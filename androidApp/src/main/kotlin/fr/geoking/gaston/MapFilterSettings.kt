@@ -192,9 +192,15 @@ fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Se
     return base
 }
 
-/** ISO country codes for [latitude]/[longitude] when it falls in known [ParkingRegion]s. */
-fun countryCodesAtMapPosition(latitude: Double, longitude: Double): List<String> =
-    listOfNotNull(ParkingRegion.containing(latitude, longitude)?.countryCode)
+/** ISO country codes for [latitude]/[longitude] when it falls in known [ParkingRegion]s or within 10km of their borders. */
+fun countryCodesAtMapPosition(latitude: Double, longitude: Double): List<String> {
+    val regions = ParkingRegion.entries.filter { region ->
+        region.subBoxes.any { box ->
+            box.distanceToKm(latitude, longitude) <= 10.0
+        }
+    }
+    return regions.map { it.countryCode }.distinct()
+}
 
 /** Human-readable countries for the map position (same regions as auto provider selection). */
 fun countryDisplayLabelAtMapPosition(
