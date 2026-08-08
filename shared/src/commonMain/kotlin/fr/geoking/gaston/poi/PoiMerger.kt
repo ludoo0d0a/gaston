@@ -479,5 +479,42 @@ object PoiMerger {
             false
         }
     }
+
+    fun enrichBrandsFromSupermarkets(pois: List<Poi>, supermarkets: List<Poi>): List<Poi> {
+        if (supermarkets.isEmpty()) return pois
+        return pois.map { poi ->
+            if (poi.poiCategory == PoiCategory.Gas && hasNoBrand(poi)) {
+                var closestSupermarket: Poi? = null
+                var minDistance = Double.MAX_VALUE
+                for (supermarket in supermarkets) {
+                    val distM = haversineMeters(poi.latitude, poi.longitude, supermarket.latitude, supermarket.longitude)
+                    if (distM <= 300.0 && distM < minDistance) {
+                        minDistance = distM
+                        closestSupermarket = supermarket
+                    }
+                }
+                if (closestSupermarket != null) {
+                    val brandName = closestSupermarket.brand?.takeIf { it.isNotBlank() }
+                        ?: closestSupermarket.name.takeIf { it.isNotBlank() }
+                    if (brandName != null) {
+                        poi.copy(brand = brandName)
+                    } else {
+                        poi
+                    }
+                } else {
+                    poi
+                }
+            } else {
+                poi
+            }
+        }
+    }
+
+    fun hasNoBrand(poi: Poi): Boolean {
+        if (poi.poiCategory != PoiCategory.Gas) return false
+        val brand = poi.brand?.trim()?.lowercase()
+        val generic = setOf("station", "independant", "independant (gms)", "sans enseigne", "autoroute", "route")
+        return brand.isNullOrBlank() || brand in generic
+    }
 }
 
