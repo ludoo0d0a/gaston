@@ -100,6 +100,7 @@ private enum class DebugOverlayTab {
     Providers,
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DebugLogOverlayContent(
     isExpanded: Boolean,
@@ -168,17 +169,19 @@ private fun DebugLogOverlayContent(
                             )
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                stringResource(R.string.settings_debug_disable_cache),
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 10.sp,
-                                modifier = Modifier.padding(end = 4.dp)
-                            )
-                            Switch(
-                                checked = settings.disableCache,
-                                onCheckedChange = { settingsManager.setDisableCache(it) },
-                                modifier = Modifier.scale(0.6f)
-                            )
+                            TooltipBox(
+                                positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                                tooltip = { PlainTooltip { Text(stringResource(R.string.settings_debug_disable_cache)) } },
+                                state = rememberTooltipState()
+                            ) {
+                                IconButton(onClick = { settingsManager.setDisableCache(!settings.disableCache) }) {
+                                    Icon(
+                                        imageVector = if (settings.disableCache) Icons.Default.CloudOff else Icons.Default.Cloud,
+                                        contentDescription = stringResource(R.string.settings_debug_disable_cache),
+                                        tint = if (settings.disableCache) Color(0xFFF87171) else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
                             IconButton(onClick = {
                                 scope.launch {
                                     CacheManager.clearAllCaches(context)
