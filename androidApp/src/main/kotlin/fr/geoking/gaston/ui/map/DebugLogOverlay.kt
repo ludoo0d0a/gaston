@@ -47,7 +47,7 @@ import java.util.*
 fun DebugLogOverlay(
     modifier: Modifier = Modifier,
     detectedCountries: String? = null,
-    zoomLevel: Float? = null
+    onRefresh: (() -> Unit)? = null
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -56,7 +56,7 @@ fun DebugLogOverlay(
             isExpanded = isExpanded,
             onExpandedChange = { isExpanded = it },
             detectedCountries = detectedCountries,
-            zoomLevel = zoomLevel,
+            onRefresh = onRefresh,
             modifier = Modifier.padding(16.dp)
         )
 
@@ -80,7 +80,7 @@ fun DebugLogOverlay(
                         isExpanded = true,
                         onExpandedChange = { isExpanded = it },
                         detectedCountries = detectedCountries,
-                        zoomLevel = zoomLevel,
+                        onRefresh = onRefresh,
                         modifier = Modifier
                             .padding(16.dp)
                             .clickable(
@@ -105,7 +105,7 @@ private fun DebugLogOverlayContent(
     isExpanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     detectedCountries: String?,
-    zoomLevel: Float? = null,
+    onRefresh: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableStateOf(DebugOverlayTab.Network) }
@@ -125,21 +125,6 @@ private fun DebugLogOverlayContent(
     Box(modifier = modifier.zIndex(2f)) {
         if (!isExpanded) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                if (zoomLevel != null) {
-                    Box(
-                        modifier = Modifier
-                            .background(Color.Black.copy(alpha = 0.7f), shape = RoundedCornerShape(4.dp))
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = String.format("Z: %.1f", zoomLevel),
-                            color = Color.Yellow,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
                 FloatingActionButton(
                     onClick = { onExpandedChange(true) },
                     containerColor = Color(0xFF334155).copy(alpha = 0.8f),
@@ -181,15 +166,6 @@ private fun DebugLogOverlayContent(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
                             )
-                            if (zoomLevel != null) {
-                                Text(
-                                    text = String.format("Zoom: %.2f", zoomLevel),
-                                    color = Color.Yellow,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
-                            }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -206,9 +182,10 @@ private fun DebugLogOverlayContent(
                             IconButton(onClick = {
                                 scope.launch {
                                     CacheManager.clearAllCaches(context)
+                                    onRefresh?.invoke()
                                 }
                             }) {
-                                Icon(Icons.Default.CleaningServices, stringResource(R.string.screen_clear_cache), tint = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Default.Refresh, "Clear Cache & Reload", tint = MaterialTheme.colorScheme.onSurface)
                             }
                             IconButton(onClick = { DebugLogStore.clearAll() }) {
                                 Icon(Icons.Default.DeleteSweep, stringResource(R.string.settings_clear_logs), tint = MaterialTheme.colorScheme.onSurface)

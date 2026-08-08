@@ -538,7 +538,9 @@ fun VectorMapScreen(
                                 .padding(top = 16.dp)
                                 .zIndex(2f),
                             detectedCountries = detectedCountries,
-                            zoomLevel = (cameraPosition?.zoom ?: defaultZoom).toFloat()
+                            onRefresh = {
+                                mapActions.refresh(true, currentMapCameraSample())
+                            }
                         )
                     }
                 }
