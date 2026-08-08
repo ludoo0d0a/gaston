@@ -130,11 +130,10 @@ fun rememberMapDataState(
             trafficInfo = null
             mapErrorMessage = null
             isErrorPaused = false
+            retryCount++
             val sample = atCenter ?: lastCameraSample
             if (sample != null) {
                 refreshRequestFlow.emit(sample)
-            } else {
-                retryCount++
             }
         }
     }
@@ -145,11 +144,10 @@ fun rememberMapDataState(
         mapErrorMessage = null
         isErrorPaused = false
         scope.launch {
+            retryCount++
             val sample = atCenter ?: lastCameraSample
             if (sample != null) {
                 refreshRequestFlow.emit(sample)
-            } else {
-                retryCount++
             }
         }
     }

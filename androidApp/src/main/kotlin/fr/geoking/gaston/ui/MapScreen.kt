@@ -642,7 +642,9 @@ fun MapScreen(
                                 .padding(top = 80.dp) // Below the top bar
                                 .zIndex(2f),
                             detectedCountries = detectedCountries,
-                            zoomLevel = cameraPositionState.position.zoom
+                            onRefresh = {
+                                mapActions.refresh(true, currentMapCameraSample())
+                            }
                         )
                     }
                 }
