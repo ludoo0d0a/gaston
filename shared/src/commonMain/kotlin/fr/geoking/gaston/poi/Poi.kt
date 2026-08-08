@@ -2,6 +2,8 @@ package fr.geoking.gaston.poi
 
 import fr.geoking.gaston.api.routex.PoiAmenities
 import fr.geoking.gaston.shared.location.approxDistanceKm
+import fr.geoking.gaston.shared.location.haversineKm
+import fr.geoking.gaston.parking.ParkingRegion
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.pow
@@ -563,10 +565,67 @@ object MapPoiFilter {
 }
 
 /**
+ * Configuration rules for when a POI provider should be used.
+ * Supports location checking by country codes or by a circular geofence.
+ */
+data class PoiProviderRules(
+    val countries: Set<String>? = null,
+    val circleCenter: Pair<Double, Double>? = null,
+    val circleRadiusKm: Double? = null
+) {
+    fun isSatisfiedBy(latitude: Double, longitude: Double, viewport: MapViewport? = null): Boolean {
+        if (circleCenter != null && circleRadiusKm != null) {
+            val effectiveRadiusKm = viewport?.let { v ->
+                radiusKmFromMapViewport(latitude, longitude, v.zoom, v.mapWidthPx, v.mapHeightPx).coerceIn(1, 50)
+            } ?: 15
+            val dist = haversineKm(latitude, longitude, circleCenter.first, circleCenter.second)
+            if (dist > circleRadiusKm + effectiveRadiusKm) {
+                return false
+            }
+        }
+
+        if (!countries.isNullOrEmpty()) {
+            val queryCountries = if (viewport != null) {
+                val minLat = viewport.minLat ?: (latitude - 0.2)
+                val maxLat = viewport.maxLat ?: (latitude + 0.2)
+                val minLng = viewport.minLng ?: (longitude - 0.2)
+                val maxLng = viewport.maxLng ?: (longitude + 0.2)
+                ParkingRegion.allInViewport(minLat, maxLat, minLng, maxLng).map { it.countryCode }
+            } else {
+                val containing = ParkingRegion.allContaining(latitude, longitude).map { it.countryCode }
+                containing.ifEmpty {
+                    ParkingRegion.entries.filter { region ->
+                        region.subBoxes.any { box ->
+                            box.distanceToKm(latitude, longitude) <= 10.0
+                        }
+                    }.map { it.countryCode }
+                }
+            }
+
+            val upperAllowed = countries.map { it.uppercase() }.toSet()
+            val upperQuery = queryCountries.map { it.uppercase() }.toSet()
+            if (upperQuery.isNotEmpty() && upperQuery.intersect(upperAllowed).isEmpty()) {
+                return false
+            }
+        }
+
+        return true
+    }
+}
+
+/**
  * Unified POI provider: supports [search] by [PoiCategory] and optional legacy [getGasStations].
  * New providers implement [search] and [supportedCategories]; [getGasStations] is for backward compatibility.
  */
 interface PoiProvider {
+    /** Configuration rules defining where/when this provider is allowed to be used. */
+    val usageRules: PoiProviderRules? get() = null
+
+    /** Evaluates whether this provider should be queried based on the request parameters. */
+    fun shouldQuery(latitude: Double, longitude: Double, viewport: MapViewport? = null): Boolean {
+        return usageRules?.isSatisfiedBy(latitude, longitude, viewport) ?: true
+    }
+
     /** Categories this provider can return. Used by the selector to build [PoiSearchRequest]. */
     fun supportedCategories(): Set<PoiCategory> = setOf(PoiCategory.Gas)
 
@@ -575,6 +634,10 @@ interface PoiProvider {
      * Default implementation emits the result of [searchResult].
      */
     fun searchFlow(request: PoiSearchRequest): Flow<PoiSearchResult> = flow {
+        if (!shouldQuery(request.latitude, request.longitude, request.viewport)) {
+            emit(PoiSearchResult())
+            return@flow
+        }
         emit(searchResult(request))
     }
 
@@ -583,6 +646,9 @@ interface PoiProvider {
      * Default implementation delegates to [getGasStations] and filters by category intersection.
      */
     suspend fun searchResult(request: PoiSearchRequest): PoiSearchResult {
+        if (!shouldQuery(request.latitude, request.longitude, request.viewport)) {
+            return PoiSearchResult()
+        }
         return try {
             val pois = search(request)
             PoiSearchResult(pois = pois)
@@ -606,6 +672,9 @@ interface PoiProvider {
      * Default implementation delegates to [getGasStations] and filters by category intersection.
      */
     suspend fun search(request: PoiSearchRequest): List<Poi> {
+        if (!shouldQuery(request.latitude, request.longitude, request.viewport)) {
+            return emptyList()
+        }
         val cat = request.categories
         val supported = supportedCategories()
         val overlap = if (cat.isEmpty()) supported else cat.intersect(supported)
@@ -629,6 +698,13 @@ interface PoiProvider {
 
     /** Clears any internal cache this provider may have. */
     suspend fun clearCache() {}
+}
+
+/**
+ * Base abstract class for POI providers to specify usage rules.
+ */
+abstract class AbstractPoiProvider : PoiProvider {
+    override val usageRules: PoiProviderRules? = null
 }
 
 private fun Poi.ensureCategory(): Poi = copy(

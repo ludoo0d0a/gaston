@@ -5,6 +5,8 @@ import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.AbstractPoiProvider
+import fr.geoking.gaston.poi.PoiProviderRules
 import fr.geoking.gaston.shared.logging.log
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -24,7 +26,9 @@ class GermanyTankerkoenigProvider(
     private val apiKey: String,
     private val radiusKm: Int = 10,
     private val limit: Int = 50
-) : PoiProvider {
+) : AbstractPoiProvider() {
+
+    override val usageRules = PoiProviderRules(countries = setOf("DE"))
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -35,6 +39,7 @@ class GermanyTankerkoenigProvider(
         longitude: Double,
         viewport: MapViewport?
     ): List<Poi> {
+        if (!shouldQuery(latitude, longitude, viewport)) return emptyList()
         val rad = radiusKm.coerceIn(1, 25)
         val url = "https://creativecommons.tankerkoenig.de/json/list.php?lat=$latitude&lng=$longitude&rad=$rad&sort=dist&type=all&apikey=$apiKey"
 

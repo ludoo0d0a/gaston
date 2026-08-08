@@ -135,6 +135,90 @@ enum class ParkingRegion(
         lonMax = 23.03,
         countryCode = "MK"
     ),
+    Norway(
+        latMin = 57.9,
+        latMax = 71.2,
+        lonMin = 4.6,
+        lonMax = 31.1,
+        countryCode = "NO"
+    ),
+    Sweden(
+        latMin = 55.3,
+        latMax = 69.1,
+        lonMin = 10.9,
+        lonMax = 24.2,
+        countryCode = "SE"
+    ),
+    Portugal(
+        latMin = 36.9,
+        latMax = 42.2,
+        lonMin = -9.5,
+        lonMax = -6.1,
+        countryCode = "PT"
+    ),
+    Finland(
+        latMin = 59.7,
+        latMax = 70.1,
+        lonMin = 19.1,
+        lonMax = 31.6,
+        countryCode = "FI"
+    ),
+    Greece(
+        latMin = 34.8,
+        latMax = 41.8,
+        lonMin = 19.3,
+        lonMax = 28.3,
+        countryCode = "GR"
+    ),
+    Ireland(
+        latMin = 51.4,
+        latMax = 55.4,
+        lonMin = -10.5,
+        lonMax = -5.9,
+        countryCode = "IE"
+    ),
+    Moldova(
+        latMin = 45.4,
+        latMax = 48.5,
+        lonMin = 26.6,
+        lonMax = 30.2,
+        countryCode = "MD"
+    ),
+    Romania(
+        latMin = 43.6,
+        latMax = 48.3,
+        lonMin = 20.2,
+        lonMax = 29.7,
+        countryCode = "RO"
+    ),
+    Serbia(
+        latMin = 42.2,
+        latMax = 46.2,
+        lonMin = 18.8,
+        lonMax = 23.0,
+        countryCode = "RS"
+    ),
+    Mexico(
+        latMin = 14.5,
+        latMax = 32.8,
+        lonMin = -118.4,
+        lonMax = -86.7,
+        countryCode = "MX"
+    ),
+    Argentina(
+        latMin = -55.2,
+        latMax = -21.8,
+        lonMin = -73.6,
+        lonMax = -53.6,
+        countryCode = "AR"
+    ),
+    Australia(
+        latMin = -43.7,
+        latMax = -10.0,
+        lonMin = 112.9,
+        lonMax = 153.6,
+        countryCode = "AU"
+    ),
     UnitedStates(
         latMin = 17.0,
         latMax = 71.5,
@@ -163,8 +247,10 @@ enum class ParkingRegion(
         /** Order: smaller / more specific regions first so e.g. Luxembourg is chosen over Germany. */
         private val bySpecificity = listOf(
             Luxembourg, Montenegro, NorthMacedonia, Slovenia, Croatia,
-            Belgium, Switzerland, Netherlands, Denmark, Austria,
-            Germany, France, UnitedKingdom, Spain, Italy
+            Ireland, Moldova, Portugal, Belgium, Switzerland, Netherlands,
+            Denmark, Austria, Romania, Serbia, Greece, Norway, Finland,
+            Sweden, Germany, France, UnitedKingdom, Spain, Italy,
+            Mexico, Argentina, Australia
             // UnitedStates is excluded from 'containing' (single region choice) to avoid breaking
             // logic that expects null for non-European regions, but is still available in 'allContaining'
             // and 'allInViewport' for provider resolution.
