@@ -281,7 +281,13 @@ val mapModule = module {
     }
     single { DataGouvCampingClient(get()) }
     single<PoiProvider>(named("datagouvcamping")) {
-        DataGouvCampingProvider(get(), radiusKm = 15, limit = 50)
+        val base = DataGouvCampingProvider(get(), radiusKm = 15, limit = 50)
+        fr.geoking.gaston.poi.CircularGeofencedPoiProvider(
+            delegate = base,
+            centerLat = 43.5795,
+            centerLon = 3.3684,
+            radiusKm = 80.0
+        )
     }
     single<PoiProvider>(named("selector")) {
         SelectorPoiProvider(
