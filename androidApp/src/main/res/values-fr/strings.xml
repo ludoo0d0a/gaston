@@ -312,6 +312,11 @@
     <string name="settings_map_engine">Moteur de carte</string>
     <string name="settings_map_mode">Mode carte</string>
     <string name="settings_map_theme">Thème de carte</string>
+    <string name="action_map_view">Vue de la carte</string>
+    <string name="map_view_streets">Plan</string>
+    <string name="map_view_satellite">Satellite</string>
+    <string name="map_view_hybrid">Hybride</string>
+    <string name="map_view_terrain">Relief</string>
     <string name="settings_no_errors">Aucune erreur enregistrée</string>
     <string name="settings_nsw_key">Clé API NSW FuelCheck</string>
     <string name="settings_nsw_secret">Secret API NSW FuelCheck</string>

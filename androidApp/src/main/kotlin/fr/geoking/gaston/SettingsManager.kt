@@ -28,6 +28,15 @@ enum class CarMapMode {
 }
 enum class MapEngine { Google, MapLibre }
 enum class ThemeMode { System, Light, Dark }
+
+/** Phone map basemap: streets / photo / hybrid / terrain (Google map types + MapLibre equivalents). */
+enum class MapBaseView {
+    Streets,
+    Satellite,
+    Hybrid,
+    Terrain,
+}
+
 enum class MapTheme(val styleUrl: String, val rasterUrl: String, val isDark: Boolean) {
     Dark("https://tiles.openfreemap.org/styles/dark", "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png", true),
     Voyager("https://tiles.openfreemap.org/styles/bright", "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png", false),
@@ -130,6 +139,7 @@ data class AppSettings(
     val cacheWarmAmenityTypes: Set<String> = emptySet(),
     val phoneMapEngine: MapEngine = MapEngine.Google,
     val mapTheme: MapTheme = MapTheme.Voyager,
+    val mapBaseView: MapBaseView = MapBaseView.Streets,
     val mapThemeMode: ThemeMode = ThemeMode.System,
     val vehicleType: VehicleType = VehicleType.Car,
     val carMapMode: CarMapMode = CarMapMode.Native,
@@ -236,6 +246,10 @@ open class SettingsManager(
             MapTheme.valueOf(prefs.getString("map_theme", MapTheme.Voyager.name) ?: MapTheme.Voyager.name)
         } catch (_: Exception) { MapTheme.Voyager }
 
+        val mapBaseView = try {
+            MapBaseView.valueOf(prefs.getString("map_base_view", MapBaseView.Streets.name) ?: MapBaseView.Streets.name)
+        } catch (_: Exception) { MapBaseView.Streets }
+
         val carMapMode = try {
             CarMapMode.valueOf(prefs.getString("car_map_mode", CarMapMode.Native.name) ?: CarMapMode.Native.name)
         } catch (_: Exception) { CarMapMode.Native }
@@ -315,6 +329,7 @@ open class SettingsManager(
                 ?: emptySet(),
             phoneMapEngine = phoneMapEngine,
             mapTheme = mapTheme,
+            mapBaseView = mapBaseView,
             mapThemeMode = mapThemeMode,
             vehicleType = vehicleType,
             carMapMode = carMapMode,
@@ -388,6 +403,7 @@ open class SettingsManager(
             .putStringSet("cache_warm_amenity_types", settings.cacheWarmAmenityTypes)
             .putString("phone_map_engine", settings.phoneMapEngine.name)
             .putString("map_theme", settings.mapTheme.name)
+            .putString("map_base_view", settings.mapBaseView.name)
             .putString("vehicle_type", settings.vehicleType.name)
             .putString("car_map_mode", settings.carMapMode.name)
             .putString("google_user_name", sanitized.googleUserName)
@@ -439,6 +455,10 @@ open class SettingsManager(
 
     open fun setMapTheme(theme: MapTheme) {
         saveSettings(_settings.value.copy(mapTheme = theme))
+    }
+
+    open fun setMapBaseView(view: MapBaseView) {
+        saveSettings(_settings.value.copy(mapBaseView = view))
     }
 
     open fun setMapTrafficEnabled(enabled: Boolean) {

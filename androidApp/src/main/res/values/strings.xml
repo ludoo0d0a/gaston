@@ -243,6 +243,11 @@
     <string name="filter_sources_partial">%1$d / %2$d on — tap to enable all</string>
     <string name="settings_map_engine">Map engine</string>
     <string name="settings_map_theme">Map theme</string>
+    <string name="action_map_view">Map view</string>
+    <string name="map_view_streets">Streets</string>
+    <string name="map_view_satellite">Satellite</string>
+    <string name="map_view_hybrid">Hybrid</string>
+    <string name="map_view_terrain">Terrain</string>
     <string name="settings_theme_night_maps">Also applies to maps for night driving</string>
     <string name="settings_api_keys_optional">API keys (optional)</string>
     <string name="settings_opencm_key">OpenChargeMap API key</string>

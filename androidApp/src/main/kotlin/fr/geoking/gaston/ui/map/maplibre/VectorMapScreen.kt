@@ -78,6 +78,8 @@ import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.map.MarkerStyle
+import fr.geoking.gaston.ui.map.MapBaseViewControl
+import fr.geoking.gaston.ui.map.maplibre.resolvePhoneMapLibreStyle
 import fr.geoking.gaston.ui.map.PoiDetailCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.AddPoiSheet
@@ -484,20 +486,14 @@ fun VectorMapScreen(
                         .onSizeChanged { mapSizePx = it }
                 ) {
                     val mapPaddingBottom = if (selectedPoi != null) STATION_OVERLAY_CARD_HEIGHT else 0.dp
+                    val mapLibreStyle = remember(settings.mapBaseView, settings.mapTheme) {
+                        resolvePhoneMapLibreStyle(settings, preferDark = false)
+                    }
 
                     LibreMap(
                         modifier = Modifier.fillMaxSize(),
-                        styleUrl = run {
-                            val isDarkMode = false // On phone, keep map in day theme
-                            // If user selected theme matches current dark mode, use it.
-                            // If they selected a dark theme but we are in light mode (or vice versa),
-                            // fall back to defaults for that mode.
-                            if (settings.mapTheme.isDark == isDarkMode) {
-                                settings.mapTheme.styleUrl
-                            } else {
-                                if (isDarkMode) MapTheme.Dark.styleUrl else MapTheme.Voyager.styleUrl
-                            }
-                        },
+                        styleUrl = mapLibreStyle.styleUrl ?: MapTheme.Voyager.styleUrl,
+                        styleJson = mapLibreStyle.styleJson,
                         initialCameraPosition = LatLng(defaultLat, defaultLng) to defaultZoom,
                         contentPaddingBottom = mapPaddingBottom,
                         onMapReady = { mapLibreMap = it },
@@ -512,6 +508,15 @@ fun VectorMapScreen(
                         },
                         effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
                         effectivePowerLevels = settings.effectiveIrvePowerLevels()
+                    )
+
+                    MapBaseViewControl(
+                        current = settings.mapBaseView,
+                        onSelect = { settingsManager.setMapBaseView(it) },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 16.dp, end = 16.dp)
+                            .zIndex(1f)
                     )
 
                     // Map overlay scale widget (placed at the bottom-left, shifts up if bottom sheet is shown)
@@ -535,7 +540,7 @@ fun VectorMapScreen(
                         DebugLogOverlay(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(top = 16.dp)
+                                .padding(top = 72.dp, end = 16.dp)
                                 .zIndex(2f),
                             detectedCountries = detectedCountries,
                             onRefresh = {

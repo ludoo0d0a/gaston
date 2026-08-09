@@ -93,7 +93,9 @@ import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.DebugLogOverlay
+import fr.geoking.gaston.ui.map.MapBaseViewControl
 import fr.geoking.gaston.ui.components.MapOverlayWidgets
+import fr.geoking.gaston.MapBaseView
 import fr.geoking.gaston.ui.anim.AnimationPalette
 import fr.geoking.gaston.ui.anim.AnimationPalettes
 import fr.geoking.gaston.intent.IntentNavigationHelper
@@ -523,6 +525,12 @@ fun MapScreen(
                         .onSizeChanged { mapSizePx = it }
                 ) {
                     val mapPaddingBottom = if (selectedPoi != null) STATION_OVERLAY_CARD_HEIGHT else 0.dp
+                    val googleMapType = when (settings.mapBaseView) {
+                        MapBaseView.Streets -> MapType.NORMAL
+                        MapBaseView.Satellite -> MapType.SATELLITE
+                        MapBaseView.Hybrid -> MapType.HYBRID
+                        MapBaseView.Terrain -> MapType.TERRAIN
+                    }
 
                     GoogleMap(
                         modifier = Modifier.fillMaxSize(),
@@ -530,6 +538,7 @@ fun MapScreen(
                         properties = MapProperties(
                             isMyLocationEnabled = hasLocationPermission,
                             isTrafficEnabled = settings.mapTrafficEnabled,
+                            mapType = googleMapType,
                             mapStyleOptions = null // On phone, keep map in day theme
                         ),
                         uiSettings = MapUiSettings(myLocationButtonEnabled = hasLocationPermission),
@@ -617,6 +626,15 @@ fun MapScreen(
                             )
                         }
                     }
+
+                    MapBaseViewControl(
+                        current = settings.mapBaseView,
+                        onSelect = { settingsManager.setMapBaseView(it) },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 16.dp, end = 16.dp)
+                            .zIndex(1f)
+                    )
 
                     // Map overlay scale widget (placed at the bottom-left, shifts up if bottom sheet is shown)
                     MapOverlayWidgets(

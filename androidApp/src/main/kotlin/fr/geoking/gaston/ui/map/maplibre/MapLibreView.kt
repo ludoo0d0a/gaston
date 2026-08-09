@@ -3,17 +3,18 @@ package fr.geoking.gaston.ui.map.maplibre
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.viewinterop.AndroidView
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
-import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
@@ -23,6 +24,7 @@ import org.maplibre.android.maps.Style
 fun MapLibreView(
     modifier: Modifier = Modifier,
     styleUrl: String = "https://tiles.openfreemap.org/styles/dark",
+    styleJson: String? = null,
     cameraPosition: CameraPosition? = null,
     onMapReady: (MapLibreMap) -> Unit = {},
     onMapClick: (LatLng) -> Unit = {},
@@ -30,16 +32,22 @@ fun MapLibreView(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    var styleEpoch by remember { mutableIntStateOf(0) }
 
     // Initialize MapLibre singleton
     remember {
         MapLibre.getInstance(context)
     }
 
+    val initialStyleUrl = styleUrl
+    val initialStyleJson = styleJson
+
     val mapView = remember {
         MapView(context).apply {
             getMapAsync { map ->
-                map.setStyle(styleUrl)
+                applyMapLibreStyle(map, initialStyleUrl, initialStyleJson) {
+                    styleEpoch++
+                }
                 cameraPosition?.let { map.cameraPosition = it }
                 map.addOnMapClickListener { point ->
                     onMapClick(point)
@@ -72,6 +80,8 @@ fun MapLibreView(
         factory = { mapView },
         modifier = modifier,
         update = {
+            // Read epoch so AndroidView re-runs update after each style load.
+            mapView.tag = styleEpoch
             mapView.getMapAsync { map ->
                 update(map)
             }
@@ -79,9 +89,24 @@ fun MapLibreView(
     )
 
     // Update style if it changes
-    LaunchedEffect(styleUrl) {
+    LaunchedEffect(styleUrl, styleJson) {
         mapView.getMapAsync { map ->
-            map.setStyle(styleUrl)
+            applyMapLibreStyle(map, styleUrl, styleJson) {
+                styleEpoch++
+            }
         }
+    }
+}
+
+private fun applyMapLibreStyle(
+    map: MapLibreMap,
+    styleUrl: String,
+    styleJson: String?,
+    onStyleLoaded: Style.OnStyleLoaded? = null,
+) {
+    if (styleJson != null) {
+        map.setStyle(Style.Builder().fromJson(styleJson), onStyleLoaded)
+    } else {
+        map.setStyle(styleUrl, onStyleLoaded)
     }
 }

@@ -19,6 +19,7 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("OpenFreeMap", "https://openfreemap.org", null),
     UsedApi("OpenStreetMap", "https://www.openstreetmap.org", "https://www.openstreetmap.org/favicon.ico"),
     UsedApi("CARTO basemaps", "https://carto.com", null),
+    UsedApi("Esri World Imagery / Topo", "https://www.esri.com", null),
 
     // Geocoding & place search
     UsedApi("Nominatim (OpenStreetMap)", "https://nominatim.org", null),

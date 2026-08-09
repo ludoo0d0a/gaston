@@ -23,6 +23,7 @@ import org.maplibre.android.maps.MapLibreMap
 fun LibreMap(
     modifier: Modifier = Modifier,
     styleUrl: String,
+    styleJson: String? = null,
     initialCameraPosition: Pair<LatLng, Double>,
     contentPaddingBottom: Dp,
     onMapReady: (MapLibreMap) -> Unit,
@@ -42,6 +43,7 @@ fun LibreMap(
     MapLibreView(
         modifier = modifier,
         styleUrl = styleUrl,
+        styleJson = styleJson,
         cameraPosition = CameraPosition.Builder()
             .target(initialCameraPosition.first)
             .zoom(initialCameraPosition.second)
