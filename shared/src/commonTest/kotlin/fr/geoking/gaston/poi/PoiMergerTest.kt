@@ -332,8 +332,8 @@ class PoiMergerTest {
 
         // ~100m away (0.0009 lat)
         val stationNear = Poi("gas-near", "Gazole Station", "Address", lat, lon, brand = null, poiCategory = PoiCategory.Gas)
-        // ~1110m away (0.01 lat)
-        val stationFar = Poi("gas-far", "Gazole Station 2", "Address", lat + 0.01, lon, brand = "sans enseigne", poiCategory = PoiCategory.Gas)
+        // ~2220m away (0.02 lat) — beyond SUPERMARKET_BRAND_ENRICH_METERS (600m)
+        val stationFar = Poi("gas-far", "Gazole Station 2", "Address", lat + 0.02, lon, brand = "sans enseigne", poiCategory = PoiCategory.Gas)
         // Already branded
         val stationBranded = Poi("gas-branded", "Gazole Station 3", "Address", lat, lon, brand = "Esso", poiCategory = PoiCategory.Gas)
 
@@ -351,7 +351,7 @@ class PoiMergerTest {
         assertEquals("Auchan", enrichedNear.brand, "Should enrich brand from near supermarket")
 
         val enrichedFar = enriched.find { it.id == "gas-far" }!!
-        assertEquals("sans enseigne", enrichedFar.brand, "Should NOT enrich brand from far supermarket (>300m)")
+        assertEquals("sans enseigne", enrichedFar.brand, "Should NOT enrich brand from far supermarket (>600m)")
 
         val enrichedBranded = enriched.find { it.id == "gas-branded" }!!
         assertEquals("Esso", enrichedBranded.brand, "Should NOT overwrite already branded station")

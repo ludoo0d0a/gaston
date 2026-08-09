@@ -24,6 +24,8 @@ object PoiMerger {
     private const val MERGE_DISTANCE_WITH_NAME_METERS = 300.0
     // Distance threshold for merge with same brand.
     private const val MERGE_DISTANCE_WITH_BRAND_METERS = 300.0
+    /** Max distance to inherit brand from a nearby supermarket (covers coarse DataGouv geoms). */
+    const val SUPERMARKET_BRAND_ENRICH_METERS = 600.0
     private const val NAME_TOKEN_MIN_LENGTH = 2
     private const val NAME_SIMILARITY_MIN = 0.8
 
@@ -488,7 +490,7 @@ object PoiMerger {
                 var minDistance = Double.MAX_VALUE
                 for (supermarket in supermarkets) {
                     val distM = haversineMeters(poi.latitude, poi.longitude, supermarket.latitude, supermarket.longitude)
-                    if (distM <= 300.0 && distM < minDistance) {
+                    if (distM <= SUPERMARKET_BRAND_ENRICH_METERS && distM < minDistance) {
                         minDistance = distM
                         closestSupermarket = supermarket
                     }
