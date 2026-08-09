@@ -1,10 +1,13 @@
 package fr.geoking.gaston.ui
 
 import android.content.Intent
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
@@ -88,11 +92,20 @@ fun PhoneDashboardScreen(
     GastonTheme(themeMode = settings.uiThemeMode) {
         Scaffold(
             topBar = {
-                PhoneDashboardTopBar(
-                    isUpdateInProgress = isUpdateInProgress,
-                    onOpenFavorites = onOpenFavorites,
-                    onOpenSettings = { onOpenSettings(null) }
-                )
+                Column {
+                    PhoneDashboardTopBar(
+                        isUpdateInProgress = isUpdateInProgress,
+                        onOpenFavorites = onOpenFavorites,
+                        onOpenSettings = { onOpenSettings(null) }
+                    )
+                    if (uiState.isLoadingPois) {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(3.dp)
+                        )
+                    }
+                }
             },
             bottomBar = {
                 if (showAds) {

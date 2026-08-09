@@ -68,6 +68,7 @@ class NativeMapPoiScreen(
     private var sortByPrice: Boolean = false
     private var refreshJob: Job? = null
     private var loadPoisJob: Job? = null
+    private var loadPoisGeneration: Int = 0
     private var isCheapestFilterActive: Boolean = false
 
     init {
@@ -108,6 +109,7 @@ class NativeMapPoiScreen(
 
     private fun loadPois(showLoading: Boolean = true, overrideLat: Double? = null, overrideLon: Double? = null) {
         loadPoisJob?.cancel()
+        val gen = ++loadPoisGeneration
         loadPoisJob = lifecycleScope.launch {
             if (showLoading) {
                 isLoading = true
@@ -150,8 +152,11 @@ class NativeMapPoiScreen(
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 Log.e("NativeMapPoiScreen", "loadPois failed", e)
-                isLoading = false
-                invalidate()
+            } finally {
+                if (gen == loadPoisGeneration) {
+                    isLoading = false
+                    invalidate()
+                }
             }
         }
     }

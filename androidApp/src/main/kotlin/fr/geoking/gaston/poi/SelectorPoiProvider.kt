@@ -599,23 +599,25 @@ class SelectorPoiProvider(
             errors = errors.map { "${it.providerName}: ${it.message}" },
         )
 
-        // Persist to DB
-        try {
-            val entitiesToPersist = synchronized(cacheLock) { cachedPois.values.toList() }
-            val entities = entitiesToPersist.map { p ->
-                PoiCacheEntity(
-                    id = p.id,
-                    latitude = p.latitude,
-                    longitude = p.longitude,
-                    name = p.name,
-                    address = p.address,
-                    poiJson = json.encodeToString(p),
-                    updatedAtMs = mergedNow
-                )
+        // Persist on the provider scope (not channelFlow children) so collectors clear promptly.
+        val entitiesToPersist = synchronized(cacheLock) { cachedPois.values.toList() }
+        this@SelectorPoiProvider.launch {
+            try {
+                val entities = entitiesToPersist.map { p ->
+                    PoiCacheEntity(
+                        id = p.id,
+                        latitude = p.latitude,
+                        longitude = p.longitude,
+                        name = p.name,
+                        address = p.address,
+                        poiJson = json.encodeToString(p),
+                        updatedAtMs = mergedNow
+                    )
+                }
+                poiCacheDao.insertPois(entities)
+            } catch (e: Exception) {
+                Log.e("SelectorPoiProvider", "Failed to persist POIs", e)
             }
-            poiCacheDao.insertPois(entities)
-        } catch (e: Exception) {
-            Log.e("SelectorPoiProvider", "Failed to persist POIs", e)
         }
     }
 
