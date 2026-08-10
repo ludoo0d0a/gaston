@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,7 +39,6 @@ import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.components.FuelFilterChip
-import fr.geoking.gaston.ui.components.FuelForecastChartCard
 import fr.geoking.gaston.ui.components.UnifiedFuelForecastChartCard
 import fr.geoking.gaston.ui.dashboard.GastonTheme
 import fr.geoking.gaston.premium.BillingManager
@@ -87,7 +85,8 @@ fun FuelForecastScreen(
     val allFuelIds = setOf("gazole", "sp95", "sp98", "gplc", "e85")
     var selectedFuelIds by remember { mutableStateOf(setOf("gazole", "sp95", "sp98")) }
 
-    LaunchedEffect(refreshTick) {
+    LaunchedEffect(refreshTick, settings.hasPremiumFeatures) {
+        if (!settings.hasPremiumFeatures) return@LaunchedEffect
         isLoading = true
         try {
             val loc = withContext(Dispatchers.IO) { LocationHelper.getCurrentLocation(context) }
@@ -122,87 +121,81 @@ fun FuelForecastScreen(
                 }
             }
         ) { padding ->
-            if (isLoading && states.isEmpty()) {
-                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    Text(
+                        stringResource(R.string.forecast_regional_estimations),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    item {
-                        Text(
-                            stringResource(R.string.forecast_regional_estimations),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
 
-                    item {
-                        androidx.compose.foundation.layout.FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            allFuelIds.forEach { fuelId ->
-                                val label = when (fuelId) {
-                                    "gazole" -> stringResource(R.string.fuel_gazole)
-                                    "sp95" -> stringResource(R.string.fuel_sp95)
-                                    "sp98" -> stringResource(R.string.fuel_sp98)
-                                    "gplc" -> stringResource(R.string.fuel_gplc)
-                                    "e85" -> stringResource(R.string.fuel_e85)
-                                    else -> fuelId
-                                }
-                                FuelFilterChip(
-                                    id = fuelId,
-                                    label = label,
-                                    isSelected = selectedFuelIds.contains(fuelId),
-                                    onClick = {
-                                        selectedFuelIds = if (selectedFuelIds.contains(fuelId)) {
-                                            if (selectedFuelIds.size > 1) selectedFuelIds - fuelId else selectedFuelIds
-                                        } else {
-                                            selectedFuelIds + fuelId
-                                        }
+                item {
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        allFuelIds.forEach { fuelId ->
+                            val label = when (fuelId) {
+                                "gazole" -> stringResource(R.string.fuel_gazole)
+                                "sp95" -> stringResource(R.string.fuel_sp95)
+                                "sp98" -> stringResource(R.string.fuel_sp98)
+                                "gplc" -> stringResource(R.string.fuel_gplc)
+                                "e85" -> stringResource(R.string.fuel_e85)
+                                else -> fuelId
+                            }
+                            FuelFilterChip(
+                                id = fuelId,
+                                label = label,
+                                isSelected = selectedFuelIds.contains(fuelId),
+                                onClick = {
+                                    selectedFuelIds = if (selectedFuelIds.contains(fuelId)) {
+                                        if (selectedFuelIds.size > 1) selectedFuelIds - fuelId else selectedFuelIds
+                                    } else {
+                                        selectedFuelIds + fuelId
                                     }
-                                )
-                            }
+                                }
+                            )
                         }
                     }
+                }
 
-                    item {
-                        UnifiedFuelForecastChartCard(
-                            states = states,
-                            selectedFuelIds = selectedFuelIds,
-                            isLoading = isLoading && states.isEmpty()
-                        )
-                    }
+                item {
+                    UnifiedFuelForecastChartCard(
+                        states = states,
+                        selectedFuelIds = selectedFuelIds,
+                        isLoading = isLoading && states.isEmpty()
+                    )
+                }
 
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.forecast_algorithm_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = stringResource(R.string.forecast_algorithm_description),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
+                            Text(
+                                text = stringResource(R.string.forecast_algorithm_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = stringResource(R.string.forecast_algorithm_description),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
+                }
 
-                    item {
-                        Box(Modifier.size(16.dp))
-                    }
+                item {
+                    Box(Modifier.size(16.dp))
                 }
             }
         }

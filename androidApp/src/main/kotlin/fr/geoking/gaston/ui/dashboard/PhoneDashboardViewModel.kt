@@ -19,8 +19,6 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.PoiSearchRequest
-import fr.geoking.gaston.repository.FuelForecastRepository
-import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -43,8 +41,6 @@ data class PhoneDashboardUiState(
     val searchError: String? = null,
     val userLat: Double? = null,
     val userLon: Double? = null,
-    val fuelForecastState: FuelForecastUiState = FuelForecastUiState(fuelId = "gazole", locationKey = ""),
-    val fuelForecastLoading: Boolean = false,
     val nearbyFuelPois: List<Poi> = emptyList(),
     val nearbyElectricPois: List<Poi> = emptyList(),
     val showLoaderByDelay: Boolean = false
@@ -53,7 +49,6 @@ data class PhoneDashboardUiState(
 @OptIn(FlowPreview::class)
 class PhoneDashboardViewModel(
     private val settingsManager: SettingsManager,
-    private val fuelForecastRepository: FuelForecastRepository?,
     private val context: Context
 ) : ViewModel() {
 
@@ -68,8 +63,6 @@ class PhoneDashboardViewModel(
     private val searchError = MutableStateFlow<String?>(null)
     private val userLat = MutableStateFlow<Double?>(settingsManager.settings.value.lastKnownLat)
     private val userLon = MutableStateFlow<Double?>(settingsManager.settings.value.lastKnownLon)
-    private val fuelForecastState = MutableStateFlow(FuelForecastUiState(fuelId = "gazole", locationKey = ""))
-    private val fuelForecastLoading = MutableStateFlow(false)
     private val showLoaderByDelay = MutableStateFlow(false)
 
     init {
@@ -191,60 +184,6 @@ class PhoneDashboardViewModel(
                     isLoadingPois.value = false
                 }
         }
-
-        // Fuel forecast flow: refreshes forecasts reactively on location or filter changes
-        viewModelScope.launch {
-            combine(
-                userLat,
-                userLon,
-                settingsManager.settings,
-                hasLocationPermissionFlow
-            ) { lat, lon, settings, hasPerm ->
-                val energyFilterIds = settings.effectiveMapEnergyFilterIds()
-                Triple(lat, lon, energyFilterIds) to hasPerm
-            }
-                .collectLatest { (triple, hasPerm) ->
-                    val (lat, lon, energyFilterIds) = triple
-                    val repo = fuelForecastRepository ?: return@collectLatest
-                    if (!hasPerm && lat == null) {
-                        fuelForecastState.value = FuelForecastUiState(
-                            fuelId = "gazole",
-                            locationKey = "",
-                            errorMessage = "Location needed for local price forecast."
-                        )
-                        return@collectLatest
-                    }
-                    val locLatLon: Pair<Double, Double> = when {
-                        lat != null && lon != null -> Pair(lat, lon)
-                        else -> {
-                            val loc = LocationHelper.getCurrentLocation(context)
-                            if (loc == null) {
-                                fuelForecastState.value = FuelForecastUiState(
-                                    fuelId = "gazole",
-                                    locationKey = "",
-                                    errorMessage = "Unable to read location for forecast."
-                                )
-                                return@collectLatest
-                            }
-                            Pair(loc.latitude, loc.longitude)
-                        }
-                    }
-                    val (la, lo) = locLatLon
-                    fuelForecastLoading.value = true
-                    try {
-                        fuelForecastState.value = repo.refreshAndBuildUiState(la, lo, energyFilterIds)
-                    } catch (e: Exception) {
-                        android.util.Log.e("PhoneDashboardViewModel", "Fuel forecast refresh failed", e)
-                        fuelForecastState.value = FuelForecastUiState(
-                            fuelId = energyFilterIds.firstOrNull { it != "electric" } ?: "gazole",
-                            locationKey = repo.locationKey(la, lo),
-                            errorMessage = "Could not refresh forecast."
-                        )
-                    } finally {
-                        fuelForecastLoading.value = false
-                    }
-                }
-        }
     }
 
     val nearbyFuelPois: StateFlow<List<Poi>> = combine(
@@ -325,8 +264,8 @@ class PhoneDashboardViewModel(
         combine(userLat, userLon, showLoaderByDelay) { lat, lon, delay ->
             Pair(Pair(lat, lon), delay)
         },
-        combine(fuelForecastState, fuelForecastLoading, nearbyFuelPois, nearbyElectricPois) { forecast, forecastLoading, fuelPois, electricPois ->
-            Pair(Pair(forecast, forecastLoading), Pair(fuelPois, electricPois))
+        combine(nearbyFuelPois, nearbyElectricPois) { fuelPois, electricPois ->
+            Pair(fuelPois, electricPois)
         }
     ) { part1, part2, part3 ->
         PhoneDashboardUiState(
@@ -337,10 +276,8 @@ class PhoneDashboardViewModel(
             userLat = part2.first.first,
             userLon = part2.first.second,
             showLoaderByDelay = part2.second,
-            fuelForecastState = part3.first.first,
-            fuelForecastLoading = part3.first.second,
-            nearbyFuelPois = part3.second.first,
-            nearbyElectricPois = part3.second.second
+            nearbyFuelPois = part3.first,
+            nearbyElectricPois = part3.second
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PhoneDashboardUiState())
 

@@ -225,7 +225,6 @@ val appModule = module {
     viewModel {
         PhoneDashboardViewModel(
             settingsManager = get(),
-            fuelForecastRepository = getOrNull(),
             context = androidContext()
         )
     }

@@ -55,7 +55,6 @@ import fr.geoking.gaston.intent.NavDestination
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.repository.FuelForecastRepository
-import fr.geoking.gaston.repository.FuelForecastUiState
 import fr.geoking.gaston.ui.SettingsScreenPage
 import fr.geoking.gaston.ui.components.*
 
@@ -89,8 +88,6 @@ fun PhoneDashboardMainContent(
     searchError: String?,
     mapDepsReady: Boolean,
     fuelForecastRepository: FuelForecastRepository?,
-    fuelForecastState: FuelForecastUiState,
-    fuelForecastLoading: Boolean,
     onOpenMap: (Poi?, Float?) -> Unit,
     onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
     onOpenFuelForecast: () -> Unit,
@@ -181,11 +178,10 @@ fun PhoneDashboardMainContent(
 
             val energyMode = settings.effectiveEnergyFilterMode()
             if (fuelForecastRepository != null && (energyMode == EnergyFilterMode.Fuel || energyMode == EnergyFilterMode.Hybrid)) {
-                val latestPrice = fuelForecastState.historyPoints.lastOrNull()?.priceEurPerL
                 gridActions.add(
                     DashboardRow(
                         title = stringResource(R.string.dashboard_price_estimation),
-                        subtitle = if (fuelForecastLoading && latestPrice == null) "..." else if (latestPrice != null) "€%.3f".format(latestPrice) else "—",
+                        subtitle = stringResource(R.string.dashboard_price_estimation_subtitle),
                         iconResId = R.drawable.ic_poi_gas,
                         onClick = onOpenFuelForecast,
                         testTag = "dashboard_forecast_btn"

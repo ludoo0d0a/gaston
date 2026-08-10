@@ -23,7 +23,7 @@ import java.util.Locale
 
 /**
  * Simple Android Auto list for local fuel outlook (no Canvas).
- * Uses the same [FuelForecastRepository] pipeline as the phone dashboard.
+ * Uses the same [FuelForecastRepository] pipeline as the phone price estimation screen.
  */
 class AutoFuelForecastScreen(
     carContext: CarContext,

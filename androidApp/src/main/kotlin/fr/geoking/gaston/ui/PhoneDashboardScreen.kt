@@ -136,8 +136,6 @@ fun PhoneDashboardScreen(
                 searchError = uiState.searchError,
                 mapDepsReady = mapDepsReady,
                 fuelForecastRepository = fuelForecastRepository,
-                fuelForecastState = uiState.fuelForecastState,
-                fuelForecastLoading = uiState.fuelForecastLoading,
                 onOpenMap = onOpenMap,
                 onOpenRoutes = onOpenRoutes,
                 onOpenFuelForecast = onOpenFuelForecast,

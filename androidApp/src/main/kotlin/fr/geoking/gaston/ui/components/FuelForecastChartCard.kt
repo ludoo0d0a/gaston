@@ -151,23 +151,17 @@ fun UnifiedFuelForecastChartCard(
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            if (isLoading && filteredHistory.isEmpty()) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .padding(top = 12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(strokeWidth = 2.dp)
-                }
-            } else {
-                val brentColor = MaterialTheme.colorScheme.secondary
-                val primaryColor = MaterialTheme.colorScheme.primary
-                val fuelColors = (filteredHistory.keys + filteredForecast.keys).associateWith {
-                    ColorHelper.getFuelColor(it) ?: primaryColor
-                }
+            val brentColor = MaterialTheme.colorScheme.secondary
+            val primaryColor = MaterialTheme.colorScheme.primary
+            val fuelColors = (filteredHistory.keys + filteredForecast.keys).associateWith {
+                ColorHelper.getFuelColor(it) ?: primaryColor
+            }
 
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+            ) {
                 UnifiedForecastChart(
                     allFuelsHistory = filteredHistory,
                     allFuelsForecast = filteredForecast,
@@ -177,30 +171,40 @@ fun UnifiedFuelForecastChartCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(240.dp)
-                        .padding(top = 16.dp)
                 )
 
-                FlowRow(
-                    modifier = Modifier.padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    (filteredHistory.keys + filteredForecast.keys).sorted().forEach { fuelId ->
-                        val color = fuelColors[fuelId] ?: primaryColor
-                        LegendItem(fuelTypeLabel(fuelId), color)
+                if (isLoading && filteredHistory.isEmpty()) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(strokeWidth = 2.dp)
                     }
-                    if (filteredForecast.values.any { it.isNotEmpty() }) {
-                        LegendDashedItem(
-                            label = stringResource(R.string.forecast_legend_projection),
-                            color = primaryColor
-                        )
-                    }
-                    if (brentHistory.isNotEmpty()) {
-                        LegendDashedItem(
-                            label = stringResource(R.string.forecast_legend_brent),
-                            color = brentColor
-                        )
-                    }
+                }
+            }
+
+            FlowRow(
+                modifier = Modifier.padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                (filteredHistory.keys + filteredForecast.keys).sorted().forEach { fuelId ->
+                    val color = fuelColors[fuelId] ?: primaryColor
+                    LegendItem(fuelTypeLabel(fuelId), color)
+                }
+                if (filteredForecast.values.any { it.isNotEmpty() }) {
+                    LegendDashedItem(
+                        label = stringResource(R.string.forecast_legend_projection),
+                        color = primaryColor
+                    )
+                }
+                if (brentHistory.isNotEmpty()) {
+                    LegendDashedItem(
+                        label = stringResource(R.string.forecast_legend_brent),
+                        color = brentColor
+                    )
                 }
             }
         }
@@ -275,7 +279,11 @@ private fun UnifiedForecastChart(
 
     val allFuelPoints = (allFuelsHistory.values.flatten() + allFuelsForecast.values.flatten())
     val allDays = (allFuelPoints.map { it.day } + brentHistory.map { it.day }).distinct().sorted()
-    if (allDays.isEmpty()) return
+        .ifEmpty {
+            // Keep axes visible when there is no series yet.
+            val today = java.time.LocalDate.now(java.time.ZoneId.of("Europe/Paris"))
+            (0..6).map { today.minusDays((6 - it).toLong()).toString() }
+        }
 
     val fuelPrices = allFuelPoints.map { it.priceEurPerL }
     val fuelMin = (fuelPrices.minOrNull() ?: 1.5)
