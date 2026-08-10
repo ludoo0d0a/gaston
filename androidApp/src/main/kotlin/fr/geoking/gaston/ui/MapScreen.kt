@@ -522,7 +522,9 @@ fun MapScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .onSizeChanged { mapSizePx = it }
+                        .onSizeChanged { size ->
+                            if (mapSizePx != size) mapSizePx = size
+                        }
                 ) {
                     val mapPaddingBottom = if (selectedPoi != null) STATION_OVERLAY_CARD_HEIGHT else 0.dp
                     val googleMapType = when (settings.mapBaseView) {

@@ -39,6 +39,7 @@ fun LibreMap(
     val paddingBottomPx = with(density) { contentPaddingBottom.roundToPx() }
 
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
+    val lastPaddingBottomPx = remember { intArrayOf(-1) }
 
     MapLibreView(
         modifier = modifier,
@@ -51,6 +52,7 @@ fun LibreMap(
         onMapReady = { map ->
             mapLibreMap = map
             map.setPadding(0, 0, 0, paddingBottomPx)
+            lastPaddingBottomPx[0] = paddingBottomPx
             onMapReady(map)
             MapLibreSharedHelper.initPoiLayer(map)
         },
@@ -83,7 +85,10 @@ fun LibreMap(
             }
         },
         update = { map ->
-            map.setPadding(0, 0, 0, paddingBottomPx)
+            if (lastPaddingBottomPx[0] != paddingBottomPx) {
+                map.setPadding(0, 0, 0, paddingBottomPx)
+                lastPaddingBottomPx[0] = paddingBottomPx
+            }
             MapLibreSharedHelper.syncPoiLayer(
                 context = context,
                 map = map,

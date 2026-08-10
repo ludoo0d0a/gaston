@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -43,7 +43,7 @@ fun MapLoader(
         modifier = modifier
             .fillMaxWidth()
             .height(3.dp)
-            .blur(2.dp)
+            .clipToBounds()
             .background(
                 brush = Brush.linearGradient(
                     colors = colors,

@@ -29,7 +29,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
@@ -62,6 +64,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
@@ -155,16 +158,26 @@ fun rememberMapDataState(
         retryCount++
     }
 
-    LaunchedEffect(mapWidthPx, mapHeightPx, retryCount, isLocationPermissionGranted, cameraFlow) {
-        if (mapWidthPx <= 0 || mapHeightPx <= 0) return@LaunchedEffect
+    // Read latest map size inside the collector; do not key LaunchedEffect on size.
+    // Tiny height changes (loader, insets) used to cancel+restart search in a loop.
+    val latestMapWidthPx by rememberUpdatedState(mapWidthPx)
+    val latestMapHeightPx by rememberUpdatedState(mapHeightPx)
 
+    LaunchedEffect(retryCount, isLocationPermissionGranted, cameraFlow) {
         if (!isLocationPermissionGranted) {
             requestLocationPermission()
         }
 
+        snapshotFlow { latestMapWidthPx to latestMapHeightPx }
+            .first { (w, h) -> w > 0 && h > 0 }
+
         merge(cameraFlow, refreshRequestFlow).collectLatest { sample ->
             lastCameraSample = sample
             if (isErrorPaused) return@collectLatest
+
+            val widthPx = latestMapWidthPx
+            val heightPx = latestMapHeightPx
+            if (widthPx <= 0 || heightPx <= 0) return@collectLatest
 
             val centerLat = sample.centerLat
             val centerLng = sample.centerLon
@@ -174,16 +187,16 @@ fun rememberMapDataState(
                 centerLat,
                 centerLng,
                 zoom,
-                mapWidthPx,
-                mapHeightPx
+                widthPx,
+                heightPx
             )
 
             val requiredRadiusKm = radiusKmFromMapViewport(
                 centerLat,
                 centerLng,
                 zoom,
-                mapWidthPx,
-                mapHeightPx
+                widthPx,
+                heightPx
             ).coerceIn(1, 50)
 
             mapErrorMessage = null

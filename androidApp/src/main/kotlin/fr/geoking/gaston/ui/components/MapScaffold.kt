@@ -158,18 +158,26 @@ fun MapScaffold(
                         actionIconContentColor = MaterialTheme.colorScheme.onSurface
                     )
                 )
-                if (isLoading) {
-                    if (palette != null) {
-                        MapLoader(
-                            palette = palette,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else {
-                        LinearProgressIndicator(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(3.dp)
-                        )
+                // Always reserve loader height so toggling isLoading does not resize map content
+                // (that used to restart POI search via onSizeChanged → LaunchedEffect loop).
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                ) {
+                    if (isLoading) {
+                        if (palette != null) {
+                            MapLoader(
+                                palette = palette,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(3.dp)
+                            )
+                        }
                     }
                 }
             }
