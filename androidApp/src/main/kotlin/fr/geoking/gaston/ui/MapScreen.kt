@@ -374,8 +374,6 @@ fun MapScreen(
             showFavoritesOnly = showFavoritesOnly,
             onShowFavoritesOnlyChange = { showFavoritesOnly = it },
             favoritesFilterEnabled = settings.isLoggedIn && favoritesRepo != null,
-            isLoading = mapData.isLoading,
-            palette = palette,
             showAds = showAds,
             floatingActionButton = {
                 if (currentSearchMode == SearchMode.Fuel && (isCheapestFilterActive || basePois.any { !it.fuelPrices.isNullOrEmpty() })) {
@@ -628,6 +626,11 @@ fun MapScreen(
                             )
                         }
                     }
+
+                    MapLoadingOverlay(
+                        isLoading = mapData.isLoading,
+                        palette = palette
+                    )
 
                     MapBaseViewControl(
                         current = settings.mapBaseView,

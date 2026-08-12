@@ -9,11 +9,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.ThemeMode
-import fr.geoking.gaston.ui.anim.AnimationPalette
 import fr.geoking.gaston.ui.components.AdMobBanner
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,8 +30,6 @@ fun MapScaffold(
     showFavoritesOnly: Boolean = false,
     onShowFavoritesOnlyChange: ((Boolean) -> Unit)? = null,
     favoritesFilterEnabled: Boolean = false,
-    isLoading: Boolean = false,
-    palette: AnimationPalette? = null,
     /** Map center for auto mode provider resolution and country label; null uses settings fallback. */
     mapCenterLatitude: Double? = null,
     mapCenterLongitude: Double? = null,
@@ -57,130 +53,106 @@ fun MapScaffold(
     Scaffold(
         floatingActionButton = floatingActionButton,
         topBar = {
-            Column {
-                TopAppBar(
-                    title = { Text(title) },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
+            TopAppBar(
+                title = { Text(title) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back)
+                        )
+                    }
+                },
+                actions = {
+                    if (onLocatePlace != null) {
+                        IconButton(onClick = onLocatePlace) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.action_back)
-                            )
-                        }
-                    },
-                    actions = {
-                        if (onLocatePlace != null) {
-                            IconButton(onClick = onLocatePlace) {
-                                Icon(
-                                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_waypoint),
-                                    contentDescription = stringResource(R.string.route_locate_place)
-                                )
-                            }
-                        }
-
-                        if (onRouteToDirection != null) {
-                            IconButton(onClick = onRouteToDirection) {
-                                Icon(
-                                    imageVector = Icons.Default.Directions,
-                                    contentDescription = stringResource(R.string.route_to_direction)
-                                )
-                            }
-                        }
-
-                        IconButton(onClick = onRefresh) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(R.string.cd_refresh_map)
-                            )
-                        }
-
-                        Box {
-                            IconButton(onClick = { moreMenuExpanded = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = stringResource(R.string.screen_more)
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = moreMenuExpanded,
-                                onDismissRequest = { moreMenuExpanded = false }
-                            ) {
-                                if (onPlanRoute != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.route_plan_menu)) },
-                                        leadingIcon = { Icon(Icons.Default.Directions, contentDescription = null) },
-                                        onClick = {
-                                            moreMenuExpanded = false
-                                            onPlanRoute()
-                                        }
-                                    )
-                                }
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.screen_theme)) },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = when (settings.mapThemeMode) {
-                                                ThemeMode.System -> Icons.Default.BrightnessAuto
-                                                ThemeMode.Light -> Icons.Default.LightMode
-                                                ThemeMode.Dark -> Icons.Default.DarkMode
-                                            },
-                                            contentDescription = null
-                                        )
-                                    },
-                                    onClick = {
-                                        moreMenuExpanded = false
-                                        toggleMapTheme()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.screen_sources)) },
-                                    leadingIcon = { Icon(Icons.Default.Hub, contentDescription = null) },
-                                    onClick = {
-                                        moreMenuExpanded = false
-                                        onShowSources()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.screen_map_settings)) },
-                                    leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                                    onClick = {
-                                        moreMenuExpanded = false
-                                        onShowSettings()
-                                    }
-                                )
-                            }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                        actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                    )
-                )
-                // Always reserve loader height so toggling isLoading does not resize map content
-                // (that used to restart POI search via onSizeChanged → LaunchedEffect loop).
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(3.dp)
-                ) {
-                    if (isLoading) {
-                        if (palette != null) {
-                            MapLoader(
-                                palette = palette,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        } else {
-                            LinearProgressIndicator(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(3.dp)
+                                painter = androidx.compose.ui.res.painterResource(R.drawable.ic_waypoint),
+                                contentDescription = stringResource(R.string.route_locate_place)
                             )
                         }
                     }
-                }
-            }
+
+                    if (onRouteToDirection != null) {
+                        IconButton(onClick = onRouteToDirection) {
+                            Icon(
+                                imageVector = Icons.Default.Directions,
+                                contentDescription = stringResource(R.string.route_to_direction)
+                            )
+                        }
+                    }
+
+                    IconButton(onClick = onRefresh) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = stringResource(R.string.cd_refresh_map)
+                        )
+                    }
+
+                    Box {
+                        IconButton(onClick = { moreMenuExpanded = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.screen_more)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = moreMenuExpanded,
+                            onDismissRequest = { moreMenuExpanded = false }
+                        ) {
+                            if (onPlanRoute != null) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.route_plan_menu)) },
+                                    leadingIcon = { Icon(Icons.Default.Directions, contentDescription = null) },
+                                    onClick = {
+                                        moreMenuExpanded = false
+                                        onPlanRoute()
+                                    }
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.screen_theme)) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = when (settings.mapThemeMode) {
+                                            ThemeMode.System -> Icons.Default.BrightnessAuto
+                                            ThemeMode.Light -> Icons.Default.LightMode
+                                            ThemeMode.Dark -> Icons.Default.DarkMode
+                                        },
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    moreMenuExpanded = false
+                                    toggleMapTheme()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.screen_sources)) },
+                                leadingIcon = { Icon(Icons.Default.Hub, contentDescription = null) },
+                                onClick = {
+                                    moreMenuExpanded = false
+                                    onShowSources()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.screen_map_settings)) },
+                                leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                onClick = {
+                                    moreMenuExpanded = false
+                                    onShowSettings()
+                                }
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
         },
         bottomBar = {
             if (showAds) {

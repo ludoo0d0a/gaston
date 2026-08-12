@@ -74,6 +74,7 @@ import fr.geoking.gaston.ui.components.SearchModeSelector
 import fr.geoking.gaston.ui.components.SearchCategorySelector
 import androidx.compose.foundation.background
 import fr.geoking.gaston.ui.components.MapScaffold
+import fr.geoking.gaston.ui.components.MapLoadingOverlay
 import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
@@ -339,8 +340,6 @@ fun VectorMapScreen(
             showFavoritesOnly = showFavoritesOnly,
             onShowFavoritesOnlyChange = { showFavoritesOnly = it },
             favoritesFilterEnabled = settings.isLoggedIn && favoritesRepo != null,
-            isLoading = mapData.isLoading,
-            palette = palette,
             showAds = showAds,
             floatingActionButton = {
                 val currentSearchMode = rememberSearchMode(settings)
@@ -510,6 +509,11 @@ fun VectorMapScreen(
                         },
                         effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
                         effectivePowerLevels = settings.effectiveIrvePowerLevels()
+                    )
+
+                    MapLoadingOverlay(
+                        isLoading = mapData.isLoading,
+                        palette = palette
                     )
 
                     MapBaseViewControl(
