@@ -117,7 +117,11 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        val appTitle = if (settingsManager.settings.value.hasPremiumFeatures) "Gaston Premium" else "Gaston"
+        val appTitle = if (settingsManager.settings.value.hasPremiumFeatures) {
+            carContext.getString(R.string.premium_brand_title)
+        } else {
+            carContext.getString(R.string.app_name)
+        }
         GridTemplate.Builder()
             .setSingleList(gridBuilder.build())
             .setHeader(

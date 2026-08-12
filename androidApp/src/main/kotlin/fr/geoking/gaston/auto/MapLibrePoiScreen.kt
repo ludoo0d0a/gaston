@@ -898,7 +898,7 @@ class MapLibrePoiScreen(
             }
 
             val itemListBuilder = ItemList.Builder()
-                .setNoItemsMessage("No POIs found")
+                .setNoItemsMessage(carContext.getString(R.string.poi_no_pois_found))
 
             val limitedPois = sortedPois.take(listLimit)
             limitedPois.forEach { item ->

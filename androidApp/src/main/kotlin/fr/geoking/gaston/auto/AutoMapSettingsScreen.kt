@@ -28,14 +28,14 @@ class AutoMapSettingsScreen(
                 val net = networkService.status.value
                 val countryLine = net.countryName ?: net.countryCode
                 buildString {
-                    append("Auto (by country)")
+                    append(carContext.getString(R.string.action_auto_by_country))
                     if (!countryLine.isNullOrBlank()) {
-                        append("\nNetwork country: ").append(countryLine)
+                        append('\n').append(carContext.getString(R.string.network_country_label, countryLine))
                     }
                 }
             }
             PoiProviderSelectionMode.Manual ->
-                if (settings.selectedPoiProviders.isEmpty()) "None"
+                if (settings.selectedPoiProviders.isEmpty()) carContext.getString(R.string.network_none)
                 else settings.selectedPoiProviders.joinToString(", ") { it.name }
         }
 
@@ -83,13 +83,12 @@ class AutoMapSettingsScreen(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.settings_map_mode))
                 .addText(
-                    "Current: ${settings.carMapMode.name}" +
-                        when (settings.carMapMode) {
-                            CarMapMode.Custom, CarMapMode.MapLibre ->
-                                " — north/heading toggle on map header (may not be POI-category compliant)"
-                            CarMapMode.Native ->
-                                " — map orientation is host-controlled (north-up)"
-                        }
+                    when (settings.carMapMode) {
+                        CarMapMode.Custom, CarMapMode.MapLibre ->
+                            carContext.getString(R.string.map_mode_current_custom, settings.carMapMode.name)
+                        CarMapMode.Native ->
+                            carContext.getString(R.string.map_mode_current_native, settings.carMapMode.name)
+                    }
                 )
                 .setOnClickListener {
                     settingsManager.setCarMapMode(settings.carMapMode.next())
@@ -125,8 +124,8 @@ class AutoMapSettingsScreen(
         if (settings.mapTileDebugEnabled) {
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("Tile Diagnostics")
-                    .addText("View recent tile loading errors and network codes")
+                    .setTitle(carContext.getString(R.string.tile_diagnostics))
+                    .addText(carContext.getString(R.string.tile_diagnostics_subtitle))
                     .setOnClickListener {
                         screenManager.push(AutoTileDiagnosticsScreen(carContext))
                     }
@@ -135,13 +134,16 @@ class AutoMapSettingsScreen(
 
             listBuilder.addItem(
                 Row.Builder()
-                    .setTitle("Clear Tile Cache")
-                    .addText("Force a fresh redownload of all map tiles")
+                    .setTitle(carContext.getString(R.string.tile_clear_cache))
+                    .addText(carContext.getString(R.string.tile_clear_cache_subtitle))
                     .setOnClickListener {
                         AutoSurfaceRenderer.clearTileCache()
                         try {
                             carContext.getCarService(androidx.car.app.AppManager::class.java)
-                                .showToast("Tile cache cleared", androidx.car.app.CarToast.LENGTH_SHORT)
+                                .showToast(
+                                    carContext.getString(R.string.tile_cache_cleared),
+                                    androidx.car.app.CarToast.LENGTH_SHORT
+                                )
                         } catch (_: Exception) {}
                         invalidate()
                     }
@@ -160,24 +162,24 @@ class AutoTileDiagnosticsScreen(carContext: CarContext) : Screen(carContext) {
     override fun onGetTemplate(): Template {
         val errors = AutoSurfaceRenderer.getRecentTileErrors()
         val contentText = if (errors.isEmpty()) {
-            "No tile download errors recorded."
+            carContext.getString(R.string.tile_no_errors)
         } else {
             errors.joinToString("\n\n") { err ->
                 val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(err.timestamp))
-                "[$time] HTTP ${err.statusCode}\nURL: ${err.url}\nError: ${err.errorMessage}"
+                carContext.getString(R.string.tile_error_entry, time, err.statusCode, err.url, err.errorMessage)
             }
         }
 
         return MessageTemplate.Builder(contentText)
             .setHeader(
                 Header.Builder()
-                    .setTitle("Tile Diagnostics")
+                    .setTitle(carContext.getString(R.string.tile_diagnostics))
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )
             .addAction(
                 Action.Builder()
-                    .setTitle("Clear Logs")
+                    .setTitle(carContext.getString(R.string.settings_clear_logs))
                     .setOnClickListener {
                         AutoSurfaceRenderer.clearRecentTileErrors()
                         invalidate()

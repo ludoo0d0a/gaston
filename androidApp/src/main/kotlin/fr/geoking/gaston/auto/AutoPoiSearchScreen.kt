@@ -11,6 +11,7 @@ import androidx.car.app.model.SearchTemplate
 import androidx.car.app.model.Template
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.R
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.belib.matchAvailabilityToPois
@@ -84,7 +85,10 @@ class AutoPoiSearchScreen(
         }
 
         val itemListBuilder = ItemList.Builder()
-            .setNoItemsMessage(if (isLoadingPois) "Loading nearby stations..." else "No matching stations found")
+            .setNoItemsMessage(
+                if (isLoadingPois) carContext.getString(R.string.poi_loading_nearby_stations)
+                else carContext.getString(R.string.poi_no_matching_stations)
+            )
 
         val currentSettings = settingsManager.settings.value
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
@@ -129,7 +133,7 @@ class AutoPoiSearchScreen(
             }
         })
             .setHeaderAction(Action.BACK)
-            .setSearchHint("Search brand, gas or electric...")
+            .setSearchHint(carContext.getString(R.string.poi_search_hint))
             .setItemList(itemListBuilder.build())
             .setLoading(isLoadingPois && searchText.isBlank())
             .build()

@@ -132,7 +132,7 @@ private fun DebugLogOverlayContent(
                     contentColor = Color.White,
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(Icons.Default.BugReport, contentDescription = "Show Logs")
+                    Icon(Icons.Default.BugReport, contentDescription = stringResource(R.string.action_show_logs))
                 }
             }
         } else {
@@ -188,7 +188,7 @@ private fun DebugLogOverlayContent(
                                     onRefresh?.invoke()
                                 }
                             }) {
-                                Icon(Icons.Default.Refresh, "Clear Cache & Reload", tint = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Default.Refresh, stringResource(R.string.action_clear_cache_reload), tint = MaterialTheme.colorScheme.onSurface)
                             }
                             IconButton(onClick = { DebugLogStore.clearAll() }) {
                                 Icon(Icons.Default.DeleteSweep, stringResource(R.string.settings_clear_logs), tint = MaterialTheme.colorScheme.onSurface)
@@ -911,7 +911,7 @@ private fun BodyContent(
             ) {
                 Icon(
                     Icons.Default.Fullscreen,
-                    contentDescription = "Fullscreen",
+                    contentDescription = stringResource(R.string.action_fullscreen),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(16.dp)
                 )

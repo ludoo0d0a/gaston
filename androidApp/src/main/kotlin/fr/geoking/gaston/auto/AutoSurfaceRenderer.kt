@@ -728,12 +728,17 @@ class AutoSurfaceRenderer(
         }
         val statusText = when {
             isLoaded -> "OK"
-            isPending -> "Loading..."
-            isFailed -> "Failed"
-            else -> "Not Requested"
+            isPending -> context.getString(fr.geoking.gaston.R.string.tile_status_loading)
+            isFailed -> context.getString(fr.geoking.gaston.R.string.tile_status_failed)
+            else -> context.getString(fr.geoking.gaston.R.string.tile_status_not_requested)
         }
         canvas.drawText("Z:$z X:$x Y:$y", drawX + 10f, drawY + 25f, textPaint)
-        canvas.drawText("Status: $statusText", drawX + 10f, drawY + 45f, textPaint)
+        canvas.drawText(
+            context.getString(fr.geoking.gaston.R.string.tile_status_label, statusText),
+            drawX + 10f,
+            drawY + 45f,
+            textPaint
+        )
     }
 
     private fun drawTilesInto(

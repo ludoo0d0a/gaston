@@ -168,8 +168,8 @@ fun PhoneDashboardMainContent(
                     testTag = "dashboard_network_btn"
                 ),
                 DashboardRow(
-                    title = "Auto Debug",
-                    subtitle = "Test AA Map Surface",
+                    title = stringResource(R.string.dashboard_auto_debug),
+                    subtitle = stringResource(R.string.dashboard_auto_debug_subtitle),
                     iconResId = R.drawable.ic_map,
                     onClick = onOpenAutoDebug,
                     testTag = "dashboard_autodebug_btn"

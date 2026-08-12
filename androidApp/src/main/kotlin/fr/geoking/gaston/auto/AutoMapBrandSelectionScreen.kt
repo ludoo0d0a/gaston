@@ -24,7 +24,10 @@ class AutoMapBrandSelectionScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(label)
-                    .addText(if (isSelected) "Active" else "Inactive")
+                    .addText(
+                        if (isSelected) carContext.getString(R.string.filter_active)
+                        else carContext.getString(R.string.filter_inactive)
+                    )
                     .setOnClickListener {
                         val current = settingsManager.settings.value.mapBrands
                         val next = if (isSelected) current - id else current + id

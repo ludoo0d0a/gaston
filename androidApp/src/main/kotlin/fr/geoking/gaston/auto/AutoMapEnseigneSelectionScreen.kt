@@ -18,7 +18,11 @@ class AutoMapEnseigneSelectionScreen(
 
         MAP_ENSEIGNE_OPTIONS.forEach { (id, label) ->
             val isSelected = settings.mapEnseigneType == id
-            val displayLabel = if (isSelected) "$label (Selected)" else label
+            val displayLabel = if (isSelected) {
+                carContext.getString(R.string.filter_selected_suffix, label)
+            } else {
+                label
+            }
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(displayLabel)

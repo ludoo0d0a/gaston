@@ -35,6 +35,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.res.stringResource
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.auto.AutoMapCamera
@@ -333,15 +335,15 @@ fun AutoDebugScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("AA Map Surface Debug") },
+                title = { Text(stringResource(R.string.auto_debug_title)) },
                 navigationIcon = {
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                        tooltip = { PlainTooltip { Text("Back") } },
+                        tooltip = { PlainTooltip { Text(stringResource(R.string.action_back)) } },
                         state = rememberTooltipState()
                     ) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.action_back))
                         }
                     }
                 },
@@ -349,7 +351,7 @@ fun AutoDebugScreen(
                     // 1. Simulate Menu Action
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                        tooltip = { PlainTooltip { Text("Simulate Menu") } },
+                        tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_simulate_menu)) } },
                         state = rememberTooltipState()
                     ) {
                         IconButton(
@@ -358,7 +360,7 @@ fun AutoDebugScreen(
                         ) {
                             Icon(
                                 imageVector = if (visibleAreaEnabled) Icons.Default.MenuOpen else Icons.Default.Menu,
-                                contentDescription = "Simulate Menu",
+                                contentDescription = stringResource(R.string.auto_debug_simulate_menu),
                                 tint = if (visibleAreaEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -367,7 +369,7 @@ fun AutoDebugScreen(
                     // 2. North-Up Toggle Action
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                        tooltip = { PlainTooltip { Text("Toggle Orientation") } },
+                        tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_toggle_orientation)) } },
                         state = rememberTooltipState()
                     ) {
                         IconButton(
@@ -382,7 +384,7 @@ fun AutoDebugScreen(
                         ) {
                             Icon(
                                 imageVector = if (orientationMode == MapOrientationMode.NorthUp) Icons.Default.North else Icons.Default.Navigation,
-                                contentDescription = "Toggle Orientation",
+                                contentDescription = stringResource(R.string.auto_debug_toggle_orientation),
                                 tint = if (orientationMode == MapOrientationMode.NorthUp) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
                             )
                         }
@@ -391,7 +393,7 @@ fun AutoDebugScreen(
                     // 3. Simulate Travel Action
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                        tooltip = { PlainTooltip { Text("Simulate Travel") } },
+                        tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_simulate_travel)) } },
                         state = rememberTooltipState()
                     ) {
                         IconButton(
@@ -427,7 +429,7 @@ fun AutoDebugScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.DirectionsCar,
-                                contentDescription = "Simulate Travel",
+                                contentDescription = stringResource(R.string.auto_debug_simulate_travel),
                                 tint = if (isSimulatingTravel) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -436,7 +438,7 @@ fun AutoDebugScreen(
                     // 4. Map Tile Debug Grid Action
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                        tooltip = { PlainTooltip { Text("Map Tile Debug Grid") } },
+                        tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_tile_grid)) } },
                         state = rememberTooltipState()
                     ) {
                         IconButton(
@@ -445,7 +447,7 @@ fun AutoDebugScreen(
                         ) {
                             Icon(
                                 imageVector = if (mapTileDebugEnabled) Icons.Default.GridOn else Icons.Default.GridOff,
-                                contentDescription = "Map Tile Debug Grid",
+                                contentDescription = stringResource(R.string.auto_debug_tile_grid),
                                 tint = if (mapTileDebugEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -524,12 +526,12 @@ fun AutoDebugScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Station Detail View",
+                                text = stringResource(R.string.auto_debug_station_detail),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             IconButton(onClick = { selectedPoiId = null }) {
-                                Icon(Icons.Default.Close, contentDescription = "Close Detail")
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.auto_debug_close_detail))
                             }
                         }
 
@@ -557,14 +559,14 @@ fun AutoDebugScreen(
 
                                 val prices = selectedPoi.fuelPrices
                                 if (!prices.isNullOrEmpty()) {
-                                    Text("Fuel Prices:", fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.auto_debug_fuel_prices), fontWeight = FontWeight.Bold)
                                     prices.forEach { price ->
                                         Text(" • ${price.fuelName}: €${price.price}")
                                     }
                                 } else if (selectedPoi.isElectric) {
-                                    Text("EV Charging Details:", fontWeight = FontWeight.Bold)
-                                    Text(" • Type 2, CCS connectors available")
-                                    Text(" • Dynamic availability supported")
+                                    Text(stringResource(R.string.auto_debug_ev_details), fontWeight = FontWeight.Bold)
+                                    Text(" • ${stringResource(R.string.auto_debug_ev_connectors)}")
+                                    Text(" • ${stringResource(R.string.auto_debug_ev_availability)}")
                                 }
                             }
                         }
@@ -858,7 +860,7 @@ fun MapSurfaceAndControls(
             ) {
                 Icon(
                     imageVector = Icons.Default.Navigation,
-                    contentDescription = "Compass",
+                    contentDescription = stringResource(R.string.auto_debug_compass),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.rotate(bearing)
                 )
@@ -870,7 +872,7 @@ fun MapSurfaceAndControls(
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 modifier = Modifier.size(48.dp).testTag("action_strip_zoomin_btn")
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Zoom In")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.auto_debug_zoom_in))
             }
 
             // Zoom Out
@@ -879,7 +881,7 @@ fun MapSurfaceAndControls(
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 modifier = Modifier.size(48.dp).testTag("action_strip_zoomout_btn")
             ) {
-                Icon(Icons.Default.Remove, contentDescription = "Zoom Out")
+                Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.auto_debug_zoom_out))
             }
 
             // Locate Me
@@ -896,7 +898,7 @@ fun MapSurfaceAndControls(
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 modifier = Modifier.size(48.dp).testTag("action_strip_locate_btn")
             ) {
-                Icon(Icons.Default.MyLocation, contentDescription = "Locate Me")
+                Icon(Icons.Default.MyLocation, contentDescription = stringResource(R.string.auto_debug_locate_me))
             }
         }
 
@@ -919,7 +921,7 @@ fun MapSurfaceAndControls(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Rotate Map", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.auto_debug_rotate_map), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                         Text("${bearing.toInt()}°", style = MaterialTheme.typography.bodySmall)
                     }
                     Slider(
@@ -950,7 +952,7 @@ fun MapSurfaceAndControls(
                     ) {
                         Icon(
                             imageVector = if (showStationsBottomSheet) Icons.Default.LocalGasStation else Icons.Default.LocationOff,
-                            contentDescription = "Toggle Stations"
+                            contentDescription = stringResource(R.string.auto_debug_toggle_stations)
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
@@ -960,7 +962,7 @@ fun MapSurfaceAndControls(
                         )
                     ) {
                         Text(
-                            text = if (showStationsBottomSheet) "Hide Stations" else "Show Stations",
+                            text = stringResource(if (showStationsBottomSheet) R.string.auto_debug_hide_stations else R.string.auto_debug_show_stations),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
@@ -976,7 +978,7 @@ fun MapSurfaceAndControls(
                     ) {
                         Icon(
                             imageVector = if (showRotationSlider) Icons.Default.ScreenRotation else Icons.Default.CropRotate,
-                            contentDescription = "Toggle Rotation"
+                            contentDescription = stringResource(R.string.auto_debug_toggle_rotation)
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
@@ -986,7 +988,7 @@ fun MapSurfaceAndControls(
                         )
                     ) {
                         Text(
-                            text = if (showRotationSlider) "Hide Rotation" else "Show Rotation",
+                            text = stringResource(if (showRotationSlider) R.string.auto_debug_hide_rotation else R.string.auto_debug_show_rotation),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
@@ -1002,7 +1004,7 @@ fun MapSurfaceAndControls(
             ) {
                 Icon(
                     imageVector = if (isFabMenuExpanded) Icons.Default.Close else Icons.Default.MenuOpen,
-                    contentDescription = "Debug Actions"
+                    contentDescription = stringResource(R.string.auto_debug_actions)
                 )
             }
         }

@@ -32,7 +32,7 @@ class AutoNetworkLocationInfoScreen(
 ) : Screen(carContext) {
 
     private var networkStatus: NetworkStatus = NetworkStatus()
-    private var locationAddress: String = "Searching address..."
+    private var locationAddress: String = carContext.getString(R.string.searching_address)
     private var latitude: Double = 0.0
     private var longitude: Double = 0.0
     private var isLoadingLocation = true
@@ -52,7 +52,7 @@ class AutoNetworkLocationInfoScreen(
         lifecycleScope.launch {
             isLoadingLocation = true
             isGeocoding = false
-            locationAddress = "Searching address..."
+            locationAddress = carContext.getString(R.string.searching_address)
             invalidate()
 
             val location = LocationHelper.getCurrentLocation(carContext)
@@ -82,13 +82,13 @@ class AutoNetworkLocationInfoScreen(
                             geocoder.getFromLocation(location.latitude, location.longitude, 1)?.firstOrNull()?.let { formatAddress(it) }
                         }
                     }
-                    locationAddress = address ?: "Address not found"
+                    locationAddress = address ?: carContext.getString(R.string.address_not_found)
                 } catch (e: Exception) {
                     Log.e("AutoNetworkInfo", "Geocoding failed", e)
-                    locationAddress = "Geocoding error"
+                    locationAddress = carContext.getString(R.string.network_geocoding_error)
                 }
             } else {
-                locationAddress = "Location not available"
+                locationAddress = carContext.getString(R.string.location_not_available)
                 isLoadingLocation = false
             }
             isGeocoding = false
@@ -109,7 +109,11 @@ class AutoNetworkLocationInfoScreen(
         val paneBuilder = Pane.Builder()
 
         // Row 1: Connection Status
-        val connectionStatus = if (networkStatus.isConnected) "Connected" else "Disconnected"
+        val connectionStatus = if (networkStatus.isConnected) {
+            carContext.getString(R.string.network_connected)
+        } else {
+            carContext.getString(R.string.network_disconnected)
+        }
         val signalBars = when (networkStatus.signalLevel) {
             1 -> "▂   "
             2 -> "▂▄  "
@@ -127,14 +131,19 @@ class AutoNetworkLocationInfoScreen(
         )
 
         // Row 2: Operator & Country
-        val operator = networkStatus.operatorName ?: "Unknown"
-        val country = networkStatus.countryName ?: networkStatus.countryCode ?: "Unknown"
+        val unknown = carContext.getString(R.string.network_unknown)
+        val operator = networkStatus.operatorName ?: unknown
+        val country = networkStatus.countryName ?: networkStatus.countryCode ?: unknown
         val countrySource = when (networkStatus.countrySource) {
             CountrySource.LOCATION -> " " + carContext.getString(R.string.network_source_location)
             CountrySource.NETWORK -> " " + carContext.getString(R.string.network_source_network)
             CountrySource.UNKNOWN -> ""
         }
-        val roamingText = if (networkStatus.isRoaming) " • Roaming" else ""
+        val roamingText = if (networkStatus.isRoaming) {
+            " • ${carContext.getString(R.string.network_roaming)}"
+        } else {
+            ""
+        }
 
         paneBuilder.addRow(
             Row.Builder()
@@ -143,7 +152,8 @@ class AutoNetworkLocationInfoScreen(
         )
 
         // Row 3: Address
-        val addressTitle = if (isGeocoding && locationAddress == "Searching address...") "Searching address..." else locationAddress
+        val searchingAddress = carContext.getString(R.string.searching_address)
+        val addressTitle = if (isGeocoding && locationAddress == searchingAddress) searchingAddress else locationAddress
         paneBuilder.addRow(
             Row.Builder()
                 .setTitle(addressTitle)
@@ -153,7 +163,7 @@ class AutoNetworkLocationInfoScreen(
 
         // Row 4: Coordinates
         val coordsText = if (isLoadingLocation) {
-            "Loading..."
+            carContext.getString(R.string.loading_ellipsis)
         } else {
             "${String.format("%.6f", latitude)}, ${String.format("%.6f", longitude)}"
         }
@@ -181,14 +191,14 @@ class AutoNetworkLocationInfoScreen(
     }
 
     private fun NetworkType.toReadableString(): String = when (this) {
-        NetworkType.WIFI -> "WiFi"
+        NetworkType.WIFI -> carContext.getString(R.string.network_wifi)
         NetworkType.FIVE_G -> "5G"
         NetworkType.FOUR_G -> "4G"
         NetworkType.THREE_G -> "3G"
         NetworkType.TWO_G -> "2G"
-        NetworkType.EDGE -> "Edge"
-        NetworkType.GPRS -> "GPRS"
-        NetworkType.UNKNOWN -> "Unknown"
-        NetworkType.NONE -> "None"
+        NetworkType.EDGE -> carContext.getString(R.string.network_edge)
+        NetworkType.GPRS -> carContext.getString(R.string.network_gprs)
+        NetworkType.UNKNOWN -> carContext.getString(R.string.network_unknown)
+        NetworkType.NONE -> carContext.getString(R.string.network_none)
     }
 }

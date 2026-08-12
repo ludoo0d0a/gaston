@@ -24,7 +24,10 @@ class AutoMapIrveOperatorSelectionScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(label)
-                    .addText(if (isSelected) "Active" else "Inactive")
+                    .addText(
+                        if (isSelected) carContext.getString(R.string.filter_active)
+                        else carContext.getString(R.string.filter_inactive)
+                    )
                     .setOnClickListener {
                         val newOps = if (settings.mapIrveOperators.contains(id)) settings.mapIrveOperators - id else settings.mapIrveOperators + id
                         settingsManager.setMapIrveOperators(newOps)

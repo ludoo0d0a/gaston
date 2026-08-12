@@ -6,6 +6,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.Session
 import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.geocoding.GeocodingClient
@@ -96,8 +97,8 @@ class CarAppSession : Session(), KoinComponent {
             if (mapDeps == null) {
                 return ErrorScreen(
                     carContext,
-                    errorMessage = "Failed to load map components.",
-                    errorDetail = "Dependencies could not be initialized.",
+                    errorMessage = carContext.getString(R.string.error_map_components),
+                    errorDetail = carContext.getString(R.string.error_map_dependencies),
                     templateType = "Root screen"
                 )
             }

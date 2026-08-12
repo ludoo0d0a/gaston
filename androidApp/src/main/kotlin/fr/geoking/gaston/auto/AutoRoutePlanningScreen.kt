@@ -239,7 +239,7 @@ class AutoRoutePlanningScreen(
         } else {
             builder.setItemList(
                 ItemList.Builder()
-                    .setNoItemsMessage("Submit destination to plan route")
+                    .setNoItemsMessage(carContext.getString(R.string.route_submit_destination))
                     .build()
             )
         }
@@ -261,14 +261,17 @@ class AutoRoutePlanningScreen(
         }
 
         val list = ItemList.Builder()
-            .setNoItemsMessage(if (loading) carContext.getString(loadingMessageResId) else "No POIs found along route")
+            .setNoItemsMessage(
+                if (loading) carContext.getString(loadingMessageResId)
+                else carContext.getString(R.string.poi_no_pois_along_route)
+            )
 
         if (!loading) {
             // Standard Android Auto list limit is 6 items for many templates.
             stations.take(6).forEach { poi ->
                 list.addItem(
                     Row.Builder()
-                        .setTitle(poi.name.ifBlank { poi.address.ifBlank { "POI" } })
+                        .setTitle(poi.name.ifBlank { poi.address.ifBlank { carContext.getString(R.string.route_poi_fallback) } })
                         .addText(poi.address.ifBlank { "${poi.latitude}, ${poi.longitude}" })
                         .setOnClickListener {
                             val uri = IntentNavigationHelper.getNavigationUri(poi)
@@ -384,7 +387,7 @@ class AutoRoutePlanningScreen(
     }
 
     private fun openExternalDirections() {
-        val origin = originQuery.takeIf { it.isNotBlank() } ?: "Current location"
+        val origin = originQuery.takeIf { it.isNotBlank() } ?: carContext.getString(R.string.network_current_location)
         val dest = destinationQuery
         if (dest.isBlank()) return
         val url = "https://www.google.com/maps/dir/?api=1&origin=${Uri.encode(origin)}&destination=${Uri.encode(dest)}&travelmode=driving"
@@ -410,11 +413,11 @@ class AutoRoutePlanningScreen(
             try {
                 val originLatLon = if (originQuery.isBlank()) {
                     val loc = LocationHelper.getCurrentLocation(carContext)
-                    if (loc == null) throw Exception("Could not determine current location")
+                    if (loc == null) throw Exception(carContext.getString(R.string.route_could_not_get_location))
                     loc.latitude to loc.longitude
                 } else {
                     val origin = geocodingClient.geocode(originQuery, limit = 1).firstOrNull()
-                        ?: throw Exception("Origin not found")
+                        ?: throw Exception(carContext.getString(R.string.route_origin_not_found))
                     origin.latitude to origin.longitude
                 }
 
@@ -425,7 +428,7 @@ class AutoRoutePlanningScreen(
                     destLon = initialDestination.longitude
                 } else {
                     val dest = geocodingClient.geocode(destinationQuery, limit = 1).firstOrNull()
-                        ?: throw Exception("Destination not found")
+                        ?: throw Exception(carContext.getString(R.string.route_destination_not_found))
                     destLat = dest.latitude
                     destLon = dest.longitude
                 }
@@ -434,7 +437,7 @@ class AutoRoutePlanningScreen(
                 invalidate()
 
                 val route = routingClient.getRoute(originLatLon.first, originLatLon.second, destLat, destLon)
-                if (route == null) throw Exception("No route found")
+                if (route == null) throw Exception(carContext.getString(R.string.route_no_route_found))
                 currentRoutePoints = route.points
                 invalidate()
 
@@ -455,7 +458,7 @@ class AutoRoutePlanningScreen(
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 lastError = when (e) {
-                    is NetworkException -> e.message ?: "Network error"
+                    is NetworkException -> e.message ?: carContext.getString(R.string.network_error)
                     else -> e.message ?: e.toString()
                 }
             } finally {

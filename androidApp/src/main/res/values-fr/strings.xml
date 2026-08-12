@@ -643,7 +643,7 @@
             <item quantity="other">%1$d/%2$d libres</item>
         </plurals>
 
-    <string name="screen_developer">developer</string>
+    <string name="screen_developer">Développeur</string>
     <string name="dev_developer_settings">Paramètres développeur</string>
     <string name="dev_premium_mode">mode premium</string>
     <string name="dev_network_floating_bar">barre réseau flottante</string>
@@ -690,4 +690,65 @@
 
     <string name="label_yes">Oui</string>
     <string name="label_no">Non</string>
+
+    <string name="filter_active">Actif</string>
+    <string name="filter_inactive">Inactif</string>
+    <string name="filter_selected_suffix">%1$s (Sélectionné)</string>
+    <string name="poi_no_pois_found">Aucun POI trouvé</string>
+    <string name="poi_no_pois_along_route">Aucun POI trouvé sur l\'itinéraire</string>
+    <string name="poi_loading_nearby_stations">Chargement des stations à proximité…</string>
+    <string name="poi_no_matching_stations">Aucune station correspondante</string>
+    <string name="poi_search_hint">Rechercher enseigne, essence ou électrique…</string>
+    <string name="route_submit_destination">Validez la destination pour planifier l\'itinéraire</string>
+    <string name="address_not_found">Adresse introuvable</string>
+    <string name="loading_ellipsis">Chargement…</string>
+    <string name="network_roaming">Itinérance</string>
+    <string name="network_country_label">Pays réseau : %1$s</string>
+    <string name="network_error">Erreur réseau</string>
+    <string name="map_mode_current_custom">Actuel : %1$s — bascule nord/cap dans l\'en-tête de carte (peut ne pas être conforme à la catégorie POI)</string>
+    <string name="map_mode_current_native">Actuel : %1$s — orientation de la carte contrôlée par l\'hôte (nord en haut)</string>
+    <string name="tile_diagnostics">Diagnostics des tuiles</string>
+    <string name="tile_diagnostics_subtitle">Voir les erreurs récentes de chargement des tuiles et les codes réseau</string>
+    <string name="tile_clear_cache">Vider le cache des tuiles</string>
+    <string name="tile_clear_cache_subtitle">Forcer un nouveau téléchargement de toutes les tuiles</string>
+    <string name="tile_cache_cleared">Cache des tuiles vidé</string>
+    <string name="tile_no_errors">Aucune erreur de téléchargement de tuiles enregistrée.</string>
+    <string name="tile_error_entry">[%1$s] HTTP %2$d\nURL : %3$s\nErreur : %4$s</string>
+    <string name="tile_status_loading">Chargement…</string>
+    <string name="tile_status_failed">Échec</string>
+    <string name="tile_status_not_requested">Non demandé</string>
+    <string name="tile_status_label">État : %1$s</string>
+    <string name="error_map_components">Échec du chargement des composants de carte.</string>
+    <string name="error_map_dependencies">Les dépendances n\'ont pas pu être initialisées.</string>
+    <string name="dev_premium_mode_subtitle">Simuler le mode Premium</string>
+    <string name="dev_network_floating_bar_subtitle">Afficher une barre d\'état réseau flottante</string>
+    <string name="dev_debug_grid_subtitle">Afficher la grille de débogage des tuiles sur la carte</string>
+    <string name="dev_test_aa_map_surface_subtitle">Émuler la carte Android Auto sur votre téléphone</string>
+    <string name="dev_disable_cache_subtitle">Contourner le cache local des POI</string>
+    <string name="dashboard_auto_debug">Débogage Auto</string>
+    <string name="dashboard_auto_debug_subtitle">Tester la surface de carte AA</string>
+    <string name="auto_debug_title">Débogage surface carte AA</string>
+    <string name="auto_debug_simulate_menu">Simuler le menu</string>
+    <string name="auto_debug_toggle_orientation">Basculer l\'orientation</string>
+    <string name="auto_debug_simulate_travel">Simuler le déplacement</string>
+    <string name="auto_debug_tile_grid">Grille de débogage des tuiles</string>
+    <string name="auto_debug_close_detail">Fermer le détail</string>
+    <string name="auto_debug_fuel_prices">Prix carburant :</string>
+    <string name="auto_debug_ev_details">Détails de recharge :</string>
+    <string name="auto_debug_ev_connectors">Connecteurs Type 2, CCS disponibles</string>
+    <string name="auto_debug_ev_availability">Disponibilité dynamique prise en charge</string>
+    <string name="auto_debug_rotate_map">Rotation de la carte</string>
+    <string name="auto_debug_compass">Boussole</string>
+    <string name="auto_debug_zoom_in">Zoom avant</string>
+    <string name="auto_debug_zoom_out">Zoom arrière</string>
+    <string name="auto_debug_locate_me">Me localiser</string>
+    <string name="auto_debug_toggle_stations">Afficher/masquer les stations</string>
+    <string name="auto_debug_toggle_rotation">Activer/désactiver la rotation</string>
+    <string name="auto_debug_actions">Actions de débogage</string>
+    <string name="auto_debug_station_detail">Vue détail station</string>
+    <string name="auto_debug_show_stations">Afficher les stations</string>
+    <string name="auto_debug_hide_stations">Masquer les stations</string>
+    <string name="auto_debug_show_rotation">Afficher la rotation</string>
+    <string name="auto_debug_hide_rotation">Masquer la rotation</string>
+    <string name="action_clear_cache_reload">Vider le cache et recharger</string>
 </resources>

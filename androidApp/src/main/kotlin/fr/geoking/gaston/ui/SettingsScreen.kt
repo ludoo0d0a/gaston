@@ -1987,7 +1987,7 @@ private fun DeveloperSection(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.dev_premium_mode), style = MaterialTheme.typography.bodyLarge)
-                    Text("Simulate premium features override", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.dev_premium_mode_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(
                     checked = settings.devSimulatePremium,
@@ -2003,7 +2003,7 @@ private fun DeveloperSection(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.dev_network_floating_bar), style = MaterialTheme.typography.bodyLarge)
-                    Text("Show a floating network status overlay", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.dev_network_floating_bar_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(
                     checked = settings.networkFloatingBarEnabled,
@@ -2019,7 +2019,7 @@ private fun DeveloperSection(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.dev_debug_grid), style = MaterialTheme.typography.bodyLarge)
-                    Text("Draw debugging tile boundaries grid on map", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.dev_debug_grid_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(
                     checked = settings.mapTileDebugEnabled,
@@ -2035,7 +2035,7 @@ private fun DeveloperSection(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.dev_test_aa_map_surface), style = MaterialTheme.typography.bodyLarge)
-                    Text("Emulate the Android Auto map on your mobile device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.dev_test_aa_map_surface_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(
                     checked = settings.testAaMapSurfaceEnabled,
@@ -2067,7 +2067,7 @@ private fun DeveloperSection(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.settings_debug_disable_cache), style = MaterialTheme.typography.bodyLarge)
-                    Text("Bypass on-device caching of POI data", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.dev_disable_cache_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(
                     checked = settings.disableCache,

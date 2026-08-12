@@ -222,7 +222,13 @@ class AutoEmergencyContactsScreen(
             .setSingleList(listBuilder.build())
             .setHeader(
                 Header.Builder()
-                    .setTitle(if (countryName != null) "Useful Numbers - $countryName" else "Useful Numbers")
+                    .setTitle(
+                        if (countryName != null) {
+                            carContext.getString(R.string.emergency_useful_numbers_auto_country, countryName)
+                        } else {
+                            carContext.getString(R.string.emergency_useful_numbers)
+                        }
+                    )
                     .setStartHeaderAction(Action.BACK)
                     .build()
             )

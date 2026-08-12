@@ -21,7 +21,10 @@ class AutoMapServicesSelectionScreen(
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(label)
-                    .addText(if (isSelected) "Enabled" else "Disabled")
+                    .addText(
+                        if (isSelected) carContext.getString(R.string.filter_enabled)
+                        else carContext.getString(R.string.filter_disabled)
+                    )
                     .setToggle(
                         Toggle.Builder { checked ->
                             val current = settingsManager.settings.value.selectedMapServices
