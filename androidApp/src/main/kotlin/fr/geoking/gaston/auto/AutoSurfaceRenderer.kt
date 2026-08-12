@@ -433,6 +433,7 @@ class AutoSurfaceRenderer(
                 if (queryPending) {
                     AutoMapQueryLoader.draw(
                         canvas = canvas,
+                        density = context.resources.displayMetrics.density,
                         visibleArea = visibleArea,
                         surfaceWidth = width,
                         surfaceHeight = height,

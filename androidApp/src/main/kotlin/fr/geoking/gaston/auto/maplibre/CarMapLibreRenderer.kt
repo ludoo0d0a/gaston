@@ -305,6 +305,7 @@ class CarMapLibreRenderer(
         if (queryPending) {
             AutoMapQueryLoader.draw(
                 canvas = canvas,
+                density = carContext.resources.displayMetrics.density,
                 visibleArea = visibleArea,
                 surfaceWidth = surfaceWidth,
                 surfaceHeight = surfaceHeight,

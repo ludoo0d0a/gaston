@@ -39,79 +39,129 @@ object AutoMapOverlayHelper {
     }
 
     private fun drawCompass(canvas: Canvas, area: Rect, bearing: Float, density: Float) {
-        val compassRadius = 20f * density
+        val compassRadius = 24f * density
         val margin = 16f * density
 
         val cx = area.right - margin - compassRadius
         val cy = area.top + margin + compassRadius
 
-        val needleLength = compassRadius * 0.8f
-        val needleWidth = compassRadius * 0.5f
+        val needleLength = compassRadius * 0.65f
+        val needleWidth = compassRadius * 0.38f
 
         canvas.save()
         canvas.rotate(-bearing, cx, cy)
 
-        // Draw background circle
+        // Draw background circle with glassmorphic dark background
         val bgPaint = Paint().apply {
             isAntiAlias = true
-            color = Color.argb(128, 0, 0, 0)
+            color = Color.argb(180, 20, 20, 20)
             style = Paint.Style.FILL
         }
         canvas.drawCircle(cx, cy, compassRadius, bgPaint)
 
+        // Draw thin inner concentric circle dial
+        val dialPaint = Paint().apply {
+            isAntiAlias = true
+            color = Color.argb(50, 255, 255, 255)
+            style = Paint.Style.STROKE
+            strokeWidth = 0.8f * density
+        }
+        canvas.drawCircle(cx, cy, compassRadius * 0.88f, dialPaint)
+
+        // Draw stylish high-contrast outer border
         val borderPaint = Paint().apply {
             isAntiAlias = true
-            color = Color.argb(128, 255, 255, 255)
+            color = Color.argb(160, 255, 255, 255)
             style = Paint.Style.STROKE
-            strokeWidth = 1f * density
+            strokeWidth = 1.5f * density
         }
         canvas.drawCircle(cx, cy, compassRadius, borderPaint)
 
-        // Red triangle (North pointer)
-        val redPath = Path().apply {
+        // Draw elegant bold "N" letter pointing north
+        val nPaint = Paint().apply {
+            isAntiAlias = true
+            color = Color.WHITE
+            textSize = 7.5f * density
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+            textAlign = Paint.Align.CENTER
+        }
+        canvas.drawText("N", cx, cy - compassRadius + 9.5f * density, nPaint)
+
+        // Red triangle (North pointer - Left half, bright red)
+        val redLeftPath = Path().apply {
             moveTo(cx, cy - needleLength)
             lineTo(cx - needleWidth / 2, cy)
-            lineTo(cx + needleWidth / 2, cy)
+            lineTo(cx, cy)
             close()
         }
-        val redPaint = Paint().apply {
+        val redLeftPaint = Paint().apply {
             isAntiAlias = true
-            color = Color.RED
+            color = Color.rgb(255, 59, 48)
             style = Paint.Style.FILL
         }
-        canvas.drawPath(redPath, redPaint)
+        canvas.drawPath(redLeftPath, redLeftPaint)
 
-        // White triangle (South pointer)
-        val whitePath = Path().apply {
-            moveTo(cx, cy + needleLength)
-            lineTo(cx - needleWidth / 2, cy)
+        // Red triangle (North pointer - Right half, shaded red)
+        val redRightPath = Path().apply {
+            moveTo(cx, cy - needleLength)
             lineTo(cx + needleWidth / 2, cy)
+            lineTo(cx, cy)
             close()
         }
-        val whitePaint = Paint().apply {
+        val redRightPaint = Paint().apply {
+            isAntiAlias = true
+            color = Color.rgb(201, 31, 31)
+            style = Paint.Style.FILL
+        }
+        canvas.drawPath(redRightPath, redRightPaint)
+
+        // White triangle (South pointer - Left half, bright white)
+        val whiteLeftPath = Path().apply {
+            moveTo(cx, cy + needleLength)
+            lineTo(cx - needleWidth / 2, cy)
+            lineTo(cx, cy)
+            close()
+        }
+        val whiteLeftPaint = Paint().apply {
             isAntiAlias = true
             color = Color.WHITE
             style = Paint.Style.FILL
         }
-        canvas.drawPath(whitePath, whitePaint)
+        canvas.drawPath(whiteLeftPath, whiteLeftPaint)
 
-        // Draw outline around needles for contrast
-        val outlinePaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.BLACK
-            style = Paint.Style.STROKE
-            strokeWidth = 1f * density
+        // White triangle (South pointer - Right half, shaded silver/grey)
+        val whiteRightPath = Path().apply {
+            moveTo(cx, cy + needleLength)
+            lineTo(cx + needleWidth / 2, cy)
+            lineTo(cx, cy)
+            close()
         }
-        canvas.drawPath(redPath, outlinePaint)
-        canvas.drawPath(whitePath, outlinePaint)
-
-        // Draw center pivot
-        val pivotPaint = Paint().apply {
+        val whiteRightPaint = Paint().apply {
             isAntiAlias = true
-            color = Color.DKGRAY
+            color = Color.rgb(211, 211, 211)
             style = Paint.Style.FILL
         }
-        canvas.drawCircle(cx, cy, 3f * density, pivotPaint)
+        canvas.drawPath(whiteRightPath, whiteRightPaint)
+
+        // Draw fine outline around needles for perfect contrast
+        val outlinePaint = Paint().apply {
+            isAntiAlias = true
+            color = Color.argb(120, 0, 0, 0)
+            style = Paint.Style.STROKE
+            strokeWidth = 0.8f * density
+        }
+        canvas.drawPath(redLeftPath, outlinePaint)
+        canvas.drawPath(redRightPath, outlinePaint)
+        canvas.drawPath(whiteLeftPath, outlinePaint)
+        canvas.drawPath(whiteRightPath, outlinePaint)
+
+        // Draw stylish metallic center pivot cap
+        val pivotPaint = Paint().apply {
+            isAntiAlias = true
+            color = Color.rgb(180, 180, 180)
+            style = Paint.Style.FILL
+        }
+        canvas.drawCircle(cx, cy, 3.5f * density, pivotPaint)
         pivotPaint.color = Color.WHITE
         canvas.drawCircle(cx, cy, 1.5f * density, pivotPaint)
 
