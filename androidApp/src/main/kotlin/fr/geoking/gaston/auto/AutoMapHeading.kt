@@ -38,6 +38,23 @@ object AutoMapHeading {
             MapOrientationMode.HeadingUp -> normalizeDegrees(headingDegrees)
         }
 
+    /**
+     * Orientation after a manual bearing change (debug slider / simulated heading).
+     *
+     * Non-zero heading requires [MapOrientationMode.HeadingUp] so [effectiveBearing] applies.
+     * Bearing 0° must **not** force [MapOrientationMode.NorthUp]: that moves
+     * [AutoMapFollowFocalPoint] (look-ahead → center) and pans the map. In AA, GPS heading
+     * can be ~0° while still heading-up; only an explicit orientation toggle switches mode.
+     */
+    fun modeAfterBearingChange(current: MapOrientationMode, bearingDegrees: Float): MapOrientationMode {
+        val bearing = normalizeDegrees(bearingDegrees)
+        return if (bearing != 0f && current == MapOrientationMode.NorthUp) {
+            MapOrientationMode.HeadingUp
+        } else {
+            current
+        }
+    }
+
     fun normalizeDegrees(degrees: Float): Float {
         var d = degrees % 360f
         if (d < 0f) d += 360f

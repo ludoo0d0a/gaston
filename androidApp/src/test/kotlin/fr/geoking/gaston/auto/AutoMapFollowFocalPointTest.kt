@@ -92,4 +92,32 @@ class AutoMapFollowFocalPointTest {
         assertEquals(200, padding.right) // 800 - 600
         assertEquals(0, padding.bottom)
     }
+
+    @Test
+    fun focalPoint_unchangedWhenHeadingUpBearingGoesToZero() {
+        // Bearing 10° → 0° must not move the pivot (user location) on screen.
+        val at10 = AutoMapFollowFocalPoint.focalPointPx(
+            visibleArea = null,
+            surfaceWidth = 800,
+            surfaceHeight = 480,
+            headingUp = true,
+        )
+        val at0 = AutoMapFollowFocalPoint.focalPointPx(
+            visibleArea = null,
+            surfaceWidth = 800,
+            surfaceHeight = 480,
+            headingUp = true, // still HeadingUp; AA does not flip to NorthUp at 0°
+        )
+        assertEquals(at10.x, at0.x, 0.001)
+        assertEquals(at10.y, at0.y, 0.001)
+        // Contrast: NorthUp would jump the pivot to surface center (pan).
+        val northUp = AutoMapFollowFocalPoint.focalPointPx(
+            visibleArea = null,
+            surfaceWidth = 800,
+            surfaceHeight = 480,
+            headingUp = false,
+        )
+        assertEquals(240.0, northUp.y, 0.001)
+        assertEquals(320.0, at0.y, 0.001)
+    }
 }

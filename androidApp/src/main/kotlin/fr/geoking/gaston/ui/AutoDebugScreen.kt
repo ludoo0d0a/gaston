@@ -38,6 +38,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.auto.AutoMapCamera
+import fr.geoking.gaston.auto.AutoMapHeading
 import fr.geoking.gaston.auto.AutoSurfaceRenderer
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
@@ -299,7 +300,8 @@ fun AutoDebugScreen(
         val uLat = userLat
         val uLon = userLon
         if (uLat != null && uLon != null) {
-            renderer.updateUserLocation(uLat, uLon)
+            // Same as CustomMapPoiScreen: user arrow uses the current heading.
+            renderer.updateUserLocation(uLat, uLon, bearing)
         }
 
         // Draw red circle loading zone around current map center matching visible screen bounds
@@ -584,13 +586,12 @@ fun AutoDebugScreen(
                     userLon = userLon,
                     orientationMode = orientationMode,
                     onZoomChange = { zoom = it },
-                    onBearingChange = {
-                        bearing = it
-                        orientationMode = if (it == 0f) {
-                            MapOrientationMode.NorthUp
-                        } else {
-                            MapOrientationMode.HeadingUp
-                        }
+                    onBearingChange = { newBearing ->
+                        bearing = newBearing
+                        orientationMode = AutoMapHeading.modeAfterBearingChange(
+                            orientationMode,
+                            newBearing,
+                        )
                     },
                     onMapPan = { dLat, dLon ->
                         mapLat += dLat

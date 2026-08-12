@@ -52,4 +52,38 @@ class AutoMapHeadingTest {
         assertEquals(-20f, AutoMapHeading.shortestAngleDelta(350f, 330f), 0.001f)
         assertEquals(20f, AutoMapHeading.shortestAngleDelta(10f, 30f), 0.001f)
     }
+
+    @Test
+    fun modeAfterBearingChange_entersHeadingUpFromNorthUpWhenNonZero() {
+        assertEquals(
+            MapOrientationMode.HeadingUp,
+            AutoMapHeading.modeAfterBearingChange(MapOrientationMode.NorthUp, 10f),
+        )
+    }
+
+    @Test
+    fun modeAfterBearingChange_keepsHeadingUpWhenBearingReturnsToZero() {
+        // Regression: flipping to NorthUp at 0° moves the follow focal point and pans.
+        assertEquals(
+            MapOrientationMode.HeadingUp,
+            AutoMapHeading.modeAfterBearingChange(MapOrientationMode.HeadingUp, 0f),
+        )
+        assertEquals(
+            MapOrientationMode.HeadingUp,
+            AutoMapHeading.modeAfterBearingChange(MapOrientationMode.HeadingUp, 10f),
+        )
+    }
+
+    @Test
+    fun modeAfterBearingChange_keepsNorthUpWhenBearingStaysZero() {
+        assertEquals(
+            MapOrientationMode.NorthUp,
+            AutoMapHeading.modeAfterBearingChange(MapOrientationMode.NorthUp, 0f),
+        )
+    }
+
+    @Test
+    fun effectiveBearing_headingUpAtZeroStillZero_withoutChangingFocalSemantics() {
+        assertEquals(0f, AutoMapHeading.effectiveBearing(MapOrientationMode.HeadingUp, 0f), 0.001f)
+    }
 }
