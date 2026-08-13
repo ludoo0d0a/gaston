@@ -19,14 +19,15 @@ class AutoMapQueryLoaderTest {
         canvas.drawColor(Color.BLACK)
         AutoMapQueryLoader.draw(
             canvas = canvas,
+            density = 1f,
             visibleArea = Rect(40, 20, 360, 280),
             surfaceWidth = 400,
             surfaceHeight = 300,
             nowMs = 450L,
         )
-        // Spinner sits in the top-right of the visible area — a non-black pixel should appear there.
-        val sampleX = 360 - 14 - 14 // right - margin - half size
-        val sampleY = 20 + 14 + 14
+        // Loader sits to the left of the compass — with density=1f, cx = 360 - 16 - 48 - 12 - 14 = 270, cy = 20 + 16 + 24 = 60
+        val sampleX = 270
+        val sampleY = 60
         val pixel = bitmap.getPixel(sampleX, sampleY)
         assertTrue(pixel != Color.BLACK)
     }
