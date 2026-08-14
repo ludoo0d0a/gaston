@@ -32,6 +32,7 @@ private data class FetchKey(
     val amenityFetchUnion: Set<String>,
     val useVehicleFilter: Boolean,
     val vehicleType: VehicleType,
+    val refreshTick: Int,
 )
 
 data class PhoneDashboardUiState(
@@ -64,6 +65,7 @@ class PhoneDashboardViewModel(
     private val userLat = MutableStateFlow<Double?>(settingsManager.settings.value.lastKnownLat)
     private val userLon = MutableStateFlow<Double?>(settingsManager.settings.value.lastKnownLon)
     private val showLoaderByDelay = MutableStateFlow(false)
+    private val refreshTick = MutableStateFlow(0)
 
     init {
         // Collect favorite IDs when favoritesRepo is available
@@ -95,8 +97,9 @@ class PhoneDashboardViewModel(
                 poiProviderFlow,
                 hasLocationPermissionFlow,
                 selectedSearchLocationFlow,
-                settingsManager.settings
-            ) { provider, hasPerm, selectedLoc, settings ->
+                settingsManager.settings,
+                refreshTick
+            ) { provider, hasPerm, selectedLoc, settings, tick ->
                 if (provider == null) return@combine null
 
                 val lat = selectedLoc?.latitude ?: userLat.value
@@ -113,7 +116,8 @@ class PhoneDashboardViewModel(
                     effectiveProviders = effectiveProviders,
                     amenityFetchUnion = settings.selectedOverpassAmenityTypes + settings.cacheWarmAmenityTypes,
                     useVehicleFilter = settings.useVehicleFilter,
-                    vehicleType = settings.vehicleType
+                    vehicleType = settings.vehicleType,
+                    refreshTick = tick
                 ) to provider
             }
                 .filterNotNull()
@@ -296,6 +300,15 @@ class PhoneDashboardViewModel(
 
     fun setSelectedSearchLocation(location: GeocodedPlace?) {
         selectedSearchLocationFlow.value = location
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            poiProviderFlow.value?.clearCache()
+            // Clear rawNearbyPois so we get the loader/shimmer/full-fetch correctly
+            rawNearbyPois.value = emptyList()
+            refreshTick.value++
+        }
     }
 
     fun toggleFavorite(poi: Poi) {
