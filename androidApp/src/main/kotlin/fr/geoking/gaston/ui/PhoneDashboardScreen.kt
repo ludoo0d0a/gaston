@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -93,20 +92,11 @@ fun PhoneDashboardScreen(
     GastonTheme(themeMode = settings.uiThemeMode) {
         Scaffold(
             topBar = {
-                Column {
-                    PhoneDashboardTopBar(
-                        isUpdateInProgress = isUpdateInProgress,
-                        onOpenFavorites = onOpenFavorites,
-                        onOpenSettings = { onOpenSettings(null) }
-                    )
-                    if (uiState.isLoadingPois) {
-                        LinearProgressIndicator(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(3.dp)
-                        )
-                    }
-                }
+                PhoneDashboardTopBar(
+                    isUpdateInProgress = isUpdateInProgress,
+                    onOpenFavorites = onOpenFavorites,
+                    onOpenSettings = { onOpenSettings(null) }
+                )
             },
             bottomBar = {
                 if (showAds) {
