@@ -73,6 +73,13 @@ fun MapScaffold(
                         }
                     }
 
+                    IconButton(onClick = onLocateMe) {
+                        Icon(
+                            imageVector = Icons.Default.MyLocation,
+                            contentDescription = stringResource(R.string.action_locate_me)
+                        )
+                    }
+
                     if (onRouteToDirection != null) {
                         IconButton(onClick = onRouteToDirection) {
                             Icon(
