@@ -339,7 +339,8 @@ private fun PhoneDashboardNearbyCheapestSection(
                     onMapClick = { onOpenMap(null, 12.5f) },
                     modifier = cardModifier,
                     emptyMessage = searchError,
-                    title = titleFuel
+                    title = titleFuel,
+                    isLoading = isLoadingPois && showLoaderByDelay
                 )
                 CheapestStationsCard(
                     stations = nearbyElectricPois,
@@ -350,7 +351,8 @@ private fun PhoneDashboardNearbyCheapestSection(
                     onMapClick = { onOpenMap(null, 12.5f) },
                     modifier = cardModifier,
                     emptyMessage = searchError,
-                    title = titleElectric
+                    title = titleElectric,
+                    isLoading = isLoadingPois && showLoaderByDelay
                 )
             }
         } else {
@@ -364,7 +366,8 @@ private fun PhoneDashboardNearbyCheapestSection(
                 onMapClick = { onOpenMap(null, 12.5f) },
                 modifier = cardModifier,
                 emptyMessage = searchError,
-                title = titleGeneric
+                title = titleGeneric,
+                isLoading = isLoadingPois && showLoaderByDelay
             )
         }
     }

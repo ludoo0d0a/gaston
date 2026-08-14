@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.alpha
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
@@ -31,7 +32,8 @@ fun CheapestStationsCard(
     onMapClick: () -> Unit,
     modifier: Modifier = Modifier,
     emptyMessage: String? = null,
-    title: String? = null
+    title: String? = null,
+    isLoading: Boolean = false
 ) {
     val fuelIds = selectedEnergyIds - "electric"
     val minPrice = remember(stations, fuelIds) {
@@ -73,32 +75,60 @@ fun CheapestStationsCard(
             }
 
             if (stations.isEmpty()) {
-                Text(
-                    text = emptyMessage ?: "No stations found nearby. Try opening the map to search elsewhere.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    stations.forEach { poi ->
-                        val isCheapest = CheapestStationHighlight.isCheapestFuelStation(
-                            poi = poi,
-                            minPrice = minPrice,
-                            fuelIds = fuelIds
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
                         )
-                        CheapestHighlightCard(
-                            isCheapest = isCheapest,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            CheapestStationItem(
+                    }
+                } else {
+                    Text(
+                        text = emptyMessage ?: stringResource(R.string.poi_no_pois_found),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = if (isLoading) Modifier.alpha(0.5f) else Modifier
+                    ) {
+                        stations.forEach { poi ->
+                            val isCheapest = CheapestStationHighlight.isCheapestFuelStation(
                                 poi = poi,
-                                userLatitude = userLatitude,
-                                userLongitude = userLongitude,
-                                selectedEnergyIds = selectedEnergyIds,
-                                isCheapest = isCheapest,
-                                onClick = { onClick(poi) }
+                                minPrice = minPrice,
+                                fuelIds = fuelIds
                             )
+                            CheapestHighlightCard(
+                                isCheapest = isCheapest,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                CheapestStationItem(
+                                    poi = poi,
+                                    userLatitude = userLatitude,
+                                    userLongitude = userLongitude,
+                                    selectedEnergyIds = selectedEnergyIds,
+                                    isCheapest = isCheapest,
+                                    onClick = { onClick(poi) }
+                                )
+                            }
                         }
+                    }
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
                     }
                 }
             }

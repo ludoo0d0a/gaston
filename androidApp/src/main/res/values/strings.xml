@@ -695,7 +695,7 @@
     <string name="filter_active">Active</string>
     <string name="filter_inactive">Inactive</string>
     <string name="filter_selected_suffix">%1$s (Selected)</string>
-    <string name="poi_no_pois_found">No POIs found</string>
+    <string name="poi_no_pois_found">Searching…</string>
     <string name="poi_no_pois_along_route">No POIs found along route</string>
     <string name="poi_loading_nearby_stations">Loading nearby stations…</string>
     <string name="poi_no_matching_stations">No matching stations found</string>
