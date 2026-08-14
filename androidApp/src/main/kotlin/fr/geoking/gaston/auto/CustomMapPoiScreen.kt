@@ -189,8 +189,7 @@ class CustomMapPoiScreen(
                 }
                 .distinctUntilChanged()
                 .collectLatest {
-                    syncRendererWithMapState()
-                    invalidate()
+                    syncAndInvalidateIfNeeded()
                 }
         }
     }
@@ -219,6 +218,78 @@ class CustomMapPoiScreen(
         val vehiclePowerLevels: Set<Int>
     )
 
+    private data class ScreenDisplayState(
+        val poiIdsWithAvailabilities: List<Pair<String, Int?>>,
+        val pricesSignature: List<String>,
+        val isLoading: Boolean,
+        val isQueryPending: Boolean,
+        val searchLat: Double,
+        val searchLon: Double,
+        val zoom: Int,
+        val isCheapestFilterActive: Boolean,
+        val sortByPrice: Boolean,
+        val hasErrors: Boolean,
+        val mapSelectedPoiId: String?,
+        val bearing: Float,
+        val orientationMode: MapOrientationMode
+    )
+
+    private var lastDisplayState: ScreenDisplayState? = null
+
+    private fun getDisplayPois(currentSettings: AppSettings, listLimit: Int): List<Poi> {
+        val filteredPois = getFilteredPois(currentSettings)
+        val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
+        val sortedPois = MapPoiFilter.sortPois(
+            pois = filteredPois,
+            lat = searchLat,
+            lon = searchLon,
+            sortByPrice = sortByPrice,
+            selectedFuelIds = effectiveEnergies - "electric"
+        )
+        return sortedPois.take(listLimit)
+    }
+
+    private fun getDisplayStateSignature(settings: AppSettings): ScreenDisplayState {
+        val listLimit = try {
+            carContext.getCarService(ConstraintManager::class.java)
+                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+        } catch (_: Exception) {
+            6
+        }
+        val displayPois = getDisplayPois(settings, listLimit)
+        val poiIdsWithAvailabilities = displayPois.map { poi ->
+            Pair(poi.id, availabilityByPoiId[poi.id]?.availableCount)
+        }
+        val pricesSignature = displayPois.map { poi ->
+            poi.fuelPrices?.joinToString(",") { "${it.fuelName}:${it.price}" } ?: ""
+        }
+        return ScreenDisplayState(
+            poiIdsWithAvailabilities = poiIdsWithAvailabilities,
+            pricesSignature = pricesSignature,
+            isLoading = isLoading,
+            isQueryPending = isQueryPending,
+            searchLat = searchLat,
+            searchLon = searchLon,
+            zoom = zoom,
+            isCheapestFilterActive = isCheapestFilterActive,
+            sortByPrice = sortByPrice,
+            hasErrors = errors.isNotEmpty(),
+            mapSelectedPoiId = mapSelectedPoi?.id,
+            bearing = lastKnownBearingDegrees,
+            orientationMode = orientationMode
+        )
+    }
+
+    private fun syncAndInvalidateIfNeeded() {
+        val settings = settingsManager.settings.value
+        val newState = getDisplayStateSignature(settings)
+        if (newState != lastDisplayState) {
+            lastDisplayState = newState
+            syncRendererWithMapState()
+            invalidate()
+        }
+    }
+
     private fun getFilteredPois(currentSettings: AppSettings): List<Poi> {
         val effectiveProviders = currentSettings.effectiveProvidersAt(searchLat, searchLon)
         val basePois = StationMapFilters.apply(
@@ -228,14 +299,45 @@ class CustomMapPoiScreen(
             skipWhenOnlyOverpass = true
         )
 
-        val visiblePois = filterPoisByViewport(
-            pois = basePois,
-            lat = searchLat,
-            lon = searchLon,
-            zoom = zoom.toFloat(),
-            widthPx = mapWidthPx,
-            heightPx = mapHeightPx
-        )
+        val visiblePois = if (currentVisibleArea != null) {
+            val visibleArea = currentVisibleArea!!
+            val focalPoint = AutoMapFollowFocalPoint.focalPointPx(
+                visibleArea = visibleArea,
+                surfaceWidth = mapWidthPx,
+                surfaceHeight = mapHeightPx,
+                headingUp = orientationMode == MapOrientationMode.HeadingUp
+            )
+            val bearing = AutoMapHeading.effectiveBearing(orientationMode, lastKnownBearingDegrees)
+            val angleRad = -Math.toRadians(bearing.toDouble())
+
+            basePois.filter { poi ->
+                val (px, py) = AutoMapPoiHitTest.poiScreenPosition(
+                    poi = poi,
+                    mapLat = searchLat,
+                    mapLon = searchLon,
+                    zoom = zoom,
+                    centerPxX = focalPoint.x,
+                    centerPxY = focalPoint.y
+                )
+                val dx = px - focalPoint.x
+                val dy = py - focalPoint.y
+                val rx = dx * Math.cos(angleRad) - dy * Math.sin(angleRad)
+                val ry = dx * Math.sin(angleRad) + dy * Math.cos(angleRad)
+                val rotatedX = focalPoint.x + rx
+                val rotatedY = focalPoint.y + ry
+
+                visibleArea.contains(rotatedX.toInt(), rotatedY.toInt())
+            }
+        } else {
+            filterPoisByViewport(
+                pois = basePois,
+                lat = searchLat,
+                lon = searchLon,
+                zoom = zoom.toFloat(),
+                widthPx = mapWidthPx,
+                heightPx = mapHeightPx
+            )
+        }
 
         return if (isCheapestFilterActive) {
             val fuelIds = currentSettings.effectiveMapEnergyFilterIds() - "electric"
@@ -349,8 +451,15 @@ class CustomMapPoiScreen(
         val settings = settingsManager.settings.value
         renderer.setTileUrlTemplate(resolveAutoRasterTileUrl(settings))
         renderer.setMapTileDebugEnabled(settings.mapTileDebugEnabled)
-        val filteredPois = getFilteredPois(settings)
-        val poiIds = filteredPois.map { it.id }
+
+        val listLimit = try {
+            carContext.getCarService(ConstraintManager::class.java)
+                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+        } catch (_: Exception) {
+            6
+        }
+        val displayPois = getDisplayPois(settings, listLimit)
+        val poiIds = displayPois.map { it.id }
 
         if (searchLat != lastAppliedSearchLat ||
             searchLon != lastAppliedSearchLon ||
@@ -365,7 +474,7 @@ class CustomMapPoiScreen(
         // Show the same filtered stations as the list; focus stations are only for zoom.
         // When a station is selected, keep only that marker (detail handoff / shared surface).
         val selected = mapSelectedPoi
-        val mapPois = if (selected != null) listOf(selected) else filteredPois
+        val mapPois = if (selected != null) listOf(selected) else displayPois
         renderer.updatePois(
             newPois = mapPois,
             effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
@@ -470,11 +579,10 @@ class CustomMapPoiScreen(
         val gen = ++queryGeneration
         loadPoisJob = lifecycleScope.launch {
             isQueryPending = true
-            syncRendererWithMapState()
             if (showLoading) {
                 isLoading = true
-                invalidate()
             }
+            syncAndInvalidateIfNeeded()
 
             try {
                 val location = LocationHelper.getCurrentLocation(carContext)
@@ -509,10 +617,9 @@ class CustomMapPoiScreen(
                     val filteredPois = getFilteredPois(settings)
                     applyCameraForItinerary(lat, lon, filteredPois)
                     surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
-                    syncRendererWithMapState()
                     isLoading = false
                     refitCameraForVisibleAreaIfNeeded()
-                    invalidate()
+                    syncAndInvalidateIfNeeded()
 
                     // Availability for itinerary stations
                     val provider = availabilityProviderFactory.getProvider(lat, lon)
@@ -524,8 +631,7 @@ class CustomMapPoiScreen(
                             emptyList()
                         }
                         availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
-                        syncRendererWithMapState()
-                        invalidate()
+                        syncAndInvalidateIfNeeded()
                     }
                 } else {
                     suspend fun collectNearbySearch(preserveCameraZoom: Boolean) {
@@ -550,10 +656,9 @@ class CustomMapPoiScreen(
                                 preserveZoom = preserveCameraZoom,
                             )
                             surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
-                            syncRendererWithMapState()
                             isLoading = false
                             refitCameraForVisibleAreaIfNeeded()
-                            invalidate()
+                            syncAndInvalidateIfNeeded()
 
                             val provider = availabilityProviderFactory.getProvider(lat, lon)
                             if (provider != null) {
@@ -565,8 +670,7 @@ class CustomMapPoiScreen(
                                     emptyList()
                                 }
                                 availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
-                                syncRendererWithMapState()
-                                invalidate()
+                                syncAndInvalidateIfNeeded()
                             }
                         }
                     }
@@ -587,8 +691,7 @@ class CustomMapPoiScreen(
                 if (gen == queryGeneration) {
                     isQueryPending = false
                     isLoading = false
-                    syncRendererWithMapState()
-                    invalidate()
+                    syncAndInvalidateIfNeeded()
                 }
             }
         }
@@ -644,10 +747,8 @@ class CustomMapPoiScreen(
         applyMapOrientationToRenderer()
         if (orientationMode == MapOrientationMode.HeadingUp) {
             lifecycleScope.launch { refreshHeadingFromLocation() }
-        } else {
-            syncRendererWithMapState()
         }
-        invalidate()
+        syncAndInvalidateIfNeeded()
     }
 
     private fun recenterMap() {
@@ -709,9 +810,8 @@ class CustomMapPoiScreen(
 
             if (orientationMode == MapOrientationMode.HeadingUp) {
                 applyMapOrientationToRenderer()
-            } else {
-                invalidate()
             }
+            syncAndInvalidateIfNeeded()
         }
     }
 
@@ -818,8 +918,7 @@ class CustomMapPoiScreen(
             // Wider visible boundary — re-query stations for the new map diameter.
             loadPois(preserveZoom = true, showLoading = false)
         } else {
-            syncRendererWithMapState()
-            invalidate()
+            syncAndInvalidateIfNeeded()
         }
     }
 
@@ -867,8 +966,7 @@ class CustomMapPoiScreen(
                             carContext.getCarService(AppManager::class.java)
                                 .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
                         }
-                        syncRendererWithMapState()
-                        invalidate()
+                        syncAndInvalidateIfNeeded()
                     }
                     .build()
             )
@@ -883,15 +981,6 @@ class CustomMapPoiScreen(
                 .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
                 .build()
         } else {
-            val filteredPoisForSorting = getFilteredPois(currentSettings)
-            val sortedPois = MapPoiFilter.sortPois(
-                pois = filteredPoisForSorting,
-                lat = searchLat,
-                lon = searchLon,
-                sortByPrice = sortByPrice,
-                selectedFuelIds = effectiveEnergies - "electric"
-            )
-
             val listLimit = try {
                 carContext.getCarService(ConstraintManager::class.java)
                     .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
@@ -902,7 +991,7 @@ class CustomMapPoiScreen(
             val itemListBuilder = ItemList.Builder()
                 .setNoItemsMessage(carContext.getString(R.string.poi_no_pois_found))
 
-            val limitedPois = sortedPois.take(listLimit)
+            val limitedPois = getDisplayPois(currentSettings, listLimit)
             limitedPois.forEach { item ->
                 val availability = availabilityByPoiId[item.id]
                 itemListBuilder.addItem(
