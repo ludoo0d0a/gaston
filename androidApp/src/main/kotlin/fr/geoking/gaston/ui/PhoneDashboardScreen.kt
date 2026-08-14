@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -116,38 +117,44 @@ fun PhoneDashboardScreen(
                 }
             }
         ) { padding ->
-            PhoneDashboardMainContent(
+            PullToRefreshBox(
+                isRefreshing = uiState.isLoadingPois,
+                onRefresh = { viewModel.refresh() },
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
-                geocodingClient = geocodingClient,
-                hasLocationPermission = hasLocationPermission,
-                userLat = uiState.userLat,
-                userLon = uiState.userLon,
-                selectedSearchLocation = selectedSearchLocation,
-                settings = settings,
-                settingsManager = settingsManager,
-                providers = providers,
-                energyFilterIds = energyFilterIds,
-                isLoadingPois = uiState.isLoadingPois,
-                showLoaderByDelay = uiState.showLoaderByDelay,
-                nearbyFuelPois = uiState.nearbyFuelPois,
-                nearbyElectricPois = uiState.nearbyElectricPois,
-                searchError = uiState.searchError,
-                mapDepsReady = mapDepsReady,
-                fuelForecastRepository = fuelForecastRepository,
-                onOpenMap = onOpenMap,
-                onOpenRoutes = onOpenRoutes,
-                onOpenFuelForecast = onOpenFuelForecast,
-                onOpenEmergency = onOpenEmergency,
-                onOpenSettings = onOpenSettings,
-                onOpenNetworkDiagnostics = onOpenNetworkDiagnostics,
-                onOpenAutoDebug = onOpenAutoDebug,
-                onRequestLocationPermission = onRequestLocationPermission,
-                onLocationSelected = onLocationSelected,
-                onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) },
-                onPoiSelected = { poiForDetails = it }
-            )
+                    .padding(padding)
+            ) {
+                PhoneDashboardMainContent(
+                    modifier = Modifier.fillMaxSize(),
+                    geocodingClient = geocodingClient,
+                    hasLocationPermission = hasLocationPermission,
+                    userLat = uiState.userLat,
+                    userLon = uiState.userLon,
+                    selectedSearchLocation = selectedSearchLocation,
+                    settings = settings,
+                    settingsManager = settingsManager,
+                    providers = providers,
+                    energyFilterIds = energyFilterIds,
+                    isLoadingPois = uiState.isLoadingPois,
+                    showLoaderByDelay = uiState.showLoaderByDelay,
+                    nearbyFuelPois = uiState.nearbyFuelPois,
+                    nearbyElectricPois = uiState.nearbyElectricPois,
+                    searchError = uiState.searchError,
+                    mapDepsReady = mapDepsReady,
+                    fuelForecastRepository = fuelForecastRepository,
+                    onOpenMap = onOpenMap,
+                    onOpenRoutes = onOpenRoutes,
+                    onOpenFuelForecast = onOpenFuelForecast,
+                    onOpenEmergency = onOpenEmergency,
+                    onOpenSettings = onOpenSettings,
+                    onOpenNetworkDiagnostics = onOpenNetworkDiagnostics,
+                    onOpenAutoDebug = onOpenAutoDebug,
+                    onRequestLocationPermission = onRequestLocationPermission,
+                    onLocationSelected = onLocationSelected,
+                    onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) },
+                    onPoiSelected = { poiForDetails = it }
+                )
+            }
         }
     }
 
