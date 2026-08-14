@@ -217,6 +217,7 @@
     <string name="route_destination_placeholder">Adresse ou ville d\'arrivée</string>
     <string name="route_error">Erreur</string>
     <string name="route_locate_place">Localiser un lieu</string>
+    <string name="action_locate_me">Me localiser</string>
     <string name="route_origin">Départ</string>
     <string name="route_origin_placeholder">Adresse ou ville de départ</string>
     <string name="route_plan_menu">Planifier un itinéraire</string>

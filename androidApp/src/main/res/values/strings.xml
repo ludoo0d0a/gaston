@@ -203,6 +203,7 @@
     <string name="route_where_to">Where to?</string>
     <string name="route_recommended_stops">Recommended stops</string>
     <string name="route_locate_place">Locate a place</string>
+    <string name="action_locate_me">Locate me</string>
     <string name="route_to_direction">Route to a direction</string>
     <string name="route_plan_menu">Plan route</string>
     <string name="route_search_at_destination">Search at destination</string>
