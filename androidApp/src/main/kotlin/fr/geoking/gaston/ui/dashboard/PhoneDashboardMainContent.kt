@@ -21,11 +21,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -276,100 +274,54 @@ private fun PhoneDashboardNearbyCheapestSection(
         }
     }
 
-    if (isLoadingPois && showLoaderByDelay && nearbyFuelPois.isEmpty() && nearbyElectricPois.isEmpty()) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = if (isHybrid) titleFuel else titleGeneric,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    IconButton(
-                        onClick = { onOpenMap(null, 12.5f) },
-                        modifier = Modifier.size(24.dp).testTag("dashboard_open_map_btn"),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_map),
-                            contentDescription = stringResource(R.string.action_open_map),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                }
-                Box(Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            stringResource(R.string.dashboard_searching_nearby),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-            }
-        }
+    val cardModifier = if (!hasLocationPermission) {
+        Modifier
+            .fillMaxWidth()
+            .clickable { onRequestLocationPermission() }
     } else {
-        val cardModifier = if (!hasLocationPermission) {
-            Modifier
-                .fillMaxWidth()
-                .clickable { onRequestLocationPermission() }
-        } else {
-            Modifier.fillMaxWidth()
-        }
-        if (isHybrid) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                CheapestStationsCard(
-                    stations = nearbyFuelPois,
-                    userLatitude = userLat,
-                    userLongitude = userLon,
-                    selectedEnergyIds = energyFilterIds - "electric",
-                    onClick = onPoiSelected,
-                    onMapClick = { onOpenMap(null, 12.5f) },
-                    modifier = cardModifier,
-                    emptyMessage = searchError,
-                    title = titleFuel,
-                    isLoading = isLoadingPois && showLoaderByDelay
-                )
-                CheapestStationsCard(
-                    stations = nearbyElectricPois,
-                    userLatitude = userLat,
-                    userLongitude = userLon,
-                    selectedEnergyIds = setOf("electric"),
-                    onClick = onPoiSelected,
-                    onMapClick = { onOpenMap(null, 12.5f) },
-                    modifier = cardModifier,
-                    emptyMessage = searchError,
-                    title = titleElectric,
-                    isLoading = isLoadingPois && showLoaderByDelay
-                )
-            }
-        } else {
-            val pois = if (energyMode == EnergyFilterMode.Electric) nearbyElectricPois else nearbyFuelPois
+        Modifier.fillMaxWidth()
+    }
+    if (isHybrid) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             CheapestStationsCard(
-                stations = pois,
+                stations = nearbyFuelPois,
                 userLatitude = userLat,
                 userLongitude = userLon,
-                selectedEnergyIds = energyFilterIds,
+                selectedEnergyIds = energyFilterIds - "electric",
                 onClick = onPoiSelected,
                 onMapClick = { onOpenMap(null, 12.5f) },
                 modifier = cardModifier,
                 emptyMessage = searchError,
-                title = titleGeneric,
+                title = titleFuel,
+                isLoading = isLoadingPois && showLoaderByDelay
+            )
+            CheapestStationsCard(
+                stations = nearbyElectricPois,
+                userLatitude = userLat,
+                userLongitude = userLon,
+                selectedEnergyIds = setOf("electric"),
+                onClick = onPoiSelected,
+                onMapClick = { onOpenMap(null, 12.5f) },
+                modifier = cardModifier,
+                emptyMessage = searchError,
+                title = titleElectric,
                 isLoading = isLoadingPois && showLoaderByDelay
             )
         }
+    } else {
+        val pois = if (energyMode == EnergyFilterMode.Electric) nearbyElectricPois else nearbyFuelPois
+        CheapestStationsCard(
+            stations = pois,
+            userLatitude = userLat,
+            userLongitude = userLon,
+            selectedEnergyIds = energyFilterIds,
+            onClick = onPoiSelected,
+            onMapClick = { onOpenMap(null, 12.5f) },
+            modifier = cardModifier,
+            emptyMessage = searchError,
+            title = titleGeneric,
+            isLoading = isLoadingPois && showLoaderByDelay
+        )
     }
 }
 

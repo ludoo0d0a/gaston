@@ -1,16 +1,34 @@
 package fr.geoking.gaston.ui.components
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.draw.alpha
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,7 +51,7 @@ fun CheapestStationsCard(
     modifier: Modifier = Modifier,
     emptyMessage: String? = null,
     title: String? = null,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
 ) {
     val fuelIds = selectedEnergyIds - "electric"
     val minPrice = remember(stations, fuelIds) {
@@ -47,7 +65,7 @@ fun CheapestStationsCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp).animateContentSize()) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -63,7 +81,7 @@ fun CheapestStationsCard(
                 )
                 IconButton(
                     onClick = onMapClick,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp).testTag("dashboard_open_map_btn")
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_map),
@@ -74,63 +92,144 @@ fun CheapestStationsCard(
                 }
             }
 
-            if (stations.isEmpty()) {
-                if (isLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
+            if (isLoading) {
+                NearbyStationsShimmerBar(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                )
+            }
+
+            if (stations.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    stations.forEach { poi ->
+                        val isCheapest = CheapestStationHighlight.isCheapestFuelStation(
+                            poi = poi,
+                            minPrice = minPrice,
+                            fuelIds = fuelIds
                         )
-                    }
-                } else {
-                    Text(
-                        text = emptyMessage ?: stringResource(R.string.poi_no_pois_found),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = if (isLoading) Modifier.alpha(0.5f) else Modifier
-                    ) {
-                        stations.forEach { poi ->
-                            val isCheapest = CheapestStationHighlight.isCheapestFuelStation(
+                        CheapestHighlightCard(
+                            isCheapest = isCheapest,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            CheapestStationItem(
                                 poi = poi,
-                                minPrice = minPrice,
-                                fuelIds = fuelIds
-                            )
-                            CheapestHighlightCard(
+                                userLatitude = userLatitude,
+                                userLongitude = userLongitude,
+                                selectedEnergyIds = selectedEnergyIds,
                                 isCheapest = isCheapest,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                CheapestStationItem(
-                                    poi = poi,
-                                    userLatitude = userLatitude,
-                                    userLongitude = userLongitude,
-                                    selectedEnergyIds = selectedEnergyIds,
-                                    isCheapest = isCheapest,
-                                    onClick = { onClick(poi) }
-                                )
-                            }
+                                onClick = { onClick(poi) }
+                            )
                         }
                     }
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                    }
                 }
+            } else if (isLoading) {
+                NearbyStationsSkeleton()
+            } else {
+                Text(
+                    text = emptyMessage ?: stringResource(R.string.poi_no_pois_found),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NearbyStationsShimmerBar(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "nearbyStationsShimmer")
+    val xOffset by infiniteTransition.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "nearbyStationsShimmerOffset"
+    )
+    val primary = MaterialTheme.colorScheme.primary
+    val secondary = MaterialTheme.colorScheme.secondary
+    Box(
+        modifier = modifier
+            .height(3.dp)
+            .clip(RoundedCornerShape(50))
+            .clipToBounds()
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        primary.copy(alpha = 0.55f),
+                        secondary.copy(alpha = 0.9f),
+                        primary.copy(alpha = 0.55f),
+                        Color.Transparent
+                    ),
+                    start = Offset(xOffset * 1000f - 500f, 0f),
+                    end = Offset(xOffset * 1000f, 0f)
+                )
+            )
+    )
+}
+
+@Composable
+private fun NearbyStationsSkeleton() {
+    val searching = stringResource(R.string.dashboard_searching_nearby)
+    val infiniteTransition = rememberInfiniteTransition(label = "nearbyStationsSkeleton")
+    val pulse by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "nearbyStationsSkeletonPulse"
+    )
+    val color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = pulse)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("dashboard_nearby_loader")
+            .semantics { contentDescription = searching },
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        repeat(3) { index ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(if (index == 1) 0.42f else 0.62f)
+                            .height(14.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(color)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.28f)
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(color)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .width(48.dp)
+                        .height(16.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(color)
+                )
             }
         }
     }

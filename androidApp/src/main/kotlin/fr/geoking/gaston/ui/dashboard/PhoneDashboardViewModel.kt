@@ -125,10 +125,8 @@ class PhoneDashboardViewModel(
                 .debounce(300)
                 .collectLatest { (key, provider) ->
                     val selectedLoc = key.selectedLocation
-                    val showLoadingIndicator = rawNearbyPois.value.isEmpty()
-                    if (showLoadingIndicator) {
-                        isLoadingPois.value = true
-                    }
+                    rawNearbyPois.value = emptyList()
+                    isLoadingPois.value = true
                     searchError.value = null
 
                     val baseLat: Double?
@@ -168,13 +166,15 @@ class PhoneDashboardViewModel(
                                     skipFilters = true
                                 )
                             ).collect { result ->
+                                if (result.pois.isEmpty()) return@collect
                                 rawNearbyPois.value = if (rawNearbyPois.value.isEmpty()) {
                                     result.pois
                                 } else {
                                     fr.geoking.gaston.poi.PoiMerger.mergeInto(rawNearbyPois.value, result.pois)
                                 }
-                                isLoadingPois.value = false
                             }
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             android.util.Log.e("PhoneDashboardViewModel", "Failed to fetch nearby POIs", e)
                             if (rawNearbyPois.value.isEmpty()) {
