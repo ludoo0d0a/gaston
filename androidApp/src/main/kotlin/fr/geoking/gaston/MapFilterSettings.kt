@@ -6,7 +6,6 @@ import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderType
-import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.autoProvidersForCountries
 import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 import java.util.Locale
@@ -160,25 +159,53 @@ fun AppSettings.effectiveIrveOperatorFilter(): Set<String> {
     }
 }
 
+fun AppSettings.wantsFuelProviders(): Boolean {
+    if (isOtherModeActive() || isSwapExclusive()) return false
+    val mode = effectiveEnergyFilterMode()
+    return mode == EnergyFilterMode.Fuel || mode == EnergyFilterMode.Hybrid
+}
+
+fun AppSettings.wantsElectricProviders(): Boolean {
+    if (isOtherModeActive()) return false
+    if (isSwapExclusive()) return true
+    val mode = effectiveEnergyFilterMode()
+    return mode == EnergyFilterMode.Electric || mode == EnergyFilterMode.Hybrid
+}
+
+fun Set<PoiProviderType>.filterProvidersForEnergy(
+    wantFuel: Boolean,
+    wantElectric: Boolean,
+): Set<PoiProviderType> {
+    if (wantFuel && wantElectric) return this
+    return filter { type ->
+        (wantFuel && type.providesFuel) ||
+            (wantElectric && (type.providesElectric || type.providesSwap))
+    }.toSet()
+}
+
 /**
  * Provider set actually used by the app.
  *
  * - [PoiProviderSelectionMode.Manual]: uses [selectedPoiProviders]
  * - [PoiProviderSelectionMode.Auto]: uses current country (GPS/network) when available
  *
+ * Fuel / electric sources follow the energy selector: fuel mode loads fuel providers only,
+ * electric (or swap-only) loads electric providers only, hybrid loads both.
+ *
  * When [countryCodes] is empty, falls back to [selectedPoiProviders] (manual override).
  */
 fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Set<PoiProviderType> {
+    val wantFuel = wantsFuelProviders()
+    val wantElectric = wantsElectricProviders()
+
     val base = if (poiProviderSelectionMode == PoiProviderSelectionMode.Manual) {
         selectedPoiProviders
     } else {
         if (countryCodes.isNotEmpty()) {
-            // We always request both fuel and electric providers to stabilize the provider set
-            // and the cache key across energy mode toggles.
             autoProvidersForCountries(
                 countryCodes = countryCodes,
-                wantFuel = true,
-                wantElectric = true,
+                wantFuel = wantFuel,
+                wantElectric = wantElectric,
                 fallbackManual = selectedPoiProviders
             )
         } else {
@@ -186,10 +213,16 @@ fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Se
         }
     }
 
-    if (useVehicleFilter && fuelCard == FuelCard.Routex) {
-        return base + setOf(PoiProviderType.Routex, PoiProviderType.Overpass)
+    val energyFiltered = if (isOtherModeActive()) {
+        base
+    } else {
+        base.filterProvidersForEnergy(wantFuel, wantElectric)
     }
-    return base
+
+    if (useVehicleFilter && fuelCard == FuelCard.Routex) {
+        return energyFiltered + setOf(PoiProviderType.Routex, PoiProviderType.Overpass)
+    }
+    return energyFiltered
 }
 
 /** ISO country codes for [latitude]/[longitude] when it falls in known [ParkingRegion]s or within 10km of their borders. */

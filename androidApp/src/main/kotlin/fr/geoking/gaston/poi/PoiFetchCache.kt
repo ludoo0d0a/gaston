@@ -111,14 +111,7 @@ fun resolveCategoriesToFetch(settings: AppSettings, extraCategories: Set<PoiCate
         .mapNotNull { categoryFromAmenityId(it) }
         .toMutableSet()
 
-    // Always fetch both energy types for caching purposes if not in Other mode
-    if (!settings.isOtherModeActive()) {
-        categories.add(PoiCategory.Gas)
-        categories.add(PoiCategory.Irve)
-        categories.add(PoiCategory.BatterySwap)
-    }
-
-    // amenities follow selection + vehicle.
+    // Energy categories follow the selector (fuel / electric / hybrid / other).
     categories += settings.effectiveAllowedCategories()
     categories += extraCategories
     return categories

@@ -22,21 +22,27 @@ class PoiFetchCacheTest {
     }
 
     @Test
-    fun resolveCategoriesToFetch_fuelModeIncludesElectricForCaching() {
+    fun resolveCategoriesToFetch_fuelModeDoesNotIncludeElectric() {
         val settings = AppSettings(mapEnergyMode = EnergyFilterMode.Fuel)
         val categories = resolveCategoriesToFetch(settings)
         assertTrue(PoiCategory.Gas in categories)
-        // Now we always fetch both to keep cache ready
-        assertTrue(PoiCategory.Irve in categories)
+        assertFalse(PoiCategory.Irve in categories)
     }
 
     @Test
-    fun resolveCategoriesToFetch_electricModeIncludesFuelForCaching() {
+    fun resolveCategoriesToFetch_electricModeDoesNotIncludeFuel() {
         val settings = AppSettings(mapEnergyMode = EnergyFilterMode.Electric)
         val categories = resolveCategoriesToFetch(settings)
         assertTrue(PoiCategory.Irve in categories)
-        // Now we always fetch both to keep cache ready
+        assertFalse(PoiCategory.Gas in categories)
+    }
+
+    @Test
+    fun resolveCategoriesToFetch_hybridModeIncludesFuelAndElectric() {
+        val settings = AppSettings(mapEnergyMode = EnergyFilterMode.Hybrid)
+        val categories = resolveCategoriesToFetch(settings)
         assertTrue(PoiCategory.Gas in categories)
+        assertTrue(PoiCategory.Irve in categories)
     }
 
     @Test
@@ -361,5 +367,69 @@ class PoiFetchCacheTest {
         assertTrue(PoiProviderType.Routex in providers)
         assertTrue(PoiProviderType.Overpass in providers)
         assertTrue(PoiProviderType.DataGouv in providers)
+    }
+
+    @Test
+    fun effectiveProviders_autoFuelModeLoadsFuelProvidersOnly() {
+        val settings = AppSettings(
+            poiProviderSelectionMode = PoiProviderSelectionMode.Auto,
+            mapEnergyMode = EnergyFilterMode.Fuel,
+        )
+        val providers = settings.effectiveProviders(countryCodes = listOf("FR"))
+        assertTrue(PoiProviderType.DataGouv in providers)
+        assertTrue(PoiProviderType.Overpass in providers)
+        assertFalse(PoiProviderType.DataGouvElec in providers)
+        assertFalse(PoiProviderType.OpenChargeMap in providers)
+    }
+
+    @Test
+    fun effectiveProviders_autoElectricModeLoadsElectricProvidersOnly() {
+        val settings = AppSettings(
+            poiProviderSelectionMode = PoiProviderSelectionMode.Auto,
+            mapEnergyMode = EnergyFilterMode.Electric,
+        )
+        val providers = settings.effectiveProviders(countryCodes = listOf("FR"))
+        assertTrue(PoiProviderType.DataGouvElec in providers)
+        assertTrue(PoiProviderType.OpenChargeMap in providers)
+        assertTrue(PoiProviderType.Overpass in providers)
+        assertFalse(PoiProviderType.DataGouv in providers)
+    }
+
+    @Test
+    fun effectiveProviders_manualFuelModeDropsElectricSources() {
+        val settings = AppSettings(
+            poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+            mapEnergyMode = EnergyFilterMode.Fuel,
+            selectedPoiProviders = setOf(
+                PoiProviderType.DataGouv,
+                PoiProviderType.DataGouvElec,
+                PoiProviderType.OpenChargeMap,
+                PoiProviderType.Overpass,
+            ),
+        )
+        val providers = settings.effectiveProviders()
+        assertEquals(
+            setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+            providers,
+        )
+    }
+
+    @Test
+    fun effectiveProviders_manualElectricModeDropsFuelSources() {
+        val settings = AppSettings(
+            poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+            mapEnergyMode = EnergyFilterMode.Electric,
+            selectedPoiProviders = setOf(
+                PoiProviderType.DataGouv,
+                PoiProviderType.DataGouvElec,
+                PoiProviderType.OpenChargeMap,
+                PoiProviderType.Overpass,
+            ),
+        )
+        val providers = settings.effectiveProviders()
+        assertEquals(
+            setOf(PoiProviderType.DataGouvElec, PoiProviderType.OpenChargeMap, PoiProviderType.Overpass),
+            providers,
+        )
     }
 }
