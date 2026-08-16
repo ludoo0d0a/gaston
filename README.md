@@ -183,6 +183,7 @@ GOOGLE_MAPS_KEY=your_maps_sdk_key
 Full list of build-time keys → [`docs/ENV_VARS.md`](docs/ENV_VARS.md)
 
 Additional setup guides:
+- POI cache, query optimization, merge strategy → [`docs/cache.md`](docs/cache.md)
 - API keys for data sources → [`docs/API_KEYS.md`](docs/API_KEYS.md)
 - Google Maps API key → [`docs/MAPS_API_KEY_SETUP.md`](docs/MAPS_API_KEY_SETUP.md)
 - Google Play setup → [`docs/GOOGLE_PLAY_MIGRATION.md`](docs/GOOGLE_PLAY_MIGRATION.md)
