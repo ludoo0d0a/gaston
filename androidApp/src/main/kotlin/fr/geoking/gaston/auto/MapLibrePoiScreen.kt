@@ -356,19 +356,21 @@ class MapLibrePoiScreen(
         val filteredPois = getFilteredPois(settings)
         val poiIds = filteredPois.map { it.id }
 
-        if (searchLat != lastAppliedSearchLat ||
-            searchLon != lastAppliedSearchLon ||
+        val selected = mapSelectedPoi
+        val cameraLat = selected?.latitude ?: searchLat
+        val cameraLon = selected?.longitude ?: searchLon
+        if (cameraLat != lastAppliedSearchLat ||
+            cameraLon != lastAppliedSearchLon ||
             zoom != lastAppliedZoom
         ) {
-            renderer.updateLocation(searchLat, searchLon, zoom)
-            lastAppliedSearchLat = searchLat
-            lastAppliedSearchLon = searchLon
+            renderer.updateLocation(cameraLat, cameraLon, zoom)
+            lastAppliedSearchLat = cameraLat
+            lastAppliedSearchLon = cameraLon
             lastAppliedZoom = zoom
         }
         renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
         // Show the same filtered stations as the list; focus stations are only for zoom.
         // When a station is selected, keep only that marker (detail handoff / shared surface).
-        val selected = mapSelectedPoi
         val mapPois = if (selected != null) listOf(selected) else filteredPois
         renderer.updatePois(
             newPois = mapPois,
@@ -702,11 +704,16 @@ class MapLibrePoiScreen(
             val lon = location.longitude
             lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
 
-            // Recenter map on user location
             searchLat = lat
             searchLon = lon
             searchCenterFlow.value = lat to lon
-            mapRenderer?.updateLocation(lat, lon, zoom)
+            // Keep following the vehicle after zoom; only freeze the camera while a station is selected.
+            if (mapSelectedPoi == null) {
+                mapRenderer?.updateLocation(lat, lon, zoom)
+                lastAppliedSearchLat = lat
+                lastAppliedSearchLon = lon
+                lastAppliedZoom = zoom
+            }
             mapRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
 
             val last = historyPoints.lastOrNull()
@@ -759,7 +766,6 @@ class MapLibrePoiScreen(
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
         Log.d("MapLibrePoiScreen", "onSurfaceDestroyed")
-        stopHeadingUpdates()
         visibleAreaCameraJob?.cancel()
         mapRenderer?.detachSurface()
     }
@@ -798,8 +804,9 @@ class MapLibrePoiScreen(
 
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
         registerSurfaceCallback()
-        // Returning from station detail: show all filtered pins again.
+        // Returning from station detail: show all filtered pins and resume follow.
         mapSelectedPoi = null
+        startHeadingUpdates()
         syncRendererWithMapState()
     }
 
@@ -812,6 +819,9 @@ class MapLibrePoiScreen(
         zoom = (zoom + delta).coerceIn(AutoMapCamera.MIN_ZOOM, AutoMapCamera.MAX_ZOOM)
         lastAppliedZoom = zoom
         mapRenderer?.updateLocation(searchLat, searchLon, zoom)
+        if (headingUpdateJob?.isActive != true) {
+            startHeadingUpdates()
+        }
         if (zoom < prevZoom) {
             // Wider visible boundary — re-query stations for the new map diameter.
             loadPois(preserveZoom = true, showLoading = false)
