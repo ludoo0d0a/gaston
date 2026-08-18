@@ -73,7 +73,7 @@ class PoiDetailScreen(
         logTag = "PoiDetailScreen",
         templateName = "ListTemplate",
     ) {
-        val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
+        val title = AutoPoiUiHelper.poiDisplayName(poi)
 
         val currentSettings = settingsManager.settings.value
         val resolvedEnergyTypes = if (effectiveEnergyTypes.isNotEmpty()) effectiveEnergyTypes else currentSettings.effectiveMapEnergyFilterIds()
@@ -184,7 +184,7 @@ class PoiDetailScreen(
             }
         )
 
-        val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
+        val title = AutoPoiUiHelper.poiDisplayName(poi)
 
         screenManager.push(
             object : Screen(carContext) {

@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.datagouv
 
+import fr.geoking.gaston.poi.genericStationName
 import io.ktor.client.HttpClient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -133,7 +134,7 @@ class DataGouvClientTest {
 
         val station = client.parseStationFromRecord(record)
         assertNotNull(station)
-        assertEquals("Station Lyon", station.name)
+        assertEquals(genericStationName("Lyon"), station.name)
     }
 
     @Test
@@ -149,6 +150,6 @@ class DataGouvClientTest {
 
         val station = client.parseStationFromRecord(record)
         assertNotNull(station)
-        assertEquals("Station", station.name)
+        assertEquals(genericStationName(), station.name)
     }
 }

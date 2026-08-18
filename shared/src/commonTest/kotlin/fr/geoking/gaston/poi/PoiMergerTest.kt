@@ -311,6 +311,19 @@ class PoiMergerTest {
     }
 
     @Test
+    fun mergePois_prefersSpecificNameOverStationCity() {
+        val lat = 48.8566
+        val lon = 2.3522
+
+        val p1 = Poi("1", "Station Paris", "Address 1", lat, lon)
+        val p2 = Poi("2", "Total Paris", "Address 1", lat + 0.0001, lon)
+
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(1, merged.size)
+        assertEquals("Total Paris", merged[0].name)
+    }
+
+    @Test
     fun hasNoBrand_identifiesGenericAndEmptyBrands() {
         val gasNoBrand1 = Poi("1", "Station", "Address", 48.85, 2.35, brand = null, poiCategory = PoiCategory.Gas)
         val gasNoBrand2 = Poi("2", "Station", "Address", 48.85, 2.35, brand = "Sans Enseigne", poiCategory = PoiCategory.Gas)
@@ -332,6 +345,7 @@ class PoiMergerTest {
 
         // ~100m away (0.0009 lat)
         val stationNear = Poi("gas-near", "Gazole Station", "Address", lat, lon, brand = null, poiCategory = PoiCategory.Gas)
+        val stationGeneric = Poi("gas-generic", "Station Paris", "Address", lat, lon, brand = null, poiCategory = PoiCategory.Gas)
         // ~2220m away (0.02 lat) — beyond SUPERMARKET_BRAND_ENRICH_METERS (600m)
         val stationFar = Poi("gas-far", "Gazole Station 2", "Address", lat + 0.02, lon, brand = "sans enseigne", poiCategory = PoiCategory.Gas)
         // Already branded
@@ -341,19 +355,54 @@ class PoiMergerTest {
         val supermarket2 = Poi("market-2", "E.Leclerc", "Address", lat + 0.005, lon, brand = null, poiCategory = PoiCategory.Supermarket)
 
         val enriched = PoiMerger.enrichBrandsFromSupermarkets(
-            pois = listOf(stationNear, stationFar, stationBranded),
+            pois = listOf(stationNear, stationGeneric, stationFar, stationBranded),
             supermarkets = listOf(supermarket1, supermarket2)
         )
 
-        assertEquals(3, enriched.size)
+        assertEquals(4, enriched.size)
 
         val enrichedNear = enriched.find { it.id == "gas-near" }!!
         assertEquals("Auchan", enrichedNear.brand, "Should enrich brand from near supermarket")
+        assertEquals("Gazole Station", enrichedNear.name, "Should not overwrite a specific name")
+
+        val enrichedGeneric = enriched.find { it.id == "gas-generic" }!!
+        assertEquals("Auchan", enrichedGeneric.brand)
+        assertEquals("Auchan", enrichedGeneric.name, "Generic Station Paris title should become Auchan")
 
         val enrichedFar = enriched.find { it.id == "gas-far" }!!
         assertEquals("sans enseigne", enrichedFar.brand, "Should NOT enrich brand from far supermarket (>600m)")
 
         val enrichedBranded = enriched.find { it.id == "gas-branded" }!!
         assertEquals("Esso", enrichedBranded.brand, "Should NOT overwrite already branded station")
+    }
+
+    @Test
+    fun enrichBrandsFromSupermarkets_replacesGenericSiteName() {
+        val lat = 48.85
+        val lon = 2.35
+        val station = Poi(
+            id = "gas-site",
+            name = "Station",
+            address = "Address",
+            latitude = lat,
+            longitude = lon,
+            brand = null,
+            poiCategory = PoiCategory.Gas,
+            siteName = "Station Lyon",
+        )
+        val supermarket = Poi(
+            id = "market",
+            name = "Carrefour",
+            address = "Address",
+            latitude = lat + 0.0009,
+            longitude = lon,
+            brand = "Carrefour",
+            poiCategory = PoiCategory.Supermarket,
+        )
+
+        val enriched = PoiMerger.enrichBrandsFromSupermarkets(listOf(station), listOf(supermarket)).single()
+        assertEquals("Carrefour", enriched.brand)
+        assertEquals("Carrefour", enriched.name)
+        assertEquals("Carrefour", enriched.siteName)
     }
 }

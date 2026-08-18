@@ -2,6 +2,7 @@ package fr.geoking.gaston.api.datagouv
 
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiSearchRequest
+import fr.geoking.gaston.poi.genericStationName
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -61,7 +62,7 @@ class DataGouvSemecourtTest {
         assertEquals(1, pois.size, "Should merge records with same ID")
         val poi = pois[0]
         assertEquals("57280001", poi.id)
-        assertEquals("Station SEMéCOURT", poi.name)
+        assertEquals(genericStationName("SEMéCOURT"), poi.name)
         assertEquals("VOIE ROMAINE, 57280, SEMéCOURT", poi.address)
         val prices = poi.fuelPrices
         assertNotNull(prices)

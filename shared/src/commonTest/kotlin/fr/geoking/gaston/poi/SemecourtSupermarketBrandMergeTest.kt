@@ -44,6 +44,7 @@ class SemecourtSupermarketBrandMergeTest {
 
         assertEquals(1, enriched.size)
         assertEquals("Auchan", enriched.single().brand)
+        assertEquals("Auchan", enriched.single().name)
         assertEquals(SEMECOURT_STATION_ID, enriched.single().id)
     }
 
@@ -85,8 +86,10 @@ class SemecourtSupermarketBrandMergeTest {
         val semecourt = byId[SEMECOURT_STATION_ID]
         assertNotNull(semecourt)
         assertEquals("Auchan", semecourt.brand, "Semécourt station should get Auchan from nearby supermarket")
+        assertEquals("Auchan", semecourt.name, "Generic Station SEMéCOURT title should become Auchan")
 
         assertEquals("Esso", byId.getValue("branded-esso").brand)
+        assertEquals("Esso Semécourt Nord", byId.getValue("branded-esso").name)
 
         // Stations far from Auchan keep their original brand (null / Independant).
         stations.filter { it.id != SEMECOURT_STATION_ID }.forEach { original ->

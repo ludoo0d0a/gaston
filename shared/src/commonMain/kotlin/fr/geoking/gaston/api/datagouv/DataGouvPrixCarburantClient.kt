@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.datagouv
 
+import fr.geoking.gaston.poi.genericStationName
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -104,12 +105,12 @@ class DataGouvPrixCarburantClient(
         val name = record["nom"]?.jsonPrimitive?.contentOrNull?.trim()
             ?: record["name"]?.jsonPrimitive?.contentOrNull?.trim()
             ?: brand
-            ?: if (ville.isNotBlank()) "Station $ville" else "Station"
+            ?: genericStationName(ville.takeIf { it.isNotBlank() })
         val fuels = parseFuels(record)
         val isOnHighway = pop == "A"
         return DataGouvPrixCarburantStation(
             id = id,
-            name = name.ifBlank { if (ville.isNotBlank()) "Station $ville" else "Station" },
+            name = name.ifBlank { genericStationName(ville.takeIf { it.isNotBlank() }) },
             address = address.ifBlank { "$cp $ville" },
             latitude = lat,
             longitude = lng,

@@ -16,9 +16,13 @@ import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.R
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.poi.BrandRegistry
 import fr.geoking.gaston.poi.FuelPrice
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.genericStationCity
+import fr.geoking.gaston.poi.genericStationName
+import fr.geoking.gaston.poi.isGenericStationName
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.map.MarkerStyle
@@ -29,8 +33,16 @@ import fr.geoking.gaston.shared.datetime.DateTimeUtils
  */
 object AutoPoiUiHelper {
 
-    fun poiDisplayName(poi: Poi): String =
-        poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
+    fun poiDisplayName(poi: Poi): String {
+        val raw = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name
+        if (!isGenericStationName(raw) && raw.isNotBlank()) {
+            return raw
+        }
+        val brand = BrandRegistry.findBrand(raw, poi.brand)
+            ?: BrandRegistry.findBrand(poi.name, poi.brand)
+        if (!brand.isNullOrBlank()) return brand
+        return genericStationName(genericStationCity(raw)).ifBlank { "POI" }
+    }
 
     fun poiDetailTitle(poi: Poi): String {
         val name = poiDisplayName(poi)
@@ -412,7 +424,7 @@ object AutoPoiUiHelper {
         val sb = StringBuilder()
 
         // Headline: brand · distance · best-price/power label
-        val title = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name.ifBlank { "POI" }
+        val title = poiDisplayName(poi)
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
         val headlineParts = mutableListOf<String>()
         brandInfo?.displayName?.takeIf { it.isNotBlank() && it != title }?.let { headlineParts.add(it) }

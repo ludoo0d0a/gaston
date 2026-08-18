@@ -273,9 +273,10 @@ object PoiMerger {
         val currLower = current.lowercase()
 
         // 1. Generic labels to avoid
-        val generic = setOf("station", "route", "autoroute")
-        if (currLower in generic && candLower !in generic) return true
-        if (candLower in generic && currLower !in generic) return false
+        val candGeneric = isGenericStationName(candidate) || candLower == "route" || candLower == "autoroute"
+        val currGeneric = isGenericStationName(current) || currLower == "route" || currLower == "autoroute"
+        if (currGeneric && !candGeneric) return true
+        if (candGeneric && !currGeneric) return false
 
         // 2. Brand presence: Prefer names that contain a known brand
         val brandCand = BrandRegistry.findBrand(candidate, null)
@@ -499,7 +500,15 @@ object PoiMerger {
                     val brandName = closestSupermarket.brand?.takeIf { it.isNotBlank() }
                         ?: closestSupermarket.name.takeIf { it.isNotBlank() }
                     if (brandName != null) {
-                        poi.copy(brand = brandName)
+                        poi.copy(
+                            brand = brandName,
+                            name = if (isGenericStationName(poi.name)) brandName else poi.name,
+                            siteName = when {
+                                poi.siteName.isNullOrBlank() -> poi.siteName
+                                isGenericStationName(poi.siteName) -> brandName
+                                else -> poi.siteName
+                            },
+                        )
                     } else {
                         poi
                     }

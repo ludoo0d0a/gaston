@@ -32,6 +32,7 @@ import fr.geoking.gaston.poi.FuelPrice
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.isGenericStationName
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.ColorHelper
 import kotlin.math.roundToInt
@@ -52,10 +53,7 @@ fun PoiDetailCard(
     modifier: Modifier = Modifier
 ) {
     val rawSiteName = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name
-    val isGenericName = rawSiteName.isBlank() ||
-        rawSiteName.equals("Gas station", ignoreCase = true) ||
-        rawSiteName.equals("Station", ignoreCase = true) ||
-        rawSiteName.equals(stringResource(R.string.gas_station), ignoreCase = true)
+    val isGenericName = isGenericStationName(rawSiteName)
     val brandInfo = BrandHelper.getBrandInfo(poi.brand)
     val locationSummary = buildList {
         listOf(poi.townLocal, poi.postcode).filter { !it.isNullOrBlank() }.joinToString(", ").takeIf { it.isNotBlank() }?.let { add(it) }
