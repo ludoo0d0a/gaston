@@ -245,7 +245,14 @@ class MapLibrePoiScreen(
         return if (isCheapestFilterActive) {
             val fuelIds = currentSettings.effectiveMapEnergyFilterIds() - "electric"
             val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
-            MapPoiFilter.filterCheapest(visiblePois, fuelIds, isLuxembourg)
+            MapPoiFilter.filterCheapest(
+                pois = visiblePois,
+                selectedFuelIds = fuelIds,
+                isLuxembourg = isLuxembourg,
+                fromLat = searchLat,
+                fromLon = searchLon,
+                limit = MapPoiFilter.CAR_CHEAPEST_COUNT,
+            )
         } else {
             visiblePois
         }

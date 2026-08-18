@@ -101,7 +101,14 @@ class NativeMapPoiScreen(
         return if (isCheapestFilterActive) {
             val fuelIds = currentSettings.effectiveMapEnergyFilterIds() - "electric"
             val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
-            MapPoiFilter.filterCheapest(basePois, fuelIds, isLuxembourg)
+            MapPoiFilter.filterCheapest(
+                pois = basePois,
+                selectedFuelIds = fuelIds,
+                isLuxembourg = isLuxembourg,
+                fromLat = searchLat,
+                fromLon = searchLon,
+                limit = MapPoiFilter.CAR_CHEAPEST_COUNT,
+            )
         } else {
             basePois
         }
@@ -227,9 +234,7 @@ class NativeMapPoiScreen(
                             isCheapestFilterActive = true
                             sortByPrice = true
                             invalidate()
-                            val fuelIds = effectiveEnergies - "electric"
-                            val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
-                            val cheapestCount = MapPoiFilter.filterCheapest(pois, fuelIds, isLuxembourg).size
+                            val cheapestCount = getFilteredPois(currentSettings).size
                             carContext.getCarService(androidx.car.app.AppManager::class.java)
                                 .showToast(carContext.getString(R.string.cheapest_stations_toast, cheapestCount), CarToast.LENGTH_SHORT)
                         }

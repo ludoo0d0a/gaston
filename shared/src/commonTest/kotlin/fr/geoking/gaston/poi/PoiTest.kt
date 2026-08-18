@@ -108,4 +108,83 @@ class PoiTest {
         assertEquals(PoiCategory.Supermarket, PoiCategory.fromOsmTags(mapOf("shop" to "supermarket")))
         assertEquals(PoiCategory.Supermarket, PoiCategory.fromOsmTags(mapOf("shop" to "convenience")))
     }
+
+    @Test
+    fun filterCheapest_withLocation_keepsThreeCheapest() {
+        val originLat = 48.8566
+        val originLon = 2.3522
+        val pois = listOf(
+            pricedPoi("expensive-near", originLat + 0.01, originLon, 2.00),
+            pricedPoi("cheap-far", originLat + 0.20, originLon, 1.40),
+            pricedPoi("mid-1", originLat + 0.05, originLon, 1.50),
+            pricedPoi("mid-2", originLat + 0.06, originLon, 1.55),
+            pricedPoi("cheap-2", originLat + 0.08, originLon, 1.45),
+            pricedPoi("unpriced", originLat, originLon, price = null),
+        )
+
+        val result = MapPoiFilter.filterCheapest(
+            pois = pois,
+            selectedFuelIds = setOf("gazole"),
+            isLuxembourg = false,
+            fromLat = originLat,
+            fromLon = originLon,
+            limit = MapPoiFilter.CAR_CHEAPEST_COUNT,
+        )
+
+        assertEquals(listOf("cheap-far", "cheap-2", "mid-1"), result.map { it.id })
+    }
+
+    @Test
+    fun filterCheapest_withLocation_breaksPriceTiesByDistance() {
+        val originLat = 48.8566
+        val originLon = 2.3522
+        val pois = listOf(
+            pricedPoi("same-far", originLat + 0.20, originLon, 1.50),
+            pricedPoi("same-closest", originLat + 0.01, originLon, 1.50),
+            pricedPoi("same-mid", originLat + 0.05, originLon, 1.50),
+            pricedPoi("same-farther", originLat + 0.10, originLon, 1.50),
+        )
+
+        val result = MapPoiFilter.filterCheapest(
+            pois = pois,
+            selectedFuelIds = setOf("gazole"),
+            isLuxembourg = true,
+            fromLat = originLat,
+            fromLon = originLon,
+            limit = MapPoiFilter.CAR_CHEAPEST_COUNT,
+        )
+
+        assertEquals(listOf("same-closest", "same-mid", "same-farther"), result.map { it.id })
+    }
+
+    @Test
+    fun filterCheapest_withoutLocation_keepsTiesAtCutoff() {
+        val pois = listOf(
+            pricedPoi("p1", 0.0, 0.0, 1.10),
+            pricedPoi("p2", 0.0, 0.0, 1.20),
+            pricedPoi("p3", 0.0, 0.0, 1.30),
+            pricedPoi("p4", 0.0, 0.0, 1.40),
+            pricedPoi("p5", 0.0, 0.0, 1.50),
+            pricedPoi("p6-tie", 0.0, 0.0, 1.50),
+            pricedPoi("p7", 0.0, 0.0, 1.60),
+        )
+
+        val result = MapPoiFilter.filterCheapest(
+            pois = pois,
+            selectedFuelIds = setOf("gazole"),
+            isLuxembourg = false,
+        )
+
+        assertEquals(listOf("p1", "p2", "p3", "p4", "p5", "p6-tie"), result.map { it.id })
+    }
+
+    private fun pricedPoi(id: String, lat: Double, lon: Double, price: Double?): Poi = Poi(
+        id = id,
+        name = id,
+        address = "Address",
+        latitude = lat,
+        longitude = lon,
+        isElectric = false,
+        fuelPrices = price?.let { listOf(FuelPrice("Gazole", it)) },
+    )
 }

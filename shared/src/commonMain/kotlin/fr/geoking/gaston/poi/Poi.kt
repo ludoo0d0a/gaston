@@ -418,6 +418,12 @@ data class PoiProviderError(
  * Aligned with [prix-carburants.gouv.fr](https://www.prix-carburants.gouv.fr/) fuel list.
  */
 object MapPoiFilter {
+    /** Phone cheapest-filter size; ties at the cutoff are kept. */
+    const val CHEAPEST_COUNT = 5
+
+    /** Android Auto cheapest-filter size; equal prices broken by distance. */
+    const val CAR_CHEAPEST_COUNT = 3
+
     /** Normalize API fuel name to a filter id (gazole, sp98, sp95, sp95_e10, gplc, e85). Returns null if unknown. */
     fun fuelNameToId(fuelName: String): String? {
         val n = fuelName.trim().lowercase()
@@ -504,32 +510,57 @@ object MapPoiFilter {
         }
 
     /**
-     * Filters [pois] to only include the cheapest stations based on [selectedFuelIds].
-     * Includes ties (e.g. if the 5th and 6th cheapest have the same price, both are included).
-     * In Luxembourg, all stations with prices are returned if [isLuxembourg] is true.
+     * Filters [pois] to the cheapest stations for [selectedFuelIds].
+     *
+     * Phone (no location): at least [limit] cheapest, including price ties at the cutoff.
+     * Luxembourg without a location returns every priced station (regulated prices).
+     *
+     * With [fromLat]/[fromLon] (Android Auto): exactly [limit] stations, cheapest first,
+     * equal prices broken by distance (closest first). Luxembourg is treated the same —
+     * identical prices yield the closest stations.
      */
     fun filterCheapest(
         pois: List<Poi>,
         selectedFuelIds: Set<String>,
-        isLuxembourg: Boolean
+        isLuxembourg: Boolean,
+        fromLat: Double? = null,
+        fromLon: Double? = null,
+        limit: Int = CHEAPEST_COUNT,
     ): List<Poi> {
+        val originLat = fromLat
+        val originLon = fromLon
         val pricedPois = pois.mapNotNull { poi ->
             val minPrice = poi.fuelPrices?.filter { !it.outOfStock && fuelNameToId(it.fuelName) in selectedFuelIds }
-                ?.minOfOrNull { it.price }
-            if (minPrice != null) Pair(poi, minPrice) else null
-        }.sortedBy { it.second }
+                ?.minOfOrNull { it.price } ?: return@mapNotNull null
+            val distanceKm = if (originLat != null && originLon != null) {
+                approxDistanceKm(originLat, originLon, poi.latitude, poi.longitude)
+            } else {
+                0.0
+            }
+            Triple(poi, minPrice, distanceKm)
+        }
 
         if (pricedPois.isEmpty()) return emptyList()
 
-        if (isLuxembourg) {
-            return pricedPois.map { it.first }
+        val hasLocation = originLat != null && originLon != null
+        val sorted = if (hasLocation) {
+            pricedPois.sortedWith(compareBy({ it.second }, { it.third }))
+        } else {
+            pricedPois.sortedBy { it.second }
         }
 
-        // We want at least top 5 stations, but including all ties for the 5th price.
-        if (pricedPois.size <= 5) return pricedPois.map { it.first }
+        if (hasLocation) {
+            return sorted.take(limit.coerceAtLeast(1)).map { it.first }
+        }
 
-        val maxPrice = pricedPois[4].second
-        return pricedPois.filter { it.second <= maxPrice }.map { it.first }
+        if (isLuxembourg) {
+            return sorted.map { it.first }
+        }
+
+        if (sorted.size <= limit) return sorted.map { it.first }
+
+        val maxPrice = sorted[limit - 1].second
+        return sorted.filter { it.second <= maxPrice }.map { it.first }
     }
 
     /**
