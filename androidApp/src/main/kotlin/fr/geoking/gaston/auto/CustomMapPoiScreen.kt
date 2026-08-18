@@ -871,23 +871,20 @@ class CustomMapPoiScreen(
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
             actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionCheapestIcon(isCheapestFilterActive))
-                    .setOnClickListener {
-                        if (isCheapestFilterActive) {
-                            isCheapestFilterActive = false
-                            sortByPrice = false
-                        } else {
-                            isCheapestFilterActive = true
-                            sortByPrice = true
-                            val filtered = getFilteredPois(currentSettings)
-                            carContext.getCarService(AppManager::class.java)
-                                .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
-                        }
-                        syncRendererWithMapState()
-                        invalidate()
+                carContext.cheapestFilterAction(isCheapestFilterActive) {
+                    if (isCheapestFilterActive) {
+                        isCheapestFilterActive = false
+                        sortByPrice = false
+                    } else {
+                        isCheapestFilterActive = true
+                        sortByPrice = true
+                        val filtered = getFilteredPois(currentSettings)
+                        carContext.getCarService(AppManager::class.java)
+                            .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
                     }
-                    .build()
+                    syncRendererWithMapState()
+                    invalidate()
+                }
             )
         }
         val actionStrip = actionStripBuilder.build()

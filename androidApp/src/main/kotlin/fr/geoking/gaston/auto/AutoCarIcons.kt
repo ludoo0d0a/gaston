@@ -21,6 +21,8 @@ object AutoCarIcons {
     private const val PRIMARY_DARK = 0xFF93C5FD.toInt()
     private const val FUEL_LIGHT = 0xFFEAB308.toInt()
     private const val FUEL_DARK = 0xFFFACC15.toInt()
+    private const val ON_FUEL_LIGHT = 0xFF422006.toInt()
+    private const val ON_FUEL_DARK = 0xFF1C1917.toInt()
     private const val EV_LIGHT = 0xFF22C55E.toInt()
     private const val EV_DARK = 0xFF4ADE80.toInt()
     private const val EMERGENCY_LIGHT = 0xFFEF4444.toInt()
@@ -47,6 +49,7 @@ object AutoCarIcons {
 
     val primary: CarColor = CarColor.createCustom(PRIMARY_LIGHT, PRIMARY_DARK)
     val fuel: CarColor = CarColor.createCustom(FUEL_LIGHT, FUEL_DARK)
+    val onFuel: CarColor = CarColor.createCustom(ON_FUEL_LIGHT, ON_FUEL_DARK)
     val ev: CarColor = CarColor.createCustom(EV_LIGHT, EV_DARK)
     val emergency: CarColor = CarColor.createCustom(EMERGENCY_LIGHT, EMERGENCY_DARK)
     val muted: CarColor = CarColor.createCustom(MUTED_LIGHT, MUTED_DARK)
@@ -167,7 +170,20 @@ fun CarContext.actionHistoryIcon(): CarIcon = carIcon(R.drawable.ic_history, Aut
 fun CarContext.actionRefreshIcon(): CarIcon = carIcon(R.drawable.ic_refresh, AutoCarIcons.primary)
 
 fun CarContext.actionCheapestIcon(active: Boolean): CarIcon =
-    carIcon(R.drawable.ic_cheapest_price, if (active) AutoCarIcons.fuel else AutoCarIcons.primary)
+    carIcon(R.drawable.ic_cheapest_price, if (active) AutoCarIcons.onFuel else AutoCarIcons.primary)
+
+/** Icon-only cheapest-price toggle. Active uses [Action.FLAG_PRIMARY] so the strip background tints. */
+fun CarContext.cheapestFilterAction(active: Boolean, onToggle: () -> Unit): Action {
+    val builder = Action.Builder()
+        .setIcon(actionCheapestIcon(active))
+        .setOnClickListener(onToggle)
+    if (active) {
+        builder
+            .setFlags(Action.FLAG_PRIMARY)
+            .setBackgroundColor(AutoCarIcons.fuel)
+    }
+    return builder.build()
+}
 
 fun CarContext.emergencyCategoryIcon(category: EmergencyCategory): CarIcon = when (category) {
     EmergencyCategory.GENERAL -> carIcon(R.drawable.ic_sos, AutoCarIcons.emergency)

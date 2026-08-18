@@ -224,23 +224,20 @@ class NativeMapPoiScreen(
         val fuelIdsForFilter = effectiveEnergies - "electric"
         if (hasFuelFilter && (isCheapestFilterActive || pois.any { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForFilter } == true })) {
             actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionCheapestIcon(isCheapestFilterActive))
-                    .setOnClickListener {
-                        if (isCheapestFilterActive) {
-                            isCheapestFilterActive = false
-                            sortByPrice = false
-                        } else {
-                            isCheapestFilterActive = true
-                            sortByPrice = true
-                            invalidate()
-                            val cheapestCount = getFilteredPois(currentSettings).size
-                            carContext.getCarService(androidx.car.app.AppManager::class.java)
-                                .showToast(carContext.getString(R.string.cheapest_stations_toast, cheapestCount), CarToast.LENGTH_SHORT)
-                        }
+                carContext.cheapestFilterAction(isCheapestFilterActive) {
+                    if (isCheapestFilterActive) {
+                        isCheapestFilterActive = false
+                        sortByPrice = false
+                    } else {
+                        isCheapestFilterActive = true
+                        sortByPrice = true
                         invalidate()
+                        val cheapestCount = getFilteredPois(currentSettings).size
+                        carContext.getCarService(androidx.car.app.AppManager::class.java)
+                            .showToast(carContext.getString(R.string.cheapest_stations_toast, cheapestCount), CarToast.LENGTH_SHORT)
                     }
-                    .build()
+                    invalidate()
+                }
             )
         }
         val actionStrip = actionStripBuilder.build()
