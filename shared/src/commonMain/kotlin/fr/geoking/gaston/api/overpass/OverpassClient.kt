@@ -3,11 +3,10 @@ package fr.geoking.gaston.api.overpass
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.submitForm
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
+import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
 import io.ktor.http.Parameters
-import io.ktor.http.contentType
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
@@ -19,6 +18,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.cos
 import kotlin.math.PI
+
+internal const val OVERPASS_USER_AGENT = "gaston-App (contact@geoking.fr)"
 
 /**
  * Client for the [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API) (OpenStreetMap).
@@ -90,20 +91,7 @@ open class OverpassClient(
             );
             out body qt ${limit.coerceIn(1, 500)};
         """.trimIndent()
-
-        val response = mutex.withLock {
-            client.submitForm(
-                url = baseUrl,
-                formParameters = Parameters.build {
-                    append("data", query)
-                }
-            )
-        }
-        val body = response.bodyAsText()
-        if (response.status.value != 200) {
-            throw NetworkException(response.status.value, "Overpass API error: ${body.take(500)}")
-        }
-        return parseElements(body, nodesOnly = true)
+        return parseElements(executeQuery(query), nodesOnly = true)
     }
 
     /**
@@ -144,20 +132,30 @@ open class OverpassClient(
             );
             out center qt ${limit.coerceIn(1, 500)};
         """.trimIndent()
+        return parseElements(executeQuery(query), nodesOnly = false)
+    }
 
+    /**
+     * Public Overpass instances reject generic OkHttp/Ktor User-Agents with HTTP 406
+     * (Apache "Not Acceptable"). Identify the app like Nominatim requests.
+     */
+    private suspend fun executeQuery(query: String): String {
         val response = mutex.withLock {
             client.submitForm(
                 url = baseUrl,
                 formParameters = Parameters.build {
                     append("data", query)
                 }
-            )
+            ) {
+                header(HttpHeaders.UserAgent, OVERPASS_USER_AGENT)
+                header(HttpHeaders.Accept, "*/*")
+            }
         }
         val body = response.bodyAsText()
         if (response.status.value != 200) {
             throw NetworkException(response.status.value, "Overpass API error: ${body.take(500)}")
         }
-        return parseElements(body, nodesOnly = false)
+        return body
     }
 
     private fun parseElements(body: String, nodesOnly: Boolean = true): List<OverpassElement> {
