@@ -150,7 +150,10 @@ class CustomMapPoiScreen(
                 favoritesRepo = favoritesRepo,
                 onDisposed = {
                     mapSelectedPoi = null
+                    lastAppliedSearchLat = Double.NaN
+                    lastAppliedSearchLon = Double.NaN
                     syncRendererWithMapState()
+                    invalidate()
                 }
             )
         )
@@ -815,8 +818,11 @@ class CustomMapPoiScreen(
         registerSurfaceCallback()
         // Returning from station detail: show all filtered pins and resume follow.
         mapSelectedPoi = null
+        lastAppliedSearchLat = Double.NaN
+        lastAppliedSearchLon = Double.NaN
         startHeadingUpdates()
         syncRendererWithMapState()
+        invalidate()
     }
 
     override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {

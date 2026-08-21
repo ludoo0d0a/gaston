@@ -152,7 +152,10 @@ class MapLibrePoiScreen(
                 favoritesRepo = favoritesRepo,
                 onDisposed = {
                     mapSelectedPoi = null
+                    lastAppliedSearchLat = Double.NaN
+                    lastAppliedSearchLon = Double.NaN
                     syncRendererWithMapState()
+                    invalidate()
                 }
             )
         )
@@ -757,7 +760,6 @@ class MapLibrePoiScreen(
         syncRendererWithMapState()
         registerSurfaceCallback()
         renderer.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
-        renderer.setStyleUrl(resolveAutoMapStyleUrl(settingsManager.settings.value, carContext))
     }
 
     override fun onVisibleAreaChanged(visibleArea: Rect) {
@@ -813,8 +815,11 @@ class MapLibrePoiScreen(
         registerSurfaceCallback()
         // Returning from station detail: show all filtered pins and resume follow.
         mapSelectedPoi = null
+        lastAppliedSearchLat = Double.NaN
+        lastAppliedSearchLon = Double.NaN
         startHeadingUpdates()
         syncRendererWithMapState()
+        invalidate()
     }
 
     override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
