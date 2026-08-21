@@ -726,6 +726,8 @@
     <string name="dev_debug_grid_subtitle">Afficher la grille de débogage des tuiles sur la carte</string>
     <string name="dev_test_aa_map_surface_subtitle">Émuler la carte Android Auto sur votre téléphone</string>
     <string name="dev_disable_cache_subtitle">Contourner le cache local des POI</string>
+    <string name="dev_dynamic_irve">IRVE dynamique (QualiCharge)</string>
+    <string name="dev_dynamic_irve_subtitle">Disponibilité temps réel expérimentale des bornes en France (hors Paris). Télécharge de gros CSV.</string>
     <string name="dashboard_auto_debug">Débogage Auto</string>
     <string name="dashboard_auto_debug_subtitle">Tester la surface de carte AA</string>
     <string name="auto_debug_title">Débogage surface carte AA</string>
