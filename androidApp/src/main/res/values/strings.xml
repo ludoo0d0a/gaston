@@ -726,6 +726,8 @@
     <string name="dev_debug_grid_subtitle">Draw debugging tile boundaries grid on map</string>
     <string name="dev_test_aa_map_surface_subtitle">Emulate the Android Auto map on your mobile device</string>
     <string name="dev_disable_cache_subtitle">Bypass on-device caching of POI data</string>
+    <string name="dev_dynamic_irve">IRVE dynamique (QualiCharge)</string>
+    <string name="dev_dynamic_irve_subtitle">Experimental real-time EV availability in France (outside Paris). Downloads large CSV feeds.</string>
     <string name="dashboard_auto_debug">Auto Debug</string>
     <string name="dashboard_auto_debug_subtitle">Test AA Map Surface</string>
     <string name="auto_debug_title">AA Map Surface Debug</string>
