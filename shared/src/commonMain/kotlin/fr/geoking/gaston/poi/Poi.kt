@@ -234,7 +234,9 @@ data class IrveDetails(
     /** Real-time availability: number of free connectors. */
     val availableConnectors: Int? = null,
     /** Real-time availability: total number of connectors. */
-    val totalConnectors: Int? = null
+    val totalConnectors: Int? = null,
+    /** PDC itinerance ids at this station (e.g. DataGouv `id_pdc_itinerance`), for availability matching. */
+    val pdcIds: Set<String> = emptySet()
 )
 
 /**
