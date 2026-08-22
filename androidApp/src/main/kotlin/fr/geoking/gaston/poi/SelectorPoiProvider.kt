@@ -97,6 +97,9 @@ class SelectorPoiProvider(
     private val cachedPois = mutableMapOf<String, Poi>()
     private val poiSeenAtMs = mutableMapOf<String, Long>()
     private val loadedRegions = mutableListOf<LoadedPoiRegion>()
+    /** Overpass supermarchés fetched only for brand enrich — never shown unless amenity is on. */
+    private val supermarketEnrichCache = mutableMapOf<String, Poi>()
+    private val supermarketEnrichRegions = mutableListOf<LoadedPoiRegion>()
     private var lastCacheKey: String? = null
     private var lastCleanupAtMs: Long = 0
     private val cacheLock = Any()
@@ -462,10 +465,13 @@ class SelectorPoiProvider(
                 emptyList()
             }
 
-            if (dbPois.isNotEmpty()) {
+            val dbPoisForDisplay = dbPois.filter { (poi, _) ->
+                poi.poiCategory != PoiCategory.Supermarket || PoiCategory.Supermarket in categoriesToFetch
+            }
+            if (dbPoisForDisplay.isNotEmpty()) {
                 val dbResultPois = synchronized(cacheLock) {
-                    PoiMerger.mergeInto(cachedPois, dbPois.map { it.first })
-                    dbPois.forEach { (poi, seenAt) -> poiSeenAtMs[poi.id] = seenAt }
+                    PoiMerger.mergeInto(cachedPois, dbPoisForDisplay.map { it.first })
+                    dbPoisForDisplay.forEach { (poi, seenAt) -> poiSeenAtMs[poi.id] = seenAt }
                     cachedPois.values.toList()
                 }
                 traceProvider(
@@ -734,9 +740,14 @@ class SelectorPoiProvider(
         }
 
         if (dbPois.isNotEmpty()) {
-            synchronized(cacheLock) {
-                PoiMerger.mergeInto(cachedPois, dbPois.map { it.first })
-                dbPois.forEach { (poi, seenAt) -> poiSeenAtMs[poi.id] = seenAt }
+            val dbPoisForDisplay = dbPois.filter { (poi, _) ->
+                poi.poiCategory != PoiCategory.Supermarket || PoiCategory.Supermarket in categoriesToFetch
+            }
+            if (dbPoisForDisplay.isNotEmpty()) {
+                synchronized(cacheLock) {
+                    PoiMerger.mergeInto(cachedPois, dbPoisForDisplay.map { it.first })
+                    dbPoisForDisplay.forEach { (poi, seenAt) -> poiSeenAtMs[poi.id] = seenAt }
+                }
             }
         }
 
@@ -859,6 +870,8 @@ class SelectorPoiProvider(
             loadedRegions.clear()
             cachedPois.clear()
             poiSeenAtMs.clear()
+            supermarketEnrichCache.clear()
+            supermarketEnrichRegions.clear()
             lastCacheKey = null
         }
 
@@ -1161,7 +1174,7 @@ class SelectorPoiProvider(
 
         val coverage = synchronized(cacheLock) {
             computePoiCoverage(
-                regions = loadedRegions,
+                regions = supermarketEnrichRegions,
                 centerLat = latitude,
                 centerLng = longitude,
                 requiredRadiusKm = radiusKm,
@@ -1171,33 +1184,11 @@ class SelectorPoiProvider(
             )
         }
 
-        val memorySupermarkets = synchronized(cacheLock) {
-            cachedPois.values.filter {
-                it.poiCategory == PoiCategory.Supermarket &&
-                it.latitude in latMin..latMax &&
-                it.longitude in lonMin..lonMax
+        var supermarkets = synchronized(cacheLock) {
+            supermarketEnrichCache.values.filter {
+                it.latitude in latMin..latMax && it.longitude in lonMin..lonMax
             }
         }
-
-        val dbSupermarkets = try {
-            poiCacheDao.getPoisInRegion(
-                latMin = latMin,
-                latMax = latMax,
-                lonMin = lonMin,
-                lonMax = lonMax,
-                minUpdatedAtMs = nowMs - POI_CACHE_DISK_RETENTION_MS
-            ).mapNotNull { entity ->
-                try {
-                    json.decodeFromString<Poi>(entity.poiJson)
-                } catch (e: Exception) {
-                    null
-                }
-            }.filter { it.poiCategory == PoiCategory.Supermarket }
-        } catch (e: Exception) {
-            emptyList()
-        }
-
-        var supermarkets = (memorySupermarkets + dbSupermarkets).distinctBy { it.id }
 
         if (!coverage.fullyCovered || supermarkets.isEmpty()) {
             val fetchedSupermarkets = try {
@@ -1214,40 +1205,39 @@ class SelectorPoiProvider(
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 Log.e("SelectorPoiProvider", "Failed to fetch supermarkets from Overpass", e)
                 emptyList()
-            }
+            }.filter { it.poiCategory == PoiCategory.Supermarket }
 
             if (fetchedSupermarkets.isNotEmpty()) {
                 synchronized(cacheLock) {
-                    PoiMerger.mergeInto(cachedPois, fetchedSupermarkets)
-                    fetchedSupermarkets.forEach { poiSeenAtMs[it.id] = nowMs }
-                    recordLoadedRegion(
+                    fetchedSupermarkets.forEach { supermarketEnrichCache[it.id] = it }
+                    val covering = findCoveringRegion(
+                        supermarketEnrichRegions,
+                        latitude,
+                        longitude,
+                        radiusKm,
+                    )
+                    val updated = mergeLoadedRegion(
+                        existing = covering,
                         centerLat = latitude,
                         centerLng = longitude,
                         requiredRadiusKm = radiusKm,
                         loadedAtMs = nowMs,
                         fetchedProviders = setOf(PoiProviderType.Overpass),
                         fetchedCategories = setOf(PoiCategory.Supermarket),
-                        maxRegions = 12
                     )
-                }
-
-                try {
-                    val entities = fetchedSupermarkets.map { p ->
-                        PoiCacheEntity(
-                            id = p.id,
-                            latitude = p.latitude,
-                            longitude = p.longitude,
-                            name = p.name,
-                            address = p.address,
-                            poiJson = json.encodeToString(p),
-                            updatedAtMs = nowMs
-                        )
+                    if (covering != null) {
+                        val idx = supermarketEnrichRegions.indexOf(covering)
+                        if (idx >= 0) supermarketEnrichRegions[idx] = updated
+                    } else {
+                        supermarketEnrichRegions.add(updated)
                     }
-                    poiCacheDao.insertPois(entities)
-                } catch (e: Exception) {
-                    Log.e("SelectorPoiProvider", "Failed to persist fetched supermarkets", e)
+                    while (supermarketEnrichRegions.size > 12) {
+                        val farthest = supermarketEnrichRegions.maxBy { r ->
+                            haversineKm(r.centerLat, r.centerLng, latitude, longitude)
+                        }
+                        supermarketEnrichRegions.remove(farthest)
+                    }
                 }
-
                 supermarkets = (supermarkets + fetchedSupermarkets).distinctBy { it.id }
             }
         }

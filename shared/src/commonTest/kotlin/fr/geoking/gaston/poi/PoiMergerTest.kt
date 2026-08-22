@@ -346,7 +346,7 @@ class PoiMergerTest {
         // ~100m away (0.0009 lat)
         val stationNear = Poi("gas-near", "Gazole Station", "Address", lat, lon, brand = null, poiCategory = PoiCategory.Gas)
         val stationGeneric = Poi("gas-generic", "Station Paris", "Address", lat, lon, brand = null, poiCategory = PoiCategory.Gas)
-        // ~2220m away (0.02 lat) — beyond SUPERMARKET_BRAND_ENRICH_METERS (600m)
+        // ~2220m away (0.02 lat) — beyond SUPERMARKET_BRAND_ENRICH_METERS (300m)
         val stationFar = Poi("gas-far", "Gazole Station 2", "Address", lat + 0.02, lon, brand = "sans enseigne", poiCategory = PoiCategory.Gas)
         // Already branded
         val stationBranded = Poi("gas-branded", "Gazole Station 3", "Address", lat, lon, brand = "Esso", poiCategory = PoiCategory.Gas)
@@ -370,7 +370,7 @@ class PoiMergerTest {
         assertEquals("Auchan", enrichedGeneric.name, "Generic Station Paris title should become Auchan")
 
         val enrichedFar = enriched.find { it.id == "gas-far" }!!
-        assertEquals("sans enseigne", enrichedFar.brand, "Should NOT enrich brand from far supermarket (>600m)")
+        assertEquals("sans enseigne", enrichedFar.brand, "Should NOT enrich brand from far supermarket (>300m)")
 
         val enrichedBranded = enriched.find { it.id == "gas-branded" }!!
         assertEquals("Esso", enrichedBranded.brand, "Should NOT overwrite already branded station")
@@ -404,5 +404,123 @@ class PoiMergerTest {
         assertEquals("Carrefour", enriched.brand)
         assertEquals("Carrefour", enriched.name)
         assertEquals("Carrefour", enriched.siteName)
+    }
+
+    @Test
+    fun mergePois_complementaryGas_pricesAndBrandWithin300m() {
+        val lat = 48.8566
+        val lon = 2.3522
+        // ~200 m apart
+        val osm = Poi(
+            id = "osm-total",
+            name = "Total",
+            address = "Rue A",
+            latitude = lat,
+            longitude = lon,
+            brand = "Total",
+            poiCategory = PoiCategory.Gas,
+            source = "Overpass",
+        )
+        val dataGouv = Poi(
+            id = "dg-prices",
+            name = "Station Maizières",
+            address = "Rue A",
+            latitude = lat + 0.0018,
+            longitude = lon,
+            brand = null,
+            poiCategory = PoiCategory.Gas,
+            fuelPrices = listOf(FuelPrice("Gazole", 1.65, updatedAt = "2099-01-01T10:00:00Z")),
+            source = "DataGouv",
+        )
+
+        val merged = PoiMerger.mergePois(listOf(osm, dataGouv))
+        assertEquals(1, merged.size)
+        assertEquals("Total", merged[0].name)
+        assertEquals("Total", merged[0].brand)
+        assertEquals(lat, merged[0].latitude)
+        assertEquals(lon, merged[0].longitude)
+        assertEquals(listOf("Gazole"), merged[0].fuelPrices?.map { it.fuelName })
+    }
+
+    @Test
+    fun mergePois_complementaryGas_doesNotMergeWhenBothHavePrices() {
+        val lat = 48.8566
+        val lon = 2.3522
+        val a = Poi(
+            id = "1",
+            name = "Total Nord",
+            address = "",
+            latitude = lat,
+            longitude = lon,
+            brand = "Total",
+            poiCategory = PoiCategory.Gas,
+            fuelPrices = listOf(FuelPrice("Gazole", 1.60)),
+        )
+        val b = Poi(
+            id = "2",
+            name = "Total Sud",
+            address = "",
+            latitude = lat + 0.0018,
+            longitude = lon,
+            brand = "Total",
+            poiCategory = PoiCategory.Gas,
+            fuelPrices = listOf(FuelPrice("Gazole", 1.62)),
+        )
+        // Same brand within 300m → still merges via brand rule; use different brands without name match
+        val c = Poi(
+            id = "3",
+            name = "Station Alpha",
+            address = "",
+            latitude = lat,
+            longitude = lon,
+            brand = null,
+            poiCategory = PoiCategory.Gas,
+            fuelPrices = listOf(FuelPrice("Gazole", 1.60)),
+        )
+        val d = Poi(
+            id = "4",
+            name = "Station Beta",
+            address = "",
+            latitude = lat + 0.0018,
+            longitude = lon,
+            brand = null,
+            poiCategory = PoiCategory.Gas,
+            fuelPrices = listOf(FuelPrice("SP95", 1.70)),
+        )
+        assertEquals(2, PoiMerger.mergePois(listOf(c, d)).size)
+        // Brand match still merges Total pair (expected)
+        assertEquals(1, PoiMerger.mergePois(listOf(a, b)).size)
+    }
+
+    @Test
+    fun mergePois_prefersBrandedCoordsOverPricedGeneric() {
+        val lat = 48.8566
+        val lon = 2.3522
+        val branded = Poi(
+            id = "z-branded",
+            name = "Total",
+            address = "",
+            latitude = lat,
+            longitude = lon,
+            brand = "Total",
+            poiCategory = PoiCategory.Gas,
+        )
+        val priced = Poi(
+            id = "a-priced",
+            name = "Station",
+            address = "",
+            latitude = lat + 0.0002,
+            longitude = lon,
+            brand = null,
+            poiCategory = PoiCategory.Gas,
+            fuelPrices = listOf(FuelPrice("Gazole", 1.55)),
+        )
+        // Sort by id: a-priced is existing, z-branded is incoming → coords should still move to Total
+        val merged = PoiMerger.mergePois(listOf(priced, branded))
+        assertEquals(1, merged.size)
+        assertEquals(lat, merged[0].latitude)
+        assertEquals(lon, merged[0].longitude)
+        assertEquals("Total", merged[0].name)
+        assertEquals(listOf("Gazole"), merged[0].fuelPrices?.map { it.fuelName })
     }
 }

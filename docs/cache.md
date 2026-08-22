@@ -181,13 +181,14 @@ Checked in order (`isSamePoi`):
 1. Same `id`.
 2. Distance **≤ 50 m** → always merge.
 3. Distance **≤ 300 m** and **same resolved brand** (`BrandRegistry`).
-4. Distance **≤ 300 m** and **name similarity ≥ 0.8** (token Jaccard on normalized `siteName` + `name`, French diacritics folded).
+4. Distance **≤ 300 m**, both Gas, **exactly one has fuel prices**, and **at least one** has a known brand or non-generic name (OSM brand ↔ DataGouv prices).
+5. Distance **≤ 300 m** and **name similarity ≥ 0.8** (token Jaccard on normalized `siteName` + `name`, French diacritics folded).
 
 A cheap lat/lng box rejects pairs before haversine.
 
 ### How fields are combined (`mergeTwo`)
 
-- **Keep the existing coordinates** (stable marker).
+- **Coordinates** prefer the source with a known brand / specific name (often OSM); otherwise keep existing.
 - **Primary category** prefers Gas, then IRVE; other types go to `extraCategories` (a supermarket+station can show as a station with extra amenity).
 - **Fuel prices**: per fuel name, keep the **newer** `updatedAt`; `outOfStock` is OR’d. All prices older than **4 weeks** ⇒ treat station as closed.
 - **IRVE**: union connector types; prefer incoming live availability/tariff fields when non-null.
@@ -202,7 +203,7 @@ APIs:
 
 ### Supermarket brand enrich
 
-Unbranded Gas stations can inherit a nearby supermarket brand within **600 m** (`enrichBrandsFromSupermarkets`). That Overpass supermarket query uses the same coverage helpers so it is not repeated every pan.
+Unbranded Gas stations can inherit a nearby supermarket brand within **300 m** (`enrichBrandsFromSupermarkets`). Overpass supermarket fetches for enrich go to a **separate in-memory cache** (not map `cachedPois` / Room) so they are not shown unless the user enables the Supermarket amenity.
 
 ---
 

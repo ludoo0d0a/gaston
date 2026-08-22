@@ -24,8 +24,8 @@ object PoiMerger {
     private const val MERGE_DISTANCE_WITH_NAME_METERS = 300.0
     // Distance threshold for merge with same brand.
     private const val MERGE_DISTANCE_WITH_BRAND_METERS = 300.0
-    /** Max distance to inherit brand from a nearby supermarket (covers coarse DataGouv geoms). */
-    const val SUPERMARKET_BRAND_ENRICH_METERS = 600.0
+    /** Max distance to inherit brand from a nearby supermarket. */
+    const val SUPERMARKET_BRAND_ENRICH_METERS = 300.0
     private const val NAME_TOKEN_MIN_LENGTH = 2
     private const val NAME_SIMILARITY_MIN = 0.8
 
@@ -105,6 +105,12 @@ object PoiMerger {
         // 1. Unconditional merge if extremely close (within 50m)
         if (distMeters <= MERGE_DISTANCE_METERS) return true
 
+        if (distMeters > MERGE_DISTANCE_WITH_NAME_METERS &&
+            distMeters > MERGE_DISTANCE_WITH_BRAND_METERS
+        ) {
+            return false
+        }
+
         // 2. Merge if fairly close (within 300m) AND same brand
         if (distMeters <= MERGE_DISTANCE_WITH_BRAND_METERS) {
             val brandA = BrandRegistry.findBrand(a.name, a.brand)
@@ -112,10 +118,53 @@ object PoiMerger {
             if (brandA != null && brandA == brandB) return true
         }
 
-        // 3. Merge if fairly close (within 300m) AND name matches (80%)
+        // 3. Complementary gas pair: one has prices, the other has a brand/specific name
+        if (distMeters <= MERGE_DISTANCE_WITH_NAME_METERS && isComplementaryGasPair(a, b)) {
+            return true
+        }
+
+        // 4. Merge if fairly close (within 300m) AND name matches (80%)
         if (distMeters <= MERGE_DISTANCE_WITH_NAME_METERS) {
             return namesSimilarEnough(a, b)
         }
+
+        return false
+    }
+
+    private fun isGasStation(p: Poi): Boolean =
+        p.poiCategory == PoiCategory.Gas ||
+            (p.poiCategory == null && !p.isElectric)
+
+    private fun hasFuelPrices(p: Poi): Boolean = !p.fuelPrices.isNullOrEmpty()
+
+    private fun hasBrandOrSpecificName(p: Poi): Boolean {
+        if (BrandRegistry.findBrand(p.name, p.brand) != null) return true
+        return p.name.isNotBlank() && !isGenericStationName(p.name)
+    }
+
+    /**
+     * OSM brand/name without prices + DataGouv prices without brand (or the reverse),
+     * within the name-merge radius.
+     */
+    private fun isComplementaryGasPair(a: Poi, b: Poi): Boolean {
+        if (!isGasStation(a) || !isGasStation(b)) return false
+        val aPrices = hasFuelPrices(a)
+        val bPrices = hasFuelPrices(b)
+        if (aPrices == bPrices) return false
+        return hasBrandOrSpecificName(a) || hasBrandOrSpecificName(b)
+    }
+
+    /** True when [candidate] is a better source of map coordinates than [current]. */
+    private fun preferCoordsFrom(candidate: Poi, current: Poi): Boolean {
+        val brandCand = BrandRegistry.findBrand(candidate.name, candidate.brand)
+        val brandCurr = BrandRegistry.findBrand(current.name, current.brand)
+        if (brandCand != null && brandCurr == null) return true
+        if (brandCand == null && brandCurr != null) return false
+
+        val candGeneric = candidate.name.isBlank() || isGenericStationName(candidate.name)
+        val currGeneric = current.name.isBlank() || isGenericStationName(current.name)
+        if (!candGeneric && currGeneric) return true
+        if (candGeneric && !currGeneric) return false
 
         return false
     }
@@ -230,9 +279,13 @@ object PoiMerger {
             else -> brandExisting ?: existing.brand
         }
 
+        val useIncomingCoords = preferCoordsFrom(incoming, existing)
+        val mergedName = if (isBetterName(incoming.name, existing.name)) incoming.name else existing.name
+
         return existing.copy(
-            // Keep coordinates from the "existing" entry for stable marker placement.
-            // They are already close (see isSamePoi).
+            // Prefer coordinates from the branded / specific-name source (often OSM).
+            latitude = if (useIncomingCoords) incoming.latitude else existing.latitude,
+            longitude = if (useIncomingCoords) incoming.longitude else existing.longitude,
             isElectric = mergedIsElectric,
             poiCategory = mergedPoiCategory,
             extraCategories = mergedExtraCategories,
@@ -241,8 +294,7 @@ object PoiMerger {
             irveDetails = mergedIrveDetails,
             amenities = mergedAmenities,
             restaurantDetails = mergedRestaurantDetails,
-            // Prefer richer/non-null display fields.
-            name = if (isBetterName(incoming.name, existing.name)) incoming.name else existing.name,
+            name = mergedName,
             address = if (existing.address.isNotBlank()) existing.address else incoming.address,
             siteName = preferNonBlank(existing.siteName, incoming.siteName),
             brand = mergedBrand,
@@ -254,7 +306,6 @@ object PoiMerger {
             operator = existing.operator ?: incoming.operator,
             isOnHighway = existing.isOnHighway || incoming.isOnHighway,
             chargePointCount = mergeMaxOrNull(existing.chargePointCount, incoming.chargePointCount),
-            // Connector / fuel price details are merged above.
             source = mergedSources,
             sourceUpdates = mergedSourceUpdates,
         )

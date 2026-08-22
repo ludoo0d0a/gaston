@@ -123,10 +123,16 @@ class SemecourtSupermarketBrandMergeRealApiTests {
             )
         }
 
-        // DataGouv coarse geom (~49.199, 6.15) is ~550 m from Auchan — within the 600 m enrich gate.
+        // Prefer accurate pump coords for enrich: live DataGouv geom can be >300 m from Auchan.
         val stationForMerge = semecourt.copy(
             brand = null,
             poiCategory = PoiCategory.Gas,
+            latitude = SemecourtSupermarketBrandMergeTest.STATION_LAT,
+            longitude = SemecourtSupermarketBrandMergeTest.STATION_LON,
+        )
+        val liveDistM = haversineMeters(
+            semecourt.latitude, semecourt.longitude,
+            auchan.latitude, auchan.longitude,
         )
         val distM = haversineMeters(
             stationForMerge.latitude, stationForMerge.longitude,
@@ -134,7 +140,7 @@ class SemecourtSupermarketBrandMergeRealApiTests {
         )
         assertTrue(
             distM <= SemecourtSupermarketBrandMergeTest.SUPERMARKET_ENRICH_MAX_M,
-            "$label: DataGouv–Auchan distance ${distM.toInt()}m exceeds enrich radius " +
+            "$label: accurate pump–Auchan distance ${distM.toInt()}m exceeds enrich radius " +
                 "(${SemecourtSupermarketBrandMergeTest.SUPERMARKET_ENRICH_MAX_M.toInt()}m)",
         )
 
@@ -148,11 +154,13 @@ class SemecourtSupermarketBrandMergeRealApiTests {
         assertTrue(
             brand.contains("Auchan", ignoreCase = true),
             "$label: expected Auchan brand after supermarket merge, got '$brand' " +
-                "(supermarket=${auchan.name}/${auchan.brand}, dist=${distM.toInt()}m)",
+                "(supermarket=${auchan.name}/${auchan.brand}, dist=${distM.toInt()}m, " +
+                "liveDataGouvDist=${liveDistM.toInt()}m)",
         )
         println(
             "$label: OK — Semécourt ${stationForMerge.id} → brand=$brand " +
-                "(${stations.size} stations, ${supermarkets.size} supermarkets, dist=${distM.toInt()}m)",
+                "(${stations.size} stations, ${supermarkets.size} supermarkets, " +
+                "dist=${distM.toInt()}m, liveDataGouvDist=${liveDistM.toInt()}m)",
         )
     }
 

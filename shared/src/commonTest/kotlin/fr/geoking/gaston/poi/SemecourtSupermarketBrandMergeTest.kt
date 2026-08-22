@@ -19,6 +19,7 @@ import kotlin.test.assertTrue
  *
  * Coordinates: pump ≈ (49.19477, 6.14645); OSM Auchan supermarket node 5467200318.
  * DataGouv station id `57280001` often ships with coarse geom (~49.199, 6.15).
+ * Unit fixtures use the accurate pump location (~18 m from Auchan) so enrich @ 300 m applies.
  */
 class SemecourtSupermarketBrandMergeTest {
 
