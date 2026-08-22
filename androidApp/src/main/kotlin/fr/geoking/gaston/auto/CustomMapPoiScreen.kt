@@ -208,7 +208,7 @@ class CustomMapPoiScreen(
             existing = lastQueryCoverage,
             centerLat = lat,
             centerLng = lon,
-            requiredRadiusKm = currentSearchRadiusKm(),
+            requiredRadiusKm = currentSearchRadiusKm().toInt(),
             loadedAtMs = System.currentTimeMillis(),
             fetchedProviders = emptySet(),
             fetchedCategories = emptySet(),
@@ -615,8 +615,10 @@ class CustomMapPoiScreen(
                 errors = listOf(PoiProviderError("System", e.message ?: "Unknown error", isCritical = true))
             } finally {
                 if (gen == queryGeneration) {
-                    if (queryLat != null && queryLon != null && itineraryPoints.isEmpty()) {
-                        recordQueryCoverage(queryLat!!, queryLon!!)
+                    val lat = queryLat
+                    val lon = queryLon
+                    if (lat != null && lon != null && itineraryPoints.isEmpty()) {
+                        recordQueryCoverage(lat, lon)
                     }
                     isQueryPending = false
                     isLoading = false
@@ -747,7 +749,7 @@ class CustomMapPoiScreen(
 
             val shouldRequery = itineraryPoints.isEmpty() &&
                 mapSelectedPoi == null &&
-                shouldRequeryPois(lastQueryCoverage, lat, lon, currentSearchRadiusKm())
+                shouldRequeryPois(lastQueryCoverage, lat, lon, currentSearchRadiusKm().toInt())
             if (shouldRequery) {
                 loadPois(preserveZoom = true, showLoading = false)
             } else if (shouldRedrawFromMovement(lastRedrawPosition, newPos)) {
@@ -868,7 +870,7 @@ class CustomMapPoiScreen(
         }
         if (zoom < prevZoom) {
             val (userLat, userLon) = searchCenterFlow.value
-            if (shouldRequeryForViewportChange(lastQueryCoverage, userLat, userLon, currentSearchRadiusKm())) {
+            if (shouldRequeryForViewportChange(lastQueryCoverage, userLat, userLon, currentSearchRadiusKm().toInt())) {
                 loadPois(preserveZoom = true, showLoading = false)
             } else {
                 syncRendererWithMapState()
