@@ -101,6 +101,7 @@ class DataGouvElecClient(
         return byStation.map { (_, group) ->
             val first = group.first()
             val connectors = group.map { it.connectorTypes }.flatten().toSet()
+            val pdcIds = group.map { it.pdcId }.filter { it.isNotBlank() }.toSet()
             val tarification = group.mapNotNull { it.tarification }.firstOrNull()?.takeIf { it.isNotBlank() }
             val openingHours = group.mapNotNull { it.openingHours }.firstOrNull()?.takeIf { it.isNotBlank() }
             val gratuit = group.mapNotNull { it.gratuit }.firstOrNull()
@@ -131,7 +132,8 @@ class DataGouvElecClient(
                     paymentActe = paymentActe,
                     paymentCb = paymentCb,
                     paymentAutre = paymentAutre,
-                    conditionAcces = conditionAcces
+                    conditionAcces = conditionAcces,
+                    pdcIds = pdcIds
                 )
             )
         }
@@ -194,6 +196,7 @@ class DataGouvElecClient(
         val conditionAcces = record["condition_acces"]?.jsonPrimitive?.content?.trim()?.takeIf { it.isNotBlank() }
         return DataGouvElecStationRaw(
             stationId = stationId,
+            pdcId = pdcId,
             id = id,
             name = name,
             address = address,
@@ -220,6 +223,7 @@ class DataGouvElecClient(
 /** Raw PDC record before aggregation by station. */
 internal data class DataGouvElecStationRaw(
     val stationId: String,
+    val pdcId: String,
     val id: String,
     val name: String,
     val address: String,

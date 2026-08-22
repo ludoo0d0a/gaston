@@ -6,7 +6,9 @@ import kotlin.math.*
 /**
  * Groups [PdcAvailability] by station (using [PdcAvailability.stationId] or by proximity),
  * builds [StationAvailabilitySummary] per group, then assigns each summary to the nearest [Poi]
- * within [maxDistanceMeters]. Returns a map from [Poi.id] to [StationAvailabilitySummary].
+ * within [maxDistanceMeters]. Prefers id matches ([PdcAvailability.stationId] == [Poi.id],
+ * or [PdcAvailability.id] in [fr.geoking.gaston.poi.IrveDetails.pdcIds]) before distance.
+ * Returns a map from [Poi.id] to [StationAvailabilitySummary].
  */
 fun matchAvailabilityToPois(
     availabilities: List<PdcAvailability>,
@@ -15,23 +17,36 @@ fun matchAvailabilityToPois(
 ): Map<String, StationAvailabilitySummary> {
     if (availabilities.isEmpty() || pois.isEmpty()) return emptyMap()
 
-    // Group by station: use stationId when present, else group by rounded lat/lon (same location)
+    val result = mutableMapOf<String, StationAvailabilitySummary>()
+    val remaining = availabilities.toMutableList()
+
+    // Prefer exact id matches (station itinerance or PDC itinerance).
+    for (poi in pois) {
+        val pdcIds = poi.irveDetails?.pdcIds.orEmpty()
+        val matched = remaining.filter { pdc ->
+            (pdc.stationId != null && pdc.stationId == poi.id) ||
+                (pdcIds.isNotEmpty() && pdc.id in pdcIds)
+        }
+        if (matched.isEmpty()) continue
+        result[poi.id] = summaryOf(matched)
+        remaining.removeAll(matched.toSet())
+    }
+    if (remaining.isEmpty()) return result
+
+    // Group leftover by station: use stationId when present, else group by rounded lat/lon
     val groupKey: (PdcAvailability) -> String = { pdc ->
         pdc.stationId?.takeIf { it.isNotBlank() }
             ?: "${roundTo5Decimals(pdc.latitude)},${roundTo5Decimals(pdc.longitude)}"
     }
-    val groups = availabilities.groupBy(groupKey)
+    val groups = remaining.groupBy(groupKey)
 
-    // Per-group summary and representative point (first PDC's coords as station location)
     val stationSummaries = groups.map { (_, list) ->
-        val availableCount = list.count { it.status == AvailabilityStatus.Available }
-        val totalCount = list.size
         val first = list.first()
-        Triple(first.latitude, first.longitude, StationAvailabilitySummary(availableCount, totalCount))
+        Triple(first.latitude, first.longitude, summaryOf(list))
     }
 
-    val result = mutableMapOf<String, StationAvailabilitySummary>()
     for (poi in pois) {
+        if (poi.id in result) continue
         var bestSummary: StationAvailabilitySummary? = null
         var bestDist = maxDistanceMeters
         for ((lat, lon, summary) in stationSummaries) {
@@ -44,6 +59,11 @@ fun matchAvailabilityToPois(
         bestSummary?.let { result[poi.id] = it }
     }
     return result
+}
+
+private fun summaryOf(list: List<PdcAvailability>): StationAvailabilitySummary {
+    val availableCount = list.count { it.status == AvailabilityStatus.Available }
+    return StationAvailabilitySummary(availableCount = availableCount, totalCount = list.size)
 }
 
 private fun roundTo5Decimals(x: Double): Double = round(x * 1e5) / 1e5
