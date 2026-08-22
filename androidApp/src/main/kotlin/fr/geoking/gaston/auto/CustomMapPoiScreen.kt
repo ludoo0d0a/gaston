@@ -42,6 +42,8 @@ import fr.geoking.gaston.poi.PoiProviderError
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.LoadedPoiRegion
+import fr.geoking.gaston.poi.mergeLoadedRegion
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.geocoding.GeocodingClient
@@ -52,7 +54,6 @@ import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.feature.location.LocationHelper
-import fr.geoking.gaston.shared.location.approxDistanceKm
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -122,8 +123,8 @@ class CustomMapPoiScreen(
     private var visibleAreaCameraJob: Job? = null
     /** When set, map markers are filtered to this station only (selection / detail handoff). */
     private var mapSelectedPoi: Poi? = null
-    private var lastPoiQueryLat: Double? = null
-    private var lastPoiQueryLon: Double? = null
+    private var lastQueryCoverage: LoadedPoiRegion? = null
+    private var lastRedrawPosition: Pair<Double, Double>? = null
 
     private fun openStationDetail(poi: Poi, availability: StationAvailabilitySummary?) {
         val settings = settingsManager.settings.value
@@ -200,15 +201,19 @@ class CustomMapPoiScreen(
     private companion object {
         private const val VISIBLE_AREA_SIZE_DELTA_PX = 8
         private const val VISIBLE_AREA_CAMERA_DEBOUNCE_MS = 150L
-        /** Same threshold as the driven trail — re-query nearby POIs when the vehicle moves this far. */
-        private const val POSITION_REQUERY_THRESHOLD_DEG = 0.0002
     }
 
-    private fun shouldRequeryPoisForMovement(newLat: Double, newLon: Double): Boolean {
-        val lastLat = lastPoiQueryLat ?: return true
-        val lastLon = lastPoiQueryLon ?: return true
-        return abs(lastLat - newLat) > POSITION_REQUERY_THRESHOLD_DEG ||
-            abs(lastLon - newLon) > POSITION_REQUERY_THRESHOLD_DEG
+    private fun recordQueryCoverage(lat: Double, lon: Double) {
+        lastQueryCoverage = mergeLoadedRegion(
+            existing = lastQueryCoverage,
+            centerLat = lat,
+            centerLng = lon,
+            requiredRadiusKm = currentSearchRadiusKm(),
+            loadedAtMs = System.currentTimeMillis(),
+            fetchedProviders = emptySet(),
+            fetchedCategories = emptySet(),
+        )
+        lastRedrawPosition = lat to lon
     }
 
     private data class PoiFetchSettings(
@@ -497,6 +502,8 @@ class CustomMapPoiScreen(
                 invalidate()
             }
 
+            var queryLat: Double? = null
+            var queryLon: Double? = null
             try {
                 val location = LocationHelper.getCurrentLocation(carContext)
                 val (lat, lon) = if (location != null) {
@@ -505,10 +512,10 @@ class CustomMapPoiScreen(
                 } else {
                     LocationHelper.getInitialLocation(carContext, settingsManager)
                 }
+                queryLat = lat
+                queryLon = lon
 
                 searchCenterFlow.value = lat to lon
-                lastPoiQueryLat = lat
-                lastPoiQueryLon = lon
                 lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
                 Log.d("CustomMapPoiScreen", "loadPois search center lat=$lat lon=$lon bearing=$lastKnownBearingDegrees")
 
@@ -608,6 +615,9 @@ class CustomMapPoiScreen(
                 errors = listOf(PoiProviderError("System", e.message ?: "Unknown error", isCritical = true))
             } finally {
                 if (gen == queryGeneration) {
+                    if (queryLat != null && queryLon != null && itineraryPoints.isEmpty()) {
+                        recordQueryCoverage(queryLat!!, queryLon!!)
+                    }
                     isQueryPending = false
                     isLoading = false
                     syncRendererWithMapState()
@@ -715,11 +725,12 @@ class CustomMapPoiScreen(
         if (location != null) {
             val lat = location.latitude
             val lon = location.longitude
+            val newPos = lat to lon
             lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
 
             searchLat = lat
             searchLon = lon
-            searchCenterFlow.value = lat to lon
+            searchCenterFlow.value = newPos
             // Keep following the vehicle after zoom; only freeze the camera while a station is selected.
             if (mapSelectedPoi == null) {
                 surfaceRenderer?.updateLocation(lat, lon, zoom)
@@ -729,28 +740,26 @@ class CustomMapPoiScreen(
             }
             surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
 
-            val last = historyPoints.lastOrNull()
-            val movedEnough = last == null ||
-                abs(last.first - lat) > POSITION_REQUERY_THRESHOLD_DEG ||
-                abs(last.second - lon) > POSITION_REQUERY_THRESHOLD_DEG
-            if (movedEnough) {
-                historyPoints.add(lat to lon)
+            if (shouldAddTrailPoint(historyPoints.lastOrNull(), newPos)) {
+                historyPoints.add(newPos)
                 surfaceRenderer?.addHistoryPoint(lat, lon)
             }
 
             val shouldRequery = itineraryPoints.isEmpty() &&
                 mapSelectedPoi == null &&
-                movedEnough &&
-                shouldRequeryPoisForMovement(lat, lon)
+                shouldRequeryPois(lastQueryCoverage, lat, lon, currentSearchRadiusKm())
             if (shouldRequery) {
                 loadPois(preserveZoom = true, showLoading = false)
-            } else {
+            } else if (shouldRedrawFromMovement(lastRedrawPosition, newPos)) {
+                lastRedrawPosition = newPos
                 syncRendererWithMapState()
                 if (orientationMode == MapOrientationMode.HeadingUp) {
                     applyMapOrientationToRenderer()
                 } else {
                     invalidate()
                 }
+            } else if (orientationMode == MapOrientationMode.HeadingUp) {
+                applyMapOrientationToRenderer()
             }
         }
     }
@@ -858,8 +867,13 @@ class CustomMapPoiScreen(
             startHeadingUpdates()
         }
         if (zoom < prevZoom) {
-            // Wider visible boundary — re-query stations for the new map diameter.
-            loadPois(preserveZoom = true, showLoading = false)
+            val (userLat, userLon) = searchCenterFlow.value
+            if (shouldRequeryForViewportChange(lastQueryCoverage, userLat, userLon, currentSearchRadiusKm())) {
+                loadPois(preserveZoom = true, showLoading = false)
+            } else {
+                syncRendererWithMapState()
+                invalidate()
+            }
         } else {
             syncRendererWithMapState()
             invalidate()
