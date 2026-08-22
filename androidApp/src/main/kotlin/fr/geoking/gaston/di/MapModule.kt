@@ -6,6 +6,9 @@ import fr.geoking.gaston.api.belib.BelibAvailabilityClient
 import fr.geoking.gaston.api.belib.BelibAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
+import fr.geoking.gaston.api.qualicharge.QualiChargeAvailabilityProvider
+import fr.geoking.gaston.api.qualicharge.QualiChargeDynamiqueClient
+import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.chargy.ChargyProvider
 import fr.geoking.gaston.api.dkv.DkvOcpiClient
 import fr.geoking.gaston.api.dkv.DkvOcpiProvider
@@ -345,13 +348,21 @@ val mapModule = module {
         MergedPoiProvider(base = get(named("selector")), communityRepo = get())
     }
 
-    // Borne availability (e.g. Belib Paris): factory returns provider for current location.
+    // Borne availability: Belib (Paris) + optional QualiCharge IRVE dynamique (FR, flag-gated).
     single { BelibAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("belib")) {
         BelibAvailabilityProvider(get(), radiusKm = 10, limit = 100)
     }
+    single { QualiChargeDynamiqueClient(get()) }
+    single<BorneAvailabilityProvider>(named("qualicharge")) {
+        QualiChargeAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+    }
     single<BorneAvailabilityProviderFactory> {
-        BorneAvailabilityProviderFactory(get(named("belib")))
+        BorneAvailabilityProviderFactory(
+            belibProvider = get(named("belib")),
+            qualiChargeProvider = get(named("qualicharge")),
+            isDynamicIrveEnabled = { get<SettingsManager>().settings.value.dynamicIrveEnabled }
+        )
     }
 
     // Traffic: Luxembourg CITA GeoJSON first; TomTom incidents as global fallback (needs TOMTOM_KEY).

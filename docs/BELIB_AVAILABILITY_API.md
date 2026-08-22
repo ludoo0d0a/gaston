@@ -16,3 +16,4 @@ There is no “register API key” step on the Paris Data console; public read a
 
 - **Client:** `shared/.../providers/availability/BelibAvailabilityClient.kt` – calls the API with no API key or auth headers.
 - **Provider:** `BelibAvailabilityProvider` + `BorneAvailabilityProviderFactory` – used when the map center is inside the Paris bounding box.
+- Outside Paris, optional QualiCharge IRVE dynamique may apply when enabled — see [`IRVE_DYNAMIQUE.md`](IRVE_DYNAMIQUE.md).
