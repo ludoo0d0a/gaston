@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +34,8 @@ fun MapLibreView(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var styleEpoch by remember { mutableIntStateOf(0) }
+    val currentOnMapClick by rememberUpdatedState(onMapClick)
+    val currentOnMapReady by rememberUpdatedState(onMapReady)
 
     // Initialize MapLibre singleton
     remember {
@@ -50,10 +53,10 @@ fun MapLibreView(
                 }
                 cameraPosition?.let { map.cameraPosition = it }
                 map.addOnMapClickListener { point ->
-                    onMapClick(point)
+                    currentOnMapClick(point)
                     true
                 }
-                onMapReady(map)
+                currentOnMapReady(map)
             }
         }
     }

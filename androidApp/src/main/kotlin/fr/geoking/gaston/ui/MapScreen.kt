@@ -91,6 +91,7 @@ import fr.geoking.gaston.ui.map.AddPoiSheet
 import fr.geoking.gaston.ui.map.PoiDetailCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
+import fr.geoking.gaston.ui.map.PhoneMapPoiHitTest
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.DebugLogOverlay
 import fr.geoking.gaston.ui.map.MapBaseViewControl
@@ -545,7 +546,33 @@ fun MapScreen(
                         ),
                         uiSettings = MapUiSettings(myLocationButtonEnabled = hasLocationPermission),
                         contentPadding = PaddingValues(bottom = mapPaddingBottom),
-                        onMapClick = { selectedPoi = null }
+                        onMapClick = { latLng ->
+                            val projection = cameraPositionState.projection
+                            if (projection == null) {
+                                selectedPoi = null
+                                return@GoogleMap
+                            }
+                            val screenPoint = projection.toScreenLocation(latLng)
+                            val nearestPoi = PhoneMapPoiHitTest.findNearestPoiAtScreenPoint(
+                                screenX = screenPoint.x.toFloat(),
+                                screenY = screenPoint.y.toFloat(),
+                                pois = filteredPois,
+                                markerWidthPx = 120,
+                            ) { poi ->
+                                val pos = projection.toScreenLocation(
+                                    LatLng(poi.latitude, poi.longitude)
+                                )
+                                pos.x.toFloat() to pos.y.toFloat()
+                            }
+                            if (nearestPoi != null) {
+                                if (selectedPoi == null && !isCheapestFilterActive) {
+                                    poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
+                                }
+                                selectedPoi = nearestPoi
+                            } else {
+                                selectedPoi = null
+                            }
+                        }
                     ) {
                         val zoom = cameraPositionState.position.zoom
                         val sizePx = remember(zoom) { markerSizePxForZoom(zoom) }
@@ -600,12 +627,13 @@ fun MapScreen(
                                 snippet = poi.address,
                                 icon = markerBitmap,
                                 anchor = Offset(0.5f, 1f),
+                                // SDK consumes marker taps before onMapClick; select here.
+                                // Near-miss taps use PhoneMapPoiHitTest in onMapClick.
                                 onClick = {
                                     if (selectedPoi == null && !isCheapestFilterActive) {
                                         poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
                                     }
                                     selectedPoi = poi
-                                    detailRequestPoiId = poi.id
                                     true
                                 }
                             )

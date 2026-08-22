@@ -508,9 +508,6 @@ fun VectorMapScreen(
                                 poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
                             }
                             selectedPoi = poi
-                            if (poi != null) {
-                                detailRequestPoiId = poi.id
-                            }
                         },
                         effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
                         effectivePowerLevels = settings.effectiveIrvePowerLevels()

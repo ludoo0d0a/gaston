@@ -1,10 +1,6 @@
 package fr.geoking.gaston.ui.map.maplibre
 
-import android.content.Context
-import android.graphics.PointF
-import android.graphics.RectF
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,37 +56,14 @@ fun LibreMap(
         onMapClick = { latLng ->
             val map = mapLibreMap ?: return@MapLibreView
             val screenPoint = map.projection.toScreenLocation(latLng)
-            val screenX = screenPoint.x.toFloat()
-            val screenY = screenPoint.y.toFloat()
-            val markerWidthPx = if (selectedPoiId != null) 150 else 120
-
-            val tolerance = PhoneMapPoiHitTest.hitRadiusPx(markerWidthPx)
-            val rect = RectF(
-                screenX - tolerance,
-                screenY - tolerance,
-                screenX + tolerance,
-                screenY + tolerance
-            )
-            val features = map.queryRenderedFeatures(rect, MapLibreSharedHelper.POI_LAYER_ID)
-            val ids = features.mapNotNull { it.getStringProperty(MapLibreSharedHelper.POI_ID_PROPERTY) }.toSet()
-            val matchedFromLayer = poisInView.filter { it.id in ids }
-
-            val nearestPoi = when {
-                matchedFromLayer.isNotEmpty() -> matchedFromLayer.minByOrNull { poi ->
-                    val pos = map.projection.toScreenLocation(LatLng(poi.latitude, poi.longitude))
-                    val dx = screenX - pos.x
-                    val dy = screenY - pos.y
-                    dx * dx + dy * dy
-                }
-                else -> PhoneMapPoiHitTest.findNearestPoiAtScreenPoint(
-                    screenX = screenX,
-                    screenY = screenY,
-                    pois = poisInView,
-                    markerWidthPx = markerWidthPx,
-                ) { poi ->
-                    val pos = map.projection.toScreenLocation(LatLng(poi.latitude, poi.longitude))
-                    pos.x.toFloat() to pos.y.toFloat()
-                }
+            val nearestPoi = PhoneMapPoiHitTest.findNearestPoiAtScreenPoint(
+                screenX = screenPoint.x.toFloat(),
+                screenY = screenPoint.y.toFloat(),
+                pois = poisInView,
+                markerWidthPx = 120,
+            ) { poi ->
+                val pos = map.projection.toScreenLocation(LatLng(poi.latitude, poi.longitude))
+                pos.x.toFloat() to pos.y.toFloat()
             }
             onPoiClick(nearestPoi)
         },

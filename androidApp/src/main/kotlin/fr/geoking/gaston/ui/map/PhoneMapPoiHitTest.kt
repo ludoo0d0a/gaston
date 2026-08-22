@@ -3,7 +3,7 @@ package fr.geoking.gaston.ui.map
 import fr.geoking.gaston.poi.Poi
 
 /**
- * Screen-space hit testing for POI markers on phone map surfaces (MapLibre).
+ * Screen-space hit testing for POI markers on phone map surfaces (Google + MapLibre).
  * Markers use a bottom-center anchor (pin tip on the coordinate).
  */
 internal object PhoneMapPoiHitTest {
