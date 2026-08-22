@@ -11,6 +11,7 @@ import android.graphics.Rect
 import android.util.Log
 import android.util.LruCache
 import android.view.Surface
+import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import java.net.HttpURLConnection
@@ -95,6 +96,7 @@ class AutoSurfaceRenderer(
     private var poiIds: List<String> = emptyList()
     private var effectiveEnergyTypes: Set<String> = emptySet()
     private var effectivePowerLevels: Set<Int> = emptySet()
+    private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
 
     private var historyPoints: List<Pair<Double, Double>> = emptyList()
     private var itineraryPoints: List<Pair<Double, Double>> = emptyList()
@@ -298,13 +300,15 @@ class AutoSurfaceRenderer(
         newPois: List<Poi>,
         effectiveEnergyTypes: Set<String>,
         effectivePowerLevels: Set<Int>,
-        selectedId: String? = selectedPoiId
+        selectedId: String? = selectedPoiId,
+        availability: Map<String, StationAvailabilitySummary> = availabilityByPoiId,
     ) {
         val newIds = newPois.map { it.id }
         if (poiIds == newIds &&
             this.effectiveEnergyTypes == effectiveEnergyTypes &&
             this.effectivePowerLevels == effectivePowerLevels &&
-            this.selectedPoiId == selectedId
+            this.selectedPoiId == selectedId &&
+            this.availabilityByPoiId == availability
         ) {
             return
         }
@@ -313,6 +317,7 @@ class AutoSurfaceRenderer(
         this.effectiveEnergyTypes = effectiveEnergyTypes
         this.effectivePowerLevels = effectivePowerLevels
         this.selectedPoiId = selectedId
+        this.availabilityByPoiId = availability
         invalidate()
     }
 
@@ -1000,7 +1005,8 @@ class AutoSurfaceRenderer(
                 effectiveEnergyTypes = effectiveEnergyTypes,
                 effectivePowerLevels = effectivePowerLevels,
                 isSelected = poi.id == selectedPoiId,
-                sizePx = markerWidthPx
+                sizePx = markerWidthPx,
+                availability = availabilityByPoiId[poi.id],
             )
 
             val bw = bitmap.width.toFloat()

@@ -146,19 +146,32 @@ object AutoPoiUiHelper {
         poi: Poi,
         effectiveEnergyTypes: Set<String> = emptySet(),
         effectivePowerLevels: Set<Int> = emptySet(),
+        availability: StationAvailabilitySummary? = null,
+        forMapPin: Boolean = false,
         sizePx: Int = 128
     ): CarIcon {
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
         val category = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
         val categoryColor = PoiMarkerHelper.getPoiColor(poi, category, effectiveEnergyTypes, effectivePowerLevels)
 
-        val bitmap = PoiMarkerHelper.getPoiHeadBitmap(
-            context = carContext,
-            poi = poi,
-            brandInfo = brandInfo,
-            sizePx = sizePx,
-            categoryColor = categoryColor
-        )
+        val bitmap = if (forMapPin) {
+            PoiMarkerHelper.getMarkerBitmap(
+                context = carContext,
+                poi = poi,
+                effectiveEnergyTypes = effectiveEnergyTypes,
+                effectivePowerLevels = effectivePowerLevels,
+                availability = availability,
+                sizePx = sizePx,
+            )
+        } else {
+            PoiMarkerHelper.getPoiHeadBitmap(
+                context = carContext,
+                poi = poi,
+                brandInfo = brandInfo,
+                sizePx = sizePx,
+                categoryColor = categoryColor
+            )
+        }
 
         return if (bitmap != null) {
             CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
@@ -191,7 +204,14 @@ object AutoPoiUiHelper {
         onClick: () -> Unit
     ): Row {
         val title = poiDisplayName(poi)
-        val carIcon = buildPoiIcon(carContext, poi, effectiveEnergyTypes, effectivePowerLevels)
+        val carIcon = buildPoiIcon(
+            carContext = carContext,
+            poi = poi,
+            effectiveEnergyTypes = effectiveEnergyTypes,
+            effectivePowerLevels = effectivePowerLevels,
+            availability = availability,
+            forMapPin = includePlace,
+        )
 
         val rowBuilder = Row.Builder()
             .setTitle(title)
@@ -250,14 +270,14 @@ object AutoPoiUiHelper {
         }
 
         if (poi.isElectric) {
+            availability?.let { s ->
+                secondaryDetails.add(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
+            }
             poi.chargePointCount?.let { n ->
                 secondaryDetails.add(
                     if (n == 1) carContext.getString(R.string.poi_charge_point_one)
                     else carContext.getString(R.string.poi_charge_points, n)
                 )
-            }
-            availability?.let { s ->
-                secondaryDetails.add(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
             }
         }
 
@@ -342,6 +362,15 @@ object AutoPoiUiHelper {
 
         // 4. IRVE Details
         if (poi.isElectric && canAddRow()) {
+            availability?.let { s ->
+                if (canAddRow()) {
+                    val row = Row.Builder()
+                        .setTitle(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
+                    if (includePlace) { row.setMetadata(metadata!!); applyDistanceSpan(row, distanceFromLatLon, poi) }
+                    rows.add(row.build())
+                }
+            }
+
             val charging = mutableListOf<String>()
             poi.operator?.takeIf { it.isNotBlank() }?.let { charging.add(it) }
             poi.powerKw?.let { charging.add(carContext.getString(R.string.power_kw_format, it.toInt())) }
@@ -359,7 +388,6 @@ object AutoPoiUiHelper {
                         connectors.add(d.connectorTypes.sorted().joinToString(", ") { BrandHelper.connectorTypeLabel(it) })
                     }
                 }
-                availability?.let { s -> connectors.add(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount)) }
                 if (connectors.isNotEmpty()) {
                     val row = Row.Builder().setTitle(connectors.joinToString(" • "))
                     if (includePlace) { row.setMetadata(metadata!!); applyDistanceSpan(row, distanceFromLatLon, poi) }
@@ -489,6 +517,10 @@ object AutoPoiUiHelper {
 
         // Charging details (electric)
         if (poi.isElectric) {
+            availability?.let { s ->
+                sb.appendLine(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
+                sb.appendLine()
+            }
             val charging = mutableListOf<String>()
             poi.operator?.takeIf { it.isNotBlank() }?.let { charging.add(it) }
             poi.powerKw?.let { charging.add(carContext.getString(R.string.power_kw_format, it.toInt())) }
@@ -516,9 +548,6 @@ object AutoPoiUiHelper {
                     if (d.paymentAutre == true) carContext.getString(R.string.poi_payment_other) else null
                 ).joinToString(", ").takeIf { it.isNotBlank() }?.let { charging.add(carContext.getString(R.string.poi_label_payment) + ": " + it) }
                 d.conditionAcces?.takeIf { it.isNotBlank() }?.let { charging.add(carContext.getString(R.string.poi_label_access) + ": " + it) }
-            }
-            availability?.let { s ->
-                charging.add(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
             }
             if (charging.isNotEmpty()) {
                 sb.appendLine(carContext.getString(R.string.poi_section_charging_details))

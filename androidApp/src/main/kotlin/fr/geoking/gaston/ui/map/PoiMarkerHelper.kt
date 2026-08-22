@@ -32,7 +32,7 @@ object PoiMarkerHelper {
     }
 
     /** Bump when marker layout changes so [cache] entries are not stale. */
-    private const val MARKER_LAYOUT_CACHE_TAG = "pinColumn11"
+    private const val MARKER_LAYOUT_CACHE_TAG = "pinColumn12"
 
     /**
      * Builds a column marker bitmap: optional label pill (top) → rounded head (circle + logo in asset) → triangle pin (bottom).
@@ -92,6 +92,12 @@ object PoiMarkerHelper {
             textSize = labelTextSize
         }
 
+        val showAvailBars = availability != null &&
+            availability.totalCount > 0 &&
+            !label.isNullOrEmpty()
+        val barRowH = if (showAvailBars) w * 0.07f else 0f
+        val barRowGap = if (showAvailBars) w * 0.025f else 0f
+
         var labelBlockH = 0f
         var labelRect = RectF()
         var labelBaseline = 0f
@@ -108,7 +114,7 @@ object PoiMarkerHelper {
             val padV = (textH * 0.22f).coerceIn(w * 0.04f, w * 0.12f)
             val tw = textPaint.measureText(label)
             val rw = (tw + padH * 2).coerceAtMost(w - w * 0.06f)
-            val rh = textH + padV * 2
+            val rh = textH + padV * 2 + barRowGap + barRowH
             val rx = (w - rw) / 2f
             val ry = topMargin
             labelRect = RectF(rx, ry, rx + rw, ry + rh)
@@ -184,26 +190,16 @@ object PoiMarkerHelper {
             canvas.drawRoundRect(labelRect, corner, corner, bgPaint)
             canvas.drawRoundRect(labelRect, corner, corner, labelStroke)
             canvas.drawText(label, labelRect.centerX(), labelBaseline, textPaint)
-        }
-
-        // 4) Availability dot (bottom right of the head)
-        if (availability != null) {
-            val dotR = w * 0.12f
-            val dotCx = circleCx + circleR * 0.707f
-            val dotCy = circleCy + circleR * 0.707f
-            val dotColor = if (availability.availableCount > 0) 0xFF22C55E.toInt() else 0xFFEF4444.toInt()
-
-            val dotFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                style = Paint.Style.FILL
-                color = dotColor
+            if (showAvailBars && availability != null) {
+                drawAvailabilityBars(
+                    canvas = canvas,
+                    summary = availability,
+                    pillRect = labelRect,
+                    barRowTop = labelBaseline + textPaint.fontMetrics.descent + barRowGap,
+                    barHeight = barRowH,
+                    markerWidthPx = w,
+                )
             }
-            val dotStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                style = Paint.Style.STROKE
-                strokeWidth = strokeW * 0.8f
-                color = Color.WHITE
-            }
-            canvas.drawCircle(dotCx, dotCy, dotR, dotFill)
-            canvas.drawCircle(dotCx, dotCy, dotR, dotStroke)
         }
 
         synchronized(cache) {
@@ -227,6 +223,37 @@ object PoiMarkerHelper {
     /** Black or white for readable text on [backgroundArgb] (opaque). */
     private fun contrastingForegroundArgb(backgroundArgb: Int): Int {
         return if (relativeLuminance(backgroundArgb) > 0.45) Color.BLACK else Color.WHITE
+    }
+
+    private fun drawAvailabilityBars(
+        canvas: Canvas,
+        summary: StationAvailabilitySummary,
+        pillRect: RectF,
+        barRowTop: Float,
+        barHeight: Float,
+        markerWidthPx: Int,
+    ) {
+        val states = AvailabilityBarLayout.barStates(summary.availableCount, summary.totalCount)
+        if (states.isEmpty() || barHeight <= 0f) return
+
+        val barGap = markerWidthPx * 0.015f
+        val innerPad = markerWidthPx * 0.06f
+        val innerWidth = pillRect.width() - innerPad * 2
+        if (innerWidth <= 0f) return
+
+        val barWidth = ((innerWidth - barGap * (states.size - 1)) / states.size)
+            .coerceAtLeast(markerWidthPx * 0.025f)
+        val totalBarsWidth = barWidth * states.size + barGap * (states.size - 1)
+        var x = pillRect.centerX() - totalBarsWidth / 2f
+
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+        }
+        states.forEach { available ->
+            fillPaint.color = AvailabilityBarLayout.barColor(available)
+            canvas.drawRect(x, barRowTop, x + barWidth, barRowTop + barHeight, fillPaint)
+            x += barWidth + barGap
+        }
     }
 
     /** Outline that reads on top of the category fill (pairs with [contrastingForegroundArgb]). */

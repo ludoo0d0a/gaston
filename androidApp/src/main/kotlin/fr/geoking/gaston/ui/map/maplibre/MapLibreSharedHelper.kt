@@ -8,6 +8,7 @@ import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.style.layers.LineLayer
+import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -39,6 +40,7 @@ object MapLibreSharedHelper {
                 style.addLayer(
                     SymbolLayer(POI_LAYER_ID, POI_SOURCE_ID).withProperties(
                         PropertyFactory.iconImage("{$POI_ID_PROPERTY}"),
+                        PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM),
                         PropertyFactory.iconAllowOverlap(true),
                         PropertyFactory.iconIgnorePlacement(true)
                     )
@@ -68,6 +70,7 @@ object MapLibreSharedHelper {
                 style.addLayer(
                     SymbolLayer(POI_LAYER_ID, POI_SOURCE_ID).withProperties(
                         PropertyFactory.iconImage("{$POI_ID_PROPERTY}"),
+                        PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM),
                         PropertyFactory.iconAllowOverlap(true),
                         PropertyFactory.iconIgnorePlacement(true)
                     )

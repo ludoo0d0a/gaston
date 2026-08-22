@@ -236,6 +236,7 @@ fun MapScreen(
 
     var mapSizePx by remember { mutableStateOf(IntSize.Zero) }
     var selectedPoi by remember { mutableStateOf<Poi?>(initialSelectedPoi) }
+    var detailRequestPoiId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(favoritesRepo) {
@@ -341,6 +342,7 @@ fun MapScreen(
     val currentSearchMode = rememberSearchMode(settings)
 
     GastonTheme(themeMode = settings.uiThemeMode) {
+        Box(modifier = Modifier.fillMaxSize()) {
         MapScaffold(
             title = stringResource(R.string.map_title_gas_stations),
             settingsManager = settingsManager,
@@ -603,6 +605,7 @@ fun MapScreen(
                                         poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
                                     }
                                     selectedPoi = poi
+                                    detailRequestPoiId = poi.id
                                     true
                                 }
                             )
@@ -702,8 +705,12 @@ fun MapScreen(
                 }
             },
             onInvalidate = { mapActions.invalidate() },
-            initialSelectedPoi = initialSelectedPoi
+            initialSelectedPoi = initialSelectedPoi,
+            detailRequestPoiId = detailRequestPoiId,
+            onDetailRequestConsumed = { detailRequestPoiId = null },
+            carouselModifier = Modifier.align(Alignment.BottomCenter),
         )
+        }
     }
 }
 

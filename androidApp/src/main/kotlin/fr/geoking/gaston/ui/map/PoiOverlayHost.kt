@@ -6,7 +6,6 @@ import android.content.Intent
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -14,16 +13,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PriceCheck
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.zIndex
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
@@ -77,7 +69,12 @@ fun PoiOverlayHost(
     onCenterMapOnPoi: (poi: Poi) -> Unit,
     onInvalidate: () -> Unit,
     sortOrder: PoiSortOrder = PoiSortOrder.Distance,
-    initialSelectedPoi: Poi? = null
+    initialSelectedPoi: Poi? = null,
+    /** When set, opens the fullscreen detail dialog for that POI (e.g. after a map marker tap). */
+    detailRequestPoiId: String? = null,
+    onDetailRequestConsumed: () -> Unit = {},
+    /** Position the bottom carousel within a parent [Box] (e.g. [Modifier.align(Alignment.BottomCenter)]). */
+    carouselModifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
     val billingManager: BillingManager = koinInject()
@@ -156,6 +153,16 @@ fun PoiOverlayHost(
         }
     }
 
+    LaunchedEffect(detailRequestPoiId, selectedPoi?.id) {
+        val requestId = detailRequestPoiId ?: return@LaunchedEffect
+        val poi = selectedPoi?.takeIf { it.id == requestId }
+            ?: poisForOverlay.find { it.id == requestId }
+        if (poi != null) {
+            poiForDetailsDialog = poi
+        }
+        onDetailRequestConsumed()
+    }
+
     // Ensure the list is scrolled to the selected POI when it changes externally (e.g. map click).
     LaunchedEffect(selectedPoi?.id) {
         val selId = selectedPoi?.id ?: return@LaunchedEffect
@@ -218,54 +225,48 @@ fun PoiOverlayHost(
         }
 
         val configuration = LocalConfiguration.current
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
+        LazyRow(
+            state = lazyListState,
+            flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState),
+            modifier = carouselModifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
                 .zIndex(5f),
-            contentAlignment = Alignment.BottomCenter
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            LazyRow(
-                state = lazyListState,
-                flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(listToShow, key = { it.id }) { poi ->
-                    val isFav = poi.id in favoriteIds
-                    PoiDetailCard(
-                        modifier = Modifier
-                            .width((configuration.screenWidthDp - 32).dp)
-                            .height(STATION_OVERLAY_CARD_HEIGHT),
-                        poi = poi,
-                        availabilitySummary = availabilityByPoiId[poi.id],
-                        highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),
-                        highlightedPowerLevels = settings.effectiveIrvePowerLevels(),
-                        onNavigate = {
-                            val uri = IntentNavigationHelper.getNavigationUri(poi)
-                            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                        },
-                        onLocate = { onCenterMapOnPoi(poi) },
-                        onShowDetails = { poiForDetailsDialog = poi },
-                        isSelected = poi.id == selectedPoi.id,
-                        isLoggedIn = settings.isLoggedIn,
-                        isFavorite = isFav,
-                        onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
-                            {
-                                if (settings.hasPremiumFeatures) {
-                                    scope.launch {
-                                        favoritesRepo.toggleFavorite(poi)
-                                        setFavoriteIds(favoritesRepo.getFavorites().map { it.id }.toSet())
-                                    }
-                                } else {
-                                    showPaywallForFavorite = true
+            items(listToShow, key = { it.id }) { poi ->
+                val isFav = poi.id in favoriteIds
+                PoiDetailCard(
+                    modifier = Modifier
+                        .width((configuration.screenWidthDp - 32).dp)
+                        .height(STATION_OVERLAY_CARD_HEIGHT),
+                    poi = poi,
+                    availabilitySummary = availabilityByPoiId[poi.id],
+                    highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),
+                    highlightedPowerLevels = settings.effectiveIrvePowerLevels(),
+                    onNavigate = {
+                        val uri = IntentNavigationHelper.getNavigationUri(poi)
+                        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    },
+                    onLocate = { onCenterMapOnPoi(poi) },
+                    onShowDetails = { poiForDetailsDialog = poi },
+                    isSelected = poi.id == selectedPoi.id,
+                    isLoggedIn = settings.isLoggedIn,
+                    isFavorite = isFav,
+                    onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
+                        {
+                            if (settings.hasPremiumFeatures) {
+                                scope.launch {
+                                    favoritesRepo.toggleFavorite(poi)
+                                    setFavoriteIds(favoritesRepo.getFavorites().map { it.id }.toSet())
                                 }
+                            } else {
+                                showPaywallForFavorite = true
                             }
-                        } else null
-                    )
-                }
+                        }
+                    } else null
+                )
             }
         }
     }

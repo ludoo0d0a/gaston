@@ -132,6 +132,7 @@ fun VectorMapScreen(
 
     var mapSizePx by remember { mutableStateOf(IntSize.Zero) }
     var selectedPoi by remember { mutableStateOf<Poi?>(initialSelectedPoi) }
+    var detailRequestPoiId by remember { mutableStateOf<String?>(null) }
     var showMapSettings by remember { mutableStateOf(false) }
     var initialSettingsPage by remember { mutableStateOf(SettingsScreenPage.MapConfig) }
     var showFavoritesOnly by remember { mutableStateOf(false) }
@@ -307,6 +308,7 @@ fun VectorMapScreen(
     }
 
     GastonTheme(themeMode = settings.uiThemeMode) {
+        Box(modifier = Modifier.fillMaxSize()) {
         MapScaffold(
             title = stringResource(R.string.map_title_gas_stations_beta),
             settingsManager = settingsManager,
@@ -506,6 +508,9 @@ fun VectorMapScreen(
                                 poiSortOrder = fr.geoking.gaston.ui.map.PoiSortOrder.Distance
                             }
                             selectedPoi = poi
+                            if (poi != null) {
+                                detailRequestPoiId = poi.id
+                            }
                         },
                         effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
                         effectivePowerLevels = settings.effectiveIrvePowerLevels()
@@ -586,7 +591,11 @@ fun VectorMapScreen(
                 }
             },
             onInvalidate = { mapActions.invalidate() },
-            initialSelectedPoi = initialSelectedPoi
+            initialSelectedPoi = initialSelectedPoi,
+            detailRequestPoiId = detailRequestPoiId,
+            onDetailRequestConsumed = { detailRequestPoiId = null },
+            carouselModifier = Modifier.align(Alignment.BottomCenter),
         )
+        }
     }
 }

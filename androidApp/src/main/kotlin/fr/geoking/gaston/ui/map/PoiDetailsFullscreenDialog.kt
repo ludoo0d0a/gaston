@@ -189,15 +189,20 @@ fun PoiDetailsFullscreenDialog(
                                 poi.chargePointCount?.let { n ->
                                     if (n == 1) stringResource(R.string.poi_charge_point_one) else stringResource(R.string.poi_charge_points, n)
                                 },
-                                availabilitySummary?.let { s ->
-                                    stringResource(R.string.poi_availability, s.availableCount, s.totalCount)
-                                }
                             ).joinToString(" • ").takeIf { it.isNotBlank() }?.let { info ->
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = info,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 13.sp
+                                )
+                            }
+                            availabilitySummary?.let { summary ->
+                                Spacer(modifier = Modifier.height(8.dp))
+                                AvailabilitySlotsRow(
+                                    summary = summary,
+                                    textColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    barHeight = 5.dp,
                                 )
                             }
                         }
@@ -250,6 +255,14 @@ fun PoiDetailsFullscreenDialog(
                         if (poi.isElectric && poi.irveDetails != null) {
                             val d = poi.irveDetails!!
                             SectionHeader(stringResource(R.string.poi_label_connectors))
+                            availabilitySummary?.let { summary ->
+                                AvailabilitySlotsRow(
+                                    summary = summary,
+                                    textColor = MaterialTheme.colorScheme.onSurface,
+                                    barHeight = 5.dp,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
                             val powerKw = poi.powerKw
                             val powerColor = powerKw?.let { ColorHelper.getPowerColor(it) }
                             if (powerKw != null) {

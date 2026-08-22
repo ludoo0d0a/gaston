@@ -145,6 +145,7 @@ class CustomMapStationDetailScreen(
                 effectiveEnergyTypes = effectiveEnergies,
                 effectivePowerLevels = effectivePowerLevels,
                 selectedId = poi.id,
+                availability = availability?.let { mapOf(poi.id to it) } ?: emptyMap(),
             )
             updateUserLocation(searchLat, searchLon, bearing)
             start()

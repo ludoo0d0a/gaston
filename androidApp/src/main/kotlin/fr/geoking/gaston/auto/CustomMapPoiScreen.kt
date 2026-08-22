@@ -122,6 +122,8 @@ class CustomMapPoiScreen(
     private var visibleAreaCameraJob: Job? = null
     /** When set, map markers are filtered to this station only (selection / detail handoff). */
     private var mapSelectedPoi: Poi? = null
+    private var lastPoiQueryLat: Double? = null
+    private var lastPoiQueryLon: Double? = null
 
     private fun openStationDetail(poi: Poi, availability: StationAvailabilitySummary?) {
         val settings = settingsManager.settings.value
@@ -198,6 +200,15 @@ class CustomMapPoiScreen(
     private companion object {
         private const val VISIBLE_AREA_SIZE_DELTA_PX = 8
         private const val VISIBLE_AREA_CAMERA_DEBOUNCE_MS = 150L
+        /** Same threshold as the driven trail — re-query nearby POIs when the vehicle moves this far. */
+        private const val POSITION_REQUERY_THRESHOLD_DEG = 0.0002
+    }
+
+    private fun shouldRequeryPoisForMovement(newLat: Double, newLon: Double): Boolean {
+        val lastLat = lastPoiQueryLat ?: return true
+        val lastLon = lastPoiQueryLon ?: return true
+        return abs(lastLat - newLat) > POSITION_REQUERY_THRESHOLD_DEG ||
+            abs(lastLon - newLon) > POSITION_REQUERY_THRESHOLD_DEG
     }
 
     private data class PoiFetchSettings(
@@ -380,6 +391,7 @@ class CustomMapPoiScreen(
             effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
             effectivePowerLevels = settings.effectiveIrvePowerLevels(),
             selectedId = selected?.id,
+            availability = availabilityByPoiId,
         )
         val (userLat, userLon) = searchCenterFlow.value
         renderer.updateSearchRadius(
@@ -495,6 +507,8 @@ class CustomMapPoiScreen(
                 }
 
                 searchCenterFlow.value = lat to lon
+                lastPoiQueryLat = lat
+                lastPoiQueryLon = lon
                 lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
                 Log.d("CustomMapPoiScreen", "loadPois search center lat=$lat lon=$lon bearing=$lastKnownBearingDegrees")
 
@@ -716,15 +730,27 @@ class CustomMapPoiScreen(
             surfaceRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
 
             val last = historyPoints.lastOrNull()
-            if (last == null || abs(last.first - lat) > 0.0002 || abs(last.second - lon) > 0.0002) {
+            val movedEnough = last == null ||
+                abs(last.first - lat) > POSITION_REQUERY_THRESHOLD_DEG ||
+                abs(last.second - lon) > POSITION_REQUERY_THRESHOLD_DEG
+            if (movedEnough) {
                 historyPoints.add(lat to lon)
                 surfaceRenderer?.addHistoryPoint(lat, lon)
             }
 
-            if (orientationMode == MapOrientationMode.HeadingUp) {
-                applyMapOrientationToRenderer()
+            val shouldRequery = itineraryPoints.isEmpty() &&
+                mapSelectedPoi == null &&
+                movedEnough &&
+                shouldRequeryPoisForMovement(lat, lon)
+            if (shouldRequery) {
+                loadPois(preserveZoom = true, showLoading = false)
             } else {
-                invalidate()
+                syncRendererWithMapState()
+                if (orientationMode == MapOrientationMode.HeadingUp) {
+                    applyMapOrientationToRenderer()
+                } else {
+                    invalidate()
+                }
             }
         }
     }
@@ -898,10 +924,11 @@ class CustomMapPoiScreen(
                 .build()
         } else {
             val filteredPoisForSorting = getFilteredPois(currentSettings)
+            val (userLat, userLon) = searchCenterFlow.value
             val sortedPois = MapPoiFilter.sortPois(
                 pois = filteredPoisForSorting,
-                lat = searchLat,
-                lon = searchLon,
+                lat = userLat,
+                lon = userLon,
                 sortByPrice = sortByPrice,
                 selectedFuelIds = effectiveEnergies - "electric"
             )
@@ -926,7 +953,7 @@ class CustomMapPoiScreen(
                         availability = availability,
                         effectiveEnergyTypes = effectiveEnergies,
                         effectivePowerLevels = effectivePowerLevels,
-                        distanceFromLatLon = searchLat to searchLon,
+                        distanceFromLatLon = userLat to userLon,
                         includePlace = false,
                         browsable = true,
                     ) {

@@ -186,22 +186,26 @@ fun PoiDetailCard(
                             }
                         }
                         if (poi.isElectric) {
-                            val info = listOfNotNull(
+                            val infoParts = listOfNotNull(
                                 if (poi.isOnHighway) stringResource(R.string.highway) else null,
                                 poi.chargePointCount?.let { n ->
                                     pluralStringResource(R.plurals.points_count, n, n)
                                 },
-                                availabilitySummary?.let { s ->
-                                    pluralStringResource(R.plurals.available_count, s.availableCount, s.availableCount, s.totalCount)
-                                }
-                            ).joinToString(" • ")
-                            if (info.isNotBlank()) {
+                            )
+                            if (infoParts.isNotEmpty()) {
                                 Text(
-                                    text = info,
+                                    text = infoParts.joinToString(" • "),
                                     color = Color.White.copy(alpha = 0.7f),
                                     fontSize = 11.sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            availabilitySummary?.let { summary ->
+                                Spacer(modifier = Modifier.height(4.dp))
+                                AvailabilitySlotsRow(
+                                    summary = summary,
+                                    textColor = Color.White.copy(alpha = 0.85f),
                                 )
                             }
 
@@ -284,6 +288,13 @@ fun PoiDetailCard(
                                 }
                             }
                             PoiCategory.Irve -> {
+                                availabilitySummary?.let { summary ->
+                                    AvailabilitySlotsRow(
+                                        summary = summary,
+                                        textColor = Color.White.copy(alpha = 0.85f),
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                }
                                 val line = listOfNotNull(
                                     poi.operator?.takeIf { it.isNotBlank() },
                                     poi.powerKw?.let { "${it.roundToInt()} kW" },
