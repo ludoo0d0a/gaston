@@ -186,7 +186,7 @@
     <string name="screen_gaston_error">gaston Error</string>
     <string name="screen_api_errors">API Errors</string>
     <string name="map_title_gas_stations">Gas Stations</string>
-    <string name="map_title_gas_stations_beta">Gas Stations (Beta)</string>
+    <string name="map_title_gas_stations_beta">Map</string>
     <string name="map_title_navigation_preview">Navigation Preview</string>
     <string name="map_level">Level %1$d</string>
     <string name="map_custom_pan">Custom map (pan)</string>

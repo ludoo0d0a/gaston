@@ -138,7 +138,7 @@ STRINGS: list[tuple[str, str, str]] = [
     ("screen_gaston_error", "gaston Error", "Erreur Gaston"),
     ("screen_api_errors", "API Errors", "Erreurs API"),
     ("map_title_gas_stations", "Gas Stations", "Stations-service"),
-    ("map_title_gas_stations_beta", "Gas Stations (Beta)", "Stations-service (bêta)"),
+    ("map_title_gas_stations_beta", "Map", "Carte"),
     ("map_title_navigation_preview", "Navigation Preview", "Aperçu navigation"),
     ("map_libre_lab", "MapLibre (lab)", "MapLibre (labo)"),
     ("map_open_maplibre_phone", "Open MapLibre on phone", "Ouvrir MapLibre sur le téléphone"),
