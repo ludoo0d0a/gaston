@@ -5,7 +5,6 @@ import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.radiusKmFromMapViewport
-import fr.geoking.gaston.api.gas.GasApiClient
 import fr.geoking.gaston.poi.PoiProvider
 import io.ktor.client.HttpClient
 
@@ -15,8 +14,6 @@ import io.ktor.client.HttpClient
  * dataset [prix-carburants-quotidien].
  *
  * Uses [DataGouvClient] for locations and prices. Data is updated daily (J-1).
- * The quotidien export often omits enseigne fields; when [gasApiClient] is set, brands are
- * filled from [GasApiClient] by nearest-neighbour match (same source data as gas-api.ovh).
  * No API key required. Returns [Poi] with [Poi.fuelPrices] populated.
  *
  * API: https://data.economie.gouv.fr/explore/dataset/prix-carburants-quotidien/api/
@@ -24,8 +21,7 @@ import io.ktor.client.HttpClient
 class DataGouvProvider(
     private val client: HttpClient,
     private val radiusKm: Int = 10,
-    private val limit: Int = 500,
-    private val gasApiClient: GasApiClient? = null
+    private val limit: Int = 500
 ) : PoiProvider {
 
     private val dataGouvClient = DataGouvClient(client)
@@ -44,24 +40,12 @@ class DataGouvProvider(
             }
             ?: radiusKm
 
-        var stations = dataGouvClient.getStations(
+        val stations = dataGouvClient.getStations(
             latitude = latitude,
             longitude = longitude,
             radiusKm = effectiveRadiusKm,
             limit = limit
         )
-        if (gasApiClient != null && stations.isNotEmpty()) {
-            try {
-                val gas = gasApiClient.searchStations(
-                    latitude = latitude,
-                    longitude = longitude,
-                    radiusKm = effectiveRadiusKm.coerceIn(1, 100),
-                    limit = 100
-                )
-                stations = DataGouvGasBrandMerge.mergeGasApiBrands(stations, gas)
-            } catch (_: Exception) {
-            }
-        }
         return stations.map { station ->
             Poi(
                 id = station.id,

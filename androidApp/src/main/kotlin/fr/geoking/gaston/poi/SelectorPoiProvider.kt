@@ -26,12 +26,14 @@ import kotlinx.serialization.encodeToString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.awaitAll
 
 /**
  * Delegates to the currently selected [PoiProvider] (Routex, DataGouv fuel, …). Etalab / GasApi stay wired for tests;
@@ -279,48 +281,56 @@ class SelectorPoiProvider(
     ): Pair<List<Poi>, List<PoiProviderError>> {
         if (providerCategories.isEmpty()) return emptyList<Poi>() to emptyList()
 
-        val allPois = mutableListOf<Poi>()
-        val errors = mutableListOf<PoiProviderError>()
+        val results = supervisorScope {
+            providerCategories.mapNotNull { (providerType, categories) ->
+                if (categories.isEmpty()) return@mapNotNull null
+                async {
+                    val effectiveRequest = request.copy(categories = categories, skipFilters = true)
+                    val activeProvider = getProvider(providerType)
+                    val fetchStartMs = System.currentTimeMillis()
+                    traceProvider(
+                        phase = ProviderTracePhase.FetchStart,
+                        message = "search ${categories.joinToString { it.name }}",
+                        provider = providerType.name,
+                        categories = categories.map { it.name },
+                    )
+                    val searchResult = try {
+                        activeProvider.searchResult(effectiveRequest)
+                    } catch (e: Exception) {
+                        if (e is kotlinx.coroutines.CancellationException) throw e
+                        PoiSearchResult(errors = listOf(PoiProviderError(providerType.name, e.message ?: "Unknown error")))
+                    }
+                    traceProvider(
+                        phase = ProviderTracePhase.FetchEnd,
+                        message = "search done",
+                        provider = providerType.name,
+                        poiCount = searchResult.pois.size,
+                        durationMs = System.currentTimeMillis() - fetchStartMs,
+                        errors = searchResult.errors.map { "${it.providerName}: ${it.message}" },
+                    )
 
-        providerCategories.forEach { (providerType, categories) ->
-            if (categories.isEmpty()) return@forEach
-            val effectiveRequest = request.copy(categories = categories, skipFilters = true)
-            val activeProvider = getProvider(providerType)
-            val fetchStartMs = System.currentTimeMillis()
-            traceProvider(
-                phase = ProviderTracePhase.FetchStart,
-                message = "search ${categories.joinToString { it.name }}",
-                provider = providerType.name,
-                categories = categories.map { it.name },
-            )
-            val searchResult = try {
-                activeProvider.searchResult(effectiveRequest)
-            } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
-                PoiSearchResult(errors = listOf(PoiProviderError(providerType.name, e.message ?: "Unknown error")))
-            }
-            traceProvider(
-                phase = ProviderTracePhase.FetchEnd,
-                message = "search done",
-                provider = providerType.name,
-                poiCount = searchResult.pois.size,
-                durationMs = System.currentTimeMillis() - fetchStartMs,
-                errors = searchResult.errors.map { "${it.providerName}: ${it.message}" },
-            )
-            allPois.addAll(searchResult.pois)
-            errors.addAll(searchResult.errors)
-
-            if (providerType == PoiProviderType.Overpass && PoiCategory.CaravanSite in categories && dataGouvCamping != null) {
-                val inFrance = ParkingRegion.containing(request.latitude, request.longitude)?.countryCode == "FR"
-                if (inFrance) try {
-                    val extra = dataGouvCamping.search(effectiveRequest)
-                    allPois.addAll(extra)
-                } catch (e: Exception) {
-                    if (e is kotlinx.coroutines.CancellationException) throw e
-                    errors.add(PoiProviderError("DataGouv Camping", e.message ?: "Unknown error"))
+                    val extraPois = if (
+                        providerType == PoiProviderType.Overpass &&
+                        PoiCategory.CaravanSite in categories &&
+                        dataGouvCamping != null &&
+                        ParkingRegion.containing(request.latitude, request.longitude)?.countryCode == "FR"
+                    ) {
+                        try {
+                            dataGouvCamping.search(effectiveRequest)
+                        } catch (e: Exception) {
+                            if (e is kotlinx.coroutines.CancellationException) throw e
+                            emptyList<Poi>()
+                        }
+                    } else {
+                        emptyList()
+                    }
+                    searchResult.pois + extraPois to searchResult.errors
                 }
-            }
+            }.awaitAll()
         }
+
+        val allPois = results.flatMap { it.first }
+        val errors = results.flatMap { it.second }
 
         val merged = PoiMerger.mergePois(allPois)
         val enrichedWithSupermarkets = enrichBrandsFromSupermarkets(
@@ -550,7 +560,7 @@ class SelectorPoiProvider(
         val errors = mutableListOf<PoiProviderError>()
         var finalEnriched = listOf<Poi>()
 
-        coroutineScope {
+        supervisorScope {
             providerCategories.forEach { (providerType, categoriesForProvider) ->
                 launch {
                     val (rated, providerErrors) = fetchPoisFromProviders(
@@ -969,28 +979,23 @@ class SelectorPoiProvider(
             radiusKm = radiusKm,
         )
 
-        val allPois = mutableListOf<Poi>()
+        val request = PoiSearchRequest(
+            latitude = latitude,
+            longitude = longitude,
+            viewport = viewport,
+            categories = setOf(PoiCategory.Gas),
+            skipFilters = true,
+        )
+        val providerCategories = providers.associateWith { providerType ->
+            setOf(PoiCategory.Gas).intersect(getProvider(providerType).supportedCategories())
+        }.filterValues { it.isNotEmpty() }
+        val (fetchedPois, _) = fetchPoisFromProviders(
+            request = request,
+            providerCategories = providerCategories,
+            allProviders = providers,
+        )
 
-        providers.forEach { providerType ->
-            val activeProvider = getProvider(providerType)
-            val fetchStartMs = System.currentTimeMillis()
-            traceProvider(
-                phase = ProviderTracePhase.FetchStart,
-                message = "getGasStations",
-                provider = providerType.name,
-            )
-            val pois = activeProvider.getGasStations(latitude, longitude, viewport)
-            traceProvider(
-                phase = ProviderTracePhase.FetchEnd,
-                message = "getGasStations done",
-                provider = providerType.name,
-                poiCount = pois.size,
-                durationMs = System.currentTimeMillis() - fetchStartMs,
-            )
-            allPois.addAll(pois)
-        }
-
-        var result = PoiMerger.mergePois(allPois)
+        var result = PoiMerger.mergePois(fetchedPois)
         result = enrichBrandsFromSupermarkets(
             pois = result,
             latitude = latitude,

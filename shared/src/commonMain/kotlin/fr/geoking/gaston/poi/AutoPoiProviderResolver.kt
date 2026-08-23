@@ -21,7 +21,10 @@ fun autoProvidersForCountries(
 
         val fuelProvider = if (wantFuel) {
             when (iso) {
-                "FR" -> PoiProviderType.DataGouv
+                "FR" -> {
+                    resolved.add(PoiProviderType.GasApi)
+                    PoiProviderType.DataGouv
+                }
                 "GB", "UK" -> PoiProviderType.UkCma
                 "IT" -> PoiProviderType.ItalyMimit
                 "SI" -> PoiProviderType.SloveniaGorivaSi

@@ -64,7 +64,7 @@ class SemecourtSupermarketBrandMergeRealApiTests {
         // omit Semécourt. Always pin a close fetch on the official PDV geom, then widen.
         val stations = withTimeout(180_000) {
             val close = loadWithRetries {
-                DataGouvProvider(client, radiusKm = CLOSE_ZONE_RADIUS_KM, limit = 100, gasApiClient = null)
+                    DataGouvProvider(client, radiusKm = CLOSE_ZONE_RADIUS_KM, limit = 100)
                     .getGasStations(DATAGOUV_LAT, DATAGOUV_LON, viewport = null)
             }
             if (radiusKm <= CLOSE_ZONE_RADIUS_KM) {
@@ -72,7 +72,7 @@ class SemecourtSupermarketBrandMergeRealApiTests {
             } else {
                 delay(1_000)
                 val wide = loadWithRetries {
-                    DataGouvProvider(client, radiusKm = radiusKm, limit = 100, gasApiClient = null)
+                        DataGouvProvider(client, radiusKm = radiusKm, limit = 100)
                         .getGasStations(DATAGOUV_LAT, DATAGOUV_LON, viewport = null)
                 }
                 (close + wide).distinctBy { it.id }

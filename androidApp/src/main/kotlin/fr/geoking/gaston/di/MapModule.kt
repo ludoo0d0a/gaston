@@ -39,7 +39,6 @@ import fr.geoking.gaston.api.us.UsaEiaProvider
 import fr.geoking.gaston.api.dgeg.PortugalDgegProvider
 import fr.geoking.gaston.api.finland.PolttoaineProvider
 import fr.geoking.gaston.api.fuelo.FueloProvider
-import fr.geoking.gaston.api.gas.GasApiClient
 import fr.geoking.gaston.api.gas.GasApiProvider
 import fr.geoking.gaston.api.greece.GreeceFuelGRProvider
 import fr.geoking.gaston.api.ireland.IrelandPickAPumpProvider
@@ -199,8 +198,7 @@ val mapModule = module {
         DataGouvProvider(
             client = get(),
             radiusKm = 10,
-            limit = 100,
-            gasApiClient = null
+            limit = 100
         )
     }
     single<PoiProvider>(named("datagouvelec")) {
