@@ -26,7 +26,7 @@ class DataGouvCampingProvider(
 
         val effectiveRadiusKm = request.viewport
             ?.let {
-                radiusKmFromMapViewport(request.latitude, request.longitude, it.zoom, it.mapWidthPx, it.mapHeightPx)
+                radiusKmFromMapViewport(request.latitude, request.longitude, it)
                     .coerceIn(1, 50)
             }
             ?: radiusKm

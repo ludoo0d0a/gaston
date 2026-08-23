@@ -355,6 +355,33 @@ fun radiusKmFromMapViewport(
 }
 
 /**
+ * Computes the search radius in km for a circle circumscribing the visible map [viewport].
+ * When explicit bounding coordinates ([viewport.minLat], etc.) are present, uses the
+ * maximum distance from ([centerLat], [centerLng]) to the viewport corners.
+ */
+fun radiusKmFromMapViewport(
+    centerLat: Double,
+    centerLng: Double,
+    viewport: MapViewport
+): Int {
+    if (viewport.minLat != null && viewport.maxLat != null && viewport.minLng != null && viewport.maxLng != null) {
+        val d1 = haversineKm(centerLat, centerLng, viewport.minLat, viewport.minLng)
+        val d2 = haversineKm(centerLat, centerLng, viewport.minLat, viewport.maxLng)
+        val d3 = haversineKm(centerLat, centerLng, viewport.maxLat, viewport.minLng)
+        val d4 = haversineKm(centerLat, centerLng, viewport.maxLat, viewport.maxLng)
+        val maxDistKm = maxOf(d1, d2, d3, d4)
+        return ceil(maxDistKm).toInt().coerceAtLeast(1)
+    }
+    return radiusKmFromMapViewport(
+        centerLat = centerLat,
+        centerLng = centerLng,
+        zoom = viewport.zoom,
+        mapWidthPx = viewport.mapWidthPx,
+        mapHeightPx = viewport.mapHeightPx
+    )
+}
+
+/**
  * Calculates the bounding box for a given map viewport.
  */
 fun calculateBoundsFromMapViewport(
