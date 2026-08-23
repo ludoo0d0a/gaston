@@ -5,11 +5,11 @@ import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.shared.logging.DebugLogStore
 import fr.geoking.gaston.shared.logging.log
 import kotlin.math.PI
 import kotlin.math.cos
-import kotlin.math.pow
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -43,11 +43,13 @@ class PortugalDgegProvider(
             // Precise filtering based on viewport
             // the SelectorPoiProvider already applies its own distance filter based on viewport.
             // But we still want to return a sensible subset here for performance.
-            val radiusDeg = (radiusKmFromViewport(viewport, latitude) / 111.0).coerceAtLeast(0.1)
+            val radiusKm = radiusKmFromMapViewport(latitude, longitude, viewport).toDouble()
+            val latDeg = radiusKm / 111.0
+            val lonDeg = radiusKm / (111.0 * cos(latitude * PI / 180.0).coerceAtLeast(0.01))
 
             return allStations.filter {
-                it.latitude in (latitude - radiusDeg)..(latitude + radiusDeg) &&
-                it.longitude in (longitude - radiusDeg)..(longitude + radiusDeg)
+                it.latitude in (latitude - latDeg)..(latitude + latDeg) &&
+                it.longitude in (longitude - lonDeg)..(longitude + lonDeg)
             }
         }
 
@@ -57,15 +59,6 @@ class PortugalDgegProvider(
             it.latitude in (latitude - radiusDeg)..(latitude + radiusDeg) &&
             it.longitude in (longitude - radiusDeg)..(longitude + radiusDeg)
         }
-    }
-
-    private fun radiusKmFromViewport(viewport: MapViewport, lat: Double): Double {
-        // Approximate radius in km from zoom and map size
-        val worldSize = 40075.0 // Earth circumference in km
-        val pixelsPerTile = 256.0
-        val numTiles = 2.0.pow(viewport.zoom.toDouble())
-        val kmPerPixel = (worldSize * cos(lat * PI / 180.0)) / (numTiles * pixelsPerTile)
-        return (maxOf(viewport.mapWidthPx, viewport.mapHeightPx) * kmPerPixel) / 2.0
     }
 
     private suspend fun getAllStations(): List<Poi> {

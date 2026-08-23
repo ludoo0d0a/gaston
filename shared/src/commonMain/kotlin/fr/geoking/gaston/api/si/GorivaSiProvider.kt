@@ -40,7 +40,7 @@ class GorivaSiProvider(
 
     override suspend fun getGasStations(latitude: Double, longitude: Double, viewport: MapViewport?): List<Poi> {
         val effectiveRadiusKm = viewport
-            ?.let { radiusKmFromMapViewport(latitude, longitude, it.zoom, it.mapWidthPx, it.mapHeightPx).coerceIn(1, 200) }
+            ?.let { radiusKmFromMapViewport(latitude, longitude, it).coerceIn(1, 200) }
             ?: radiusKm
 
         // goriva.si has ~551 stations total; easiest is to cache the full dataset using a large radius query.

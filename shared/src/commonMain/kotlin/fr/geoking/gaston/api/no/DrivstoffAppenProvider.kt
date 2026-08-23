@@ -42,7 +42,7 @@ class DrivstoffAppenProvider(
 
     override suspend fun getGasStations(latitude: Double, longitude: Double, viewport: MapViewport?): List<Poi> {
         val effectiveRadiusKm = viewport
-            ?.let { radiusKmFromMapViewport(latitude, longitude, it.zoom, it.mapWidthPx, it.mapHeightPx).coerceIn(1, 100) }
+            ?.let { radiusKmFromMapViewport(latitude, longitude, it).coerceIn(1, 100) }
             ?: radiusKm
 
         val effectiveLimit = limit.coerceAtMost(100)

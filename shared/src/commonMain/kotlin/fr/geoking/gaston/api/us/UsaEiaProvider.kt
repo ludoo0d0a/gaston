@@ -34,7 +34,7 @@ class UsaEiaProvider(
 
         val effectiveRadiusKm = viewport
             ?.let {
-                radiusKmFromMapViewport(latitude, longitude, it.zoom, it.mapWidthPx, it.mapHeightPx)
+                radiusKmFromMapViewport(latitude, longitude, it)
                     .coerceIn(1, 50)
             }
             ?: radiusKm

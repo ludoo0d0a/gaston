@@ -387,9 +387,7 @@ class SelectorPoiProvider(
             radiusKmFromMapViewport(
                 request.latitude,
                 request.longitude,
-                v.zoom,
-                v.mapWidthPx,
-                v.mapHeightPx
+                v
             ).coerceIn(1, 50)
         } ?: 10
 
@@ -941,9 +939,7 @@ class SelectorPoiProvider(
             radiusKmFromMapViewport(
                 latitude,
                 longitude,
-                it.zoom,
-                it.mapWidthPx,
-                it.mapHeightPx
+                it
             ).coerceIn(1, 50)
         } ?: 10
 
@@ -1166,7 +1162,7 @@ class SelectorPoiProvider(
         if (!hasAnyNoBrand) return pois
 
         val radiusKm = viewport?.let { v ->
-            radiusKmFromMapViewport(latitude, longitude, v.zoom, v.mapWidthPx, v.mapHeightPx).coerceIn(1, 50)
+            radiusKmFromMapViewport(latitude, longitude, v).coerceIn(1, 50)
         } ?: 10
 
         val nowMs = System.currentTimeMillis()

@@ -22,9 +22,7 @@ class MergedPoiProvider(
                     radiusKmFromMapViewport(
                         centerLat = request.latitude,
                         centerLng = request.longitude,
-                        zoom = v.zoom,
-                        mapWidthPx = v.mapWidthPx,
-                        mapHeightPx = v.mapHeightPx
+                        viewport = v
                     ).coerceIn(5, 50).toDouble()
                 } ?: 50.0
             val communityPois = communityRepo.getCommunityPoisInArea(request.latitude, request.longitude, radiusKm)
@@ -44,9 +42,7 @@ class MergedPoiProvider(
                 radiusKmFromMapViewport(
                     centerLat = request.latitude,
                     centerLng = request.longitude,
-                    zoom = v.zoom,
-                    mapWidthPx = v.mapWidthPx,
-                    mapHeightPx = v.mapHeightPx
+                    viewport = v
                 ).coerceIn(5, 50).toDouble()
             } ?: 50.0
         val communityPois = communityRepo.getCommunityPoisInArea(request.latitude, request.longitude, radiusKm)

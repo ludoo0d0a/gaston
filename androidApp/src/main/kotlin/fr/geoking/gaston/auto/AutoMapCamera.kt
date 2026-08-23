@@ -82,9 +82,7 @@ object AutoMapCamera {
         val fromViewport = radiusKmFromMapViewport(
             centerLat = centerLat,
             centerLng = centerLon,
-            zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM).toFloat(),
-            mapWidthPx = mapWidthPx.coerceAtLeast(1),
-            mapHeightPx = mapHeightPx.coerceAtLeast(1),
+            viewport = searchViewport(centerLat, centerLon, zoom, mapWidthPx, mapHeightPx)
         )
         return max(fromViewport, DEFAULT_NEARBY_SEARCH_RADIUS_KM)
             .coerceAtMost(MAX_NEARBY_SEARCH_RADIUS_KM)
@@ -107,9 +105,7 @@ object AutoMapCamera {
         val fromViewport = radiusKmFromMapViewport(
             centerLat = centerLat,
             centerLng = centerLon,
-            zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM).toFloat(),
-            mapWidthPx = w,
-            mapHeightPx = h,
+            viewport = searchViewport(centerLat, centerLon, zoom, w, h)
         )
         if (fromViewport <= DEFAULT_NEARBY_SEARCH_RADIUS_KM) return null
         return searchViewport(centerLat, centerLon, zoom, w, h)
