@@ -47,7 +47,7 @@ class UkCmaFuelProvider(
 
     override suspend fun getGasStations(latitude: Double, longitude: Double, viewport: MapViewport?): List<Poi> {
         val effectiveRadiusKm = viewport
-            ?.let { radiusKmFromMapViewport(latitude, longitude, it.zoom, it.mapWidthPx, it.mapHeightPx).coerceIn(1, 50) }
+            ?.let { radiusKmFromMapViewport(latitude, longitude, it).coerceIn(1, 50) }
             ?: radiusKm
 
         val stations = getOrFetchAllStations()

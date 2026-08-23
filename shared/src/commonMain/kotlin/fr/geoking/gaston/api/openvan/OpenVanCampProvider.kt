@@ -38,7 +38,7 @@ class OpenVanCampProvider(
 
         val effectiveRadiusKm = viewport
             ?.let {
-                radiusKmFromMapViewport(latitude, longitude, it.zoom, it.mapWidthPx, it.mapHeightPx).coerceIn(1, 50)
+                radiusKmFromMapViewport(latitude, longitude, it).coerceIn(1, 50)
             }
             ?: radiusKm
 

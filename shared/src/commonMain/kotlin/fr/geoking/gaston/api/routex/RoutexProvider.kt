@@ -31,9 +31,7 @@ class RoutexProvider(
             radiusKmFromMapViewport(
                 latitude,
                 longitude,
-                viewport.zoom,
-                viewport.mapWidthPx,
-                viewport.mapHeightPx
+                viewport
             )
         } else {
             radiusKm

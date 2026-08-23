@@ -636,7 +636,7 @@ data class PoiProviderRules(
     fun isSatisfiedBy(latitude: Double, longitude: Double, viewport: MapViewport? = null): Boolean {
         if (circleCenter != null && circleRadiusKm != null) {
             val effectiveRadiusKm = viewport?.let { v ->
-                radiusKmFromMapViewport(latitude, longitude, v.zoom, v.mapWidthPx, v.mapHeightPx).coerceIn(1, 50)
+                radiusKmFromMapViewport(latitude, longitude, v).coerceIn(1, 50)
             } ?: 15
             val dist = haversineKm(latitude, longitude, circleCenter.first, circleCenter.second)
             if (dist > circleRadiusKm + effectiveRadiusKm) {

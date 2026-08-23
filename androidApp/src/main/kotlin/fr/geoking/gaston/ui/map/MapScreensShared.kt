@@ -194,9 +194,7 @@ fun rememberMapDataState(
             val requiredRadiusKm = radiusKmFromMapViewport(
                 centerLat,
                 centerLng,
-                zoom,
-                widthPx,
-                heightPx
+                viewport
             ).coerceIn(1, 50)
 
             mapErrorMessage = null
