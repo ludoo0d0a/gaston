@@ -622,6 +622,7 @@
     <string name="debug_overlay_general">Général</string>
     <string name="debug_overlay_method">Méthode</string>
     <string name="debug_overlay_status">État</string>
+    <string name="debug_overlay_query_parameters">Paramètres de requête</string>
     <string name="debug_overlay_request_headers">En-têtes de requête</string>
     <string name="debug_overlay_request_body">Corps de la requête</string>
     <string name="debug_overlay_response_headers">En-têtes de réponse</string>

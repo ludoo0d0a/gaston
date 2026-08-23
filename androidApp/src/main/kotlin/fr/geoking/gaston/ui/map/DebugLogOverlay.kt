@@ -579,6 +579,33 @@ private fun LogDetailsDialog(log: NetworkLog, onDismiss: () -> Unit) {
                         DetailItem(stringResource(R.string.debug_overlay_duration), "${log.durationMs}ms")
                         DetailItem(stringResource(R.string.debug_overlay_time), Date(log.timestamp).toString())
 
+                        val queryParams = remember(log.url) { log.queryParams }
+                        if (queryParams.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            DetailSection(stringResource(R.string.debug_overlay_query_parameters))
+                            queryParams.forEach { (k, v) ->
+                                val joinedValue = v.joinToString(", ")
+                                val jsonElement = remember(joinedValue) {
+                                    try { Json.parseToJsonElement(joinedValue) } catch (_: Exception) { null }
+                                }
+                                if (jsonElement != null && (jsonElement is JsonObject || jsonElement is JsonArray)) {
+                                    Row(modifier = Modifier.padding(vertical = 2.dp)) {
+                                        Text(
+                                            text = "$k: ",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                    JsonTree(
+                                        jsonElement = jsonElement,
+                                        modifier = Modifier.padding(start = 12.dp, top = 2.dp, bottom = 4.dp)
+                                    )
+                                } else {
+                                    DetailItem(k, joinedValue)
+                                }
+                            }
+                        }
+
                         Spacer(modifier = Modifier.height(16.dp))
                         DetailSection(stringResource(R.string.debug_overlay_request_headers))
                         log.requestHeaders.forEach { (k, v) ->
