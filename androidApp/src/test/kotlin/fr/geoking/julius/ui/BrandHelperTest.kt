@@ -40,6 +40,15 @@ class BrandHelperTest {
     }
 
     @Test
+    fun testDyneffMatching() {
+        val info = BrandHelper.getBrandInfo("Dyneff Montpellier")
+        assertNotNull(info)
+        assertEquals("Dyneff", info.displayName)
+        assertEquals(R.drawable.ic_brand_dyneff, info.iconResId)
+        assertEquals(R.drawable.ic_brand_dyneff_rounded, info.roundedIconResId)
+    }
+
+    @Test
     fun testUnknownBrandReturnsNull() {
         val info = BrandHelper.getBrandInfo("Some Unknown Brand")
         assertNull(info)
@@ -51,6 +60,7 @@ class BrandHelperTest {
         val ids = gasBrands.map { it.first }
         assert(ids.contains("total"))
         assert(ids.contains("shell"))
+        assert(ids.contains("dyneff"))
         assert(!ids.contains("tesla"))
         assert(!ids.contains("ionity"))
     }
