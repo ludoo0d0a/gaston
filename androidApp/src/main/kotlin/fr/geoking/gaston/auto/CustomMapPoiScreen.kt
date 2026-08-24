@@ -127,6 +127,9 @@ class CustomMapPoiScreen(
     private var lastRedrawPosition: Pair<Double, Double>? = null
 
     private fun openStationDetail(poi: Poi, availability: StationAvailabilitySummary?) {
+        loadPoisJob?.cancel()
+        isQueryPending = false
+        isLoading = false
         val settings = settingsManager.settings.value
         val energies = settings.effectiveMapEnergyFilterIds()
         val powerLevels = settings.effectiveIrvePowerLevels()
@@ -153,7 +156,11 @@ class CustomMapPoiScreen(
                 favoritesRepo = favoritesRepo,
                 onDisposed = {
                     mapSelectedPoi = null
+                    lastAppliedSearchLat = searchLat
+                    lastAppliedSearchLon = searchLon
+                    surfaceRenderer?.updateLocation(searchLat, searchLon, zoom)
                     syncRendererWithMapState()
+                    invalidate()
                 }
             )
         )
@@ -492,6 +499,7 @@ class CustomMapPoiScreen(
     private var loadPoisJob: Job? = null
 
     private fun loadPois(preserveZoom: Boolean = false, showLoading: Boolean = true) {
+        if (mapSelectedPoi != null) return
         loadPoisJob?.cancel()
         val gen = ++queryGeneration
         loadPoisJob = lifecycleScope.launch {
@@ -851,9 +859,16 @@ class CustomMapPoiScreen(
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
         registerSurfaceCallback()
         // Returning from station detail: show all filtered pins and resume follow.
+        loadPoisJob?.cancel()
+        isQueryPending = false
+        isLoading = false
         mapSelectedPoi = null
+        lastAppliedSearchLat = searchLat
+        lastAppliedSearchLon = searchLon
+        surfaceRenderer?.updateLocation(searchLat, searchLon, zoom)
         startHeadingUpdates()
         syncRendererWithMapState()
+        invalidate()
     }
 
     override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
