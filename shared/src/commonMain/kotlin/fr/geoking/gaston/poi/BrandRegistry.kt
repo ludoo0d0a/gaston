@@ -57,6 +57,32 @@ object BrandRegistry {
         "gulf" to "Gulf",
         "monoprix" to "Monoprix",
         "dyneff" to "Dyneff",
+        "delmonicos" to "Delmonicos",
+        "easycharge" to "Easy Charge",
+        "easy charge" to "Easy Charge",
+        "izivia" to "IZIVIA",
+        "electra" to "Electra",
+        "engie" to "ENGIE Vianeo",
+        "engie vianeo" to "ENGIE Vianeo",
+        "iecharge" to "IECharge",
+        "nw iecharge" to "IECharge",
+        "eborn" to "e-Born",
+        "e-born" to "e-Born",
+        "reveo" to "Révéo",
+        "bump" to "Bump",
+        "qovoltis" to "Qovoltis",
+        "metropolis" to "Metropolis",
+        "chargepoint" to "ChargePoint",
+        "zeplug" to "Zeplug",
+        "mobilize" to "Mobilize",
+        "stationse" to "Stations-e",
+        "stations-e" to "Stations-e",
+        "waat" to "WAAT",
+        "enbw" to "EnBW",
+        "shell recharge" to "Shell Recharge",
+        "evbox" to "EVBox",
+        "virta" to "Virta",
+        "monta" to "Monta",
     )
 
     /** brand_id (lowercase) -> is gas station brand. */
@@ -72,7 +98,11 @@ object BrandRegistry {
     val ELECTRIC_BRANDS = setOf(
         "tesla", "ionity", "fastned", "allego", "lidl", "chargy", "atlante", "zunder", "total", "totalenergies",
         "freshmile", "superu", "systeme u", "cooperative u", "match", "supermarche match",
-        "powerdot", "driveco", "carrefour", "leclerc", "auchan"
+        "powerdot", "driveco", "carrefour", "leclerc", "auchan",
+        "delmonicos", "easycharge", "easy charge", "izivia", "electra", "engie", "engie vianeo",
+        "iecharge", "nw iecharge", "eborn", "e-born", "reveo", "bump", "qovoltis", "metropolis",
+        "chargepoint", "zeplug", "mobilize", "stationse", "stations-e", "waat", "enbw",
+        "shell recharge", "evbox", "virta", "monta"
     )
 
     /** Set of brand keys that have a dedicated icon in the application. */
@@ -81,8 +111,12 @@ object BrandRegistry {
         "q8", "agip", "eurogarages", "jet", "elf", "migrol", "coop", "migros", "rel", "rel.metz",
         "circle k", "aral", "carrefour", "leclerc", "e.leclerc", "auchan", "intermarche", "casino",
         "tesla", "ionity", "fastned", "allego", "lidl", "chargy", "atlante", "zunder", "freshmile",
-        "superu", "systeme u", "cooperative u", "match", "supermarche match", "powerdot", "driveco"
-        , "spar", "gulf", "monoprix", "dyneff"
+        "superu", "systeme u", "cooperative u", "match", "supermarche match", "powerdot", "driveco",
+        "spar", "gulf", "monoprix", "dyneff",
+        "delmonicos", "easycharge", "easy charge", "izivia", "electra", "engie", "engie vianeo",
+        "iecharge", "nw iecharge", "eborn", "e-born", "reveo", "bump", "qovoltis", "metropolis",
+        "chargepoint", "zeplug", "mobilize", "stationse", "stations-e", "waat", "enbw",
+        "shell recharge", "evbox", "virta", "monta"
     )
 
     /** Returns true if the brand has a dedicated icon. */
@@ -153,6 +187,12 @@ object BrandRegistry {
             base.contains("indigo") -> "indigo"
             base.contains("total") && base.contains("access") -> "totalenergies"
             base.contains("esso") && base.contains("express") -> "esso express"
+            base.contains("easy charge") || base.contains("easycharge") -> "easycharge"
+            base.contains("engie") -> "engie vianeo"
+            base.contains("iecharge") || base.contains("ie charge") -> "iecharge"
+            base.contains("e-born") || base.contains("eborn") -> "e-born"
+            base.contains("stations-e") || base.contains("station-e") || base.contains("stationse") -> "stations-e"
+            base.contains("shell recharge") -> "shell recharge"
             else -> base.replace(". ", ".").trim()
         }
     }
