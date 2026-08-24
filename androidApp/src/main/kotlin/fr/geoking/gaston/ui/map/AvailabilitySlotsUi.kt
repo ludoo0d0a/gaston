@@ -23,21 +23,38 @@ import kotlin.math.min
 object AvailabilityBarLayout {
     const val MAX_BARS = 5
 
-    private val availableColor = 0xFF22C55E.toInt()
-    private val occupiedColor = 0xFF64748B.toInt()
+    val greenColor = 0xFF22C55E.toInt()
+    val orangeColor = 0xFFFF9800.toInt()
+    val redColor = 0xFFEF4444.toInt()
+    val occupiedColor = 0xFF64748B.toInt()
 
-    /** One boolean per bar: `true` = available (green). */
+    /**
+     * Determines overall availability status color:
+     * - Green: > 25% availability remaining
+     * - Orange: <= 25% availability remaining (and at least 1 slot)
+     * - Red: 0% / complete (0 available slots)
+     */
+    fun availabilityColor(availableCount: Int, totalCount: Int): Int {
+        if (totalCount <= 0 || availableCount <= 0) return redColor
+        val ratio = availableCount.toDouble() / totalCount.toDouble()
+        return if (ratio > 0.25) greenColor else orangeColor
+    }
+
+    /** One boolean per bar: `true` = available slot, `false` = occupied/unavailable slot. */
     fun barStates(available: Int, total: Int): List<Boolean> {
         if (total <= 0) return emptyList()
         val barCount = min(total, MAX_BARS)
         if (total <= MAX_BARS) {
             return List(barCount) { index -> index < available.coerceIn(0, total) }
         }
-        val greenBars = (available * barCount / total).coerceIn(0, barCount)
-        return List(barCount) { index -> index < greenBars }
+        val filledBars = (available * barCount / total).coerceIn(0, barCount)
+        return List(barCount) { index -> index < filledBars }
     }
 
-    fun barColor(available: Boolean): Int = if (available) availableColor else occupiedColor
+    fun barColor(available: Boolean, statusColor: Int = greenColor): Int =
+        if (available) statusColor else occupiedColor
+
+    fun barColor(available: Boolean): Int = if (available) greenColor else occupiedColor
 }
 
 @Composable
@@ -47,11 +64,15 @@ fun AvailabilitySlotsRow(
     barHeight: Dp = 4.dp,
     barWidth: Dp = 10.dp,
     barGap: Dp = 2.dp,
-    textColor: Color = Color.White.copy(alpha = 0.85f),
+    textColor: Color? = null,
     showLabel: Boolean = true,
 ) {
     val states = AvailabilityBarLayout.barStates(summary.availableCount, summary.totalCount)
     if (states.isEmpty()) return
+
+    val statusColorInt = AvailabilityBarLayout.availabilityColor(summary.availableCount, summary.totalCount)
+    val statusColor = Color(statusColorInt)
+    val effectiveTextColor = textColor ?: statusColor
 
     Row(
         modifier = modifier,
@@ -67,7 +88,7 @@ fun AvailabilitySlotsRow(
                     modifier = Modifier
                         .width(barWidth)
                         .height(barHeight)
-                        .background(Color(AvailabilityBarLayout.barColor(available))),
+                        .background(Color(AvailabilityBarLayout.barColor(available, statusColorInt))),
                 )
             }
         }
@@ -79,7 +100,7 @@ fun AvailabilitySlotsRow(
                     summary.availableCount,
                     summary.totalCount,
                 ),
-                color = textColor,
+                color = effectiveTextColor,
                 fontSize = 11.sp,
                 maxLines = 1,
             )

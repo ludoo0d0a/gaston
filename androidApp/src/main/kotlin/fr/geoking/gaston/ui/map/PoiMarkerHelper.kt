@@ -92,7 +92,8 @@ object PoiMarkerHelper {
             textSize = labelTextSize
         }
 
-        val showAvailBars = availability != null &&
+        val showAvailBars = poi.isElectric &&
+            availability != null &&
             availability.totalCount > 0 &&
             !label.isNullOrEmpty()
         val barRowH = if (showAvailBars) w * 0.07f else 0f
@@ -190,7 +191,7 @@ object PoiMarkerHelper {
             canvas.drawRoundRect(labelRect, corner, corner, bgPaint)
             canvas.drawRoundRect(labelRect, corner, corner, labelStroke)
             canvas.drawText(label, labelRect.centerX(), labelBaseline, textPaint)
-            if (showAvailBars && availability != null) {
+            if (showAvailBars) {
                 drawAvailabilityBars(
                     canvas = canvas,
                     summary = availability,
@@ -236,6 +237,8 @@ object PoiMarkerHelper {
         val states = AvailabilityBarLayout.barStates(summary.availableCount, summary.totalCount)
         if (states.isEmpty() || barHeight <= 0f) return
 
+        val statusColor = AvailabilityBarLayout.availabilityColor(summary.availableCount, summary.totalCount)
+
         val barGap = markerWidthPx * 0.015f
         val innerPad = markerWidthPx * 0.06f
         val innerWidth = pillRect.width() - innerPad * 2
@@ -250,7 +253,7 @@ object PoiMarkerHelper {
             style = Paint.Style.FILL
         }
         states.forEach { available ->
-            fillPaint.color = AvailabilityBarLayout.barColor(available)
+            fillPaint.color = AvailabilityBarLayout.barColor(available, statusColor)
             canvas.drawRect(x, barRowTop, x + barWidth, barRowTop + barHeight, fillPaint)
             x += barWidth + barGap
         }
