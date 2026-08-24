@@ -44,7 +44,7 @@ internal object AutoMapPoiHitTest {
         centerPxX: Double,
         centerPxY: Double,
     ): Pair<Float, Float> {
-        val tileSize = 256
+        val tileSize = AutoSurfaceRenderer.TILE_SIZE
         val centerX = lonToTileX(mapLon, zoom)
         val centerY = latToTileY(mapLat, zoom)
         val tileX = lonToTileX(poi.longitude, zoom)
