@@ -11,6 +11,7 @@ import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.MessageTemplate
+import androidx.car.app.navigation.model.MapController
 import androidx.car.app.navigation.model.MapWithContentTemplate
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
@@ -912,18 +913,6 @@ class CustomMapPoiScreen(
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
                     .build()
             )
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionZoomInIcon())
-                    .setOnClickListener { bumpZoom(1) }
-                    .build()
-            )
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionZoomOutIcon())
-                    .setOnClickListener { bumpZoom(-1) }
-                    .build()
-            )
 
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
@@ -945,6 +934,25 @@ class CustomMapPoiScreen(
             )
         }
         val actionStrip = actionStripBuilder.build()
+
+        val mapActionStrip = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionZoomInIcon())
+                    .setOnClickListener { bumpZoom(1) }
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionZoomOutIcon())
+                    .setOnClickListener { bumpZoom(-1) }
+                    .build()
+            )
+            .build()
+
+        val mapController = MapController.Builder()
+            .setMapActionStrip(mapActionStrip)
+            .build()
 
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
@@ -1002,6 +1010,7 @@ class CustomMapPoiScreen(
         MapWithContentTemplate.Builder()
             .setContentTemplate(contentTemplate)
             .setActionStrip(actionStrip)
+            .setMapController(mapController)
             .build()
     }
 }
