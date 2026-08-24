@@ -36,15 +36,15 @@ object AutoMapCamera {
     const val MAX_NEARBY_SEARCH_RADIUS_KM = 50
 
     /** Web Mercator meters-per-pixel at [lat] / integer [zoom]. */
-    fun metersPerPixel(lat: Double, zoom: Int): Double {
+    fun metersPerPixel(lat: Double, zoom: Int, tileSize: Int = AutoSurfaceRenderer.TILE_SIZE): Double {
         val z = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM)
-        return 156543.03392 * cos(lat * PI / 180.0).coerceIn(0.01, 1.0) / (1 shl z)
+        return (156543.03392 * cos(lat * PI / 180.0).coerceIn(0.01, 1.0) / (1 shl z)) * (256.0 / tileSize)
     }
 
     /** Screen-pixel radius for a geographic circle of [radiusKm] at [lat] / [zoom]. */
-    fun radiusPxForKm(lat: Double, zoom: Int, radiusKm: Double): Float {
+    fun radiusPxForKm(lat: Double, zoom: Int, radiusKm: Double, tileSize: Int = AutoSurfaceRenderer.TILE_SIZE): Float {
         if (radiusKm <= 0.0) return 0f
-        val mpp = metersPerPixel(lat, zoom).coerceAtLeast(1e-6)
+        val mpp = metersPerPixel(lat, zoom, tileSize).coerceAtLeast(1e-6)
         return ((radiusKm * 1000.0) / mpp).toFloat()
     }
 

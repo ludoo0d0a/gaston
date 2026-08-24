@@ -177,7 +177,7 @@ object AutoMapOverlayHelper {
         isDensityScaled: Boolean
     ) {
         // Standard Mercator projection calculation (meters per coordinate pixel / DP)
-        val metersPerPixel = 156543.03392 * cos(Math.toRadians(latitude)) / Math.pow(2.0, zoom.toDouble())
+        val metersPerPixel = 156543.03392 * cos(Math.toRadians(latitude)) / Math.pow(2.0, zoom.toDouble()) * (256.0 / AutoSurfaceRenderer.TILE_SIZE)
 
         val metersPerPixelOnScreen = if (isDensityScaled) metersPerPixel / density else metersPerPixel
 

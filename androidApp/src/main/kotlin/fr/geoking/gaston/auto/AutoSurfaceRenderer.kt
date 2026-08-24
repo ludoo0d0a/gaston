@@ -51,7 +51,7 @@ class AutoSurfaceRenderer(
     initialLat: Double = 48.8566,
     initialLon: Double = 2.3522,
     /** XYZ raster tile URL template with {z}, {x}, {y} placeholders. */
-    private var tileUrlTemplate: String = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+    private var tileUrlTemplate: String = "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png"
 ) {
     @Volatile
     private var running = true
@@ -167,7 +167,7 @@ class AutoSurfaceRenderer(
         private const val TAG = "AutoSurfaceRenderer"
         private val NAVIGATION_BLUE = Color.parseColor("#4285F4")
         private const val MIN_DRAW_INTERVAL_MS = 33L
-        private const val TILE_SIZE = 256
+        const val TILE_SIZE = 512
         const val POI_MARKER_WIDTH_PX = 96
 
         // Shared LRU cache for tiles across all instances of AutoSurfaceRenderer

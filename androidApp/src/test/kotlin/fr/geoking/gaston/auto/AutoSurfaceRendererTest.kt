@@ -9,6 +9,11 @@ import org.robolectric.RobolectricTestRunner
 class AutoSurfaceRendererTest {
 
     @Test
+    fun testTileSizeIsScaledForLegibility() {
+        assertEquals(512, AutoSurfaceRenderer.TILE_SIZE)
+    }
+
+    @Test
     fun testFloorDivisionMathForParentTiles() {
         fun floorDiv(x: Int, y: Int): Int {
             return if (x < 0 && x % y != 0) x / y - 1 else x / y
