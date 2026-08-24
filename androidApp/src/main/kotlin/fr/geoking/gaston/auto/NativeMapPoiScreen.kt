@@ -169,6 +169,9 @@ class NativeMapPoiScreen(
     }
 
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+        loadPoisJob?.cancel()
+        isLoading = false
+        invalidate()
         startRefreshLoop()
     }
 
@@ -298,6 +301,8 @@ class NativeMapPoiScreen(
                     distanceFromLatLon = searchLat to searchLon,
                     includePlace = true,
                 ) {
+                loadPoisJob?.cancel()
+                isLoading = false
                     screenManager.push(
                         PlaceListMapStationDetailScreen(
                             carContext = carContext,
