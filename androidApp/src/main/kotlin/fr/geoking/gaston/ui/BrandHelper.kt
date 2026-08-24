@@ -59,6 +59,7 @@ object BrandHelper {
         "spar" to R.drawable.ic_brand_spar,
         "gulf" to R.drawable.ic_brand_gulf,
         "monoprix" to R.drawable.ic_brand_monoprix,
+        "dyneff" to R.drawable.ic_brand_dyneff,
     )
 
     /** Lookup key -> rounded brand icon drawable. Unlisted brands use ic_poi_gas_rounded. */
@@ -110,6 +111,7 @@ object BrandHelper {
         "spar" to R.drawable.ic_brand_spar_rounded,
         "gulf" to R.drawable.ic_brand_gulf_rounded,
         "monoprix" to R.drawable.ic_brand_monoprix_rounded,
+        "dyneff" to R.drawable.ic_brand_dyneff_rounded,
     )
 
     data class BrandInfo(
