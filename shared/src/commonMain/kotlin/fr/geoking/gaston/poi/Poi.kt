@@ -170,6 +170,8 @@ enum class PoiProviderType(
     DataGouvElec(providesElectric = true),
     OpenChargeMap(providesElectric = true),
     Chargy(providesElectric = true),
+    /** char.gy UK Open Data API (OCPI 2.2.1). */
+    CharGyUk(providesElectric = true),
     /** Fastned UK Open Data API (OCPI 2.2.1). */
     Fastned(providesElectric = true),
     /** DKV Mobility API portal (OCPI via Azure APIM). */

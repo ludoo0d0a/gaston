@@ -1,6 +1,5 @@
 package fr.geoking.gaston.api.chargy
 
-import fr.geoking.gaston.poi.IrveDetails
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -85,19 +84,32 @@ object ChargyKmlParser {
                             val c = it.jsonObject
                             totalConnectors++
                             val status = c["description"]?.jsonPrimitive?.content
-                            if (status?.equals("AVAILABLE", ignoreCase = true) == true) {
+                                ?: c["status"]?.jsonPrimitive?.content
+                            if (status?.equals("AVAILABLE", ignoreCase = true) == true ||
+                                status?.equals("FREE", ignoreCase = true) == true ||
+                                status?.equals("IDLE", ignoreCase = true) == true) {
                                 availableConnectors++
                             }
-                            val power = c["maxchspeed"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0
+                            val power = c["maxchspeed"]?.jsonPrimitive?.content?.toDoubleOrNull()
+                                ?: c["power"]?.jsonPrimitive?.content?.toDoubleOrNull()
+                                ?: 0.0
                             if (power > maxPower) maxPower = power
 
-                            // Chargy mostly uses Type 2
-                            connectorTypes.add("type_2")
+                            val connectorTypeStr = c["connectorType"]?.jsonPrimitive?.content
+                                ?: c["type"]?.jsonPrimitive?.content
+                                ?: c["standard"]?.jsonPrimitive?.content
+                            if (!connectorTypeStr.isNullOrBlank()) {
+                                connectorTypes.add(connectorTypeStr.lowercase())
+                            }
                         }
                     } catch (_: Exception) {}
                 }
             }
             dataOffset = endData + "</Data>".length
+        }
+
+        if (connectorTypes.isEmpty() && totalConnectors > 0) {
+            connectorTypes.add("type_2")
         }
 
         return ChargyStation(
@@ -114,12 +126,10 @@ object ChargyKmlParser {
 
     private fun extractTag(content: String, tag: String): String? {
         // Robustly find start tag with potential attributes: <tag ...> or <prefix:tag ...>
-        // We look for < followed by optional namespace and then the tag name
         var startTagIndex = content.indexOf("<$tag")
         var actualTag = tag
 
         if (startTagIndex == -1) {
-            // Try searching for any tag ending with :tag
             val match = "<[a-zA-Z0-9]+:$tag".toRegex().find(content)
             if (match != null) {
                 startTagIndex = match.range.first
@@ -129,14 +139,12 @@ object ChargyKmlParser {
 
         if (startTagIndex == -1) return null
 
-        // Ensure it's the right tag (either <tag> or <tag followed by space or >)
         val nextChar = content.getOrNull(startTagIndex + actualTag.length + 1)
         if (nextChar != null && nextChar != '>' && !nextChar.isWhitespace() && nextChar != '/') return null
 
         val startTagEndIndex = content.indexOf(">", startTagIndex)
         if (startTagEndIndex == -1) return null
 
-        // Support both namespaced and non-namespaced end tags
         val endTag = "</$actualTag>"
         val endTagIndex = content.indexOf(endTag, startTagEndIndex)
         if (endTagIndex == -1) return null

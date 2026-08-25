@@ -41,7 +41,8 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **Routex / Wigeogis** | Europe | Fuel | `https://app.wigeogis.com/kunden/routex-sitefinder/backend` | No |
 | **DataGouv IRVE** | France | EV charging | `https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/bornes-irve` | No |
 | **Open Charge Map** | Global | EV charging | `https://api.openchargemap.io/v3/poi` | Yes — `OPENCHARGEMAP_KEY` |
-| **Chargy** | Luxembourg | EV charging | `https://my.chargy.lu/.../kml` | Yes — `CHARGY_API_KEY` |
+| **Chargy (Luxembourg)** | Luxembourg | EV charging | `https://my.chargy.lu/.../kml` | Yes — `CHARGY_API_KEY` |
+| **char.gy (UK OCPI)** | United Kingdom | EV charging | `https://char.gy/open-ocpi` | No |
 | **Fastned (OCPI 2.2.1)** | UK (Open Data) | EV charging | `https://uk-public.api.fastned.nl/uk-public/ocpi/cpo/2.2.1` | Yes — `FASTNED_UK_KEY` |
 | **DKV Mobility (OCPI)** | EU (network) | EV charging | `https://api-portal.dkv-mobility.com/...` | Yes — `DKV_SUBSCRIPTION_KEY` |
 | **Eco‑Movement (OCPI 2.2.1)** | EU / Global | EV charging | `https://open-chargepoints.com/api/ocpi/cpo/2.2.1` | Yes — `ECO_MOVEMENT_KEY` |
