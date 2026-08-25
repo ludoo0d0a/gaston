@@ -99,4 +99,22 @@ class BrandHelperTest {
         assertNotNull(engie)
         assertEquals("ENGIE Vianeo", engie.displayName)
     }
+
+    @Test
+    fun testBeneluxElectricBrandsInBrandHelper() {
+        val electricBrands = BrandHelper.getElectricBrands()
+        val names = electricBrands.map { it.second }
+
+        val expectedBenelux = listOf(
+            "Enovos", "Superchargy", "Sudstroum", "Electris", "Creos",
+            "Luminus", "Eneco", "Blue Corner", "DATS 24", "Vandebron",
+            "LeasePlan", "Greenflux", "Sparki", "EDI", "Powerpass",
+            "CityPower", "Strohm", "Rebel Mobility", "Optimile", "OpCharge",
+            "Vattenfall", "Orange Charging", "Equans", "Essent"
+        )
+
+        for (name in expectedBenelux) {
+            assert(names.contains(name)) { "BrandHelper electric brands list should contain $name" }
+        }
+    }
 }

@@ -83,6 +83,34 @@ object BrandRegistry {
         "evbox" to "EVBox",
         "virta" to "Virta",
         "monta" to "Monta",
+        // Benelux (Luxembourg, Belgium, Netherlands) EV brands
+        "enovos" to "Enovos",
+        "superchargy" to "Superchargy",
+        "sudstroum" to "Sudstroum",
+        "electris" to "Electris",
+        "creos" to "Creos",
+        "luminus" to "Luminus",
+        "eneco" to "Eneco",
+        "eneco emobility" to "Eneco",
+        "blue corner" to "Blue Corner",
+        "bluecorner" to "Blue Corner",
+        "dats 24" to "DATS 24",
+        "dats24" to "DATS 24",
+        "vandebron" to "Vandebron",
+        "leaseplan" to "LeasePlan",
+        "greenflux" to "Greenflux",
+        "sparki" to "Sparki",
+        "edi" to "EDI",
+        "powerpass" to "Powerpass",
+        "citypower" to "CityPower",
+        "strohm" to "Strohm",
+        "rebel mobility" to "Rebel Mobility",
+        "optimile" to "Optimile",
+        "opcharge" to "OpCharge",
+        "vattenfall" to "Vattenfall",
+        "orange charging" to "Orange Charging",
+        "equans" to "Equans",
+        "essent" to "Essent",
     )
 
     /** brand_id (lowercase) -> is gas station brand. */
@@ -102,7 +130,11 @@ object BrandRegistry {
         "delmonicos", "easycharge", "easy charge", "izivia", "electra", "engie", "engie vianeo",
         "iecharge", "nw iecharge", "eborn", "e-born", "reveo", "bump", "qovoltis", "metropolis",
         "chargepoint", "zeplug", "mobilize", "stationse", "stations-e", "waat", "enbw",
-        "shell recharge", "evbox", "virta", "monta"
+        "shell recharge", "evbox", "virta", "monta",
+        "enovos", "superchargy", "sudstroum", "electris", "creos", "luminus", "eneco", "eneco emobility",
+        "blue corner", "bluecorner", "dats 24", "dats24", "vandebron", "leaseplan", "greenflux", "sparki",
+        "edi", "powerpass", "citypower", "strohm", "rebel mobility", "optimile", "opcharge", "vattenfall",
+        "orange charging", "equans", "essent"
     )
 
     /** Set of brand keys that have a dedicated icon in the application. */
@@ -110,7 +142,7 @@ object BrandRegistry {
         "total", "totalenergies", "bp", "shell", "esso", "esso express", "eni", "repsol", "omv", "avia",
         "q8", "agip", "eurogarages", "jet", "elf", "migrol", "coop", "migros", "rel", "rel.metz",
         "circle k", "aral", "carrefour", "leclerc", "e.leclerc", "auchan", "intermarche", "casino",
-        "tesla", "ionity", "fastned", "allego", "lidl", "chargy", "atlante", "zunder", "freshmile",
+        "tesla", "ionity", "fastned", "allego", "lidl", "chargy", "superchargy", "atlante", "zunder", "freshmile",
         "superu", "systeme u", "cooperative u", "match", "supermarche match", "powerdot", "driveco",
         "spar", "gulf", "monoprix", "dyneff",
         "delmonicos", "easycharge", "easy charge", "izivia", "electra", "engie", "engie vianeo",
@@ -193,6 +225,9 @@ object BrandRegistry {
             base.contains("e-born") || base.contains("eborn") -> "e-born"
             base.contains("stations-e") || base.contains("station-e") || base.contains("stationse") -> "stations-e"
             base.contains("shell recharge") -> "shell recharge"
+            base.contains("blue corner") || base.contains("bluecorner") -> "blue corner"
+            base.contains("dats 24") || base.contains("dats24") -> "dats 24"
+            base.contains("eneco") -> "eneco"
             else -> base.replace(". ", ".").trim()
         }
     }
