@@ -72,6 +72,7 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("Open Charge Map", "https://openchargemap.org", "https://openchargemap.org/favicon.ico"),
     UsedApi("ODRE (bornes IRVE)", "https://odre.opendatasoft.com", null),
     UsedApi("Chargy (Luxembourg)", "https://chargy.lu", null),
+    UsedApi("char.gy (UK)", "https://char.gy", null),
     UsedApi("Eco-Movement (OCPI)", "https://eco-movement.com", null),
     UsedApi("Fastned (OCPI)", "https://fastnedcharging.com", null),
     UsedApi("DKV Mobility (OCPI)", "https://www.dkv-mobility.com", null),

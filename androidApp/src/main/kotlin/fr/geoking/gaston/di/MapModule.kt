@@ -10,6 +10,7 @@ import fr.geoking.gaston.api.qualicharge.QualiChargeAvailabilityProvider
 import fr.geoking.gaston.api.qualicharge.QualiChargeDynamiqueClient
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.chargy.ChargyProvider
+import fr.geoking.gaston.api.chargyuk.CharGyUkProvider
 import fr.geoking.gaston.api.dkv.DkvOcpiClient
 import fr.geoking.gaston.api.dkv.DkvOcpiProvider
 import fr.geoking.gaston.api.ecomovement.EcoMovementOcpiClient
@@ -213,6 +214,9 @@ val mapModule = module {
     single<PoiProvider>(named("chargy")) {
         ChargyProvider(get(), apiKey = BuildConfig.CHARGY_API_KEY, radiusKm = 15, limit = 100)
     }
+    single<PoiProvider>(named("chargyuk")) {
+        CharGyUkProvider(get(), radiusKm = 15, limit = 100)
+    }
     single { FastnedOcpiClient(get(), apiKey = BuildConfig.FASTNED_UK_KEY) }
     single<PoiProvider>(named("fastned")) {
         FastnedOcpiProvider(get(), radiusKm = 10, limit = 100)
@@ -321,6 +325,7 @@ val mapModule = module {
             dataGouvElec = get(named("datagouvelec")),
             openChargeMap = get(named("openchargemap")),
             chargy = get(named("chargy")),
+            charGyUk = get(named("chargyuk")),
             fastned = get(named("fastned")),
             dkv = get(named("dkv")),
             ecoMovement = get(named("ecomovement")),

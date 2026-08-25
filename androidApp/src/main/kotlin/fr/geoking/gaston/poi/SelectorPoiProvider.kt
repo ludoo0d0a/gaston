@@ -70,6 +70,7 @@ class SelectorPoiProvider(
     private val dataGouvElec: PoiProvider,
     private val openChargeMap: PoiProvider,
     private val chargy: PoiProvider,
+    private val charGyUk: PoiProvider,
     private val fastned: PoiProvider,
     private val dkv: PoiProvider,
     private val ecoMovement: PoiProvider,
@@ -166,6 +167,7 @@ class SelectorPoiProvider(
         PoiProviderType.DataGouvElec -> dataGouvElec
         PoiProviderType.OpenChargeMap -> openChargeMap
         PoiProviderType.Chargy -> chargy
+        PoiProviderType.CharGyUk -> charGyUk
         PoiProviderType.Fastned -> fastned
         PoiProviderType.Dkv -> dkv
         PoiProviderType.EcoMovement -> ecoMovement
@@ -896,6 +898,7 @@ class SelectorPoiProvider(
         dataGouvElec.clearCache()
         openChargeMap.clearCache()
         chargy.clearCache()
+        charGyUk.clearCache()
         fastned.clearCache()
         dkv.clearCache()
         ecoMovement.clearCache()

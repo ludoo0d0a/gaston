@@ -44,6 +44,7 @@ object BrandRegistry {
         "allego" to "Allego",
         "lidl" to "Lidl",
         "chargy" to "Chargy",
+        "char.gy" to "char.gy",
         "atlante" to "Atlante",
         "zunder" to "Zunder",
         "freshmile" to "Freshmile",
@@ -124,7 +125,7 @@ object BrandRegistry {
 
     /** brand_id (lowercase) -> is electric charging brand. */
     val ELECTRIC_BRANDS = setOf(
-        "tesla", "ionity", "fastned", "allego", "lidl", "chargy", "atlante", "zunder", "total", "totalenergies",
+        "tesla", "ionity", "fastned", "allego", "lidl", "chargy", "char.gy", "atlante", "zunder", "total", "totalenergies",
         "freshmile", "superu", "systeme u", "cooperative u", "match", "supermarche match",
         "powerdot", "driveco", "carrefour", "leclerc", "auchan",
         "delmonicos", "easycharge", "easy charge", "izivia", "electra", "engie", "engie vianeo",

@@ -67,6 +67,11 @@ fun autoProvidersForCountries(
                     resolved.add(PoiProviderType.OpenChargeMap)
                     PoiProviderType.Chargy
                 }
+                "GB", "UK" -> {
+                    resolved.add(PoiProviderType.OpenChargeMap)
+                    resolved.add(PoiProviderType.Fastned)
+                    PoiProviderType.CharGyUk
+                }
                 else -> PoiProviderType.OpenChargeMap
             }
         } else null

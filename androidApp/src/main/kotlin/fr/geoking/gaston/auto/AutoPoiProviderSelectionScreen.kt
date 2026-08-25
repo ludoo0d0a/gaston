@@ -43,6 +43,7 @@ class AutoPoiProviderSelectionScreen(
         PoiProviderType.DataGouvElec to "data.gouv.fr (Electric)",
         PoiProviderType.OpenChargeMap to "Open Charge Map",
         PoiProviderType.Chargy to "Chargy (Luxembourg)",
+        PoiProviderType.CharGyUk to "char.gy (UK)",
         PoiProviderType.Fastned to "Fastned (OCPI)",
         PoiProviderType.Dkv to "DKV Mobility (OCPI)",
         PoiProviderType.EcoMovement to "Eco-Movement (OCPI)",

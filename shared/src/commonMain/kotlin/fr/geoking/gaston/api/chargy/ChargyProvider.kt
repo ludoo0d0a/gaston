@@ -1,11 +1,11 @@
 package fr.geoking.gaston.api.chargy
 
-import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.poi.IrveDetails
 import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import io.ktor.client.HttpClient
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -55,7 +55,11 @@ class ChargyProvider(
             return emptyList()
         }
 
-        val stations = chargyClient.getStations()
+        val stations = try {
+            chargyClient.getStations()
+        } catch (_: Exception) {
+            emptyList()
+        }
 
         return stations
             .map { s -> s to haversineKm(latitude, longitude, s.latitude, s.longitude) }

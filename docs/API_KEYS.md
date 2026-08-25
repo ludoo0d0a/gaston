@@ -153,7 +153,9 @@ Access is provided under UK Public Charge Point Regulations. There is no public 
 The real-time KML feed is operated by Chargy (not the generic data.public.lu CKAN API).
 
 1. Request API access from [Chargy](https://chargy.lu/) or via Luxembourg open-data contacts (dataset: [bornes de recharge](https://data.public.lu/en/datasets/bornes-de-chargement-publiques-pour-voitures-electriques/)).
-2. Set `CHARGY_API_KEY`. If blank, the Chargy provider returns no stations.
+2. Set `CHARGY_API_KEY`. If blank, the Chargy Luxembourg provider returns no stations and the app falls back to other Luxembourg sources (e.g. OpenChargeMap, Overpass).
+
+*Note:* For UK EV charging, the **char.gy (UK)** open OCPI feed (`https://char.gy/open-ocpi/locations`) is unauthenticated and requires no API key.
 
 ---
 
