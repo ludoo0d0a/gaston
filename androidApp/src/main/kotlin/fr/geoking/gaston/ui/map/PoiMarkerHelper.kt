@@ -94,32 +94,37 @@ object PoiMarkerHelper {
 
         val showAvailBars = poi.isElectric &&
             availability != null &&
-            availability.totalCount > 0 &&
-            !label.isNullOrEmpty()
+            availability.totalCount > 0
         val barRowH = if (showAvailBars) w * 0.07f else 0f
         val barRowGap = if (showAvailBars) w * 0.025f else 0f
 
         var labelBlockH = 0f
         var labelRect = RectF()
         var labelBaseline = 0f
-        if (!label.isNullOrEmpty()) {
-            var ts = labelTextSize
-            for (i in 0 until 12) {
-                textPaint.textSize = ts
-                if (textPaint.measureText(label) <= w - w * 0.10f) break
-                ts *= 0.88f
-            }
-            val fm = textPaint.fontMetrics
-            val textH = fm.descent - fm.ascent
+        val hasLabel = !label.isNullOrEmpty()
+
+        if (hasLabel || showAvailBars) {
+            val labelText = label
+            val textH = if (labelText != null) {
+                var ts = labelTextSize
+                for (i in 0 until 12) {
+                    textPaint.textSize = ts
+                    if (textPaint.measureText(labelText) <= w - w * 0.10f) break
+                    ts *= 0.88f
+                }
+                val fm = textPaint.fontMetrics
+                fm.descent - fm.ascent
+            } else 0f
+
             val padH = w * 0.08f
-            val padV = (textH * 0.22f).coerceIn(w * 0.04f, w * 0.12f)
-            val tw = textPaint.measureText(label)
+            val padV = if (hasLabel) (textH * 0.22f).coerceIn(w * 0.04f, w * 0.12f) else w * 0.04f
+            val tw = if (labelText != null) textPaint.measureText(labelText) else w * 0.40f
             val rw = (tw + padH * 2).coerceAtMost(w - w * 0.06f)
-            val rh = textH + padV * 2 + barRowGap + barRowH
+            val rh = textH + padV * 2 + (if (hasLabel && showAvailBars) barRowGap else 0f) + barRowH
             val rx = (w - rw) / 2f
             val ry = topMargin
             labelRect = RectF(rx, ry, rx + rw, ry + rh)
-            val corner = w * 0.08f
+            val fm = textPaint.fontMetrics
             labelBaseline = ry + padV - fm.ascent
             labelBlockH = topMargin + rh + gapSmall
         } else {
@@ -177,7 +182,7 @@ object PoiMarkerHelper {
         }
 
         // 3) Label pill (optional, on top) — same fill as triangle; text/stroke contrast from [fillColor].
-        if (!label.isNullOrEmpty() && labelRect.width() > 0f) {
+        if ((hasLabel || showAvailBars) && labelRect.width() > 0f) {
             val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.FILL
                 color = fillColor
@@ -190,13 +195,20 @@ object PoiMarkerHelper {
             val corner = w * 0.08f
             canvas.drawRoundRect(labelRect, corner, corner, bgPaint)
             canvas.drawRoundRect(labelRect, corner, corner, labelStroke)
-            canvas.drawText(label, labelRect.centerX(), labelBaseline, textPaint)
+            if (label != null) {
+                canvas.drawText(label, labelRect.centerX(), labelBaseline, textPaint)
+            }
             if (showAvailBars) {
+                val barRowTop = if (hasLabel) {
+                    labelBaseline + textPaint.fontMetrics.descent + barRowGap
+                } else {
+                    labelRect.top + (labelRect.height() - barRowH) / 2f
+                }
                 drawAvailabilityBars(
                     canvas = canvas,
                     summary = availability,
                     pillRect = labelRect,
-                    barRowTop = labelBaseline + textPaint.fontMetrics.descent + barRowGap,
+                    barRowTop = barRowTop,
                     barHeight = barRowH,
                     markerWidthPx = w,
                 )

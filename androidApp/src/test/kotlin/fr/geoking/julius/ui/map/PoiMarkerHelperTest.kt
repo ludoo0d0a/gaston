@@ -135,4 +135,21 @@ class PoiMarkerHelperTest {
         // Both filters -> fuel price (Priority 1)
         assertEquals("€1.500", PoiMarkerHelper.getPoiLabel(hybridPoi, setOf("sp95", "electric"), emptySet()))
     }
+
+    @Test
+    fun `getPoiColor returns correct color for IRVE station`() {
+        val evPoi = Poi(
+            id = "4",
+            name = "EV 1",
+            address = "Address 4",
+            latitude = 0.0,
+            longitude = 0.0,
+            isElectric = true,
+            powerKw = 150.0
+        )
+
+        val color = PoiMarkerHelper.getPoiColor(evPoi, PoiCategory.Irve, setOf("electric"), emptySet())
+        val expected = fr.geoking.gaston.ui.ColorHelper.getPowerColor(150.0)
+        assertEquals(expected, androidx.compose.ui.graphics.Color(color))
+    }
 }
