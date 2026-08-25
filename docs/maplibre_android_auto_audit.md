@@ -1,79 +1,75 @@
-# Audit Technique : MapLibre sur Android Auto (Gaston)
+# Audit & Comparatif des 3 Implémentations Techniques de MapLibre sur Android Auto
 
-Ce document présente l'audit technique complet du fonctionnement de MapLibre sur Android Auto dans l'application Gaston, les raisons pour lesquelles la mise en œuvre actuelle ne fonctionne pas, la comparaison des 3 moteurs de cartes (`Native`, `Custom`, `MapLibre`), et l'architecture requise pour un moteur vectoriel pur sur Android Auto.
-
----
-
-## 1. Diagnostic & Causes d'Échec de l'Implémentation Actuelle
-
-Actuellement, l'intégration de MapLibre sur Android Auto (`CarMapContainer.kt`, `CarMapLibreRenderer.kt`, `MapLibrePoiScreen.kt`) essaie de rendre un `MapView` en arrière-plan et de copier son image (`Bitmap`) vers la surface d'Android Auto. Cette approche échoue pour les raisons suivantes :
-
-### 1.1 `WindowManager.BadTokenException` sur le `CarContext`
-* **Emplacement** : `CarMapContainer.kt` (lignes 75-76) & `CarContextExt.kt` (ligne 9).
-* **Cause** : `CarContext` sur Android Auto (`androidx.car.app`) est un contexte de service (`CarAppService` / `Session`), **et non une `Activity`**. Dans `CarContextExt.kt`, `carWindowManager` appelle `getSystemService(Context.WINDOW_SERVICE)`. Lorsque `CarMapContainer` fait `carWindowManager.addView(this, windowLayoutParams())` avec `TYPE_PRIVATE_PRESENTATION`, Android 10+ (API 29+) lève une exception `WindowManager$BadTokenException: Unable to add window -- permission denied for this window type` car `CarContext` ne possède pas de token de fenêtre valide rattaché à un écran.
-* **Impact** : L'application plante immédiatement dès que l'utilisateur ouvre l'écran MapLibre sur Android Auto.
-
-### 1.2 Vue Hors-Écran Non Mesurée & Moteur OpenGL Non Initialisé
-* **Emplacement** : `CarMapContainer.kt` (lignes 73-85).
-* **Cause** : Le `MapView` de MapLibre nécessite d'être rattaché à une fenêtre active rattachée à un écran pour exécuter sa boucle de rendu C++ OpenGL ES. Comme le `MapView` hors-écran n'est jamais rattaché à une hiérarchie de vues mesurée, `getMapAsync()` ne se termine jamais ou `onMapReady` n'est jamais appelé, laissant l'écran noir/vide.
-
-### 1.3 Contrainte de Surface Binder IPC (`SurfaceContainer.surface`)
-* **Cause** : `SurfaceContainer.surface` fournie par le car host est une surface distante Binder IPC gérée par le processus Android Auto. Le moteur C++ natif de MapLibre (`libmaplibre-gl.so`) attend une fenêtre locale `ANativeWindow` / `SurfaceView` gérée par l'application locale.
-* **Catégorie d'application** : Gaston est déclaré comme une application POI (`androidx.car.app.category.POI`). Les applications de catégorie POI ont accès à `MapWithContentTemplate` et `SurfaceCallback`, mais doivent dessiner directement sur la surface du car host.
-
-### 1.4 Pression Mémoire Extreme (GC Thrashing) via `TextureView.getBitmap()`
-* **Emplacement** : `CarMapLibreRenderer.kt` (lignes 290-295).
-* **Cause** : Dans `drawMapOnCanvas()`, l'application appelle `textureView.bitmap` et le dessine sur le `Canvas` d'Android Auto. L'appel à `textureView.getBitmap()` alloue un nouvel objet `Bitmap` `ARGB_8888` à chaque frame (`addOnWillStartRenderingFrameListener`). À 30-60 FPS, une résolution de 800x480 alloue entre **100 et 200 Mo de mémoire poubelle par seconde**.
-* **Impact** : Micro-saccades majeures (Garbage Collection pauses), ralentissements sévères de l'UI et risque de `OutOfMemoryError` ou ANR.
-
-### 1.5 Concurrence et Plantages lors du Lock du Canvas Matériel
-* **Emplacement** : `CarMapLibreRenderer.kt` (lignes 279-287).
-* **Cause** : `drawOnSurface()` fait un `surface.lockHardwareCanvas()` sur le thread principal UI. Si `SurfaceCallback.onSurfaceDestroyed` survient lors du changement d'écran, un appel concurrent à `lockHardwareCanvas()` sur une surface libérée provoque une `IllegalArgumentException` ou un crash natif `libhwui`.
+Ce document analyse spécifiquement **MapLibre sur Android Auto** et compare les **3 approches techniques possibles** pour intégrer le moteur vectoriel MapLibre dans l'environnement Android Auto (`androidx.car.app`).
 
 ---
 
-## 2. Comparatif des 3 Moteurs de Cartes sur Android Auto
+## 1. Contexte & Problématique d'Android Auto
 
-| Élément | **1. Native (`CarMapMode.Native`)** | **2. Custom (`CarMapMode.Custom`)** | **3. MapLibre (`CarMapMode.MapLibre`)** |
+Sur Android Auto (`CarContext`), l'application s'exécute sous forme de service arrière-plan (`CarAppService` / `Session`) et **n'est pas une `Activity`**. L'affichage s'effectue via une surface distante fournie par le car host dans un Binder IPC (`SurfaceContainer.surface`).
+
+---
+
+## 2. Tableau Comparatif des 3 Implémentations Techniques de MapLibre
+
+| Critère / Fonctionnalité | **Approche 1 : Vue Hors-Écran (`MapView` + `WindowManager`)** *(Actuel)* | **Approche 2 : Rendu EGL Natif Direct (`EGLContext` + C++ `NativeMapView`)** | **Approche 3 : Pipeline Vectoriel-vers-Raster (`MapSnapshotter` / Offline Tile)** |
 | :--- | :--- | :--- | :--- |
-| **Technologie** | `PlaceListMapTemplate` (Moteur Google Maps du car host) | `AutoSurfaceRenderer.kt` (Moteur Canvas Raster léger) | SDK MapLibre Android (`CarMapLibreRenderer.kt`) |
-| **Format des Tuiles** | Vectoriel / Raster Google | Tuiles Raster PNG/JPG (Carto, OSM, Esri via HTTP) | Tuiles Vectorielles PBF (OpenFreeMap) |
-| **Utilise MapLibre ?** | **Non** | **Non** (Développement Canvas indépendant) | **Oui** |
-| **Stabilité** | **100% Stable** | **100% Stable** | **Incompatible / Crash (`BadTokenException`)** |
-| **Performance & Mémoire** | Empreinte RAM minimale | Très faible (Cache LRU ~20 Mo) | Allocation mémoire massive (~100-200 Mo/s) |
-| **Mode Hors-Ligne** | Cache Google Maps système | Cache disque & mémoire + tuiles de secours | Dépend des requêtes PBF vectorielles |
-| **Personnalisation** | Limitée aux thèmes système | Fonds de carte personnalisés (Carto, Voyager, Dark, Esri) | Styles JSON MapLibre vectoriels |
+| **Description** | `MapView` rattaché via `carWindowManager.addView()`, capture `TextureView.bitmap` et copie sur le Canvas AA | Liaison directe d'un `EGLContext` / `EGLSurface` sur `SurfaceContainer.surface` via l'engine C++ MapLibre | Rendu des styles vectoriels MapLibre en tuiles/snapshots bitmap en arrière-plan puis affichage Canvas |
+| **Compatibilité Android Auto** | **Incompatible / Crash (`BadTokenException`)** | **100% In-Process & Conforme `CarContext`** | **100% Conforme & Sans crash `WindowManager`** |
+| **Affiche de la carte** | Écran noir / Plante au lancement sur Android 10+ | **Carte Vectorielle Temps Réel 60 FPS** | Carte basée sur le style vectoriel MapLibre, rafraîchie par snapshots |
+| **Consommation Mémoire & GC** | **Massive / Catastrophique** (~100-200 Mo/s d'allocations `Bitmap`) | **Nulle / Optimale** (Permutation de buffers GPU `eglSwapBuffers`) | **Faible / Contrôlée** (Mise en cache `LruCache` des snapshots) |
+| **Fluidité Pan & Zoom** | Saccadée (si cela ne plante pas) | **Fluide à 60 FPS (Accélération GPU directe)** | Fluide au pan/zoom (tuiles en cache), rendu lors de l'arrêt caméra |
+| **Complexité de Code** | Faible (Réutilise l'API Android haut niveau MapLibre) | **Élevée** (Nécessite du code JNI / EGL natif ou APIs privées MapLibre) | **Moyenne** (Gestion d'un pool de worker `MapSnapshotter`) |
+| **Prise en charge 3D / Inclinaison** | Théorique | **Oui (Support natif de la caméra 3D MapLibre)** | Non (Rendu 2D plat par tuiles) |
 
 ---
 
-## 3. Architecture Recommandée pour un Moteur Vectoriel Pur sur Android Auto
+## 3. Détail des 3 Implémentations
 
-Pour faire fonctionner un **véritable moteur vectoriel MapLibre** sur Android Auto sans utiliser de tuiles raster ni de hack `WindowManager` :
-
-```
-[ Tuiles Vectorielles OpenFreeMap (PBF) ]
-                   │
-                   ▼
-       [ Moteur C++ MapLibre Native ]  (libmaplibre-gl.so)
-                   │
-           (Commandes OpenGL ES)
-                   │
-                   ▼
-        [ EGLDisplay / EGLSurface ]  <-- Relié directement via EGLWindowSurface
-                   │
-                   ▼
-       [ SurfaceContainer.surface ]  <-- Surface Distante Android Auto
-```
-
-### Plan de Mise en Œuvre
-1. **Créer un `CarEglSurfaceRenderer` Native** : Éliminer `CarMapContainer` et l'appel `carWindowManager.addView()`.
-2. **Lier l'EGLContext à `SurfaceContainer.surface`** : Lors de `onSurfaceAvailable()`, initialiser l'EGLDisplay, l'EGLContext, et créer une `EGLSurface` directement sur la `Surface` Android Auto.
-3. **Rendu GPU Direct** : Passer le handle EGL directement au moteur C++ de MapLibre via son API de rendu hors-écran (`OffscreenTile` / NativeMapView).
-4. **Permutation de Buffers (Zero Copy)** : Utiliser `eglSwapBuffers()` pour envoyer directement les images vectorielles calculées sur GPU vers l'écran d'Android Auto. **0 allocation de Bitmap intermédiaire**, rendu à 60 FPS.
+### Implémentation 1 : `MapView` Hors-Écran via `WindowManager` *(Implémentation Actuelle Gaston)*
+* **Fonctionnement** :
+  1. Instancie un `MapView` Android standard (`textureMode = true`).
+  2. Tente de l'ajouter au Window Manager système via `carWindowManager.addView()`.
+  3. À chaque frame, extrait le `Bitmap` du `TextureView` enfant et le dessine sur la `Surface` Android Auto via `lockHardwareCanvas()`.
+* **Causes de l'Échec** :
+  * `CarContext` n'est pas une `Activity` -> `WindowManager$BadTokenException`.
+  * La vue hors-écran n'étant pas mesurée par un écran réel, l'EGLContext de `MapView` ne s'initialise pas correctement.
+  * La création de `Bitmap` à 60 FPS sature le Garbage Collector (~100-200 Mo/s).
 
 ---
 
-## 4. Recommandation pour Gaston
+### Implémentation 2 : Rendu Natif EGL Direct sur `SurfaceContainer.surface` *(Solution Idéale Vectorielle)*
+* **Fonctionnement** :
+  1. Élimine complètement `MapView`, `TextureView` et `WindowManager`.
+  2. Lors de `SurfaceCallback.onSurfaceAvailable(surfaceContainer)`, récupère la `Surface` Android native.
+  3. Initialise un `EGLDisplay`, un `EGLContext` et crée une `EGLSurface` (`eglCreateWindowSurface()`).
+  4. Lie le moteur C++ natif de MapLibre (`NativeMapView` / `OffscreenTile` / `MapRenderer`) directement à cet `EGLSurface`.
+  5. Effectue les appels de rendu GL directement sur la GPU et permute les buffers via `eglSwapBuffers()`.
+* **Avantages** :
+  * **Accélération GPU directe sans aucune allocation de Bitmap**.
+  * Rendu vectoriel fluide 60 FPS avec rotation, inclinaison 3D et styles JSON OpenFreeMap.
+  * Aucune dépendance à `WindowManager` -> Aucune exception `BadTokenException`.
+* **Inconvénients** :
+  * Nécessite d'écrire du code d'intégration EGL/OpenGL ES bas niveau en C++/JNI ou d'utiliser les classes internes natives de MapLibre.
 
-1. **Conserver `Custom` (`CarMapMode.Custom`) comme moteur personnalisé principal** : `AutoSurfaceRenderer` fonctionne à 100%, supporte les tuiles haute densité `@2x`, le cache hors-ligne, les thèmes personnalisés et les barres de disponibilité des bornes sans aucun problème de stabilité.
-2. **Masquer ou désactiver `MapLibre` sur Android Auto** tant que la liaison EGL direct n'est pas développée, tout en conservant MapLibre sur l'application mobile téléphone (Compose `LibreMap`) où il fonctionne parfaitement.
+---
+
+### Implémentation 3 : Pipeline Vectoriel-vers-Raster via `MapSnapshotter`
+* **Fonctionnement** :
+  1. Utilise l'API `MapSnapshotter` de MapLibre (ou un pool d'instances vectorielles en arrière-plan) pour générer des images/tuiles raster à partir des styles vectoriels MapLibre JSON.
+  2. Envoie ces images vectorielles rendu-en-raster à un moteur Canvas (comme `AutoSurfaceRenderer`).
+* **Avantages** :
+  * Conserve la richesse des styles vectoriels MapLibre (OpenFreeMap, thèmes personnalisés).
+  * Totalement conforme au modèle de service d'Android Auto.
+  * Évite les allocations mémoires continues grâce au cache LRU des snapshots.
+* **Inconvénients** :
+  * Ce n'est pas un rendu vectoriel temps réel continu à 60 FPS lors des déplacements de caméra.
+
+---
+
+## 4. Conclusion & Recommandation
+
+Si l'objectif est d'avoir un **moteur MapLibre vectoriel fonctionnel sur Android Auto** :
+1. **L'Implémentation 1 (actuelle) doit être abandonnée** car elle est techniquement incompatible avec l'architecture d'Android Auto (`BadTokenException` et thrashing mémoire).
+2. **L'Implémentation 2 (Rendu Natif EGL Direct)** est la seule vraie solution vectorielle temps réel 60 FPS pour MapLibre sur Android Auto.
+3. **L'Implémentation 3 (Snapshotter Vectoriel)** est une alternative intermédiaire pour bénéficier des styles vectoriels MapLibre sans complexité EGL native.
