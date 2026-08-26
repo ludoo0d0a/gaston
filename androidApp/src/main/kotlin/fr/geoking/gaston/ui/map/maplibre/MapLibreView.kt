@@ -37,9 +37,13 @@ fun MapLibreView(
     val currentOnMapClick by rememberUpdatedState(onMapClick)
     val currentOnMapReady by rememberUpdatedState(onMapReady)
 
-    // Initialize MapLibre singleton
+    // Initialize MapLibre singleton safely
     remember {
-        MapLibre.getInstance(context)
+        try {
+            MapLibre.getInstance(context)
+        } catch (e: Throwable) {
+            android.util.Log.e("MapLibreView", "MapLibre.getInstance failed", e)
+        }
     }
 
     val initialStyleUrl = styleUrl
