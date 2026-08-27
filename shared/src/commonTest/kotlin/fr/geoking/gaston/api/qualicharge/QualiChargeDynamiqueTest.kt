@@ -136,24 +136,22 @@ class QualiChargeDynamiqueTest {
     }
 
     @Test
-    fun factory_returnsQualiChargeOnlyWhenEnabledOutsideParis() {
+    fun factory_returnsQualiChargeOutsideParis() {
         val belib = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
             override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) = emptyList<PdcAvailability>()
         }
         val quali = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
             override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) = emptyList<PdcAvailability>()
         }
-        var enabled = false
         val factory = fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory(
             belibProvider = belib,
             qualiChargeProvider = quali,
-            isDynamicIrveEnabled = { enabled }
         )
-        // Lyon
-        assertEquals(null, factory.getProvider(45.75, 4.85))
-        enabled = true
+        // Lyon → QualiCharge
         assertEquals(quali, factory.getProvider(45.75, 4.85))
-        // Paris still Belib
+        // Paris → Belib
         assertEquals(belib, factory.getProvider(48.85, 2.35))
+        // Outside France → none
+        assertEquals(null, factory.getProvider(50.85, 4.35))
     }
 }

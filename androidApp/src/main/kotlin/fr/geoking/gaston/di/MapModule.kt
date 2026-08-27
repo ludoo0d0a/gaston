@@ -351,7 +351,7 @@ val mapModule = module {
         MergedPoiProvider(base = get(named("selector")), communityRepo = get())
     }
 
-    // Borne availability: Belib (Paris) + optional QualiCharge IRVE dynamique (FR, flag-gated).
+    // Borne availability: Belib (Paris) + QualiCharge IRVE dynamique (mainland France).
     single { BelibAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("belib")) {
         BelibAvailabilityProvider(get(), radiusKm = 10, limit = 100)
@@ -364,7 +364,6 @@ val mapModule = module {
         BorneAvailabilityProviderFactory(
             belibProvider = get(named("belib")),
             qualiChargeProvider = get(named("qualicharge")),
-            isDynamicIrveEnabled = { get<SettingsManager>().settings.value.dynamicIrveEnabled }
         )
     }
 

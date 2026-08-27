@@ -2077,21 +2077,6 @@ private fun DeveloperSection(
                 )
             }
 
-            // 7. QualiCharge IRVE dynamique (experimental)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.dev_dynamic_irve), style = MaterialTheme.typography.bodyLarge)
-                    Text(stringResource(R.string.dev_dynamic_irve_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(
-                    checked = settings.dynamicIrveEnabled,
-                    onCheckedChange = { onUpdate(settings.copy(dynamicIrveEnabled = it)) }
-                )
-            }
         }
     }
 }

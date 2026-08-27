@@ -3,12 +3,11 @@ package fr.geoking.gaston.api.belib
 /**
  * Returns the appropriate [BorneAvailabilityProvider] for a given location.
  * Belib (Paris) takes priority inside the Paris bbox; QualiCharge IRVE dynamique
- * covers mainland France when [isDynamicIrveEnabled] is true.
+ * covers the rest of mainland France.
  */
 class BorneAvailabilityProviderFactory(
     private val belibProvider: BorneAvailabilityProvider,
     private val qualiChargeProvider: BorneAvailabilityProvider? = null,
-    private val isDynamicIrveEnabled: () -> Boolean = { false }
 ) {
     /** Paris bounding box (approximate). */
     private val parisLatMin = 48.81
@@ -30,7 +29,6 @@ class BorneAvailabilityProviderFactory(
             return belibProvider
         }
         if (
-            isDynamicIrveEnabled() &&
             qualiChargeProvider != null &&
             latitude in franceLatMin..franceLatMax &&
             longitude in franceLonMin..franceLonMax

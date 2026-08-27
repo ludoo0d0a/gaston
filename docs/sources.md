@@ -47,7 +47,7 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **DKV Mobility (OCPI)** | EU (network) | EV charging | `https://api-portal.dkv-mobility.com/...` | Yes — `DKV_SUBSCRIPTION_KEY` |
 | **Eco‑Movement (OCPI 2.2.1)** | EU / Global | EV charging | `https://open-chargepoints.com/api/ocpi/cpo/2.2.1` | Yes — `ECO_MOVEMENT_KEY` |
 | **Belib’ availability** | Paris (FR) | EV charging | `https://parisdata.opendatasoft.com/.../belib-...` | No — see [`BELIB_AVAILABILITY_API.md`](BELIB_AVAILABILITY_API.md) |
-| **QualiCharge IRVE dynamique** | Mainland France (opt-in) | EV availability | `https://proxy.transport.data.gouv.fr/resource/qualicharge-irve-dynamique` (+ statique join) | No — flag `dynamic_irve_enabled`; see [`IRVE_DYNAMIQUE.md`](IRVE_DYNAMIQUE.md) |
+| **QualiCharge IRVE dynamique** | Mainland France (hors Paris) | EV availability | `https://proxy.transport.data.gouv.fr/resource/qualicharge-irve-dynamique` (+ statique join) | No — see [`IRVE_DYNAMIQUE.md`](IRVE_DYNAMIQUE.md) |
 | **OpenStreetMap (Overpass)** | Global | POIs (many), Battery Swap | `https://overpass-api.de/api/interpreter` | No |
 
 ## Notes

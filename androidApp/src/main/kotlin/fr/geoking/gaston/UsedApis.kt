@@ -77,8 +77,7 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("Fastned (OCPI)", "https://fastnedcharging.com", null),
     UsedApi("DKV Mobility (OCPI)", "https://www.dkv-mobility.com", null),
     UsedApi("Belib (Paris EV)", "https://opendata.paris.fr", null),
-    UsedApi("QualiCharge IRVE dynamique", "https://transport.data.gouv.fr", null),
-    UsedApi("QualiCharge IRVE statique", "https://transport.data.gouv.fr", null),
+    UsedApi("QualiCharge IRVE (dispo temps réel)", "https://transport.data.gouv.fr", null),
 
     // POIs & amenities
     UsedApi("Overpass API (OpenStreetMap)", "https://wiki.openstreetmap.org/wiki/Overpass_API", "https://www.openstreetmap.org/favicon.ico"),
