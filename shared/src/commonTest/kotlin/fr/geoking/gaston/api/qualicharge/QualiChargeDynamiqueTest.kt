@@ -6,6 +6,7 @@ import fr.geoking.gaston.api.belib.matchAvailabilityToPois
 import fr.geoking.gaston.poi.IrveDetails
 import fr.geoking.gaston.poi.Poi
 import io.ktor.client.HttpClient
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -136,22 +137,82 @@ class QualiChargeDynamiqueTest {
     }
 
     @Test
-    fun factory_returnsQualiChargeOutsideParis() {
+    fun factory_returnsQualiChargeInFrance_andMergesBelibInParis() = runBlocking {
         val belib = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
-            override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) = emptyList<PdcAvailability>()
+            override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) =
+                listOf(
+                    PdcAvailability(
+                        id = "BELIB1",
+                        status = AvailabilityStatus.Available,
+                        latitude = 48.85,
+                        longitude = 2.35
+                    )
+                )
         }
         val quali = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
-            override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) = emptyList<PdcAvailability>()
+            override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) =
+                listOf(
+                    PdcAvailability(
+                        id = "QUALI1",
+                        status = AvailabilityStatus.Occupied,
+                        latitude = 48.85,
+                        longitude = 2.35
+                    )
+                )
         }
         val factory = fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory(
             belibProvider = belib,
             qualiChargeProvider = quali,
         )
-        // Lyon → QualiCharge
+        // Lyon → QualiCharge only
         assertEquals(quali, factory.getProvider(45.75, 4.85))
-        // Paris → Belib
-        assertEquals(belib, factory.getProvider(48.85, 2.35))
-        // Outside France → none
-        assertEquals(null, factory.getProvider(50.85, 4.35))
+        // Outside France (London) → none
+        assertEquals(null, factory.getProvider(51.51, -0.13))
+
+        // Paris → merged (QualiCharge primary + Belib secondary)
+        val paris = factory.getProvider(48.85, 2.35)
+        assertNotNull(paris)
+        assertTrue(paris !== quali)
+        assertTrue(paris !== belib)
+        val merged = paris.getAvailability(48.85, 2.35, 10)
+        assertEquals(2, merged.size)
+        assertEquals(setOf("QUALI1", "BELIB1"), merged.map { it.id }.toSet())
+    }
+
+    @Test
+    fun mergedProvider_keepsPrimaryOnIdCollision() = runBlocking {
+        val primary = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
+            override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) =
+                listOf(
+                    PdcAvailability(
+                        id = "SAME",
+                        status = AvailabilityStatus.Available,
+                        latitude = 48.85,
+                        longitude = 2.35
+                    )
+                )
+        }
+        val secondary = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
+            override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) =
+                listOf(
+                    PdcAvailability(
+                        id = "SAME",
+                        status = AvailabilityStatus.Occupied,
+                        latitude = 48.85,
+                        longitude = 2.35
+                    ),
+                    PdcAvailability(
+                        id = "EXTRA",
+                        status = AvailabilityStatus.Reserved,
+                        latitude = 48.86,
+                        longitude = 2.36
+                    )
+                )
+        }
+        val merged = fr.geoking.gaston.api.belib.MergedBorneAvailabilityProvider(primary, secondary)
+        val result = merged.getAvailability(48.85, 2.35, 10)
+        assertEquals(2, result.size)
+        assertEquals(AvailabilityStatus.Available, result.first { it.id == "SAME" }.status)
+        assertTrue(result.any { it.id == "EXTRA" })
     }
 }

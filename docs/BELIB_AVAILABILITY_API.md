@@ -1,6 +1,6 @@
 # Belib (Paris Data) – Borne availability API
 
-Gaston uses **Paris Data** (Opendatasoft) to show real-time availability of Belib' charging points when the map is centered on Paris.
+Gaston uses **Paris Data** (Opendatasoft) as a **secondary** real-time availability source for Belib' charging points when the map is centered on Paris. QualiCharge is the primary source for all of mainland France (including Paris); Belib only adds PDCs not already returned by QualiCharge.
 
 ## No API key required
 
@@ -14,6 +14,6 @@ There is no “register API key” step on the Paris Data console; public read a
 
 ## In the codebase
 
-- **Client:** `shared/.../providers/availability/BelibAvailabilityClient.kt` – calls the API with no API key or auth headers.
-- **Provider:** `BelibAvailabilityProvider` + `BorneAvailabilityProviderFactory` – used when the map center is inside the Paris bounding box.
-- Outside Paris (mainland France), QualiCharge IRVE dynamique supplies availability — see [`IRVE_DYNAMIQUE.md`](IRVE_DYNAMIQUE.md).
+- **Client:** `shared/.../api/belib/BelibAvailabilityClient.kt` – calls the API with no API key or auth headers.
+- **Provider:** `BelibAvailabilityProvider` + `MergedBorneAvailabilityProvider` via `BorneAvailabilityProviderFactory` in the Paris bbox.
+- Primary nationwide: QualiCharge IRVE dynamique — see [`IRVE_DYNAMIQUE.md`](IRVE_DYNAMIQUE.md).

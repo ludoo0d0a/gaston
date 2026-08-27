@@ -2,8 +2,8 @@ package fr.geoking.gaston.api.belib
 
 /**
  * Returns the appropriate [BorneAvailabilityProvider] for a given location.
- * Belib (Paris) takes priority inside the Paris bbox; QualiCharge IRVE dynamique
- * covers the rest of mainland France.
+ * QualiCharge IRVE dynamique covers mainland France; in Paris, Belib is merged
+ * as a secondary source (fills PDCs missing from QualiCharge).
  */
 class BorneAvailabilityProviderFactory(
     private val belibProvider: BorneAvailabilityProvider,
@@ -21,20 +21,27 @@ class BorneAvailabilityProviderFactory(
     private val franceLonMin = -5.2
     private val franceLonMax = 9.7
 
+    private val parisMergedProvider: BorneAvailabilityProvider? =
+        qualiChargeProvider?.let { MergedBorneAvailabilityProvider(primary = it, secondary = belibProvider) }
+
     /**
      * Returns a provider that can supply availability for the given coordinates, or null if none.
      */
     fun getProvider(latitude: Double, longitude: Double): BorneAvailabilityProvider? {
-        if (latitude in parisLatMin..parisLatMax && longitude in parisLonMin..parisLonMax) {
-            return belibProvider
-        }
-        if (
-            qualiChargeProvider != null &&
+        val inFrance =
             latitude in franceLatMin..franceLatMax &&
-            longitude in franceLonMin..franceLonMax
-        ) {
-            return qualiChargeProvider
+                longitude in franceLonMin..franceLonMax
+        if (!inFrance) return null
+
+        val inParis =
+            latitude in parisLatMin..parisLatMax &&
+                longitude in parisLonMin..parisLonMax
+
+        return when {
+            inParis && parisMergedProvider != null -> parisMergedProvider
+            inParis -> belibProvider
+            qualiChargeProvider != null -> qualiChargeProvider
+            else -> null
         }
-        return null
     }
 }

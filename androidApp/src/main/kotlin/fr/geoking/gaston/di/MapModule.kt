@@ -351,7 +351,7 @@ val mapModule = module {
         MergedPoiProvider(base = get(named("selector")), communityRepo = get())
     }
 
-    // Borne availability: Belib (Paris) + QualiCharge IRVE dynamique (mainland France).
+    // Borne availability: QualiCharge IRVE (mainland France); Belib merged as secondary in Paris.
     single { BelibAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("belib")) {
         BelibAvailabilityProvider(get(), radiusKm = 10, limit = 100)
