@@ -2,6 +2,8 @@ package fr.geoking.gaston.di
 
 import org.koin.core.context.GlobalContext
 
+import fr.geoking.gaston.api.belgiumnap.BelgiumNapAvailabilityClient
+import fr.geoking.gaston.api.belgiumnap.BelgiumNapAvailabilityProvider
 import fr.geoking.gaston.api.belib.BelibAvailabilityClient
 import fr.geoking.gaston.api.belib.BelibAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProvider
@@ -351,7 +353,7 @@ val mapModule = module {
         MergedPoiProvider(base = get(named("selector")), communityRepo = get())
     }
 
-    // Borne availability: QualiCharge IRVE (mainland France); Belib merged as secondary in Paris.
+    // Borne availability: QualiCharge (FR) + Belib secondary in Paris; Belgium NAP (Road) for BE.
     single { BelibAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("belib")) {
         BelibAvailabilityProvider(get(), radiusKm = 10, limit = 100)
@@ -360,10 +362,15 @@ val mapModule = module {
     single<BorneAvailabilityProvider>(named("qualicharge")) {
         QualiChargeAvailabilityProvider(get(), radiusKm = 15, limit = 200)
     }
+    single { BelgiumNapAvailabilityClient(get()) }
+    single<BorneAvailabilityProvider>(named("belgium_nap")) {
+        BelgiumNapAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+    }
     single<BorneAvailabilityProviderFactory> {
         BorneAvailabilityProviderFactory(
             belibProvider = get(named("belib")),
             qualiChargeProvider = get(named("qualicharge")),
+            belgiumNapProvider = get(named("belgium_nap")),
         )
     }
 

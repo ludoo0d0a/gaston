@@ -55,6 +55,8 @@ Eco-Movement is a **commercial** data product. Access is not self-service:
 2. They provide an OCPI token for `https://open-chargepoints.com/api/ocpi/cpo/2.2.1`.
 3. Set `ECO_MOVEMENT_KEY` or paste the token in Settings.
 
+**Belgium NAP DATEX** (`nap-be.eco-movement.com`) is a separate AFIR feed on [transportdata.be](https://transportdata.be); it also needs credentials (401 without auth). Contacts and details: [`BELGIUM_NAP_AVAILABILITY.md`](BELGIUM_NAP_AVAILABILITY.md#eco-movement-datex-ii-belgium-afir) (`support@eco-movement.com`, `partners@eco-movement.com`). Gaston’s Belgium availability provider currently uses the free Road Public Charging Network dump (no key).
+
 ---
 
 ## Fuelprices.dk (fuel, Denmark)
@@ -228,7 +230,7 @@ Not a POI source, but required for the map UI.
 
 These providers work without credentials (open data, public APIs, or scraping where allowed):
 
-DataGouv (fuel + IRVE), Gas API, UK CMA feeds, Spain Minetur, Austria E-Control, Italy MIMIT, goriva.si, DrivstoffAppen, DGEG, ANWB, Fuelo, MZOE, polttoaine.net, FuelGR, Pick A Pump, ANRE, CRE, Argentina energy data, Belgium official prices, OpenVan.camp, Routex/Wigeogis, Belib availability (Paris open data), Overpass/OSM, OSRM, Open-Meteo, CITA traffic, RATP, STIB, and most other entries in [`sources.md`](sources.md).
+DataGouv (fuel + IRVE), Gas API, UK CMA feeds, Spain Minetur, Austria E-Control, Italy MIMIT, goriva.si, DrivstoffAppen, DGEG, ANWB, Fuelo, MZOE, polttoaine.net, FuelGR, Pick A Pump, ANRE, CRE, Argentina energy data, Belgium official prices, OpenVan.camp, Routex/Wigeogis, Belib availability (Paris open data), QualiCharge IRVE dynamique, Belgium NAP Road EV availability (transportdata.be), Overpass/OSM, OSRM, Open-Meteo, CITA traffic, RATP, STIB, and most other entries in [`sources.md`](sources.md).
 
 ---
 
