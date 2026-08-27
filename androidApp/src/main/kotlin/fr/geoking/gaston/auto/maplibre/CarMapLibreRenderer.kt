@@ -8,7 +8,6 @@ import android.hardware.display.VirtualDisplay
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.view.ViewGroup
 import androidx.car.app.CarContext
 import androidx.car.app.SurfaceContainer
 import androidx.lifecycle.Lifecycle
@@ -29,8 +28,11 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 
 /**
- * Presents MapLibre onto the Android Auto [SurfaceContainer] via VirtualDisplay + [Presentation]
- * (Spike B). Overlays (compass / scale / loader) are drawn by [CarMapOverlayView] above the map.
+ * Presents MapLibre (OpenFreeMap vector styles) onto the Android Auto [SurfaceContainer]
+ * via VirtualDisplay + [Presentation].
+ *
+ * MapView is created **per attach** and resumed only after [Presentation.show], matching the
+ * MapLibre Android Auto sample (Spike B). Reusing a MapView across dismiss often yields a black screen.
  */
 class CarMapLibreRenderer(
     private val carContext: CarContext,
@@ -96,7 +98,14 @@ class CarMapLibreRenderer(
     private var visibleArea: Rect? = null
     private var surfaceWidth: Int = 0
     private var surfaceHeight: Int = 0
+    private var surfaceDpi: Int = 0
     private var queryPending: Boolean = false
+
+    private var debugPhase: String = "idle"
+    private var debugStyleStatus: String = "—"
+    private var debugLastError: String? = null
+    private var debugFrameCount: Int = 0
+    private var firstFrameLogged: Boolean = false
 
     private val loaderAnimRunnable = object : Runnable {
         override fun run() {
@@ -111,30 +120,45 @@ class CarMapLibreRenderer(
 
     init {
         mapContainer.onMapReady = { map ->
-            val url = styleUrl
-            if (url != null) {
-                map.setStyle(url) { style ->
-                    adjustTextSizes(style)
-                    applyCamera(map)
-                    syncPoiLayer()
-                    syncSearchRadiusLayer()
-                }
-            } else {
-                map.getStyle { style ->
-                    adjustTextSizes(style)
-                }
-                applyCamera(map)
-                syncPoiLayer()
-                syncSearchRadiusLayer()
-            }
+            debugPhase = "map_ready"
+            applyCamera(map)
+            syncPoiLayer()
+            syncSearchRadiusLayer()
             syncOverlay()
+            Log.i(TAG, "onMapReady camera=${centerLat},${centerLon} z=$zoom")
+        }
+        mapContainer.onStyleLoaded = { url ->
+            debugStyleStatus = "ok"
+            debugLastError = null
+            debugPhase = "style_ok"
+            mapContainer.mapLibreMapInstance?.getStyle { style ->
+                adjustTextSizes(style)
+            }
+            syncPoiLayer()
+            syncSearchRadiusLayer()
+            syncOverlay()
+            Log.i(TAG, "style loaded: $url")
+        }
+        mapContainer.onMapFailLoading = { message ->
+            debugStyleStatus = "fail"
+            debugLastError = message
+            debugPhase = "style_fail"
+            syncOverlay()
+            Log.e(TAG, "style/map load failed: $message")
         }
     }
 
     fun setStyleUrl(url: String) {
-        if (styleUrl == url) return
+        if (styleUrl == url) {
+            Log.d(TAG, "setStyleUrl unchanged: $url")
+            return
+        }
+        Log.i(TAG, "setStyleUrl: $url")
         styleUrl = url
+        debugStyleStatus = "loading"
+        debugPhase = "style_loading"
         mapContainer.setStyleUrl(url)
+        syncOverlay()
     }
 
     fun updateLocation(lat: Double, lon: Double, zoomLevel: Int) {
@@ -252,11 +276,20 @@ class CarMapLibreRenderer(
         val surface = container.surface
         if (surface == null) {
             Log.w(TAG, "attachSurface: SurfaceContainer.surface is null")
+            debugPhase = "no_surface"
+            syncOverlay()
             return
         }
         if (container.width <= 0 || container.height <= 0) {
             Log.w(TAG, "attachSurface: invalid size ${container.width}x${container.height}")
+            debugPhase = "bad_size"
+            syncOverlay()
             return
+        }
+
+        val url = styleUrl ?: DEFAULT_OPENFREEMAP_STYLE.also {
+            Log.w(TAG, "attachSurface: styleUrl null, using default $it")
+            styleUrl = it
         }
 
         detachPresentation()
@@ -264,47 +297,64 @@ class CarMapLibreRenderer(
         surfaceContainer = container
         surfaceWidth = container.width
         surfaceHeight = container.height
+        surfaceDpi = container.dpi.coerceAtLeast(1)
+        debugPhase = "attaching"
+        debugStyleStatus = "loading"
+        debugLastError = null
+        debugFrameCount = 0
+        firstFrameLogged = false
 
-        val dpi = container.dpi.coerceAtLeast(1)
-        Log.d(
+        Log.i(
             TAG,
-            "attachSurface Presentation: ${container.width}x${container.height} dpi=$dpi",
+            "attachSurface Presentation: ${container.width}x${container.height} dpi=$surfaceDpi style=$url",
         )
 
-        val displayManager = carContext.getSystemService(DisplayManager::class.java)
-        val vd = displayManager.createVirtualDisplay(
-            VIRTUAL_DISPLAY_NAME,
-            container.width,
-            container.height,
-            dpi,
-            surface,
-            0,
-        )
-        virtualDisplay = vd
+        try {
+            val displayManager = carContext.getSystemService(DisplayManager::class.java)
+            val vd = displayManager.createVirtualDisplay(
+                VIRTUAL_DISPLAY_NAME,
+                container.width,
+                container.height,
+                surfaceDpi,
+                surface,
+                0, // match MapLibre AA sample
+            )
+            virtualDisplay = vd
+            Log.i(TAG, "VirtualDisplay created displayId=${vd.display.displayId}")
 
-        val content = mapContainer.ensureContentView()
-        (content.parent as? ViewGroup)?.removeView(content)
+            val content = mapContainer.buildContent(url)
+            val pres = Presentation(carContext, vd.display)
+            presentation = pres
+            pres.setContentView(content)
+            pres.show()
+            Log.i(TAG, "Presentation.show() ok isShowing=${pres.isShowing}")
 
-        val pres = Presentation(carContext, vd.display)
-        presentation = pres
-        pres.setContentView(content)
-        pres.show()
-
-        mapContainer.startMapLifecycle()
-        mapContainer.mapLibreMapInstance?.let { applyCamera(it) }
-        syncOverlay()
-        syncPoiLayer()
-        syncSearchRadiusLayer()
+            mapContainer.resumeAfterPresented()
+            wireFirstFrameLogger()
+            debugPhase = "presented"
+            mapContainer.mapLibreMapInstance?.let { applyCamera(it) }
+            syncOverlay()
+            syncPoiLayer()
+            syncSearchRadiusLayer()
+        } catch (e: Exception) {
+            debugPhase = "attach_fail"
+            debugLastError = e.message
+            syncOverlay()
+            Log.e(TAG, "attachSurface failed", e)
+            detachPresentation()
+        }
     }
 
     fun detachSurface() {
         uiHandler.removeCallbacks(loaderAnimRunnable)
+        debugPhase = "detached"
         detachPresentation()
         surfaceContainer = null
+        Log.i(TAG, "detachSurface done")
     }
 
     private fun detachPresentation() {
-        mapContainer.pauseMapLifecycle()
+        mapContainer.tearDown()
         try {
             presentation?.dismiss()
         } catch (e: Exception) {
@@ -317,6 +367,21 @@ class CarMapLibreRenderer(
             Log.w(TAG, "virtualDisplay.release failed", e)
         }
         virtualDisplay = null
+    }
+
+    private fun wireFirstFrameLogger() {
+        val mapView = mapContainer.mapViewInstance ?: return
+        mapView.addOnDidFinishRenderingFrameListener { fully, _, _ ->
+            debugFrameCount++
+            if (!firstFrameLogged && fully) {
+                firstFrameLogged = true
+                debugPhase = "first_frame"
+                Log.i(TAG, "first fully rendered frame (OpenFreeMap vector)")
+                syncOverlay()
+            } else if (debugFrameCount % 60 == 0) {
+                syncOverlay()
+            }
+        }
     }
 
     private fun followFocalPoint(): AutoMapFollowFocalPoint.FocalPoint =
@@ -345,7 +410,23 @@ class CarMapLibreRenderer(
         overlay.latitude = centerLat
         overlay.mapTileDebugEnabled = settingsManager.settings.value.mapTileDebugEnabled
         overlay.queryPending = queryPending
+        overlay.debugLines = buildDebugLines()
         overlay.invalidate()
+    }
+
+    private fun buildDebugLines(): List<String> {
+        val styleShort = styleUrl
+            ?.removePrefix("https://tiles.openfreemap.org/styles/")
+            ?.let { "ofm/$it" }
+            ?: "style=?"
+        return listOf(
+            "MLAA phase=$debugPhase",
+            "surf=${surfaceWidth}x${surfaceHeight}@${surfaceDpi}",
+            "style=$styleShort ($debugStyleStatus)",
+            "cam=${"%.4f".format(centerLat)},${"%.4f".format(centerLon)} z=$zoom",
+            "frames=$debugFrameCount map=${if (map != null) "yes" else "no"}",
+            "err=${debugLastError ?: "—"}",
+        )
     }
 
     private fun applyCamera(map: MapLibreMap) {
@@ -403,6 +484,8 @@ class CarMapLibreRenderer(
     companion object {
         private const val TAG = "CarMapLibreRenderer"
         private const val VIRTUAL_DISPLAY_NAME = "GastonMapLibreVirtualDisplay"
+        /** Fallback OpenFreeMap vector style (Positron). */
+        private const val DEFAULT_OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron"
 
         internal fun scaleExpressionArray(value: Any?, scale: Float): Any? {
             if (scale == 1.0f) return value

@@ -72,7 +72,8 @@ import fr.geoking.gaston.auto.maplibre.resolveAutoMapStyleUrl
 
 /**
  * POI map with MapLibre (OpenFreeMap) presented onto the Auto surface via
- * VirtualDisplay + [android.app.Presentation] (Spike B — no TextureView bitmap copy).
+ * VirtualDisplay + [android.app.Presentation] with OpenFreeMap vector styles (Spike B).
+ * Enable Settings → Map tile debug for on-screen MapLibre AA HUD; logcat: CarMapLibreRenderer / CarMapContainer.
  * Supports north-up and heading-up orientation via header controls.
  */
 class MapLibrePoiScreen(

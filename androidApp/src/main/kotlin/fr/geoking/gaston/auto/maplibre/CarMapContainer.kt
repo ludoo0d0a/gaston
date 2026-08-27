@@ -27,11 +27,9 @@ import org.maplibre.android.maps.MapView
  * MapLibre [MapView] hosted inside an Android Auto [android.app.Presentation]
  * (VirtualDisplay → host [android.view.Surface]).
  *
- * Spike B: replaces the TextureView bitmap-copy path from
- * [MapLibre-Android-Auto-Sample](https://github.com/maplibre/MapLibre-Android-Auto-Sample)
- * with the Presentation approach from
- * [PR #13](https://github.com/maplibre/MapLibre-Android-Auto-Sample/pull/13) /
- * [helw.net](https://helw.net/2025/11/16/maplibre-on-android-auto/).
+ * Important: create the [MapView] only for a live Presentation display, then call
+ * [resumeAfterPresented] **after** [android.app.Presentation.show]. Reusing a
+ * MapView across Presentation dismiss/show often yields a black GLSurfaceView.
  */
 class CarMapContainer(
     private val carContext: CarContext,
@@ -51,10 +49,13 @@ class CarMapContainer(
 
     private var contentRoot: FrameLayout? = null
     private var mapLifecycleStarted = false
+    /** Bumps on each [buildContent] / [tearDown] so late async callbacks are ignored. */
+    private var generation: Int = 0
 
     private var scaleAnimator: Animator? = null
-    private var pendingStyleUrl: String? = null
     var onMapReady: ((MapLibreMap) -> Unit)? = null
+    var onStyleLoaded: ((String) -> Unit)? = null
+    var onMapFailLoading: ((String?) -> Unit)? = null
 
     init {
         lifecycle.addObserver(this)
@@ -64,35 +65,39 @@ class CarMapContainer(
         mapLibreMapInstance?.scrollBy(-x, -y, 0)
     }
 
-    fun setStyleUrl(url: String) {
-        pendingStyleUrl = url
-        val map = mapLibreMapInstance ?: return
-        map.setStyle(url)
-    }
-
     /**
-     * Builds (once) the Presentation content: MapView + overlay FrameLayout.
-     * Caller must attach the returned view via [android.app.Presentation.setContentView].
+     * Builds a fresh MapView + overlay tree for [styleUrl].
+     * Call [resumeAfterPresented] only after the Presentation is shown.
      */
     @MainThread
-    fun ensureContentView(): View {
-        contentRoot?.let { return it }
+    fun buildContent(styleUrl: String): View {
+        tearDown()
+        val gen = ++generation
+        Log.i(TAG, "buildContent gen=$gen style=$styleUrl")
 
         MapLibre.getInstance(carContext)
         val mapView = createMapView().also { view ->
             mapViewInstance = view
             view.onCreate(Bundle())
+            view.addOnDidFailLoadingMapListener { message ->
+                if (gen != generation) return@addOnDidFailLoadingMapListener
+                Log.e(TAG, "MapLibre failed loading map: $message")
+                onMapFailLoading?.invoke(message)
+            }
             view.getMapAsync { map ->
-                mapLibreMapInstance = map
-                val styleUrl = pendingStyleUrl
-                if (styleUrl != null) {
-                    map.setStyle(styleUrl)
+                if (gen != generation) {
+                    Log.w(TAG, "getMapAsync ignored stale gen=$gen current=$generation")
+                    return@getMapAsync
                 }
+                mapLibreMapInstance = map
+                Log.i(TAG, "MapLibreMap ready gen=$gen")
+                loadStyle(map, styleUrl, gen)
                 onMapReady?.invoke(map)
             }
         }
         val overlay = CarMapOverlayView(carContext).also { overlayView = it }
         val root = FrameLayout(carContext).apply {
+            setBackgroundColor(android.graphics.Color.rgb(0xF0, 0xF0, 0xF0))
             addView(
                 mapView,
                 FrameLayout.LayoutParams(
@@ -112,43 +117,62 @@ class CarMapContainer(
         return root
     }
 
-    /** Call after the content view is shown in a Presentation. */
+    /** Apply a new OpenFreeMap style URI on the live map (if ready). */
     @MainThread
-    fun startMapLifecycle() {
-        val mapView = mapViewInstance ?: return
+    fun setStyleUrl(url: String) {
+        val map = mapLibreMapInstance
+        if (map == null) {
+            Log.d(TAG, "setStyleUrl deferred (map not ready): $url")
+            return
+        }
+        loadStyle(map, url, generation)
+    }
+
+    /** Call after [android.app.Presentation.show]. */
+    @MainThread
+    fun resumeAfterPresented() {
+        val mapView = mapViewInstance ?: run {
+            Log.w(TAG, "resumeAfterPresented: no MapView")
+            return
+        }
         if (!mapLifecycleStarted) {
             mapView.onStart()
             mapView.onResume()
             mapLifecycleStarted = true
-            Log.d(TAG, "MapView lifecycle started (onStart/onResume)")
+            Log.i(TAG, "MapView lifecycle started (onStart/onResume) gen=$generation")
+        } else {
+            Log.d(TAG, "resumeAfterPresented: already started")
         }
-    }
-
-    /** Call before dismissing the Presentation / releasing the VirtualDisplay. */
-    @MainThread
-    fun pauseMapLifecycle() {
-        val mapView = mapViewInstance ?: return
-        if (mapLifecycleStarted) {
-            mapView.onPause()
-            mapView.onStop()
-            mapLifecycleStarted = false
-            Log.d(TAG, "MapView lifecycle paused (onPause/onStop)")
-        }
+        mapView.requestLayout()
+        mapView.invalidate()
     }
 
     @MainThread
-    fun destroyMap() {
-        pauseMapLifecycle()
+    fun tearDown() {
         cancelAnimator(scaleAnimator)
+        val mapView = mapViewInstance
+        if (mapView != null) {
+            Log.i(TAG, "tearDown MapView gen=$generation started=$mapLifecycleStarted")
+            try {
+                if (mapLifecycleStarted) {
+                    mapView.onPause()
+                    mapView.onStop()
+                    mapLifecycleStarted = false
+                }
+                mapView.onDestroy()
+            } catch (e: Exception) {
+                Log.w(TAG, "MapView teardown failed", e)
+            }
+        }
         mapLibreMapInstance = null
-        mapViewInstance?.onDestroy()
         mapViewInstance = null
         overlayView = null
         contentRoot = null
+        generation++
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
-        runOnMainThread { destroyMap() }
+        runOnMainThread { tearDown() }
     }
 
     fun onScale(focusX: Float, focusY: Float, scaleFactor: Float) {
@@ -165,6 +189,15 @@ class CarMapContainer(
             (kotlin.math.ln(scaleFactor.toDouble()) / kotlin.math.ln(Math.PI / 2)) *
                 MapLibreConstants.ZOOM_RATE
         mapLibreMapInstance?.setZoom(currentZoom + zoomAdditional, PointF(focusX, focusY), 0)
+    }
+
+    private fun loadStyle(map: MapLibreMap, url: String, gen: Int) {
+        Log.i(TAG, "setStyle gen=$gen url=$url")
+        map.setStyle(url) { style ->
+            if (gen != generation) return@setStyle
+            Log.i(TAG, "style loaded gen=$gen layers=${style.layers.size} url=$url")
+            onStyleLoaded?.invoke(url)
+        }
     }
 
     private fun doubleClickZoom(focalPoint: PointF, zoomIn: Boolean) {
@@ -196,7 +229,7 @@ class CarMapContainer(
             carContext,
             MapLibreMapOptions.createFromAttributes(carContext),
         ).apply {
-            // Default GLSurfaceView path — Presentation owns the host Surface.
+            // Default GLSurfaceView — Presentation owns the host Surface (sample Spike B).
             setLayerType(View.LAYER_TYPE_HARDWARE, Paint())
         }
 
