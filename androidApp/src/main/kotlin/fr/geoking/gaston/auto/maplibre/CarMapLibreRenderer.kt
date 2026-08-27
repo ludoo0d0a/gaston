@@ -245,6 +245,12 @@ class CarMapLibreRenderer(
         }
 
         try {
+            try {
+                org.maplibre.android.MapLibre.getInstance(carContext)
+            } catch (e: Throwable) {
+                Log.w(TAG, "MapLibre.getInstance failed in CarMapLibreRenderer", e)
+            }
+
             isSnapshotPending = true
             val bearing = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
             val cameraPosition = CameraPosition.Builder()
@@ -276,7 +282,7 @@ class CarMapLibreRenderer(
                     drawOnSurface()
                 }
             })
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             isSnapshotPending = false
             Log.e(TAG, "MapSnapshotter vector render failed", e)
             drawOnSurface()
@@ -294,9 +300,13 @@ class CarMapLibreRenderer(
 
         val canvas = try {
             surface.lockHardwareCanvas()
-        } catch (e: Exception) {
-            Log.e(TAG, "lockHardwareCanvas failed", e)
-            null
+        } catch (e: Throwable) {
+            try {
+                surface.lockCanvas(null)
+            } catch (e2: Throwable) {
+                Log.e(TAG, "lockCanvas failed", e2)
+                null
+            }
         } ?: return
 
         try {
