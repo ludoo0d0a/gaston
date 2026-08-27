@@ -1,26 +1,25 @@
 package fr.geoking.gaston.auto.maplibre
 
-import android.graphics.Canvas
-import android.graphics.PointF
+import android.app.Presentation
+import android.graphics.Rect
+import android.graphics.RectF
+import android.hardware.display.DisplayManager
+import android.hardware.display.VirtualDisplay
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.view.ViewGroup
+import androidx.car.app.CarContext
+import androidx.car.app.SurfaceContainer
+import androidx.lifecycle.Lifecycle
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonPrimitive
-import android.graphics.Rect
-import android.graphics.RectF
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
-import android.view.TextureView
-import androidx.car.app.CarContext
-import androidx.car.app.SurfaceContainer
-import androidx.lifecycle.Lifecycle
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.AutoMapCamera
-import fr.geoking.gaston.auto.AutoMapOverlayHelper
 import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
 import fr.geoking.gaston.auto.AutoMapHeading
-import fr.geoking.gaston.auto.AutoMapQueryLoader
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.map.maplibre.MapLibreSharedHelper
@@ -28,11 +27,10 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
-import org.maplibre.android.maps.MapView
 
 /**
- * Copies MapLibre [TextureView] frames onto the Android Auto [SurfaceContainer] surface.
- * Leverages the shared [MapLibreSharedHelper] for POI and search radius layer drawing.
+ * Presents MapLibre onto the Android Auto [SurfaceContainer] via VirtualDisplay + [Presentation]
+ * (Spike B). Overlays (compass / scale / loader) are drawn by [CarMapOverlayView] above the map.
  */
 class CarMapLibreRenderer(
     private val carContext: CarContext,
@@ -79,6 +77,8 @@ class CarMapLibreRenderer(
     }
 
     private var surfaceContainer: SurfaceContainer? = null
+    private var virtualDisplay: VirtualDisplay? = null
+    private var presentation: Presentation? = null
     private var styleUrl: String? = null
     private var centerLat: Double = 48.8566
     private var centerLon: Double = 2.3522
@@ -90,7 +90,6 @@ class CarMapLibreRenderer(
     private var effectiveEnergyTypes: Set<String> = emptySet()
     private var effectivePowerLevels: Set<Int> = emptySet()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
-    private var frameListenersAttached = false
     private var searchRadiusCenterLat: Double? = null
     private var searchRadiusCenterLon: Double? = null
     private var searchRadiusKm: Double? = null
@@ -101,8 +100,8 @@ class CarMapLibreRenderer(
 
     private val loaderAnimRunnable = object : Runnable {
         override fun run() {
-            if (!queryPending || surfaceContainer == null) return
-            drawOnSurface()
+            if (!queryPending || presentation == null) return
+            mapContainer.overlayView?.invalidate()
             uiHandler.postDelayed(this, 50L)
         }
     }
@@ -128,6 +127,7 @@ class CarMapLibreRenderer(
                 syncPoiLayer()
                 syncSearchRadiusLayer()
             }
+            syncOverlay()
         }
     }
 
@@ -142,23 +142,27 @@ class CarMapLibreRenderer(
         centerLon = lon
         zoom = zoomLevel.coerceIn(AutoMapCamera.MIN_ZOOM, AutoMapCamera.MAX_ZOOM)
         mapContainer.mapLibreMapInstance?.let { applyCamera(it) }
+        syncOverlay()
     }
 
     fun updateUserLocation(lat: Double, lon: Double, bearing: Float) {
         headingDegrees = bearing
         mapContainer.mapLibreMapInstance?.let { applyCamera(it) }
+        syncOverlay()
     }
 
     fun setMapOrientation(mode: MapOrientationMode, bearing: Float = headingDegrees) {
         orientationMode = mode
         headingDegrees = bearing
         mapContainer.mapLibreMapInstance?.let { applyCamera(it) }
+        syncOverlay()
     }
 
     fun updateVisibleArea(area: Rect) {
         if (visibleArea?.equals(area) == true) return
         visibleArea = Rect(area)
         mapContainer.mapLibreMapInstance?.let { applyCamera(it) }
+        syncOverlay()
     }
 
     fun bumpZoom(delta: Int) {
@@ -166,6 +170,7 @@ class CarMapLibreRenderer(
         mapContainer.mapLibreMapInstance?.let { map ->
             map.animateCamera(CameraUpdateFactory.zoomTo(zoom.toDouble()))
         }
+        syncOverlay()
     }
 
     fun updatePois(
@@ -205,10 +210,9 @@ class CarMapLibreRenderer(
         if (queryPending == pending) return
         queryPending = pending
         uiHandler.removeCallbacks(loaderAnimRunnable)
+        syncOverlay()
         if (pending) {
             uiHandler.post(loaderAnimRunnable)
-        } else {
-            drawOnSurface()
         }
     }
 
@@ -245,19 +249,74 @@ class CarMapLibreRenderer(
     fun centerPxYForHitTest(): Double = followFocalPoint().y
 
     fun attachSurface(container: SurfaceContainer) {
+        val surface = container.surface
+        if (surface == null) {
+            Log.w(TAG, "attachSurface: SurfaceContainer.surface is null")
+            return
+        }
+        if (container.width <= 0 || container.height <= 0) {
+            Log.w(TAG, "attachSurface: invalid size ${container.width}x${container.height}")
+            return
+        }
+
+        detachPresentation()
+
         surfaceContainer = container
         surfaceWidth = container.width
         surfaceHeight = container.height
-        mapContainer.setSurfaceSize(container.width, container.height)
-        attachFrameListeners()
+
+        val dpi = container.dpi.coerceAtLeast(1)
+        Log.d(
+            TAG,
+            "attachSurface Presentation: ${container.width}x${container.height} dpi=$dpi",
+        )
+
+        val displayManager = carContext.getSystemService(DisplayManager::class.java)
+        val vd = displayManager.createVirtualDisplay(
+            VIRTUAL_DISPLAY_NAME,
+            container.width,
+            container.height,
+            dpi,
+            surface,
+            0,
+        )
+        virtualDisplay = vd
+
+        val content = mapContainer.ensureContentView()
+        (content.parent as? ViewGroup)?.removeView(content)
+
+        val pres = Presentation(carContext, vd.display)
+        presentation = pres
+        pres.setContentView(content)
+        pres.show()
+
+        mapContainer.startMapLifecycle()
         mapContainer.mapLibreMapInstance?.let { applyCamera(it) }
-        drawOnSurface()
+        syncOverlay()
+        syncPoiLayer()
+        syncSearchRadiusLayer()
     }
 
     fun detachSurface() {
-        detachFrameListeners()
+        uiHandler.removeCallbacks(loaderAnimRunnable)
+        detachPresentation()
         surfaceContainer = null
-        uiHandler.removeCallbacksAndMessages(null)
+    }
+
+    private fun detachPresentation() {
+        mapContainer.pauseMapLifecycle()
+        try {
+            presentation?.dismiss()
+        } catch (e: Exception) {
+            Log.w(TAG, "presentation.dismiss failed", e)
+        }
+        presentation = null
+        try {
+            virtualDisplay?.release()
+        } catch (e: Exception) {
+            Log.w(TAG, "virtualDisplay.release failed", e)
+        }
+        virtualDisplay = null
     }
 
     private fun followFocalPoint(): AutoMapFollowFocalPoint.FocalPoint =
@@ -276,57 +335,17 @@ class CarMapLibreRenderer(
         mapContainer.scrollBy(distanceX, distanceY)
     }
 
-    private fun attachFrameListeners() {
-        if (frameListenersAttached) return
-        val mapView = mapContainer.mapViewInstance ?: return
-        mapView.addOnDidBecomeIdleListener { drawOnSurface() }
-        mapView.addOnWillStartRenderingFrameListener { drawOnSurface() }
-        frameListenersAttached = true
-    }
-
-    private fun detachFrameListeners() {
-        frameListenersAttached = false
-    }
-
-    private fun drawOnSurface() {
-        val mapView = mapContainer.mapViewInstance ?: return
-        val surface = surfaceContainer?.surface ?: return
-        val canvas = surface.lockHardwareCanvas() ?: return
-        try {
-            drawMapOnCanvas(mapView, canvas)
-        } finally {
-            surface.unlockCanvasAndPost(canvas)
-        }
-    }
-
-    private fun drawMapOnCanvas(mapView: MapView, canvas: Canvas) {
-        val textureView = mapView.takeIf { it.childCount > 0 }?.getChildAt(0) as? TextureView
-        textureView?.bitmap?.let { canvas.drawBitmap(it, 0f, 0f, null) }
-        if (queryPending) {
-            AutoMapQueryLoader.draw(
-                canvas = canvas,
-                density = carContext.resources.displayMetrics.density,
-                visibleArea = visibleArea,
-                surfaceWidth = surfaceWidth,
-                surfaceHeight = surfaceHeight,
-            )
-        }
-
-        // Draw map overlay widgets (scale, compass, debug zoom)
-        val bearing = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
-        val mapTileDebugEnabled = settingsManager.settings.value.mapTileDebugEnabled
-        AutoMapOverlayHelper.drawCompassAndScale(
-            canvas = canvas,
-            context = carContext,
-            visibleArea = visibleArea,
-            surfaceWidth = surfaceWidth,
-            surfaceHeight = surfaceHeight,
-            bearing = bearing,
-            zoom = zoom.toFloat(),
-            latitude = centerLat,
-            mapTileDebugEnabled = mapTileDebugEnabled,
-            isDensityScaled = true
-        )
+    private fun syncOverlay() {
+        val overlay = mapContainer.overlayView ?: return
+        overlay.visibleArea = visibleArea
+        overlay.surfaceWidth = surfaceWidth
+        overlay.surfaceHeight = surfaceHeight
+        overlay.bearing = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
+        overlay.zoom = zoom.toFloat()
+        overlay.latitude = centerLat
+        overlay.mapTileDebugEnabled = settingsManager.settings.value.mapTileDebugEnabled
+        overlay.queryPending = queryPending
+        overlay.invalidate()
     }
 
     private fun applyCamera(map: MapLibreMap) {
@@ -383,6 +402,7 @@ class CarMapLibreRenderer(
 
     companion object {
         private const val TAG = "CarMapLibreRenderer"
+        private const val VIRTUAL_DISPLAY_NAME = "GastonMapLibreVirtualDisplay"
 
         internal fun scaleExpressionArray(value: Any?, scale: Float): Any? {
             if (scale == 1.0f) return value

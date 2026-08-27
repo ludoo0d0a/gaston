@@ -71,7 +71,8 @@ import fr.geoking.gaston.auto.maplibre.CarMapLibreRenderer
 import fr.geoking.gaston.auto.maplibre.resolveAutoMapStyleUrl
 
 /**
- * POI map with MapLibre (OpenFreeMap) rendered offscreen and copied to the Auto surface.
+ * POI map with MapLibre (OpenFreeMap) presented onto the Auto surface via
+ * VirtualDisplay + [android.app.Presentation] (Spike B — no TextureView bitmap copy).
  * Supports north-up and heading-up orientation via header controls.
  */
 class MapLibrePoiScreen(

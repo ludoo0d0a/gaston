@@ -3,15 +3,17 @@ package fr.geoking.gaston.auto.maplibre
 import android.animation.Animator
 import android.animation.ValueAnimator
 import android.graphics.Paint
-import android.graphics.PixelFormat
 import android.graphics.PointF
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
-import android.view.WindowManager
+import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
+import android.widget.FrameLayout
+import androidx.annotation.MainThread
 import androidx.car.app.CarContext
-import fr.geoking.gaston.auto.carWindowManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -22,8 +24,14 @@ import org.maplibre.android.maps.MapLibreMapOptions
 import org.maplibre.android.maps.MapView
 
 /**
- * Offscreen MapLibre [MapView] (texture mode) attached via [fr.geoking.gaston.auto.carWindowManager].
- * Pattern from [MapLibre-Android-Auto-Sample](https://github.com/maplibre/MapLibre-Android-Auto-Sample).
+ * MapLibre [MapView] hosted inside an Android Auto [android.app.Presentation]
+ * (VirtualDisplay → host [android.view.Surface]).
+ *
+ * Spike B: replaces the TextureView bitmap-copy path from
+ * [MapLibre-Android-Auto-Sample](https://github.com/maplibre/MapLibre-Android-Auto-Sample)
+ * with the Presentation approach from
+ * [PR #13](https://github.com/maplibre/MapLibre-Android-Auto-Sample/pull/13) /
+ * [helw.net](https://helw.net/2025/11/16/maplibre-on-android-auto/).
  */
 class CarMapContainer(
     private val carContext: CarContext,
@@ -38,8 +46,11 @@ class CarMapContainer(
     var mapLibreMapInstance: MapLibreMap? = null
         private set
 
-    var surfaceWidth: Int? = null
-    var surfaceHeight: Int? = null
+    var overlayView: CarMapOverlayView? = null
+        private set
+
+    private var contentRoot: FrameLayout? = null
+    private var mapLifecycleStarted = false
 
     private var scaleAnimator: Animator? = null
     private var pendingStyleUrl: String? = null
@@ -59,44 +70,85 @@ class CarMapContainer(
         map.setStyle(url)
     }
 
-    fun setSurfaceSize(surfaceWidth: Int, surfaceHeight: Int) {
-        if (this.surfaceWidth == surfaceWidth && this.surfaceHeight == surfaceHeight) return
-        this.surfaceWidth = surfaceWidth
-        this.surfaceHeight = surfaceHeight
-        mapViewInstance?.let { view ->
-            carContext.carWindowManager.updateViewLayout(view, windowLayoutParams())
+    /**
+     * Builds (once) the Presentation content: MapView + overlay FrameLayout.
+     * Caller must attach the returned view via [android.app.Presentation.setContentView].
+     */
+    @MainThread
+    fun ensureContentView(): View {
+        contentRoot?.let { return it }
+
+        MapLibre.getInstance(carContext)
+        val mapView = createMapView().also { view ->
+            mapViewInstance = view
+            view.onCreate(Bundle())
+            view.getMapAsync { map ->
+                mapLibreMapInstance = map
+                val styleUrl = pendingStyleUrl
+                if (styleUrl != null) {
+                    map.setStyle(styleUrl)
+                }
+                onMapReady?.invoke(map)
+            }
+        }
+        val overlay = CarMapOverlayView(carContext).also { overlayView = it }
+        val root = FrameLayout(carContext).apply {
+            addView(
+                mapView,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                ),
+            )
+            addView(
+                overlay,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                ),
+            )
+        }
+        contentRoot = root
+        return root
+    }
+
+    /** Call after the content view is shown in a Presentation. */
+    @MainThread
+    fun startMapLifecycle() {
+        val mapView = mapViewInstance ?: return
+        if (!mapLifecycleStarted) {
+            mapView.onStart()
+            mapView.onResume()
+            mapLifecycleStarted = true
+            Log.d(TAG, "MapView lifecycle started (onStart/onResume)")
         }
     }
 
-    override fun onCreate(owner: LifecycleOwner) {
-        MapLibre.getInstance(carContext)
-        runOnMainThread {
-            mapViewInstance = createMapView().apply {
-                carContext.carWindowManager.addView(this, windowLayoutParams())
-                onStart()
-                getMapAsync { map ->
-                    mapViewInstance = this@apply
-                    mapLibreMapInstance = map
-                    val styleUrl = pendingStyleUrl
-                    if (styleUrl != null) {
-                        map.setStyle(styleUrl)
-                    }
-                    onMapReady?.invoke(map)
-                }
-            }
+    /** Call before dismissing the Presentation / releasing the VirtualDisplay. */
+    @MainThread
+    fun pauseMapLifecycle() {
+        val mapView = mapViewInstance ?: return
+        if (mapLifecycleStarted) {
+            mapView.onPause()
+            mapView.onStop()
+            mapLifecycleStarted = false
+            Log.d(TAG, "MapView lifecycle paused (onPause/onStop)")
         }
+    }
+
+    @MainThread
+    fun destroyMap() {
+        pauseMapLifecycle()
+        cancelAnimator(scaleAnimator)
+        mapLibreMapInstance = null
+        mapViewInstance?.onDestroy()
+        mapViewInstance = null
+        overlayView = null
+        contentRoot = null
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
-        runOnMainThread {
-            mapLibreMapInstance = null
-            mapViewInstance?.run {
-                onStop()
-                onDestroy()
-                carContext.carWindowManager.removeView(this)
-            }
-            mapViewInstance = null
-        }
+        runOnMainThread { destroyMap() }
     }
 
     fun onScale(focusX: Float, focusY: Float, scaleFactor: Float) {
@@ -142,26 +194,18 @@ class CarMapContainer(
     private fun createMapView(): MapView =
         MapView(
             carContext,
-            MapLibreMapOptions.createFromAttributes(carContext).apply {
-                textureMode(true)
-            },
+            MapLibreMapOptions.createFromAttributes(carContext),
         ).apply {
+            // Default GLSurfaceView path — Presentation owns the host Surface.
             setLayerType(View.LAYER_TYPE_HARDWARE, Paint())
         }
-
-    private fun windowLayoutParams() = WindowManager.LayoutParams(
-        surfaceWidth ?: WindowManager.LayoutParams.MATCH_PARENT,
-        surfaceHeight ?: WindowManager.LayoutParams.MATCH_PARENT,
-        WindowManager.LayoutParams.TYPE_PRIVATE_PRESENTATION,
-        WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-        PixelFormat.RGBX_8888,
-    )
 
     private fun runOnMainThread(block: () -> Unit) {
         if (Looper.myLooper() == Looper.getMainLooper()) block() else mainHandler.post(block)
     }
 
     companion object {
+        private const val TAG = "CarMapContainer"
         const val DOUBLE_CLICK_FACTOR = 2.0f
     }
 }
