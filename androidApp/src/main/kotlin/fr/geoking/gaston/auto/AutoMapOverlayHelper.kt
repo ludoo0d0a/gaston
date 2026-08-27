@@ -38,6 +38,42 @@ object AutoMapOverlayHelper {
         }
     }
 
+    /** Extra diagnostic lines under the zoom debug chip (MapLibre AA / tile debug). */
+    fun drawDebugHud(
+        canvas: Canvas,
+        context: Context,
+        visibleArea: Rect?,
+        surfaceWidth: Int,
+        surfaceHeight: Int,
+        lines: List<String>,
+    ) {
+        if (lines.isEmpty()) return
+        val density = context.resources.displayMetrics.density
+        val area = visibleArea ?: Rect(0, 0, surfaceWidth, surfaceHeight)
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 11f * density
+            typeface = android.graphics.Typeface.MONOSPACE
+        }
+        val bgPaint = Paint().apply {
+            color = Color.argb(180, 0, 0, 0)
+            style = Paint.Style.FILL
+        }
+        val pad = 6f * density
+        val lineHeight = 14f * density
+        val blockHeight = pad * 2 + lines.size * lineHeight
+        val maxWidth = lines.maxOfOrNull { textPaint.measureText(it) } ?: 0f
+        val left = area.left + 8f * density
+        // Below the large zoom chip
+        val top = area.top + 48f * density
+        canvas.drawRect(left, top, left + maxWidth + pad * 2, top + blockHeight, bgPaint)
+        var y = top + pad + lineHeight * 0.8f
+        for (line in lines) {
+            canvas.drawText(line, left + pad, y, textPaint)
+            y += lineHeight
+        }
+    }
+
     private fun drawCompass(canvas: Canvas, area: Rect, bearing: Float, density: Float) {
         val compassRadius = 24f * density
         val margin = 16f * density
