@@ -7,10 +7,13 @@ import fr.geoking.gaston.premium.RevenueCatInitializer
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
+import fr.geoking.gaston.diagnostics.DiagnosticsPersistence
+
 class GastonApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        setupUncaughtExceptionHandler()
         android.util.Log.d("GastonApplication", "onCreate start")
         try {
             // Safe to call once; uses test ids by default unless overridden by local.properties/env
@@ -31,6 +34,20 @@ class GastonApplication : Application() {
                 MobileAds.initialize(this) {}
             } catch (e: Throwable) {
                 android.util.Log.e("GastonApplication", "AdMob init failed", e)
+            }
+        }
+    }
+
+    private fun setupUncaughtExceptionHandler() {
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                android.util.Log.e("GastonApplication", "Uncaught exception in thread ${thread.name}", throwable)
+                DiagnosticsPersistence.persistCrash(this, throwable)
+            } catch (e: Throwable) {
+                android.util.Log.e("GastonApplication", "Failed to log uncaught exception", e)
+            } finally {
+                defaultHandler?.uncaughtException(thread, throwable)
             }
         }
     }

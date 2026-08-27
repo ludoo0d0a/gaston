@@ -56,6 +56,10 @@ import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.UsedApisList
 import fr.geoking.gaston.poi.FuelPriceRegistry
 import fr.geoking.gaston.shared.diagnostics.DetailedError
+import fr.geoking.gaston.shared.diagnostics.ErrorSeverity
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.horizontalScroll
 import fr.geoking.gaston.ui.components.DisclaimerDialog
 import fr.geoking.gaston.ui.components.FuelFilterChip
 import fr.geoking.gaston.ui.map.maplibre.MapLibreView
@@ -184,7 +188,8 @@ fun SettingsScreen(
     onDismiss: () -> Unit,
     initialScreenStack: List<SettingsScreenPage>? = null,
     onInitialRouteConsumed: () -> Unit = {},
-    onClearErrorLog: () -> Unit = {}
+    onClearErrorLog: () -> Unit = {},
+    onOpenAutoDebug: () -> Unit = {}
 ) {
     val current by settingsManager.settings.collectAsState()
     var screenStack by remember { mutableStateOf(listOf(SettingsScreenPage.Main)) }
@@ -293,8 +298,11 @@ fun SettingsScreen(
                 )
                 SettingsScreenPage.Developer -> DeveloperSection(
                     settings = current,
+                    errorLog = errorLog,
                     onNavigate = { screenStack = screenStack + it },
-                    onUpdate = { save(settingsManager, it) }
+                    onUpdate = { save(settingsManager, it) },
+                    onClearErrorLog = onClearErrorLog,
+                    onOpenAutoDebug = onOpenAutoDebug
                 )
             }
         }
@@ -1785,18 +1793,20 @@ private fun ConfigTextField(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ErrorLog(
+private fun ErrorLogContent(
     errorLog: List<DetailedError>,
-    onClear: () -> Unit
+    onClear: () -> Unit,
+    snackbarHostState: SnackbarHostState? = null
 ) {
-    val scrollState = rememberScrollState()
-    val clipboard = LocalClipboard.current
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val genericErrorLabel = stringResource(R.string.error_log_generic)
-    val reversedLog = remember(errorLog) { errorLog.reversed() }
+    val scope = rememberCoroutineScope()
+    val clipboard = LocalClipboard.current
+    var selectedFilter by remember { mutableStateOf<ErrorSeverity?>(null) }
     var showClearConfirm by remember { mutableStateOf(false) }
+
+    val genericErrorLabel = stringResource(R.string.error_log_generic)
 
     if (showClearConfirm) {
         AlertDialog(
@@ -1821,80 +1831,177 @@ private fun ErrorLog(
         )
     }
 
-    SelectionContainer {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(20.dp)
-        ) {
-            if (reversedLog.isEmpty()) {
-                Text(stringResource(R.string.settings_no_errors), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            val allErrors = reversedLog.joinToString("\n\n") { error ->
-                                val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(error.timestamp))
-                                val httpCode = error.httpCode?.let { context.getString(R.string.error_log_http, it) }
-                                    ?: genericErrorLabel
-                                "[$timestamp] $httpCode\n${error.message}"
-                            }
-                            scope.launch {
-                                clipboard.setClipEntry(androidx.compose.ui.platform.ClipEntry(android.content.ClipData.newPlainText("", allErrors)))
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.action_copy_all))
-                    }
+    val filteredLog = remember(errorLog, selectedFilter) {
+        val list = if (selectedFilter == null) errorLog else errorLog.filter { it.level == selectedFilter }
+        list.sortedByDescending { it.timestamp }
+    }
 
-                    OutlinedButton(
-                        onClick = { showClearConfirm = true },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B6B))
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.settings_clear_logs))
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.developer_errors_section_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        // Filter chips
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FilterChip(
+                selected = selectedFilter == null,
+                onClick = { selectedFilter = null },
+                label = { Text("${stringResource(R.string.filter_all)} (${errorLog.size})") }
+            )
+            FilterChip(
+                selected = selectedFilter == ErrorSeverity.CRASH,
+                onClick = { selectedFilter = if (selectedFilter == ErrorSeverity.CRASH) null else ErrorSeverity.CRASH },
+                label = { Text("${stringResource(R.string.filter_crash)} (${errorLog.count { it.level == ErrorSeverity.CRASH }})") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0xFFEF4444),
+                    selectedLabelColor = Color.White
+                )
+            )
+            FilterChip(
+                selected = selectedFilter == ErrorSeverity.ERROR,
+                onClick = { selectedFilter = if (selectedFilter == ErrorSeverity.ERROR) null else ErrorSeverity.ERROR },
+                label = { Text("${stringResource(R.string.filter_error)} (${errorLog.count { it.level == ErrorSeverity.ERROR }})") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0xFFFF9800),
+                    selectedLabelColor = Color.White
+                )
+            )
+            FilterChip(
+                selected = selectedFilter == ErrorSeverity.WARNING,
+                onClick = { selectedFilter = if (selectedFilter == ErrorSeverity.WARNING) null else ErrorSeverity.WARNING },
+                label = { Text("${stringResource(R.string.filter_warning)} (${errorLog.count { it.level == ErrorSeverity.WARNING }})") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0xFFEAB308),
+                    selectedLabelColor = Color.White
+                )
+            )
+        }
+
+        if (errorLog.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = {
+                        val allErrors = filteredLog.joinToString("\n\n---\n\n") { error ->
+                            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(error.timestamp))
+                            val httpCode = error.httpCode?.let { context.getString(R.string.error_log_http, it) } ?: genericErrorLabel
+                            val header = "[${error.level.name}] [$timestamp] $httpCode"
+                            val body = error.message
+                            val stack = if (!error.stackTrace.isNullOrBlank()) "\nStacktrace:\n${error.stackTrace}" else ""
+                            "$header\n$body$stack"
+                        }
+                        scope.launch {
+                            clipboard.setClipEntry(androidx.compose.ui.platform.ClipEntry(android.content.ClipData.newPlainText("All Errors", allErrors)))
+                            snackbarHostState?.showSnackbar(context.getString(R.string.error_copied_to_clipboard))
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.action_copy_all))
+                }
+
+                OutlinedButton(
+                    onClick = { showClearConfirm = true },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF6B6B))
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_clear_logs))
+                }
+            }
+        }
+
+        if (filteredLog.isEmpty()) {
+            Text(
+                text = stringResource(R.string.settings_no_errors),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 12.dp)
+            )
+        } else {
+            filteredLog.forEach { error ->
+                val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(error.timestamp))
+                val httpCode = error.httpCode?.let { stringResource(R.string.error_log_http, it) } ?: genericErrorLabel
+
+                val badgeColor = when (error.level) {
+                    ErrorSeverity.CRASH -> Color(0xFFEF4444)
+                    ErrorSeverity.ERROR -> Color(0xFFFF9800)
+                    ErrorSeverity.WARNING -> Color(0xFFEAB308)
+                }
+
+                val fullText = buildString {
+                    append("[${error.level.name}] [$timestamp] $httpCode\nMessage: ${error.message}")
+                    if (!error.stackTrace.isNullOrBlank()) {
+                        append("\n\nStacktrace:\n${error.stackTrace}")
                     }
                 }
 
-                reversedLog.forEach { error ->
-                    val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(error.timestamp))
-                    val httpCode = error.httpCode?.let { stringResource(R.string.error_log_http, it) }
-                        ?: genericErrorLabel
-
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            scope.launch {
+                                clipboard.setClipEntry(androidx.compose.ui.platform.ClipEntry(android.content.ClipData.newPlainText("Error Detail", fullText)))
+                                snackbarHostState?.showSnackbar(context.getString(R.string.error_copied_to_clipboard))
+                            }
+                        }
+                ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-                            .padding(16.dp)
+                            .padding(14.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Top
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "[$timestamp] $httpCode",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.weight(1f)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Surface(
+                                    color = badgeColor,
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = error.level.name,
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                                Text(
+                                    text = "[$timestamp] $httpCode",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                             IconButton(
                                 onClick = {
-                                    val errorText = "[$timestamp] $httpCode\n${error.message}"
                                     scope.launch {
-                                        clipboard.setClipEntry(androidx.compose.ui.platform.ClipEntry(android.content.ClipData.newPlainText("", errorText)))
+                                        clipboard.setClipEntry(androidx.compose.ui.platform.ClipEntry(android.content.ClipData.newPlainText("Error Detail", fullText)))
+                                        snackbarHostState?.showSnackbar(context.getString(R.string.error_copied_to_clipboard))
                                     }
                                 },
                                 modifier = Modifier.size(24.dp)
@@ -1907,8 +2014,34 @@ private fun ErrorLog(
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = error.message, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyMedium)
+
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = error.message,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        if (!error.stackTrace.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 160.dp)
+                                    .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(6.dp))
+                                    .padding(8.dp)
+                                    .verticalScroll(rememberScrollState())
+                            ) {
+                                Text(
+                                    text = error.stackTrace!!,
+                                    color = Color(0xFF00FF66),
+                                    fontFamily = FontFamily.Monospace,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1917,10 +2050,39 @@ private fun ErrorLog(
 }
 
 @Composable
+private fun ErrorLog(
+    errorLog: List<DetailedError>,
+    onClear: () -> Unit
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp)
+        ) {
+            ErrorLogContent(
+                errorLog = errorLog,
+                onClear = onClear,
+                snackbarHostState = snackbarHostState
+            )
+        }
+    }
+}
+
+@Composable
 private fun DeveloperSection(
     settings: AppSettings,
+    errorLog: List<DetailedError>,
     onNavigate: (SettingsScreenPage) -> Unit,
-    onUpdate: (AppSettings) -> Unit
+    onUpdate: (AppSettings) -> Unit,
+    onClearErrorLog: () -> Unit = {},
+    onOpenAutoDebug: () -> Unit = {}
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -1963,32 +2125,16 @@ private fun DeveloperSection(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                SettingsItem(
-                    label = stringResource(R.string.screen_error_log),
-                    value = stringResource(R.string.settings_error_log_subtitle),
-                    onClick = { onNavigate(SettingsScreenPage.ErrorLog) }
-                )
-                SettingsItem(
-                    label = stringResource(R.string.screen_clear_cache),
-                    value = stringResource(R.string.settings_clear_cache_subtitle),
-                    onClick = { showClearCacheConfirm = true }
-                )
-            }
-
-            // 1. premium mode
+            // 1. Premium Simulation (first control)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.dev_premium_mode), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.dev_premium_mode), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                     Text(stringResource(R.string.dev_premium_mode_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(
@@ -1997,7 +2143,26 @@ private fun DeveloperSection(
                 )
             }
 
-            // 2. network floating bar
+            HorizontalDivider()
+
+            // 2. Developer actions & options card
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                SettingsItem(
+                    label = stringResource(R.string.dev_test_aa_map_surface),
+                    value = stringResource(R.string.dev_test_aa_map_surface_subtitle),
+                    onClick = onOpenAutoDebug
+                )
+                SettingsItem(
+                    label = stringResource(R.string.screen_clear_cache),
+                    value = stringResource(R.string.settings_clear_cache_subtitle),
+                    onClick = { showClearCacheConfirm = true }
+                )
+            }
+
+            // 3. Network floating bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -2013,7 +2178,7 @@ private fun DeveloperSection(
                 )
             }
 
-            // 3. debug grid in map
+            // 4. Debug grid in map
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -2029,23 +2194,7 @@ private fun DeveloperSection(
                 )
             }
 
-            // 4. test AA map surface
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.dev_test_aa_map_surface), style = MaterialTheme.typography.bodyLarge)
-                    Text(stringResource(R.string.dev_test_aa_map_surface_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(
-                    checked = settings.testAaMapSurfaceEnabled,
-                    onCheckedChange = { onUpdate(settings.copy(testAaMapSurfaceEnabled = it)) }
-                )
-            }
-
-            // 5. debug logging
+            // 5. Debug logging
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -2061,7 +2210,7 @@ private fun DeveloperSection(
                 )
             }
 
-            // 6. disable cache
+            // 6. Disable cache
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -2092,6 +2241,15 @@ private fun DeveloperSection(
                     onCheckedChange = { onUpdate(settings.copy(dynamicIrveEnabled = it)) }
                 )
             }
+
+            HorizontalDivider()
+
+            // 8. Errors & Crashes Section
+            ErrorLogContent(
+                errorLog = errorLog,
+                onClear = onClearErrorLog,
+                snackbarHostState = snackbarHostState
+            )
         }
     }
 }

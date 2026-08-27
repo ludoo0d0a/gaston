@@ -92,7 +92,7 @@ fun PhoneDashboardMainContent(
     onOpenEmergency: () -> Unit,
     onOpenSettings: (List<SettingsScreenPage>?) -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
-    onOpenAutoDebug: () -> Unit,
+    onOpenAutoDebug: () -> Unit = {},
     onRequestLocationPermission: () -> Unit,
     onLocationSelected: (GeocodedPlace?) -> Unit,
     onToggleFavorite: (GeocodedPlace) -> Unit,
@@ -164,13 +164,6 @@ fun PhoneDashboardMainContent(
                     iconResId = R.drawable.ic_signal_cellular,
                     onClick = onOpenNetworkDiagnostics,
                     testTag = "dashboard_network_btn"
-                ),
-                DashboardRow(
-                    title = stringResource(R.string.dashboard_auto_debug),
-                    subtitle = stringResource(R.string.dashboard_auto_debug_subtitle),
-                    iconResId = R.drawable.ic_map,
-                    onClick = onOpenAutoDebug,
-                    testTag = "dashboard_autodebug_btn"
                 )
             )
 

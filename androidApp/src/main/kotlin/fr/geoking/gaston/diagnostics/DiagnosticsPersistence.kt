@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import fr.geoking.gaston.shared.diagnostics.DetailedError
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
+import fr.geoking.gaston.shared.diagnostics.ErrorSeverity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,11 +26,6 @@ class DiagnosticsPersistence(
 ) {
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
 
     init {
         restore()
@@ -62,10 +58,40 @@ class DiagnosticsPersistence(
         }
     }
 
-    private companion object {
+    companion object {
         private const val TAG = "DiagnosticsPersistence"
         private const val PREFS_NAME = "gaston_diagnostics"
         private const val KEY_ERROR_LOG = "error_log_v1"
+
+        private val json = Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
+
+        fun persistCrash(context: Context, throwable: Throwable) {
+            runCatching {
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val raw = prefs.getString(KEY_ERROR_LOG, null)
+                val existingList = if (raw != null) {
+                    runCatching { json.decodeFromString(ListSerializer(DetailedError.serializer()), raw) }.getOrDefault(emptyList())
+                } else emptyList()
+
+                val stackTrace = Log.getStackTraceString(throwable)
+                val message = throwable.localizedMessage ?: throwable.message ?: throwable.javaClass.name
+                val crashEntry = DetailedError(
+                    httpCode = null,
+                    message = message,
+                    timestamp = System.currentTimeMillis(),
+                    level = ErrorSeverity.CRASH,
+                    stackTrace = stackTrace
+                )
+                val updatedList = (listOf(crashEntry) + existingList).take(50)
+                val encoded = json.encodeToString(ListSerializer(DetailedError.serializer()), updatedList)
+                prefs.edit().putString(KEY_ERROR_LOG, encoded).commit()
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to persist crash", e)
+            }
+        }
     }
 }
 

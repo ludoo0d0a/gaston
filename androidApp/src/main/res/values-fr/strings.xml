@@ -756,4 +756,10 @@
     <string name="auto_debug_show_rotation">Afficher la rotation</string>
     <string name="auto_debug_hide_rotation">Masquer la rotation</string>
     <string name="action_clear_cache_reload">Vider le cache et recharger</string>
+    <string name="error_copied_to_clipboard">Détails de l\'erreur copiés dans le presse-papiers</string>
+    <string name="filter_all">Tout</string>
+    <string name="filter_crash">Crash</string>
+    <string name="filter_error">Erreur</string>
+    <string name="filter_warning">Avertissement</string>
+    <string name="developer_errors_section_title">Erreurs &amp; Crashs</string>
 </resources>
