@@ -209,6 +209,15 @@ class MapLibrePoiScreen(
                     invalidate()
                 }
         }
+        lifecycleScope.launch {
+            settingsManager.settings
+                .map { it.mapTileDebugEnabled }
+                .distinctUntilChanged()
+                .collectLatest {
+                    mapRenderer?.requestRedraw()
+                    invalidate()
+                }
+        }
     }
 
     private companion object {

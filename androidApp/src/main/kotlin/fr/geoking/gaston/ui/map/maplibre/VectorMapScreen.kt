@@ -527,6 +527,19 @@ fun VectorMapScreen(
                             .zIndex(1f)
                     )
 
+                    if (settings.mapTileDebugEnabled) {
+                        MapLibrePhoneStatusOverlay(
+                            styleUrl = mapLibreStyle.styleUrl ?: MapTheme.Voyager.styleUrl,
+                            mapBaseView = settings.mapBaseView.name,
+                            mapReady = mapLibreMap != null,
+                            zoom = (cameraPosition?.zoom ?: defaultZoom).toFloat(),
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 16.dp, bottom = mapPaddingBottom + 16.dp)
+                                .zIndex(2f),
+                        )
+                    }
+
                     // Map overlay scale widget (placed at the bottom-left, shifts up if bottom sheet is shown)
                     MapOverlayWidgets(
                         bearing = (cameraPosition?.bearing ?: 0.0).toFloat(),

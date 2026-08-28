@@ -121,6 +121,19 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.dev_debug_grid))
+                .addText(carContext.getString(R.string.dev_debug_grid_subtitle))
+                .setToggle(
+                    Toggle.Builder { checked ->
+                        settingsManager.setMapTileDebugEnabled(checked)
+                        invalidate()
+                    }.setChecked(settings.mapTileDebugEnabled).build()
+                )
+                .build()
+        )
+
         if (settings.mapTileDebugEnabled) {
             listBuilder.addItem(
                 Row.Builder()
@@ -160,13 +173,33 @@ class AutoMapSettingsScreen(
 
 class AutoTileDiagnosticsScreen(carContext: CarContext) : Screen(carContext) {
     override fun onGetTemplate(): Template {
-        val errors = AutoSurfaceRenderer.getRecentTileErrors()
-        val contentText = if (errors.isEmpty()) {
-            carContext.getString(R.string.tile_no_errors)
-        } else {
-            errors.joinToString("\n\n") { err ->
-                val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(err.timestamp))
-                carContext.getString(R.string.tile_error_entry, time, err.statusCode, err.url, err.errorMessage)
+        val tileErrors = AutoSurfaceRenderer.getRecentTileErrors()
+        val snapshotErrors = fr.geoking.gaston.auto.maplibre.CarMapLibreRenderer.getRecentSnapshotErrors()
+        val contentText = when {
+            tileErrors.isEmpty() && snapshotErrors.isEmpty() ->
+                carContext.getString(R.string.tile_no_errors)
+            else -> buildString {
+                if (snapshotErrors.isNotEmpty()) {
+                    append("MapLibre snapshot\n")
+                    append(
+                        snapshotErrors.joinToString("\n\n") { err ->
+                            val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                                .format(java.util.Date(err.timestamp))
+                            "[$time] ${err.message}"
+                        }
+                    )
+                }
+                if (tileErrors.isNotEmpty()) {
+                    if (isNotEmpty()) append("\n\n")
+                    append("Raster tiles\n")
+                    append(
+                        tileErrors.joinToString("\n\n") { err ->
+                            val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                                .format(java.util.Date(err.timestamp))
+                            carContext.getString(R.string.tile_error_entry, time, err.statusCode, err.url, err.errorMessage)
+                        }
+                    )
+                }
             }
         }
 
@@ -182,6 +215,7 @@ class AutoTileDiagnosticsScreen(carContext: CarContext) : Screen(carContext) {
                     .setTitle(carContext.getString(R.string.settings_clear_logs))
                     .setOnClickListener {
                         AutoSurfaceRenderer.clearRecentTileErrors()
+                        fr.geoking.gaston.auto.maplibre.CarMapLibreRenderer.clearRecentSnapshotErrors()
                         invalidate()
                     }
                     .build()

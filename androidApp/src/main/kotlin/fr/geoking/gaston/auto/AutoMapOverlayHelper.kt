@@ -11,6 +11,62 @@ import kotlin.math.cos
 
 object AutoMapOverlayHelper {
 
+    enum class MapLibreStatusSeverity {
+        Ok,
+        Pending,
+        Error,
+    }
+
+    data class MapLibreStatusChip(
+        val title: String,
+        val subtitle: String,
+        val severity: MapLibreStatusSeverity = MapLibreStatusSeverity.Pending,
+    )
+
+    /** Compact always-on MapLibre AA pipeline status (surface / snapshot / canvas). */
+    fun drawMapLibreStatusStrip(
+        canvas: Canvas,
+        visibleArea: Rect?,
+        surfaceWidth: Int,
+        surfaceHeight: Int,
+        density: Float,
+        chip: MapLibreStatusChip,
+    ) {
+        val area = visibleArea ?: Rect(0, 0, surfaceWidth, surfaceHeight)
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 11f * density
+            typeface = android.graphics.Typeface.MONOSPACE
+            isFakeBoldText = true
+        }
+        val subtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(230, 255, 255, 255)
+            textSize = 10f * density
+            typeface = android.graphics.Typeface.MONOSPACE
+        }
+        val bgColor = when (chip.severity) {
+            MapLibreStatusSeverity.Ok -> Color.argb(210, 20, 96, 48)
+            MapLibreStatusSeverity.Pending -> Color.argb(210, 120, 84, 0)
+            MapLibreStatusSeverity.Error -> Color.argb(210, 140, 24, 24)
+        }
+        val bgPaint = Paint().apply {
+            color = bgColor
+            style = Paint.Style.FILL
+        }
+        val pad = 6f * density
+        val lineHeight = 13f * density
+        val titleWidth = titlePaint.measureText(chip.title)
+        val subtitleWidth = subtitlePaint.measureText(chip.subtitle)
+        val blockWidth = maxOf(titleWidth, subtitleWidth) + pad * 2
+        val blockHeight = pad * 2 + lineHeight * 2
+        val margin = 8f * density
+        val left = area.right - margin - blockWidth
+        val top = area.bottom - margin - blockHeight
+        canvas.drawRect(left, top, left + blockWidth, top + blockHeight, bgPaint)
+        canvas.drawText(chip.title, left + pad, top + pad + lineHeight * 0.85f, titlePaint)
+        canvas.drawText(chip.subtitle, left + pad, top + pad + lineHeight * 1.85f, subtitlePaint)
+    }
+
     fun drawCompassAndScale(
         canvas: Canvas,
         context: Context,

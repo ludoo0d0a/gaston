@@ -30,6 +30,7 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.snapshotter.MapSnapshot
 import org.maplibre.android.snapshotter.MapSnapshotter
+import java.util.Collections
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.ln
@@ -84,6 +85,9 @@ class CarMapLibreRenderer(
     private var debugSnapshotCount: Int = 0
     private var surfaceDpi: Int = 0
     private var snapshotStartedAtMs: Long = 0L
+    private var lastSnapshotReadyAtMs: Long = 0L
+    private var lastStyleLoadedAtMs: Long = 0L
+    private var surfaceValid: Boolean = false
 
     private val searchRadiusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.RED
@@ -108,7 +112,13 @@ class CarMapLibreRenderer(
         val timeoutMessage = "snapshot timed out after ${SNAPSHOT_TIMEOUT_MS}ms"
         debugLastError = timeoutMessage
         Log.e(TAG, timeoutMessage)
+        logSnapshotError(timeoutMessage)
         scheduleVectorSnapshot()
+        drawOnSurface()
+    }
+
+    /** Force an immediate canvas redraw (e.g. after toggling map debug overlay). */
+    fun requestRedraw() {
         drawOnSurface()
     }
 
@@ -239,11 +249,12 @@ class CarMapLibreRenderer(
         surfaceDpi = container.dpi.coerceAtLeast(1)
         debugPhase = "attaching"
         debugLastError = null
+        surfaceValid = container.surface?.isValid == true
         Log.i(
             TAG,
-            "attachSurface ${surfaceWidth}x${surfaceHeight} dpi=$surfaceDpi style=$styleUrl",
+            "attachSurface ${surfaceWidth}x${surfaceHeight} dpi=$surfaceDpi valid=$surfaceValid style=$styleUrl",
         )
-        debugPhase = "surface_ready"
+        debugPhase = if (surfaceValid) "surface_ready" else "surface_invalid"
         scheduleVectorSnapshot()
         drawOnSurface()
     }
@@ -254,6 +265,7 @@ class CarMapLibreRenderer(
         reusableSnapshotter?.cancel()
         reusableSnapshotter = null
         surfaceContainer = null
+        surfaceValid = false
         debugPhase = "detached"
     }
 
@@ -345,6 +357,7 @@ class CarMapLibreRenderer(
                         Log.i(TAG, "MapSnapshotter style loaded: $styleUrl")
                         debugSnapshotStatus = "style_ok"
                         debugPhase = "style_ok"
+                        lastStyleLoadedAtMs = System.currentTimeMillis()
                     }
 
                     override fun onStyleImageMissing(imageName: String) {
@@ -371,6 +384,7 @@ class CarMapLibreRenderer(
                         debugSnapshotStatus = "ok"
                         debugPhase = "snapshot_ok"
                         debugLastError = null
+                        lastSnapshotReadyAtMs = System.currentTimeMillis()
                         Log.i(
                             TAG,
                             "snapshot ready #$debugSnapshotCount ${snapshot.bitmap.width}x${snapshot.bitmap.height}",
@@ -386,6 +400,7 @@ class CarMapLibreRenderer(
                         debugPhase = "snapshot_fail"
                         debugLastError = error
                         Log.e(TAG, "MapSnapshotter error: $error")
+                        logSnapshotError(error)
                         drawOnSurface()
                     }
                 },
@@ -397,6 +412,7 @@ class CarMapLibreRenderer(
             debugPhase = "snapshot_fail"
             debugLastError = e.message
             Log.e(TAG, "MapSnapshotter vector render failed", e)
+            logSnapshotError(e.message ?: e.toString())
             drawOnSurface()
         }
     }
@@ -465,7 +481,16 @@ class CarMapLibreRenderer(
             )
         }
 
+        val density = carContext.resources.displayMetrics.density
         val mapTileDebugEnabled = settingsManager.settings.value.mapTileDebugEnabled
+        AutoMapOverlayHelper.drawMapLibreStatusStrip(
+            canvas = canvas,
+            visibleArea = visibleArea,
+            surfaceWidth = surfaceWidth,
+            surfaceHeight = surfaceHeight,
+            density = density,
+            chip = buildStatusChip(),
+        )
         AutoMapOverlayHelper.drawCompassAndScale(
             canvas = canvas,
             context = carContext,
@@ -490,17 +515,59 @@ class CarMapLibreRenderer(
         }
     }
 
+    private fun buildStatusChip(): AutoMapOverlayHelper.MapLibreStatusChip {
+        val hasBitmap = latestVectorBitmap?.takeUnless { it.isRecycled } != null
+        val severity = when {
+            debugLastError != null || debugPhase.endsWith("fail") || debugPhase == "snapshot_timeout" ->
+                AutoMapOverlayHelper.MapLibreStatusSeverity.Error
+            debugPhase == "snapshot_ok" && hasBitmap ->
+                AutoMapOverlayHelper.MapLibreStatusSeverity.Ok
+            else -> AutoMapOverlayHelper.MapLibreStatusSeverity.Pending
+        }
+        val title = "MapLibre · $debugPhase"
+        val subtitle = debugLastError?.take(72)
+            ?: buildString {
+                append("canvas · surf=")
+                append(if (surfaceValid) "ok" else "no")
+                append(" · bmp=")
+                append(if (hasBitmap) "yes" else "no")
+                append(" · ")
+                append(debugSnapshotStatus)
+                if (isSnapshotPending) append(" · pending")
+            }
+        return AutoMapOverlayHelper.MapLibreStatusChip(
+            title = title,
+            subtitle = subtitle,
+            severity = severity,
+        )
+    }
+
     private fun buildDebugLines(): List<String> {
         val styleShort = styleUrl
             .removePrefix("https://tiles.openfreemap.org/styles/")
             .let { "ofm/$it" }
         val hasBitmap = latestVectorBitmap?.takeUnless { it.isRecycled } != null
+        val snapAgeSec = if (lastSnapshotReadyAtMs > 0L) {
+            ((System.currentTimeMillis() - lastSnapshotReadyAtMs) / 1000).toString() + "s"
+        } else {
+            "—"
+        }
+        val styleAgeSec = if (lastStyleLoadedAtMs > 0L) {
+            ((System.currentTimeMillis() - lastStyleLoadedAtMs) / 1000).toString() + "s"
+        } else {
+            "—"
+        }
+        val pendingForMs = if (isSnapshotPending && snapshotStartedAtMs > 0L) {
+            System.currentTimeMillis() - snapshotStartedAtMs
+        } else {
+            0L
+        }
         return listOf(
-            "MLAA phase=$debugPhase",
-            "surf=${surfaceWidth}x${surfaceHeight}@${surfaceDpi}",
-            "style=$styleShort ($debugSnapshotStatus)",
-            "cam=${"%.4f".format(centerLat)},${"%.4f".format(centerLon)} z=$zoom",
-            "snaps=$debugSnapshotCount bmp=${if (hasBitmap) "yes" else "no"} pending=$isSnapshotPending",
+            "MLAA phase=$debugPhase render=canvas+snapshot (no EGL)",
+            "surf=${surfaceWidth}x${surfaceHeight}@${surfaceDpi} valid=$surfaceValid attached=${surfaceContainer != null}",
+            "style=$styleShort status=$debugSnapshotStatus loaded=$styleAgeSec ago",
+            "cam=${"%.4f".format(centerLat)},${"%.4f".format(centerLon)} z=$zoom bearing=${AutoMapHeading.effectiveBearing(orientationMode, headingDegrees).toInt()}°",
+            "snaps=$debugSnapshotCount last=$snapAgeSec ago bmp=${if (hasBitmap) "yes" else "no"} pending=$isSnapshotPending${if (pendingForMs > 0) " ${pendingForMs}ms" else ""}",
             "err=${debugLastError ?: "—"}",
         )
     }
@@ -569,6 +636,27 @@ class CarMapLibreRenderer(
     companion object {
         private const val TAG = "CarMapLibreRenderer"
         private const val SNAPSHOT_TIMEOUT_MS = 15_000L
+        private const val MAX_SNAPSHOT_ERRORS = 12
+
+        private val recentSnapshotErrors =
+            Collections.synchronizedList(mutableListOf<MapLibreSnapshotError>())
+
+        fun getRecentSnapshotErrors(): List<MapLibreSnapshotError> =
+            synchronized(recentSnapshotErrors) { recentSnapshotErrors.toList() }
+
+        fun clearRecentSnapshotErrors() {
+            synchronized(recentSnapshotErrors) { recentSnapshotErrors.clear() }
+        }
+
+        private fun logSnapshotError(message: String) {
+            val entry = MapLibreSnapshotError(message, System.currentTimeMillis())
+            synchronized(recentSnapshotErrors) {
+                recentSnapshotErrors.add(0, entry)
+                while (recentSnapshotErrors.size > MAX_SNAPSHOT_ERRORS) {
+                    recentSnapshotErrors.removeAt(recentSnapshotErrors.size - 1)
+                }
+            }
+        }
 
         internal fun scaleExpressionArray(value: Any?, scale: Float): Any? {
             if (scale == 1.0f) return value
@@ -685,3 +773,8 @@ class CarMapLibreRenderer(
         }
     }
 }
+
+data class MapLibreSnapshotError(
+    val message: String,
+    val timestamp: Long,
+)
