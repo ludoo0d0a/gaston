@@ -18,7 +18,6 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("TomTom Routing", "https://developer.tomtom.com/routing-api", null),
     UsedApi("OpenFreeMap", "https://openfreemap.org", null),
     UsedApi("OpenStreetMap", "https://www.openstreetmap.org", "https://www.openstreetmap.org/favicon.ico"),
-    UsedApi("CARTO basemaps", "https://carto.com", null),
     UsedApi("Esri World Imagery / Topo", "https://www.esri.com", null),
 
     // Geocoding & place search

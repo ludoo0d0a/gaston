@@ -51,7 +51,7 @@ class AutoSurfaceRenderer(
     initialLat: Double = 48.8566,
     initialLon: Double = 2.3522,
     /** XYZ raster tile URL template with {z}, {x}, {y} placeholders. */
-    private var tileUrlTemplate: String = "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png"
+    private var tileUrlTemplate: String = "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
 ) {
     @Volatile
     private var running = true

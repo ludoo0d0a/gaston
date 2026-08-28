@@ -5,7 +5,7 @@ import fr.geoking.gaston.AppSettings
 
 /**
  * OpenFreeMap **vector** style URL for Android Auto MapLibre mode.
- * Always uses [fr.geoking.gaston.MapTheme.styleUrl] (tiles.openfreemap.org) — never CARTO raster.
+ * Always uses [fr.geoking.gaston.MapTheme.styleUrl] (tiles.openfreemap.org vector styles).
  */
 @Suppress("UNUSED_PARAMETER")
 fun resolveAutoMapStyleUrl(settings: AppSettings, carContext: CarContext): String {

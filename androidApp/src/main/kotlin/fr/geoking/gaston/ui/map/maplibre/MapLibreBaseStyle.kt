@@ -21,8 +21,8 @@ private const val ESRI_IMAGERY =
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
 private const val ESRI_TOPO =
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-private const val CARTO_LABELS =
-    "https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png"
+private const val ESRI_REFERENCE_LABELS =
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
 
 fun resolvePhoneMapLibreStyle(settings: AppSettings, preferDark: Boolean = false): MapLibreStyleSpec {
     return when (settings.mapBaseView) {
@@ -39,7 +39,7 @@ fun resolvePhoneMapLibreStyle(settings: AppSettings, preferDark: Boolean = false
         MapBaseView.Hybrid -> MapLibreStyleSpec(
             styleJson = hybridRasterStyle(
                 imageryUrl = ESRI_IMAGERY,
-                labelsUrl = CARTO_LABELS,
+                labelsUrl = ESRI_REFERENCE_LABELS,
             )
         )
     }
@@ -78,7 +78,7 @@ private fun hybridRasterStyle(imageryUrl: String, labelsUrl: String): String = "
       "type": "raster",
       "tiles": ["$labelsUrl"],
       "tileSize": 256,
-      "attribution": "CARTO"
+      "attribution": "Esri"
     }
   },
   "layers": [

@@ -38,14 +38,14 @@ enum class MapBaseView {
 }
 
 enum class MapTheme(val styleUrl: String, val rasterUrl: String, val isDark: Boolean) {
-    Dark("https://tiles.openfreemap.org/styles/dark", "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png", true),
-    Voyager("https://tiles.openfreemap.org/styles/bright", "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png", false),
+    Dark("https://tiles.openfreemap.org/styles/dark", "https://tile.openstreetmap.org/{z}/{x}/{y}.png", true),
+    Voyager("https://tiles.openfreemap.org/styles/bright", "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", false),
     Standard("https://tiles.openfreemap.org/styles/liberty", "https://tile.openstreetmap.org/{z}/{x}/{y}.png", false),
-    Positron("https://tiles.openfreemap.org/styles/positron", "https://a.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}@2x.png", false),
-    Fiord("https://tiles.openfreemap.org/styles/fiord", "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png", true),
+    Positron("https://tiles.openfreemap.org/styles/positron", "https://tile.openstreetmap.org/{z}/{x}/{y}.png", false),
+    Fiord("https://tiles.openfreemap.org/styles/fiord", "https://tile.openstreetmap.org/{z}/{x}/{y}.png", true),
     OsmFr("https://tiles.openfreemap.org/styles/bright", "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", false),
     Hot("https://tiles.openfreemap.org/styles/bright", "https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", false),
-    Bright("https://tiles.openfreemap.org/styles/bright", "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png", false),
+    Bright("https://tiles.openfreemap.org/styles/bright", "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", false),
     Liberty("https://tiles.openfreemap.org/styles/liberty", "https://tile.openstreetmap.org/{z}/{x}/{y}.png", false)
 }
 
