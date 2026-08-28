@@ -37,15 +37,16 @@ import kotlin.math.tan
 
 /**
  * Direct In-Process Vector Map Renderer for Android Auto.
- * Replaces Option 1 (WindowManager.addView) with [CarEglSurfaceRenderer] and MapLibre [MapSnapshotter]
- * vector style rendering on [SurfaceContainer.surface] without WindowManager.addView() or BadTokenException,
- * complying with Android Auto ACCESS_SURFACE permission guidelines.
+ * Renders OpenFreeMap vector styles off-screen via [MapSnapshotter], then blits the bitmap to the
+ * AA [SurfaceContainer] with [Surface.lockHardwareCanvas] / [Surface.lockCanvas].
+ *
+ * Do not attach an EGL window surface to the same AA Surface — once EGL owns it, Canvas drawing
+ * fails or stays black (see [CarEglSurfaceRenderer] for a future native EGL pipeline).
  */
 class CarMapLibreRenderer(
     private val carContext: CarContext,
     lifecycle: Lifecycle,
 ) {
-    private val eglRenderer = CarEglSurfaceRenderer()
     private val uiHandler = Handler(Looper.getMainLooper())
     private val settingsManager = org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.SettingsManager>()
 
@@ -81,8 +82,8 @@ class CarMapLibreRenderer(
     private var debugSnapshotStatus: String = "—"
     private var debugLastError: String? = null
     private var debugSnapshotCount: Int = 0
-    private var debugEglOk: Boolean = false
     private var surfaceDpi: Int = 0
+    private var snapshotStartedAtMs: Long = 0L
 
     private val searchRadiusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.RED
@@ -97,6 +98,18 @@ class CarMapLibreRenderer(
 
     private val snapshotRunnable = Runnable {
         requestVectorSnapshotInternal()
+    }
+
+    private val snapshotTimeoutRunnable = Runnable {
+        if (!isSnapshotPending) return@Runnable
+        isSnapshotPending = false
+        debugSnapshotStatus = "timeout"
+        debugPhase = "snapshot_timeout"
+        val timeoutMessage = "snapshot timed out after ${SNAPSHOT_TIMEOUT_MS}ms"
+        debugLastError = timeoutMessage
+        Log.e(TAG, timeoutMessage)
+        scheduleVectorSnapshot()
+        drawOnSurface()
     }
 
     private val loaderAnimRunnable = object : Runnable {
@@ -230,14 +243,7 @@ class CarMapLibreRenderer(
             TAG,
             "attachSurface ${surfaceWidth}x${surfaceHeight} dpi=$surfaceDpi style=$styleUrl",
         )
-        debugEglOk = eglRenderer.attachSurface(container)
-        if (!debugEglOk) {
-            debugPhase = "egl_fail"
-            debugLastError = "EGL attach failed"
-            Log.e(TAG, "EGL attach failed — still attempting canvas lock + snapshots")
-        } else {
-            debugPhase = "egl_ok"
-        }
+        debugPhase = "surface_ready"
         scheduleVectorSnapshot()
         drawOnSurface()
     }
@@ -247,10 +253,8 @@ class CarMapLibreRenderer(
         uiHandler.removeCallbacksAndMessages(null)
         reusableSnapshotter?.cancel()
         reusableSnapshotter = null
-        eglRenderer.detachSurface()
         surfaceContainer = null
         debugPhase = "detached"
-        debugEglOk = false
     }
 
     private fun followFocalPoint(): AutoMapFollowFocalPoint.FocalPoint =
@@ -307,6 +311,9 @@ class CarMapLibreRenderer(
             }
 
             isSnapshotPending = true
+            snapshotStartedAtMs = System.currentTimeMillis()
+            uiHandler.removeCallbacks(snapshotTimeoutRunnable)
+            uiHandler.postDelayed(snapshotTimeoutRunnable, SNAPSHOT_TIMEOUT_MS)
             debugPhase = "snapshot_pending"
             debugSnapshotStatus = "pending"
             Log.i(
@@ -315,6 +322,7 @@ class CarMapLibreRenderer(
             )
 
             val bearing = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
+            val pixelRatio = (surfaceDpi / 160f).coerceAtLeast(1f)
             val cameraPosition = CameraPosition.Builder()
                 .target(LatLng(centerLat, centerLon))
                 .zoom((zoom - 1).toDouble())
@@ -327,7 +335,10 @@ class CarMapLibreRenderer(
                 val options = MapSnapshotter.Options(surfaceWidth, surfaceHeight)
                     .withStyle(styleUrl)
                     .withCameraPosition(cameraPosition)
-                snapshotter = MapSnapshotter(carContext, options)
+                    .withPixelRatio(pixelRatio)
+                    .withLogo(false)
+                    .withAttribution(false)
+                snapshotter = MapSnapshotter(carContext.applicationContext, options)
                 reusableSnapshotter = snapshotter
                 snapshotter.setObserver(object : MapSnapshotter.Observer {
                     override fun onDidFinishLoadingStyle() {
@@ -349,6 +360,7 @@ class CarMapLibreRenderer(
             snapshotter.start(
                 object : MapSnapshotter.SnapshotReadyCallback {
                     override fun onSnapshotReady(snapshot: MapSnapshot) {
+                        uiHandler.removeCallbacks(snapshotTimeoutRunnable)
                         isSnapshotPending = false
                         lastSnapshotLat = centerLat
                         lastSnapshotLon = centerLon
@@ -368,6 +380,7 @@ class CarMapLibreRenderer(
                 },
                 object : MapSnapshotter.ErrorHandler {
                     override fun onError(error: String) {
+                        uiHandler.removeCallbacks(snapshotTimeoutRunnable)
                         isSnapshotPending = false
                         debugSnapshotStatus = "fail"
                         debugPhase = "snapshot_fail"
@@ -378,6 +391,7 @@ class CarMapLibreRenderer(
                 },
             )
         } catch (e: Throwable) {
+            uiHandler.removeCallbacks(snapshotTimeoutRunnable)
             isSnapshotPending = false
             debugSnapshotStatus = "fail"
             debugPhase = "snapshot_fail"
@@ -392,10 +406,6 @@ class CarMapLibreRenderer(
         val surface = container.surface ?: return
         if (!surface.isValid) return
 
-        if (eglRenderer.isInitialized) {
-            eglRenderer.makeCurrent()
-        }
-
         val canvas = try {
             surface.lockHardwareCanvas()
         } catch (e: Throwable) {
@@ -403,6 +413,7 @@ class CarMapLibreRenderer(
                 surface.lockCanvas(null)
             } catch (e2: Throwable) {
                 Log.e(TAG, "lockCanvas failed", e2)
+                debugLastError = "lockCanvas: ${e2.message}"
                 null
             }
         } ?: return
@@ -412,11 +423,9 @@ class CarMapLibreRenderer(
         } finally {
             try {
                 surface.unlockCanvasAndPost(canvas)
-                if (eglRenderer.isInitialized) {
-                    eglRenderer.swapBuffers()
-                }
             } catch (e: Exception) {
                 Log.e(TAG, "unlockCanvasAndPost failed", e)
+                debugLastError = "unlockCanvas: ${e.message}"
             }
         }
     }
@@ -488,7 +497,7 @@ class CarMapLibreRenderer(
         val hasBitmap = latestVectorBitmap?.takeUnless { it.isRecycled } != null
         return listOf(
             "MLAA phase=$debugPhase",
-            "surf=${surfaceWidth}x${surfaceHeight}@${surfaceDpi} egl=${if (debugEglOk) "ok" else "no"}",
+            "surf=${surfaceWidth}x${surfaceHeight}@${surfaceDpi}",
             "style=$styleShort ($debugSnapshotStatus)",
             "cam=${"%.4f".format(centerLat)},${"%.4f".format(centerLon)} z=$zoom",
             "snaps=$debugSnapshotCount bmp=${if (hasBitmap) "yes" else "no"} pending=$isSnapshotPending",
@@ -559,6 +568,7 @@ class CarMapLibreRenderer(
 
     companion object {
         private const val TAG = "CarMapLibreRenderer"
+        private const val SNAPSHOT_TIMEOUT_MS = 15_000L
 
         internal fun scaleExpressionArray(value: Any?, scale: Float): Any? {
             if (scale == 1.0f) return value

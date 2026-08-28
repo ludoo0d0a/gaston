@@ -73,8 +73,8 @@ import fr.geoking.gaston.auto.maplibre.resolveAutoMapStyleUrl
 
 /**
  * POI map with MapLibre OpenFreeMap vector styles via [CarMapLibreRenderer]
- * (MapSnapshotter → AA surface, optional EGL). Enable Settings → Map tile debug for HUD;
- * logcat: `CarMapLibreRenderer` / `CarEglSurfaceRenderer`.
+ * (MapSnapshotter → AA surface Canvas blit). Enable Settings → Map tile debug for HUD;
+ * logcat: `CarMapLibreRenderer`.
  */
 class MapLibrePoiScreen(
     carContext: CarContext,

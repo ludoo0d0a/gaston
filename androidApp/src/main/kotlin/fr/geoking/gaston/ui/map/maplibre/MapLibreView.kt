@@ -51,6 +51,7 @@ fun MapLibreView(
 
     val mapView = remember {
         MapView(context).apply {
+            onCreate(null)
             getMapAsync { map ->
                 applyMapLibreStyle(map, initialStyleUrl, initialStyleJson) {
                     styleEpoch++
@@ -69,6 +70,7 @@ fun MapLibreView(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
+                Lifecycle.Event.ON_CREATE -> mapView.onCreate(null)
                 Lifecycle.Event.ON_START -> mapView.onStart()
                 Lifecycle.Event.ON_RESUME -> mapView.onResume()
                 Lifecycle.Event.ON_PAUSE -> mapView.onPause()
@@ -78,6 +80,15 @@ fun MapLibreView(
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) {
+            mapView.onCreate(null)
+        }
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            mapView.onStart()
+        }
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            mapView.onResume()
+        }
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
