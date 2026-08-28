@@ -16,6 +16,13 @@ class GastonApplication : Application() {
         setupUncaughtExceptionHandler()
         android.util.Log.d("GastonApplication", "onCreate start")
         try {
+            // Initialize MapLibre singleton globally
+            try {
+                org.maplibre.android.MapLibre.getInstance(this)
+            } catch (e: Throwable) {
+                android.util.Log.e("GastonApplication", "MapLibre init failed", e)
+            }
+
             // Safe to call once; uses test ids by default unless overridden by local.properties/env
             MobileAds.initialize(this)
             RevenueCatInitializer.initialize(this, BuildConfig.REVENUECAT_API_KEY)

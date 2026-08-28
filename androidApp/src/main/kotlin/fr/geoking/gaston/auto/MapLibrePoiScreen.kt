@@ -72,8 +72,9 @@ import fr.geoking.gaston.auto.maplibre.CarMapLibreRenderer
 import fr.geoking.gaston.auto.maplibre.resolveAutoMapStyleUrl
 
 /**
- * POI map with MapLibre (OpenFreeMap) rendered offscreen and copied to the Auto surface.
- * Supports north-up and heading-up orientation via header controls.
+ * POI map with MapLibre OpenFreeMap vector styles via [CarMapLibreRenderer]
+ * (MapSnapshotter → AA surface, optional EGL). Enable Settings → Map tile debug for HUD;
+ * logcat: `CarMapLibreRenderer` / `CarEglSurfaceRenderer`.
  */
 class MapLibrePoiScreen(
     carContext: CarContext,

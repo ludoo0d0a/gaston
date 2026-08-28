@@ -75,11 +75,24 @@ class CarMapLibreRenderer(
     private var lastSnapshotLat: Double = Double.NaN
     private var lastSnapshotLon: Double = Double.NaN
     private var lastSnapshotZoom: Int = -1
+    private var lastSnapshotStyleUrl: String? = null
+
+    private var debugPhase: String = "idle"
+    private var debugSnapshotStatus: String = "—"
+    private var debugLastError: String? = null
+    private var debugSnapshotCount: Int = 0
+    private var debugEglOk: Boolean = false
+    private var surfaceDpi: Int = 0
 
     private val searchRadiusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.RED
         style = Paint.Style.STROKE
         strokeWidth = 3f
+    }
+
+    private val waitingBasemapPaint = Paint().apply {
+        color = Color.rgb(0xF0, 0xF0, 0xF0)
+        style = Paint.Style.FILL
     }
 
     private val snapshotRunnable = Runnable {
@@ -95,8 +108,20 @@ class CarMapLibreRenderer(
     }
 
     fun setStyleUrl(url: String) {
-        if (styleUrl == url) return
+        if (styleUrl == url) {
+            Log.d(TAG, "setStyleUrl unchanged: $url")
+            return
+        }
+        Log.i(TAG, "setStyleUrl: $url")
         styleUrl = url
+        debugSnapshotStatus = "loading"
+        debugPhase = "style_change"
+        debugLastError = null
+        // Force a new snapshot (and rebuild snapshotter) for the new OpenFreeMap style.
+        lastSnapshotZoom = -1
+        lastSnapshotStyleUrl = null
+        reusableSnapshotter?.cancel()
+        reusableSnapshotter = null
         scheduleVectorSnapshot()
     }
 
@@ -198,16 +223,34 @@ class CarMapLibreRenderer(
         surfaceContainer = container
         surfaceWidth = container.width.coerceAtLeast(100)
         surfaceHeight = container.height.coerceAtLeast(100)
-        eglRenderer.attachSurface(container)
+        surfaceDpi = container.dpi.coerceAtLeast(1)
+        debugPhase = "attaching"
+        debugLastError = null
+        Log.i(
+            TAG,
+            "attachSurface ${surfaceWidth}x${surfaceHeight} dpi=$surfaceDpi style=$styleUrl",
+        )
+        debugEglOk = eglRenderer.attachSurface(container)
+        if (!debugEglOk) {
+            debugPhase = "egl_fail"
+            debugLastError = "EGL attach failed"
+            Log.e(TAG, "EGL attach failed — still attempting canvas lock + snapshots")
+        } else {
+            debugPhase = "egl_ok"
+        }
         scheduleVectorSnapshot()
+        drawOnSurface()
     }
 
     fun detachSurface() {
+        Log.i(TAG, "detachSurface")
         uiHandler.removeCallbacksAndMessages(null)
         reusableSnapshotter?.cancel()
         reusableSnapshotter = null
         eglRenderer.detachSurface()
         surfaceContainer = null
+        debugPhase = "detached"
+        debugEglOk = false
     }
 
     private fun followFocalPoint(): AutoMapFollowFocalPoint.FocalPoint =
@@ -236,16 +279,41 @@ class CarMapLibreRenderer(
     }
 
     private fun requestVectorSnapshotInternal() {
-        if (surfaceWidth <= 0 || surfaceHeight <= 0) return
-        if (isSnapshotPending) return
+        if (surfaceWidth <= 0 || surfaceHeight <= 0) {
+            Log.w(TAG, "snapshot skipped: bad size ${surfaceWidth}x${surfaceHeight}")
+            return
+        }
+        if (isSnapshotPending) {
+            Log.d(TAG, "snapshot skipped: already pending")
+            return
+        }
 
-        if (lastSnapshotLat == centerLat && lastSnapshotLon == centerLon && lastSnapshotZoom == zoom) {
+        val styleChanged = lastSnapshotStyleUrl != styleUrl
+        if (!styleChanged &&
+            lastSnapshotLat == centerLat &&
+            lastSnapshotLon == centerLon &&
+            lastSnapshotZoom == zoom
+        ) {
             drawOnSurface()
             return
         }
 
         try {
+            try {
+                org.maplibre.android.MapLibre.getInstance(carContext)
+            } catch (e: Throwable) {
+                Log.w(TAG, "MapLibre.getInstance failed in CarMapLibreRenderer", e)
+                debugLastError = "MapLibre.init: ${e.message}"
+            }
+
             isSnapshotPending = true
+            debugPhase = "snapshot_pending"
+            debugSnapshotStatus = "pending"
+            Log.i(
+                TAG,
+                "start snapshot ${surfaceWidth}x${surfaceHeight} cam=$centerLat,$centerLon z=$zoom style=$styleUrl",
+            )
+
             val bearing = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
             val cameraPosition = CameraPosition.Builder()
                 .target(LatLng(centerLat, centerLon))
@@ -254,30 +322,66 @@ class CarMapLibreRenderer(
                 .build()
 
             var snapshotter = reusableSnapshotter
-            if (snapshotter == null) {
+            if (snapshotter == null || styleChanged) {
+                reusableSnapshotter?.cancel()
                 val options = MapSnapshotter.Options(surfaceWidth, surfaceHeight)
                     .withStyle(styleUrl)
                     .withCameraPosition(cameraPosition)
                 snapshotter = MapSnapshotter(carContext, options)
                 reusableSnapshotter = snapshotter
+                snapshotter.setObserver(object : MapSnapshotter.Observer {
+                    override fun onDidFinishLoadingStyle() {
+                        Log.i(TAG, "MapSnapshotter style loaded: $styleUrl")
+                        debugSnapshotStatus = "style_ok"
+                        debugPhase = "style_ok"
+                    }
+
+                    override fun onStyleImageMissing(imageName: String) {
+                        Log.w(TAG, "MapSnapshotter missing style image: $imageName")
+                    }
+                })
             } else {
                 snapshotter.setSize(surfaceWidth, surfaceHeight)
                 snapshotter.setCameraPosition(cameraPosition)
                 snapshotter.setStyleUrl(styleUrl)
             }
 
-            snapshotter.start(object : MapSnapshotter.SnapshotReadyCallback {
-                override fun onSnapshotReady(snapshot: MapSnapshot) {
-                    isSnapshotPending = false
-                    lastSnapshotLat = centerLat
-                    lastSnapshotLon = centerLon
-                    lastSnapshotZoom = zoom
-                    latestVectorBitmap = snapshot.bitmap
-                    drawOnSurface()
-                }
-            })
-        } catch (e: Exception) {
+            snapshotter.start(
+                object : MapSnapshotter.SnapshotReadyCallback {
+                    override fun onSnapshotReady(snapshot: MapSnapshot) {
+                        isSnapshotPending = false
+                        lastSnapshotLat = centerLat
+                        lastSnapshotLon = centerLon
+                        lastSnapshotZoom = zoom
+                        lastSnapshotStyleUrl = styleUrl
+                        latestVectorBitmap = snapshot.bitmap
+                        debugSnapshotCount++
+                        debugSnapshotStatus = "ok"
+                        debugPhase = "snapshot_ok"
+                        debugLastError = null
+                        Log.i(
+                            TAG,
+                            "snapshot ready #$debugSnapshotCount ${snapshot.bitmap.width}x${snapshot.bitmap.height}",
+                        )
+                        drawOnSurface()
+                    }
+                },
+                object : MapSnapshotter.ErrorHandler {
+                    override fun onError(error: String) {
+                        isSnapshotPending = false
+                        debugSnapshotStatus = "fail"
+                        debugPhase = "snapshot_fail"
+                        debugLastError = error
+                        Log.e(TAG, "MapSnapshotter error: $error")
+                        drawOnSurface()
+                    }
+                },
+            )
+        } catch (e: Throwable) {
             isSnapshotPending = false
+            debugSnapshotStatus = "fail"
+            debugPhase = "snapshot_fail"
+            debugLastError = e.message
             Log.e(TAG, "MapSnapshotter vector render failed", e)
             drawOnSurface()
         }
@@ -294,9 +398,13 @@ class CarMapLibreRenderer(
 
         val canvas = try {
             surface.lockHardwareCanvas()
-        } catch (e: Exception) {
-            Log.e(TAG, "lockHardwareCanvas failed", e)
-            null
+        } catch (e: Throwable) {
+            try {
+                surface.lockCanvas(null)
+            } catch (e2: Throwable) {
+                Log.e(TAG, "lockCanvas failed", e2)
+                null
+            }
         } ?: return
 
         try {
@@ -321,6 +429,9 @@ class CarMapLibreRenderer(
         val vectorBitmap = latestVectorBitmap
         if (vectorBitmap != null && !vectorBitmap.isRecycled) {
             canvas.drawBitmap(vectorBitmap, 0f, 0f, null)
+        } else {
+            // Avoid a pure-black AA surface while waiting for the first OpenFreeMap snapshot.
+            canvas.drawRect(0f, 0f, canvas.width.toFloat(), canvas.height.toFloat(), waitingBasemapPaint)
         }
 
         if (bearing != 0f) {
@@ -357,6 +468,31 @@ class CarMapLibreRenderer(
             latitude = centerLat,
             mapTileDebugEnabled = mapTileDebugEnabled,
             isDensityScaled = true
+        )
+        if (mapTileDebugEnabled) {
+            AutoMapOverlayHelper.drawDebugHud(
+                canvas = canvas,
+                context = carContext,
+                visibleArea = visibleArea,
+                surfaceWidth = surfaceWidth,
+                surfaceHeight = surfaceHeight,
+                lines = buildDebugLines(),
+            )
+        }
+    }
+
+    private fun buildDebugLines(): List<String> {
+        val styleShort = styleUrl
+            .removePrefix("https://tiles.openfreemap.org/styles/")
+            .let { "ofm/$it" }
+        val hasBitmap = latestVectorBitmap?.takeUnless { it.isRecycled } != null
+        return listOf(
+            "MLAA phase=$debugPhase",
+            "surf=${surfaceWidth}x${surfaceHeight}@${surfaceDpi} egl=${if (debugEglOk) "ok" else "no"}",
+            "style=$styleShort ($debugSnapshotStatus)",
+            "cam=${"%.4f".format(centerLat)},${"%.4f".format(centerLon)} z=$zoom",
+            "snaps=$debugSnapshotCount bmp=${if (hasBitmap) "yes" else "no"} pending=$isSnapshotPending",
+            "err=${debugLastError ?: "—"}",
         )
     }
 

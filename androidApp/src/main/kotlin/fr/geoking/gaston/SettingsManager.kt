@@ -126,11 +126,6 @@ data class AppSettings(
     val mapIrveOperators: Set<String> = DEFAULT_MAP_IRVE_OPERATORS,
     val selectedMapConnectorTypes: Set<String> = emptySet(),
     val mapTrafficEnabled: Boolean = false,
-    /**
-     * Experimental: QualiCharge IRVE dynamique availability outside Paris.
-     * Prefs key: `dynamic_irve_enabled`. Default off (can be unstable / heavy CSV).
-     */
-    val dynamicIrveEnabled: Boolean = false,
     val debugLoggingEnabled: Boolean = false,
     val disableCache: Boolean = false,
     val mapTileDebugEnabled: Boolean = false,
@@ -320,7 +315,6 @@ open class SettingsManager(
             mapIrveOperators = prefs.getStringSet("map_irve_operators", null)?.toSet() ?: DEFAULT_MAP_IRVE_OPERATORS,
             selectedMapConnectorTypes = prefs.getStringSet("map_connector_types", null)?.toSet() ?: emptySet(),
             mapTrafficEnabled = prefs.getBoolean("map_traffic_enabled", false),
-            dynamicIrveEnabled = prefs.getBoolean("dynamic_irve_enabled", false),
             debugLoggingEnabled = prefs.getBoolean("debug_logging_enabled", false),
             disableCache = prefs.getBoolean("disable_cache", false),
             mapTileDebugEnabled = prefs.getBoolean("map_tile_debug_enabled", false),
@@ -397,7 +391,6 @@ open class SettingsManager(
             .putStringSet("map_irve_operators", settings.mapIrveOperators)
             .putStringSet("map_connector_types", settings.selectedMapConnectorTypes)
             .putBoolean("map_traffic_enabled", settings.mapTrafficEnabled)
-            .putBoolean("dynamic_irve_enabled", settings.dynamicIrveEnabled)
             .putBoolean("debug_logging_enabled", settings.debugLoggingEnabled)
             .putBoolean("disable_cache", settings.disableCache)
             .putBoolean("map_tile_debug_enabled", settings.mapTileDebugEnabled)
