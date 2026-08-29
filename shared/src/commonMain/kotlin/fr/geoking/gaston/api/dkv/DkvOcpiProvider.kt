@@ -16,7 +16,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * [PoiProvider] backed by DKV Mobility's OCPI endpoints exposed via `api-portal.dkv-mobility.com`.
+ * [PoiProvider] backed by DKV Mobility's OCPI endpoints on `api.dkv-mobility.com`.
  *
  * OCPI Locations are not queryable by radius in the base spec; in practice, most deployments
  * expect bulk sync with pagination. This provider therefore caches the full dataset for

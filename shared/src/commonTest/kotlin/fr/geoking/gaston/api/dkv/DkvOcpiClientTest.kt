@@ -31,7 +31,7 @@ class DkvOcpiClientTest {
             client = HttpClient(engine),
             subscriptionKey = "test-sub-key",
             authorization = "Token abc",
-            baseUrl = "https://api-portal.dkv-mobility.com/ocpi/cpo/2.2.1"
+            baseUrl = "https://api.dkv-mobility.com/ocpi/cpo/2.2.1"
         )
 
         val locations = client.listLocations(limit = 10, offset = 0)

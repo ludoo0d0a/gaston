@@ -165,13 +165,14 @@ The real-time KML feed is operated by Chargy (not the generic data.public.lu CKA
 
 | | |
 |---|---|
-| **Properties** | `DKV_SUBSCRIPTION_KEY` (required), `DKV_AUTHORIZATION` (optional OCPI token) |
-| **Auth** | Header `Ocp-Apim-Subscription-Key`; optional `Authorization: Token …` |
-| **Portal** | [api-portal.dkv-mobility.com](https://api-portal.dkv-mobility.com/) |
+| **Properties** | `DKV_SUBSCRIPTION_KEY` (required), `DKV_AUTHORIZATION` (optional Bearer/Token) |
+| **Auth** | Header `Ocp-Apim-Subscription-Key`; optional `Authorization: Bearer …` or `Token …` |
+| **API host** | `https://api.dkv-mobility.com/ocpi/cpo/2.2.1` |
+| **Portal** | [api-portal.dkv-mobility.com](https://api-portal.dkv-mobility.com/) (docs only — not the API host) |
 
 1. API access is granted through DKV Mobility sales / onboarding ([how it works](https://api-portal.dkv-mobility.com/how-to), [FAQs](https://api-portal.dkv-mobility.com/faqs)).
 2. Subscribe to the relevant product on the developer portal; the **subscription key** is emailed once.
-3. If your contract uses OCPI credentials, set `DKV_AUTHORIZATION` as documented in [API Authentication](https://api-portal.dkv-mobility.com/content/html_widgets/uxlt9.html).
+3. Enterprise APIs also use OAuth2 client credentials ([API Authentication](https://api-portal.dkv-mobility.com/content/html_widgets/uxlt9.html)); set `DKV_AUTHORIZATION` to the resulting `Bearer …` (or OCPI `Token …` if that is what your product uses).
 
 ---
 

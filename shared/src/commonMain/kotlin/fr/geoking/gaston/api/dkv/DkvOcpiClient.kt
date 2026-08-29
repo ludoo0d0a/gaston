@@ -11,14 +11,14 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * Lightweight OCPI client for DKV Mobility's API portal (Azure API Management).
+ * Lightweight OCPI client for DKV Mobility (Azure API Management).
  *
- * DKV endpoints are exposed via `api-portal.dkv-mobility.com` and typically require an APIM
- * subscription key header:
+ * API host: `https://api.dkv-mobility.com` (developer docs live on `api-portal.dkv-mobility.com`).
+ * Auth typically requires an APIM subscription key header:
  *   - `Ocp-Apim-Subscription-Key: <key>`
  *
- * Some OCPI deployments also require an OCPI credentials token via:
- *   - `Authorization: Token <token>` (sometimes not Base64-encoded in practice)
+ * Some deployments also require OAuth2 Bearer or an OCPI credentials token via:
+ *   - `Authorization: Bearer <token>` or `Authorization: Token <token>`
  *
  * This client supports both: [subscriptionKey] is mandatory, [authorization] is optional.
  */
@@ -26,7 +26,7 @@ class DkvOcpiClient(
     private val client: HttpClient,
     private val subscriptionKey: String,
     private val authorization: String? = null,
-    private val baseUrl: String = "https://api-portal.dkv-mobility.com/ocpi/cpo/2.2.1"
+    private val baseUrl: String = "https://api.dkv-mobility.com/ocpi/cpo/2.2.1"
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
