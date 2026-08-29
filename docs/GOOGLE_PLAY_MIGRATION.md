@@ -43,9 +43,9 @@ Where to put it:
   - `GOOGLE_MAPS_KEY=...`
 - **CI**: set `GOOGLE_MAPS_KEY` in GitHub Actions secrets.
 
-### 4) Firebase (Auth / Firestore)
+### 4) Firebase (Auth / Firestore / Crashlytics)
 
-This project uses Firebase Auth + Firestore for account/settings sync.
+This project uses Firebase Auth + Firestore for account/settings sync, and Crashlytics (+ Analytics breadcrumbs) for crash reporting.
 
 **Firebase project ID (Gaston production):** `gaston-c8f44`
 
@@ -57,6 +57,7 @@ Use these links (sign in with a Google account that has access to the project):
 | Project settings (apps, SHA keys, `google-services.json`) | https://console.firebase.google.com/project/gaston-c8f44/settings/general |
 | **`GOOGLE_WEB_CLIENT_ID`** — Authentication → Sign-in method → **Google** (Web client ID) | https://console.firebase.google.com/project/gaston-c8f44/authentication/providers |
 | Authentication → Users (verify sign-ins) | https://console.firebase.google.com/project/gaston-c8f44/authentication/users |
+| Crashlytics | https://console.firebase.google.com/project/gaston-c8f44/crashlytics |
 | Linked Google Cloud → OAuth credentials (Web client ID) | https://console.cloud.google.com/apis/credentials?project=gaston-c8f44 |
 
 Checklist:
@@ -71,6 +72,7 @@ Checklist:
 - In Firebase console:
   - Enable **Authentication** providers you need (at minimum **Google** for account sign-in in the app)
   - Create Firestore DB (if used) and set rules
+  - Open **Crashlytics** once (builds the dashboard); optionally link **Google Analytics** for Crashlytics breadcrumbs
 
 ### 5) Google Sign-In / Credential Manager (Web client ID)
 

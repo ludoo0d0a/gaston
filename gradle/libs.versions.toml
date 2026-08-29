@@ -21,6 +21,7 @@ httpclient-android = "4.3.5.1"
 play-app-update = "2.1.0"
 kotlinx-datetime = "0.8.0"
 google-services = "4.4.4"
+firebase-crashlytics-gradle = "3.0.8"
 play-services-location = "21.3.0"
 play-services-ads = "25.3.0"
 androidx-credentials = "1.6.0"
@@ -88,6 +89,8 @@ androidx-room-ksp = { module = "androidx.room:room-compiler", version.ref = "and
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 revenuecat-purchases = { module = "com.revenuecat.purchases:purchases-kmp-core", version.ref = "revenuecat" }
@@ -102,3 +105,4 @@ kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", versio
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref="ksp" }
 google-services = { id = "com.google.gms.google-services", version.ref="google-services" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics-gradle" }

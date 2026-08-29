@@ -14,6 +14,7 @@ plugins {
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.kotlinSerialization) apply false
     alias(libs.plugins.google.services) apply false
+    alias(libs.plugins.firebase.crashlytics) apply false
     id("org.jetbrains.compose") version "1.10.3" apply false
 }
 

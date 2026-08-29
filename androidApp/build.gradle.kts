@@ -10,11 +10,15 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
-    // Only apply Google Services when the local (uncommitted) google-services.json is present.
-    // This keeps CI/clean checkouts buildable without secrets.
-    if (File("google-services.json").exists()) {
-        alias(libs.plugins.google.services)
-    }
+}
+
+// Only apply Google Services / Crashlytics when the local (uncommitted) google-services.json is present.
+// This keeps CI/clean checkouts buildable without secrets.
+// Must run after plugins {} so project.file() resolves against the androidApp module dir
+// (java.io.File("…") would use Gradle user.dir / repo root and miss the file).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
 }
 
 configure<ApplicationExtension> {
@@ -295,6 +299,9 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.crashlytics)
+    // Breadcrumb logs for Crashlytics (enable Analytics in Firebase console if not already)
+    implementation(libs.firebase.analytics)
 
     // Coil for loading API logos in About
     implementation("io.coil-kt.coil3:coil-compose:${libs.versions.coil.get()}")

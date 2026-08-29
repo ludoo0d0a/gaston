@@ -1,6 +1,6 @@
 # Privacy Policy – Gaston
 
-**Last updated:** February 2025
+**Last updated:** August 2026
 
 Gaston ("we", "our", or "the app") is a fuel and EV charging station finder for Android and Android Auto. This policy describes how we handle your data.
 
@@ -21,6 +21,7 @@ Gaston ("we", "our", or "the app") is a fuel and EV charging station finder for 
 - **We do not sell your data.**
 - **We do not collect personal data** beyond what is needed for the app to function.
 - External providers may receive network requests (e.g. to retrieve fuel prices / charging POIs). Their privacy policies apply to their services.
+- **Crash reporting:** If Firebase is configured for your build, anonymous crash and diagnostic data (stack traces, device/OS info, app version) may be sent to Firebase Crashlytics to help fix stability issues. See [Google’s privacy policy](https://policies.google.com/privacy).
 
 ## 3. Data Storage
 
