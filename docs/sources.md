@@ -47,6 +47,13 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **DKV Mobility (OCPI)** | EU (network) | EV charging | `https://api-portal.dkv-mobility.com/...` | Yes — `DKV_SUBSCRIPTION_KEY` |
 | **Eco‑Movement (OCPI 2.2.1)** | EU / Global | EV charging + availability | `https://open-chargepoints.com/api/ocpi/cpo/2.2.1` | Yes — `ECO_MOVEMENT_KEY` (also global availability fallback outside FR/BE) |
 | **Belgium NAP (Road / E-Flux)** | Belgium | EV availability | `https://roaming.road.io/.../locations.json` (via [transportdata.be](https://transportdata.be/dataset/road-public-charging-network)) | No — see [`BELGIUM_NAP_AVAILABILITY.md`](BELGIUM_NAP_AVAILABILITY.md) |
+| **DOT-NL / NDW** | Netherlands | EV availability | `https://opendata.ndw.nu/charging_point_locations_ocpi.json.gz` | No — see [`DOTNL_AVAILABILITY.md`](DOTNL_AVAILABILITY.md) |
+| **ich-tanke-strom (BFE)** | Switzerland | EV availability | geo.admin.ch static + status JSON | No — see [`SWITZERLAND_EV_AVAILABILITY.md`](SWITZERLAND_EV_AVAILABILITY.md) |
+| **Digitraffic AFIR** | Finland | EV availability | `https://afir.digitraffic.fi/api/charging-network/v1/…` | No — see [`FINLAND_DIGITRAFFIC_AVAILABILITY.md`](FINLAND_DIGITRAFFIC_AVAILABILITY.md) |
+| **E-Control charge** | Austria | EV availability | `https://api.e-control.at/charge/1.0/search` | Yes — `ECONTROL_EV_API_KEY` + referer — see [`AUSTRIA_EV_AVAILABILITY.md`](AUSTRIA_EV_AVAILABILITY.md) |
+| **EIPA** | Poland | EV availability | `https://eipa.udt.gov.pl/reader/export-data/…` | Optional `EIPA_EXPORT_KEY` — see [`POLAND_EIPA_AVAILABILITY.md`](POLAND_EIPA_AVAILABILITY.md) |
+| **NOBIL** | Norway + Sweden | EV availability | `https://nobil.no/api/server/datadump.php` | Yes — `NOBIL_API_KEY` — see [`NOBIL_AVAILABILITY.md`](NOBIL_AVAILABILITY.md) |
+| **Italy PUN** | Italy | EV availability | ArcGIS FeatureServer (PUN) | No — see [`ITALY_PUN_AVAILABILITY.md`](ITALY_PUN_AVAILABILITY.md) |
 | **Belib’ availability** | Paris (FR, secondary) | EV availability | `https://parisdata.opendatasoft.com/.../belib-...` | No — complements QualiCharge; see [`BELIB_AVAILABILITY_API.md`](BELIB_AVAILABILITY_API.md) |
 | **QualiCharge IRVE dynamique** | Mainland France | EV availability | `https://proxy.transport.data.gouv.fr/resource/qualicharge-irve-dynamique` (+ statique join) | No — see [`IRVE_DYNAMIQUE.md`](IRVE_DYNAMIQUE.md) |
 | **OpenStreetMap (Overpass)** | Global | POIs (many), Battery Swap | `https://overpass-api.de/api/interpreter` | No |

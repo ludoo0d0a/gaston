@@ -16,7 +16,10 @@ import kotlin.test.assertTrue
  */
 class EuropeanEvCoverageTest {
 
-    private enum class AvailabilityKind { Quali, ParisMerged, Belgium, Eco }
+    private enum class AvailabilityKind {
+        Quali, ParisMerged, Belgium, DotNl, IchTankeStrom, Digitraffic, AustriaEv,
+        Eipa, NobilNor, NobilSwe, ItalyPun, Eco,
+    }
 
     private data class City(
         val iso: String,
@@ -30,11 +33,27 @@ class EuropeanEvCoverageTest {
     private val quali = stubProvider()
     private val belgium = stubProvider()
     private val eco = stubProvider()
+    private val dotNl = stubProvider()
+    private val ichTanke = stubProvider()
+    private val digitraffic = stubProvider()
+    private val austriaEv = stubProvider()
+    private val eipa = stubProvider()
+    private val nobilNor = stubProvider()
+    private val nobilSwe = stubProvider()
+    private val italyPun = stubProvider()
     private val availabilityFactory = BorneAvailabilityProviderFactory(
         belibProvider = belib,
         qualiChargeProvider = quali,
         belgiumNapProvider = belgium,
         ecoMovementProvider = eco,
+        dotNlProvider = dotNl,
+        ichTankeStromProvider = ichTanke,
+        digitrafficAfirProvider = digitraffic,
+        austriaEControlEvProvider = austriaEv,
+        eipaProvider = eipa,
+        nobilNorProvider = nobilNor,
+        nobilSweProvider = nobilSwe,
+        italyPunProvider = italyPun,
     )
 
     @Test
@@ -87,6 +106,14 @@ class EuropeanEvCoverageTest {
                 AvailabilityKind.Quali -> quali
                 AvailabilityKind.ParisMerged -> parisMerged
                 AvailabilityKind.Belgium -> belgium
+                AvailabilityKind.DotNl -> dotNl
+                AvailabilityKind.IchTankeStrom -> ichTanke
+                AvailabilityKind.Digitraffic -> digitraffic
+                AvailabilityKind.AustriaEv -> austriaEv
+                AvailabilityKind.Eipa -> eipa
+                AvailabilityKind.NobilNor -> nobilNor
+                AvailabilityKind.NobilSwe -> nobilSwe
+                AvailabilityKind.ItalyPun -> italyPun
                 AvailabilityKind.Eco -> eco
             }
             assertEquals(
@@ -101,7 +128,6 @@ class EuropeanEvCoverageTest {
         when (iso) {
             "FR" -> setOf(
                 PoiProviderType.DataGouvElec,
-                PoiProviderType.QualiCharge,
                 PoiProviderType.OpenChargeMap,
                 PoiProviderType.EcoMovement,
                 PoiProviderType.Overpass,
@@ -135,20 +161,23 @@ class EuropeanEvCoverageTest {
             ): List<PdcAvailability> = emptyList()
         }
 
-    /** Two big cities per European [ParkingRegion], coords inside that country's bbox. */
+    /**
+     * Two big cities per European [ParkingRegion], coords inside that country's bbox.
+     * Availability expectation follows [ParkingRegion.containing] (e.g. Stockholm→NO→NobilNor).
+     */
     private val cities: List<City> = listOf(
         City("LU", "Luxembourg City", 49.6116, 6.1319, AvailabilityKind.Eco),
         City("LU", "Esch-sur-Alzette", 49.4958, 5.9806, AvailabilityKind.Eco),
         City("BE", "Brussels", 50.8503, 4.3517, AvailabilityKind.Belgium),
         City("BE", "Antwerp", 51.2194, 4.4025, AvailabilityKind.Belgium),
-        City("CH", "Zurich", 47.3769, 8.5417, AvailabilityKind.Eco),
-        City("CH", "Geneva", 46.2044, 6.1432, AvailabilityKind.Eco),
-        City("NL", "Amsterdam", 52.3676, 4.9041, AvailabilityKind.Eco),
-        City("NL", "Rotterdam", 51.9244, 4.4777, AvailabilityKind.Eco),
+        City("CH", "Zurich", 47.3769, 8.5417, AvailabilityKind.IchTankeStrom),
+        City("CH", "Geneva", 46.2044, 6.1432, AvailabilityKind.IchTankeStrom),
+        City("NL", "Amsterdam", 52.3676, 4.9041, AvailabilityKind.DotNl),
+        City("NL", "Rotterdam", 51.9244, 4.4777, AvailabilityKind.DotNl),
         City("DK", "Copenhagen", 55.6761, 12.5683, AvailabilityKind.Eco),
         City("DK", "Aarhus", 56.1629, 10.2039, AvailabilityKind.Eco),
-        City("AT", "Vienna", 48.2082, 16.3738, AvailabilityKind.Eco),
-        City("AT", "Graz", 47.0707, 15.4395, AvailabilityKind.Eco),
+        City("AT", "Vienna", 48.2082, 16.3738, AvailabilityKind.AustriaEv),
+        City("AT", "Graz", 47.0707, 15.4395, AvailabilityKind.AustriaEv),
         City("DE", "Berlin", 52.5200, 13.4050, AvailabilityKind.Eco),
         City("DE", "Hamburg", 53.5511, 9.9937, AvailabilityKind.Eco),
         City("FR", "Paris", 48.8566, 2.3522, AvailabilityKind.ParisMerged),
@@ -157,8 +186,8 @@ class EuropeanEvCoverageTest {
         City("GB", "Manchester", 53.4808, -2.2426, AvailabilityKind.Eco),
         City("ES", "Madrid", 40.4168, -3.7038, AvailabilityKind.Eco),
         City("ES", "Barcelona", 41.3874, 2.1686, AvailabilityKind.Eco),
-        City("IT", "Rome", 41.9028, 12.4964, AvailabilityKind.Eco),
-        City("IT", "Milan", 45.4642, 9.1900, AvailabilityKind.Eco),
+        City("IT", "Rome", 41.9028, 12.4964, AvailabilityKind.ItalyPun),
+        City("IT", "Milan", 45.4642, 9.1900, AvailabilityKind.ItalyPun),
         City("HR", "Zagreb", 45.8150, 15.9819, AvailabilityKind.Eco),
         City("HR", "Split", 43.5081, 16.4402, AvailabilityKind.Eco),
         City("SI", "Ljubljana", 46.0569, 14.5058, AvailabilityKind.Eco),
@@ -167,14 +196,15 @@ class EuropeanEvCoverageTest {
         City("ME", "Nikšić", 42.7731, 18.9445, AvailabilityKind.Eco),
         City("MK", "Skopje", 41.9981, 21.4254, AvailabilityKind.Eco),
         City("MK", "Bitola", 41.0297, 21.3292, AvailabilityKind.Eco),
-        City("NO", "Oslo", 59.9139, 10.7522, AvailabilityKind.Eco),
-        City("NO", "Bergen", 60.3913, 5.3221, AvailabilityKind.Eco),
-        City("SE", "Stockholm", 59.3293, 18.0686, AvailabilityKind.Eco),
+        City("NO", "Oslo", 59.9139, 10.7522, AvailabilityKind.NobilNor),
+        City("NO", "Bergen", 60.3913, 5.3221, AvailabilityKind.NobilNor),
+        // Stockholm sits in Norway bbox (specificity); Gothenburg in Denmark → Eco
+        City("SE", "Stockholm", 59.3293, 18.0686, AvailabilityKind.NobilNor),
         City("SE", "Gothenburg", 57.7089, 11.9746, AvailabilityKind.Eco),
         City("PT", "Lisbon", 38.7223, -9.1393, AvailabilityKind.Eco),
         City("PT", "Porto", 41.1579, -8.6291, AvailabilityKind.Eco),
-        City("FI", "Helsinki", 60.1699, 24.9384, AvailabilityKind.Eco),
-        City("FI", "Tampere", 61.4978, 23.7610, AvailabilityKind.Eco),
+        City("FI", "Helsinki", 60.1699, 24.9384, AvailabilityKind.Digitraffic),
+        City("FI", "Tampere", 61.4978, 23.7610, AvailabilityKind.Digitraffic),
         City("GR", "Athens", 37.9838, 23.7275, AvailabilityKind.Eco),
         City("GR", "Thessaloniki", 40.6401, 22.9444, AvailabilityKind.Eco),
         City("IE", "Dublin", 53.3498, -6.2603, AvailabilityKind.Eco),
@@ -185,5 +215,7 @@ class EuropeanEvCoverageTest {
         City("RO", "Cluj-Napoca", 46.7712, 23.6236, AvailabilityKind.Eco),
         City("RS", "Belgrade", 44.7866, 20.4489, AvailabilityKind.Eco),
         City("RS", "Novi Sad", 45.2671, 19.8335, AvailabilityKind.Eco),
+        City("PL", "Warsaw", 52.2297, 21.0122, AvailabilityKind.Eipa),
+        City("PL", "Kraków", 50.0647, 19.9450, AvailabilityKind.Eipa),
     )
 }

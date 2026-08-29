@@ -177,6 +177,13 @@ enum class ParkingRegion(
         lonMax = -5.9,
         countryCode = "IE"
     ),
+    Poland(
+        latMin = 49.00,
+        latMax = 54.84,
+        lonMin = 14.07,
+        lonMax = 24.15,
+        countryCode = "PL"
+    ),
     Moldova(
         latMin = 45.4,
         latMax = 48.5,
@@ -254,7 +261,7 @@ enum class ParkingRegion(
         private val bySpecificity = listOf(
             Luxembourg, Montenegro, NorthMacedonia, Slovenia, Croatia,
             Ireland, Moldova, Portugal, Belgium, Switzerland, Netherlands,
-            Denmark, Austria, Romania, Serbia, Greece, Norway, Finland,
+            Denmark, Austria, Poland, Romania, Serbia, Greece, Finland, Norway,
             Sweden, Germany, France, UnitedKingdom, Spain, Italy,
             Mexico, Argentina, Australia
             // UnitedStates is excluded from 'containing' (single region choice) to avoid breaking

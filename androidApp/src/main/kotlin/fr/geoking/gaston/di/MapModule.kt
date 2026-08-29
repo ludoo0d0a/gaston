@@ -2,15 +2,30 @@ package fr.geoking.gaston.di
 
 import org.koin.core.context.GlobalContext
 
+import fr.geoking.gaston.api.austria.AustriaEControlEvAvailabilityProvider
+import fr.geoking.gaston.api.austria.AustriaEControlEvClient
 import fr.geoking.gaston.api.belgiumnap.BelgiumNapAvailabilityClient
 import fr.geoking.gaston.api.belgiumnap.BelgiumNapAvailabilityProvider
 import fr.geoking.gaston.api.belib.BelibAvailabilityClient
 import fr.geoking.gaston.api.belib.BelibAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
+import fr.geoking.gaston.api.dotnl.DotNlAvailabilityClient
+import fr.geoking.gaston.api.dotnl.DotNlAvailabilityProvider
+import fr.geoking.gaston.api.finland.DigitrafficAfirAvailabilityClient
+import fr.geoking.gaston.api.finland.DigitrafficAfirAvailabilityProvider
+import fr.geoking.gaston.api.italy.ItalyPunAvailabilityClient
+import fr.geoking.gaston.api.italy.ItalyPunAvailabilityProvider
+import fr.geoking.gaston.api.nobil.NobilAvailabilityProvider
+import fr.geoking.gaston.api.nobil.NobilClient
+import fr.geoking.gaston.api.nobil.SwedenNobilAvailabilityProvider
+import fr.geoking.gaston.api.poland.EipaAvailabilityClient
+import fr.geoking.gaston.api.poland.EipaAvailabilityProvider
 import fr.geoking.gaston.api.qualicharge.QualiChargeAvailabilityProvider
 import fr.geoking.gaston.api.qualicharge.QualiChargeDynamiqueClient
 import fr.geoking.gaston.api.qualicharge.QualiChargeProvider
+import fr.geoking.gaston.api.switzerland.IchTankeStromAvailabilityClient
+import fr.geoking.gaston.api.switzerland.IchTankeStromAvailabilityProvider
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.chargy.ChargyProvider
 import fr.geoking.gaston.api.chargyuk.CharGyUkProvider
@@ -359,8 +374,7 @@ val mapModule = module {
         MergedPoiProvider(base = get(named("selector")), communityRepo = get())
     }
 
-    // Borne availability: QualiCharge (FR) + Belib secondary in Paris; Belgium NAP (Road) for BE;
-    // Eco-Movement OCPI as global fallback (DE, NL, LU, …) when ECO_MOVEMENT_KEY is set.
+    // Borne availability: national NAPs where open; Eco-Movement OCPI as global fallback.
     single { BelibAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("belib")) {
         BelibAvailabilityProvider(get(), radiusKm = 10, limit = 100)
@@ -373,6 +387,63 @@ val mapModule = module {
     single<BorneAvailabilityProvider>(named("belgium_nap")) {
         BelgiumNapAvailabilityProvider(get(), radiusKm = 15, limit = 200)
     }
+    single { DotNlAvailabilityClient(get()) }
+    single<BorneAvailabilityProvider>(named("dotnl")) {
+        DotNlAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single { IchTankeStromAvailabilityClient(get()) }
+    single<BorneAvailabilityProvider>(named("ich_tanke_strom")) {
+        IchTankeStromAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single { DigitrafficAfirAvailabilityClient(get()) }
+    single<BorneAvailabilityProvider>(named("digitraffic_afir")) {
+        DigitrafficAfirAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single {
+        AustriaEControlEvClient(
+            client = get(),
+            apiKey = BuildConfig.ECONTROL_EV_API_KEY,
+            refererDomain = BuildConfig.ECONTROL_EV_REFERER_DOMAIN,
+        )
+    }
+    single<BorneAvailabilityProvider>(named("austria_econtrol_ev")) {
+        AustriaEControlEvAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single {
+        EipaAvailabilityClient(
+            client = get(),
+            exportKey = BuildConfig.EIPA_EXPORT_KEY.ifBlank {
+                EipaAvailabilityClient.DEFAULT_EXPORT_KEY
+            },
+        )
+    }
+    single<BorneAvailabilityProvider>(named("eipa")) {
+        EipaAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single(named("nobil_nor_client")) {
+        NobilClient(
+            client = get(),
+            apiKey = BuildConfig.NOBIL_API_KEY,
+            countryCode = NobilClient.DEFAULT_COUNTRY_NOR,
+        )
+    }
+    single<BorneAvailabilityProvider>(named("nobil_nor")) {
+        NobilAvailabilityProvider(get(named("nobil_nor_client")), radiusKm = 15, limit = 200)
+    }
+    single(named("nobil_swe_client")) {
+        NobilClient(
+            client = get(),
+            apiKey = BuildConfig.NOBIL_API_KEY,
+            countryCode = NobilClient.COUNTRY_SWE,
+        )
+    }
+    single<BorneAvailabilityProvider>(named("nobil_swe")) {
+        SwedenNobilAvailabilityProvider(get(named("nobil_swe_client")), radiusKm = 15, limit = 200)
+    }
+    single { ItalyPunAvailabilityClient(get()) }
+    single<BorneAvailabilityProvider>(named("italy_pun")) {
+        ItalyPunAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+    }
     single<BorneAvailabilityProviderFactory> {
         BorneAvailabilityProviderFactory(
             belibProvider = get(named("belib")),
@@ -383,6 +454,14 @@ val mapModule = module {
             } else {
                 EcoMovementAvailabilityProvider(get(), radiusKm = 15, limit = 200)
             },
+            dotNlProvider = get(named("dotnl")),
+            ichTankeStromProvider = get(named("ich_tanke_strom")),
+            digitrafficAfirProvider = get(named("digitraffic_afir")),
+            austriaEControlEvProvider = get(named("austria_econtrol_ev")),
+            eipaProvider = get(named("eipa")),
+            nobilNorProvider = get(named("nobil_nor")),
+            nobilSweProvider = get(named("nobil_swe")),
+            italyPunProvider = get(named("italy_pun")),
         )
     }
 

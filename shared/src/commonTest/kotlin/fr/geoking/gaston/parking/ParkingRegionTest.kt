@@ -18,6 +18,11 @@ class ParkingRegionTest {
     }
 
     @Test
+    fun containing_Warsaw_returnsPoland() {
+        assertEquals(ParkingRegion.Poland, ParkingRegion.containing(52.2297, 21.0122))
+    }
+
+    @Test
     fun containing_Zurich_returnsSwitzerland() {
         assertEquals(ParkingRegion.Switzerland, ParkingRegion.containing(47.3769, 8.5417))
     }

@@ -23,6 +23,10 @@ Use these names in `local.properties` or set the same name as an env var (e.g. f
 | `GOOGLE_WEB_CLIENT_ID` | Google Sign-In **Web client ID**: copy from Firebase [Authentication → Sign-in method → Google](https://console.firebase.google.com/project/gaston-c8f44/authentication/providers) (`gaston-c8f44`). Details: `docs/GOOGLE_PLAY_MIGRATION.md` §5. |
 | `OPENCHARGEMAP_KEY` | Open Charge Map API key (recommended if you enable that provider). |
 | `ECO_MOVEMENT_KEY` | Eco-Movement OCPI token (`Authorization: Token …`). Also overridable in Settings. |
+| `NOBIL_API_KEY` | NOBIL datadump (Norway/Sweden EV availability). Free CC-BY key from nobil.no. |
+| `ECONTROL_EV_API_KEY` | Austria E-Control Ladestellenverzeichnis (charge) API key. |
+| `ECONTROL_EV_REFERER_DOMAIN` | Registered hostname for E-Control EV API `Referer` (e.g. `geoking.fr`). |
+| `EIPA_EXPORT_KEY` | Optional Poland EIPA export key (defaults to public map-reader key). |
 | `FUELPRICES_DK_KEY` | Fuelprices.dk API key (Denmark). Also overridable in Settings. |
 | `NSW_FUELCHECK_KEY` | NSW FuelCheck consumer key (Australia). Also overridable in Settings. |
 | `NSW_FUELCHECK_SECRET` | NSW FuelCheck consumer secret. Also overridable in Settings. |
