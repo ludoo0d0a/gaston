@@ -33,7 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.feature.location.LocationHelper
-import fr.geoking.gaston.shared.network.CountrySource
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkType
 import fr.geoking.gaston.ui.dashboard.GastonTheme
@@ -80,8 +79,17 @@ fun PhoneNetworkLocationScreen(
         stringResource(R.string.network_disconnected)
     }
     val operatorName = networkStatus.operatorName ?: stringResource(R.string.network_unknown)
-    val countryLabel = networkStatus.countryName ?: networkStatus.countryCode
-        ?: stringResource(R.string.network_unknown)
+    val unknownCountry = stringResource(R.string.network_unknown)
+    val positionCountryLabel = formatCountryLabel(
+        networkStatus.locationCountryName,
+        networkStatus.locationCountryCode,
+        unknownCountry
+    )
+    val networkCountryLabel = formatCountryLabel(
+        name = networkStatus.telephonyCountryCode?.let { Locale("", it).getDisplayCountry(Locale.getDefault()) },
+        code = networkStatus.telephonyCountryCode,
+        unknown = unknownCountry
+    )
     val roamingLabel = if (networkStatus.isRoaming) {
         stringResource(R.string.network_yes)
     } else {
@@ -128,13 +136,14 @@ fun PhoneNetworkLocationScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                val countrySource = when (networkStatus.countrySource) {
-                    CountrySource.LOCATION -> " " + stringResource(R.string.network_source_location)
-                    CountrySource.NETWORK -> " " + stringResource(R.string.network_source_network)
-                    CountrySource.UNKNOWN -> ""
-                }
                 Text(
-                    stringResource(R.string.network_country_roaming, "$countryLabel$countrySource", roamingLabel),
+                    stringResource(R.string.location_country_label, positionCountryLabel),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    stringResource(R.string.network_country_label, networkCountryLabel) +
+                        " · ${stringResource(R.string.network_roaming)}: $roamingLabel",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -167,6 +176,14 @@ fun PhoneNetworkLocationScreen(
             }
         }
     }
+}
+
+private fun formatCountryLabel(name: String?, code: String?, unknown: String): String {
+    val displayName = name?.takeIf { it.isNotBlank() }
+        ?: code?.takeIf { it.isNotBlank() }?.let { Locale("", it).getDisplayCountry(Locale.getDefault()) }
+            ?.takeIf { it.isNotBlank() }
+        ?: code
+    return displayName?.takeIf { it.isNotBlank() } ?: unknown
 }
 
 private suspend fun geocodeAddress(context: Context, lat: Double, lon: Double): String? {

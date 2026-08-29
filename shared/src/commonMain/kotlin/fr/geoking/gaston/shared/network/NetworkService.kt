@@ -24,6 +24,10 @@ data class NetworkStatus(
     val countryCode: String? = null,
     val countryName: String? = null,
     val countrySource: CountrySource = CountrySource.UNKNOWN,
+    /** Country from GPS / map position (geocode or offline region). */
+    val locationCountryCode: String? = null,
+    val locationCountryName: String? = null,
+    /** Country from cellular network (telephony MCC / networkCountryIso). */
     val telephonyCountryCode: String? = null,
     val networkType: NetworkType = NetworkType.UNKNOWN,
     val isRoaming: Boolean = false,

@@ -536,6 +536,7 @@
     <string name="network_disconnected">Disconnected</string>
     <string name="network_type_operator">Type: %1$s · Operator: %2$s</string>
     <string name="network_country_roaming">Country: %1$s · Roaming: %2$s</string>
+    <string name="location_country_label">Location country: %1$s</string>
     <string name="network_operator">Operator: %1$s</string>
     <string name="network_source_location">(from location)</string>
     <string name="network_source_network">(from network)</string>

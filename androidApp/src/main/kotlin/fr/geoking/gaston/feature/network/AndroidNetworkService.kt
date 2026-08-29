@@ -141,6 +141,9 @@ class AndroidNetworkService(
                                 locationCountryCode = offlineCodes.first()
                             }
                         }
+                        if (locationCountryName == null && locationCountryCode != null) {
+                            locationCountryName = Locale("", locationCountryCode).getDisplayCountry(Locale.getDefault())
+                        }
 
                         cachedLocationCountryCode = locationCountryCode
                         cachedLocationCountryName = locationCountryName
@@ -175,6 +178,8 @@ class AndroidNetworkService(
                 countryCode = finalCountryCode,
                 countryName = finalCountryName, // Might be null if only telephony worked
                 countrySource = countrySource,
+                locationCountryCode = locationCountryCode,
+                locationCountryName = locationCountryName,
                 telephonyCountryCode = telephonyCountry,
                 networkType = networkType,
                 isRoaming = isRoaming,

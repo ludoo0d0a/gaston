@@ -16,7 +16,6 @@ import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.R
 import fr.geoking.gaston.shared.location.ConnectivityManager
-import fr.geoking.gaston.shared.network.CountrySource
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkStatus
 import fr.geoking.gaston.shared.network.NetworkType
@@ -130,15 +129,21 @@ class AutoNetworkLocationInfoScreen(
                 .build()
         )
 
-        // Row 2: Operator & Country
+        // Row 2: Operator, countries (position + network), roaming
         val unknown = carContext.getString(R.string.network_unknown)
         val operator = networkStatus.operatorName ?: unknown
-        val country = networkStatus.countryName ?: networkStatus.countryCode ?: unknown
-        val countrySource = when (networkStatus.countrySource) {
-            CountrySource.LOCATION -> " " + carContext.getString(R.string.network_source_location)
-            CountrySource.NETWORK -> " " + carContext.getString(R.string.network_source_network)
-            CountrySource.UNKNOWN -> ""
-        }
+        val positionCountry = formatCountryLabel(
+            networkStatus.locationCountryName,
+            networkStatus.locationCountryCode,
+            unknown
+        )
+        val networkCountry = formatCountryLabel(
+            name = networkStatus.telephonyCountryCode?.let {
+                Locale("", it).getDisplayCountry(Locale.getDefault())
+            },
+            code = networkStatus.telephonyCountryCode,
+            unknown = unknown
+        )
         val roamingText = if (networkStatus.isRoaming) {
             " • ${carContext.getString(R.string.network_roaming)}"
         } else {
@@ -147,7 +152,9 @@ class AutoNetworkLocationInfoScreen(
 
         paneBuilder.addRow(
             Row.Builder()
-                .setTitle("$operator • $country$countrySource$roamingText")
+                .setTitle(operator)
+                .addText(carContext.getString(R.string.location_country_label, positionCountry))
+                .addText(carContext.getString(R.string.network_country_label, networkCountry) + roamingText)
                 .build()
         )
 
@@ -188,6 +195,14 @@ class AutoNetworkLocationInfoScreen(
                     .build()
             )
             .build()
+    }
+
+    private fun formatCountryLabel(name: String?, code: String?, unknown: String): String {
+        val displayName = name?.takeIf { it.isNotBlank() }
+            ?: code?.takeIf { it.isNotBlank() }?.let { Locale("", it).getDisplayCountry(Locale.getDefault()) }
+                ?.takeIf { it.isNotBlank() }
+            ?: code
+        return displayName?.takeIf { it.isNotBlank() } ?: unknown
     }
 
     private fun NetworkType.toReadableString(): String = when (this) {
