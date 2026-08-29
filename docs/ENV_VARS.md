@@ -24,6 +24,7 @@ Use these names in `local.properties` or set the same name as an env var (e.g. f
 | `OPENCHARGEMAP_KEY` | Open Charge Map API key (recommended if you enable that provider). |
 | `ECO_MOVEMENT_KEY` | Eco-Movement OCPI token (`Authorization: Token …`). Also overridable in Settings. |
 | `NOBIL_API_KEY` | NOBIL datadump (Norway/Sweden EV availability). Free CC-BY key from nobil.no. |
+| `NREL_AFDC_KEY` | NREL/AFDC Alternative Fuel Stations (US + Canada EV inventory/status). Free key from developer.nrel.gov. |
 | `ECONTROL_EV_API_KEY` | Austria E-Control Ladestellenverzeichnis (charge) API key. |
 | `ECONTROL_EV_REFERER_DOMAIN` | Registered hostname for E-Control EV API `Referer` (e.g. `geoking.fr`). |
 | `EIPA_EXPORT_KEY` | Optional Poland EIPA export key (defaults to public map-reader key). |

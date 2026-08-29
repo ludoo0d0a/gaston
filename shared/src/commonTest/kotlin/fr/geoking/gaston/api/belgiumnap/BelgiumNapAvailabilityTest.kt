@@ -124,5 +124,19 @@ class BelgiumNapAvailabilityTest {
         assertEquals(eco, factory.getProvider(48.14, 11.58)) // Munich (east of NL bbox)
         // Luxembourg City is not inside Belgium bbox → eco, not BE NAP
         assertEquals(eco, factory.getProvider(49.61, 6.13))
+
+        val afdc = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
+            override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) =
+                emptyList<PdcAvailability>()
+        }
+        val naFactory = fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory(
+            belibProvider = belib,
+            qualiChargeProvider = quali,
+            belgiumNapProvider = belgium,
+            ecoMovementProvider = eco,
+            afdcProvider = afdc,
+        )
+        assertEquals(afdc, naFactory.getProvider(40.71, -74.0)) // NYC → AFDC
+        assertEquals(afdc, naFactory.getProvider(43.65, -79.38)) // Toronto → AFDC
     }
 }

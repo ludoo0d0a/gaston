@@ -68,7 +68,7 @@ Recommend order: **open no-key OCPI/JSON (like NL/BE) → free API-key NAPs → 
 
 ### Phase A — remaining EU open dumps (mostly done)
 
-CH, FI shipped. Prefer next EU work only where a new open dump appears; otherwise see [non-EU roadmap](EV_AVAILABILITY_ROADMAP_NON_EU.md) (**US/CA AFDC** is the next global P0).
+CH, FI shipped. Non-EU P0 **US/CA AFDC** is done — see [`AFDC_AVAILABILITY.md`](AFDC_AVAILABILITY.md) / [`EV_AVAILABILITY_ROADMAP_NON_EU.md`](EV_AVAILABILITY_ROADMAP_NON_EU.md). Prefer next EU work only where a new open dump appears.
 
 ### Phase B — free registration / national APIs
 
@@ -210,7 +210,7 @@ Best **Phase A** candidate after the current in-progress set: open government da
 
 | Rank | Country | Rationale |
 |------|---------|-----------|
-| 1 | **US / CA** | Free AFDC/NREL API — see [`EV_AVAILABILITY_ROADMAP_NON_EU.md`](EV_AVAILABILITY_ROADMAP_NON_EU.md) |
+| 1 | **AU** (watch) | No national registry API yet — see [`EV_AVAILABILITY_ROADMAP_NON_EU.md`](EV_AVAILABILITY_ROADMAP_NON_EU.md) |
 | 2 | **ES** | High demand; unblock when REVE/SGV pull API exists |
 | 3 | **DK / IE / PT** | Watch NAP consumer publication |
 | 4 | **AU / JP** | OCM/partner until national or commercial OCPI is viable |

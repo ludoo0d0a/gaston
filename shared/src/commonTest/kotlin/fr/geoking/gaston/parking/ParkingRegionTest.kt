@@ -66,8 +66,18 @@ class ParkingRegionTest {
     }
 
     @Test
-    fun containing_outsideEurope_returnsNull() {
-        assertNull(ParkingRegion.containing(40.7128, -74.0060))
+    fun containing_NewYork_returnsUnitedStates() {
+        assertEquals(ParkingRegion.UnitedStates, ParkingRegion.containing(40.7128, -74.0060))
+    }
+
+    @Test
+    fun containing_Toronto_returnsCanada() {
+        assertEquals(ParkingRegion.Canada, ParkingRegion.containing(43.6532, -79.3832))
+    }
+
+    @Test
+    fun containing_outsideKnownRegions_returnsNull() {
+        assertNull(ParkingRegion.containing(0.0, 0.0))
     }
 
     @Test

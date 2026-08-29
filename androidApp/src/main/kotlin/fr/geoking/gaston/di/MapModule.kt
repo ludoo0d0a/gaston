@@ -4,6 +4,8 @@ import org.koin.core.context.GlobalContext
 
 import fr.geoking.gaston.api.austria.AustriaEControlEvAvailabilityProvider
 import fr.geoking.gaston.api.austria.AustriaEControlEvClient
+import fr.geoking.gaston.api.afdc.AfdcAvailabilityClient
+import fr.geoking.gaston.api.afdc.AfdcAvailabilityProvider
 import fr.geoking.gaston.api.belgiumnap.BelgiumNapAvailabilityClient
 import fr.geoking.gaston.api.belgiumnap.BelgiumNapAvailabilityProvider
 import fr.geoking.gaston.api.belib.BelibAvailabilityClient
@@ -444,6 +446,16 @@ val mapModule = module {
     single<BorneAvailabilityProvider>(named("italy_pun")) {
         ItalyPunAvailabilityProvider(get(), radiusKm = 15, limit = 200)
     }
+    single {
+        AfdcAvailabilityClient(
+            client = get(),
+            apiKey = BuildConfig.NREL_AFDC_KEY,
+            country = "all",
+        )
+    }
+    single<BorneAvailabilityProvider>(named("afdc")) {
+        AfdcAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+    }
     single<BorneAvailabilityProviderFactory> {
         BorneAvailabilityProviderFactory(
             belibProvider = get(named("belib")),
@@ -462,6 +474,11 @@ val mapModule = module {
             nobilNorProvider = get(named("nobil_nor")),
             nobilSweProvider = get(named("nobil_swe")),
             italyPunProvider = get(named("italy_pun")),
+            afdcProvider = if (BuildConfig.NREL_AFDC_KEY.isBlank()) {
+                null
+            } else {
+                get(named("afdc"))
+            },
         )
     }
 

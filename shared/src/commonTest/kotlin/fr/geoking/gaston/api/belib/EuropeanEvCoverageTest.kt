@@ -60,7 +60,7 @@ class EuropeanEvCoverageTest {
     fun probes_coverEveryEuropeanParkingRegion_withTwoCities() {
         val europeanIsos = ParkingRegion.entries
             .map { it.countryCode }
-            .filter { it.length == 2 && it !in setOf("MX", "AR", "AU", "US") }
+            .filter { it.length == 2 && it !in setOf("MX", "AR", "AU", "US", "CA") }
             .toSet()
         val byIso = cities.groupBy { it.iso }
         assertEquals(europeanIsos, byIso.keys, "missing or extra European ParkingRegion countries")

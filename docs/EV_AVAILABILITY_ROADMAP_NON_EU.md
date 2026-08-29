@@ -2,7 +2,7 @@
 
 OCPI-or-equivalent sources for **United States, Australia, Canada, China, Japan**. Complements the European NAP roadmap: [`EV_AVAILABILITY_ROADMAP.md`](EV_AVAILABILITY_ROADMAP.md).
 
-**Related:** [`sources.md`](sources.md) · [`API_KEYS.md`](API_KEYS.md) · global fallbacks **Eco-Movement** (`ECO_MOVEMENT_KEY`) and **Open Charge Map** · factory via [`BorneAvailabilityProviderFactory`](../shared/src/commonMain/kotlin/fr/geoking/gaston/api/belib/BorneAvailabilityProviderFactory.kt) + [`ParkingRegion`](../shared/src/commonMain/kotlin/fr/geoking/gaston/parking/ParkingRegion.kt) (`UnitedStates`, `Australia` already defined; CA/CN/JP not yet)
+**Related:** [`sources.md`](sources.md) · [`API_KEYS.md`](API_KEYS.md) · [`AFDC_AVAILABILITY.md`](AFDC_AVAILABILITY.md) · global fallbacks **Eco-Movement** (`ECO_MOVEMENT_KEY`) and **Open Charge Map** · factory via [`BorneAvailabilityProviderFactory`](../shared/src/commonMain/kotlin/fr/geoking/gaston/api/belib/BorneAvailabilityProviderFactory.kt) + [`ParkingRegion`](../shared/src/commonMain/kotlin/fr/geoking/gaston/parking/ParkingRegion.kt) (US + CA wired for AFDC; AU present; CN/JP not yet)
 
 Legend: **Yes** / **Partial** / **No** for open consumer pull. Priorities **P0–P3** same as EU doc (open/free-key first).
 
@@ -12,8 +12,8 @@ Legend: **Yes** / **Partial** / **No** for open consumer pull. Priorities **P0�
 
 | Country | Official / primary source | Format | Stations open pull? | Live availability open pull? | Auth | Priority | Notes |
 |---------|---------------------------|--------|---------------------|------------------------------|------|----------|-------|
-| **US** | AFDC / NREL Alt-Fuel Stations API (+ NEVI OCPI mandate on federally funded CPOs) | Custom REST (OCPI-inspired inventory); per-network OCPI 2.2.1 for NEVI realtime | **Yes** | **Partial** | Free NREL API key | **P0** | Best non-EU starting point. See [§ United States](#united-states-us) |
-| **CA** | NRCan Electric Charging & Alternative Fuelling Stations Locator (same NREL/AFDC stack as US) | Same AFDC REST as US (`country=CA`) | **Yes** | **Partial** | Free NREL API key | **P0** | Same client as US with `country=CA`. See [§ Canada](#canada-ca) |
+| **US** | AFDC / NREL Alt-Fuel Stations API (+ NEVI OCPI mandate on federally funded CPOs) | Custom REST (OCPI-inspired inventory); per-network OCPI 2.2.1 for NEVI realtime | **Yes** | **Partial** | Free NREL API key | **Done** | [`AFDC_AVAILABILITY.md`](AFDC_AVAILABILITY.md) |
+| **CA** | NRCan Electric Charging & Alternative Fuelling Stations Locator (same NREL/AFDC stack as US) | Same AFDC REST as US (`country=all`) | **Yes** | **Partial** | Free NREL API key | **Done** | Same client as US. [`AFDC_AVAILABILITY.md`](AFDC_AVAILABILITY.md) |
 | **AU** | No national EV NAP; DCCEEW MOS guidance; fragmented CPOs (Evie, Chargefox, …) | App/proprietary; OCM / Eco-Movement | **Partial** | **No** | Commercial / none for OCM | **P2** | Fuel already via FuelCheck/FuelWatch/PetrolSpy. See [§ Australia](#australia-au) |
 | **JP** | No public NAP dump; commercial aggregators (EVsmart / ENECHANGE OCPI API, Plugo, …) | OCPI (B2B) / proprietary | **Partial** | **Partial** | Partner / commercial | **P2** | Track EVsmart Data API if a self-serve key appears. See [§ Japan](#japan-jp) |
 | **CN** | Provincial / grid operator platforms; **GB/T 44130** public info exchange (operator↔platform) | Chinese national specs (not OCPI); map LBS APIs (commercial) | **No** | **No** | Operator registration / commercial LBS | **P3** | No Belgium-style open dump for foreign apps. See [§ China](#china-cn) |
@@ -24,14 +24,14 @@ Legend: **Yes** / **Partial** / **No** for open consumer pull. Priorities **P0�
 
 ## Phased roadmap (non-EU)
 
-### Phase N1 — North America AFDC (next)
+### Phase N1 — North America AFDC (done)
 
 | Order | Country | Why |
 |-------|---------|-----|
-| 1 | **US** | Free NREL key, mature nearest/bbox APIs, `ParkingRegion.UnitedStates` exists; fuel already via EIA |
-| 2 | **CA** | Same API with `country=CA`; share one `AfdcAvailabilityClient` |
+| 1 | **US** | Free NREL key; `ParkingRegion.UnitedStates` in `containing()`; fuel via EIA |
+| 2 | **CA** | Same AFDC client (`country=all`); `ParkingRegion.Canada` |
 
-**Verify (“done”):** AFDC client + map `status_code` / EVSE fields → app availability enums; radius/nearest query; factory branch for US (+ CA region or AFDC country filter); tests; `sources.md` + short country doc; BuildConfig `NREL_AFDC_KEY` (or reuse existing key name if added).
+**Shipped:** `AfdcAvailabilityClient` / `AfdcAvailabilityProvider`; factory US/CA → AFDC; `NREL_AFDC_KEY`; [`AFDC_AVAILABILITY.md`](AFDC_AVAILABILITY.md).
 
 **Caveat:** AFDC status is **not** true OCPI realtime for every port — many networks sync daily via OCPI into AFDC; NEVI requires networks to expose **their own** OCPI 2.2.1 APIs free to developers (per-network tokens), not a single national OCPI hub.
 
@@ -65,11 +65,10 @@ Legend: **Yes** / **Partial** / **No** for open consumer pull. Priorities **P0�
 - Station-level `status_code` (e.g. E available / T temp unavailable / P planned) — coarser than OCPI EVSE status; use for availability when present.
 - Rate limits apply (document in country doc when implementing).
 
-**Gaston plan**
+**Gaston**
 
-1. **P0:** `AfdcEvAvailabilityProvider` (or combined US/CA POI+availability) with free NREL key.
+1. **Done (P0):** `AfdcAvailabilityProvider` with `NREL_AFDC_KEY`, `country=all`, US+CA factory branches.
 2. Optional later: opt-in per-network NEVI OCPI for fresher status on major networks (Electrify America, EVgo, ChargePoint, …) — high maintenance.
-3. Wire `ParkingRegion.UnitedStates` (today US is excluded from `containing()` — **fix that** when adding availability so factory can select AFDC).
 
 ---
 
@@ -80,9 +79,9 @@ Legend: **Yes** / **Partial** / **No** for open consumer pull. Priorities **P0�
 | **National locator** | [NRCan Electric Charging and Alternative Fuelling Stations Locator](https://natural-resources.canada.ca/energy-efficiency/transportation-energy-efficiency/electric-charging-alternative-fuelling-stationslocator-map) | **Yes** via **same NREL/AFDC API** (`country=CA` / `all`) |
 | **Ingest** | NRCan partners with NREL; networks push OCPI into the shared North American DB | Same as US |
 
-**Gaston plan**
+**Gaston**
 
-1. Reuse AFDC client; add `ParkingRegion.Canada` (missing today) or pass country from ISO when auto-mode detects `CA`.
+1. **Done:** same `AfdcAvailabilityProvider` as US (`country=all`); `ParkingRegion.Canada` in `containing()`.
 2. No separate Canadian OCPI NAP required for v1.
 
 ---
@@ -145,7 +144,7 @@ Legend: **Yes** / **Partial** / **No** for open consumer pull. Priorities **P0�
 | **Prefer AFDC over per-CPO OCPI** | One key, US+CA, good enough status for v1 |
 | **NEVI OCPI** | Only if AFDC freshness is insufficient for a named network |
 | **Eco-Movement outside EU** | Verify coverage before promising AU/JP/CN parity |
-| **ParkingRegion** | Enable US in `containing()`; add Canada (and JP later); AU already present |
+| **ParkingRegion** | US + Canada in `containing()`; AU already present; JP later |
 | **Ids / matching** | AFDC station id + lat/lon distance match (same pattern as Belib) |
 
 ---
@@ -154,11 +153,10 @@ Legend: **Yes** / **Partial** / **No** for open consumer pull. Priorities **P0�
 
 | Rank | Country | Rationale |
 |------|---------|-----------|
-| 1 | **US** | Free AFDC API, bbox exists (fix `containing`), high user value |
-| 2 | **CA** | Same API as US |
-| 3 | **AU** | Document-only until a national registry API exists; keep OCM |
-| 4 | **JP** | Partner OCPI (EVsmart) if budget/terms OK |
-| 5 | **CN** | Blocked on open pull; commercial LBS only as last resort |
+| 1 | **AU** | Document-only until a national registry API exists; keep OCM |
+| 2 | **JP** | Partner OCPI (EVsmart) if budget/terms OK |
+| 3 | **CN** | Blocked on open pull; commercial LBS only as last resort |
+| — | **US / CA** | **Done** — AFDC (`NREL_AFDC_KEY`) |
 
 ---
 

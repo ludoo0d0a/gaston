@@ -54,6 +54,7 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **EIPA** | Poland | EV availability | `https://eipa.udt.gov.pl/reader/export-data/…` | Optional `EIPA_EXPORT_KEY` — see [`POLAND_EIPA_AVAILABILITY.md`](POLAND_EIPA_AVAILABILITY.md) |
 | **NOBIL** | Norway + Sweden | EV availability | `https://nobil.no/api/server/datadump.php` | Yes — `NOBIL_API_KEY` — see [`NOBIL_AVAILABILITY.md`](NOBIL_AVAILABILITY.md) |
 | **Italy PUN** | Italy | EV availability | ArcGIS FeatureServer (PUN) | No — see [`ITALY_PUN_AVAILABILITY.md`](ITALY_PUN_AVAILABILITY.md) |
+| **AFDC / NREL** | United States + Canada | EV inventory + station status | `https://developer.nlr.gov/api/alt-fuel-stations/v1/…` | Yes — `NREL_AFDC_KEY` — see [`AFDC_AVAILABILITY.md`](AFDC_AVAILABILITY.md) |
 | **Belib’ availability** | Paris (FR, secondary) | EV availability | `https://parisdata.opendatasoft.com/.../belib-...` | No — complements QualiCharge; see [`BELIB_AVAILABILITY_API.md`](BELIB_AVAILABILITY_API.md) |
 | **QualiCharge IRVE dynamique** | Mainland France | EV availability | `https://proxy.transport.data.gouv.fr/resource/qualicharge-irve-dynamique` (+ statique join) | No — see [`IRVE_DYNAMIQUE.md`](IRVE_DYNAMIQUE.md) |
 | **OpenStreetMap (Overpass)** | Global | POIs (many), Battery Swap | `https://overpass-api.de/api/interpreter` | No |

@@ -11,6 +11,7 @@ Some keys can also be entered in the app under **Settings → App config** (stor
 | `GOOGLE_MAPS_KEY` | — | Map tiles ([setup guide](MAPS_API_KEY_SETUP.md)) |
 | `OPENCHARGEMAP_KEY` | Yes | Open Charge Map provider |
 | `ECO_MOVEMENT_KEY` | Yes | Eco-Movement OCPI provider |
+| `NREL_AFDC_KEY` | — | NREL/AFDC alt-fuel stations (US + Canada EV) |
 | `FUELPRICES_DK_KEY` | Yes | Fuelprices.dk (Denmark) |
 | `NSW_FUELCHECK_KEY` + `NSW_FUELCHECK_SECRET` | Yes | NSW FuelCheck (Australia) |
 | `GERMANY_TANKERKOENIG_KEY` | — | Tankerkönig (Germany); demo key available |
@@ -38,6 +39,20 @@ Some keys can also be entered in the app under **Settings → App config** (stor
 4. Copy the API key shown on **My Apps** into `local.properties` or Settings.
 
 Without a key, the API may rate-limit or reject heavy use.
+
+---
+
+## NREL / AFDC (EV, United States + Canada)
+
+| | |
+|---|---|
+| **Property** | `NREL_AFDC_KEY` |
+| **Auth** | Query parameter `api_key=` |
+| **Docs** | [Alt-Fuel Stations API](https://developer.nrel.gov/docs/transportation/alt-fuel-stations-v1/) · Gaston: [`AFDC_AVAILABILITY.md`](AFDC_AVAILABILITY.md) |
+
+1. Sign up at [developer.nrel.gov/signup](https://developer.nrel.gov/signup/) (free).
+2. Copy the API key into `local.properties` as `NREL_AFDC_KEY=…`.
+3. Demo/testing can use `DEMO_KEY` (rate-limited).
 
 ---
 

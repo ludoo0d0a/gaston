@@ -226,6 +226,14 @@ enum class ParkingRegion(
         lonMax = 153.6,
         countryCode = "AU"
     ),
+    /** Mainland + territories; checked before [UnitedStates] so southern ON/QC win over CONUS overlap. */
+    Canada(
+        latMin = 41.68,
+        latMax = 83.15,
+        lonMin = -141.0,
+        lonMax = -52.0,
+        countryCode = "CA"
+    ),
     UnitedStates(
         latMin = 17.0,
         latMax = 71.5,
@@ -250,6 +258,24 @@ enum class ParkingRegion(
             SubBox(43.0, 51.09, -5.14, 8.25),
             SubBox(41.33, 43.0, 8.5, 9.56)
         )
+        "Canada" -> listOf(
+            // North of 49th parallel (Prairies, BC, Territories, most of ON/QC)
+            SubBox(49.0, 83.15, -141.0, -52.0),
+            // Southern Ontario / Quebec corridor (Toronto, Montreal, Windsor)
+            SubBox(41.68, 49.0, -95.0, -74.0),
+            // Atlantic Canada (NB, NS, PE, NL south of 49)
+            SubBox(43.4, 49.0, -67.0, -52.0),
+        )
+        "UnitedStates" -> listOf(
+            // CONUS (stops at ~49° so Canada subBoxes above take priority north of the border)
+            SubBox(24.5, 49.0, -125.0, -66.9),
+            // Alaska
+            SubBox(51.2, 71.5, -170.0, -130.0),
+            // Hawaii
+            SubBox(18.9, 22.5, -160.5, -154.8),
+            // Puerto Rico + USVI (aligned with UsStateLookup)
+            SubBox(17.0, 18.6, -68.0, -64.0),
+        )
         else -> listOf(SubBox(latMin, latMax, lonMin, lonMax))
     }
 
@@ -263,13 +289,12 @@ enum class ParkingRegion(
             Ireland, Moldova, Portugal, Belgium, Switzerland, Netherlands,
             Denmark, Austria, Poland, Romania, Serbia, Greece, Finland, Norway,
             Sweden, Germany, France, UnitedKingdom, Spain, Italy,
-            Mexico, Argentina, Australia
-            // UnitedStates is excluded from 'containing' (single region choice) to avoid breaking
-            // logic that expects null for non-European regions, but is still available in 'allContaining'
-            // and 'allInViewport' for provider resolution.
+            Mexico, Argentina, Australia,
+            // Canada before US so southern ON/QC is not swallowed by CONUS.
+            Canada, UnitedStates,
         )
 
-        private val allRegions = bySpecificity + UnitedStates
+        private val allRegions = bySpecificity
 
         /** Returns the region containing (lat, lon), or null if none. */
         fun containing(lat: Double, lon: Double): ParkingRegion? =

@@ -15,6 +15,7 @@ import fr.geoking.gaston.parking.ParkingRegion
  * - **Poland:** EIPA
  * - **Norway / Sweden:** NOBIL
  * - **Italy:** PUN ArcGIS
+ * - **United States / Canada:** NREL AFDC alt-fuel stations
  * - **Everywhere else:** Eco-Movement OCPI when configured
  */
 class BorneAvailabilityProviderFactory(
@@ -30,6 +31,7 @@ class BorneAvailabilityProviderFactory(
     private val nobilNorProvider: BorneAvailabilityProvider? = null,
     private val nobilSweProvider: BorneAvailabilityProvider? = null,
     private val italyPunProvider: BorneAvailabilityProvider? = null,
+    private val afdcProvider: BorneAvailabilityProvider? = null,
 ) {
     /** Paris bounding box (approximate; nested inside France). */
     private val parisLatMin = 48.81
@@ -54,6 +56,8 @@ class BorneAvailabilityProviderFactory(
             ParkingRegion.Norway -> nobilNorProvider ?: ecoMovementProvider
             ParkingRegion.Sweden -> nobilSweProvider ?: ecoMovementProvider
             ParkingRegion.Italy -> italyPunProvider ?: ecoMovementProvider
+            ParkingRegion.Canada, ParkingRegion.UnitedStates ->
+                afdcProvider ?: ecoMovementProvider
             ParkingRegion.France -> {
                 val inParis =
                     latitude in parisLatMin..parisLatMax &&
