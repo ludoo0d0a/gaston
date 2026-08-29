@@ -168,6 +168,7 @@ enum class PoiProviderType(
     /** Australia-wide fuel prices via PetrolSpy. */
     AustraliaPetrolSpy(providesFuel = true),
     DataGouvElec(providesElectric = true),
+    QualiCharge(providesElectric = true),
     OpenChargeMap(providesElectric = true),
     Chargy(providesElectric = true),
     /** char.gy UK Open Data API (OCPI 2.2.1). */

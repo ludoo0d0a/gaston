@@ -60,6 +60,7 @@ fun autoProvidersForCountries(
         val electricProvider = if (wantElectric) {
             when (iso) {
                 "FR" -> {
+                    resolved.add(PoiProviderType.QualiCharge)
                     resolved.add(PoiProviderType.OpenChargeMap)
                     resolved.add(PoiProviderType.EcoMovement)
                     PoiProviderType.DataGouvElec

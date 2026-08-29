@@ -400,6 +400,7 @@
     <string name="fuel_card_none">None</string>
     <string name="fuel_card_routex">Routex</string>
     <string name="provider_datagouv_elec">data.gouv.fr (Electric)</string>
+    <string name="provider_qualicharge">QualiCharge (France)</string>
     <string name="provider_chargy">Chargy (Luxembourg)</string>
     <string name="provider_chargy_uk">char.gy (UK)</string>
     <string name="provider_openchargemap">OpenChargeMap</string>
