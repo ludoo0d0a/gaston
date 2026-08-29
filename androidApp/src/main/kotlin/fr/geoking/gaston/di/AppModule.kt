@@ -70,7 +70,7 @@ val appModule = module {
                         @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
                         kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Default) {
                             val respBody = try {
-                                response.bodyAsText()
+                                truncateDebugBody(response.bodyAsText())
                             } catch (e: Exception) {
                                 "[Unreadable body: ${e.message}]"
                             }
@@ -82,7 +82,7 @@ val appModule = module {
                                     host = request.url.host,
                                     method = request.method.value,
                                     requestHeaders = request.headers.toMap(),
-                                    requestBody = reqBody,
+                                    requestBody = truncateDebugBody(reqBody),
                                     responseHeaders = response.headers.toMap(),
                                     responseBody = respBody,
                                     statusCode = response.status.value,
@@ -255,4 +255,11 @@ val appModule = module {
             ) ?: throw IllegalStateException("Both persistent and in-memory databases failed to initialize")
         }
     }
+}
+
+/** Cap debug network payloads so full OCPI/catalog responses cannot OOM the log store. */
+private fun truncateDebugBody(body: String?, maxChars: Int = 8_192): String? {
+    if (body == null) return null
+    if (body.length <= maxChars) return body
+    return body.take(maxChars) + "…[truncated ${body.length - maxChars} chars]"
 }

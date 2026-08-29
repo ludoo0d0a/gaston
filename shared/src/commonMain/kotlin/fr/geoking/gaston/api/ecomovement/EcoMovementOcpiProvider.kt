@@ -20,17 +20,19 @@ import kotlin.math.sqrt
 /**
  * [PoiProvider] backed by Eco-Movement's OCPI 2.2.1 endpoints.
  *
- * This provider caches the full dataset for [cacheMaxAgeMs] and performs in-memory distance filtering.
+ * `/locations` has no geo filter. Never cache the full European catalog: scan with a hard
+ * [maxFetch] cap, keep only stations inside the map viewport (or radius fallback), and stop
+ * once [limit] matches are found.
  */
 class EcoMovementOcpiProvider(
     private val client: EcoMovementOcpiClient,
     private val radiusKm: Int = 10,
-    private val limit: Int = 150,
-    private val cacheMaxAgeMs: Long = 6 * 60 * 60_000L
+    private val limit: Int = 100,
+    private val cacheMaxAgeMs: Long = 6 * 60 * 60_000L,
+    private val maxFetch: Int = DEFAULT_MAX_FETCH,
 ) : PoiProvider {
 
-    private var cachedLocations: List<EcoMovementOcpiLocation> = emptyList()
-    private var cacheTimestampMs: Long = 0L
+    private var cache: CachedQuery? = null
     private val mutex = Mutex()
 
     override fun supportedCategories(): Set<PoiCategory> = setOf(PoiCategory.Irve)
@@ -47,16 +49,17 @@ class EcoMovementOcpiProvider(
             }
             ?: radiusKm
 
-        ensureCachePopulated()
+        val nearby = ensureNearbyCached(latitude, longitude, effectiveRadiusKm, viewport)
 
-        return cachedLocations
+        return nearby
             .mapNotNull { loc ->
                 val coords = loc.coordinates ?: return@mapNotNull null
                 val locLat = coords.latitude?.toDoubleOrNull() ?: return@mapNotNull null
                 val locLon = coords.longitude?.toDoubleOrNull() ?: return@mapNotNull null
-                val dist = haversineKm(latitude, longitude, locLat, locLon)
-                if (dist > effectiveRadiusKm) return@mapNotNull null
-                Triple(loc, locLat, locLon) to dist
+                if (!inMapScope(locLat, locLon, latitude, longitude, effectiveRadiusKm, viewport)) {
+                    return@mapNotNull null
+                }
+                Triple(loc, locLat, locLon) to haversineKm(latitude, longitude, locLat, locLon)
             }
             .sortedBy { it.second }
             .take(limit)
@@ -116,33 +119,57 @@ class EcoMovementOcpiProvider(
     }
 
     override suspend fun clearCache() {
-        cachedLocations = emptyList()
-        cacheTimestampMs = 0L
+        cache = null
     }
 
-    private suspend fun ensureCachePopulated() {
+    private suspend fun ensureNearbyCached(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        viewport: MapViewport?,
+    ): List<EcoMovementOcpiLocation> {
+        val key = CacheKey.from(latitude, longitude, radiusKm, viewport)
         val now = currentTimeMs()
-        if (cachedLocations.isNotEmpty() && now - cacheTimestampMs < cacheMaxAgeMs) return
+        val hit = cache
+        if (hit != null && hit.key == key && now - hit.atMs < cacheMaxAgeMs) {
+            return hit.locations
+        }
 
-        mutex.withLock {
-            // Re-check after acquiring lock
-            if (cachedLocations.isNotEmpty() && now - cacheTimestampMs < cacheMaxAgeMs) return
-            cachedLocations = fetchAllLocations()
-            cacheTimestampMs = currentTimeMs()
+        return mutex.withLock {
+            val again = cache
+            if (again != null && again.key == key && currentTimeMs() - again.atMs < cacheMaxAgeMs) {
+                return@withLock again.locations
+            }
+            val nearby = fetchNearbyLocations(latitude, longitude, radiusKm, viewport)
+            cache = CachedQuery(key, nearby, currentTimeMs())
+            nearby
         }
     }
 
-    private suspend fun fetchAllLocations(): List<EcoMovementOcpiLocation> {
+    private suspend fun fetchNearbyLocations(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        viewport: MapViewport?,
+    ): List<EcoMovementOcpiLocation> {
         val pageSize = 1000
-        val result = mutableListOf<EcoMovementOcpiLocation>()
+        val nearby = ArrayList<EcoMovementOcpiLocation>(limit.coerceAtMost(100))
         var offset = 0
-        while (true) {
+        while (offset < maxFetch) {
             val page = client.listLocations(limit = pageSize, offset = offset)
-            result.addAll(page)
+            if (page.isEmpty()) break
+            for (loc in page) {
+                val coords = loc.coordinates ?: continue
+                val locLat = coords.latitude?.toDoubleOrNull() ?: continue
+                val locLon = coords.longitude?.toDoubleOrNull() ?: continue
+                if (!inMapScope(locLat, locLon, latitude, longitude, radiusKm, viewport)) continue
+                nearby.add(loc)
+                if (nearby.size >= limit) return nearby
+            }
             if (page.size < pageSize) break
             offset += pageSize
         }
-        return result
+        return nearby
     }
 
     private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
@@ -160,10 +187,69 @@ class EcoMovementOcpiProvider(
         return (v * a) / 1000.0
     }
 
-    /**
-     * Platform-specific current time in milliseconds.
-     * Note: In a pure KMP project, this would be an 'expect' fun or use a library like kotlinx-datetime.
-     * Given the existing project structure, we use System.currentTimeMillis() which works for Android.
-     */
     private fun currentTimeMs(): Long = System.currentTimeMillis()
+
+    companion object {
+        const val DEFAULT_MAX_FETCH = 5_000
+
+        /** Prefer map bbox when present; otherwise radius circle around the search center. */
+        internal fun inMapScope(
+            locLat: Double,
+            locLon: Double,
+            centerLat: Double,
+            centerLon: Double,
+            radiusKm: Int,
+            viewport: MapViewport?,
+        ): Boolean {
+            if (viewport != null &&
+                viewport.minLat != null &&
+                viewport.maxLat != null &&
+                viewport.minLng != null &&
+                viewport.maxLng != null
+            ) {
+                return viewport.contains(locLat, locLon)
+            }
+            val r = 6371.0
+            val rad = PI / 180.0
+            val dLat = (locLat - centerLat) * rad
+            val dLon = (locLon - centerLon) * rad
+            val a = sin(dLat / 2).pow(2) +
+                cos(centerLat * rad) * cos(locLat * rad) * sin(dLon / 2).pow(2)
+            val dist = 2 * r * atan2(sqrt(a), sqrt(1 - a))
+            return dist <= radiusKm
+        }
+    }
+
+    private data class CacheKey(
+        val lat: Int,
+        val lon: Int,
+        val radiusKm: Int,
+        val minLatE4: Int?,
+        val maxLatE4: Int?,
+        val minLngE4: Int?,
+        val maxLngE4: Int?,
+    ) {
+        companion object {
+            fun from(
+                latitude: Double,
+                longitude: Double,
+                radiusKm: Int,
+                viewport: MapViewport?,
+            ): CacheKey = CacheKey(
+                lat = (latitude * 100).toInt(),
+                lon = (longitude * 100).toInt(),
+                radiusKm = radiusKm,
+                minLatE4 = viewport?.minLat?.let { (it * 10_000).toInt() },
+                maxLatE4 = viewport?.maxLat?.let { (it * 10_000).toInt() },
+                minLngE4 = viewport?.minLng?.let { (it * 10_000).toInt() },
+                maxLngE4 = viewport?.maxLng?.let { (it * 10_000).toInt() },
+            )
+        }
+    }
+
+    private data class CachedQuery(
+        val key: CacheKey,
+        val locations: List<EcoMovementOcpiLocation>,
+        val atMs: Long,
+    )
 }

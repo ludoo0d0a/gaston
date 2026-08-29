@@ -265,6 +265,7 @@ class CarMapLibreRenderer(
         uiHandler.removeCallbacksAndMessages(null)
         reusableSnapshotter?.cancel()
         reusableSnapshotter = null
+        latestVectorBitmap = null
         surfaceContainer = null
         surfaceValid = false
         debugPhase = "detached"
@@ -335,7 +336,8 @@ class CarMapLibreRenderer(
             )
 
             val bearing = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
-            val pixelRatio = (surfaceDpi / 160f).coerceAtLeast(1f)
+            // SurfaceContainer width/height are already physical pixels; do not multiply by dpi
+            // (pixelRatio > 1 allocates multi‑× bitmaps and OOMs on AA displays).
             val cameraPosition = CameraPosition.Builder()
                 .target(LatLng(centerLat, centerLon))
                 .zoom((zoom - 1).toDouble())
@@ -348,7 +350,7 @@ class CarMapLibreRenderer(
                 val options = MapSnapshotter.Options(surfaceWidth, surfaceHeight)
                     .withStyle(styleUrl)
                     .withCameraPosition(cameraPosition)
-                    .withPixelRatio(pixelRatio)
+                    .withPixelRatio(1f)
                     .withLogo(false)
                     .withAttribution(false)
                 snapshotter = MapSnapshotter(carContext.applicationContext, options)
@@ -380,6 +382,8 @@ class CarMapLibreRenderer(
                         lastSnapshotLon = centerLon
                         lastSnapshotZoom = zoom
                         lastSnapshotStyleUrl = styleUrl
+                        // Drop previous reference so GC can reclaim native pixels.
+                        latestVectorBitmap = null
                         latestVectorBitmap = snapshot.bitmap
                         debugSnapshotCount++
                         debugSnapshotStatus = "ok"

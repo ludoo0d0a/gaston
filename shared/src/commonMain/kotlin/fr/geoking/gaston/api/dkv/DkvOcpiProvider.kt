@@ -18,19 +18,19 @@ import kotlin.math.sqrt
 /**
  * [PoiProvider] backed by DKV Mobility's OCPI endpoints on `api.dkv-mobility.com`.
  *
- * OCPI Locations are not queryable by radius in the base spec; in practice, most deployments
- * expect bulk sync with pagination. This provider therefore caches the full dataset for
- * [cacheMaxAgeMs] and does in-memory distance filtering.
+ * OCPI Locations are not queryable by radius. Never retain the full catalog: scan with a hard
+ * [maxFetch] cap, keep only stations inside the map viewport (or radius fallback), and stop once
+ * [limit] matches are found.
  */
 class DkvOcpiProvider(
     private val client: DkvOcpiClient,
     private val radiusKm: Int = 10,
-    private val limit: Int = 150,
-    private val cacheMaxAgeMs: Long = 6 * 60 * 60_000L
+    private val limit: Int = 100,
+    private val cacheMaxAgeMs: Long = 6 * 60 * 60_000L,
+    private val maxFetch: Int = DEFAULT_MAX_FETCH,
 ) : PoiProvider {
 
-    private var cachedLocations: List<DkvOcpiLocation> = emptyList()
-    private var cacheTimestampMs: Long = 0L
+    private var cache: CachedQuery? = null
 
     override fun supportedCategories(): Set<PoiCategory> = setOf(PoiCategory.Irve)
 
@@ -46,15 +46,16 @@ class DkvOcpiProvider(
             }
             ?: radiusKm
 
-        ensureCachePopulated()
+        val nearby = ensureNearbyCached(latitude, longitude, effectiveRadiusKm, viewport)
 
-        return cachedLocations
+        return nearby
             .mapNotNull { loc ->
                 val lat = loc.coordinates?.latitude?.toDoubleOrNull() ?: return@mapNotNull null
                 val lon = loc.coordinates.longitude?.toDoubleOrNull() ?: return@mapNotNull null
-                val dist = haversineKm(latitude, longitude, lat, lon)
-                if (dist > effectiveRadiusKm) return@mapNotNull null
-                loc to dist
+                if (!inMapScope(lat, lon, latitude, longitude, effectiveRadiusKm, viewport)) {
+                    return@mapNotNull null
+                }
+                loc to haversineKm(latitude, longitude, lat, lon)
             }
             .sortedBy { it.second }
             .take(limit)
@@ -113,28 +114,49 @@ class DkvOcpiProvider(
     }
 
     override suspend fun clearCache() {
-        cachedLocations = emptyList()
-        cacheTimestampMs = 0L
+        cache = null
     }
 
-    private suspend fun ensureCachePopulated() {
+    private suspend fun ensureNearbyCached(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        viewport: MapViewport?,
+    ): List<DkvOcpiLocation> {
+        val key = CacheKey.from(latitude, longitude, radiusKm, viewport)
         val now = System.currentTimeMillis()
-        if (cachedLocations.isNotEmpty() && now - cacheTimestampMs < cacheMaxAgeMs) return
-        cachedLocations = fetchAllLocations()
-        cacheTimestampMs = now
+        val hit = cache
+        if (hit != null && hit.key == key && now - hit.atMs < cacheMaxAgeMs) {
+            return hit.locations
+        }
+        val nearby = fetchNearbyLocations(latitude, longitude, radiusKm, viewport)
+        cache = CachedQuery(key, nearby, System.currentTimeMillis())
+        return nearby
     }
 
-    private suspend fun fetchAllLocations(): List<DkvOcpiLocation> {
+    private suspend fun fetchNearbyLocations(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        viewport: MapViewport?,
+    ): List<DkvOcpiLocation> {
         val pageSize = 200
-        val result = mutableListOf<DkvOcpiLocation>()
+        val nearby = ArrayList<DkvOcpiLocation>(limit.coerceAtMost(100))
         var offset = 0
-        while (true) {
+        while (offset < maxFetch) {
             val page = client.listLocations(limit = pageSize, offset = offset)
-            result.addAll(page)
+            if (page.isEmpty()) break
+            for (loc in page) {
+                val lat = loc.coordinates?.latitude?.toDoubleOrNull() ?: continue
+                val lon = loc.coordinates.longitude?.toDoubleOrNull() ?: continue
+                if (!inMapScope(lat, lon, latitude, longitude, radiusKm, viewport)) continue
+                nearby.add(loc)
+                if (nearby.size >= limit) return nearby
+            }
             if (page.size < pageSize) break
             offset += pageSize
         }
-        return result
+        return nearby
     }
 
     private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
@@ -151,5 +173,67 @@ class DkvOcpiProvider(
         val a = connector.maxAmperage ?: return null
         return (v * a) / 1000.0
     }
-}
 
+    companion object {
+        const val DEFAULT_MAX_FETCH = 5_000
+
+        internal fun inMapScope(
+            locLat: Double,
+            locLon: Double,
+            centerLat: Double,
+            centerLon: Double,
+            radiusKm: Int,
+            viewport: MapViewport?,
+        ): Boolean {
+            if (viewport != null &&
+                viewport.minLat != null &&
+                viewport.maxLat != null &&
+                viewport.minLng != null &&
+                viewport.maxLng != null
+            ) {
+                return viewport.contains(locLat, locLon)
+            }
+            val r = 6371.0
+            val rad = PI / 180.0
+            val dLat = (locLat - centerLat) * rad
+            val dLon = (locLon - centerLon) * rad
+            val a = sin(dLat / 2).pow(2) +
+                cos(centerLat * rad) * cos(locLat * rad) * sin(dLon / 2).pow(2)
+            val dist = 2 * r * atan2(sqrt(a), sqrt(1 - a))
+            return dist <= radiusKm
+        }
+    }
+
+    private data class CacheKey(
+        val lat: Int,
+        val lon: Int,
+        val radiusKm: Int,
+        val minLatE4: Int?,
+        val maxLatE4: Int?,
+        val minLngE4: Int?,
+        val maxLngE4: Int?,
+    ) {
+        companion object {
+            fun from(
+                latitude: Double,
+                longitude: Double,
+                radiusKm: Int,
+                viewport: MapViewport?,
+            ): CacheKey = CacheKey(
+                lat = (latitude * 100).toInt(),
+                lon = (longitude * 100).toInt(),
+                radiusKm = radiusKm,
+                minLatE4 = viewport?.minLat?.let { (it * 10_000).toInt() },
+                maxLatE4 = viewport?.maxLat?.let { (it * 10_000).toInt() },
+                minLngE4 = viewport?.minLng?.let { (it * 10_000).toInt() },
+                maxLngE4 = viewport?.maxLng?.let { (it * 10_000).toInt() },
+            )
+        }
+    }
+
+    private data class CachedQuery(
+        val key: CacheKey,
+        val locations: List<DkvOcpiLocation>,
+        val atMs: Long,
+    )
+}

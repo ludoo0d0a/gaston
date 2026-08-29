@@ -10,17 +10,21 @@ import kotlinx.coroutines.sync.withLock
 /**
  * Global [BorneAvailabilityProvider] backed by Eco-Movement OCPI locations (EVSE status).
  * Used as fallback when no country-specific feed (QualiCharge, Belib, Belgium NAP) applies.
+ *
+ * Eco-Movement `/locations` is a bulk catalog (no geo filter). Never retain the full dataset:
+ * paginate with a hard cap and keep only locations inside the query radius.
  */
 class EcoMovementAvailabilityProvider(
     private val client: EcoMovementOcpiClient,
     private val radiusKm: Int = 15,
-    private val limit: Int = 200,
+    private val limit: Int = 100,
     private val cacheTtlMs: Long = 120_000L,
+    private val maxFetch: Int = DEFAULT_MAX_FETCH,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
 ) : BorneAvailabilityProvider {
 
     private val mutex = Mutex()
-    private var cache: CachedLocations? = null
+    private var cache: CachedQuery? = null
 
     override suspend fun getAvailability(
         latitude: Double,
@@ -28,7 +32,7 @@ class EcoMovementAvailabilityProvider(
         radiusKm: Int,
     ): List<PdcAvailability> {
         val effectiveRadius = if (radiusKm > 0) radiusKm else this.radiusKm
-        val locations = getOrFetchLocations()
+        val locations = getOrFetchNearby(latitude, longitude, effectiveRadius)
         if (locations.isEmpty()) return emptyList()
 
         return locations.asSequence()
@@ -61,31 +65,64 @@ class EcoMovementAvailabilityProvider(
             .toList()
     }
 
-    private suspend fun getOrFetchLocations(): List<EcoMovementOcpiLocation> = mutex.withLock {
+    private suspend fun getOrFetchNearby(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+    ): List<EcoMovementOcpiLocation> = mutex.withLock {
+        val key = CacheKey(
+            lat = (latitude * 100).toInt(),
+            lon = (longitude * 100).toInt(),
+            radiusKm = radiusKm,
+        )
         val cached = cache
         val now = nowMs()
-        if (cached != null && now - cached.atMs < cacheTtlMs) return@withLock cached.locations
-        val locations = fetchAllLocations()
-        cache = CachedLocations(locations, now)
+        if (cached != null && cached.key == key && now - cached.atMs < cacheTtlMs) {
+            return@withLock cached.locations
+        }
+        val locations = fetchNearbyLocations(latitude, longitude, radiusKm)
+        cache = CachedQuery(key, locations, now)
         locations
     }
 
-    private suspend fun fetchAllLocations(): List<EcoMovementOcpiLocation> {
+    private suspend fun fetchNearbyLocations(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+    ): List<EcoMovementOcpiLocation> {
         val pageSize = 1000
-        val result = mutableListOf<EcoMovementOcpiLocation>()
+        val nearby = ArrayList<EcoMovementOcpiLocation>()
         var offset = 0
-        while (true) {
+        while (offset < maxFetch) {
             val page = try {
                 client.listLocations(limit = pageSize, offset = offset)
             } catch (_: Exception) {
                 break
             }
-            result.addAll(page)
+            if (page.isEmpty()) break
+            for (loc in page) {
+                val lat = loc.coordinates?.latitude?.toDoubleOrNull() ?: continue
+                val lon = loc.coordinates?.longitude?.toDoubleOrNull() ?: continue
+                if (haversineKm(latitude, longitude, lat, lon) <= radiusKm) {
+                    nearby.add(loc)
+                    if (nearby.size >= limit) return nearby
+                }
+            }
             if (page.size < pageSize) break
             offset += pageSize
         }
-        return result
+        return nearby
     }
 
-    private data class CachedLocations(val locations: List<EcoMovementOcpiLocation>, val atMs: Long)
+    companion object {
+        /** Hard cap on catalog scan size — full Europe sync OOMs on mobile. */
+        const val DEFAULT_MAX_FETCH = 5_000
+    }
+
+    private data class CacheKey(val lat: Int, val lon: Int, val radiusKm: Int)
+    private data class CachedQuery(
+        val key: CacheKey,
+        val locations: List<EcoMovementOcpiLocation>,
+        val atMs: Long,
+    )
 }

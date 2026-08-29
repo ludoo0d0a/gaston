@@ -256,7 +256,7 @@ val mapModule = module {
         )
     }
     single<PoiProvider>(named("dkv")) {
-        DkvOcpiProvider(get(), radiusKm = 10, limit = 150)
+        DkvOcpiProvider(get(), radiusKm = 10, limit = 100)
     }
     single {
         EcoMovementOcpiClient(get(), apiKey = BuildConfig.ECO_MOVEMENT_KEY)
@@ -274,7 +274,7 @@ val mapModule = module {
                 ): List<fr.geoking.gaston.poi.Poi> = emptyList()
             }
         } else {
-            EcoMovementOcpiProvider(get(), radiusKm = 10, limit = 150)
+            EcoMovementOcpiProvider(get(), radiusKm = 10, limit = 100)
         }
     }
     single { OverpassClient(get()) }
@@ -464,7 +464,7 @@ val mapModule = module {
             ecoMovementProvider = if (BuildConfig.ECO_MOVEMENT_KEY.isBlank()) {
                 null
             } else {
-                EcoMovementAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+                EcoMovementAvailabilityProvider(get(), radiusKm = 15, limit = 100)
             },
             dotNlProvider = get(named("dotnl")),
             ichTankeStromProvider = get(named("ich_tanke_strom")),

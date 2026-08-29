@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.ecomovement
 
+import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.PoiCategory
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -62,5 +63,43 @@ class EcoMovementOcpiProviderTest {
         assertTrue(poi.irveDetails?.connectorTypes?.contains("combo_ccs") == true)
         assertEquals(1, poi.irveDetails?.availableConnectors)
         assertEquals(2, poi.irveDetails?.totalConnectors)
+    }
+
+    @Test
+    fun getGasStations_restrictsToMapViewportBoundary_andCapsAtLimit() = runBlocking {
+        val engine = MockEngine {
+            respond(
+                content = """
+                {
+                  "data": [
+                    {"id":"IN","name":"Inside","coordinates":{"latitude":"48.86","longitude":"2.35"},
+                     "evses":[{"uid":"1","status":"AVAILABLE","connectors":[{"standard":"IEC_62196_T2","max_electric_power":11000}]}]},
+                    {"id":"OUT","name":"Outside corner","coordinates":{"latitude":"48.90","longitude":"2.40"},
+                     "evses":[{"uid":"2","status":"AVAILABLE","connectors":[{"standard":"IEC_62196_T2","max_electric_power":11000}]}]}
+                  ],
+                  "status_code": 1000
+                }
+                """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val provider = EcoMovementOcpiProvider(
+            EcoMovementOcpiClient(HttpClient(engine), "key"),
+            radiusKm = 50,
+            limit = 100,
+        )
+        val viewport = MapViewport(
+            zoom = 14f,
+            mapWidthPx = 800,
+            mapHeightPx = 600,
+            minLat = 48.85,
+            maxLat = 48.87,
+            minLng = 2.34,
+            maxLng = 2.36,
+        )
+        val pois = provider.getGasStations(48.86, 2.35, viewport)
+        assertEquals(1, pois.size)
+        assertEquals("ecomovement-IN", pois.first().id)
     }
 }
