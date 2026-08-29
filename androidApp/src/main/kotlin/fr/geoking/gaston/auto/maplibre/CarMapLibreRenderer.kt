@@ -25,6 +25,7 @@ import fr.geoking.gaston.auto.AutoMapQueryLoader
 import fr.geoking.gaston.auto.AutoSurfaceRenderer
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
@@ -605,7 +606,7 @@ class CarMapLibreRenderer(
                 effectivePowerLevels = effectivePowerLevels,
                 isSelected = poi.id == selectedPoiId,
                 sizePx = markerWidthPx,
-                availability = availabilityByPoiId[poi.id],
+                availability = poi.resolveAvailabilitySummary(availabilityByPoiId[poi.id]),
             )
 
             val tileX = lonToTileX(poi.longitude, zoom)

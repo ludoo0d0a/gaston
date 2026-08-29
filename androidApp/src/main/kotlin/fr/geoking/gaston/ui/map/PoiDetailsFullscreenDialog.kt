@@ -25,6 +25,8 @@ import androidx.compose.ui.window.DialogProperties
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.isChargingStation
+import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.shared.datetime.DateTimeUtils
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.ColorHelper
@@ -52,6 +54,7 @@ fun PoiDetailsFullscreenDialog(
     /** When true, renders as full-screen content (for marketing captures) instead of a [Dialog]. */
     embedded: Boolean = false,
 ) {
+    val resolvedAvailability = poi.resolveAvailabilitySummary(availabilitySummary)
     val brandInfo = BrandHelper.getBrandInfo(poi.brand)
     val sources = remember(poi.source) {
         poi.source
@@ -182,7 +185,7 @@ fun PoiDetailsFullscreenDialog(
                             }
                         }
 
-                        if (poi.isElectric) {
+                        if (poi.isChargingStation) {
                             listOfNotNull(
                                 poi.operator?.takeIf { it.isNotBlank() },
                                 if (poi.isOnHighway) stringResource(R.string.highway) else null,
@@ -197,7 +200,7 @@ fun PoiDetailsFullscreenDialog(
                                     fontSize = 13.sp
                                 )
                             }
-                            availabilitySummary?.let { summary ->
+                            resolvedAvailability?.let { summary ->
                                 Spacer(modifier = Modifier.height(8.dp))
                                 AvailabilitySlotsRow(
                                     summary = summary,
@@ -252,10 +255,10 @@ fun PoiDetailsFullscreenDialog(
                         }
 
                         // IRVE Details
-                        if (poi.isElectric && poi.irveDetails != null) {
+                        if (poi.isChargingStation && poi.irveDetails != null) {
                             val d = poi.irveDetails!!
                             SectionHeader(stringResource(R.string.poi_label_connectors))
-                            availabilitySummary?.let { summary ->
+                            resolvedAvailability?.let { summary ->
                                 AvailabilitySlotsRow(
                                     summary = summary,
                                     textColor = MaterialTheme.colorScheme.onSurface,

@@ -101,6 +101,7 @@ import fr.geoking.gaston.ui.anim.AnimationPalette
 import fr.geoking.gaston.ui.anim.AnimationPalettes
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.PoiMerger
+import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.api.geocoding.GeocodingClient
@@ -594,7 +595,7 @@ fun MapScreen(
                         }
 
                         poisToShow.forEach { poi ->
-                            val availability = mapData.availabilityByPoiId[poi.id]
+                            val availability = poi.resolveAvailabilitySummary(mapData.availabilityByPoiId[poi.id])
                             val isPoiSelected = selectedPoi?.id == poi.id
                             val cheapestRank = remember(poi, top3Prices, fuelIdsForCheapest) {
                                 val minPoiPrice = poi.fuelPrices?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForCheapest }

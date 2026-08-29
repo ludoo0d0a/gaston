@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.dkv
 
+import fr.geoking.gaston.api.common.OcpiEvseAvailability
 import fr.geoking.gaston.api.fastned.mapOcpiStandard
 import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.poi.IrveDetails
@@ -68,6 +69,7 @@ class DkvOcpiProvider(
                     .maxOrNull()
                     ?.let { it / 1000.0 }
                     ?: connectors.mapNotNull { powerKwFromAmpsVolts(it) }.maxOrNull()
+                val (availableConnectors, totalConnectors) = OcpiEvseAvailability.counts(evses.map { it.status })
 
                 val address = buildString {
                     if (!loc.address.isNullOrBlank()) append(loc.address)
@@ -97,11 +99,13 @@ class DkvOcpiProvider(
                     powerKw = maxPowerKw,
                     operator = loc.operator?.name ?: "DKV Mobility",
                     isOnHighway = false,
-                    chargePointCount = evses.size.takeIf { it > 0 },
+                    chargePointCount = totalConnectors.takeIf { it > 0 } ?: evses.size.takeIf { it > 0 },
                     fuelPrices = null,
                     irveDetails = IrveDetails(
                         connectorTypes = connectorTypes,
-                        tarification = null
+                        tarification = null,
+                        availableConnectors = availableConnectors.takeIf { totalConnectors > 0 },
+                        totalConnectors = totalConnectors.takeIf { it > 0 },
                     ),
                     source = "DKV"
                 )

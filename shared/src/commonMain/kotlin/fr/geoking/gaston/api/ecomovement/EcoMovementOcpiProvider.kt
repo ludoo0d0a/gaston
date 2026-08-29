@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.ecomovement
 
+import fr.geoking.gaston.api.common.OcpiEvseAvailability
 import fr.geoking.gaston.api.fastned.mapOcpiStandard
 import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.poi.IrveDetails
@@ -69,6 +70,8 @@ class EcoMovementOcpiProvider(
                     .maxOrNull()
                     ?.let { it / 1000.0 }
                     ?: connectors.mapNotNull { powerKwFromAmpsVolts(it) }.maxOrNull()
+                val (availableConnectors, totalConnectors) = OcpiEvseAvailability.counts(evses.map { it.status })
+                val pdcIds = evses.mapNotNull { it.evseId?.takeIf { id -> id.isNotBlank() } ?: it.uid?.takeIf { id -> id.isNotBlank() } }.toSet()
 
                 val address = buildString {
                     if (!loc.address.isNullOrBlank()) append(loc.address)
@@ -98,11 +101,14 @@ class EcoMovementOcpiProvider(
                     powerKw = maxPowerKw,
                     operator = loc.operator?.name ?: "Eco-Movement",
                     isOnHighway = false,
-                    chargePointCount = evses.size.takeIf { it > 0 },
+                    chargePointCount = totalConnectors.takeIf { it > 0 } ?: evses.size.takeIf { it > 0 },
                     fuelPrices = null,
                     irveDetails = IrveDetails(
                         connectorTypes = connectorTypes,
-                        tarification = null
+                        tarification = null,
+                        availableConnectors = availableConnectors.takeIf { totalConnectors > 0 },
+                        totalConnectors = totalConnectors.takeIf { it > 0 },
+                        pdcIds = pdcIds,
                     ),
                     source = "Eco-Movement"
                 )

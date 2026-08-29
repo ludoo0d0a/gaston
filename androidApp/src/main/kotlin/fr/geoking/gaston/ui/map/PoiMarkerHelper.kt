@@ -9,6 +9,7 @@ import androidx.core.content.ContextCompat
 import fr.geoking.gaston.R
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
+import fr.geoking.gaston.poi.isChargingStation
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.ui.BrandHelper
@@ -92,7 +93,7 @@ object PoiMarkerHelper {
             textSize = labelTextSize
         }
 
-        val showAvailBars = poi.isElectric &&
+        val showAvailBars = poi.isChargingStation &&
             availability != null &&
             availability.totalCount > 0
         val barRowH = if (showAvailBars) w * 0.07f else 0f

@@ -81,7 +81,7 @@ class BelgiumNapAvailabilityTest {
     }
 
     @Test
-    fun factory_returnsBelgiumNapInBelgium() {
+    fun factory_routesByCountryWithoutOverlap() {
         val belib = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
             override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) =
                 emptyList<PdcAvailability>()
@@ -94,15 +94,30 @@ class BelgiumNapAvailabilityTest {
             override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) =
                 emptyList<PdcAvailability>()
         }
+        val eco = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
+            override suspend fun getAvailability(latitude: Double, longitude: Double, radiusKm: Int) =
+                emptyList<PdcAvailability>()
+        }
         val factory = fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory(
             belibProvider = belib,
             qualiChargeProvider = quali,
             belgiumNapProvider = belgium,
+            ecoMovementProvider = eco,
         )
-        // Brussels → Belgium NAP (not QualiCharge despite FR bbox overlap)
+        // Brussels → Belgium NAP
         assertEquals(belgium, factory.getProvider(50.85, 4.35))
+        // Lyon → QualiCharge
         assertEquals(quali, factory.getProvider(45.75, 4.85))
+        // Paris → Belib+Quali merge (not plain Belib / Quali alone)
         assertTrue(factory.getProvider(48.85, 2.35) !== belib)
         assertTrue(factory.getProvider(48.85, 2.35) !== quali)
+        assertTrue(factory.getProvider(48.85, 2.35) !== belgium)
+        assertTrue(factory.getProvider(48.85, 2.35) !== eco)
+        // Outside FR/BE → Eco-Movement fallback
+        assertEquals(eco, factory.getProvider(52.52, 13.40)) // Berlin
+        assertEquals(eco, factory.getProvider(52.37, 4.90)) // Amsterdam
+        assertEquals(eco, factory.getProvider(50.94, 6.96)) // Cologne
+        // Luxembourg City is not inside Belgium bbox → eco, not BE NAP
+        assertEquals(eco, factory.getProvider(49.61, 6.13))
     }
 }

@@ -22,7 +22,9 @@ import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.genericStationCity
 import fr.geoking.gaston.poi.genericStationName
+import fr.geoking.gaston.poi.isChargingStation
 import fr.geoking.gaston.poi.isGenericStationName
+import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.map.MarkerStyle
@@ -150,6 +152,7 @@ object AutoPoiUiHelper {
         forMapPin: Boolean = false,
         sizePx: Int = 128
     ): CarIcon {
+        val resolvedAvailability = poi.resolveAvailabilitySummary(availability)
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
         val category = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
         val categoryColor = PoiMarkerHelper.getPoiColor(poi, category, effectiveEnergyTypes, effectivePowerLevels)
@@ -160,7 +163,7 @@ object AutoPoiUiHelper {
                 poi = poi,
                 effectiveEnergyTypes = effectiveEnergyTypes,
                 effectivePowerLevels = effectivePowerLevels,
-                availability = availability,
+                availability = resolvedAvailability,
                 sizePx = sizePx,
             )
         } else {
@@ -203,13 +206,14 @@ object AutoPoiUiHelper {
         browsable: Boolean = true,
         onClick: () -> Unit
     ): Row {
+        val resolvedAvailability = poi.resolveAvailabilitySummary(availability)
         val title = poiDisplayName(poi)
         val carIcon = buildPoiIcon(
             carContext = carContext,
             poi = poi,
             effectiveEnergyTypes = effectiveEnergyTypes,
             effectivePowerLevels = effectivePowerLevels,
-            availability = availability,
+            availability = resolvedAvailability,
             forMapPin = includePlace,
         )
 
@@ -269,8 +273,8 @@ object AutoPoiUiHelper {
             poi.operator?.takeIf { it.isNotBlank() }?.let { secondaryDetails.add(it) }
         }
 
-        if (poi.isElectric) {
-            availability?.let { s ->
+        if (poi.isChargingStation) {
+            resolvedAvailability?.let { s ->
                 secondaryDetails.add(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
             }
             poi.chargePointCount?.let { n ->
@@ -300,6 +304,7 @@ object AutoPoiUiHelper {
         maxRows: Int = 6,
         includePlace: Boolean = false
     ): List<Row> {
+        val resolvedAvailability = poi.resolveAvailabilitySummary(availability)
         val rows = mutableListOf<Row>()
         val metadata = if (includePlace) {
             Metadata.Builder().setPlace(buildPlace(carContext, poi)).build()
@@ -361,8 +366,8 @@ object AutoPoiUiHelper {
         }
 
         // 4. IRVE Details
-        if (poi.isElectric && canAddRow()) {
-            availability?.let { s ->
+        if (poi.isChargingStation && canAddRow()) {
+            resolvedAvailability?.let { s ->
                 if (canAddRow()) {
                     val row = Row.Builder()
                         .setTitle(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
@@ -449,6 +454,7 @@ object AutoPoiUiHelper {
         effectivePowerLevels: Set<Int> = emptySet(),
         distanceFromLatLon: Pair<Double, Double>? = null
     ): String {
+        val resolvedAvailability = poi.resolveAvailabilitySummary(availability)
         val sb = StringBuilder()
 
         // Headline: brand · distance · best-price/power label
@@ -516,8 +522,8 @@ object AutoPoiUiHelper {
         }
 
         // Charging details (electric)
-        if (poi.isElectric) {
-            availability?.let { s ->
+        if (poi.isChargingStation) {
+            resolvedAvailability?.let { s ->
                 sb.appendLine(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
                 sb.appendLine()
             }

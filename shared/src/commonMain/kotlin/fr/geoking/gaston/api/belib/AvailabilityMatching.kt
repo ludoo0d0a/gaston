@@ -13,7 +13,7 @@ import kotlin.math.*
 fun matchAvailabilityToPois(
     availabilities: List<PdcAvailability>,
     pois: List<Poi>,
-    maxDistanceMeters: Double = 80.0
+    maxDistanceMeters: Double = 150.0
 ): Map<String, StationAvailabilitySummary> {
     if (availabilities.isEmpty() || pois.isEmpty()) return emptyMap()
 

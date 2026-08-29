@@ -2,6 +2,7 @@ package fr.geoking.gaston.parking
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
 class ParkingRegionTest {
@@ -24,6 +25,29 @@ class ParkingRegionTest {
     @Test
     fun containing_LuxembourgCity_returnsLuxembourg() {
         assertEquals(ParkingRegion.Luxembourg, ParkingRegion.containing(49.6116, 6.1319))
+    }
+
+    @Test
+    fun containing_Arlon_returnsBelgium_notLuxembourg() {
+        // Arlon sits west of the LU bbox; must remain Belgium after the LU carve-out.
+        assertEquals(ParkingRegion.Belgium, ParkingRegion.containing(49.6833, 5.8167))
+    }
+
+    @Test
+    fun luxembourgAndBelgium_bboxesDoNotOverlap() {
+        val lux = ParkingRegion.Luxembourg.subBoxes
+        val be = ParkingRegion.Belgium.subBoxes
+        for (a in lux) {
+            for (b in be) {
+                val overlap =
+                    a.latMin <= b.latMax && a.latMax >= b.latMin &&
+                        a.lonMin <= b.lonMax && a.lonMax >= b.lonMin
+                kotlin.test.assertFalse(
+                    overlap,
+                    "LU $a overlaps BE $b",
+                )
+            }
+        }
     }
 
     @Test
@@ -51,7 +75,7 @@ class ParkingRegionTest {
 
     @Test
     fun allInViewport_nearBorder_returnsMultiple() {
-        // Viewport covering part of FR, DE, LU
+        // Viewport covering part of FR, DE, LU (south of Liège — BE no longer overlaps LU)
         val regions = ParkingRegion.allInViewport(
             latMin = 49.4,
             latMax = 49.6,
@@ -59,8 +83,6 @@ class ParkingRegionTest {
             lonMax = 6.4
         )
         val codes = regions.map { it.countryCode }.toSet()
-        // Use println to debug if it fails again
-        // println("Detected codes: $codes")
-        assertEquals(setOf("FR", "DE", "LU", "BE"), codes)
+        assertEquals(setOf("FR", "DE", "LU"), codes)
     }
 }

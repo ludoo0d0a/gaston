@@ -38,6 +38,16 @@ fun LibreMap(
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
     val lastPaddingBottomPx = remember { intArrayOf(-1) }
 
+    val syncToken = remember(
+        poisInView,
+        selectedPoiId,
+        availabilityByPoiId,
+        effectiveEnergyTypes,
+        effectivePowerLevels,
+    ) {
+        arrayOf(poisInView, selectedPoiId, availabilityByPoiId, effectiveEnergyTypes, effectivePowerLevels)
+    }
+
     MapLibreView(
         modifier = modifier,
         styleUrl = styleUrl,
@@ -67,6 +77,7 @@ fun LibreMap(
             }
             onPoiClick(nearestPoi)
         },
+        syncToken = syncToken,
         update = { map ->
             if (lastPaddingBottomPx[0] != paddingBottomPx) {
                 map.setPadding(0, 0, 0, paddingBottomPx)

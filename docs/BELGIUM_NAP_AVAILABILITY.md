@@ -51,7 +51,7 @@ Commercial / partner APIs — request via the provider’s portal or sales (see 
 
 - **Client:** `shared/.../api/belgiumnap/BelgiumNapAvailabilityClient.kt` — fetch/parse/cache (~60s), radius filter
 - **Provider:** `BelgiumNapAvailabilityProvider` implements `BorneAvailabilityProvider`
-- **Factory:** Belgium NAP for BE; QualiCharge (+ Belib in Paris) for FR
+- **Factory:** Belgium NAP for BE; QualiCharge (+ Belib in Paris) for FR; Eco-Movement OCPI as fallback elsewhere (LU, DE, NL, …). Country routing uses [ParkingRegion](../shared/src/commonMain/kotlin/fr/geoking/gaston/parking/ParkingRegion.kt) sub-boxes (BE/LU do not overlap).
 
 Status mapping (OCPI → app): `AVAILABLE` → Available, `CHARGING`/`BLOCKED` → Occupied, `OUTOFORDER`/`INOPERATIVE` → Maintenance, `REMOVED` skipped.
 

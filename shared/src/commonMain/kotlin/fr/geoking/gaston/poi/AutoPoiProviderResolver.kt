@@ -61,18 +61,25 @@ fun autoProvidersForCountries(
             when (iso) {
                 "FR" -> {
                     resolved.add(PoiProviderType.OpenChargeMap)
+                    resolved.add(PoiProviderType.EcoMovement)
                     PoiProviderType.DataGouvElec
                 }
                 "LU" -> {
                     resolved.add(PoiProviderType.OpenChargeMap)
+                    resolved.add(PoiProviderType.EcoMovement)
                     PoiProviderType.Chargy
                 }
                 "GB", "UK" -> {
                     resolved.add(PoiProviderType.OpenChargeMap)
                     resolved.add(PoiProviderType.Fastned)
+                    resolved.add(PoiProviderType.EcoMovement)
                     PoiProviderType.CharGyUk
                 }
-                else -> PoiProviderType.OpenChargeMap
+                else -> {
+                    // Eco-Movement carries live EVSE status for DE, NL, AT, … when key is set.
+                    resolved.add(PoiProviderType.EcoMovement)
+                    PoiProviderType.OpenChargeMap
+                }
             }
         } else null
 

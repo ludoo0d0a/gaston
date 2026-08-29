@@ -4,6 +4,7 @@ import android.content.Context
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.AutoMapCamera
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.maplibre.android.maps.MapLibreMap
@@ -79,7 +80,7 @@ object MapLibreSharedHelper {
 
             val features = pois.map { poi ->
                 val isSelected = poi.id == selectedPoiId
-                val availability = availabilityByPoiId[poi.id]
+                val availability = poi.resolveAvailabilitySummary(availabilityByPoiId[poi.id])
                 val size = sizeProvider(poi, isSelected)
 
                 val markerBitmap = PoiMarkerHelper.getMarkerBitmap(

@@ -33,7 +33,7 @@ enum class ParkingRegion(
     Luxembourg(
         latMin = 49.44,
         latMax = 50.18,
-        lonMin = 5.73,
+        lonMin = 5.87,
         lonMax = 6.53,
         countryCode = "LU"
     ),
@@ -233,6 +233,12 @@ enum class ParkingRegion(
             SubBox(48.9, 50.5, 6.35, 15.04),
             SubBox(47.27, 48.9, 7.4, 15.04)
         )
+        "Belgium" -> listOf(
+            // West of Luxembourg (includes Arlon ~5.82); exclusive of LU lonMin 5.87
+            SubBox(49.50, 51.51, 2.54, 5.86),
+            // North of Luxembourg (Liège / Eupen); exclusive of LU latMax 50.18
+            SubBox(50.181, 51.51, 5.87, 6.41),
+        )
         "France" -> listOf(
             SubBox(43.0, 51.09, -5.14, 8.25),
             SubBox(41.33, 43.0, 8.5, 9.56)
@@ -274,8 +280,10 @@ enum class ParkingRegion(
             lonMax: Double
         ): List<ParkingRegion> {
             return allRegions.filter { region ->
-                region.latMin <= latMax && region.latMax >= latMin &&
-                        region.lonMin <= lonMax && region.lonMax >= lonMin
+                region.subBoxes.any { box ->
+                    box.latMin <= latMax && box.latMax >= latMin &&
+                        box.lonMin <= lonMax && box.lonMax >= lonMin
+                }
             }
         }
     }

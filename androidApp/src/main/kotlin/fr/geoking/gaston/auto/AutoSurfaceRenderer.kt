@@ -13,6 +13,7 @@ import android.util.LruCache
 import android.view.Surface
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import java.net.HttpURLConnection
 import java.net.URL
@@ -1006,7 +1007,7 @@ class AutoSurfaceRenderer(
                 effectivePowerLevels = effectivePowerLevels,
                 isSelected = poi.id == selectedPoiId,
                 sizePx = markerWidthPx,
-                availability = availabilityByPoiId[poi.id],
+                availability = poi.resolveAvailabilitySummary(availabilityByPoiId[poi.id]),
             )
 
             val bw = bitmap.width.toFloat()

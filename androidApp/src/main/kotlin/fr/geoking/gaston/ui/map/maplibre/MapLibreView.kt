@@ -29,6 +29,7 @@ fun MapLibreView(
     cameraPosition: CameraPosition? = null,
     onMapReady: (MapLibreMap) -> Unit = {},
     onMapClick: (LatLng) -> Unit = {},
+    syncToken: Any? = null,
     update: (MapLibreMap) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -98,6 +99,9 @@ fun MapLibreView(
         factory = { mapView },
         modifier = modifier,
         update = {
+            // Read syncToken so AndroidView re-runs update when POIs / availability change.
+            @Suppress("UNUSED_EXPRESSION")
+            syncToken
             // Read epoch so AndroidView re-runs update after each style load.
             mapView.tag = styleEpoch
             mapView.getMapAsync { map ->

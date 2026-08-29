@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.fastned
 
+import fr.geoking.gaston.api.common.OcpiEvseAvailability
 import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.poi.IrveDetails
 import fr.geoking.gaston.poi.MapViewport
@@ -85,6 +86,7 @@ class FastnedOcpiProvider(
                     .maxOrNull()
                     ?.let { it / 1000.0 }
                     ?: connectors.mapNotNull { powerKwFromAmpsVolts(it) }.maxOrNull()
+                val (availableConnectors, totalConnectors) = OcpiEvseAvailability.counts(evses.map { it.status })
                 val address = buildString {
                     if (!loc.address.isNullOrBlank()) append(loc.address)
                     if (!loc.city.isNullOrBlank()) {
@@ -109,11 +111,13 @@ class FastnedOcpiProvider(
                     powerKw = maxPowerKw,
                     operator = loc.operator?.name ?: "Fastned",
                     isOnHighway = false,
-                    chargePointCount = evses.size.takeIf { it > 0 },
+                    chargePointCount = totalConnectors.takeIf { it > 0 } ?: evses.size.takeIf { it > 0 },
                     fuelPrices = null,
                     irveDetails = IrveDetails(
                         connectorTypes = connectorTypes,
-                        tarification = tarification
+                        tarification = tarification,
+                        availableConnectors = availableConnectors.takeIf { totalConnectors > 0 },
+                        totalConnectors = totalConnectors.takeIf { it > 0 },
                     ),
                     source = "Fastned"
                 )

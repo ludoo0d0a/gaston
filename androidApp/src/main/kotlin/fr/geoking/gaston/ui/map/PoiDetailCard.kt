@@ -32,7 +32,9 @@ import fr.geoking.gaston.poi.FuelPrice
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.isChargingStation
 import fr.geoking.gaston.poi.isGenericStationName
+import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.ColorHelper
 import kotlin.math.roundToInt
@@ -52,6 +54,7 @@ fun PoiDetailCard(
     onToggleFavorite: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val resolvedAvailability = poi.resolveAvailabilitySummary(availabilitySummary)
     val rawSiteName = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name
     val isGenericName = isGenericStationName(rawSiteName)
     val brandInfo = BrandHelper.getBrandInfo(poi.brand)
@@ -185,7 +188,7 @@ fun PoiDetailCard(
                                 )
                             }
                         }
-                        if (poi.isElectric) {
+                        if (poi.isChargingStation) {
                             val infoParts = listOfNotNull(
                                 if (poi.isOnHighway) stringResource(R.string.highway) else null,
                                 poi.chargePointCount?.let { n ->
@@ -201,7 +204,7 @@ fun PoiDetailCard(
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
-                            availabilitySummary?.let { summary ->
+                            resolvedAvailability?.let { summary ->
                                 Spacer(modifier = Modifier.height(4.dp))
                                 AvailabilitySlotsRow(
                                     summary = summary,
@@ -288,7 +291,7 @@ fun PoiDetailCard(
                                 }
                             }
                             PoiCategory.Irve -> {
-                                availabilitySummary?.let { summary ->
+                                resolvedAvailability?.let { summary ->
                                     AvailabilitySlotsRow(
                                         summary = summary,
                                         textColor = Color.White.copy(alpha = 0.85f),

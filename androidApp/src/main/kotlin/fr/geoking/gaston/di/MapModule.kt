@@ -15,6 +15,7 @@ import fr.geoking.gaston.api.chargy.ChargyProvider
 import fr.geoking.gaston.api.chargyuk.CharGyUkProvider
 import fr.geoking.gaston.api.dkv.DkvOcpiClient
 import fr.geoking.gaston.api.dkv.DkvOcpiProvider
+import fr.geoking.gaston.api.ecomovement.EcoMovementAvailabilityProvider
 import fr.geoking.gaston.api.ecomovement.EcoMovementOcpiClient
 import fr.geoking.gaston.api.ecomovement.EcoMovementOcpiProvider
 import fr.geoking.gaston.api.fastned.FastnedOcpiClient
@@ -353,7 +354,8 @@ val mapModule = module {
         MergedPoiProvider(base = get(named("selector")), communityRepo = get())
     }
 
-    // Borne availability: QualiCharge (FR) + Belib secondary in Paris; Belgium NAP (Road) for BE.
+    // Borne availability: QualiCharge (FR) + Belib secondary in Paris; Belgium NAP (Road) for BE;
+    // Eco-Movement OCPI as global fallback (DE, NL, LU, …) when ECO_MOVEMENT_KEY is set.
     single { BelibAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("belib")) {
         BelibAvailabilityProvider(get(), radiusKm = 10, limit = 100)
@@ -371,6 +373,11 @@ val mapModule = module {
             belibProvider = get(named("belib")),
             qualiChargeProvider = get(named("qualicharge")),
             belgiumNapProvider = get(named("belgium_nap")),
+            ecoMovementProvider = if (BuildConfig.ECO_MOVEMENT_KEY.isBlank()) {
+                null
+            } else {
+                EcoMovementAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+            },
         )
     }
 

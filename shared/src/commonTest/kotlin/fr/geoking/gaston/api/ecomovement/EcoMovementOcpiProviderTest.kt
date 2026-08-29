@@ -29,7 +29,8 @@ class EcoMovementOcpiProviderTest {
                       "city": "Paris",
                       "coordinates": { "latitude": "48.8566", "longitude": "2.3522" },
                       "evses": [
-                        { "uid": "1", "connectors": [{ "standard": "IEC_62196_T2_COMBO", "max_electric_power": 50000 }] }
+                        { "uid": "1", "status": "AVAILABLE", "connectors": [{ "standard": "IEC_62196_T2_COMBO", "max_electric_power": 50000 }] },
+                        { "uid": "2", "status": "CHARGING", "connectors": [{ "standard": "IEC_62196_T2_COMBO", "max_electric_power": 50000 }] }
                       ]
                     },
                     {
@@ -59,5 +60,7 @@ class EcoMovementOcpiProviderTest {
         assertEquals(PoiCategory.Irve, poi.poiCategory)
         assertEquals(50.0, poi.powerKw)
         assertTrue(poi.irveDetails?.connectorTypes?.contains("combo_ccs") == true)
+        assertEquals(1, poi.irveDetails?.availableConnectors)
+        assertEquals(2, poi.irveDetails?.totalConnectors)
     }
 }
