@@ -137,6 +137,7 @@ private fun FuelCard.displayLabel(): String = when (this) {
 @StringRes
 private fun poiProviderLabelRes(type: PoiProviderType): Int = when (type) {
     PoiProviderType.DataGouvElec -> R.string.provider_datagouv_elec
+    PoiProviderType.QualiCharge -> R.string.provider_qualicharge
     PoiProviderType.Chargy -> R.string.provider_chargy
     PoiProviderType.CharGyUk -> R.string.provider_chargy_uk
     PoiProviderType.OpenChargeMap -> R.string.provider_openchargemap
@@ -540,6 +541,7 @@ private fun SourcesConfig(
     val providers = listOf(
         // Electric
         ProviderUiInfo(PoiProviderType.DataGouvElec, listOf("FR")),
+        ProviderUiInfo(PoiProviderType.QualiCharge, listOf("FR")),
         ProviderUiInfo(PoiProviderType.Chargy, listOf("LU")),
         ProviderUiInfo(PoiProviderType.CharGyUk, listOf("GB")),
         ProviderUiInfo(PoiProviderType.OpenChargeMap, listOf("GLOBAL")),

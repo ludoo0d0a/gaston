@@ -41,6 +41,7 @@ class AutoPoiProviderSelectionScreen(
         PoiProviderType.MexicoCre to "CRE (Mexico)",
         PoiProviderType.ArgentinaEnergia to "Secretaría de Energía (Argentina)",
         PoiProviderType.DataGouvElec to "data.gouv.fr (Electric)",
+        PoiProviderType.QualiCharge to "QualiCharge IRVE (Electric)",
         PoiProviderType.OpenChargeMap to "Open Charge Map",
         PoiProviderType.Chargy to "Chargy (Luxembourg)",
         PoiProviderType.CharGyUk to "char.gy (UK)",

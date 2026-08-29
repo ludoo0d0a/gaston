@@ -10,6 +10,7 @@ import fr.geoking.gaston.api.belib.BorneAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.qualicharge.QualiChargeAvailabilityProvider
 import fr.geoking.gaston.api.qualicharge.QualiChargeDynamiqueClient
+import fr.geoking.gaston.api.qualicharge.QualiChargeProvider
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.chargy.ChargyProvider
 import fr.geoking.gaston.api.chargyuk.CharGyUkProvider
@@ -208,6 +209,9 @@ val mapModule = module {
     single<PoiProvider>(named("datagouvelec")) {
         DataGouvElecProvider(get(), radiusKm = 10, limit = 100)
     }
+    single<PoiProvider>(named("qualicharge_provider")) {
+        QualiChargeProvider(get(), radiusKm = 15, limit = 100)
+    }
     single<OpenChargeMapClient> {
         OpenChargeMapClient(get(), apiKey = BuildConfig.OPENCHARGEMAP_KEY)
     }
@@ -326,6 +330,7 @@ val mapModule = module {
             mexicoCre = get(named("mexicocre")),
             argentinaEnergia = get(named("argentinaenergia")),
             dataGouvElec = get(named("datagouvelec")),
+            qualiCharge = get(named("qualicharge_provider")),
             openChargeMap = get(named("openchargemap")),
             chargy = get(named("chargy")),
             charGyUk = get(named("chargyuk")),

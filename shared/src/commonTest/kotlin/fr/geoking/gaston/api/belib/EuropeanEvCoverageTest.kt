@@ -101,6 +101,7 @@ class EuropeanEvCoverageTest {
         when (iso) {
             "FR" -> setOf(
                 PoiProviderType.DataGouvElec,
+                PoiProviderType.QualiCharge,
                 PoiProviderType.OpenChargeMap,
                 PoiProviderType.EcoMovement,
                 PoiProviderType.Overpass,
