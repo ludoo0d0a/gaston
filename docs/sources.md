@@ -2,7 +2,7 @@
 
 This document compares **Pumperly**’s documented sources (from its “Data Sources” tables) with what is currently implemented in **Gaston**.
 
-**API keys:** which feeds need credentials and how to register → [`API_KEYS.md`](API_KEYS.md). Build-time property names → [`ENV_VARS.md`](ENV_VARS.md).
+**API keys:** which feeds need credentials and how to register → [`API_KEYS.md`](API_KEYS.md). Build-time property names → [`ENV_VARS.md`](ENV_VARS.md). Remaining EU EV stations + live availability NAPs → [`EV_AVAILABILITY_ROADMAP.md`](EV_AVAILABILITY_ROADMAP.md).
 
 ## Implemented in Gaston (selectable providers)
 
