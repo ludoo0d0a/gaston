@@ -1,6 +1,8 @@
 # EV stations + live availability — European roadmap
 
-Practical roadmap for **stations + live EVSE availability** in European countries **not** already covered by the current parallel workstream. Goal: prefer national open (or free-registration) NAP feeds over commercial fallbacks where Gaston can pull reliably.
+Practical roadmap for **stations + live EVSE availability** in European countries. Prefer national open (or free-registration) NAP feeds over commercial fallbacks where Gaston can pull reliably.
+
+**Non-EU (US, CA, AU, JP, CN):** [`EV_AVAILABILITY_ROADMAP_NON_EU.md`](EV_AVAILABILITY_ROADMAP_NON_EU.md)
 
 **Related:** [`sources.md`](sources.md) · [`API_KEYS.md`](API_KEYS.md#eco-movement-ev-eu--global-ocpi-221) · [`BELGIUM_NAP_AVAILABILITY.md`](BELGIUM_NAP_AVAILABILITY.md) · [`IRVE_DYNAMIQUE.md`](IRVE_DYNAMIQUE.md) · factory routing via [`BorneAvailabilityProviderFactory`](../shared/src/commonMain/kotlin/fr/geoking/gaston/api/belib/BorneAvailabilityProviderFactory.kt) + [`ParkingRegion`](../shared/src/commonMain/kotlin/fr/geoking/gaston/parking/ParkingRegion.kt)
 
@@ -11,13 +13,18 @@ Practical roadmap for **stations + live EVSE availability** in European countrie
 | Country | Status | Source (short) |
 |---------|--------|----------------|
 | **FR** | Done | QualiCharge IRVE dynamique + Belib (Paris) |
-| **BE** | Done | Belgium NAP Road/E-Flux OCPI dump ([transportdata.be](https://transportdata.be/dataset/road-public-charging-network)) |
-| **NL** | In progress | DOT-NL / NDW OCPI |
-| **DE** | In progress | Mobilithek DATEX / Eco-Movement |
-| **IT** | In progress | PUN |
-| **NO / SE** | In progress | NOBIL |
-| **LU** | Stations + fallback | Chargy (stations) + Eco-Movement availability |
-| **GB** | Stations (+ network OCPI) | char.gy OCPI + Fastned UK OCPI |
+| **BE** | Done | Belgium NAP Road/E-Flux OCPI dump |
+| **NL** | Done | DOT-NL / NDW OCPI — [`DOTNL_AVAILABILITY.md`](DOTNL_AVAILABILITY.md) |
+| **CH** | Done | ich-tanke-strom / BFE — [`SWITZERLAND_EV_AVAILABILITY.md`](SWITZERLAND_EV_AVAILABILITY.md) |
+| **FI** | Done | Digitraffic AFIR — [`FINLAND_DIGITRAFFIC_AVAILABILITY.md`](FINLAND_DIGITRAFFIC_AVAILABILITY.md) |
+| **AT** | Done | E-Control charge API — [`AUSTRIA_EV_AVAILABILITY.md`](AUSTRIA_EV_AVAILABILITY.md) |
+| **PL** | Done | EIPA — [`POLAND_EIPA_AVAILABILITY.md`](POLAND_EIPA_AVAILABILITY.md) |
+| **NO / SE** | Done | NOBIL — [`NOBIL_AVAILABILITY.md`](NOBIL_AVAILABILITY.md) |
+| **IT** | Done (partial) | PUN ArcGIS — [`ITALY_PUN_AVAILABILITY.md`](ITALY_PUN_AVAILABILITY.md) |
+| **DE** | Eco interim | Mobilithek DATEX — [`GERMANY_EV_AVAILABILITY.md`](GERMANY_EV_AVAILABILITY.md) |
+| **ES / DK / PT / IE** | Eco interim | See country docs; no usable open national pull yet |
+| **LU** | Stations + fallback | Chargy + Eco-Movement |
+| **GB** | Stations (+ network OCPI) | char.gy + Fastned UK |
 | **Global fallback** | Always | Eco-Movement OCPI (`ECO_MOVEMENT_KEY`), Open Charge Map |
 
 ---
@@ -59,21 +66,15 @@ EU catalogue of ITS NAPs (background): [EC NAP list PDF](https://transport.ec.eu
 
 Recommend order: **open no-key OCPI/JSON (like NL/BE) → free API-key NAPs → DATEX/heavy registries → Eco-Movement-only**.
 
-### Phase A — open dumps / no-key APIs (next after NL/DE/IT/NO/SE)
+### Phase A — remaining EU open dumps (mostly done)
 
-| Order | Country | Why |
-|-------|---------|-----|
-| 1 | **CH** | Same shape as Belgium: bulk static + status JSON, no key; `ParkingRegion.Switzerland` already exists |
-| 2 | **FI** | Digitraffic REST (+ optional MQTT) for locations + statuses; no key; clear docs |
-
-**Verify:** radius-filtered client + `BorneAvailabilityProvider` + factory branch for that `ParkingRegion` + host tests + row in `sources.md` (+ short country doc if non-obvious).
+CH, FI shipped. Prefer next EU work only where a new open dump appears; otherwise see [non-EU roadmap](EV_AVAILABILITY_ROADMAP_NON_EU.md) (**US/CA AFDC** is the next global P0).
 
 ### Phase B — free registration / national APIs
 
 | Order | Country | Why |
 |-------|---------|-----|
-| 3 | **AT** | E-Control charge API used by many apps; free key; DATEX also on NAP |
-| 4 | **PL** | EIPA reader dumps include live availability; free account + rate limits |
+| — | **AT / PL** | Done — E-Control / EIPA wired |
 | 5 | **IE** | Watch TII DXP publication on data.gov.ie; OCPI-shaped if exposed |
 | 6 | **DK** | Prefer Klimadatastyrelsen aggregated feed if/when consumer access is documented; else stay on Eco-Movement until DATEX NAP pulls are usable |
 
@@ -201,26 +202,19 @@ Best **Phase A** candidate after the current in-progress set: open government da
 - Coverage is “most” public operators, not necessarily 100%.
 - Confirm commercial redistribition terms before shipping in a paid store build if licence is interpreted strictly.
 
-**Gaston plan**
-
-1. Implement `SwitzerlandIchTankeStromAvailabilityProvider` (name TBD) + cache (~60s status, longer static).
-2. Wire `ParkingRegion.Switzerland` in the factory **before** Eco-Movement.
-3. Tests for status mapping + factory; document licence note in `sources.md`.
+**Gaston status:** Implemented — [`SWITZERLAND_EV_AVAILABILITY.md`](SWITZERLAND_EV_AVAILABILITY.md); factory routes `ParkingRegion.Switzerland` → ich-tanke-strom.
 
 ---
 
-## Suggested next 8 (after NL / DE / IT / NO / SE)
+## Suggested next (EU leftovers + non-EU)
 
 | Rank | Country | Rationale |
 |------|---------|-----------|
-| 1 | **CH** | Open static+status dumps, bbox ready |
-| 2 | **FI** | Digitraffic open AFIR API |
-| 3 | **AT** | E-Control free API + live status |
-| 4 | **PL** | EIPA free JSON + `dynamic.json` |
-| 5 | **ES** | High demand; unblock when pull API exists (Eco-Movement until then) |
-| 6 | **DK** | Aggregated real-time programme; DATEX NAP path |
-| 7 | **PT** | EADME/NAP maturing; high Iberian pairing with ES |
-| 8 | **IE** | TII OCPI DXP → NAP publication |
+| 1 | **US / CA** | Free AFDC/NREL API — see [`EV_AVAILABILITY_ROADMAP_NON_EU.md`](EV_AVAILABILITY_ROADMAP_NON_EU.md) |
+| 2 | **ES** | High demand; unblock when REVE/SGV pull API exists |
+| 3 | **DK / IE / PT** | Watch NAP consumer publication |
+| 4 | **AU / JP** | OCM/partner until national or commercial OCPI is viable |
+| 5 | **CN** | Blocked on open pull |
 
 ---
 
