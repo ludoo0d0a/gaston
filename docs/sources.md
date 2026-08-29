@@ -44,7 +44,7 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **Chargy (Luxembourg)** | Luxembourg | EV charging | `https://my.chargy.lu/.../kml` | Yes — `CHARGY_API_KEY` |
 | **char.gy (UK OCPI)** | United Kingdom | EV charging | `https://char.gy/open-ocpi` | No |
 | **Fastned (OCPI 2.2.1)** | UK (Open Data) | EV charging | `https://uk-public.api.fastned.nl/uk-public/ocpi/cpo/2.2.1` | Yes — `FASTNED_UK_KEY` |
-| **DKV Mobility (OCPI)** | EU (network) | EV charging | `https://api.dkv-mobility.com/ocpi/cpo/2.2.1` | Yes — `DKV_SUBSCRIPTION_KEY` |
+| **DKV Mobility (OCPI)** | EU (network) | EV charging | `https://api.dkv-mobility.com/ocpi/cpo/2.2.1` | Yes — `DKV_SUBSCRIPTION_KEY` — see [`DKV_OCPI.md`](DKV_OCPI.md) |
 | **Eco‑Movement (OCPI 2.2.1)** | EU / Global | EV charging + availability | `https://open-chargepoints.com/api/ocpi/cpo/2.2.1` | Yes — `ECO_MOVEMENT_KEY` (also global availability fallback outside FR/BE) |
 | **Belgium NAP (Road / E-Flux)** | Belgium | EV availability | `https://roaming.road.io/.../locations.json` (via [transportdata.be](https://transportdata.be/dataset/road-public-charging-network)) | No — see [`BELGIUM_NAP_AVAILABILITY.md`](BELGIUM_NAP_AVAILABILITY.md) |
 | **DOT-NL / NDW** | Netherlands | EV availability | `https://opendata.ndw.nu/charging_point_locations_ocpi.json.gz` | No — see [`DOTNL_AVAILABILITY.md`](DOTNL_AVAILABILITY.md) |

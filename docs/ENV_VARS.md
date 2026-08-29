@@ -37,7 +37,7 @@ Use these names in `local.properties` or set the same name as an env var (e.g. f
 | `GERMANY_TANKERKOENIG_KEY` | Tankerkönig API key (demo: `00000000-0000-0000-0000-000000000002`). |
 | `EIA_KEY` | EIA Open Data API key (US petroleum/pri state retail prices). Optional — OSM stations still load without it. |
 | `FASTNED_UK_KEY` | Fastned UK OCPI API key (`x-api-key` header). |
-| `DKV_SUBSCRIPTION_KEY` | DKV Mobility Azure APIM subscription key (`Ocp-Apim-Subscription-Key`) for `api.dkv-mobility.com`. |
+| `DKV_SUBSCRIPTION_KEY` | DKV Mobility Azure APIM subscription key (`Ocp-Apim-Subscription-Key`) for `api.dkv-mobility.com`. Guide: [`DKV_OCPI.md`](DKV_OCPI.md). |
 | `DKV_AUTHORIZATION` | Optional DKV `Authorization` header (`Bearer …` or OCPI `Token …`) if required by your product. |
 | `ROMANIA_PECO_APPLICATION_ID` | Parse application id for Peco Online (Romania). |
 | `ROMANIA_PECO_CLIENT_KEY` | Parse client key for Peco Online (Romania). |

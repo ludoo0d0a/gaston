@@ -184,10 +184,11 @@ The real-time KML feed is operated by Chargy (not the generic data.public.lu CKA
 | **Auth** | Header `Ocp-Apim-Subscription-Key`; optional `Authorization: Bearer …` or `Token …` |
 | **API host** | `https://api.dkv-mobility.com/ocpi/cpo/2.2.1` |
 | **Portal** | [api-portal.dkv-mobility.com](https://api-portal.dkv-mobility.com/) (docs only — not the API host) |
+| **Full guide** | [`DKV_OCPI.md`](DKV_OCPI.md) (onboarding, OAuth, troubleshooting) |
 
-1. API access is granted through DKV Mobility sales / onboarding ([how it works](https://api-portal.dkv-mobility.com/how-to), [FAQs](https://api-portal.dkv-mobility.com/faqs)).
-2. Subscribe to the relevant product on the developer portal; the **subscription key** is emailed once.
-3. Enterprise APIs also use OAuth2 client credentials ([API Authentication](https://api-portal.dkv-mobility.com/content/html_widgets/uxlt9.html)); set `DKV_AUTHORIZATION` to the resulting `Bearer …` (or OCPI `Token …` if that is what your product uses).
+1. API access is granted through DKV Mobility sales / onboarding — **not** self-service on the portal ([how it works](https://api-portal.dkv-mobility.com/how-to), [FAQs](https://api-portal.dkv-mobility.com/faqs), [Customer onboarding](https://api-portal.dkv-mobility.com/content/html_widgets/rr03k.html)).
+2. You receive **client_id** + **subscription key** by e-mail and **client_secret** by SMS (~7–10 days). Ask explicitly for **OCPI / e-Mobility Locations**.
+3. Enterprise APIs use OAuth2 client credentials ([API Authentication](https://api-portal.dkv-mobility.com/content/html_widgets/uxlt9.html)); set `DKV_SUBSCRIPTION_KEY` and optionally `DKV_AUTHORIZATION=Bearer …` (or OCPI `Token …`).
 
 ---
 
