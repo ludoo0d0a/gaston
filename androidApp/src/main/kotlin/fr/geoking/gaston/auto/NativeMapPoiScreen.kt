@@ -143,6 +143,8 @@ class NativeMapPoiScreen(
                     )
                 ).collect { result ->
                     pois = PoiMerger.mergeInto(pois, result.pois)
+                        .sortedBy { approxDistanceKm(lat, lon, it.latitude, it.longitude) }
+                        .take(200)
                     val provider = availabilityProviderFactory.getProvider(lat, lon)
                     if (provider != null) {
                         val availabilities = try {
@@ -151,7 +153,7 @@ class NativeMapPoiScreen(
                             if (e is kotlinx.coroutines.CancellationException) throw e
                             emptyList()
                         }
-                        availabilityByPoiId = availabilityByPoiId + matchAvailabilityToPois(availabilities, pois)
+                        availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
                     }
                     isLoading = false
                     invalidate()

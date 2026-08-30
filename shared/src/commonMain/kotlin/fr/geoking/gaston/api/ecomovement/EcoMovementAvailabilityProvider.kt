@@ -90,7 +90,7 @@ class EcoMovementAvailabilityProvider(
         longitude: Double,
         radiusKm: Int,
     ): List<EcoMovementOcpiLocation> {
-        val pageSize = 1000
+        val pageSize = EcoMovementOcpiClient.MAX_PAGE
         val nearby = ArrayList<EcoMovementOcpiLocation>()
         var offset = 0
         while (offset < maxFetch) {
@@ -116,7 +116,7 @@ class EcoMovementAvailabilityProvider(
 
     companion object {
         /** Hard cap on catalog scan size — full Europe sync OOMs on mobile. */
-        const val DEFAULT_MAX_FETCH = 5_000
+        const val DEFAULT_MAX_FETCH = 500
     }
 
     private data class CacheKey(val lat: Int, val lon: Int, val radiusKm: Int)

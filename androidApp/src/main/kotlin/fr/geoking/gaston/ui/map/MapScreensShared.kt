@@ -211,7 +211,11 @@ fun rememberMapDataState(
                     )
                 ).collect { result ->
                     if (result.errors.isEmpty() || result.pois.isNotEmpty()) {
-                        cachedPois = PoiMerger.mergeInto(cachedPois, result.pois)
+                        cachedPois = trimMapPois(
+                            PoiMerger.mergeInto(cachedPois, result.pois),
+                            centerLat,
+                            centerLng,
+                        )
 
                         val availabilityProvider = availabilityProviderFactory?.getProvider(centerLat, centerLng)
                         if (availabilityProvider != null) {
@@ -221,7 +225,7 @@ fun rememberMapDataState(
                                 approxDistanceKm(centerLat, centerLng, poi.latitude, poi.longitude) <= availabilityRadiusKm * 1.05
                             }
                             val matched = matchAvailabilityToPois(availabilities, poisForAvailability)
-                            availabilityByPoiId = availabilityByPoiId + matched
+                            availabilityByPoiId = matched
                         }
                     }
 
@@ -361,6 +365,13 @@ fun MapErrorBanner(
             }
         }
     }
+}
+
+private const val MAX_MAP_POIS = 200
+
+private fun trimMapPois(pois: List<Poi>, lat: Double, lng: Double): List<Poi> {
+    if (pois.size <= MAX_MAP_POIS) return pois
+    return pois.sortedBy { approxDistanceKm(lat, lng, it.latitude, it.longitude) }.take(MAX_MAP_POIS)
 }
 
 @Composable

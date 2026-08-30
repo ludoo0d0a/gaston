@@ -17,10 +17,10 @@ import fr.geoking.gaston.ui.ColorHelper
 
 object PoiMarkerHelper {
 
-    private val cache = LruCache<String, Bitmap>(100)
+    private val cache = LruCache<String, Bitmap>(40)
 
     /** Rasterized vector heads (rounded = circle + logo); keyed by id + bucketed pixel size. Do not recycle evicted entries (bitmaps may still be referenced by marker bitmaps in flight). */
-    private val vectorRasterCache = LruCache<String, Bitmap>(150)
+    private val vectorRasterCache = LruCache<String, Bitmap>(40)
 
     fun clearCache() {
         synchronized(cache) {

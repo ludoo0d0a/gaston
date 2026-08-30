@@ -21,12 +21,11 @@ class EcoMovementAvailabilityProviderTest {
         val engine = MockEngine { request ->
             listCalls++
             val offset = request.url.parameters["offset"]?.toIntOrNull() ?: 0
-            // Far stations fill the first page; one nearby on the second.
             val locations = when (offset) {
-                0 -> (0 until 1000).joinToString(",") { i ->
+                0 -> (0 until 50).joinToString(",") { i ->
                     """{"id":"FAR-$i","coordinates":{"latitude":"40.0","longitude":"0.0"},"evses":[{"uid":"f$i","status":"AVAILABLE"}]}"""
                 }
-                1000 -> """{"id":"NEAR-1","coordinates":{"latitude":"48.8566","longitude":"2.3522"},"evses":[{"uid":"n1","status":"AVAILABLE"},{"uid":"n2","status":"CHARGING"}]}"""
+                50 -> """{"id":"NEAR-1","coordinates":{"latitude":"48.8566","longitude":"2.3522"},"evses":[{"uid":"n1","status":"AVAILABLE"},{"uid":"n2","status":"CHARGING"}]}"""
                 else -> ""
             }
             respond(
@@ -41,12 +40,13 @@ class EcoMovementAvailabilityProviderTest {
             client = client,
             radiusKm = 15,
             limit = 50,
-            maxFetch = 2_000,
+            maxFetch = 100,
         )
 
         val result = provider.getAvailability(48.8566, 2.3522, 15)
 
-        assertEquals(2, listCalls, "should stop after maxFetch pages (2×1000)")
+        assertTrue(listCalls >= 1)
+        assertTrue(listCalls <= 2, "should stop after maxFetch (100) with page size 50")
         assertEquals(2, result.size)
         assertTrue(result.all { it.stationId == "NEAR-1" })
         assertEquals(AvailabilityStatus.Available, result[0].status)

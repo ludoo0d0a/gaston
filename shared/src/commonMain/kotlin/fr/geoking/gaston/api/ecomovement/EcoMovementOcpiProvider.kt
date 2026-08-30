@@ -152,7 +152,7 @@ class EcoMovementOcpiProvider(
         radiusKm: Int,
         viewport: MapViewport?,
     ): List<EcoMovementOcpiLocation> {
-        val pageSize = 1000
+        val pageSize = EcoMovementOcpiClient.MAX_PAGE
         val nearby = ArrayList<EcoMovementOcpiLocation>(limit.coerceAtMost(100))
         var offset = 0
         while (offset < maxFetch) {
@@ -190,7 +190,7 @@ class EcoMovementOcpiProvider(
     private fun currentTimeMs(): Long = System.currentTimeMillis()
 
     companion object {
-        const val DEFAULT_MAX_FETCH = 5_000
+        const val DEFAULT_MAX_FETCH = 500
 
         /** Prefer map bbox when present; otherwise radius circle around the search center. */
         internal fun inMapScope(

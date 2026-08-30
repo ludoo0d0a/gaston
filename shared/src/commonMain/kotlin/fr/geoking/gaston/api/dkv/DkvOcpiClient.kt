@@ -31,7 +31,7 @@ class DkvOcpiClient(
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun listLocations(limit: Int = 200, offset: Int = 0): List<DkvOcpiLocation> {
-        val url = "${baseUrl.trimEnd('/')}/locations?limit=${limit.coerceIn(1, 1000)}&offset=${offset.coerceAtLeast(0)}"
+        val url = "${baseUrl.trimEnd('/')}/locations?limit=${limit.coerceIn(1, 50)}&offset=${offset.coerceAtLeast(0)}"
         return getOcpi(url)
     }
 
@@ -48,7 +48,7 @@ class DkvOcpiClient(
         }
         val body = response.bodyAsText()
         if (response.status.value != 200) {
-            throw NetworkException(response.status.value, "DKV OCPI error: $body")
+            throw NetworkException(response.status.value, "DKV OCPI error")
         }
         val envelope = json.decodeFromString<DkvOcpiEnvelope<T>>(body)
         if (envelope.statusCode != 1000) {

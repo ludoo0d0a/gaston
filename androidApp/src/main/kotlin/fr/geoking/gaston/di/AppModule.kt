@@ -29,7 +29,6 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.observer.ResponseObserver
-import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.request
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -66,31 +65,30 @@ val appModule = module {
                     if (settingsManager.settings.value.debugLoggingEnabled) {
                         val request = response.request
                         val reqBody = request.attributes.getOrNull(requestBodyKey)
-
-                        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-                        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Default) {
-                            val respBody = try {
-                                truncateDebugBody(response.bodyAsText())
-                            } catch (e: Exception) {
-                                "[Unreadable body: ${e.message}]"
-                            }
-
-                            DebugLogStore.addLog(
-                                NetworkLog(
-                                    id = UUID.randomUUID().toString(),
-                                    url = request.url.toString(),
-                                    host = request.url.host,
-                                    method = request.method.value,
-                                    requestHeaders = request.headers.toMap(),
-                                    requestBody = truncateDebugBody(reqBody),
-                                    responseHeaders = response.headers.toMap(),
-                                    responseBody = respBody,
-                                    statusCode = response.status.value,
-                                    durationMs = response.responseTime.timestamp - response.requestTime.timestamp,
-                                    timestamp = System.currentTimeMillis()
-                                )
-                            )
+                        // Never call bodyAsText() here — Crashlytics OOM on ~79MB OCPI/catalog
+                        // payloads (AppModuleKt.invokeSuspend → HttpResponse.bodyAsText).
+                        val contentLength = response.headers["Content-Length"]?.toLongOrNull()
+                        val respBody = if (contentLength != null) {
+                            "[body omitted: ${contentLength} bytes]"
+                        } else {
+                            "[body omitted]"
                         }
+
+                        DebugLogStore.addLog(
+                            NetworkLog(
+                                id = UUID.randomUUID().toString(),
+                                url = request.url.toString(),
+                                host = request.url.host,
+                                method = request.method.value,
+                                requestHeaders = request.headers.toMap(),
+                                requestBody = truncateDebugBody(reqBody),
+                                responseHeaders = response.headers.toMap(),
+                                responseBody = respBody,
+                                statusCode = response.status.value,
+                                durationMs = response.responseTime.timestamp - response.requestTime.timestamp,
+                                timestamp = System.currentTimeMillis()
+                            )
+                        )
                     }
                 }
             }
@@ -257,8 +255,10 @@ val appModule = module {
     }
 }
 
-/** Cap debug network payloads so full OCPI/catalog responses cannot OOM the log store. */
-private fun truncateDebugBody(body: String?, maxChars: Int = 8_192): String? {
+private const val DEBUG_BODY_MAX_CHARS = 8_192
+
+/** Cap debug request payloads so oversized POSTs cannot OOM the log store. */
+private fun truncateDebugBody(body: String?, maxChars: Int = DEBUG_BODY_MAX_CHARS): String? {
     if (body == null) return null
     if (body.length <= maxChars) return body
     return body.take(maxChars) + "…[truncated ${body.length - maxChars} chars]"

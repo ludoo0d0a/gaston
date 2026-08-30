@@ -140,7 +140,7 @@ class DkvOcpiProvider(
         radiusKm: Int,
         viewport: MapViewport?,
     ): List<DkvOcpiLocation> {
-        val pageSize = 200
+        val pageSize = 50
         val nearby = ArrayList<DkvOcpiLocation>(limit.coerceAtMost(100))
         var offset = 0
         while (offset < maxFetch) {
@@ -175,7 +175,7 @@ class DkvOcpiProvider(
     }
 
     companion object {
-        const val DEFAULT_MAX_FETCH = 5_000
+        const val DEFAULT_MAX_FETCH = 500
 
         internal fun inMapScope(
             locLat: Double,

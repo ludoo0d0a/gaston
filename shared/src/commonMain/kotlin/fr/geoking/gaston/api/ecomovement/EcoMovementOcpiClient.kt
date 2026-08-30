@@ -28,7 +28,7 @@ class EcoMovementOcpiClient(
         getOcpi("/versions")
 
     suspend fun listLocations(limit: Int = 100, offset: Int = 0): List<EcoMovementOcpiLocation> {
-        val safeLimit = limit.coerceIn(1, 1000)
+        val safeLimit = limit.coerceIn(1, MAX_PAGE)
         val safeOffset = offset.coerceAtLeast(0)
         val url = "${baseUrl.trimEnd('/')}/locations?limit=$safeLimit&offset=$safeOffset"
         return getOcpiAbsolute(url)
@@ -50,10 +50,10 @@ class EcoMovementOcpiClient(
             header(HttpHeaders.Authorization, "Token $apiKey")
             header(HttpHeaders.Accept, "application/json")
         }
-        val body = response.bodyAsText()
         if (response.status.value != 200) {
-            throw NetworkException(response.status.value, "Eco-Movement OCPI error: $body")
+            throw NetworkException(response.status.value, "Eco-Movement OCPI error")
         }
+        val body = response.bodyAsText()
         val envelope = json.decodeFromString<EcoMovementOcpiEnvelope<T>>(body)
         if (envelope.statusCode != 1000) {
             throw NetworkException(
@@ -62,6 +62,11 @@ class EcoMovementOcpiClient(
             )
         }
         return envelope.data
+    }
+
+    companion object {
+        /** One OCPI page of 1000 full locations is ~80MB and OOMs on 384MB heaps. */
+        const val MAX_PAGE = 50
     }
 }
 

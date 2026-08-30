@@ -94,7 +94,7 @@ object AmenityIconCatalog {
     }
 
     /** Marker head bitmap cache (white circle + tinted glyph), keyed by icon identity + bucketed size + color. */
-    private val headBitmapCache = LruCache<String, Bitmap>(150)
+    private val headBitmapCache = LruCache<String, Bitmap>(40)
 
     /**
      * Renders a circular map marker head: white disc with a thin gray edge, plus the Material

@@ -170,9 +170,13 @@ class AutoSurfaceRenderer(
         private const val MIN_DRAW_INTERVAL_MS = 33L
         const val TILE_SIZE = 512
         const val POI_MARKER_WIDTH_PX = 96
+        /** ~24 tiles at 512² ARGB; entry-count LRU of 250 was ~250 MB. */
+        private const val TILE_CACHE_MAX_BYTES = 24 * 1024 * 1024
 
-        // Shared LRU cache for tiles across all instances of AutoSurfaceRenderer
-        private val sharedTileCache = LruCache<String, Bitmap>(250)
+        private val sharedTileCache = object : LruCache<String, Bitmap>(TILE_CACHE_MAX_BYTES) {
+            override fun sizeOf(key: String, value: Bitmap): Int =
+                if (value.isRecycled) 1 else value.byteCount.coerceAtLeast(1)
+        }
         private val failedTiles = ConcurrentHashMap<String, Long>()
 
         // Tile retry tracking and diagnostics for debugging
