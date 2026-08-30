@@ -81,8 +81,12 @@ class EcoMovementAvailabilityProvider(
             return@withLock cached.locations
         }
         val locations = fetchNearbyLocations(latitude, longitude, radiusKm)
-        cache = CachedQuery(key, locations, now)
-        locations
+        if (locations.isNotEmpty()) {
+            cache = CachedQuery(key, locations, now)
+            locations
+        } else {
+            cached?.locations ?: emptyList()
+        }
     }
 
     private suspend fun fetchNearbyLocations(

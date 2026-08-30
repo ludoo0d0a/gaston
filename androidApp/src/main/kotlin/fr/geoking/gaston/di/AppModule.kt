@@ -26,6 +26,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import fr.geoking.gaston.shared.network.RateLimitPlugin
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.observer.ResponseObserver
@@ -107,6 +108,8 @@ val appModule = module {
                 }
             })
 
+            install(RateLimitPlugin)
+
             install(HttpRequestRetry) {
                 maxRetries = 2
 
@@ -120,7 +123,7 @@ val appModule = module {
                     if (!idempotent) return@retryIf false
 
                     val status = response.status
-                    status == HttpStatusCode.TooManyRequests || status.value in 500..599
+                    status.value in 500..599
                 }
 
                 retryOnExceptionIf { _, cause ->

@@ -141,8 +141,12 @@ class EcoMovementOcpiProvider(
                 return@withLock again.locations
             }
             val nearby = fetchNearbyLocations(latitude, longitude, radiusKm, viewport)
-            cache = CachedQuery(key, nearby, currentTimeMs())
-            nearby
+            if (nearby.isNotEmpty()) {
+                cache = CachedQuery(key, nearby, currentTimeMs())
+                nearby
+            } else {
+                cache?.locations ?: emptyList()
+            }
         }
     }
 
@@ -156,7 +160,12 @@ class EcoMovementOcpiProvider(
         val nearby = ArrayList<EcoMovementOcpiLocation>(limit.coerceAtMost(100))
         var offset = 0
         while (offset < maxFetch) {
-            val page = client.listLocations(limit = pageSize, offset = offset)
+            val page = try {
+                client.listLocations(limit = pageSize, offset = offset)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                break
+            }
             if (page.isEmpty()) break
             for (loc in page) {
                 val coords = loc.coordinates ?: continue
