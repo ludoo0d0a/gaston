@@ -376,6 +376,8 @@
     <string name="vehicle_preferred_power_range">Preferred power range</string>
     <string name="map_engine_google">Google</string>
     <string name="map_engine_maplibre">MapLibre</string>
+    <string name="map_engine_custom">Custom (Raster Tiles)</string>
+    <string name="map_engine_mapsforge">Mapsforge (Offline)</string>
     <string name="map_theme_voyager">Voyager (Light)</string>
     <string name="map_theme_positron">Positron (Light, clear roads)</string>
     <string name="map_theme_dark_matter">Dark Matter (Dark)</string>

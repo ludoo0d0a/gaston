@@ -378,6 +378,8 @@
     <string name="vehicle_preferred_power_range">Plage de puissance préférée</string>
     <string name="map_engine_google">Google</string>
     <string name="map_engine_maplibre">MapLibre</string>
+    <string name="map_engine_custom">Personnalisé (Tuiles Raster)</string>
+    <string name="map_engine_mapsforge">Mapsforge (Hors-ligne)</string>
     <string name="map_theme_voyager">Voyager (Clair)</string>
     <string name="map_theme_positron">Positron (Clair, routes dégagées)</string>
     <string name="map_theme_dark_matter">Dark Matter (Sombre)</string>
