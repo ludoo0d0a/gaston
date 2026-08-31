@@ -75,6 +75,8 @@ class CarMapLibreRenderer(
     private var reusableSnapshotter: MapSnapshotter? = null
     private var latestVectorBitmap: Bitmap? = null
     private var isSnapshotPending = false
+    private var hasPendingCameraUpdate = false
+    private var consecutiveErrors = 0
     private var lastSnapshotLat: Double = Double.NaN
     private var lastSnapshotLon: Double = Double.NaN
     private var lastSnapshotZoom: Int = -1
@@ -108,13 +110,14 @@ class CarMapLibreRenderer(
     private val snapshotTimeoutRunnable = Runnable {
         if (!isSnapshotPending) return@Runnable
         isSnapshotPending = false
+        consecutiveErrors++
         debugSnapshotStatus = "timeout"
         debugPhase = "snapshot_timeout"
-        val timeoutMessage = "snapshot timed out after ${SNAPSHOT_TIMEOUT_MS}ms"
+        val timeoutMessage = "snapshot timed out after ${SNAPSHOT_TIMEOUT_MS}ms (err #$consecutiveErrors)"
         debugLastError = timeoutMessage
         Log.e(TAG, timeoutMessage)
         logSnapshotError(timeoutMessage)
-        scheduleVectorSnapshot()
+        scheduleBackoffSnapshot()
         drawOnSurface()
     }
 
@@ -263,11 +266,22 @@ class CarMapLibreRenderer(
     fun detachSurface() {
         Log.i(TAG, "detachSurface")
         uiHandler.removeCallbacksAndMessages(null)
-        reusableSnapshotter?.cancel()
+        try {
+            reusableSnapshotter?.cancel()
+        } catch (e: Throwable) {
+            Log.w(TAG, "Error cancelling snapshotter during detach", e)
+        }
         reusableSnapshotter = null
+        val oldBmp = latestVectorBitmap
         latestVectorBitmap = null
+        if (oldBmp != null && !oldBmp.isRecycled) {
+            try { oldBmp.recycle() } catch (_: Throwable) {}
+        }
         surfaceContainer = null
         surfaceValid = false
+        isSnapshotPending = false
+        hasPendingCameraUpdate = false
+        consecutiveErrors = 0
         debugPhase = "detached"
     }
 
@@ -291,9 +305,16 @@ class CarMapLibreRenderer(
         drawOnSurface()
     }
 
-    private fun scheduleVectorSnapshot() {
+    private fun scheduleVectorSnapshot(delayMs: Long = 50L) {
         uiHandler.removeCallbacks(snapshotRunnable)
-        uiHandler.postDelayed(snapshotRunnable, 50L)
+        uiHandler.postDelayed(snapshotRunnable, delayMs)
+    }
+
+    private fun scheduleBackoffSnapshot() {
+        val backoffMs = (INITIAL_BACKOFF_MS * (1 shl (consecutiveErrors - 1).coerceAtMost(5)))
+            .coerceAtMost(MAX_BACKOFF_MS)
+        Log.w(TAG, "Scheduling backoff snapshot retry in ${backoffMs}ms (consecutive errors: $consecutiveErrors)")
+        scheduleVectorSnapshot(backoffMs)
     }
 
     private fun requestVectorSnapshotInternal() {
@@ -301,8 +322,13 @@ class CarMapLibreRenderer(
             Log.w(TAG, "snapshot skipped: bad size ${surfaceWidth}x${surfaceHeight}")
             return
         }
+        if (surfaceContainer?.surface?.isValid != true) {
+            Log.w(TAG, "snapshot skipped: surface is invalid or detached")
+            return
+        }
         if (isSnapshotPending) {
-            Log.d(TAG, "snapshot skipped: already pending")
+            hasPendingCameraUpdate = true
+            Log.d(TAG, "snapshot queued: camera update pending")
             return
         }
 
@@ -378,13 +404,17 @@ class CarMapLibreRenderer(
                     override fun onSnapshotReady(snapshot: MapSnapshot) {
                         uiHandler.removeCallbacks(snapshotTimeoutRunnable)
                         isSnapshotPending = false
+                        consecutiveErrors = 0
                         lastSnapshotLat = centerLat
                         lastSnapshotLon = centerLon
                         lastSnapshotZoom = zoom
                         lastSnapshotStyleUrl = styleUrl
-                        // Drop previous reference so GC can reclaim native pixels.
-                        latestVectorBitmap = null
-                        latestVectorBitmap = snapshot.bitmap
+                        val newBmp = snapshot.bitmap
+                        val oldBmp = latestVectorBitmap
+                        latestVectorBitmap = newBmp
+                        if (oldBmp != null && oldBmp != newBmp && !oldBmp.isRecycled) {
+                            try { oldBmp.recycle() } catch (_: Throwable) {}
+                        }
                         debugSnapshotCount++
                         debugSnapshotStatus = "ok"
                         debugPhase = "snapshot_ok"
@@ -392,33 +422,48 @@ class CarMapLibreRenderer(
                         lastSnapshotReadyAtMs = System.currentTimeMillis()
                         Log.i(
                             TAG,
-                            "snapshot ready #$debugSnapshotCount ${snapshot.bitmap.width}x${snapshot.bitmap.height}",
+                            "snapshot ready #$debugSnapshotCount ${newBmp.width}x${newBmp.height}",
                         )
                         drawOnSurface()
+
+                        if (hasPendingCameraUpdate) {
+                            hasPendingCameraUpdate = false
+                            scheduleVectorSnapshot(10L)
+                        }
                     }
                 },
                 object : MapSnapshotter.ErrorHandler {
                     override fun onError(error: String) {
                         uiHandler.removeCallbacks(snapshotTimeoutRunnable)
                         isSnapshotPending = false
+                        consecutiveErrors++
                         debugSnapshotStatus = "fail"
                         debugPhase = "snapshot_fail"
                         debugLastError = error
-                        Log.e(TAG, "MapSnapshotter error: $error")
+                        Log.e(TAG, "MapSnapshotter error: $error (err #$consecutiveErrors)")
                         logSnapshotError(error)
                         drawOnSurface()
+                        if (hasPendingCameraUpdate) {
+                            hasPendingCameraUpdate = false
+                        }
+                        scheduleBackoffSnapshot()
                     }
                 },
             )
         } catch (e: Throwable) {
             uiHandler.removeCallbacks(snapshotTimeoutRunnable)
             isSnapshotPending = false
+            consecutiveErrors++
             debugSnapshotStatus = "fail"
             debugPhase = "snapshot_fail"
             debugLastError = e.message
-            Log.e(TAG, "MapSnapshotter vector render failed", e)
+            Log.e(TAG, "MapSnapshotter vector render failed (err #$consecutiveErrors)", e)
             logSnapshotError(e.message ?: e.toString())
             drawOnSurface()
+            if (hasPendingCameraUpdate) {
+                hasPendingCameraUpdate = false
+            }
+            scheduleBackoffSnapshot()
         }
     }
 
@@ -641,6 +686,8 @@ class CarMapLibreRenderer(
     companion object {
         private const val TAG = "CarMapLibreRenderer"
         private const val SNAPSHOT_TIMEOUT_MS = 15_000L
+        private const val INITIAL_BACKOFF_MS = 2_000L
+        private const val MAX_BACKOFF_MS = 30_000L
         private const val MAX_SNAPSHOT_ERRORS = 12
 
         private val recentSnapshotErrors =
