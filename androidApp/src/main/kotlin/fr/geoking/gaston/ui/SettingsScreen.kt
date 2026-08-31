@@ -348,6 +348,50 @@ private fun MapConfig(
             }
         }
 
+        if (settings.phoneMapEngine == MapEngine.Mapsforge) {
+            val context = LocalContext.current
+            val mapManager = remember(context) { fr.geoking.gaston.auto.mapsforge.MapsforgeMapManager(context) }
+            val installedMaps by mapManager.installedMaps.collectAsState()
+            var showDownloadDialog by remember { mutableStateOf(false) }
+            val activeMap = remember(installedMaps) { mapManager.getActiveMapFile() }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.mapsforge_offline_maps),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        stringResource(R.string.mapsforge_active_map) + ": " + (activeMap?.name ?: stringResource(R.string.network_none)),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(
+                        onClick = { showDownloadDialog = true },
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Text(stringResource(R.string.mapsforge_offline_maps))
+                    }
+                }
+            }
+
+            if (showDownloadDialog) {
+                fr.geoking.gaston.ui.map.MapsforgeMapDownloadDialog(
+                    mapManager = mapManager,
+                    onDismiss = { showDownloadDialog = false }
+                )
+            }
+        }
+
         if (settings.phoneMapEngine == MapEngine.MapLibre) {
             // Map Theme (for MapLibre)
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

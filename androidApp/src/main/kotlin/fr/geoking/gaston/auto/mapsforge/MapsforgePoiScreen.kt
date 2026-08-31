@@ -866,6 +866,19 @@ class MapsforgePoiScreen(
             val itemListBuilder = ItemList.Builder()
                 .setNoItemsMessage(carContext.getString(R.string.poi_no_pois_found))
 
+            val activeMap = mapManager.getActiveMapFile()
+            if (activeMap == null) {
+                itemListBuilder.addItem(
+                    androidx.car.app.model.Row.Builder()
+                        .setTitle(carContext.getString(R.string.mapsforge_active_map) + ": " + carContext.getString(R.string.network_none))
+                        .addText(carContext.getString(R.string.mapsforge_offline_maps_subtitle))
+                        .setOnClickListener {
+                            screenManager.push(AutoMapsforgeMapManagementScreen(carContext, mapManager))
+                        }
+                        .build()
+                )
+            }
+
             val limitedPois = sortedPois.take(listLimit)
             limitedPois.forEach { item ->
                 val availability = availabilityByPoiId[item.id]
