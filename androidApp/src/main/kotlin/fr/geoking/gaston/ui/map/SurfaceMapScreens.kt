@@ -385,6 +385,9 @@ fun SurfaceMapsforgeMapScreen(
 
     val scope = rememberCoroutineScope()
     val mapManager = remember(context) { MapsforgeMapManager(context) }
+    val installedMaps by mapManager.installedMaps.collectAsState()
+    var showDownloadDialog by remember { mutableStateOf(false) }
+    var surfaceRendererRef by remember { mutableStateOf<CarMapsforgeRenderer?>(null) }
 
     LaunchedEffect(favoritesRepo) {
         if (favoritesRepo != null) {
@@ -531,8 +534,6 @@ fun SurfaceMapsforgeMapScreen(
                     }
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        var surfaceRendererRef by remember { mutableStateOf<CarMapsforgeRenderer?>(null) }
-
                         LaunchedEffect(mapLat, mapLon, zoom, bearing, orientationMode, filteredPois, selectedPoi) {
                             val r = surfaceRendererRef ?: return@LaunchedEffect
                             r.updateLocation(mapLat, mapLon, zoom)
@@ -607,8 +608,59 @@ fun SurfaceMapsforgeMapScreen(
                                 .align(Alignment.BottomStart)
                                 .padding(start = 16.dp, bottom = 16.dp)
                         )
+
+                        val activeMapFile = remember(installedMaps) { mapManager.getActiveMapFile() }
+                        if (activeMapFile == null) {
+                            Surface(
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.errorContainer,
+                                shadowElevation = 4.dp
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = stringResource(R.string.mapsforge_active_map) + ": " + stringResource(R.string.network_none),
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.mapsforge_offline_maps_subtitle),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Button(
+                                        onClick = { showDownloadDialog = true },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.error
+                                        )
+                                    ) {
+                                        Text(stringResource(R.string.screen_download_toll_data))
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+            }
+
+            if (showDownloadDialog) {
+                MapsforgeMapDownloadDialog(
+                    mapManager = mapManager,
+                    onDismiss = { showDownloadDialog = false },
+                    onMapFileChanged = {
+                        surfaceRendererRef?.reloadMapsforgeDataStore()
+                    }
+                )
             }
 
             PoiOverlayHost(
