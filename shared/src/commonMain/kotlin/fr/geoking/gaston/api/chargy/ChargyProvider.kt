@@ -1,10 +1,11 @@
 package fr.geoking.gaston.api.chargy
 
+import fr.geoking.gaston.poi.AbstractPoiProvider
 import fr.geoking.gaston.poi.IrveDetails
 import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
-import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.PoiProviderRules
 import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import io.ktor.client.HttpClient
 import kotlin.math.PI
@@ -23,17 +24,11 @@ class ChargyProvider(
     private val apiKey: String,
     private val radiusKm: Int = 10,
     private val limit: Int = 50
-) : PoiProvider {
+) : AbstractPoiProvider() {
+
+    override val usageRules: PoiProviderRules = PoiProviderRules(countries = setOf("LU"))
 
     private val chargyClient = ChargyClient(client, apiKey)
-
-    /** Luxembourg bounding box (approximate). */
-    private val luxBbox = object {
-        val latMin = 49.4
-        val lonMin = 5.7
-        val latMax = 50.2
-        val lonMax = 6.6
-    }
 
     override fun supportedCategories(): Set<PoiCategory> = setOf(PoiCategory.Irve)
 
@@ -49,9 +44,7 @@ class ChargyProvider(
             }
             ?: radiusKm
 
-        // Only return results if coordinates are within/near Luxembourg
-        if (latitude < luxBbox.latMin - 0.2 || latitude > luxBbox.latMax + 0.2 ||
-            longitude < luxBbox.lonMin - 0.2 || longitude > luxBbox.lonMax + 0.2) {
+        if (!shouldQuery(latitude, longitude, viewport)) {
             return emptyList()
         }
 
