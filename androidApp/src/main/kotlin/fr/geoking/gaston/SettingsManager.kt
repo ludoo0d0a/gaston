@@ -22,7 +22,8 @@ import kotlinx.serialization.json.Json
 enum class CarMapMode {
     Native,
     Custom,
-    MapLibre;
+    MapLibre,
+    Mapsforge;
 
     fun next(): CarMapMode = entries[(ordinal + 1) % entries.size]
 }

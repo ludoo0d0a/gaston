@@ -237,7 +237,7 @@ object AutoPoiUiHelper {
                 .build()
             rowBuilder.setMetadata(Metadata.Builder().setPlace(place).build())
         } else {
-            // For screens where we render the map ourselves (CustomMapPoiScreen, MapLibrePoiScreen)
+            // For screens where we render the map ourselves (CustomMapPoiScreen, MapLibrePoiScreen, MapsforgePoiScreen)
             // or simple list/search screens, we use a Row image for the brand icon.
             rowBuilder.setImage(carIcon, Row.IMAGE_TYPE_SMALL)
         }

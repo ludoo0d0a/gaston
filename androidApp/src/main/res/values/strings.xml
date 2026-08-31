@@ -762,4 +762,14 @@
     <string name="filter_error">Error</string>
     <string name="filter_warning">Warning</string>
     <string name="developer_errors_section_title">Errors &amp; Crashes</string>
+    <string name="mapsforge_offline_maps">Offline Maps (Mapsforge)</string>
+    <string name="mapsforge_offline_maps_subtitle">Download and manage vector map files for offline navigation</string>
+    <string name="mapsforge_active_map">Active Vector Map</string>
+    <string name="mapsforge_downloading">Downloading %1$s…</string>
+    <string name="mapsforge_download_error">Download Error</string>
+    <string name="mapsforge_installed">Installed (%1$d MB)</string>
+    <string name="mapsforge_available">Available (~%1$d MB)</string>
+    <string name="mapsforge_download_in_progress">Download already in progress…</string>
+    <string name="mapsforge_starting_download">Downloading %1$s…</string>
+    <string name="mapsforge_download_success">%1$s downloaded successfully</string>
 </resources>
