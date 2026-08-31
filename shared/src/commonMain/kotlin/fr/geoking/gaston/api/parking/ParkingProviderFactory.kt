@@ -26,15 +26,17 @@ class ParkingProviderFactory(
     }
 
     /**
-     * Creates all parking providers (LiveParking, ParkAPI, OSM). Exposed for tests or custom wiring.
+     * Creates all parking providers (Luxembourg, LiveParking, ParkAPI, OSM). Exposed for tests or custom wiring.
      */
     fun createProviders(): List<ParkingProvider> {
+        val luxembourgClient = LuxembourgParkingClient(httpClient)
+        val luxembourgProvider = LuxembourgParkingProvider(luxembourgClient)
         val liveParkingClient = LiveParkingClient(httpClient)
         val liveParkingProvider = LiveParkingProvider(liveParkingClient)
         val parkApiClient = ParkApiClient(httpClient)
         val parkApiProvider = ParkApiProvider(parkApiClient, parkApiCityConfigs)
         val osmProvider = OsmParkingProvider(overpassClient)
-        return listOf(liveParkingProvider, parkApiProvider, osmProvider)
+        return listOf(luxembourgProvider, liveParkingProvider, parkApiProvider, osmProvider)
     }
 
     companion object {
