@@ -1,0 +1,66 @@
+package fr.geoking.gaston.auto.mapsforge
+
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import java.io.File
+
+@RunWith(RobolectricTestRunner::class)
+class MapsforgeMapManagerTest {
+
+    private lateinit var context: Context
+    private lateinit var mapManager: MapsforgeMapManager
+
+    @Before
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+        mapManager = MapsforgeMapManager(context)
+    }
+
+    @Test
+    fun testMapsforgePresetServersListNotEmpty() {
+        val presets = MapsforgePresetServers.PRESET_MAPS
+        assertTrue("Preset map list should not be empty", presets.isNotEmpty())
+        assertTrue("Preset map URLs should end with .map", presets.all { it.url.endsWith(".map") })
+    }
+
+    @Test
+    fun testActiveMapFileSelection() {
+        val mapsDir = File(context.getExternalFilesDir(null), "mapsforge")
+        if (!mapsDir.exists()) mapsDir.mkdirs()
+
+        val map1 = File(mapsDir, "france.map").apply { writeText("dummy map data 1") }
+        val map2 = File(mapsDir, "monaco.map").apply { writeText("dummy map data 2") }
+
+        mapManager.refreshInstalledMaps()
+
+        val installed = mapManager.installedMaps.value
+        assertEquals(2, installed.size)
+
+        mapManager.setActiveMapFile(map2)
+        val active = mapManager.getActiveMapFile()
+        assertNotNull(active)
+        assertEquals("monaco.map", active?.name)
+
+        // Cleanup
+        map1.delete()
+        map2.delete()
+    }
+
+    @Test
+    fun testDownloadProgressPercent() {
+        val progress = DownloadProgress(
+            fileName = "france.map",
+            bytesDownloaded = 500,
+            totalBytes = 1000
+        )
+        assertEquals(50, progress.progressPercent)
+    }
+}

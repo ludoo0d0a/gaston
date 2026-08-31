@@ -55,6 +55,17 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.mapsforge_offline_maps))
+                .addText(carContext.getString(R.string.mapsforge_offline_maps_subtitle))
+                .setOnClickListener {
+                    val mapManager = fr.geoking.gaston.auto.mapsforge.MapsforgeMapManager(carContext)
+                    screenManager.push(fr.geoking.gaston.auto.mapsforge.AutoMapsforgeMapManagementScreen(carContext, mapManager))
+                }
+                .build()
+        )
+
         val themeLabel = when (settings.mapTheme) {
             MapTheme.Dark -> carContext.getString(R.string.map_theme_dark_matter)
             MapTheme.Voyager -> carContext.getString(R.string.map_theme_voyager)
@@ -84,7 +95,7 @@ class AutoMapSettingsScreen(
                 .setTitle(carContext.getString(R.string.settings_map_mode))
                 .addText(
                     when (settings.carMapMode) {
-                        CarMapMode.Custom, CarMapMode.MapLibre ->
+                        CarMapMode.Custom, CarMapMode.MapLibre, CarMapMode.Mapsforge ->
                             carContext.getString(R.string.map_mode_current_custom, settings.carMapMode.name)
                         CarMapMode.Native ->
                             carContext.getString(R.string.map_mode_current_native, settings.carMapMode.name)

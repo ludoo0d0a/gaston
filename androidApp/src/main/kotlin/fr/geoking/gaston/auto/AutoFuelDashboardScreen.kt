@@ -16,6 +16,7 @@ import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.poi.EnergyFilterMode
+import fr.geoking.gaston.auto.mapsforge.MapsforgePoiScreen
 import fr.geoking.gaston.ui.ColorHelper
 import fr.geoking.gaston.ui.MAP_ENERGY_OPTIONS
 
@@ -90,6 +91,20 @@ class AutoFuelDashboardScreen(
                     title = finalTitle
                 )
                 CarMapMode.MapLibre -> MapLibrePoiScreen(
+                    carContext = carContext,
+                    poiProvider = mapDeps.poiProvider,
+                    availabilityProviderFactory = mapDeps.availabilityProviderFactory,
+                    settingsManager = settingsManager,
+                    routePlanner = mapDeps.routePlanner,
+                    routingClient = mapDeps.routingClient,
+                    tollCalculator = mapDeps.tollCalculator,
+                    trafficProviderFactory = mapDeps.trafficProviderFactory,
+                    geocodingClient = mapDeps.geocodingClient,
+                    communityRepo = mapDeps.communityRepo,
+                    favoritesRepo = mapDeps.favoritesRepo,
+                    title = finalTitle
+                )
+                CarMapMode.Mapsforge -> MapsforgePoiScreen(
                     carContext = carContext,
                     poiProvider = mapDeps.poiProvider,
                     availabilityProviderFactory = mapDeps.availabilityProviderFactory,

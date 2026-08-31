@@ -17,6 +17,7 @@ junit-jupiter = "6.1.0"
 media3 = "1.10.1"
 maps-compose = "8.3.0"
 maplibre-android = "13.3.0"
+mapsforge = "0.20.0"
 httpclient-android = "4.3.5.1"
 play-app-update = "2.1.0"
 kotlinx-datetime = "0.8.0"
@@ -73,6 +74,10 @@ koin-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = 
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }
 maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre-android" }
+mapsforge-core = { module = "org.mapsforge:mapsforge-core", version.ref = "mapsforge" }
+mapsforge-map = { module = "org.mapsforge:mapsforge-map", version.ref = "mapsforge" }
+mapsforge-map-android = { module = "org.mapsforge:mapsforge-map-android", version.ref = "mapsforge" }
+mapsforge-map-reader = { module = "org.mapsforge:mapsforge-map-reader", version.ref = "mapsforge" }
 httpclient-android = { module = "org.apache.httpcomponents:httpclient-android", version.ref = "httpclient-android" }
 media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
 media3-common = { module = "androidx.media3:media3-common", version.ref = "media3" }

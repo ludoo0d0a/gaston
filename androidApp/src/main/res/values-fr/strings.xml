@@ -762,4 +762,14 @@
     <string name="filter_error">Erreur</string>
     <string name="filter_warning">Avertissement</string>
     <string name="developer_errors_section_title">Erreurs &amp; Crashs</string>
+    <string name="mapsforge_offline_maps">Cartes hors-ligne (Mapsforge)</string>
+    <string name="mapsforge_offline_maps_subtitle">Télécharger et gérer les cartes vectorielles pour la navigation hors-ligne</string>
+    <string name="mapsforge_active_map">Carte vectorielle active</string>
+    <string name="mapsforge_downloading">Téléchargement de %1$s…</string>
+    <string name="mapsforge_download_error">Erreur de téléchargement</string>
+    <string name="mapsforge_installed">Installée (%1$d Mo)</string>
+    <string name="mapsforge_available">Disponible (~%1$d Mo)</string>
+    <string name="mapsforge_download_in_progress">Téléchargement déjà en cours…</string>
+    <string name="mapsforge_starting_download">Téléchargement de %1$s…</string>
+    <string name="mapsforge_download_success">%1$s téléchargée avec succès</string>
 </resources>
