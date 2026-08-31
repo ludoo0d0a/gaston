@@ -93,6 +93,8 @@ enum class SettingsScreenPage {
 private fun MapEngine.displayLabel(): String = when (this) {
     MapEngine.Google -> stringResource(R.string.map_engine_google)
     MapEngine.MapLibre -> stringResource(R.string.map_engine_maplibre)
+    MapEngine.Custom -> stringResource(R.string.map_engine_custom)
+    MapEngine.Mapsforge -> stringResource(R.string.map_engine_mapsforge)
 }
 
 @Composable
@@ -331,7 +333,11 @@ private fun MapConfig(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 MapEngine.entries.forEach { engine ->
                     FilterChip(
                         selected = settings.phoneMapEngine == engine,

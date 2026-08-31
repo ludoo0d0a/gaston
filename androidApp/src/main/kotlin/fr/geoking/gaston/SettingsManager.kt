@@ -27,7 +27,7 @@ enum class CarMapMode {
 
     fun next(): CarMapMode = entries[(ordinal + 1) % entries.size]
 }
-enum class MapEngine { Google, MapLibre }
+enum class MapEngine { Google, MapLibre, Custom, Mapsforge }
 enum class ThemeMode { System, Light, Dark }
 
 /** Phone map basemap: streets / photo / hybrid / terrain (Google map types + MapLibre equivalents). */

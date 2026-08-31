@@ -75,6 +75,42 @@ fun MapFactory(
             initialZoom = initialZoom,
             showAds = showAds
         )
+        MapEngine.Custom -> SurfaceCustomMapScreen(
+            poiProvider = poiProvider,
+            availabilityProviderFactory = availabilityProviderFactory,
+            trafficProviderFactory = trafficProviderFactory,
+            settingsManager = settingsManager,
+            authManager = authManager,
+            diagnostics = diagnostics,
+            palette = palette,
+            onBack = onBack,
+            onPlanRoute = onPlanRoute,
+            geocodingClient = geocodingClient,
+            communityRepo = communityRepo,
+            favoritesRepo = favoritesRepo,
+            initialSelectedPoi = initialSelectedPoi,
+            initialCenter = initialCenter,
+            initialZoom = initialZoom,
+            showAds = showAds
+        )
+        MapEngine.Mapsforge -> SurfaceMapsforgeMapScreen(
+            poiProvider = poiProvider,
+            availabilityProviderFactory = availabilityProviderFactory,
+            trafficProviderFactory = trafficProviderFactory,
+            settingsManager = settingsManager,
+            authManager = authManager,
+            diagnostics = diagnostics,
+            palette = palette,
+            onBack = onBack,
+            onPlanRoute = onPlanRoute,
+            geocodingClient = geocodingClient,
+            communityRepo = communityRepo,
+            favoritesRepo = favoritesRepo,
+            initialSelectedPoi = initialSelectedPoi,
+            initialCenter = initialCenter,
+            initialZoom = initialZoom,
+            showAds = showAds
+        )
     }
 }
 
