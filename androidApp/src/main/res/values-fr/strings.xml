@@ -36,6 +36,7 @@
     <string name="action_open_routes">Ouvrir les itinéraires</string>
     <string name="action_open_website">Ouvrir le site web</string>
     <string name="action_refresh">Actualiser</string>
+    <string name="action_download">Télécharger</string>
     <string name="action_remove">Supprimer</string>
     <string name="action_request_details">Détails de la requête</string>
     <string name="action_retry">Réessayer</string>
@@ -774,4 +775,7 @@
     <string name="mapsforge_download_in_progress">Téléchargement déjà en cours…</string>
     <string name="mapsforge_starting_download">Téléchargement de %1$s…</string>
     <string name="mapsforge_download_success">%1$s téléchargée avec succès</string>
+    <string name="mapsforge_no_map_for_location">Aucune carte hors-ligne installée pour la position actuelle</string>
+    <string name="mapsforge_suggest_download_region">Télécharger %1$s (~%2$d Mo) pour la navigation hors-ligne</string>
+    <string name="mapsforge_download_region">Télécharger %1$s</string>
 </resources>

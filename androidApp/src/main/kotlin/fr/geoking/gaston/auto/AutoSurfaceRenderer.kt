@@ -792,7 +792,13 @@ class AutoSurfaceRenderer(
                 val key = "$tileUrlTemplate/$zoom/$wrappedX/$y"
 
                 if (bitmap != null) {
-                    canvas.drawBitmap(bitmap, drawX, drawY, null)
+                    val dstRect = Rect(
+                        drawX.toInt(),
+                        drawY.toInt(),
+                        (drawX + TILE_SIZE).toInt(),
+                        (drawY + TILE_SIZE).toInt()
+                    )
+                    canvas.drawBitmap(bitmap, null, dstRect, null)
 
                     if (mapTileDebugEnabled) {
                         drawTileDebugGrid(canvas, drawX, drawY, x, y, zoom, key, isLoaded = true)
@@ -940,7 +946,13 @@ class AutoSurfaceRenderer(
                 return
             }
 
-            Canvas(basemap).drawBitmap(tileBitmap, drawX, drawY, null)
+            val dstRect = Rect(
+                drawX.toInt(),
+                drawY.toInt(),
+                (drawX + TILE_SIZE).toInt(),
+                (drawY + TILE_SIZE).toInt()
+            )
+            Canvas(basemap).drawBitmap(tileBitmap, null, dstRect, null)
         }
     }
 

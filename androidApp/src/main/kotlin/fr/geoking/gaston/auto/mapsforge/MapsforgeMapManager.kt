@@ -31,48 +31,73 @@ data class MapsforgeServerMap(
     val name: String,
     val region: String,
     val url: String,
-    val sizeEstimateMb: Int
-)
+    val sizeEstimateMb: Int,
+    val minLat: Double = -90.0,
+    val maxLat: Double = 90.0,
+    val minLon: Double = -180.0,
+    val maxLon: Double = 180.0
+) {
+    fun contains(lat: Double, lon: Double): Boolean =
+        lat in minLat..maxLat && lon in minLon..maxLon
+}
 
 object MapsforgePresetServers {
     val PRESET_MAPS = listOf(
         MapsforgeServerMap(
-            name = "France (All)",
-            region = "Europe",
-            url = "https://download.mapsforge.org/maps/v5/europe/france.map",
-            sizeEstimateMb = 1800
-        ),
-        MapsforgeServerMap(
             name = "Île-de-France (Paris)",
             region = "France",
             url = "https://download.mapsforge.org/maps/v5/europe/france/ile-de-france.map",
-            sizeEstimateMb = 250
+            sizeEstimateMb = 250,
+            minLat = 48.1, maxLat = 49.3, minLon = 1.4, maxLon = 3.6
         ),
         MapsforgeServerMap(
             name = "Monaco",
             region = "Europe",
             url = "https://download.mapsforge.org/maps/v5/europe/monaco.map",
-            sizeEstimateMb = 5
+            sizeEstimateMb = 5,
+            minLat = 43.7, maxLat = 43.8, minLon = 7.4, maxLon = 7.5
         ),
         MapsforgeServerMap(
             name = "Luxembourg",
             region = "Europe",
             url = "https://download.mapsforge.org/maps/v5/europe/luxembourg.map",
-            sizeEstimateMb = 35
+            sizeEstimateMb = 35,
+            minLat = 49.4, maxLat = 50.2, minLon = 5.7, maxLon = 6.6
         ),
         MapsforgeServerMap(
             name = "Belgium",
             region = "Europe",
             url = "https://download.mapsforge.org/maps/v5/europe/belgium.map",
-            sizeEstimateMb = 320
+            sizeEstimateMb = 320,
+            minLat = 49.5, maxLat = 51.5, minLon = 2.5, maxLon = 6.4
         ),
         MapsforgeServerMap(
             name = "Germany (Berlin)",
             region = "Germany",
             url = "https://download.mapsforge.org/maps/v5/europe/germany/berlin.map",
-            sizeEstimateMb = 120
+            sizeEstimateMb = 120,
+            minLat = 52.3, maxLat = 52.7, minLon = 13.0, maxLon = 13.8
+        ),
+        MapsforgeServerMap(
+            name = "France (All)",
+            region = "Europe",
+            url = "https://download.mapsforge.org/maps/v5/europe/france.map",
+            sizeEstimateMb = 1800,
+            minLat = 41.3, maxLat = 51.1, minLon = -5.2, maxLon = 9.6
         )
     )
+
+    fun getRecommendedPreset(lat: Double?, lon: Double?): MapsforgeServerMap {
+        if (lat == null || lon == null) return PRESET_MAPS.first { it.name.contains("Île-de-France") }
+        // Prefer smaller regional map over whole country if location is inside bounds
+        val matchingSmallMap = PRESET_MAPS
+            .filter { it.sizeEstimateMb < 1000 }
+            .firstOrNull { it.contains(lat, lon) }
+        if (matchingSmallMap != null) return matchingSmallMap
+
+        val matchingAnyMap = PRESET_MAPS.firstOrNull { it.contains(lat, lon) }
+        return matchingAnyMap ?: PRESET_MAPS.first { it.name.contains("Île-de-France") }
+    }
 }
 
 class MapsforgeMapManager(private val context: Context) {

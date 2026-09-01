@@ -55,6 +55,21 @@ class MapsforgeMapManagerTest {
     }
 
     @Test
+    fun testGetRecommendedPresetForLocation() {
+        // Paris coordinates (Île-de-France)
+        val parisPreset = MapsforgePresetServers.getRecommendedPreset(48.8566, 2.3522)
+        assertEquals("Île-de-France (Paris)", parisPreset.name)
+
+        // Berlin coordinates
+        val berlinPreset = MapsforgePresetServers.getRecommendedPreset(52.5200, 13.4050)
+        assertEquals("Germany (Berlin)", berlinPreset.name)
+
+        // Unknown location outside preset bounds should fallback to default (Île-de-France)
+        val fallbackPreset = MapsforgePresetServers.getRecommendedPreset(0.0, 0.0)
+        assertEquals("Île-de-France (Paris)", fallbackPreset.name)
+    }
+
+    @Test
     fun testDownloadProgressPercent() {
         val progress = DownloadProgress(
             fileName = "france.map",

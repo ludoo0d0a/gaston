@@ -192,7 +192,7 @@ fun MapsforgeMapDownloadDialog(
                                     },
                                     enabled = progress == null || progress.isComplete || progress.error != null
                                 ) {
-                                    Text(if (isInstalled) stringResource(R.string.action_refresh) else stringResource(R.string.screen_download_toll_data))
+                                    Text(if (isInstalled) stringResource(R.string.action_refresh) else stringResource(R.string.action_download))
                                 }
                             }
                         }
