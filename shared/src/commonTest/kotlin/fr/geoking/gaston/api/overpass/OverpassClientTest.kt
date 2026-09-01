@@ -37,6 +37,23 @@ class OverpassClientTest {
         assertEquals("Test Pump", elements.first().name())
     }
 
+    @Test
+    fun overpassElement_streetAndAddressExtraction_formatsDetailedAddress() {
+        val element = OverpassElement(
+            id = 100L,
+            lat = 48.85,
+            lon = 2.35,
+            tags = mapOf(
+                "addr:housenumber" to "12",
+                "addr:street" to "Rue de Rivoli",
+                "addr:postcode" to "75001",
+                "addr:city" to "Paris"
+            )
+        )
+        assertEquals("Rue de Rivoli", element.street())
+        assertEquals("12 Rue de Rivoli, 75001 Paris", element.address())
+    }
+
     companion object {
         private val NODE_RESPONSE = """
             {
