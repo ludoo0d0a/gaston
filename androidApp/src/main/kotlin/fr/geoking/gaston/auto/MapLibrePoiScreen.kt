@@ -68,15 +68,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-import fr.geoking.gaston.auto.maplibre.CarMapLibreRenderer
 import fr.geoking.gaston.auto.maplibre.resolveAutoMapStyleUrl
 
 /**
- * POI map with MapLibre OpenFreeMap vector styles via [CarMapLibreRenderer]
- * (MapSnapshotter → AA surface Canvas blit). Enable Settings → Map tile debug for HUD;
- * logcat: `CarMapLibreRenderer`.
+ * POI map with a canvas surface renderer (MapLibre, MapTiler, Protomaps, Mapsforge).
+ * [CustomMapPoiScreen] is the frozen raster reference and does not use this screen.
  */
-class MapLibrePoiScreen(
+open class MapLibrePoiScreen(
     carContext: CarContext,
     private val poiProvider: PoiProvider,
     private val availabilityProviderFactory: BorneAvailabilityProviderFactory,
@@ -89,7 +87,8 @@ class MapLibrePoiScreen(
     private val communityRepo: CommunityPoiRepository? = null,
     private val favoritesRepo: FavoritesRepository? = null,
     private val title: String = carContext.getString(R.string.dashboard_nearby_stations),
-    private val itineraryPoints: List<Pair<Double, Double>> = emptyList()
+    private val itineraryPoints: List<Pair<Double, Double>> = emptyList(),
+    private val canvasMapModeConfig: CanvasMapModeConfig = CanvasMapModeConfig.mapLibre(carContext),
 ) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
 
     private var pois: List<Poi> = emptyList()
@@ -107,7 +106,7 @@ class MapLibrePoiScreen(
     private var mapWidthPx: Int = 800
     private var mapHeightPx: Int = 480
 
-    private var mapRenderer: CarMapLibreRenderer? = null
+    private var mapRenderer: AaMapSurfaceRenderer? = null
     private var headingUpdateJob: Job? = null
     private var orientationMode: MapOrientationMode = MapOrientationMode.HeadingUp
     private var lastKnownBearingDegrees: Float = 0f
@@ -145,28 +144,27 @@ class MapLibrePoiScreen(
         mapRenderer?.updateLocation(poi.latitude, poi.longitude, zoom)
         syncRendererWithMapState()
         screenManager.push(
-            MapLibreStationDetailScreen(
-                carContext = carContext,
-                poi = poi,
-                availability = availability,
-                searchLat = searchLat,
-                searchLon = searchLon,
-                zoom = zoom,
-                orientationMode = orientationMode,
-                bearing = lastKnownBearingDegrees,
-                effectiveEnergies = energies,
-                effectivePowerLevels = powerLevels,
-                settingsManager = settingsManager,
-                favoritesRepo = favoritesRepo,
-                onDisposed = {
-                    mapSelectedPoi = null
-                    lastAppliedSearchLat = searchLat
-                    lastAppliedSearchLon = searchLon
-                    mapRenderer?.updateLocation(searchLat, searchLon, zoom)
-                    syncRendererWithMapState()
-                    invalidate()
-                }
-            )
+            canvasMapModeConfig.createStationDetailScreen(
+                carContext,
+                poi,
+                availability,
+                searchLat,
+                searchLon,
+                zoom,
+                orientationMode,
+                lastKnownBearingDegrees,
+                energies,
+                powerLevels,
+                settingsManager,
+                favoritesRepo,
+            ) {
+                mapSelectedPoi = null
+                lastAppliedSearchLat = searchLat
+                lastAppliedSearchLon = searchLon
+                mapRenderer?.updateLocation(searchLat, searchLon, zoom)
+                syncRendererWithMapState()
+                invalidate()
+            }
         )
     }
 
@@ -393,7 +391,17 @@ class MapLibrePoiScreen(
     private fun syncRendererWithMapState() {
         val renderer = mapRenderer ?: return
         val settings = settingsManager.settings.value
-        renderer.setStyleUrl(resolveAutoMapStyleUrl(settings, carContext))
+        val offlineReady = !canvasMapModeConfig.requiresOfflineFile ||
+            OfflineMapAvailability.isOfflineFileAvailable(settings)
+        val styleUrl = canvasMapModeConfig.styleUrlResolver(settings, carContext)
+        renderer.offlineUnavailable = when {
+            canvasMapModeConfig.requiresOfflineFile && !offlineReady -> true
+            styleUrl == null -> true
+            else -> false
+        }
+        if (styleUrl != null) {
+            renderer.setStyleUrl(styleUrl)
+        }
         val filteredPois = getFilteredPois(settings)
         val poiIds = filteredPois.map { it.id }
 
@@ -683,10 +691,22 @@ class MapLibrePoiScreen(
         )
     }
 
-    private fun mapContentHeaderBuilder(title: String, currentSettings: AppSettings): Header.Builder {
+    private fun mapContentHeaderBuilder(title: String, @Suppress("UNUSED_PARAMETER") currentSettings: AppSettings): Header.Builder {
         return Header.Builder()
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
+            .addEndHeaderAction(
+                Action.Builder()
+                    .setIcon(carContext.actionCompassIcon())
+                    .setOnClickListener { toggleMapOrientation() }
+                    .build()
+            )
+            .addEndHeaderAction(
+                Action.Builder()
+                    .setIcon(carContext.actionRecenterIcon())
+                    .setOnClickListener { recenterMap() }
+                    .build()
+            )
     }
 
     private fun applyMapOrientationToRenderer() {
@@ -694,8 +714,10 @@ class MapLibrePoiScreen(
         lastMapOrientationUpdateMillis = System.currentTimeMillis()
     }
 
-    private fun createMapRenderer(): CarMapLibreRenderer =
-        CarMapLibreRenderer(carContext, lifecycle)
+    protected open fun createMapRenderer(): AaMapSurfaceRenderer =
+        canvasMapModeConfig.createRenderer(carContext, lifecycle, canvasMapModeConfig).also { renderer ->
+            renderer.hudModeLabel = canvasMapModeConfig.hudLabel
+        }
 
     private fun toggleMapOrientation() {
         orientationMode = when (orientationMode) {
@@ -804,7 +826,8 @@ class MapLibrePoiScreen(
         mapWidthPx = surfaceContainer.width
         mapHeightPx = surfaceContainer.height
         val renderer = mapRenderer ?: createMapRenderer().also { mapRenderer = it }
-        renderer.setStyleUrl(resolveAutoMapStyleUrl(settingsManager.settings.value, carContext))
+        val settings = settingsManager.settings.value
+        canvasMapModeConfig.styleUrlResolver(settings, carContext)?.let { renderer.setStyleUrl(it) }
         renderer.attachSurface(surfaceContainer)
         currentVisibleArea?.let { renderer.updateVisibleArea(it) }
         renderer.updateLocation(searchLat, searchLon, zoom)
@@ -812,7 +835,7 @@ class MapLibrePoiScreen(
         syncRendererWithMapState()
         registerSurfaceCallback()
         renderer.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
-        renderer.setStyleUrl(resolveAutoMapStyleUrl(settingsManager.settings.value, carContext))
+        syncRendererWithMapState()
     }
 
     override fun onVisibleAreaChanged(visibleArea: Rect) {
@@ -907,7 +930,7 @@ class MapLibrePoiScreen(
 
     override fun onGetTemplate(): Template = safeCarTemplate(
         carContext = carContext,
-        logTag = "MapLibrePoiScreen",
+        logTag = canvasMapModeConfig.logTag,
         templateName = "MapWithContentTemplate"
     ) {
         val currentSettings = settingsManager.settings.value

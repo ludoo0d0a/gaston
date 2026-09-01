@@ -79,6 +79,8 @@ class FirestoreSettingsSync(
             "selectedOverpassAmenityTypes" to s.selectedOverpassAmenityTypes.toList(),
             "vehicleType" to s.vehicleType.name,
             "carMapMode" to s.carMapMode.name,
+            "offlinePmtilesPath" to s.offlinePmtilesPath,
+            "offlineMapsforgePath" to s.offlineMapsforgePath,
             "isPremium" to s.isPremium,
             "favoriteLocations" to s.favoriteLocations.map { mapOf("label" to it.label, "latitude" to it.latitude, "longitude" to it.longitude) },
             "lastAcceptedDisclaimerVersion" to s.lastAcceptedDisclaimerVersion
@@ -139,6 +141,8 @@ class FirestoreSettingsSync(
             selectedOverpassAmenityTypes = pick(local.selectedOverpassAmenityTypes, remote["selectedOverpassAmenityTypes"], default.selectedOverpassAmenityTypes, ::parseStringSet),
             vehicleType = pick(local.vehicleType, remote["vehicleType"], default.vehicleType) { parseEnum(it, VehicleType::class.java) },
             carMapMode = pick(local.carMapMode, remote["carMapMode"], default.carMapMode) { parseEnum(it, CarMapMode::class.java) },
+            offlinePmtilesPath = pick(local.offlinePmtilesPath, remote["offlinePmtilesPath"], default.offlinePmtilesPath, ::parseString),
+            offlineMapsforgePath = pick(local.offlineMapsforgePath, remote["offlineMapsforgePath"], default.offlineMapsforgePath, ::parseString),
             isPremium = pick(local.isPremium, remote["isPremium"], default.isPremium, ::parseBoolean),
             favoriteLocations = pick(local.favoriteLocations, remote["favoriteLocations"], default.favoriteLocations, ::parseGeocodedPlaceList),
             lastAcceptedDisclaimerVersion = pick(local.lastAcceptedDisclaimerVersion, remote["lastAcceptedDisclaimerVersion"], default.lastAcceptedDisclaimerVersion, ::parseInt)

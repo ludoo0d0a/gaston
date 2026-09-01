@@ -89,6 +89,7 @@ configure<ApplicationExtension> {
         val nswFuelCheckSecret = sanitizeBuildConfigString(prop("NSW_FUELCHECK_SECRET"))
         val eiaKey = sanitizeBuildConfigString(prop("EIA_KEY"))
         val nrelAfdcKey = sanitizeBuildConfigString(prop("NREL_AFDC_KEY"))
+        val maptilerKey = sanitizeBuildConfigString(prop("MAPTILER_KEY"))
         val mapsApiKey = prop("GOOGLE_MAPS_KEY")
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
 
@@ -126,6 +127,7 @@ configure<ApplicationExtension> {
         buildConfigField("String", "NSW_FUELCHECK_SECRET", "\"$nswFuelCheckSecret\"")
         buildConfigField("String", "EIA_KEY", "\"$eiaKey\"")
         buildConfigField("String", "NREL_AFDC_KEY", "\"$nrelAfdcKey\"")
+        buildConfigField("String", "MAPTILER_KEY", "\"$maptilerKey\"")
         buildConfigField("String", "ADMOB_BANNER_ID", "\"$admobBannerAdUnitId\"")
 
         // Required for Google Play Services Maps (references legacy Apache HTTP classes removed from Android 9+)
@@ -276,6 +278,7 @@ dependencies {
     implementation(libs.mapsforge.map.reader) {
         exclude(group = "com.caverock", module = "androidsvg")
     }
+    implementation(libs.mapsforge.themes)
     // Bundle Apache HTTP legacy classes for Play Services Maps Dynamite (removed from Android 9+ bootclasspath)
     implementation(libs.httpclient.android)
 

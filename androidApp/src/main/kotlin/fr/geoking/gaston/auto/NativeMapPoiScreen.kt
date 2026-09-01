@@ -213,15 +213,7 @@ class NativeMapPoiScreen(
             Action.Builder()
                 .setIcon(carContext.actionSettingsIcon())
                 .setOnClickListener {
-                    screenManager.push(
-                        AutoMapMoreOptionsScreen(
-                            carContext = carContext,
-                            settingsManager = settingsManager,
-                            lat = searchLat,
-                            lon = searchLon,
-                            onRecenter = { loadPois() }
-                        )
-                    )
+                    screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
                 }
                 .build()
         )

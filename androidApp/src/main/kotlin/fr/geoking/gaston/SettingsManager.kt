@@ -20,12 +20,23 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 enum class CarMapMode {
+  /** Host Google map on Android Auto ([NativeMapPoiScreen]). */
     Native,
+  /** Raster OSM / OpenFreeMap tiles on AA surface — frozen reference implementation. */
     Custom,
+  /** MapLibre vector (OpenFreeMap) via snapshot → Canvas. */
     MapLibre,
+  /** MapLibre vector with MapTiler styles (API key). */
+    MapTiler,
+  /** Offline Protomaps PMTiles (manual file in phone settings). */
+    Protomaps,
+  /** Offline Mapsforge `.map` (manual file in phone settings). */
     Mapsforge;
 
     fun next(): CarMapMode = entries[(ordinal + 1) % entries.size]
+
+    val requiresOfflineMapFile: Boolean
+        get() = this == Protomaps || this == Mapsforge
 }
 enum class MapEngine { Google, MapLibre, Custom, Mapsforge }
 enum class ThemeMode { System, Light, Dark }
@@ -144,6 +155,10 @@ data class AppSettings(
     val mapThemeMode: ThemeMode = ThemeMode.System,
     val vehicleType: VehicleType = VehicleType.Car,
     val carMapMode: CarMapMode = CarMapMode.Native,
+    /** Absolute path to a local `.pmtiles` file (Protomaps AA mode). Set manually on phone — never auto-downloaded. */
+    val offlinePmtilesPath: String? = null,
+    /** Absolute path to a local Mapsforge `.map` file. Set manually on phone — never auto-downloaded. */
+    val offlineMapsforgePath: String? = null,
     val googleUserName: String? = null,
     val isLoggedIn: Boolean = false,
     val tollDataPath: String? = null,
@@ -254,6 +269,8 @@ open class SettingsManager(
         val carMapMode = try {
             CarMapMode.valueOf(prefs.getString("car_map_mode", CarMapMode.Native.name) ?: CarMapMode.Native.name)
         } catch (_: Exception) { CarMapMode.Native }
+        val offlinePmtilesPath = prefs.getString("offline_pmtiles_path", null)?.takeIf { it.isNotBlank() }
+        val offlineMapsforgePath = prefs.getString("offline_mapsforge_path", null)?.takeIf { it.isNotBlank() }
 
         val vehicleType = try {
             VehicleType.valueOf(prefs.getString("vehicle_type", VehicleType.Car.name) ?: VehicleType.Car.name)
@@ -353,6 +370,8 @@ open class SettingsManager(
             lastOperatorName = prefs.getString("last_operator_name", null),
             lastIsConnected = prefs.getBoolean("last_is_connected", false),
             lastIsRoaming = prefs.getBoolean("last_is_roaming", false),
+            offlinePmtilesPath = offlinePmtilesPath,
+            offlineMapsforgePath = offlineMapsforgePath,
         )
     }
 
@@ -407,6 +426,8 @@ open class SettingsManager(
             .putString("map_base_view", settings.mapBaseView.name)
             .putString("vehicle_type", settings.vehicleType.name)
             .putString("car_map_mode", settings.carMapMode.name)
+            .putString("offline_pmtiles_path", settings.offlinePmtilesPath)
+            .putString("offline_mapsforge_path", settings.offlineMapsforgePath)
             .putString("google_user_name", sanitized.googleUserName)
             .putBoolean("is_logged_in", sanitized.isLoggedIn)
             .putString("toll_data_path", sanitized.tollDataPath)
@@ -452,6 +473,14 @@ open class SettingsManager(
 
     open fun setCarMapMode(mode: CarMapMode) {
         saveSettings(_settings.value.copy(carMapMode = mode))
+    }
+
+    open fun setOfflinePmtilesPath(path: String?) {
+        saveSettings(_settings.value.copy(offlinePmtilesPath = path?.takeIf { it.isNotBlank() }))
+    }
+
+    open fun setOfflineMapsforgePath(path: String?) {
+        saveSettings(_settings.value.copy(offlineMapsforgePath = path?.takeIf { it.isNotBlank() }))
     }
 
     open fun setMapTheme(theme: MapTheme) {

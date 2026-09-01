@@ -93,17 +93,9 @@ class AutoMapSettingsScreen(
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.settings_map_mode))
-                .addText(
-                    when (settings.carMapMode) {
-                        CarMapMode.Custom, CarMapMode.MapLibre, CarMapMode.Mapsforge ->
-                            carContext.getString(R.string.map_mode_current_custom, settings.carMapMode.name)
-                        CarMapMode.Native ->
-                            carContext.getString(R.string.map_mode_current_native, settings.carMapMode.name)
-                    }
-                )
+                .addText(settings.carMapMode.displayLabel(carContext))
                 .setOnClickListener {
-                    settingsManager.setCarMapMode(settings.carMapMode.next())
-                    invalidate()
+                    screenManager.push(AutoMapModePickerScreen(carContext, settingsManager))
                 }
                 .build()
         )

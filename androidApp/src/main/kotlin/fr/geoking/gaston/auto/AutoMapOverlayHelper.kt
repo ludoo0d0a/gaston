@@ -67,6 +67,99 @@ object AutoMapOverlayHelper {
         canvas.drawText(chip.subtitle, left + pad, top + pad + lineHeight * 1.85f, subtitlePaint)
     }
 
+    /** Always-on mode + zoom chip (top-left of visible map area). */
+    fun drawMapInfoStrip(
+        canvas: Canvas,
+        visibleArea: Rect?,
+        surfaceWidth: Int,
+        surfaceHeight: Int,
+        density: Float,
+        modeLabel: String,
+        zoom: Float,
+    ) {
+        val area = visibleArea ?: Rect(0, 0, surfaceWidth, surfaceHeight)
+        val text = "$modeLabel · Z ${"%.1f".format(zoom)}"
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 12f * density
+            typeface = android.graphics.Typeface.MONOSPACE
+            isFakeBoldText = true
+        }
+        val bgPaint = Paint().apply {
+            color = Color.argb(200, 0, 0, 0)
+            style = Paint.Style.FILL
+        }
+        val pad = 6f * density
+        val bounds = Rect()
+        textPaint.getTextBounds(text, 0, text.length, bounds)
+        val left = area.left + 8f * density
+        val top = area.top + 8f * density
+        canvas.drawRoundRect(
+            left,
+            top,
+            left + bounds.width() + pad * 2,
+            top + bounds.height() + pad * 2,
+            4f * density,
+            4f * density,
+            bgPaint,
+        )
+        canvas.drawText(text, left + pad, top + pad + bounds.height(), textPaint)
+    }
+
+    /** Centered banner when an offline map file is required but missing. */
+    fun drawOfflineUnavailableBanner(
+        canvas: Canvas,
+        context: android.content.Context,
+        visibleArea: Rect?,
+        surfaceWidth: Int,
+        surfaceHeight: Int,
+    ) {
+        val area = visibleArea ?: Rect(0, 0, surfaceWidth, surfaceHeight)
+        val density = context.resources.displayMetrics.density
+        val message = context.getString(fr.geoking.gaston.R.string.map_offline_unavailable)
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 14f * density
+            textAlign = Paint.Align.CENTER
+        }
+        val bgPaint = Paint().apply {
+            color = Color.argb(220, 40, 40, 40)
+            style = Paint.Style.FILL
+        }
+        val padH = 16f * density
+        val padV = 12f * density
+        val maxWidth = area.width() * 0.85f
+        val lines = wrapText(message, textPaint, maxWidth)
+        val lineHeight = 18f * density
+        val blockHeight = padV * 2 + lines.size * lineHeight
+        val blockWidth = lines.maxOf { textPaint.measureText(it) } + padH * 2
+        val left = area.centerX() - blockWidth / 2f
+        val top = area.centerY() - blockHeight / 2f
+        canvas.drawRoundRect(left, top, left + blockWidth, top + blockHeight, 8f * density, 8f * density, bgPaint)
+        var y = top + padV + lineHeight * 0.75f
+        for (line in lines) {
+            canvas.drawText(line, area.centerX().toFloat(), y, textPaint)
+            y += lineHeight
+        }
+    }
+
+    private fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> {
+        val words = text.split(' ')
+        val lines = mutableListOf<String>()
+        var current = StringBuilder()
+        for (word in words) {
+            val candidate = if (current.isEmpty()) word else "$current $word"
+            if (paint.measureText(candidate) <= maxWidth) {
+                current = StringBuilder(candidate)
+            } else {
+                if (current.isNotEmpty()) lines.add(current.toString())
+                current = StringBuilder(word)
+            }
+        }
+        if (current.isNotEmpty()) lines.add(current.toString())
+        return lines.ifEmpty { listOf(text) }
+    }
+
     fun drawCompassAndScale(
         canvas: Canvas,
         context: Context,

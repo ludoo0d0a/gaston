@@ -34,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.FuelCard
@@ -87,6 +88,26 @@ enum class SettingsScreenPage {
     Theme,
     About,
     Developer
+}
+
+@Composable
+private fun CarMapMode.displayLabel(): String = when (this) {
+    CarMapMode.Native -> stringResource(R.string.map_mode_google)
+    CarMapMode.Custom -> stringResource(R.string.map_mode_custom)
+    CarMapMode.MapLibre -> stringResource(R.string.map_mode_maplibre)
+    CarMapMode.MapTiler -> stringResource(R.string.map_mode_maptiler)
+    CarMapMode.Protomaps -> stringResource(R.string.map_mode_protomaps)
+    CarMapMode.Mapsforge -> stringResource(R.string.map_mode_mapsforge)
+}
+
+@Composable
+private fun CarMapMode.displayDescription(): String = when (this) {
+    CarMapMode.Native -> stringResource(R.string.map_mode_google_desc)
+    CarMapMode.Custom -> stringResource(R.string.map_mode_custom_desc)
+    CarMapMode.MapLibre -> stringResource(R.string.map_mode_maplibre_desc)
+    CarMapMode.MapTiler -> stringResource(R.string.map_mode_maptiler_desc)
+    CarMapMode.Protomaps -> stringResource(R.string.map_mode_protomaps_desc)
+    CarMapMode.Mapsforge -> stringResource(R.string.map_mode_mapsforge_desc)
 }
 
 @Composable
@@ -318,6 +339,7 @@ private fun MapConfig(
     settings: AppSettings,
     onUpdate: (AppSettings) -> Unit
 ) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -349,7 +371,6 @@ private fun MapConfig(
         }
 
         if (settings.phoneMapEngine == MapEngine.Mapsforge) {
-            val context = LocalContext.current
             val mapManager = remember(context) { fr.geoking.gaston.auto.mapsforge.MapsforgeMapManager(context) }
             val installedMaps by mapManager.installedMaps.collectAsState()
             var showDownloadDialog by remember { mutableStateOf(false) }
@@ -389,6 +410,72 @@ private fun MapConfig(
                     mapManager = mapManager,
                     onDismiss = { showDownloadDialog = false }
                 )
+            }
+        }
+
+        // Android Auto map mode (phone)
+        Column {
+            Text(
+                stringResource(R.string.settings_aa_map_mode),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            CarMapMode.entries.forEach { mode ->
+                val selected = settings.carMapMode == mode
+                OutlinedCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                        .clickable { onUpdate(settings.copy(carMapMode = mode)) },
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = if (selected) 2.dp else 1.dp,
+                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                    ),
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(mode.displayLabel(), style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            mode.displayDescription(),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+        }
+
+        Column {
+            Text(
+                stringResource(R.string.settings_offline_maps),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            OutlinedTextField(
+                value = settings.offlinePmtilesPath.orEmpty(),
+                onValueChange = { onUpdate(settings.copy(offlinePmtilesPath = it.ifBlank { null })) },
+                label = { Text(stringResource(R.string.settings_offline_pmtiles_path)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = settings.offlineMapsforgePath.orEmpty(),
+                onValueChange = { onUpdate(settings.copy(offlineMapsforgePath = it.ifBlank { null })) },
+                label = { Text(stringResource(R.string.settings_offline_mapsforge_path)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            TextButton(
+                onClick = {
+                    onUpdate(
+                        settings.copy(
+                            offlinePmtilesPath = null,
+                            offlineMapsforgePath = null,
+                        )
+                    )
+                },
+            ) {
+                Text(stringResource(R.string.settings_offline_clear))
             }
         }
 

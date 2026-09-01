@@ -17,6 +17,7 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonPrimitive
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.AutoMapCamera
+import fr.geoking.gaston.auto.AaMapSurfaceRenderer
 import fr.geoking.gaston.auto.AutoMapOverlayHelper
 import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
 import fr.geoking.gaston.auto.AutoMapHeading
@@ -48,7 +49,9 @@ import kotlin.math.tan
 class CarMapLibreRenderer(
     private val carContext: CarContext,
     lifecycle: Lifecycle,
-) {
+) : AaMapSurfaceRenderer {
+    override var hudModeLabel: String = "MapLibre"
+    override var offlineUnavailable: Boolean = false
     private val uiHandler = Handler(Looper.getMainLooper())
     private val settingsManager = org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.SettingsManager>()
 
@@ -121,8 +124,10 @@ class CarMapLibreRenderer(
         drawOnSurface()
     }
 
+    override fun currentZoom(): Int = zoom
+
     /** Force an immediate canvas redraw (e.g. after toggling map debug overlay). */
-    fun requestRedraw() {
+    override fun requestRedraw() {
         drawOnSurface()
     }
 
@@ -134,7 +139,7 @@ class CarMapLibreRenderer(
         }
     }
 
-    fun setStyleUrl(url: String) {
+    override fun setStyleUrl(url: String) {
         if (styleUrl == url) {
             Log.d(TAG, "setStyleUrl unchanged: $url")
             return
@@ -152,7 +157,7 @@ class CarMapLibreRenderer(
         scheduleVectorSnapshot()
     }
 
-    fun updateLocation(lat: Double, lon: Double, zoomLevel: Int) {
+    override fun updateLocation(lat: Double, lon: Double, zoomLevel: Int) {
         val coercedZoom = zoomLevel.coerceIn(AutoMapCamera.MIN_ZOOM, AutoMapCamera.MAX_ZOOM)
         if (centerLat == lat && centerLon == lon && zoom == coercedZoom) return
         centerLat = lat
@@ -161,18 +166,18 @@ class CarMapLibreRenderer(
         scheduleVectorSnapshot()
     }
 
-    fun updateUserLocation(lat: Double, lon: Double, bearing: Float) {
+    override fun updateUserLocation(lat: Double, lon: Double, bearing: Float) {
         headingDegrees = bearing
         scheduleVectorSnapshot()
     }
 
-    fun setMapOrientation(mode: MapOrientationMode, bearing: Float = headingDegrees) {
+    override fun setMapOrientation(mode: MapOrientationMode, bearing: Float) {
         orientationMode = mode
         headingDegrees = bearing
         scheduleVectorSnapshot()
     }
 
-    fun updateVisibleArea(area: Rect) {
+    override fun updateVisibleArea(area: Rect) {
         if (visibleArea?.equals(area) == true) return
         visibleArea = Rect(area)
         scheduleVectorSnapshot()
@@ -183,12 +188,12 @@ class CarMapLibreRenderer(
         scheduleVectorSnapshot()
     }
 
-    fun updatePois(
+    override fun updatePois(
         newPois: List<Poi>,
         effectiveEnergyTypes: Set<String>,
         effectivePowerLevels: Set<Int>,
-        availability: Map<String, StationAvailabilitySummary> = availabilityByPoiId,
-        selectedId: String? = selectedPoiId
+        availability: Map<String, StationAvailabilitySummary>,
+        selectedId: String?,
     ) {
         lastPois = newPois
         this.effectiveEnergyTypes = effectiveEnergyTypes
@@ -198,7 +203,7 @@ class CarMapLibreRenderer(
         drawOnSurface()
     }
 
-    fun updateSearchRadius(centerLat: Double, centerLon: Double, radiusKm: Double?) {
+    override fun updateSearchRadius(centerLat: Double, centerLon: Double, radiusKm: Double?) {
         if (searchRadiusCenterLat == centerLat &&
             searchRadiusCenterLon == centerLon &&
             searchRadiusKm == radiusKm
@@ -211,7 +216,7 @@ class CarMapLibreRenderer(
         drawOnSurface()
     }
 
-    fun setQueryPending(pending: Boolean) {
+    override fun setQueryPending(pending: Boolean) {
         if (queryPending == pending) return
         queryPending = pending
         uiHandler.removeCallbacks(loaderAnimRunnable)
@@ -222,7 +227,7 @@ class CarMapLibreRenderer(
         }
     }
 
-    fun findPoisAt(screenX: Float, screenY: Float): List<Poi> =
+    override fun findPoisAt(screenX: Float, screenY: Float): List<Poi> =
         AutoMapPoiHitTest.findPoisAt(
             screenX = screenX,
             screenY = screenY,
@@ -236,17 +241,23 @@ class CarMapLibreRenderer(
             visibleArea = visibleArea,
         )
 
-    fun zoomForHitTest(): Int = zoom
+    override fun zoomForHitTest(): Int = zoom
 
-    fun mapLatForHitTest(): Double = centerLat
+    override fun mapLatForHitTest(): Double = centerLat
 
-    fun mapLonForHitTest(): Double = centerLon
+    override fun mapLonForHitTest(): Double = centerLon
 
-    fun centerPxXForHitTest(): Double = followFocalPoint().x
+    override fun centerPxXForHitTest(): Double = followFocalPoint().x
 
-    fun centerPxYForHitTest(): Double = followFocalPoint().y
+    override fun centerPxYForHitTest(): Double = followFocalPoint().y
 
-    fun attachSurface(container: SurfaceContainer) {
+    private val eglSurfaceRenderer = CarEglSurfaceRenderer()
+
+    override fun attachSurface(container: SurfaceContainer) {
+        // Prepare native EGL pipeline when the host surface is valid (future MapLibre EGL path).
+        if (container.surface?.isValid == true) {
+            eglSurfaceRenderer.attachSurface(container)
+        }
         surfaceContainer = container
         surfaceWidth = container.width.coerceAtLeast(100)
         surfaceHeight = container.height.coerceAtLeast(100)
@@ -263,8 +274,9 @@ class CarMapLibreRenderer(
         drawOnSurface()
     }
 
-    fun detachSurface() {
+    override fun detachSurface() {
         Log.i(TAG, "detachSurface")
+        eglSurfaceRenderer.detachSurface()
         uiHandler.removeCallbacksAndMessages(null)
         try {
             reusableSnapshotter?.cancel()
@@ -318,6 +330,10 @@ class CarMapLibreRenderer(
     }
 
     private fun requestVectorSnapshotInternal() {
+        if (offlineUnavailable) {
+            drawOnSurface()
+            return
+        }
         if (surfaceWidth <= 0 || surfaceHeight <= 0) {
             Log.w(TAG, "snapshot skipped: bad size ${surfaceWidth}x${surfaceHeight}")
             return
@@ -533,7 +549,26 @@ class CarMapLibreRenderer(
 
         val density = carContext.resources.displayMetrics.density
         val mapTileDebugEnabled = settingsManager.settings.value.mapTileDebugEnabled
-        AutoMapOverlayHelper.drawMapLibreStatusStrip(
+        if (offlineUnavailable) {
+            AutoMapOverlayHelper.drawOfflineUnavailableBanner(
+                canvas = canvas,
+                context = carContext,
+                visibleArea = visibleArea,
+                surfaceWidth = surfaceWidth,
+                surfaceHeight = surfaceHeight,
+            )
+        }
+        AutoMapOverlayHelper.drawMapInfoStrip(
+            canvas = canvas,
+            visibleArea = visibleArea,
+            surfaceWidth = surfaceWidth,
+            surfaceHeight = surfaceHeight,
+            density = density,
+            modeLabel = hudModeLabel,
+            zoom = zoom.toFloat(),
+        )
+        if (mapTileDebugEnabled) {
+            AutoMapOverlayHelper.drawMapLibreStatusStrip(
             canvas = canvas,
             visibleArea = visibleArea,
             surfaceWidth = surfaceWidth,
@@ -541,6 +576,7 @@ class CarMapLibreRenderer(
             density = density,
             chip = buildStatusChip(),
         )
+        }
         AutoMapOverlayHelper.drawCompassAndScale(
             canvas = canvas,
             context = carContext,

@@ -78,6 +78,7 @@ mapsforge-core = { module = "org.mapsforge:mapsforge-core", version.ref = "mapsf
 mapsforge-map = { module = "org.mapsforge:mapsforge-map", version.ref = "mapsforge" }
 mapsforge-map-android = { module = "org.mapsforge:mapsforge-map-android", version.ref = "mapsforge" }
 mapsforge-map-reader = { module = "org.mapsforge:mapsforge-map-reader", version.ref = "mapsforge" }
+mapsforge-themes = { module = "org.mapsforge:mapsforge-themes", version.ref = "mapsforge" }
 httpclient-android = { module = "org.apache.httpcomponents:httpclient-android", version.ref = "httpclient-android" }
 media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
 media3-common = { module = "androidx.media3:media3-common", version.ref = "media3" }
