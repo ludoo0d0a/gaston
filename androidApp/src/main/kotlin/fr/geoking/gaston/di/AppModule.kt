@@ -30,6 +30,7 @@ import fr.geoking.gaston.shared.network.RateLimitPlugin
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.observer.ResponseObserver
+import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.request
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -66,13 +67,18 @@ val appModule = module {
                     if (settingsManager.settings.value.debugLoggingEnabled) {
                         val request = response.request
                         val reqBody = request.attributes.getOrNull(requestBodyKey)
-                        // Never call bodyAsText() here — Crashlytics OOM on ~79MB OCPI/catalog
-                        // payloads (AppModuleKt.invokeSuspend → HttpResponse.bodyAsText).
                         val contentLength = response.headers["Content-Length"]?.toLongOrNull()
-                        val respBody = if (contentLength != null) {
-                            "[body omitted: ${contentLength} bytes]"
+
+                        // Safely read response body if missing or small (under 512KB) to prevent OOM
+                        val respBody = if (contentLength != null && contentLength > 512 * 1024) {
+                            "[body omitted: $contentLength bytes]"
                         } else {
-                            "[body omitted]"
+                            try {
+                                val bodyText = response.bodyAsText()
+                                truncateDebugBody(bodyText)
+                            } catch (e: Throwable) {
+                                "[body unreadable: ${e.message}]"
+                            }
                         }
 
                         DebugLogStore.addLog(

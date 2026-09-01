@@ -6,6 +6,7 @@ import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.shared.location.haversineKm
 
 /**
  * [PoiProvider] that fetches EV charging stations from Open Charge Map (open data, CC BY 4.0).
@@ -37,24 +38,32 @@ class OpenChargeMapProvider(
             distanceKm = effectiveRadiusKm,
             maxResults = limit
         )
-        return stations.map { s ->
-            Poi(
-                id = s.id,
-                name = s.name,
-                address = s.address,
-                latitude = s.latitude,
-                longitude = s.longitude,
-                brand = null,
-                isElectric = true,
-                powerKw = s.powerKw,
-                operator = s.operator,
-                isOnHighway = false,
-                chargePointCount = null,
-                fuelPrices = null,
-                isClosed = s.isClosed,
-                irveDetails = IrveDetails(connectorTypes = s.connectorTypes),
-                source = "OpenChargeMap"
-            )
-        }
+        return stations
+            .filter { s ->
+                if (viewport != null) {
+                    viewport.contains(s.latitude, s.longitude)
+                } else {
+                    haversineKm(latitude, longitude, s.latitude, s.longitude) <= effectiveRadiusKm
+                }
+            }
+            .map { s ->
+                Poi(
+                    id = s.id,
+                    name = s.name,
+                    address = s.address,
+                    latitude = s.latitude,
+                    longitude = s.longitude,
+                    brand = null,
+                    isElectric = true,
+                    powerKw = s.powerKw,
+                    operator = s.operator,
+                    isOnHighway = false,
+                    chargePointCount = null,
+                    fuelPrices = null,
+                    isClosed = s.isClosed,
+                    irveDetails = IrveDetails(connectorTypes = s.connectorTypes),
+                    source = "OpenChargeMap"
+                )
+            }
     }
 }

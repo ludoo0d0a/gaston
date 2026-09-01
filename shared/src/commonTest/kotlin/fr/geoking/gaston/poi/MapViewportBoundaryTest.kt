@@ -180,4 +180,58 @@ class MapViewportBoundaryTest {
 
         assertTrue(requestedUrl.contains("distance=33"))
     }
+
+    @Test
+    fun openChargeMapProvider_filtersPoisOutsideViewportBoundary() = runBlocking {
+        var requestedUrl = ""
+        val jsonResponse = """
+            [
+                {
+                    "ID": 101,
+                    "AddressInfo": {
+                        "Title": "Inside Station",
+                        "Latitude": 49.6015,
+                        "Longitude": 6.1087
+                    }
+                },
+                {
+                    "ID": 102,
+                    "AddressInfo": {
+                        "Title": "Outside Station",
+                        "Latitude": 49.7500,
+                        "Longitude": 6.3000
+                    }
+                }
+            ]
+        """.trimIndent()
+
+        val mockEngine = MockEngine { request ->
+            requestedUrl = request.url.toString()
+            respond(
+                content = jsonResponse,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val httpClient = HttpClient(mockEngine)
+        val ocmClient = OpenChargeMapClient(httpClient)
+        val provider = OpenChargeMapProvider(ocmClient)
+
+        val centerLat = 49.601492239890526
+        val centerLng = 6.108744408842568
+        // Small 2km viewport
+        val viewport = calculateBoundsFromMapViewport(
+            centerLat = centerLat,
+            centerLng = centerLng,
+            zoom = 15.0f,
+            mapWidthPx = 800,
+            mapHeightPx = 800
+        )
+
+        val pois = provider.getGasStations(centerLat, centerLng, viewport)
+
+        assertTrue(requestedUrl.contains("distance=2"))
+        assertEquals(1, pois.size)
+        assertEquals("ocm-101", pois[0].id)
+    }
 }
