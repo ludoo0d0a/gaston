@@ -205,11 +205,22 @@ data class OverpassElement(
     fun tourism(): String? = tags["tourism"]
     fun highway(): String? = tags["highway"]
     fun name(lang: String? = null): String? = lang?.let { tags["name:$it"] } ?: tags["name"]
-    fun address(): String? = tags["addr:street"]?.let { street ->
-        val house = tags["addr:housenumber"]
-        val city = tags["addr:city"] ?: tags["addr:place"]
-        listOfNotNull(house?.let { "$it $street" } ?: street, city).joinToString(", ")
-    } ?: tags["address"]
+    fun street(): String? = tags["addr:street"] ?: tags["street"]
+    fun address(): String? {
+        val st = street()
+        val house = tags["addr:housenumber"] ?: tags["housenumber"]
+        val postcode = tags["addr:postcode"] ?: tags["postcode"]
+        val city = tags["addr:city"] ?: tags["addr:place"] ?: tags["city"] ?: tags["place"]
+        val suburb = tags["addr:suburb"] ?: tags["suburb"]
+
+        val streetPart = st?.let { house?.let { h -> "$h $it" } ?: it }
+        val cityPart = listOfNotNull(postcode, city).joinToString(" ").ifBlank { null }
+
+        return listOfNotNull(streetPart, suburb, cityPart)
+            .filter { it.isNotBlank() }
+            .joinToString(", ")
+            .ifBlank { tags["address"] }
+    }
     fun openingHours(): String? = tags["opening_hours"]
     fun cuisine(lang: String? = null): String? = lang?.let { tags["cuisine:$it"] } ?: tags["cuisine"]
     fun brand(lang: String? = null): String? = lang?.let { tags["brand:$it"] } ?: tags["brand"]

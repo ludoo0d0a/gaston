@@ -14,7 +14,7 @@ import kotlin.math.PI
 import kotlin.math.cos
 
 /**
- * Global geocoding using OpenStreetMap Nominatim.
+ * Global geocoding using OpenStreetMap Nominatim with detailed street and address extraction.
  * Docs: https://nominatim.org/release-docs/latest/api/Search/
  */
 class NominatimGeocodingClient(
@@ -34,7 +34,7 @@ class NominatimGeocodingClient(
         if (q.isBlank()) return emptyList()
 
         val url = buildString {
-            append("${baseUrl}?q=${q.encodeURLParameter()}&limit=$limit&format=jsonv2")
+            append("${baseUrl}?q=${q.encodeURLParameter()}&limit=$limit&format=jsonv2&addressdetails=1")
             if (biasLatitude != null && biasLongitude != null) {
                 // viewbox = west, north, east, south — boosts results inside the box without bounded=1
                 val dLat = 0.45
@@ -62,8 +62,26 @@ class NominatimGeocodingClient(
             val lat = obj["lat"]?.jsonPrimitive?.content?.toDoubleOrNull()
             val lon = obj["lon"]?.jsonPrimitive?.content?.toDoubleOrNull()
             if (lat == null || lon == null) return@mapNotNull null
-            val label = obj["display_name"]?.jsonPrimitive?.content ?: q
-            GeocodedPlace(label = label, latitude = lat, longitude = lon)
+
+            val addressObj = obj["address"]?.jsonObject
+            val road = addressObj?.get("road")?.jsonPrimitive?.content
+                ?: addressObj?.get("pedestrian")?.jsonPrimitive?.content
+                ?: addressObj?.get("street")?.jsonPrimitive?.content
+            val houseNumber = addressObj?.get("house_number")?.jsonPrimitive?.content
+            val suburb = addressObj?.get("suburb")?.jsonPrimitive?.content
+                ?: addressObj?.get("neighbourhood")?.jsonPrimitive?.content
+            val city = addressObj?.get("city")?.jsonPrimitive?.content
+                ?: addressObj?.get("town")?.jsonPrimitive?.content
+                ?: addressObj?.get("village")?.jsonPrimitive?.content
+
+            val streetPart = listOfNotNull(houseNumber, road).joinToString(" ").ifBlank { null }
+            val formattedLabel = listOfNotNull(streetPart, suburb, city)
+                .joinToString(", ")
+                .ifBlank { null }
+                ?: obj["display_name"]?.jsonPrimitive?.content
+                ?: q
+
+            GeocodedPlace(label = formattedLabel, latitude = lat, longitude = lon)
         }
     }
 }
