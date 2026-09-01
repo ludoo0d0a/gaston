@@ -90,6 +90,7 @@
     <string name="action_exit">Exit</string>
     <string name="action_previous">Previous</string>
     <string name="action_next">Next</string>
+    <string name="action_download">Download</string>
     <string name="action_remove">Remove</string>
     <string name="action_add_poi">+ POI</string>
     <string name="action_show_on_map">Show on Map</string>
@@ -774,4 +775,7 @@
     <string name="mapsforge_download_in_progress">Download already in progress…</string>
     <string name="mapsforge_starting_download">Downloading %1$s…</string>
     <string name="mapsforge_download_success">%1$s downloaded successfully</string>
+    <string name="mapsforge_no_map_for_location">No offline map installed for current position</string>
+    <string name="mapsforge_suggest_download_region">Download %1$s (~%2$d MB) for offline navigation</string>
+    <string name="mapsforge_download_region">Download %1$s</string>
 </resources>

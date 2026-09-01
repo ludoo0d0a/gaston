@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.maps.model.LatLng
@@ -611,6 +612,12 @@ fun SurfaceMapsforgeMapScreen(
 
                         val activeMapFile = remember(installedMaps) { mapManager.getActiveMapFile() }
                         if (activeMapFile == null) {
+                            val recommendedPreset = remember(mapLat, mapLon) {
+                                fr.geoking.gaston.auto.mapsforge.MapsforgePresetServers.getRecommendedPreset(mapLat, mapLon)
+                            }
+                            val downloadScope = rememberCoroutineScope()
+                            val progress by mapManager.downloadProgress.collectAsState()
+
                             Surface(
                                 modifier = Modifier
                                     .align(Alignment.TopCenter)
@@ -627,24 +634,47 @@ fun SurfaceMapsforgeMapScreen(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = stringResource(R.string.mapsforge_active_map) + ": " + stringResource(R.string.network_none),
+                                            text = stringResource(R.string.mapsforge_no_map_for_location),
                                             style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onErrorContainer
                                         )
+                                        Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            text = stringResource(R.string.mapsforge_offline_maps_subtitle),
+                                            text = stringResource(
+                                                R.string.mapsforge_suggest_download_region,
+                                                recommendedPreset.name,
+                                                recommendedPreset.sizeEstimateMb
+                                            ),
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
+                                            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.9f)
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Button(
-                                        onClick = { showDownloadDialog = true },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.error
-                                        )
-                                    ) {
-                                        Text(stringResource(R.string.screen_download_toll_data))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Button(
+                                            onClick = {
+                                                downloadScope.launch {
+                                                    val result = mapManager.downloadMap(recommendedPreset.url, "${recommendedPreset.name}.map")
+                                                    if (result.isSuccess) {
+                                                        surfaceRendererRef?.reloadMapsforgeDataStore()
+                                                    }
+                                                }
+                                            },
+                                            enabled = progress == null || progress?.isComplete == true || progress?.error != null,
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.error
+                                            )
+                                        ) {
+                                            Text(stringResource(R.string.mapsforge_download_region, recommendedPreset.name))
+                                        }
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        TextButton(onClick = { showDownloadDialog = true }) {
+                                            Text(
+                                                text = stringResource(R.string.filter_all),
+                                                color = MaterialTheme.colorScheme.onErrorContainer
+                                            )
+                                        }
                                     }
                                 }
                             }
