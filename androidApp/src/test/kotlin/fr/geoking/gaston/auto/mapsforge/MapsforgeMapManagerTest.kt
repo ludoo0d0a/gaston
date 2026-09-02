@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -29,6 +28,16 @@ class MapsforgeMapManagerTest {
         val presets = MapsforgePresetServers.PRESET_MAPS
         assertTrue("Preset map list should not be empty", presets.isNotEmpty())
         assertTrue("Preset map URLs should end with .map", presets.all { it.url.endsWith(".map") })
+        assertTrue(
+            "France should expose per-region downloads",
+            MapsforgePresetServers.FRANCE_REGION_MAPS.size >= 20,
+        )
+        assertTrue(
+            "Every France region URL should live under europe/france/",
+            MapsforgePresetServers.FRANCE_REGION_MAPS.all {
+                it.url.contains("/europe/france/") && it.url.endsWith(".map")
+            },
+        )
     }
 
     @Test
@@ -59,6 +68,14 @@ class MapsforgeMapManagerTest {
         // Paris coordinates (Île-de-France)
         val parisPreset = MapsforgePresetServers.getRecommendedPreset(48.8566, 2.3522)
         assertEquals("Île-de-France (Paris)", parisPreset.name)
+
+        // Lyon → Rhône-Alpes
+        val lyonPreset = MapsforgePresetServers.getRecommendedPreset(45.7640, 4.8357)
+        assertEquals("Rhône-Alpes", lyonPreset.name)
+
+        // Marseille → PACA
+        val marseillePreset = MapsforgePresetServers.getRecommendedPreset(43.2965, 5.3698)
+        assertEquals("Provence-Alpes-Côte d'Azur", marseillePreset.name)
 
         // Berlin coordinates
         val berlinPreset = MapsforgePresetServers.getRecommendedPreset(52.5200, 13.4050)

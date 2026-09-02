@@ -4,6 +4,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.AppManager
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
@@ -45,11 +46,26 @@ class AutoMapsforgeMapManagementScreen(
         logTag = "AutoMapsforgeMapManagementScreen",
         templateName = "ListTemplate"
     ) {
+        val listLimit = try {
+            carContext.getCarService(ConstraintManager::class.java)
+                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+        } catch (_: Exception) {
+            6
+        }
+
         val listBuilder = ItemList.Builder()
         val activeMap = mapManager.getActiveMapFile()
+        var slotsUsed = 0
+
+        fun canAdd(): Boolean = slotsUsed < listLimit
+        fun addRow(row: Row) {
+            if (!canAdd()) return
+            listBuilder.addItem(row)
+            slotsUsed++
+        }
 
         val activeLabel = activeMap?.name ?: carContext.getString(R.string.network_none)
-        listBuilder.addItem(
+        addRow(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.mapsforge_active_map))
                 .addText(activeLabel)
@@ -58,57 +74,80 @@ class AutoMapsforgeMapManagementScreen(
 
         val progress = downloadProgress
         if (progress != null && !progress.isComplete && progress.error == null) {
-            listBuilder.addItem(
+            addRow(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.mapsforge_downloading, progress.fileName))
                     .addText("${progress.progressPercent}% (${progress.bytesDownloaded / (1024 * 1024)} MB)")
                     .build()
             )
         } else if (progress?.error != null) {
-            listBuilder.addItem(
+            addRow(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.mapsforge_download_error))
-                    .addText(progress.error)
+                    .addText(progress.error.take(500))
                     .build()
             )
         }
 
-        MapsforgePresetServers.PRESET_MAPS.forEach { preset ->
-            val isInstalled = installedMaps.any { it.name == preset.name || it.name == "${preset.name}.map" || it.name.contains(preset.name, ignoreCase = true) }
+        // Prefer France regions in the capped AA list; full catalog is on phone Settings.
+        val presetsForAa = MapsforgePresetServers.FRANCE_REGION_MAPS +
+            MapsforgePresetServers.NEIGHBOR_MAPS +
+            listOf(MapsforgePresetServers.FRANCE_ALL)
+
+        for (preset in presetsForAa) {
+            if (!canAdd()) break
+            val isInstalled = installedMaps.any {
+                it.name == preset.name ||
+                    it.name == "${preset.name}.map" ||
+                    it.name.contains(preset.name, ignoreCase = true)
+            }
             val subtitle = if (isInstalled) {
                 carContext.getString(R.string.mapsforge_installed, preset.sizeEstimateMb)
             } else {
                 carContext.getString(R.string.mapsforge_available, preset.sizeEstimateMb)
             }
 
-            val rowBuilder = Row.Builder()
-                .setTitle(preset.name)
-                .addText("${preset.region} · $subtitle")
-                .setOnClickListener {
-                    if (progress != null && !progress.isComplete && progress.error == null) {
-                        try {
-                            carContext.getCarService(AppManager::class.java)
-                                .showToast(carContext.getString(R.string.mapsforge_download_in_progress), CarToast.LENGTH_SHORT)
-                        } catch (_: Exception) {}
-                        return@setOnClickListener
-                    }
-                    lifecycleScope.launch {
-                        try {
-                            carContext.getCarService(AppManager::class.java)
-                                .showToast(carContext.getString(R.string.mapsforge_starting_download, preset.name), CarToast.LENGTH_SHORT)
-                        } catch (_: Exception) {}
-                        val result = mapManager.downloadMap(preset.url, "${preset.name}.map")
-                        if (result.isSuccess) {
+            addRow(
+                Row.Builder()
+                    .setTitle(preset.name)
+                    .addText("${preset.region} · $subtitle")
+                    .setOnClickListener {
+                        if (progress != null && !progress.isComplete && progress.error == null) {
                             try {
                                 carContext.getCarService(AppManager::class.java)
-                                    .showToast(carContext.getString(R.string.mapsforge_download_success, preset.name), CarToast.LENGTH_SHORT)
-                            } catch (_: Exception) {}
+                                    .showToast(
+                                        carContext.getString(R.string.mapsforge_download_in_progress),
+                                        CarToast.LENGTH_SHORT,
+                                    )
+                            } catch (_: Exception) {
+                            }
+                            return@setOnClickListener
                         }
-                        invalidate()
+                        lifecycleScope.launch {
+                            try {
+                                carContext.getCarService(AppManager::class.java)
+                                    .showToast(
+                                        carContext.getString(R.string.mapsforge_starting_download, preset.name),
+                                        CarToast.LENGTH_SHORT,
+                                    )
+                            } catch (_: Exception) {
+                            }
+                            val result = mapManager.downloadMap(preset.url, "${preset.name}.map")
+                            if (result.isSuccess) {
+                                try {
+                                    carContext.getCarService(AppManager::class.java)
+                                        .showToast(
+                                            carContext.getString(R.string.mapsforge_download_success, preset.name),
+                                            CarToast.LENGTH_SHORT,
+                                        )
+                                } catch (_: Exception) {
+                                }
+                            }
+                            invalidate()
+                        }
                     }
-                }
-
-            listBuilder.addItem(rowBuilder.build())
+                    .build()
+            )
         }
 
         ListTemplate.Builder()

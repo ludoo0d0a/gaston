@@ -794,4 +794,7 @@
     <string name="mapsforge_no_map_for_location">Aucune carte hors-ligne installée pour la position actuelle</string>
     <string name="mapsforge_suggest_download_region">Télécharger %1$s (~%2$d Mo) pour la navigation hors-ligne</string>
     <string name="mapsforge_download_region">Télécharger %1$s</string>
+    <string name="mapsforge_section_france_regions">France — régions</string>
+    <string name="mapsforge_section_neighbors">Pays voisins</string>
+    <string name="mapsforge_section_country_wide">Pays entier</string>
 </resources>

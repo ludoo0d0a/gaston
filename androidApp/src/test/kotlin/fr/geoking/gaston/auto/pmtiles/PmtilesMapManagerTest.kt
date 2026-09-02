@@ -11,7 +11,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.File
-
+import java.io.FileOutputStream
 @RunWith(RobolectricTestRunner::class)
 class PmtilesMapManagerTest {
 
@@ -28,7 +28,20 @@ class PmtilesMapManagerTest {
     fun testPmtilesPresetServersListNotEmpty() {
         val presets = PmtilesPresetServers.PRESET_MAPS
         assertTrue("Preset map list should not be empty", presets.isNotEmpty())
-        assertTrue("Preset map URLs should end with .pmtiles", presets.all { it.url.endsWith(".pmtiles") })
+        assertTrue(
+            "Preset map URLs should be downloadable .pmtiles or .zip archives",
+            presets.all {
+                val path = it.url.substringBefore('?').lowercase()
+                path.endsWith(".pmtiles") || path.endsWith(".zip")
+            },
+        )
+        // Regional build.protomaps.com/<date>/<region>.pmtiles paths 404; presets must not use them.
+        assertTrue(
+            "Presets must not use non-existent Protomaps regional URLs",
+            presets.none {
+                it.url.matches(Regex("""https://build\.protomaps\.com/\d{8}/[^/]+\.pmtiles"""))
+            },
+        )
     }
 
     @Test
@@ -77,5 +90,31 @@ class PmtilesMapManagerTest {
             totalBytes = 1000
         )
         assertEquals(50, progress.progressPercent)
+    }
+
+    @Test
+    fun testExtractPmtilesFromZipArchive() {
+        val pmtilesDir = File(context.getExternalFilesDir(null), "pmtiles")
+        if (!pmtilesDir.exists()) pmtilesDir.mkdirs()
+
+        val zipFile = File(pmtilesDir, "sample.zip")
+        val target = File(pmtilesDir, "Sample Region.pmtiles")
+        val payload = "PMTiles-dummy-bytes".toByteArray()
+        java.util.zip.ZipOutputStream(FileOutputStream(zipFile)).use { zos ->
+            zos.putNextEntry(java.util.zip.ZipEntry("region-pack/README.txt"))
+            zos.write("ignore".toByteArray())
+            zos.closeEntry()
+            zos.putNextEntry(java.util.zip.ZipEntry("region-pack/sample.pmtiles"))
+            zos.write(payload)
+            zos.closeEntry()
+        }
+
+        assertTrue(mapManager.looksLikeZip(zipFile))
+        mapManager.extractPmtilesFromZip(zipFile, target)
+        assertTrue(target.isFile)
+        assertEquals(payload.toString(Charsets.UTF_8), target.readText())
+
+        target.delete()
+        zipFile.delete()
     }
 }

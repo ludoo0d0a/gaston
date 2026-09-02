@@ -17,9 +17,10 @@ import fr.geoking.gaston.R
 import fr.geoking.gaston.auto.mapsforge.DownloadProgress
 import fr.geoking.gaston.auto.mapsforge.MapsforgeMapManager
 import fr.geoking.gaston.auto.mapsforge.MapsforgePresetServers
+import fr.geoking.gaston.auto.mapsforge.MapsforgeServerMap
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.File
-
 @Composable
 fun MapsforgeMapDownloadDialog(
     mapManager: MapsforgeMapManager,
@@ -138,64 +139,62 @@ fun MapsforgeMapDownloadDialog(
                     HorizontalDivider()
                 }
 
-                Text(
-                    text = stringResource(R.string.filter_all),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(MapsforgePresetServers.PRESET_MAPS) { preset ->
-                        val isInstalled = installedMaps.any {
-                            it.name.equals(preset.name, ignoreCase = true) ||
-                                it.name.equals("${preset.name}.map", ignoreCase = true) ||
-                                it.name.contains(preset.name, ignoreCase = true)
-                        }
-                        OutlinedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = preset.name,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "${preset.region} · " + if (isInstalled) {
-                                            stringResource(R.string.mapsforge_installed, preset.sizeEstimateMb)
-                                        } else {
-                                            stringResource(R.string.mapsforge_available, preset.sizeEstimateMb)
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Button(
-                                    onClick = {
-                                        scope.launch {
-                                            val res = mapManager.downloadMap(preset.url, "${preset.name}.map")
-                                            if (res.isSuccess) {
-                                                onMapFileChanged()
-                                            }
-                                        }
-                                    },
-                                    enabled = progress == null || progress.isComplete || progress.error != null
-                                ) {
-                                    Text(if (isInstalled) stringResource(R.string.action_refresh) else stringResource(R.string.action_download))
-                                }
-                            }
-                        }
+                    item {
+                        Text(
+                            text = stringResource(R.string.mapsforge_section_france_regions),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    items(MapsforgePresetServers.FRANCE_REGION_MAPS) { preset ->
+                        MapsforgePresetDownloadRow(
+                            preset = preset,
+                            installedMaps = installedMaps,
+                            progress = progress,
+                            scope = scope,
+                            mapManager = mapManager,
+                            onMapFileChanged = onMapFileChanged,
+                        )
+                    }
+                    item {
+                        Text(
+                            text = stringResource(R.string.mapsforge_section_neighbors),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                    items(MapsforgePresetServers.NEIGHBOR_MAPS) { preset ->
+                        MapsforgePresetDownloadRow(
+                            preset = preset,
+                            installedMaps = installedMaps,
+                            progress = progress,
+                            scope = scope,
+                            mapManager = mapManager,
+                            onMapFileChanged = onMapFileChanged,
+                        )
+                    }
+                    item {
+                        Text(
+                            text = stringResource(R.string.mapsforge_section_country_wide),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                    item {
+                        MapsforgePresetDownloadRow(
+                            preset = MapsforgePresetServers.FRANCE_ALL,
+                            installedMaps = installedMaps,
+                            progress = progress,
+                            scope = scope,
+                            mapManager = mapManager,
+                            onMapFileChanged = onMapFileChanged,
+                        )
                     }
                 }
             }
@@ -206,4 +205,62 @@ fun MapsforgeMapDownloadDialog(
             }
         }
     )
+}
+
+@Composable
+private fun MapsforgePresetDownloadRow(
+    preset: MapsforgeServerMap,
+    installedMaps: List<File>,
+    progress: DownloadProgress?,
+    scope: CoroutineScope,
+    mapManager: MapsforgeMapManager,
+    onMapFileChanged: () -> Unit,
+) {
+    val isInstalled = installedMaps.any {
+        it.name.equals(preset.name, ignoreCase = true) ||
+            it.name.equals("${preset.name}.map", ignoreCase = true) ||
+            it.name.contains(preset.name, ignoreCase = true)
+    }
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = preset.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${preset.region} · " + if (isInstalled) {
+                        stringResource(R.string.mapsforge_installed, preset.sizeEstimateMb)
+                    } else {
+                        stringResource(R.string.mapsforge_available, preset.sizeEstimateMb)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = {
+                    scope.launch {
+                        val res = mapManager.downloadMap(preset.url, "${preset.name}.map")
+                        if (res.isSuccess) {
+                            onMapFileChanged()
+                        }
+                    }
+                },
+                enabled = progress == null || progress.isComplete || progress.error != null
+            ) {
+                Text(if (isInstalled) stringResource(R.string.action_refresh) else stringResource(R.string.action_download))
+            }
+        }
+    }
 }

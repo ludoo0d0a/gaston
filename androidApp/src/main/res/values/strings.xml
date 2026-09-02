@@ -794,4 +794,7 @@
     <string name="mapsforge_no_map_for_location">No offline map installed for current position</string>
     <string name="mapsforge_suggest_download_region">Download %1$s (~%2$d MB) for offline navigation</string>
     <string name="mapsforge_download_region">Download %1$s</string>
+    <string name="mapsforge_section_france_regions">France — regions</string>
+    <string name="mapsforge_section_neighbors">Nearby countries</string>
+    <string name="mapsforge_section_country_wide">Whole country</string>
 </resources>

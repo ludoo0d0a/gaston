@@ -42,61 +42,97 @@ data class MapsforgeServerMap(
 }
 
 object MapsforgePresetServers {
-    val PRESET_MAPS = listOf(
+    private const val FR_BASE = "https://download.mapsforge.org/maps/v5/europe/france"
+
+    /** Former administrative régions as published by mapsforge.org (one `.map` per region). */
+    val FRANCE_REGION_MAPS = listOf(
+        MapsforgeServerMap("Alsace", "France", "$FR_BASE/alsace.map", 86, 47.3, 49.1, 6.8, 8.3),
+        MapsforgeServerMap("Aquitaine", "France", "$FR_BASE/aquitaine.map", 211, 42.8, 45.7, -1.8, 1.2),
+        MapsforgeServerMap("Auvergne", "France", "$FR_BASE/auvergne.map", 113, 44.6, 46.8, 2.0, 4.5),
+        MapsforgeServerMap("Basse-Normandie", "France", "$FR_BASE/basse-normandie.map", 104, 48.3, 49.8, -2.0, 0.5),
+        MapsforgeServerMap("Bourgogne", "France", "$FR_BASE/bourgogne.map", 151, 46.2, 48.4, 2.8, 5.5),
+        MapsforgeServerMap("Bretagne", "France", "$FR_BASE/bretagne.map", 208, 47.3, 48.9, -5.2, -1.0),
+        MapsforgeServerMap("Centre", "France", "$FR_BASE/centre.map", 176, 46.3, 48.9, 0.1, 3.2),
+        MapsforgeServerMap("Champagne-Ardenne", "France", "$FR_BASE/champagne-ardenne.map", 80, 47.8, 50.3, 3.4, 5.9),
+        MapsforgeServerMap("Corse", "France", "$FR_BASE/corse.map", 25, 41.3, 43.1, 8.5, 9.6),
+        MapsforgeServerMap("Franche-Comté", "France", "$FR_BASE/franche-comte.map", 89, 46.2, 48.0, 5.3, 7.2),
+        MapsforgeServerMap("Guadeloupe", "France", "$FR_BASE/guadeloupe.map", 17, 15.8, 16.6, -61.9, -61.0),
+        MapsforgeServerMap("Guyane", "France", "$FR_BASE/guyane.map", 15, 2.1, 5.8, -54.6, -51.6),
+        MapsforgeServerMap("Haute-Normandie", "France", "$FR_BASE/haute-normandie.map", 79, 48.8, 50.1, 0.0, 1.8),
+        MapsforgeServerMap("Île-de-France (Paris)", "France", "$FR_BASE/ile-de-france.map", 200, 48.1, 49.3, 1.4, 3.6),
+        MapsforgeServerMap("Languedoc-Roussillon", "France", "$FR_BASE/languedoc-roussillon.map", 178, 42.3, 44.9, 1.7, 4.9),
+        MapsforgeServerMap("Limousin", "France", "$FR_BASE/limousin.map", 73, 44.9, 46.5, 0.6, 2.6),
+        MapsforgeServerMap("Lorraine", "France", "$FR_BASE/lorraine.map", 123, 48.3, 49.7, 5.2, 7.6),
+        MapsforgeServerMap("Martinique", "France", "$FR_BASE/martinique.map", 14, 14.4, 14.9, -61.3, -60.8),
+        MapsforgeServerMap("Mayotte", "France", "$FR_BASE/mayotte.map", 8, -13.1, -12.6, 45.0, 45.3),
+        MapsforgeServerMap("Midi-Pyrénées", "France", "$FR_BASE/midi-pyrenees.map", 245, 42.3, 45.1, -0.3, 3.5),
+        MapsforgeServerMap("Nord-Pas-de-Calais", "France", "$FR_BASE/nord-pas-de-calais.map", 159, 50.0, 51.1, 1.5, 4.3),
+        MapsforgeServerMap("Pays de la Loire", "France", "$FR_BASE/pays-de-la-loire.map", 238, 46.3, 48.6, -2.6, 0.9),
+        MapsforgeServerMap("Picardie", "France", "$FR_BASE/picardie.map", 106, 48.8, 50.4, 1.4, 4.3),
+        MapsforgeServerMap("Poitou-Charentes", "France", "$FR_BASE/poitou-charentes.map", 147, 45.1, 47.2, -1.6, 1.1),
         MapsforgeServerMap(
-            name = "Île-de-France (Paris)",
-            region = "France",
-            url = "https://download.mapsforge.org/maps/v5/europe/france/ile-de-france.map",
-            sizeEstimateMb = 250,
-            minLat = 48.1, maxLat = 49.3, minLon = 1.4, maxLon = 3.6
+            "Provence-Alpes-Côte d'Azur",
+            "France",
+            "$FR_BASE/provence-alpes-cote-d-azur.map",
+            231,
+            42.9, 45.1, 4.2, 7.8,
         ),
+        MapsforgeServerMap("La Réunion", "France", "$FR_BASE/reunion.map", 22, -21.4, -20.9, 55.2, 55.9),
+        MapsforgeServerMap("Rhône-Alpes", "France", "$FR_BASE/rhone-alpes.map", 340, 44.1, 46.5, 4.5, 7.2),
+    )
+
+    val NEIGHBOR_MAPS = listOf(
         MapsforgeServerMap(
             name = "Monaco",
             region = "Europe",
             url = "https://download.mapsforge.org/maps/v5/europe/monaco.map",
             sizeEstimateMb = 5,
-            minLat = 43.7, maxLat = 43.8, minLon = 7.4, maxLon = 7.5
+            minLat = 43.7, maxLat = 43.8, minLon = 7.4, maxLon = 7.5,
         ),
         MapsforgeServerMap(
             name = "Luxembourg",
             region = "Europe",
             url = "https://download.mapsforge.org/maps/v5/europe/luxembourg.map",
             sizeEstimateMb = 35,
-            minLat = 49.4, maxLat = 50.2, minLon = 5.7, maxLon = 6.6
+            minLat = 49.4, maxLat = 50.2, minLon = 5.7, maxLon = 6.6,
         ),
         MapsforgeServerMap(
             name = "Belgium",
             region = "Europe",
             url = "https://download.mapsforge.org/maps/v5/europe/belgium.map",
             sizeEstimateMb = 320,
-            minLat = 49.5, maxLat = 51.5, minLon = 2.5, maxLon = 6.4
+            minLat = 49.5, maxLat = 51.5, minLon = 2.5, maxLon = 6.4,
         ),
         MapsforgeServerMap(
             name = "Germany (Berlin)",
             region = "Germany",
             url = "https://download.mapsforge.org/maps/v5/europe/germany/berlin.map",
             sizeEstimateMb = 120,
-            minLat = 52.3, maxLat = 52.7, minLon = 13.0, maxLon = 13.8
+            minLat = 52.3, maxLat = 52.7, minLon = 13.0, maxLon = 13.8,
         ),
-        MapsforgeServerMap(
-            name = "France (All)",
-            region = "Europe",
-            url = "https://download.mapsforge.org/maps/v5/europe/france.map",
-            sizeEstimateMb = 1800,
-            minLat = 41.3, maxLat = 51.1, minLon = -5.2, maxLon = 9.6
-        )
     )
 
-    fun getRecommendedPreset(lat: Double?, lon: Double?): MapsforgeServerMap {
-        if (lat == null || lon == null) return PRESET_MAPS.first { it.name.contains("Île-de-France") }
-        // Prefer smaller regional map over whole country if location is inside bounds
-        val matchingSmallMap = PRESET_MAPS
-            .filter { it.sizeEstimateMb < 1000 }
-            .firstOrNull { it.contains(lat, lon) }
-        if (matchingSmallMap != null) return matchingSmallMap
+    val FRANCE_ALL = MapsforgeServerMap(
+        name = "France (All)",
+        region = "Europe",
+        url = "https://download.mapsforge.org/maps/v5/europe/france.map",
+        sizeEstimateMb = 3338,
+        minLat = 41.3, maxLat = 51.1, minLon = -5.2, maxLon = 9.6,
+    )
 
-        val matchingAnyMap = PRESET_MAPS.firstOrNull { it.contains(lat, lon) }
-        return matchingAnyMap ?: PRESET_MAPS.first { it.name.contains("Île-de-France") }
+    val PRESET_MAPS: List<MapsforgeServerMap> =
+        FRANCE_REGION_MAPS + NEIGHBOR_MAPS + listOf(FRANCE_ALL)
+
+    fun getRecommendedPreset(lat: Double?, lon: Double?): MapsforgeServerMap {
+        val default = FRANCE_REGION_MAPS.first { it.name.contains("Île-de-France") }
+        if (lat == null || lon == null) return default
+        // Prefer the tightest bbox that covers the point (avoids oversized neighbors with fuzzy bounds).
+        val matchingRegional = PRESET_MAPS
+            .filter { it.sizeEstimateMb < 1000 && it.contains(lat, lon) }
+            .minByOrNull { (it.maxLat - it.minLat) * (it.maxLon - it.minLon) }
+        if (matchingRegional != null) return matchingRegional
+
+        return PRESET_MAPS.firstOrNull { it.contains(lat, lon) } ?: default
     }
 }
 

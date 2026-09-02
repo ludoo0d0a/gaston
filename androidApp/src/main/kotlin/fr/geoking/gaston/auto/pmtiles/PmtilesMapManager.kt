@@ -10,10 +10,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import java.io.BufferedInputStream
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.zip.ZipInputStream
 
 data class PmtilesServerMap(
     val name: String,
@@ -29,48 +32,60 @@ data class PmtilesServerMap(
         lat in minLat..maxLat && lon in minLon..maxLon
 }
 
+/**
+ * Preset regional PMTiles downloads.
+ *
+ * Protomaps daily builds are full-planet archives only (~120 GiB at
+ * `https://build.protomaps.com/YYYYMMDD.pmtiles`); regional paths like
+ * `…/monaco.pmtiles` do not exist (HTTP 404). BBBike publishes downloadable
+ * Shortbread-schema PMTiles zips for OSM extracts — used here as the public
+ * preset source.
+ */
 object PmtilesPresetServers {
+    private const val BBBIKE_PMTILES =
+        "https://data.bbbike.org/osm/pmtiles/region"
+
     val PRESET_MAPS = listOf(
         PmtilesServerMap(
             name = "Île-de-France (Paris)",
             region = "France",
-            url = "https://build.protomaps.com/20240101/ile-de-france.pmtiles",
-            sizeEstimateMb = 280,
+            url = "$BBBIKE_PMTILES/europe/france/ile-de-france/ile-de-france.osm.pmtiles-shortbread.zip",
+            sizeEstimateMb = 131,
             minLat = 48.1, maxLat = 49.3, minLon = 1.4, maxLon = 3.6
         ),
         PmtilesServerMap(
             name = "Monaco",
             region = "Europe",
-            url = "https://build.protomaps.com/20240101/monaco.pmtiles",
-            sizeEstimateMb = 8,
+            url = "$BBBIKE_PMTILES/europe/monaco/monaco.osm.pmtiles-shortbread.zip",
+            sizeEstimateMb = 1,
             minLat = 43.7, maxLat = 43.8, minLon = 7.4, maxLon = 7.5
         ),
         PmtilesServerMap(
             name = "Luxembourg",
             region = "Europe",
-            url = "https://build.protomaps.com/20240101/luxembourg.pmtiles",
-            sizeEstimateMb = 42,
+            url = "$BBBIKE_PMTILES/europe/luxembourg/luxembourg.osm.pmtiles-shortbread.zip",
+            sizeEstimateMb = 32,
             minLat = 49.4, maxLat = 50.2, minLon = 5.7, maxLon = 6.6
         ),
         PmtilesServerMap(
             name = "Belgium",
             region = "Europe",
-            url = "https://build.protomaps.com/20240101/belgium.pmtiles",
-            sizeEstimateMb = 360,
+            url = "$BBBIKE_PMTILES/europe/belgium/belgium.osm.pmtiles-shortbread.zip",
+            sizeEstimateMb = 400,
             minLat = 49.5, maxLat = 51.5, minLon = 2.5, maxLon = 6.4
         ),
         PmtilesServerMap(
             name = "Germany (Berlin)",
             region = "Germany",
-            url = "https://build.protomaps.com/20240101/berlin.pmtiles",
-            sizeEstimateMb = 140,
+            url = "$BBBIKE_PMTILES/europe/germany/berlin/berlin.osm.pmtiles-shortbread.zip",
+            sizeEstimateMb = 33,
             minLat = 52.3, maxLat = 52.7, minLon = 13.0, maxLon = 13.8
         ),
         PmtilesServerMap(
             name = "France (All)",
             region = "Europe",
-            url = "https://build.protomaps.com/20240101/france.pmtiles",
-            sizeEstimateMb = 2100,
+            url = "$BBBIKE_PMTILES/europe/france/france.osm.pmtiles-shortbread.zip",
+            sizeEstimateMb = 2766,
             minLat = 41.3, maxLat = 51.1, minLon = -5.2, maxLon = 9.6
         )
     )
@@ -171,26 +186,34 @@ class PmtilesMapManager(
         urlString: String,
         customFileName: String? = null
     ): Result<File> = withContext(Dispatchers.IO) {
-        try {
-            val rawFileName = customFileName
-                ?: urlString.substringAfterLast('/').substringBefore('?')
+        val rawFileName = customFileName
+            ?: urlString.substringAfterLast('/').substringBefore('?')
                 .ifBlank { "downloaded_map.pmtiles" }
-            val fileName = if (rawFileName.endsWith(".pmtiles", ignoreCase = true)) rawFileName else "$rawFileName.pmtiles"
-            val tempFile = File(pmtilesDir, "$fileName.tmp")
-            val targetFile = File(pmtilesDir, fileName)
+        val fileName = when {
+            rawFileName.endsWith(".pmtiles", ignoreCase = true) -> rawFileName
+            rawFileName.endsWith(".zip", ignoreCase = true) ->
+                rawFileName.removeSuffix(".zip").removeSuffix(".ZIP") + ".pmtiles"
+            else -> "$rawFileName.pmtiles"
+        }
+        val tempDownload = File(pmtilesDir, "$fileName.download")
+        val targetFile = File(pmtilesDir, fileName)
 
-            Log.d("PmtilesMapManager", "Starting download from $urlString to ${tempFile.absolutePath}")
+        try {
+            Log.d("PmtilesMapManager", "Starting download from $urlString to ${tempDownload.absolutePath}")
             _downloadProgress.value = DownloadProgress(fileName, 0, -1)
 
             val url = URL(urlString)
             val connection = url.openConnection() as HttpURLConnection
-            connection.connectTimeout = 15000
-            connection.readTimeout = 30000
+            connection.instanceFollowRedirects = true
+            connection.connectTimeout = 30_000
+            connection.readTimeout = 120_000
             connection.requestMethod = "GET"
+            connection.setRequestProperty("User-Agent", "GastonAndroid/1.0 (pmtiles-download)")
             connection.connect()
 
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                val err = "HTTP Error ${connection.responseCode}: ${connection.responseMessage}"
+            val code = connection.responseCode
+            if (code !in 200..299) {
+                val err = "HTTP Error $code: ${connection.responseMessage}"
                 _downloadProgress.value = DownloadProgress(fileName, 0, -1, error = err)
                 return@withContext Result.failure(Exception(err))
             }
@@ -199,8 +222,8 @@ class PmtilesMapManager(
             var bytesDownloaded = 0L
 
             connection.inputStream.use { input ->
-                FileOutputStream(tempFile).use { output ->
-                    val buffer = ByteArray(8192)
+                FileOutputStream(tempDownload).use { output ->
+                    val buffer = ByteArray(64 * 1024)
                     var read: Int
                     while (input.read(buffer).also { read = it } != -1) {
                         output.write(buffer, 0, read)
@@ -214,15 +237,30 @@ class PmtilesMapManager(
                 }
             }
 
-            if (tempFile.exists()) {
+            val isZip = urlString.substringBefore('?').endsWith(".zip", ignoreCase = true) ||
+                looksLikeZip(tempDownload)
+            if (isZip) {
+                extractPmtilesFromZip(tempDownload, targetFile)
+                tempDownload.delete()
+            } else {
                 if (targetFile.exists()) targetFile.delete()
-                tempFile.renameTo(targetFile)
+                if (!tempDownload.renameTo(targetFile)) {
+                    tempDownload.copyTo(targetFile, overwrite = true)
+                    tempDownload.delete()
+                }
+            }
+
+            if (!targetFile.isFile || targetFile.length() == 0L) {
+                targetFile.delete()
+                val err = "Downloaded file is missing or empty"
+                _downloadProgress.value = DownloadProgress(fileName, 0, -1, error = err)
+                return@withContext Result.failure(Exception(err))
             }
 
             _downloadProgress.value = DownloadProgress(
                 fileName = fileName,
-                bytesDownloaded = bytesDownloaded,
-                totalBytes = totalBytes,
+                bytesDownloaded = targetFile.length(),
+                totalBytes = targetFile.length(),
                 isComplete = true
             )
 
@@ -232,14 +270,52 @@ class PmtilesMapManager(
             Result.success(targetFile)
         } catch (e: Exception) {
             Log.e("PmtilesMapManager", "Download pmtiles map failed", e)
+            tempDownload.delete()
+            if (targetFile.exists() && targetFile.length() == 0L) targetFile.delete()
             _downloadProgress.value = DownloadProgress(
-                fileName = customFileName ?: "map.pmtiles",
+                fileName = fileName,
                 bytesDownloaded = 0,
                 totalBytes = -1,
                 error = e.message ?: "Download failed"
             )
             Result.failure(e)
         }
+    }
+
+    internal fun looksLikeZip(file: File): Boolean {
+        if (!file.isFile || file.length() < 4) return false
+        FileInputStream(file).use { input ->
+            val sig = ByteArray(4)
+            if (input.read(sig) != 4) return false
+            // ZIP local file header: PK\x03\x04
+            return sig[0] == 'P'.code.toByte() &&
+                sig[1] == 'K'.code.toByte() &&
+                sig[2] == 3.toByte() &&
+                sig[3] == 4.toByte()
+        }
+    }
+
+    internal fun extractPmtilesFromZip(zipFile: File, targetFile: File) {
+        ZipInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
+            var entry = zis.nextEntry
+            while (entry != null) {
+                val name = entry.name.substringAfterLast('/').substringAfterLast('\\')
+                if (!entry.isDirectory && name.endsWith(".pmtiles", ignoreCase = true)) {
+                    val staging = File(pmtilesDir, "${targetFile.name}.extracting")
+                    FileOutputStream(staging).use { output -> zis.copyTo(output) }
+                    zis.closeEntry()
+                    if (targetFile.exists()) targetFile.delete()
+                    if (!staging.renameTo(targetFile)) {
+                        staging.copyTo(targetFile, overwrite = true)
+                        staging.delete()
+                    }
+                    return
+                }
+                zis.closeEntry()
+                entry = zis.nextEntry
+            }
+        }
+        throw Exception("ZIP archive contains no .pmtiles file")
     }
 
     fun deleteMap(file: File): Boolean {
