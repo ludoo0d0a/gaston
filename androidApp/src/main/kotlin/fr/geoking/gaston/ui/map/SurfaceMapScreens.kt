@@ -3,6 +3,7 @@ package fr.geoking.gaston.ui.map
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -45,6 +46,7 @@ import fr.geoking.gaston.ui.components.rememberSearchMode
 import fr.geoking.gaston.ui.SettingsScreen
 import fr.geoking.gaston.ui.SettingsScreenPage
 import fr.geoking.gaston.ui.anim.AnimationPalette
+import fr.geoking.gaston.ui.components.MapControlsOverlay
 import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.ui.components.MapScaffold
 import fr.geoking.gaston.ui.dashboard.GastonTheme
@@ -258,12 +260,14 @@ fun SurfaceCustomMapScreen(
                             )
                         }
 
+                        var zoomAcc by remember { mutableFloatStateOf(1f) }
+
                         AndroidView(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .pointerInput(zoom, bearing, mapLat, mapLon) {
-                                    detectDragGestures { change, dragAmount ->
-                                        change.consume()
+                                    detectTransformGestures { _, pan, zoomFactor, _ ->
+                                        // Panning / drag
                                         val degreesPerPixelX = 360.0 / (256.0 * (1 shl zoom))
                                         val latRad = Math.toRadians(mapLat)
                                         val degreesPerPixelY = degreesPerPixelX * cos(latRad)
@@ -271,11 +275,23 @@ fun SurfaceCustomMapScreen(
                                         val bearingRad = Math.toRadians(bearing.toDouble())
                                         val cosB = cos(bearingRad)
                                         val sinB = sin(bearingRad)
-                                        val rotatedDragX = dragAmount.x * cosB - dragAmount.y * sinB
-                                        val rotatedDragY = dragAmount.x * sinB + dragAmount.y * cosB
+                                        val rotatedDragX = pan.x * cosB - pan.y * sinB
+                                        val rotatedDragY = pan.x * sinB + pan.y * cosB
 
                                         mapLon -= rotatedDragX * degreesPerPixelX
                                         mapLat += rotatedDragY * degreesPerPixelY
+
+                                        // Pinch-to-zoom
+                                        if (zoomFactor != 1f) {
+                                            zoomAcc *= zoomFactor
+                                            if (zoomAcc > 1.3f && zoom < 18) {
+                                                zoom += 1
+                                                zoomAcc = 1f
+                                            } else if (zoomAcc < 0.7f && zoom > 4) {
+                                                zoom -= 1
+                                                zoomAcc = 1f
+                                            }
+                                        }
                                     }
                                 },
                             factory = { ctx ->
@@ -310,7 +326,24 @@ fun SurfaceCustomMapScreen(
                             latitude = mapLat,
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
-                                .padding(start = 16.dp, bottom = 16.dp)
+                                .padding(start = 16.dp, bottom = if (selectedPoi != null) STATION_OVERLAY_CARD_HEIGHT + 16.dp else 16.dp)
+                        )
+
+                        MapControlsOverlay(
+                            onLocateMe = {
+                                scope.launch {
+                                    val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                                    mapLat = lat
+                                    mapLon = lon
+                                }
+                            },
+                            onZoomIn = { if (zoom < 18) zoom += 1 },
+                            onZoomOut = { if (zoom > 4) zoom -= 1 },
+                            enabledZoomIn = zoom < 18,
+                            enabledZoomOut = zoom > 4,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 16.dp, bottom = if (selectedPoi != null) STATION_OVERLAY_CARD_HEIGHT + 16.dp else 16.dp)
                         )
                     }
                 }
@@ -547,12 +580,14 @@ fun SurfaceMapsforgeMapScreen(
                             )
                         }
 
+                        var zoomAcc by remember { mutableFloatStateOf(1f) }
+
                         AndroidView(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .pointerInput(zoom, bearing, mapLat, mapLon) {
-                                    detectDragGestures { change, dragAmount ->
-                                        change.consume()
+                                    detectTransformGestures { _, pan, zoomFactor, _ ->
+                                        // Panning / drag
                                         val degreesPerPixelX = 360.0 / (256.0 * (1 shl zoom))
                                         val latRad = Math.toRadians(mapLat)
                                         val degreesPerPixelY = degreesPerPixelX * cos(latRad)
@@ -560,11 +595,23 @@ fun SurfaceMapsforgeMapScreen(
                                         val bearingRad = Math.toRadians(bearing.toDouble())
                                         val cosB = cos(bearingRad)
                                         val sinB = sin(bearingRad)
-                                        val rotatedDragX = dragAmount.x * cosB - dragAmount.y * sinB
-                                        val rotatedDragY = dragAmount.x * sinB + dragAmount.y * cosB
+                                        val rotatedDragX = pan.x * cosB - pan.y * sinB
+                                        val rotatedDragY = pan.x * sinB + pan.y * cosB
 
                                         mapLon -= rotatedDragX * degreesPerPixelX
                                         mapLat += rotatedDragY * degreesPerPixelY
+
+                                        // Pinch-to-zoom
+                                        if (zoomFactor != 1f) {
+                                            zoomAcc *= zoomFactor
+                                            if (zoomAcc > 1.3f && zoom < 18) {
+                                                zoom += 1
+                                                zoomAcc = 1f
+                                            } else if (zoomAcc < 0.7f && zoom > 4) {
+                                                zoom -= 1
+                                                zoomAcc = 1f
+                                            }
+                                        }
                                     }
                                 },
                             factory = { ctx ->
@@ -607,7 +654,24 @@ fun SurfaceMapsforgeMapScreen(
                             latitude = mapLat,
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
-                                .padding(start = 16.dp, bottom = 16.dp)
+                                .padding(start = 16.dp, bottom = if (selectedPoi != null) STATION_OVERLAY_CARD_HEIGHT + 16.dp else 16.dp)
+                        )
+
+                        MapControlsOverlay(
+                            onLocateMe = {
+                                scope.launch {
+                                    val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                                    mapLat = lat
+                                    mapLon = lon
+                                }
+                            },
+                            onZoomIn = { if (zoom < 18) zoom += 1 },
+                            onZoomOut = { if (zoom > 4) zoom -= 1 },
+                            enabledZoomIn = zoom < 18,
+                            enabledZoomOut = zoom > 4,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 16.dp, bottom = if (selectedPoi != null) STATION_OVERLAY_CARD_HEIGHT + 16.dp else 16.dp)
                         )
 
                         val activeMapFile = remember(installedMaps) { mapManager.getActiveMapFile() }

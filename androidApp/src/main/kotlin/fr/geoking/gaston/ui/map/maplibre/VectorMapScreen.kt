@@ -85,6 +85,7 @@ import fr.geoking.gaston.ui.map.PoiDetailCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.AddPoiSheet
 import fr.geoking.gaston.ui.map.DebugLogOverlay
+import fr.geoking.gaston.ui.components.MapLocateMeButton
 import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.ui.map.MapCameraSample
 import fr.geoking.gaston.ui.map.MapErrorBanner
@@ -548,6 +549,24 @@ fun VectorMapScreen(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .padding(start = 16.dp, bottom = mapPaddingBottom + 16.dp)
+                            .zIndex(1f)
+                    )
+
+                    MapLocateMeButton(
+                        onLocateMe = {
+                            scope.launch {
+                                val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                                mapLibreMap?.animateCamera(
+                                    CameraUpdateFactory.newLatLngZoom(
+                                        LatLng(lat, lon),
+                                        12.0
+                                    )
+                                )
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp, bottom = mapPaddingBottom + 16.dp)
                             .zIndex(1f)
                     )
 

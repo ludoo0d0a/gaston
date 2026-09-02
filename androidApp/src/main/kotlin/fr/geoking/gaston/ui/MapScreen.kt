@@ -684,6 +684,24 @@ fun MapScreen(
                             .zIndex(1f)
                     )
 
+                    MapLocateMeButton(
+                        onLocateMe = {
+                            scope.launch {
+                                val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                                cameraPositionState.animate(
+                                    CameraUpdateFactory.newLatLngZoom(
+                                        LatLng(lat, lon),
+                                        12f
+                                    )
+                                )
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp, bottom = mapPaddingBottom + 16.dp)
+                            .zIndex(1f)
+                    )
+
                     if (settings.debugLoggingEnabled) {
                         val detectedCountries = remember(cameraPositionState.position.target) {
                             fr.geoking.gaston.countryDisplayLabelAtMapPosition(
