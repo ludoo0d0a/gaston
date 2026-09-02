@@ -412,6 +412,54 @@ private fun MapConfig(
                 )
             }
         }
+        if (settings.carMapMode == CarMapMode.Protomaps) {
+            val pmtilesManager = remember(context) { fr.geoking.gaston.auto.pmtiles.PmtilesMapManager(context, settingsManager = null) }
+            val installedMaps by pmtilesManager.installedMaps.collectAsState()
+            var showPmtilesDownloadDialog by remember { mutableStateOf(false) }
+            val activeMap = remember(installedMaps, settings.offlinePmtilesPath) {
+                settings.offlinePmtilesPath?.let { File(it) }?.takeIf { it.exists() } ?: pmtilesManager.getActiveMapFile()
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "Cartes PMTiles hors-ligne (Protomaps)",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "Carte PMTiles active: " + (activeMap?.name ?: stringResource(R.string.network_none)),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(
+                        onClick = { showPmtilesDownloadDialog = true },
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Text("Télécharger cartes PMTiles")
+                    }
+                }
+            }
+
+            if (showPmtilesDownloadDialog) {
+                fr.geoking.gaston.ui.map.PmtilesMapDownloadDialog(
+                    mapManager = pmtilesManager,
+                    onDismiss = { showPmtilesDownloadDialog = false },
+                    onMapFileChanged = {
+                        val newActive = pmtilesManager.getActiveMapFile()
+                        onUpdate(settings.copy(offlinePmtilesPath = newActive?.absolutePath))
+                    }
+                )
+            }
+        }
 
         // Android Auto map mode (phone)
         Column {
