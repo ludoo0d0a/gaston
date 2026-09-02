@@ -2,6 +2,8 @@
 
 Reference: https://developer.android.com/training/cars/apps/library/template-restrictions
 
+See also: [AA map modes summary](aa-map-modes-summary.md) — requirements, trade-offs, and future work.
+
 ---
 
 ## Screen stack & template quota (5 steps per task)
