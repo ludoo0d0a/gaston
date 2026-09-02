@@ -28,6 +28,7 @@ import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.components.CheapestStationHighlight
 import fr.geoking.gaston.ui.components.MapScaffold
+import fr.geoking.gaston.ui.components.MapLocateMeButton
 import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
@@ -137,6 +138,20 @@ fun DirectionsMapScreen(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(start = 16.dp, bottom = 16.dp)
+                    .zIndex(1f)
+            )
+
+            MapLocateMeButton(
+                onLocateMe = {
+                    route?.points?.firstOrNull()?.let { point ->
+                        mapLibreMap?.animateCamera(
+                            CameraUpdateFactory.newLatLngZoom(LatLng(point.first, point.second), 15.0)
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 16.dp)
                     .zIndex(1f)
             )
 

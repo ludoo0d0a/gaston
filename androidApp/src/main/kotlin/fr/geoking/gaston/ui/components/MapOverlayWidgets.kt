@@ -4,7 +4,13 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -15,8 +21,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import fr.geoking.gaston.R
 import kotlin.math.cos
 
 @Composable
@@ -32,8 +39,90 @@ fun MapOverlayWidgets(
             .padding(8.dp),
         contentAlignment = Alignment.Center
     ) {
-        // 2. Scale widget (metric)
+        // Scale widget (metric)
         MapScaleWidget(zoom = zoom, latitude = latitude)
+    }
+}
+
+@Composable
+fun MapLocateMeButton(
+    onLocateMe: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    SmallFloatingActionButton(
+        onClick = onLocateMe,
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Icon(
+            imageVector = Icons.Default.MyLocation,
+            contentDescription = stringResource(R.string.action_locate_me),
+        )
+    }
+}
+
+@Composable
+fun MapZoomControls(
+    onZoomIn: () -> Unit,
+    onZoomOut: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabledZoomIn: Boolean = true,
+    enabledZoomOut: Boolean = true
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        SmallFloatingActionButton(
+            onClick = { if (enabledZoomIn) onZoomIn() },
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+            contentColor = if (enabledZoomIn) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = stringResource(R.string.action_zoom_in),
+            )
+        }
+        SmallFloatingActionButton(
+            onClick = { if (enabledZoomOut) onZoomOut() },
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+            contentColor = if (enabledZoomOut) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Remove,
+                contentDescription = stringResource(R.string.action_zoom_out),
+            )
+        }
+    }
+}
+
+@Composable
+fun MapControlsOverlay(
+    modifier: Modifier = Modifier,
+    onLocateMe: (() -> Unit)? = null,
+    onZoomIn: (() -> Unit)? = null,
+    onZoomOut: (() -> Unit)? = null,
+    enabledZoomIn: Boolean = true,
+    enabledZoomOut: Boolean = true
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (onLocateMe != null) {
+            MapLocateMeButton(onLocateMe = onLocateMe)
+        }
+        if (onZoomIn != null && onZoomOut != null) {
+            MapZoomControls(
+                onZoomIn = onZoomIn,
+                onZoomOut = onZoomOut,
+                enabledZoomIn = enabledZoomIn,
+                enabledZoomOut = enabledZoomOut
+            )
+        }
     }
 }
 
