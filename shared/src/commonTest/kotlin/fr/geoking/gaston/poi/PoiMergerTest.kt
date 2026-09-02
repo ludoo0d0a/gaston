@@ -523,4 +523,95 @@ class PoiMergerTest {
         assertEquals("Total", merged[0].name)
         assertEquals(listOf("Gazole"), merged[0].fuelPrices?.map { it.fuelName })
     }
+
+    @Test
+    fun mergePois_doesNotBrandMergeDistinctChargyHubsWithin300m() {
+        // Real P+R Bouillon cluster: hub + two nearby Chargy sites (same brand, different names).
+        val hub = Poi(
+            id = "chargy-49.599813-6.108361",
+            name = "VdL - Luxembourg - P+R Bouillon",
+            address = "Rue de Bouillon 61",
+            latitude = 49.599813,
+            longitude = 6.108361,
+            brand = "Chargy",
+            isElectric = true,
+            poiCategory = PoiCategory.Irve,
+            chargePointCount = 68,
+            irveDetails = IrveDetails(availableConnectors = 58, totalConnectors = 68),
+        )
+        val aerien = Poi(
+            id = "chargy-49.599956-6.106203",
+            name = "Chargy Ok - Parking aérien BOUILLON",
+            address = "Rue de Bouillon 61",
+            latitude = 49.599956,
+            longitude = 6.106203,
+            brand = "Chargy",
+            isElectric = true,
+            poiCategory = PoiCategory.Irve,
+            chargePointCount = 2,
+            irveDetails = IrveDetails(availableConnectors = 2, totalConnectors = 2),
+        )
+        val conservatoire = Poi(
+            id = "chargy-49.602135-6.106474",
+            name = "Chargy Ok - Parking souterrain CONSERVATOIRE",
+            address = "Nearby",
+            latitude = 49.602135,
+            longitude = 6.106474,
+            brand = "Chargy",
+            isElectric = true,
+            poiCategory = PoiCategory.Irve,
+            chargePointCount = 3,
+            irveDetails = IrveDetails(availableConnectors = 3, totalConnectors = 3),
+        )
+
+        val merged = PoiMerger.mergePois(listOf(hub, aerien, conservatoire))
+        assertEquals(3, merged.size, "Distinct Chargy EV sites within 300m must stay separate")
+        val hubMerged = merged.single { it.id == hub.id }
+        assertEquals(58, hubMerged.irveDetails?.availableConnectors)
+        assertEquals(68, hubMerged.irveDetails?.totalConnectors)
+    }
+
+    @Test
+    fun mergePois_gasSameBrandWithin300mStillMerges() {
+        val lat = 48.8566
+        val lon = 2.3522
+        val p1 = Poi("1", "Total Station", "Address 1", lat, lon, brand = "Total")
+        val p2 = Poi("2", "Another Station", "Address 2", lat + 0.0025, lon, brand = "Total")
+        val merged = PoiMerger.mergePois(listOf(p1, p2))
+        assertEquals(1, merged.size, "Gas same-brand within 300m should still merge")
+    }
+
+    @Test
+    fun mergePois_preferLargerIrveTotalsWhenMergingWithin50m() {
+        val lat = 49.599813
+        val lon = 6.108361
+        val hub = Poi(
+            id = "hub",
+            name = "VdL - P+R Bouillon",
+            address = "A",
+            latitude = lat,
+            longitude = lon,
+            brand = "Chargy",
+            isElectric = true,
+            poiCategory = PoiCategory.Irve,
+            irveDetails = IrveDetails(availableConnectors = 58, totalConnectors = 68),
+        )
+        // ~33m away — unconditional merge despite different name / smaller totals
+        val small = Poi(
+            id = "small",
+            name = "Nearby dual CP",
+            address = "B",
+            latitude = lat + 0.0003,
+            longitude = lon,
+            brand = "Chargy",
+            isElectric = true,
+            poiCategory = PoiCategory.Irve,
+            irveDetails = IrveDetails(availableConnectors = 2, totalConnectors = 2),
+        )
+
+        val merged = PoiMerger.mergePois(listOf(hub, small))
+        assertEquals(1, merged.size)
+        assertEquals(58, merged[0].irveDetails?.availableConnectors)
+        assertEquals(68, merged[0].irveDetails?.totalConnectors)
+    }
 }

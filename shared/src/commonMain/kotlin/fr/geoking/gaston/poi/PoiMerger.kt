@@ -111,8 +111,12 @@ object PoiMerger {
             return false
         }
 
-        // 2. Merge if fairly close (within 300m) AND same brand
-        if (distMeters <= MERGE_DISTANCE_WITH_BRAND_METERS) {
+        // 2. Merge if fairly close (within 300m) AND same brand.
+        // Skip for EV charging: national networks (e.g. Chargy) often place distinct hubs
+        // within 300m; brand-merge would overwrite connector availability with a neighbor.
+        if (distMeters <= MERGE_DISTANCE_WITH_BRAND_METERS &&
+            !(a.isChargingStation && b.isChargingStation)
+        ) {
             val brandA = BrandRegistry.findBrand(a.name, a.brand)
             val brandB = BrandRegistry.findBrand(b.name, b.brand)
             if (brandA != null && brandA == brandB) return true
@@ -425,11 +429,25 @@ object PoiMerger {
     private fun mergeIrveDetails(a: IrveDetails?, b: IrveDetails?): IrveDetails? {
         if (a == null) return b
         if (b == null) return a
+        val totalA = a.totalConnectors
+        val totalB = b.totalConnectors
+        // Prefer the side with more connectors so a small co-located source cannot wipe a hub.
+        // Tie or missing totals: prefer incoming (b), then fall back to a.
+        val preferB = when {
+            totalA != null && totalB != null -> totalB >= totalA
+            totalB != null -> true
+            else -> false
+        }
+        val availableConnectors =
+            if (preferB) b.availableConnectors ?: a.availableConnectors
+            else a.availableConnectors ?: b.availableConnectors
+        val totalConnectors =
+            if (preferB) b.totalConnectors ?: a.totalConnectors
+            else a.totalConnectors ?: b.totalConnectors
         return a.copy(
             connectorTypes = a.connectorTypes + b.connectorTypes,
-            // Prefer latest non-null values when merging "live" availability details.
-            availableConnectors = b.availableConnectors ?: a.availableConnectors,
-            totalConnectors = b.totalConnectors ?: a.totalConnectors,
+            availableConnectors = availableConnectors,
+            totalConnectors = totalConnectors,
             tarification = b.tarification ?: a.tarification,
             gratuit = b.gratuit ?: a.gratuit,
             openingHours = b.openingHours ?: a.openingHours,
