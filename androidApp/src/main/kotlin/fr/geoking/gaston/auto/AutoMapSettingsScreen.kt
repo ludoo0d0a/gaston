@@ -4,7 +4,6 @@ import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
-import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.MapTheme
 import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
@@ -19,7 +18,7 @@ class AutoMapSettingsScreen(
 
     private val networkService: NetworkService by inject()
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoMapSettingsScreen", "ListTemplate") {
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
 
@@ -92,16 +91,6 @@ class AutoMapSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle(carContext.getString(R.string.settings_map_mode))
-                .addText(settings.carMapMode.displayLabel(carContext))
-                .setOnClickListener {
-                    screenManager.push(AutoMapModePickerScreen(carContext, settingsManager))
-                }
-                .build()
-        )
-
-        listBuilder.addItem(
-            Row.Builder()
                 .setTitle(carContext.getString(R.string.settings_show_traffic))
                 .addText(carContext.getString(R.string.filter_google_traffic))
                 .setToggle(
@@ -167,7 +156,7 @@ class AutoMapSettingsScreen(
             )
         }
 
-        return ListTemplate.Builder()
+        ListTemplate.Builder()
             .setSingleList(listBuilder.build())
             .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_map_settings)).setStartHeaderAction(Action.BACK).build())
             .build()

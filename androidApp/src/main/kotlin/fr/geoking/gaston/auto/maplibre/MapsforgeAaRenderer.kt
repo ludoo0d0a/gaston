@@ -285,7 +285,6 @@ class MapsforgeAaRenderer(
                 surfaceHeight = surfaceHeight,
             )
         }
-        val density = carContext.resources.displayMetrics.density
         if (offlineUnavailable) {
             AutoMapOverlayHelper.drawOfflineUnavailableBanner(
                 canvas = canvas,
@@ -295,15 +294,6 @@ class MapsforgeAaRenderer(
                 surfaceHeight = surfaceHeight,
             )
         }
-        AutoMapOverlayHelper.drawMapInfoStrip(
-            canvas = canvas,
-            visibleArea = visibleArea,
-            surfaceWidth = surfaceWidth,
-            surfaceHeight = surfaceHeight,
-            density = density,
-            modeLabel = hudModeLabel,
-            zoom = zoom.toFloat(),
-        )
         AutoMapOverlayHelper.drawCompassAndScale(
             canvas = canvas,
             context = carContext,
@@ -313,8 +303,8 @@ class MapsforgeAaRenderer(
             bearing = bearing,
             zoom = zoom.toFloat(),
             latitude = centerLat,
-            mapTileDebugEnabled = false,
             isDensityScaled = true,
+            modeLabel = hudModeLabel,
         )
     }
 

@@ -73,6 +73,8 @@ class CarMapsforgeRenderer(
     initialLon: Double = 2.3522,
     private var tileUrlTemplate: String = "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
 ) {
+    var hudModeLabel: String = "Mapsforge"
+
     @Volatile
     private var running = true
     @Volatile
@@ -498,8 +500,8 @@ class CarMapsforgeRenderer(
                     bearing = bearing,
                     zoom = zoom.toFloat(),
                     latitude = lat,
-                    mapTileDebugEnabled = mapTileDebugEnabled,
-                    isDensityScaled = false
+                    isDensityScaled = false,
+                    modeLabel = hudModeLabel,
                 )
 
                 if (queryPending) {

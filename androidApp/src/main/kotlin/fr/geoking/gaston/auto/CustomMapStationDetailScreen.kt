@@ -18,6 +18,7 @@ import androidx.car.app.navigation.model.MapWithContentTemplate
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.maplibre.resolveAutoRasterTileUrl
@@ -136,6 +137,7 @@ class CustomMapStationDetailScreen(
             initialLat = poi.latitude,
             initialLon = poi.longitude,
         ).apply {
+            hudModeLabel = carContext.getString(R.string.map_mode_custom)
             updateLocation(poi.latitude, poi.longitude, zoom)
             setMapOrientation(orientationMode, bearing)
             setTileUrlTemplate(resolveAutoRasterTileUrl(settingsManager.settings.value))

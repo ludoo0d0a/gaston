@@ -558,15 +558,6 @@ class CarMapLibreRenderer(
                 surfaceHeight = surfaceHeight,
             )
         }
-        AutoMapOverlayHelper.drawMapInfoStrip(
-            canvas = canvas,
-            visibleArea = visibleArea,
-            surfaceWidth = surfaceWidth,
-            surfaceHeight = surfaceHeight,
-            density = density,
-            modeLabel = hudModeLabel,
-            zoom = zoom.toFloat(),
-        )
         if (mapTileDebugEnabled) {
             AutoMapOverlayHelper.drawMapLibreStatusStrip(
             canvas = canvas,
@@ -586,8 +577,8 @@ class CarMapLibreRenderer(
             bearing = bearing,
             zoom = zoom.toFloat(),
             latitude = centerLat,
-            mapTileDebugEnabled = mapTileDebugEnabled,
-            isDensityScaled = true
+            isDensityScaled = true,
+            modeLabel = hudModeLabel,
         )
         if (mapTileDebugEnabled) {
             AutoMapOverlayHelper.drawDebugHud(

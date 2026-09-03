@@ -67,45 +67,6 @@ object AutoMapOverlayHelper {
         canvas.drawText(chip.subtitle, left + pad, top + pad + lineHeight * 1.85f, subtitlePaint)
     }
 
-    /** Always-on mode + zoom chip (top-left of visible map area). */
-    fun drawMapInfoStrip(
-        canvas: Canvas,
-        visibleArea: Rect?,
-        surfaceWidth: Int,
-        surfaceHeight: Int,
-        density: Float,
-        modeLabel: String,
-        zoom: Float,
-    ) {
-        val area = visibleArea ?: Rect(0, 0, surfaceWidth, surfaceHeight)
-        val text = "$modeLabel · Z ${"%.1f".format(zoom)}"
-        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            textSize = 12f * density
-            typeface = android.graphics.Typeface.MONOSPACE
-            isFakeBoldText = true
-        }
-        val bgPaint = Paint().apply {
-            color = Color.argb(200, 0, 0, 0)
-            style = Paint.Style.FILL
-        }
-        val pad = 6f * density
-        val bounds = Rect()
-        textPaint.getTextBounds(text, 0, text.length, bounds)
-        val left = area.left + 8f * density
-        val top = area.top + 8f * density
-        canvas.drawRoundRect(
-            left,
-            top,
-            left + bounds.width() + pad * 2,
-            top + bounds.height() + pad * 2,
-            4f * density,
-            4f * density,
-            bgPaint,
-        )
-        canvas.drawText(text, left + pad, top + pad + bounds.height(), textPaint)
-    }
-
     /** Centered banner when an offline map file is required but missing. */
     fun drawOfflineUnavailableBanner(
         canvas: Canvas,
@@ -169,8 +130,8 @@ object AutoMapOverlayHelper {
         bearing: Float,
         zoom: Float,
         latitude: Double,
-        mapTileDebugEnabled: Boolean,
-        isDensityScaled: Boolean
+        isDensityScaled: Boolean,
+        modeLabel: String,
     ) {
         val density = context.resources.displayMetrics.density
         val area = visibleArea ?: Rect(0, 0, surfaceWidth, surfaceHeight)
@@ -181,10 +142,8 @@ object AutoMapOverlayHelper {
         // 2. Draw Scale (Bottom-Left of visible area)
         drawScale(canvas, area, zoom, latitude, density, isDensityScaled)
 
-        // 3. Draw Zoom debug layer if enabled (Top-Left of visible area, plus global, plus gros)
-        if (mapTileDebugEnabled) {
-            drawZoomDebug(canvas, area, zoom, density)
-        }
+        // 3. Always-on mode + zoom chip (top-left of visible map area)
+        drawZoomDebug(canvas, area, zoom, density, modeLabel)
     }
 
     /** Extra diagnostic lines under the zoom debug chip (MapLibre AA / tile debug). */
@@ -422,12 +381,13 @@ object AutoMapOverlayHelper {
         canvas.drawLine(x + scaleWidthPx, y - 4 * density, x + scaleWidthPx, y + 4 * density, linePaint)
     }
 
-    private fun drawZoomDebug(canvas: Canvas, area: Rect, zoom: Float, density: Float) {
+    private fun drawZoomDebug(canvas: Canvas, area: Rect, zoom: Float, density: Float, modeLabel: String) {
         val margin = 16f * density
         val x = area.left + margin
         val y = area.top + margin
 
-        val text = String.format("Zoom: %.2f", zoom)
+        val zoomText = String.format("Zoom: %.2f", zoom)
+        val text = if (modeLabel.isBlank()) zoomText else "$modeLabel · $zoomText"
 
         // Set up paint for drawing text
         val textPaint = Paint().apply {

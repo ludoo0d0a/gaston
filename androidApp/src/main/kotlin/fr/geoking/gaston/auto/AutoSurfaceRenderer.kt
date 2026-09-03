@@ -54,6 +54,8 @@ class AutoSurfaceRenderer(
     /** XYZ raster tile URL template with {z}, {x}, {y} placeholders. */
     private var tileUrlTemplate: String = "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
 ) {
+    var hudModeLabel: String = "Custom"
+
     @Volatile
     private var running = true
     @Volatile
@@ -436,8 +438,8 @@ class AutoSurfaceRenderer(
                     bearing = bearing,
                     zoom = zoom.toFloat(),
                     latitude = lat,
-                    mapTileDebugEnabled = mapTileDebugEnabled,
-                    isDensityScaled = false
+                    isDensityScaled = false,
+                    modeLabel = hudModeLabel,
                 )
 
                 if (queryPending) {

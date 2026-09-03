@@ -795,6 +795,7 @@ class CustomMapPoiScreen(
             surfaceContainer.width,
             surfaceContainer.height
         ).apply {
+            hudModeLabel = carContext.getString(R.string.map_mode_custom)
             updateLocation(searchLat, searchLon, zoom)
             currentVisibleArea?.let { updateVisibleArea(it) }
             setHistory(historyPoints)

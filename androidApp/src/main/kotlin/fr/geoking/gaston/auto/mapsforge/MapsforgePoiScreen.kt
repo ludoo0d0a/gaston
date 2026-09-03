@@ -679,6 +679,7 @@ class MapsforgePoiScreen(
             initialLat = searchLat,
             initialLon = searchLon,
         ).apply {
+            hudModeLabel = carContext.getString(R.string.map_mode_mapsforge)
             updateLocation(searchLat, searchLon, zoom)
             currentVisibleArea?.let { updateVisibleArea(it) }
             setHistory(historyPoints)
