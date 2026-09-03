@@ -419,4 +419,33 @@ object AutoMapOverlayHelper {
 
         canvas.drawText(text, x, y + bounds.height(), textPaint)
     }
+
+    private val headingArrowFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#4285F4")
+        style = Paint.Style.FILL
+    }
+    private val headingArrowStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 4f
+        strokeJoin = Paint.Join.ROUND
+    }
+    private val headingArrowPath = Path().apply {
+        val radius = 24f
+        moveTo(0f, -radius)
+        lineTo(-radius * 0.8f, radius * 0.8f)
+        lineTo(0f, radius * 0.4f)
+        lineTo(radius * 0.8f, radius * 0.8f)
+        close()
+    }
+
+    /** Vehicle chevron at [drawX]/[drawY], rotated by heading degrees (0 = north / up in map space). */
+    fun drawHeadingArrow(canvas: Canvas, drawX: Float, drawY: Float, headingDegrees: Float) {
+        canvas.save()
+        canvas.translate(drawX, drawY)
+        canvas.rotate(headingDegrees)
+        canvas.drawPath(headingArrowPath, headingArrowFill)
+        canvas.drawPath(headingArrowPath, headingArrowStroke)
+        canvas.restore()
+    }
 }

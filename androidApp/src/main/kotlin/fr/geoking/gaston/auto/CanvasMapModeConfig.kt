@@ -21,6 +21,7 @@ import fr.geoking.gaston.poi.Poi
  */
 data class CanvasMapModeConfig(
     val logTag: String,
+    val carMapMode: CarMapMode,
     val hudLabel: String,
     val requiresOfflineFile: Boolean = false,
     val styleUrlResolver: (fr.geoking.gaston.AppSettings, CarContext) -> String?,
@@ -44,6 +45,7 @@ data class CanvasMapModeConfig(
     companion object {
         fun mapLibre(carContext: CarContext): CanvasMapModeConfig = CanvasMapModeConfig(
             logTag = "MapLibrePoiScreen",
+            carMapMode = CarMapMode.MapLibre,
             hudLabel = carContext.getString(R.string.map_mode_maplibre),
             styleUrlResolver = { settings, ctx -> resolveAutoMapStyleUrl(settings, ctx) },
             createRenderer = { ctx, lifecycle, config ->
@@ -72,12 +74,14 @@ data class CanvasMapModeConfig(
 
         fun mapTiler(carContext: CarContext): CanvasMapModeConfig = mapLibre(carContext).copy(
             logTag = "MapTilerPoiScreen",
+            carMapMode = CarMapMode.MapTiler,
             hudLabel = carContext.getString(R.string.map_mode_maptiler),
             styleUrlResolver = { settings, _ -> resolveMapTilerStyleUrl(settings) },
         )
 
         fun protomaps(carContext: CarContext): CanvasMapModeConfig = mapLibre(carContext).copy(
             logTag = "ProtomapsPoiScreen",
+            carMapMode = CarMapMode.Protomaps,
             hudLabel = carContext.getString(R.string.map_mode_protomaps),
             requiresOfflineFile = true,
             styleUrlResolver = { settings, ctx ->
@@ -91,6 +95,7 @@ data class CanvasMapModeConfig(
 
         fun mapsforge(carContext: CarContext): CanvasMapModeConfig = CanvasMapModeConfig(
             logTag = "MapsforgePoiScreen",
+            carMapMode = CarMapMode.Mapsforge,
             hudLabel = carContext.getString(R.string.map_mode_mapsforge),
             requiresOfflineFile = true,
             styleUrlResolver = { _, _ -> null },

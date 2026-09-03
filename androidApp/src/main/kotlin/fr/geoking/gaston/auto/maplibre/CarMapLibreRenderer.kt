@@ -62,6 +62,9 @@ class CarMapLibreRenderer(
     private var zoom: Int = AutoMapCamera.DEFAULT_ZOOM
     private var orientationMode: MapOrientationMode = MapOrientationMode.NorthUp
     private var headingDegrees: Float = 0f
+    private var userLat: Double? = null
+    private var userLon: Double? = null
+    private var userHeadingDegrees: Float = 0f
     private var selectedPoiId: String? = null
     private var lastPois: List<Poi> = emptyList()
     private var effectiveEnergyTypes: Set<String> = emptySet()
@@ -166,9 +169,12 @@ class CarMapLibreRenderer(
         scheduleVectorSnapshot()
     }
 
-    override fun updateUserLocation(lat: Double, lon: Double, bearing: Float) {
-        headingDegrees = bearing
-        scheduleVectorSnapshot()
+    override fun updateUserLocation(lat: Double, lon: Double, headingDegrees: Float) {
+        userLat = lat
+        userLon = lon
+        userHeadingDegrees = AutoMapHeading.normalizeDegrees(headingDegrees)
+        this.headingDegrees = headingDegrees
+        drawOnSurface()
     }
 
     override fun setMapOrientation(mode: MapOrientationMode, bearing: Float) {
@@ -183,7 +189,7 @@ class CarMapLibreRenderer(
         scheduleVectorSnapshot()
     }
 
-    fun bumpZoom(delta: Int) {
+    override fun bumpZoom(delta: Int) {
         zoom = (zoom + delta).coerceIn(AutoMapCamera.MIN_ZOOM, AutoMapCamera.MAX_ZOOM)
         scheduleVectorSnapshot()
     }
@@ -532,6 +538,7 @@ class CarMapLibreRenderer(
 
         drawSearchRadius(canvas)
         drawPois(canvas)
+        drawUserLocation(canvas)
 
         if (bearing != 0f) {
             canvas.restore()
@@ -700,6 +707,18 @@ class CarMapLibreRenderer(
                 canvas.drawBitmap(bitmap, drawX - bitmap.width / 2f, drawY - bitmap.height, null)
             }
         }
+    }
+
+    private fun drawUserLocation(canvas: Canvas) {
+        val uLat = userLat ?: return
+        val uLon = userLon ?: return
+        val mapCenterX = lonToTileX(centerLon, zoom)
+        val mapCenterY = latToTileY(centerLat, zoom)
+        val tileX = lonToTileX(uLon, zoom)
+        val tileY = latToTileY(uLat, zoom)
+        val drawX = ((tileX - mapCenterX) * AutoSurfaceRenderer.TILE_SIZE + centerPxXForHitTest()).toFloat()
+        val drawY = ((tileY - mapCenterY) * AutoSurfaceRenderer.TILE_SIZE + centerPxYForHitTest()).toFloat()
+        AutoMapOverlayHelper.drawHeadingArrow(canvas, drawX, drawY, userHeadingDegrees)
     }
 
     private fun lonToTileX(lon: Double, zoom: Int): Double =

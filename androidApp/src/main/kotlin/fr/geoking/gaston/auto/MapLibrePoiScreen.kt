@@ -11,7 +11,6 @@ import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.MessageTemplate
-import androidx.car.app.navigation.model.MapController
 import androidx.car.app.navigation.model.MapWithContentTemplate
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
@@ -89,7 +88,7 @@ open class MapLibrePoiScreen(
     private val title: String = carContext.getString(R.string.dashboard_nearby_stations),
     private val itineraryPoints: List<Pair<Double, Double>> = emptyList(),
     private val canvasMapModeConfig: CanvasMapModeConfig = CanvasMapModeConfig.mapLibre(carContext),
-) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
+) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver, AaCanvasMapControls {
 
     private var pois: List<Poi> = emptyList()
     private var errors: List<PoiProviderError> = emptyList()
@@ -691,22 +690,8 @@ open class MapLibrePoiScreen(
         )
     }
 
-    private fun mapContentHeaderBuilder(title: String, @Suppress("UNUSED_PARAMETER") currentSettings: AppSettings): Header.Builder {
-        return Header.Builder()
-            .setTitle(title)
-            .setStartHeaderAction(Action.BACK)
-            .addEndHeaderAction(
-                Action.Builder()
-                    .setIcon(carContext.actionCompassIcon())
-                    .setOnClickListener { toggleMapOrientation() }
-                    .build()
-            )
-            .addEndHeaderAction(
-                Action.Builder()
-                    .setIcon(carContext.actionRecenterIcon())
-                    .setOnClickListener { recenterMap() }
-                    .build()
-            )
+    private fun mapContentHeaderBuilder(title: String): Header.Builder {
+        return AaMapChromeTemplate.contentHeader(carContext, title, this)
     }
 
     private fun applyMapOrientationToRenderer() {
@@ -719,7 +704,7 @@ open class MapLibrePoiScreen(
             renderer.hudModeLabel = canvasMapModeConfig.hudLabel
         }
 
-    private fun toggleMapOrientation() {
+    override fun toggleMapOrientation() {
         orientationMode = when (orientationMode) {
             MapOrientationMode.NorthUp -> MapOrientationMode.HeadingUp
             MapOrientationMode.HeadingUp -> MapOrientationMode.NorthUp
@@ -733,7 +718,7 @@ open class MapLibrePoiScreen(
         invalidate()
     }
 
-    private fun recenterMap() {
+    override fun recenterMap() {
         lifecycleScope.launch {
             val location = LocationHelper.getCurrentLocation(carContext)
             if (location != null) {
@@ -888,6 +873,7 @@ open class MapLibrePoiScreen(
     }
 
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+        if (AutoCarMapModeSwitcher.replaceIfStale(this, canvasMapModeConfig.carMapMode, settingsManager, title)) return
         registerSurfaceCallback()
         // Returning from station detail: show all filtered pins and resume follow.
         loadPoisJob?.cancel()
@@ -906,7 +892,7 @@ open class MapLibrePoiScreen(
         stopHeadingUpdates()
     }
 
-    private fun bumpZoom(delta: Int) {
+    override fun bumpZoom(delta: Int) {
         val prevZoom = zoom
         zoom = (zoom + delta).coerceIn(AutoMapCamera.MIN_ZOOM, AutoMapCamera.MAX_ZOOM)
         lastAppliedZoom = zoom
@@ -943,6 +929,16 @@ open class MapLibrePoiScreen(
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
                     .build()
             )
+            .addAction(
+                carContext.cycleMapModeAction(currentSettings.carMapMode) {
+                    AutoCarMapModeSwitcher.cycle(
+                        screen = this@MapLibrePoiScreen,
+                        settingsManager = settingsManager,
+                        title = title,
+                        replaceMapNow = true,
+                    )
+                }
+            )
 
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
@@ -965,31 +961,14 @@ open class MapLibrePoiScreen(
         }
         val actionStrip = actionStripBuilder.build()
 
-        val mapActionStrip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionZoomInIcon())
-                    .setOnClickListener { bumpZoom(1) }
-                    .build()
-            )
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionZoomOutIcon())
-                    .setOnClickListener { bumpZoom(-1) }
-                    .build()
-            )
-            .build()
-
-        val mapController = MapController.Builder()
-            .setMapActionStrip(mapActionStrip)
-            .build()
+        val mapController = AaMapChromeTemplate.zoomMapController(carContext, this)
 
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
         val contentTemplate = if (isLoading) {
             ListTemplate.Builder()
                 .setLoading(true)
-                .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
+                .setHeader(mapContentHeaderBuilder(title).build())
                 .build()
         } else {
             val filteredPoisForSorting = getFilteredPois(currentSettings)
@@ -1032,7 +1011,7 @@ open class MapLibrePoiScreen(
             }
 
             ListTemplate.Builder()
-                .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
+                .setHeader(mapContentHeaderBuilder(title).build())
                 .setSingleList(itemListBuilder.build())
                 .build()
         }

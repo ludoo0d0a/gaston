@@ -6,10 +6,11 @@ import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.poi.Poi
 
 /**
- * Common surface-map renderer API for Android Auto canvas modes (MapLibre, MapTiler, Protomaps, Mapsforge).
- * [fr.geoking.gaston.auto.CustomMapPoiScreen] uses [AutoSurfaceRenderer] directly and is unchanged.
+ * Common surface-map renderer API for Android Auto canvas modes.
+ * Canvas screens share [AaCanvasMapControls] (zoom, compass, recenter) and [AaMapDrivingChrome]
+ * (orientation + heading arrow). Custom uses [AutoSurfaceRenderer] which also implements [AaMapDrivingChrome].
  */
-interface AaMapSurfaceRenderer {
+interface AaMapSurfaceRenderer : AaMapDrivingChrome {
     var hudModeLabel: String
     var offlineUnavailable: Boolean
 
@@ -17,8 +18,6 @@ interface AaMapSurfaceRenderer {
     fun detachSurface()
     fun setStyleUrl(url: String)
     fun updateLocation(lat: Double, lon: Double, zoomLevel: Int)
-    fun updateUserLocation(lat: Double, lon: Double, bearing: Float)
-    fun setMapOrientation(mode: MapOrientationMode, bearing: Float = 0f)
     fun updateVisibleArea(area: Rect)
     fun updatePois(
         newPois: List<Poi>,

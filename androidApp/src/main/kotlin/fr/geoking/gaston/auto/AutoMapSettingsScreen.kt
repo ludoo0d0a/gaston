@@ -3,6 +3,7 @@ package fr.geoking.gaston.auto
 import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
+import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.*
 import fr.geoking.gaston.MapTheme
 import fr.geoking.gaston.PoiProviderSelectionMode
@@ -20,7 +21,7 @@ class AutoMapSettingsScreen(
 
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoMapSettingsScreen", "ListTemplate") {
         val settings = settingsManager.settings.value
-        val listBuilder = ItemList.Builder()
+        val rows = mutableListOf<Row>()
 
         val dataSourceText = when (settings.poiProviderSelectionMode) {
             PoiProviderSelectionMode.Auto -> {
@@ -38,7 +39,7 @@ class AutoMapSettingsScreen(
                 else settings.selectedPoiProviders.joinToString(", ") { it.name }
         }
 
-        listBuilder.addItem(
+        rows.add(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.screen_data_source))
                 .addText(dataSourceText)
@@ -54,7 +55,23 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
-        listBuilder.addItem(
+        rows.add(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.settings_map_mode))
+                .addText(settings.carMapMode.displayLabel(carContext))
+                .setOnClickListener {
+                    AutoCarMapModeSwitcher.cycle(
+                        screen = this@AutoMapSettingsScreen,
+                        settingsManager = settingsManager,
+                        title = carContext.getString(R.string.dashboard_nearby_stations),
+                        replaceMapNow = false,
+                    )
+                    invalidate()
+                }
+                .build()
+        )
+
+        rows.add(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.mapsforge_offline_maps))
                 .addText(carContext.getString(R.string.mapsforge_offline_maps_subtitle))
@@ -76,7 +93,7 @@ class AutoMapSettingsScreen(
             MapTheme.Bright -> carContext.getString(R.string.map_theme_bright)
             MapTheme.Liberty -> carContext.getString(R.string.map_theme_liberty)
         }
-        listBuilder.addItem(
+        rows.add(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.settings_map_theme))
                 .addText(themeLabel)
@@ -89,7 +106,7 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
-        listBuilder.addItem(
+        rows.add(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.settings_show_traffic))
                 .addText(carContext.getString(R.string.filter_google_traffic))
@@ -102,7 +119,7 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
-        listBuilder.addItem(
+        rows.add(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.screen_vehicle_and_range))
                 .addText("${settings.vehicleType.name}, ${settings.evRangeKm} km")
@@ -113,7 +130,7 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
-        listBuilder.addItem(
+        rows.add(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.dev_debug_grid))
                 .addText(carContext.getString(R.string.dev_debug_grid_subtitle))
@@ -127,7 +144,7 @@ class AutoMapSettingsScreen(
         )
 
         if (settings.mapTileDebugEnabled) {
-            listBuilder.addItem(
+            rows.add(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.tile_diagnostics))
                     .addText(carContext.getString(R.string.tile_diagnostics_subtitle))
@@ -137,7 +154,7 @@ class AutoMapSettingsScreen(
                     .build()
             )
 
-            listBuilder.addItem(
+            rows.add(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.tile_clear_cache))
                     .addText(carContext.getString(R.string.tile_clear_cache_subtitle))
@@ -155,6 +172,15 @@ class AutoMapSettingsScreen(
                     .build()
             )
         }
+
+        val listLimit = try {
+            carContext.getCarService(ConstraintManager::class.java)
+                .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+        } catch (_: Exception) {
+            6
+        }
+        val listBuilder = ItemList.Builder()
+        rows.take(listLimit).forEach { listBuilder.addItem(it) }
 
         ListTemplate.Builder()
             .setSingleList(listBuilder.build())

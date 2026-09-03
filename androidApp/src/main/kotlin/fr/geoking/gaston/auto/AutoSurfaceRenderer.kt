@@ -53,7 +53,7 @@ class AutoSurfaceRenderer(
     initialLon: Double = 2.3522,
     /** XYZ raster tile URL template with {z}, {x}, {y} placeholders. */
     private var tileUrlTemplate: String = "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
-) {
+) : AaMapDrivingChrome {
     var hudModeLabel: String = "Custom"
 
     @Volatile
@@ -138,24 +138,6 @@ class AutoSurfaceRenderer(
         style = Paint.Style.STROKE
         strokeWidth = 3f
     }
-    private val userLocationPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = NAVIGATION_BLUE
-        style = Paint.Style.FILL
-    }
-    private val userLocationStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        style = Paint.Style.STROKE
-        strokeWidth = 4f
-        strokeJoin = Paint.Join.ROUND
-    }
-    private val arrowPath = Path().apply {
-        val radius = 24f
-        moveTo(0f, -radius)
-        lineTo(-radius * 0.8f, radius * 0.8f)
-        lineTo(0f, radius * 0.4f)
-        lineTo(radius * 0.8f, radius * 0.8f)
-        close()
-    }
     private val reusablePath = Path()
     private val drawThread = Thread(::runDrawLoop, "AutoSurfaceRenderer")
 
@@ -168,7 +150,6 @@ class AutoSurfaceRenderer(
 
     companion object {
         private const val TAG = "AutoSurfaceRenderer"
-        private val NAVIGATION_BLUE = Color.parseColor("#4285F4")
         private const val MIN_DRAW_INTERVAL_MS = 33L
         const val TILE_SIZE = 512
         const val POI_MARKER_WIDTH_PX = 96
@@ -257,7 +238,11 @@ class AutoSurfaceRenderer(
         invalidate() // Throttled to prevent too frequent redraws when position is moving
     }
 
-    fun setMapOrientation(mode: MapOrientationMode, headingDegrees: Float = this.headingDegrees) {
+    override fun bumpZoom(delta: Int) {
+        updateLocation(lat, lon, (zoom + delta).coerceIn(AutoMapCamera.MIN_ZOOM, AutoMapCamera.MAX_ZOOM))
+    }
+
+    override fun setMapOrientation(mode: MapOrientationMode, headingDegrees: Float) {
         val normalizedHeading = AutoMapHeading.normalizeDegrees(headingDegrees)
         if (orientationMode == mode && this.headingDegrees == normalizedHeading) return
         orientationMode = mode
@@ -287,7 +272,7 @@ class AutoSurfaceRenderer(
         invalidate()
     }
 
-    fun updateUserLocation(newLat: Double, newLon: Double, heading: Float = userHeadingDegrees) {
+    override fun updateUserLocation(newLat: Double, newLon: Double, heading: Float) {
         val normalizedHeading = AutoMapHeading.normalizeDegrees(heading)
         if (userLat == newLat && userLon == newLon && userHeadingDegrees == normalizedHeading) return
         userLat = newLat
@@ -1092,16 +1077,7 @@ class AutoSurfaceRenderer(
 
         val drawX = ((tileX - centerX) * TILE_SIZE + centerPxX).toFloat()
         val drawY = ((tileY - centerY) * TILE_SIZE + centerPxY).toFloat()
-
-        val rotation = userHeadingDegrees
-
-        canvas.save()
-        canvas.translate(drawX, drawY)
-        canvas.rotate(rotation)
-
-        canvas.drawPath(arrowPath, userLocationPaint)
-        canvas.drawPath(arrowPath, userLocationStrokePaint)
-        canvas.restore()
+        AutoMapOverlayHelper.drawHeadingArrow(canvas, drawX, drawY, userHeadingDegrees)
     }
 
     private fun getTile(x: Int, y: Int, z: Int): Bitmap? {

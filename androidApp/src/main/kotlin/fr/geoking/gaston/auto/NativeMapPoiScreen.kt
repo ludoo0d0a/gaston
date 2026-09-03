@@ -19,6 +19,7 @@ import androidx.car.app.model.PlaceListMapTemplate
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
+import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.StationMapFilters
@@ -47,8 +48,8 @@ import kotlinx.coroutines.launch
 /**
  * POI map using the host-rendered [PlaceListMapTemplate] (Google Maps on Android Auto).
  *
- * Map camera orientation (north-up vs heading-up), zoom, and bearing are controlled by the
- * host — the app cannot rotate this map. Use [CustomMapPoiScreen] for north-up / heading-up toggle.
+ * Map camera orientation (north-up vs heading-up), zoom, and the driving arrow are
+ * host-controlled on this template. Canvas modes implement [AaCanvasMapControls].
  */
 class NativeMapPoiScreen(
     carContext: CarContext,
@@ -171,6 +172,7 @@ class NativeMapPoiScreen(
     }
 
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+        if (AutoCarMapModeSwitcher.replaceIfStale(this, CarMapMode.Native, settingsManager, title)) return
         loadPoisJob?.cancel()
         isLoading = false
         invalidate()
@@ -216,6 +218,16 @@ class NativeMapPoiScreen(
                     screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
                 }
                 .build()
+        )
+        actionStripBuilder.addAction(
+            carContext.cycleMapModeAction(currentSettings.carMapMode) {
+                AutoCarMapModeSwitcher.cycle(
+                    screen = this@NativeMapPoiScreen,
+                    settingsManager = settingsManager,
+                    title = title,
+                    replaceMapNow = true,
+                )
+            }
         )
 
         val fuelIdsForFilter = effectiveEnergies - "electric"

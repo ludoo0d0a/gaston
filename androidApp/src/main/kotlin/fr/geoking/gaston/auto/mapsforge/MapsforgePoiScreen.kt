@@ -16,13 +16,13 @@ import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
-import androidx.car.app.navigation.model.MapController
 import androidx.car.app.navigation.model.MapWithContentTemplate
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.Priority
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.FuelCard
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
@@ -35,6 +35,9 @@ import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
+import fr.geoking.gaston.auto.AaCanvasMapControls
+import fr.geoking.gaston.auto.AaMapChromeTemplate
+import fr.geoking.gaston.auto.AutoCarMapModeSwitcher
 import fr.geoking.gaston.auto.AutoMapCamera
 import fr.geoking.gaston.auto.AutoMapHeading
 import fr.geoking.gaston.auto.AutoMapPoiHitTest
@@ -42,9 +45,8 @@ import fr.geoking.gaston.auto.AutoMapSettingsScreen
 import fr.geoking.gaston.auto.AutoPoiUiHelper
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.auto.actionSettingsIcon
-import fr.geoking.gaston.auto.actionZoomInIcon
-import fr.geoking.gaston.auto.actionZoomOutIcon
 import fr.geoking.gaston.auto.cheapestFilterAction
+import fr.geoking.gaston.auto.cycleMapModeAction
 import fr.geoking.gaston.auto.maplibre.resolveAutoRasterTileUrl
 import fr.geoking.gaston.auto.safeCarTemplate
 import fr.geoking.gaston.auto.shouldAddTrailPoint
@@ -97,7 +99,7 @@ class MapsforgePoiScreen(
     private val favoritesRepo: FavoritesRepository? = null,
     private val title: String = carContext.getString(R.string.dashboard_nearby_stations),
     private val itineraryPoints: List<Pair<Double, Double>> = emptyList()
-) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
+) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver, AaCanvasMapControls {
 
     private val mapManager = MapsforgeMapManager(carContext)
     private var pois: List<Poi> = emptyList()
@@ -584,15 +586,44 @@ class MapsforgePoiScreen(
         }
     }
 
-    private fun mapContentHeaderBuilder(title: String, currentSettings: AppSettings): Header.Builder {
-        return Header.Builder()
-            .setTitle(title)
-            .setStartHeaderAction(Action.BACK)
+    private fun mapContentHeaderBuilder(title: String): Header.Builder {
+        return AaMapChromeTemplate.contentHeader(carContext, title, this)
     }
 
     private fun applyMapOrientationToRenderer() {
         surfaceRenderer?.setMapOrientation(orientationMode, lastKnownBearingDegrees)
         lastMapOrientationUpdateMillis = System.currentTimeMillis()
+    }
+
+    override fun toggleMapOrientation() {
+        orientationMode = when (orientationMode) {
+            MapOrientationMode.NorthUp -> MapOrientationMode.HeadingUp
+            MapOrientationMode.HeadingUp -> MapOrientationMode.NorthUp
+        }
+        applyMapOrientationToRenderer()
+        if (orientationMode == MapOrientationMode.HeadingUp) {
+            lifecycleScope.launch { refreshHeadingFromLocation() }
+        } else {
+            syncRendererWithMapState()
+        }
+        invalidate()
+    }
+
+    override fun recenterMap() {
+        lifecycleScope.launch {
+            val location = LocationHelper.getCurrentLocation(carContext)
+            if (location != null) {
+                searchLat = location.latitude
+                searchLon = location.longitude
+                settingsManager.saveLastKnownLocation(location.latitude, location.longitude)
+                searchCenterFlow.value = searchLat to searchLon
+                lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+                surfaceRenderer?.updateLocation(searchLat, searchLon, zoom)
+                surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
+                applyMapOrientationToRenderer()
+            }
+            loadPois(preserveZoom = true)
+        }
     }
 
     private fun startHeadingUpdates() {
@@ -743,6 +774,7 @@ class MapsforgePoiScreen(
     }
 
     override fun onStart(owner: LifecycleOwner) {
+        if (AutoCarMapModeSwitcher.replaceIfStale(this, CarMapMode.Mapsforge, settingsManager, title)) return
         registerSurfaceCallback()
         loadPoisJob?.cancel()
         isQueryPending = false
@@ -761,7 +793,7 @@ class MapsforgePoiScreen(
         stopHeadingUpdates()
     }
 
-    private fun bumpZoom(delta: Int) {
+    override fun bumpZoom(delta: Int) {
         val prevZoom = zoom
         zoom = (zoom + delta).coerceIn(AutoMapCamera.MIN_ZOOM, AutoMapCamera.MAX_ZOOM)
         lastAppliedZoom = zoom
@@ -798,6 +830,16 @@ class MapsforgePoiScreen(
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
                     .build()
             )
+            .addAction(
+                carContext.cycleMapModeAction(currentSettings.carMapMode) {
+                    AutoCarMapModeSwitcher.cycle(
+                        screen = this@MapsforgePoiScreen,
+                        settingsManager = settingsManager,
+                        title = title,
+                        replaceMapNow = true,
+                    )
+                }
+            )
 
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
@@ -820,31 +862,14 @@ class MapsforgePoiScreen(
         }
         val actionStrip = actionStripBuilder.build()
 
-        val mapActionStrip = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionZoomInIcon())
-                    .setOnClickListener { bumpZoom(1) }
-                    .build()
-            )
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionZoomOutIcon())
-                    .setOnClickListener { bumpZoom(-1) }
-                    .build()
-            )
-            .build()
-
-        val mapController = MapController.Builder()
-            .setMapActionStrip(mapActionStrip)
-            .build()
+        val mapController = AaMapChromeTemplate.zoomMapController(carContext, this)
 
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
         val contentTemplate = if (isLoading) {
             ListTemplate.Builder()
                 .setLoading(true)
-                .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
+                .setHeader(mapContentHeaderBuilder(title).build())
                 .build()
         } else {
             val filteredPoisForSorting = getFilteredPois(currentSettings)
@@ -900,7 +925,7 @@ class MapsforgePoiScreen(
             }
 
             ListTemplate.Builder()
-                .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
+                .setHeader(mapContentHeaderBuilder(title).build())
                 .setSingleList(itemListBuilder.build())
                 .build()
         }

@@ -8,6 +8,7 @@ import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.R
+import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.feature.emergency.EmergencyCategory
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.Poi
@@ -108,6 +109,14 @@ fun CarContext.actionHomeIcon(): CarIcon = carIcon(R.drawable.ic_home, AutoCarIc
 fun CarContext.actionSettingsIcon(): CarIcon = carIcon(R.drawable.ic_settings, AutoCarIcons.primary)
 
 fun CarContext.actionMapIcon(): CarIcon = carIcon(R.drawable.ic_map, AutoCarIcons.primary)
+
+/** Icon + current-mode title (the single labeled ActionStrip button) to cycle [CarMapMode]. */
+fun CarContext.cycleMapModeAction(current: CarMapMode, onCycle: () -> Unit): Action =
+    Action.Builder()
+        .setIcon(actionMapIcon())
+        .setTitle(current.displayLabel(this))
+        .setOnClickListener(onCycle)
+        .build()
 
 fun CarContext.actionErrorIcon(): CarIcon = carIcon(R.drawable.ic_error_outline, AutoCarIcons.emergency)
 
