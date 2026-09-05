@@ -6,6 +6,8 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.headers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -20,19 +22,54 @@ import kotlinx.serialization.json.jsonPrimitive
  * This is intentionally coarse: it is NOT a per-station pricing engine.
  */
 class EvPricesFrClient(
-    private val http: HttpClient
+    private val http: HttpClient,
+    private val cacheTtlMs: Long = DEFAULT_CACHE_TTL_MS,
+    private val nowMs: () -> Long = { System.currentTimeMillis() },
 ) {
     private val json = Json { ignoreUnknownKeys = true }
+    private val mutex = Mutex()
+    private var cache: CachedBaselines? = null
 
-    suspend fun fetchBaselines(): List<EvPriceBaseline> {
-        val out = mutableListOf<EvPriceBaseline>()
-        out += fetchFastned()
-        out += fetchAllego()
-        out += fetchElectra()
-        out += fetchTotalEnergies()
-        out += fetchIonity()
-        out += fetchTeslaCommunity()
-        return out
+    suspend fun fetchBaselines(): List<EvPriceBaseline> = mutex.withLock {
+        val now = nowMs()
+        val hit = cache
+        if (hit != null && now - hit.fetchedAtMs < cacheTtlMs) return hit.baselines
+
+        val fresh = mutableListOf<EvPriceBaseline>()
+        // Best-effort: keep successful operators even if one page fails.
+        for (fetcher in listOf(
+            suspend { fetchFastned() },
+            suspend { fetchAllego() },
+            suspend { fetchElectra() },
+            suspend { fetchTotalEnergies() },
+            suspend { fetchIonity() },
+            suspend { fetchTeslaCommunity() },
+        )) {
+            try {
+                fresh += fetcher()
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                // leave out this operator; others still usable
+            }
+        }
+        if (fresh.isNotEmpty()) {
+            cache = CachedBaselines(fresh, now)
+            return fresh
+        }
+        return hit?.baselines.orEmpty()
+    }
+
+    fun clearCache() {
+        cache = null
+    }
+
+    private data class CachedBaselines(
+        val baselines: List<EvPriceBaseline>,
+        val fetchedAtMs: Long,
+    )
+
+    companion object {
+        const val DEFAULT_CACHE_TTL_MS: Long = 6L * 60L * 60L * 1000L
     }
 
     private suspend fun getText(url: String): String {

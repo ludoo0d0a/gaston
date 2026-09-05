@@ -77,6 +77,7 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("DKV Mobility (OCPI)", "https://www.dkv-mobility.com", null),
     UsedApi("Belib (Paris EV)", "https://opendata.paris.fr", null),
     UsedApi("QualiCharge IRVE (dispo temps réel)", "https://transport.data.gouv.fr", null),
+    UsedApi("Tarifs IRVE FR (opérateurs publiés)", "https://fastned.nl/fr/recharge/tarifs", null),
     UsedApi("Belgium NAP EV (Road / transportdata.be)", "https://transportdata.be", null),
 
     // POIs & amenities
