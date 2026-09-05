@@ -1,16 +1,16 @@
 appId: fr.geoking.gaston
 tags:
-  - smoke
-  - ci
-  - navigation
+  - favorites
 ---
 - launchApp:
     permissions:
       all: allow
 - runFlow: common/prepare.yaml
 - tapOn:
-    id: "dashboard_open_map_btn"
-- assertVisible: "Gas Stations"
+    id: "dashboard_favorites_btn"
+# Premium: Favorites list. Free: paywall.
+- assertVisible:
+    text: "Favorites|Gaston Premium"
 - back
 - assertVisible:
     id: "dashboard_search_field"

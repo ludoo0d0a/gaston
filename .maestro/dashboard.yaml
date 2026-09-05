@@ -1,6 +1,12 @@
 appId: fr.geoking.gaston
+tags:
+  - smoke
+  - dashboard
 ---
-- launchApp
+- launchApp:
+    permissions:
+      all: allow
+- runFlow: common/prepare.yaml
 - assertVisible: "Gaston"
 - assertVisible:
     id: "dashboard_search_field"

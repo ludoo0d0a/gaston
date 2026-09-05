@@ -1,0 +1,18 @@
+# Shared launch hygiene: dismiss first-run disclaimer if present.
+# Included via `runFlow` from scenario files (tagged util so it is not run alone).
+tags:
+  - util
+---
+- tapOn:
+    id: "disclaimer_accept_btn"
+    optional: true
+- tapOn:
+    text: "I Accept"
+    optional: true
+- tapOn:
+    text: "J'accepte"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "dashboard_search_field"
+    timeout: 15000

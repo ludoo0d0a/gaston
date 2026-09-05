@@ -156,20 +156,39 @@ Quick access to road-trip essentials when something goes wrong, plus highway tol
 
 ### E2E Testing (Maestro)
 
-Gaston uses **Maestro** for end-to-end UI testing. Tests are located in the `.maestro/` directory.
+Gaston uses **[Maestro](https://maestro.mobile.dev/)** for phone UI end-to-end tests. Flows live in [`.maestro/`](.maestro/).
 
-To run tests:
-1. [Install Maestro](https://maestro.mobile.dev/getting-started/installing-maestro)
-2. Start an Android emulator or connect a device
-3. Run the flows:
-   ```bash
-   maestro test .maestro/dashboard.yaml
-   maestro test .maestro/map_navigation.yaml
-   maestro test .maestro/settings_navigation.yaml
-   maestro test .maestro/emergency.yaml
-   maestro test .maestro/fuel_forecast.yaml
-   maestro test .maestro/route_planning.yaml
-   ```
+```bash
+# Install CLI (once)
+curl -Ls "https://get.maestro.mobile.dev" | bash
+
+# Build & install a debug APK, start an emulator (or USB device), then:
+./gradlew :androidApp:assembleFullDebug
+adb install -r androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk
+
+# Run the full suite (or a single flow / tag)
+maestro test .maestro
+maestro test .maestro/dashboard.yaml
+maestro test .maestro --include-tags smoke
+maestro test .maestro --include-tags ci   # same set as GitHub Actions
+```
+
+**CI:** [`.github/workflows/maestro.yml`](.github/workflows/maestro.yml) runs `--include-tags ci` on an API 34 emulator (PRs that touch `androidApp/` / `.maestro/`, weekly schedule, and manual `workflow_dispatch`). Geocoding-heavy `dashboard.yaml` is smoke-only (local), not in the `ci` tag. Artifacts upload `.maestro/output` on every run.
+
+| Flow | Covers |
+|------|--------|
+| `dashboard.yaml` | Search Paris, Fuel ↔ EV mode titles |
+| `search_modes.yaml` | Fuel / EV / My vehicle / Other mode chips |
+| `map_navigation.yaml` | Open map from dashboard |
+| `route_planning.yaml` | Plan route screen |
+| `settings_navigation.yaml` | Open / leave Settings |
+| `settings_subpages.yaml` | Vehicle, Map, About |
+| `network_diagnostics.yaml` | Connectivity & location |
+| `emergency.yaml` | Emergency card + 112 |
+| `fuel_forecast.yaml` | Price estimation (or Premium paywall) |
+| `favorites.yaml` | Favorites (or Premium paywall) |
+
+Compose `testTag`s are exposed as resource IDs (`testTagsAsResourceId`) so flows can use stable `id:` selectors. Shared launch steps live in `.maestro/common/prepare.yaml` (disclaimer dismiss).
 
 ### Configuration
 

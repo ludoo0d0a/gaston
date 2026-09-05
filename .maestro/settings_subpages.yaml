@@ -1,0 +1,27 @@
+appId: fr.geoking.gaston
+tags:
+  - settings
+---
+- launchApp:
+    permissions:
+      all: allow
+- runFlow: common/prepare.yaml
+- tapOn:
+    id: "dashboard_settings_btn"
+- assertVisible: "Settings"
+- tapOn: "Vehicle"
+- assertVisible: "Vehicle"
+- back
+- assertVisible: "Settings"
+- tapOn: "Map"
+- assertVisible: "Map"
+- assertVisible: "Map engine"
+- back
+- assertVisible: "Settings"
+- tapOn: "About"
+- assertVisible: "About"
+- back
+- assertVisible: "Settings"
+- back
+- assertVisible:
+    id: "dashboard_search_field"

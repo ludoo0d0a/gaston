@@ -21,7 +21,7 @@ Human-oriented docs: [`README.md`](README.md), data sources [`docs/sources.md`](
 ./gradlew :shared:testAndroidHostTest
 ```
 
-E2E tests (Maestro): Flows are in `.maestro/`. Run with `maestro test .maestro/`.
+E2E tests (Maestro): Flows are in `.maestro/`. Local: `maestro test .maestro` (or `--include-tags smoke`). CI: `.github/workflows/maestro.yml` runs `--include-tags ci` on an emulator (PR path filter + weekly + manual).
 
 Integration tests (real APIs, optional in CI): `CountryStationLoadRealApiTests` via workflow in `.github/workflows/station-load-integration.yml`.
 

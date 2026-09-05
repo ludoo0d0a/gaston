@@ -1,0 +1,10 @@
+# Maestro workspace for Gaston phone UI E2E flows.
+# Local:  maestro test .maestro
+# CI:     maestro test .maestro --include-tags ci  (.github/workflows/maestro.yml)
+# Docs: https://maestro.mobile.dev/
+flows:
+  - "*"
+  - "common/*"
+excludeTags:
+  - util
+testOutputDir: .maestro/output

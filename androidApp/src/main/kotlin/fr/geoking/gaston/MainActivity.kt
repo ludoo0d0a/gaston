@@ -76,6 +76,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fr.geoking.gaston.ui.components.DisclaimerDialog
@@ -233,6 +236,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun MainActivityComposeRoot(
     diagnostics: DiagnosticStore,
@@ -249,93 +253,100 @@ private fun MainActivityComposeRoot(
 ) {
     android.util.Log.d("MainActivity", "Compose setContent block running")
 
-    val settings by settingsManager.settings.collectAsState()
+    // Expose Compose testTags as Android resource IDs so Maestro can use `id:` selectors.
+    Box(
+        Modifier
+            .fillMaxSize()
+            .semantics { testTagsAsResourceId = true }
+    ) {
+        val settings by settingsManager.settings.collectAsState()
 
-    LaunchedEffect(Unit) {
-        android.util.Log.d("MainActivity", "Compose first frame")
-    }
-
-    LaunchedEffect(Unit) {
-        if (settings.isLoggedIn) {
-            settingsManager.triggerPullAndMerge()
+        LaunchedEffect(Unit) {
+            android.util.Log.d("MainActivity", "Compose first frame")
         }
-    }
 
-    if (settings.lastAcceptedDisclaimerVersion < BuildConfig.VERSION_CODE) {
-        DisclaimerDialog(
-            onAccept = {
-                settingsManager.saveSettings(settings.copy(lastAcceptedDisclaimerVersion = BuildConfig.VERSION_CODE))
+        LaunchedEffect(Unit) {
+            if (settings.isLoggedIn) {
+                settingsManager.triggerPullAndMerge()
             }
-        )
-    }
+        }
 
-    val context = LocalContext.current
-    var hasLocationPermission by remember(context) {
-        mutableStateOf(
-            androidx.core.content.ContextCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        )
-    }
+        if (settings.lastAcceptedDisclaimerVersion < BuildConfig.VERSION_CODE) {
+            DisclaimerDialog(
+                onAccept = {
+                    settingsManager.saveSettings(settings.copy(lastAcceptedDisclaimerVersion = BuildConfig.VERSION_CODE))
+                }
+            )
+        }
 
-    val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted -> hasLocationPermission = isGranted }
-    )
-
-    var hasNotificationPermission by remember(context) {
-        mutableStateOf(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                ContextCompat.checkSelfPermission(
+        val context = LocalContext.current
+        var hasLocationPermission by remember(context) {
+            mutableStateOf(
+                androidx.core.content.ContextCompat.checkSelfPermission(
                     context,
-                    Manifest.permission.POST_NOTIFICATIONS,
-                ) == PackageManager.PERMISSION_GRANTED
-            } else {
-                true
+                    android.Manifest.permission.ACCESS_FINE_LOCATION
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            )
+        }
+
+        val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+            contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+            onResult = { isGranted -> hasLocationPermission = isGranted }
+        )
+
+        var hasNotificationPermission by remember(context) {
+            mutableStateOf(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS,
+                    ) == PackageManager.PERMISSION_GRANTED
+                } else {
+                    true
+                }
+            )
+        }
+        val notificationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+            onResult = { isGranted -> hasNotificationPermission = isGranted },
+        )
+        val disclaimerAccepted = settings.lastAcceptedDisclaimerVersion >= BuildConfig.VERSION_CODE
+        LaunchedEffect(disclaimerAccepted, hasNotificationPermission) {
+            if (
+                disclaimerAccepted &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                !hasNotificationPermission
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        val installStatus by inAppUpdateHelper.installStatus.collectAsState()
+        val isUpdateInProgress = remember(installStatus) {
+            installStatus == InstallStatus.PENDING ||
+                    installStatus == InstallStatus.DOWNLOADING ||
+                    installStatus == InstallStatus.INSTALLING
+        }
+
+        MainUI(
+            diagnostics = diagnostics,
+            settingsManager = settingsManager,
+            authManager = authManager,
+            mapDepsState = mapDepsState,
+            onRequestMapDeps = onRequestMapDeps,
+            networkService = networkService,
+            fuelForecastRepository = fuelForecastRepository,
+            inAppUpdateHelper = inAppUpdateHelper,
+            onStartUpdate = { info -> inAppUpdateHelper.startUpdate(info, updateResultLauncher) },
+            isUpdateInProgress = isUpdateInProgress,
+            pendingNavDestinationFlow = pendingNavDestination,
+            isPlaystoreDistribution = isPlaystoreDistribution,
+            hasLocationPermission = hasLocationPermission,
+            onRequestLocationPermission = {
+                locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
             }
         )
     }
-    val notificationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted -> hasNotificationPermission = isGranted },
-    )
-    val disclaimerAccepted = settings.lastAcceptedDisclaimerVersion >= BuildConfig.VERSION_CODE
-    LaunchedEffect(disclaimerAccepted, hasNotificationPermission) {
-        if (
-            disclaimerAccepted &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            !hasNotificationPermission
-        ) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
-
-    val installStatus by inAppUpdateHelper.installStatus.collectAsState()
-    val isUpdateInProgress = remember(installStatus) {
-        installStatus == InstallStatus.PENDING ||
-                installStatus == InstallStatus.DOWNLOADING ||
-                installStatus == InstallStatus.INSTALLING
-    }
-
-    MainUI(
-        diagnostics = diagnostics,
-        settingsManager = settingsManager,
-        authManager = authManager,
-        mapDepsState = mapDepsState,
-        onRequestMapDeps = onRequestMapDeps,
-        networkService = networkService,
-        fuelForecastRepository = fuelForecastRepository,
-        inAppUpdateHelper = inAppUpdateHelper,
-        onStartUpdate = { info -> inAppUpdateHelper.startUpdate(info, updateResultLauncher) },
-        isUpdateInProgress = isUpdateInProgress,
-        pendingNavDestinationFlow = pendingNavDestination,
-        isPlaystoreDistribution = isPlaystoreDistribution,
-        hasLocationPermission = hasLocationPermission,
-        onRequestLocationPermission = {
-            locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-    )
 }
 
 @Composable

@@ -1,0 +1,27 @@
+appId: fr.geoking.gaston
+tags:
+  - smoke
+  - ci
+  - dashboard
+---
+- launchApp:
+    permissions:
+      all: allow
+- runFlow: common/prepare.yaml
+- tapOn:
+    id: "mode_fuel"
+- assertVisible: "Cheapest fuel nearby|Cheapest nearby"
+- tapOn:
+    id: "mode_ev"
+- assertVisible: "Nearest charging nearby|Nearest stations"
+- tapOn:
+    id: "mode_my_vehicle"
+- assertVisible:
+    id: "mode_my_vehicle"
+- tapOn:
+    id: "mode_other"
+- assertVisible: "Nearest parkings|Nearest nearby"
+- tapOn:
+    id: "mode_fuel"
+- assertVisible:
+    id: "dashboard_search_field"

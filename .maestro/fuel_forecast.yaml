@@ -1,9 +1,21 @@
 appId: fr.geoking.gaston
+tags:
+  - forecast
 ---
-- launchApp
+- launchApp:
+    permissions:
+      all: allow
+- runFlow: common/prepare.yaml
+# Forecast tile is only shown in Fuel / Hybrid energy modes.
+- tapOn:
+    id: "mode_fuel"
+- scrollUntilVisible:
+    element:
+      id: "dashboard_forecast_btn"
 - tapOn:
     id: "dashboard_forecast_btn"
-- assertVisible: "Fuel price outlook"
+# Premium users see the forecast screen; others see the paywall.
+- assertVisible: "Price Estimation|Gaston Premium"
 - back
 - assertVisible:
     id: "dashboard_forecast_btn"

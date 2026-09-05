@@ -1,6 +1,13 @@
 appId: fr.geoking.gaston
+tags:
+  - smoke
+  - ci
+  - routes
 ---
-- launchApp
+- launchApp:
+    permissions:
+      all: allow
+- runFlow: common/prepare.yaml
 - tapOn:
     id: "dashboard_open_routes_btn"
 - assertVisible: "Plan route"
