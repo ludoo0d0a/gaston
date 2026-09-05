@@ -59,14 +59,9 @@ class AutoMapSettingsScreen(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.settings_map_mode))
                 .addText(settings.carMapMode.displayLabel(carContext))
+                .setBrowsable(true)
                 .setOnClickListener {
-                    AutoCarMapModeSwitcher.cycle(
-                        screen = this@AutoMapSettingsScreen,
-                        settingsManager = settingsManager,
-                        title = carContext.getString(R.string.dashboard_nearby_stations),
-                        replaceMapNow = false,
-                    )
-                    invalidate()
+                    screenManager.push(AutoMapModePickerScreen(carContext, settingsManager))
                 }
                 .build()
         )

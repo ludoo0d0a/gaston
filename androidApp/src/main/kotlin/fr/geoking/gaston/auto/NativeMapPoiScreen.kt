@@ -219,16 +219,6 @@ class NativeMapPoiScreen(
                 }
                 .build()
         )
-        actionStripBuilder.addAction(
-            carContext.cycleMapModeAction(currentSettings.carMapMode) {
-                AutoCarMapModeSwitcher.cycle(
-                    screen = this@NativeMapPoiScreen,
-                    settingsManager = settingsManager,
-                    title = title,
-                    replaceMapNow = true,
-                )
-            }
-        )
 
         val fuelIdsForFilter = effectiveEnergies - "electric"
         if (hasFuelFilter && (isCheapestFilterActive || pois.any { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForFilter } == true })) {

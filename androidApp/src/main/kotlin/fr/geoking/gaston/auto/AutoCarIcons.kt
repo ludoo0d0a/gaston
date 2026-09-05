@@ -8,7 +8,6 @@ import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.R
-import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.feature.emergency.EmergencyCategory
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.Poi
@@ -110,11 +109,13 @@ fun CarContext.actionSettingsIcon(): CarIcon = carIcon(R.drawable.ic_settings, A
 
 fun CarContext.actionMapIcon(): CarIcon = carIcon(R.drawable.ic_map, AutoCarIcons.primary)
 
-/** Icon + current-mode title (the single labeled ActionStrip button) to cycle [CarMapMode]. */
-fun CarContext.cycleMapModeAction(current: CarMapMode, onCycle: () -> Unit): Action =
+/**
+ * Icon-only cycle for map mode. Prefer the settings picker on AA; if used on an ActionStrip,
+ * keep it icon-only so it does not consume the single labeled-button slot.
+ */
+fun CarContext.cycleMapModeAction(onCycle: () -> Unit): Action =
     Action.Builder()
         .setIcon(actionMapIcon())
-        .setTitle(current.displayLabel(this))
         .setOnClickListener(onCycle)
         .build()
 

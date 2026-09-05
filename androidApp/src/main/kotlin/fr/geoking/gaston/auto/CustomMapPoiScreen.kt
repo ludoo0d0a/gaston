@@ -906,22 +906,14 @@ class CustomMapPoiScreen(
         val currentSettings = settingsManager.settings.value
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
 
+        // MapWithContent top ActionStrip: keep to settings + optional cheapest (max 2).
+        // Mode changes go through AutoMapSettingsScreen → AutoMapModePickerScreen.
         val actionStripBuilder = ActionStrip.Builder()
             .addAction(
                 Action.Builder()
                     .setIcon(carContext.actionSettingsIcon())
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
                     .build()
-            )
-            .addAction(
-                carContext.cycleMapModeAction(currentSettings.carMapMode) {
-                    AutoCarMapModeSwitcher.cycle(
-                        screen = this@CustomMapPoiScreen,
-                        settingsManager = settingsManager,
-                        title = title,
-                        replaceMapNow = true,
-                    )
-                }
             )
 
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()

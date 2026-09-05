@@ -21,7 +21,10 @@ import fr.geoking.gaston.toll.TollCalculator
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 
-/** Cycles [CarMapMode] and rebuilds the AA map screen so the new backend is actually shown. */
+/**
+ * Rebuilds the AA map screen when [CarMapMode] no longer matches the visible screen
+ * (e.g. after changing mode in [AutoMapModePickerScreen]).
+ */
 object AutoCarMapModeSwitcher : KoinComponent {
 
     fun cycle(
@@ -30,7 +33,7 @@ object AutoCarMapModeSwitcher : KoinComponent {
         title: String,
         replaceMapNow: Boolean,
     ) {
-        val next = settingsManager.settings.value.carMapMode.next()
+        val next = nextAvailableMode(settingsManager)
         settingsManager.setCarMapMode(next)
         try {
             screen.carContext.getCarService(AppManager::class.java)
@@ -42,7 +45,7 @@ object AutoCarMapModeSwitcher : KoinComponent {
         }
     }
 
-    /** When returning to a map whose backend no longer matches settings (e.g. cycled in settings). */
+    /** When returning to a map whose backend no longer matches settings (e.g. changed in settings). */
     fun replaceIfStale(
         screen: Screen,
         expectedMode: CarMapMode,
@@ -53,6 +56,19 @@ object AutoCarMapModeSwitcher : KoinComponent {
         return replaceMap(screen, settingsManager, title)
     }
 
+    private fun nextAvailableMode(settingsManager: SettingsManager): CarMapMode {
+        val current = settingsManager.settings.value.carMapMode
+        val settings = settingsManager.settings.value
+        repeat(CarMapMode.entries.size) { step ->
+            val candidate = CarMapMode.entries[(current.ordinal + 1 + step) % CarMapMode.entries.size]
+            if (!candidate.requiresOfflineMapFile) return candidate
+            if (OfflineMapAvailability.isOfflineFileAvailable(settings.copy(carMapMode = candidate))) {
+                return candidate
+            }
+        }
+        return CarMapMode.Native
+    }
+
     private fun replaceMap(screen: Screen, settingsManager: SettingsManager, title: String): Boolean {
         val mapDeps = resolveMapDeps() ?: return false
         val replacement = AutoMapScreenFactory.createMapPoiScreen(
@@ -61,10 +77,15 @@ object AutoCarMapModeSwitcher : KoinComponent {
             settingsManager = settingsManager,
             title = title,
         )
-        val manager = screen.screenManager
-        manager.pop()
-        manager.push(replacement)
-        return true
+        return try {
+            val manager = screen.screenManager
+            manager.pop()
+            manager.push(replacement)
+            true
+        } catch (e: Exception) {
+            Log.e("AutoCarMapModeSwitcher", "Failed to replace map screen", e)
+            false
+        }
     }
 
     private fun resolveMapDeps(): MapDeps? = try {
