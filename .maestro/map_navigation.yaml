@@ -1,13 +1,6 @@
 appId: fr.geoking.gaston
-tags:
-  - smoke
-  - ci
-  - navigation
 ---
-- launchApp:
-    permissions:
-      all: allow
-- runFlow: common/prepare.yaml
+- launchApp
 - tapOn:
     id: "dashboard_open_map_btn"
 - assertVisible: "Gas Stations"

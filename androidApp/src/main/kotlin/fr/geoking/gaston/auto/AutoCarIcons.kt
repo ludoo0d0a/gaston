@@ -109,16 +109,6 @@ fun CarContext.actionSettingsIcon(): CarIcon = carIcon(R.drawable.ic_settings, A
 
 fun CarContext.actionMapIcon(): CarIcon = carIcon(R.drawable.ic_map, AutoCarIcons.primary)
 
-/**
- * Icon-only cycle for map mode. Prefer the settings picker on AA; if used on an ActionStrip,
- * keep it icon-only so it does not consume the single labeled-button slot.
- */
-fun CarContext.cycleMapModeAction(onCycle: () -> Unit): Action =
-    Action.Builder()
-        .setIcon(actionMapIcon())
-        .setOnClickListener(onCycle)
-        .build()
-
 fun CarContext.actionErrorIcon(): CarIcon = carIcon(R.drawable.ic_error_outline, AutoCarIcons.emergency)
 
 fun CarContext.actionZoomInIcon(): CarIcon = carIcon(R.drawable.ic_add, AutoCarIcons.primary)

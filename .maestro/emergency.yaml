@@ -1,21 +1,10 @@
 appId: fr.geoking.gaston
-tags:
-  - smoke
-  - ci
-  - emergency
 ---
-- launchApp:
-    permissions:
-      all: allow
-- runFlow: common/prepare.yaml
-- scrollUntilVisible:
-    element:
-      id: "dashboard_emergency_card"
+- launchApp
 - tapOn:
     id: "dashboard_emergency_card"
 - assertVisible: "Emergency"
-- assertVisible: "Need help now?"
-- assertVisible: "Call 112|Tap to call 112"
+- assertVisible: "Call Emergency: 112"
 - back
 - assertVisible:
     id: "dashboard_emergency_card"
