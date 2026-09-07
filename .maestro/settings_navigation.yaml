@@ -1,13 +1,6 @@
 appId: fr.geoking.gaston
-tags:
-  - smoke
-  - ci
-  - settings
 ---
-- launchApp:
-    permissions:
-      all: allow
-- runFlow: common/prepare.yaml
+- launchApp
 - tapOn:
     id: "dashboard_settings_btn"
 - assertVisible: "Settings"

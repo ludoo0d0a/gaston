@@ -8,12 +8,11 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.isOtherModeActive
 import fr.geoking.gaston.VehicleType
 import fr.geoking.gaston.parking.ParkingRegion
-import fr.geoking.gaston.api.evpricesfr.EvPricesFrClient
-import fr.geoking.gaston.api.evpricesfr.EvPricesFrEnricher
 import fr.geoking.gaston.api.openvan.OpenVanCampClient
 import fr.geoking.gaston.api.openvan.OpenVanCampProvider
 import fr.geoking.gaston.persistence.PoiCacheDao
 import fr.geoking.gaston.persistence.PoiCacheEntity
+import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.repository.StationPriceHistoryRepository
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.location.approxDistanceKm
@@ -87,8 +86,7 @@ class SelectorPoiProvider(
     private val dataGouvCamping: PoiProvider?,
     private val poiCacheDao: PoiCacheDao,
     private val settingsManager: SettingsManager,
-    private val historyRepo: StationPriceHistoryRepository? = null,
-    private val evPricesFrClient: EvPricesFrClient? = null,
+    private val historyRepo: StationPriceHistoryRepository? = null
 ) : PoiProvider, CoroutineScope {
 
     override val coroutineContext = SupervisorJob() + Dispatchers.IO
@@ -351,12 +349,7 @@ class SelectorPoiProvider(
             centerLat = request.latitude,
             centerLon = request.longitude,
         )
-        val withEvTariffs = enrichFranceEvPriceBaselines(
-            pois = enriched,
-            centerLat = request.latitude,
-            centerLon = request.longitude,
-        )
-        val rated = enrichPriceRatings(withEvTariffs)
+        val rated = enrichPriceRatings(enriched)
         return rated to errors
     }
 
@@ -936,7 +929,6 @@ class SelectorPoiProvider(
         belgiumOfficial.clearCache()
         usaEia.clearCache()
         overpass.clearCache()
-        evPricesFrClient?.clearCache()
     }
 
     // POI deduplication/merge is centralized in `PoiMerger` so the map cache and selectors
@@ -1045,34 +1037,6 @@ class SelectorPoiProvider(
 
             if (rating != null) poi.copy(priceRating = rating) else poi
         }
-    }
-
-    /**
-     * Attach free France IRVE operator tariff baselines when DataGouv has no useful tarification.
-     */
-    private suspend fun enrichFranceEvPriceBaselines(
-        pois: List<Poi>,
-        centerLat: Double,
-        centerLon: Double,
-    ): List<Poi> {
-        val client = evPricesFrClient ?: return pois
-        if (ParkingRegion.containing(centerLat, centerLon) != ParkingRegion.France) return pois
-        val hasIrveNeedingPrice = pois.any { poi ->
-            poi.isChargingStation &&
-                ParkingRegion.containing(poi.latitude, poi.longitude) == ParkingRegion.France &&
-                poi.irveDetails?.gratuit != true &&
-                !EvPricesFrEnricher.hasUsefulTarification(poi.irveDetails?.tarification)
-        }
-        if (!hasIrveNeedingPrice) return pois
-        val baselines = try {
-            client.fetchBaselines()
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
-            Log.w("SelectorPoiProvider", "EV price baselines FR fetch failed", e)
-            emptyList()
-        }
-        if (baselines.isEmpty()) return pois
-        return EvPricesFrEnricher.enrich(pois, baselines)
     }
 
     /**
