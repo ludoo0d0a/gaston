@@ -56,6 +56,7 @@ compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", versio
 compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "compose" }
 androidx-car-app = { module = "androidx.car.app:app", version.ref = "androidx-car-app" }
 androidx-car-app-projected = { module = "androidx.car.app:app-projected", version.ref = "androidx-car-app" }
+androidx-car-app-testing = { module = "androidx.car.app:app-testing", version.ref = "androidx-car-app" }
 
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlinTestJunit" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }

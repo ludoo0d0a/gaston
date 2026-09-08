@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -107,6 +108,12 @@ open class MapLibrePoiScreen(
     private var mapHeightPx: Int = 480
 
     private var mapRenderer: AaMapSurfaceRenderer? = null
+
+    /** Test seam: lets tests read the renderer's state (e.g. offlineUnavailable) without exposing it in production. */
+    @VisibleForTesting
+    internal val mapRendererForTest: AaMapSurfaceRenderer?
+        get() = mapRenderer
+
     private var headingUpdateJob: Job? = null
     private var orientationMode: MapOrientationMode = MapOrientationMode.HeadingUp
     private var lastKnownBearingDegrees: Float = 0f
