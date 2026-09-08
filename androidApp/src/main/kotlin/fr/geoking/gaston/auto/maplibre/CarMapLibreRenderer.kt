@@ -251,13 +251,12 @@ class CarMapLibreRenderer(
 
     override fun centerPxYForHitTest(): Double = followFocalPoint().y
 
-    private val eglSurfaceRenderer = CarEglSurfaceRenderer()
-
     override fun attachSurface(container: SurfaceContainer) {
-        // Prepare native EGL pipeline when the host surface is valid (future MapLibre EGL path).
-        if (container.surface?.isValid == true) {
-            eglSurfaceRenderer.attachSurface(container)
-        }
+        // Do NOT attach an EGL window surface here: this renderer blits via
+        // Surface.lockHardwareCanvas()/lockCanvas() below, and a Surface can only be
+        // connected to one producer API at a time. Connecting EGL first makes the
+        // Canvas lock calls throw ("Surface was already connected to another API"),
+        // crashing every time this screen becomes visible on Android Auto.
         surfaceContainer = container
         surfaceWidth = container.width.coerceAtLeast(100)
         surfaceHeight = container.height.coerceAtLeast(100)
@@ -276,7 +275,6 @@ class CarMapLibreRenderer(
 
     override fun detachSurface() {
         Log.i(TAG, "detachSurface")
-        eglSurfaceRenderer.detachSurface()
         uiHandler.removeCallbacksAndMessages(null)
         try {
             reusableSnapshotter?.cancel()

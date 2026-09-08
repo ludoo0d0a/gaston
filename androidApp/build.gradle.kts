@@ -327,6 +327,7 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.androidx.activity.compose)
+    testImplementation(libs.androidx.car.app.testing)
     debugImplementation(libs.compose.ui.test.manifest)
 
     // Ads (AdMob)

@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -105,6 +106,12 @@ class CustomMapPoiScreen(
     private var mapHeightPx: Int = 480
 
     private var surfaceRenderer: AutoSurfaceRenderer? = null
+
+    /** Test seam: lets tests confirm the renderer is (re)created after a surface attach/detach cycle. */
+    @VisibleForTesting
+    internal val surfaceRendererForTest: AutoSurfaceRenderer?
+        get() = surfaceRenderer
+
     private var headingUpdateJob: Job? = null
     private var orientationMode: MapOrientationMode = MapOrientationMode.HeadingUp
     private var lastKnownBearingDegrees: Float = 0f
