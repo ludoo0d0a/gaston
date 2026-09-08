@@ -790,6 +790,8 @@ class MapsforgePoiScreen(
         val currentSettings = settingsManager.settings.value
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
 
+        // MapWithContent top ActionStrip: keep to settings + optional cheapest (max 2).
+        // Mode changes go through AutoMapSettingsScreen → AutoMapModePickerScreen.
         val actionStripBuilder = ActionStrip.Builder()
             .addAction(
                 Action.Builder()

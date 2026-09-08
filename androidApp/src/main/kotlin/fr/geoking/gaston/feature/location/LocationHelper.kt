@@ -1,9 +1,12 @@
 package fr.geoking.gaston.feature.location
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.Location
 import android.util.Log
+import androidx.core.content.ContextCompat
 import fr.geoking.gaston.SettingsManager
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -15,12 +18,31 @@ object LocationHelper {
     private const val TAG = "LocationHelper"
     private const val FRESH_AGE_MS = 300_000L // 5 minutes
 
+    fun hasLocationPermission(context: Context): Boolean {
+        val fine = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+        return fine || coarse
+    }
+
     @SuppressLint("MissingPermission")
     suspend fun getCurrentLocation(
         context: Context,
         timeoutMs: Long = 3000L,
         priority: Int = Priority.PRIORITY_HIGH_ACCURACY
     ): Location? {
+        // Calling Fused Location without a grant throws SecurityException on the GMS
+        // binder thread and can kill the process (Crashlytics 8d782ca9… on 1.0.451–454).
+        if (!hasLocationPermission(context)) {
+            Log.d(TAG, "Skipping location request: no ACCESS_FINE/COARSE permission")
+            return null
+        }
+
         val fusedClient = LocationServices.getFusedLocationProviderClient(context)
 
         // 1. Try last location first (instant if available)
@@ -41,6 +63,9 @@ object LocationHelper {
         val fresh = withTimeoutOrNull(timeoutMs) {
             try {
                 fusedClient.getCurrentLocation(priority, cts.token).await()
+            } catch (e: Exception) {
+                Log.w(TAG, "getCurrentLocation failed", e)
+                null
             } finally {
                 cts.cancel()
             }
