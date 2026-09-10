@@ -35,7 +35,10 @@ data class MapsforgeServerMap(
     val minLat: Double = -90.0,
     val maxLat: Double = 90.0,
     val minLon: Double = -180.0,
-    val maxLon: Double = 180.0
+    val maxLon: Double = 180.0,
+    /** Base file name (without extension) used on disk. Aliases (e.g. "Moselle" -> "Lorraine")
+     *  share the same downloaded file as their canonical region instead of duplicating storage. */
+    val storageKey: String = name,
 ) {
     fun contains(lat: Double, lon: Double): Boolean =
         lat in minLat..maxLat && lon in minLon..maxLon
@@ -63,6 +66,14 @@ object MapsforgePresetServers {
         MapsforgeServerMap("Languedoc-Roussillon", "France", "$FR_BASE/languedoc-roussillon.map", 178, 42.3, 44.9, 1.7, 4.9),
         MapsforgeServerMap("Limousin", "France", "$FR_BASE/limousin.map", 73, 44.9, 46.5, 0.6, 2.6),
         MapsforgeServerMap("Lorraine", "France", "$FR_BASE/lorraine.map", 123, 48.3, 49.7, 5.2, 7.6),
+        // "Grand Est" (the 2016-merged region) has no single published file; it is covered by the
+        // Alsace + Champagne-Ardenne + Lorraine entries above/below. Moselle is a département fully
+        // inside Lorraine with no separate extract, so it shares the Lorraine file via storageKey.
+        MapsforgeServerMap(
+            "Moselle", "France", "$FR_BASE/lorraine.map", 123,
+            48.75, 49.65, 6.05, 7.05,
+            storageKey = "Lorraine",
+        ),
         MapsforgeServerMap("Martinique", "France", "$FR_BASE/martinique.map", 14, 14.4, 14.9, -61.3, -60.8),
         MapsforgeServerMap("Mayotte", "France", "$FR_BASE/mayotte.map", 8, -13.1, -12.6, 45.0, 45.3),
         MapsforgeServerMap("Midi-Pyrénées", "France", "$FR_BASE/midi-pyrenees.map", 245, 42.3, 45.1, -0.3, 3.5),
@@ -123,6 +134,15 @@ object MapsforgePresetServers {
     val PRESET_MAPS: List<MapsforgeServerMap> =
         FRANCE_REGION_MAPS + NEIGHBOR_MAPS + listOf(FRANCE_ALL)
 
+    /** Quick-access regions surfaced directly in Settings, without opening the full preset list. */
+    val PRIORITY_REGIONS: List<MapsforgeServerMap> = listOf(
+        FRANCE_REGION_MAPS.first { it.name == "Lorraine" },
+        FRANCE_REGION_MAPS.first { it.name == "Moselle" },
+        FRANCE_REGION_MAPS.first { it.name == "Alsace" },
+        FRANCE_REGION_MAPS.first { it.name == "Champagne-Ardenne" },
+        NEIGHBOR_MAPS.first { it.name == "Luxembourg" },
+    )
+
     fun getRecommendedPreset(lat: Double?, lon: Double?): MapsforgeServerMap {
         val default = FRANCE_REGION_MAPS.first { it.name.contains("Île-de-France") }
         if (lat == null || lon == null) return default
@@ -160,6 +180,9 @@ class MapsforgeMapManager(private val context: Context) {
         val files = mapsDir.listFiles { _, name -> name.endsWith(".map", ignoreCase = true) }?.toList() ?: emptyList()
         _installedMaps.value = files.sortedBy { it.name }
     }
+
+    /** Total bytes used on disk by installed Mapsforge `.map` files. */
+    fun getUsedStorageBytes(): Long = _installedMaps.value.sumOf { it.length() }
 
     fun getActiveMapFile(): File? {
         val activeName = prefs.getString("active_map_name", null)

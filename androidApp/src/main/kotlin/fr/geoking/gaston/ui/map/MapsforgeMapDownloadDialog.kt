@@ -208,7 +208,7 @@ fun MapsforgeMapDownloadDialog(
 }
 
 @Composable
-private fun MapsforgePresetDownloadRow(
+internal fun MapsforgePresetDownloadRow(
     preset: MapsforgeServerMap,
     installedMaps: List<File>,
     progress: DownloadProgress?,
@@ -217,9 +217,9 @@ private fun MapsforgePresetDownloadRow(
     onMapFileChanged: () -> Unit,
 ) {
     val isInstalled = installedMaps.any {
-        it.name.equals(preset.name, ignoreCase = true) ||
-            it.name.equals("${preset.name}.map", ignoreCase = true) ||
-            it.name.contains(preset.name, ignoreCase = true)
+        it.name.equals(preset.storageKey, ignoreCase = true) ||
+            it.name.equals("${preset.storageKey}.map", ignoreCase = true) ||
+            it.name.contains(preset.storageKey, ignoreCase = true)
     }
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -251,7 +251,7 @@ private fun MapsforgePresetDownloadRow(
             Button(
                 onClick = {
                     scope.launch {
-                        val res = mapManager.downloadMap(preset.url, "${preset.name}.map")
+                        val res = mapManager.downloadMap(preset.url, "${preset.storageKey}.map")
                         if (res.isSuccess) {
                             onMapFileChanged()
                         }

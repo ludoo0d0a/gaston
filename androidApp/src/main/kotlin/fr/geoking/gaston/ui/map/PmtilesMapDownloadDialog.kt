@@ -14,9 +14,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.R
+import fr.geoking.gaston.auto.mapsforge.DownloadProgress
 import fr.geoking.gaston.auto.pmtiles.PmtilesMapManager
 import fr.geoking.gaston.auto.pmtiles.PmtilesPresetServers
+import fr.geoking.gaston.auto.pmtiles.PmtilesServerMap
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 fun PmtilesMapDownloadDialog(
@@ -147,53 +151,14 @@ fun PmtilesMapDownloadDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(PmtilesPresetServers.PRESET_MAPS) { preset ->
-                        val isInstalled = installedMaps.any {
-                            it.name.equals(preset.name, ignoreCase = true) ||
-                                it.name.equals("${preset.name}.pmtiles", ignoreCase = true) ||
-                                it.name.contains(preset.name, ignoreCase = true)
-                        }
-                        OutlinedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = preset.name,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "${preset.region} · " + if (isInstalled) {
-                                            stringResource(R.string.mapsforge_installed, preset.sizeEstimateMb)
-                                        } else {
-                                            stringResource(R.string.mapsforge_available, preset.sizeEstimateMb)
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Button(
-                                    onClick = {
-                                        scope.launch {
-                                            val res = mapManager.downloadMap(preset.url, "${preset.name}.pmtiles")
-                                            if (res.isSuccess) {
-                                                onMapFileChanged()
-                                            }
-                                        }
-                                    },
-                                    enabled = progress == null || progress.isComplete || progress.error != null
-                                ) {
-                                    Text(if (isInstalled) stringResource(R.string.action_refresh) else stringResource(R.string.action_download))
-                                }
-                            }
-                        }
+                        PmtilesPresetDownloadRow(
+                            preset = preset,
+                            installedMaps = installedMaps,
+                            progress = progress,
+                            scope = scope,
+                            mapManager = mapManager,
+                            onMapFileChanged = onMapFileChanged,
+                        )
                     }
                 }
             }
@@ -204,4 +169,62 @@ fun PmtilesMapDownloadDialog(
             }
         }
     )
+}
+
+@Composable
+internal fun PmtilesPresetDownloadRow(
+    preset: PmtilesServerMap,
+    installedMaps: List<File>,
+    progress: DownloadProgress?,
+    scope: CoroutineScope,
+    mapManager: PmtilesMapManager,
+    onMapFileChanged: () -> Unit,
+) {
+    val isInstalled = installedMaps.any {
+        it.name.equals(preset.storageKey, ignoreCase = true) ||
+            it.name.equals("${preset.storageKey}.pmtiles", ignoreCase = true) ||
+            it.name.contains(preset.storageKey, ignoreCase = true)
+    }
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = preset.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${preset.region} · " + if (isInstalled) {
+                        stringResource(R.string.mapsforge_installed, preset.sizeEstimateMb)
+                    } else {
+                        stringResource(R.string.mapsforge_available, preset.sizeEstimateMb)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = {
+                    scope.launch {
+                        val res = mapManager.downloadMap(preset.url, "${preset.storageKey}.pmtiles")
+                        if (res.isSuccess) {
+                            onMapFileChanged()
+                        }
+                    }
+                },
+                enabled = progress == null || progress.isComplete || progress.error != null
+            ) {
+                Text(if (isInstalled) stringResource(R.string.action_refresh) else stringResource(R.string.action_download))
+            }
+        }
+    }
 }

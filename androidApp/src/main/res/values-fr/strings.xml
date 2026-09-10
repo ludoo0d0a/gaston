@@ -797,4 +797,8 @@
     <string name="mapsforge_section_france_regions">France — régions</string>
     <string name="mapsforge_section_neighbors">Pays voisins</string>
     <string name="mapsforge_section_country_wide">Pays entier</string>
+    <string name="offline_maps_by_region_title">Cartes hors-ligne par région</string>
+    <string name="offline_maps_by_region_subtitle">Téléchargez les cartes de vos régions habituelles pour la navigation hors-ligne, sur le téléphone comme en Android Auto</string>
+    <string name="offline_maps_storage_used">Stockage utilisé : %1$s</string>
+    <string name="offline_maps_other_regions">Autres régions…</string>
 </resources>
