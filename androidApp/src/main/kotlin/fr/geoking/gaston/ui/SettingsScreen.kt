@@ -2392,6 +2392,22 @@ private fun DeveloperSection(
                 )
             }
 
+            // Raw Station Detail toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.dev_raw_detail), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.dev_raw_detail_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.devRawDetail,
+                    onCheckedChange = { onUpdate(settings.copy(devRawDetail = it)) }
+                )
+            }
+
             HorizontalDivider()
 
             // 2. Developer actions & options card

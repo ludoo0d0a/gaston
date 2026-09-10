@@ -59,7 +59,8 @@ class GasApiProvider(
                         outOfStock = p.outOfStock
                     )
                 }.ifEmpty { null },
-                source = "GasAPI"
+                source = "GasAPI",
+                rawSourceData = station.rawJson?.let { mapOf("GasAPI" to it) }
             )
         }
     }

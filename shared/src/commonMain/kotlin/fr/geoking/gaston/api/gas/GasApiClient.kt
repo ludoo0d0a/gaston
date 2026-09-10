@@ -84,7 +84,7 @@ class GasApiClient(
     /**
      * Parse API response: accepts root array, single station object, or "hydra:member" / "data" array.
      */
-    private fun parseStationsResponse(body: String): List<GasApiStation> {
+    internal fun parseStationsResponse(body: String): List<GasApiStation> {
         val element = json.parseToJsonElement(body)
 
         when (element) {
@@ -147,7 +147,8 @@ class GasApiClient(
             latitude = lat,
             longitude = lng,
             brand = brandName,
-            prices = prices
+            prices = prices,
+            rawJson = element.toString()
         )
     }
 }
@@ -163,5 +164,6 @@ data class GasApiStation(
     val latitude: Double,
     val longitude: Double,
     val brand: String? = null,
-    val prices: List<DataGouvPrice> = emptyList()
+    val prices: List<DataGouvPrice> = emptyList(),
+    val rawJson: String? = null
 )

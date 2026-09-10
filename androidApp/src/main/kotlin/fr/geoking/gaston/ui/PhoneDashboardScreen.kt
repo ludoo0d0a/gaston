@@ -148,6 +148,7 @@ fun PhoneDashboardScreen(
     poiForDetails?.let { poi ->
         PoiDetailsFullscreenDialog(
             poi = poi,
+            showRawDetail = settings.devRawDetail,
             isFavorite = poi.id in uiState.favoriteIds,
             onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
                 {

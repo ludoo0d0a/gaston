@@ -167,6 +167,7 @@ data class AppSettings(
     val isPremium: Boolean = false,
     /** Dev/test override: unlock premium features without a subscription. */
     val devSimulatePremium: Boolean = false,
+    val devRawDetail: Boolean = false,
     val debugBarEnabled: Boolean = false,
     val networkFloatingBarEnabled: Boolean = false,
     val testAaMapSurfaceEnabled: Boolean = false,
@@ -359,6 +360,7 @@ open class SettingsManager(
             favoriteLocations = favoriteLocations,
             isPremium = prefs.getBoolean("is_premium", false),
             devSimulatePremium = prefs.getBoolean("dev_simulate_premium", false),
+            devRawDetail = prefs.getBoolean("dev_raw_detail", false),
             debugBarEnabled = prefs.getBoolean("debug_bar_enabled", false),
             networkFloatingBarEnabled = prefs.getBoolean("network_floating_bar_enabled", false),
             testAaMapSurfaceEnabled = prefs.getBoolean("test_aa_map_surface_enabled", false),
@@ -437,6 +439,7 @@ open class SettingsManager(
             .putString("favorite_locations", Json.encodeToString(sanitized.favoriteLocations))
             .putBoolean("is_premium", sanitized.isPremium)
             .putBoolean("dev_simulate_premium", sanitized.devSimulatePremium)
+            .putBoolean("dev_raw_detail", sanitized.devRawDetail)
             .putBoolean("debug_bar_enabled", sanitized.debugBarEnabled)
             .putBoolean("network_floating_bar_enabled", sanitized.networkFloatingBarEnabled)
             .putBoolean("test_aa_map_surface_enabled", sanitized.testAaMapSurfaceEnabled)
