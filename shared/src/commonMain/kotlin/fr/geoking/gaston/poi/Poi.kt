@@ -307,7 +307,9 @@ data class Poi(
     /** The source of the POI data (e.g. "Routex", "DataGouv", "Chargy"). */
     val source: String? = null,
     /** Latest price update timestamp per source. */
-    val sourceUpdates: Map<String, String>? = null
+    val sourceUpdates: Map<String, String>? = null,
+    /** Reference ID from external registry (e.g. ref:FR:prix-carburants for French fuel stations). */
+    val refId: String? = null
 )
 
 /**

@@ -180,6 +180,9 @@ class OverpassProvider(
                 OverpassTranslator.translate(apiOperator, lang) ?: apiOperator
             }
 
+            val refId = el.tags["ref:FR:prix-carburants"]?.trim()?.takeIf { it.isNotBlank() }
+                ?: el.tags["old_ref:FR:prix-carburants"]?.trim()?.takeIf { it.isNotBlank() }
+
             Poi(
                 id = "osm:${el.id}",
                 name = name?.takeIf { it.isNotBlank() } ?: categoryDisplayName(category, lang),
@@ -194,7 +197,8 @@ class OverpassProvider(
                 restaurantDetails = restaurantDetails,
                 irveDetails = irveDetails,
                 amenities = amenities,
-                source = "OpenStreetMap"
+                source = "OpenStreetMap",
+                refId = refId
             )
         }
     }
