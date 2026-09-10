@@ -93,7 +93,6 @@ import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.map.PhoneMapPoiHitTest
 import fr.geoking.gaston.ui.map.MarkerStyle
-import fr.geoking.gaston.ui.map.DebugLogOverlay
 import fr.geoking.gaston.ui.map.MapBaseViewControl
 import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.MapBaseView
@@ -702,24 +701,6 @@ fun MapScreen(
                             .zIndex(1f)
                     )
 
-                    if (settings.debugLoggingEnabled) {
-                        val detectedCountries = remember(cameraPositionState.position.target) {
-                            fr.geoking.gaston.countryDisplayLabelAtMapPosition(
-                                cameraPositionState.position.target.latitude,
-                                cameraPositionState.position.target.longitude
-                            )
-                        }
-                        DebugLogOverlay(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(top = 80.dp) // Below the top bar
-                                .zIndex(2f),
-                            detectedCountries = detectedCountries,
-                            onRefresh = {
-                                mapActions.refresh(true, currentMapCameraSample())
-                            }
-                        )
-                    }
                 }
             }
         }

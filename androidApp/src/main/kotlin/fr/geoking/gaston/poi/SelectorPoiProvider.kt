@@ -1087,7 +1087,7 @@ class SelectorPoiProvider(
     }
 
     private fun isProviderTraceEnabled(): Boolean =
-        settingsManager.settings.value.debugLoggingEnabled
+        settingsManager.settings.value.debugLoggingEnabled || settingsManager.settings.value.debugBarEnabled
 
     private fun traceProvider(
         phase: ProviderTracePhase,
