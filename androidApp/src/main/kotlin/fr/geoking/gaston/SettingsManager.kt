@@ -167,6 +167,7 @@ data class AppSettings(
     val isPremium: Boolean = false,
     /** Dev/test override: unlock premium features without a subscription. */
     val devSimulatePremium: Boolean = false,
+    val debugBarEnabled: Boolean = false,
     val networkFloatingBarEnabled: Boolean = false,
     val testAaMapSurfaceEnabled: Boolean = false,
     val routeStationSearchRadiusMeters: Int = 2000,
@@ -358,6 +359,7 @@ open class SettingsManager(
             favoriteLocations = favoriteLocations,
             isPremium = prefs.getBoolean("is_premium", false),
             devSimulatePremium = prefs.getBoolean("dev_simulate_premium", false),
+            debugBarEnabled = prefs.getBoolean("debug_bar_enabled", false),
             networkFloatingBarEnabled = prefs.getBoolean("network_floating_bar_enabled", false),
             testAaMapSurfaceEnabled = prefs.getBoolean("test_aa_map_surface_enabled", false),
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
@@ -435,6 +437,7 @@ open class SettingsManager(
             .putString("favorite_locations", Json.encodeToString(sanitized.favoriteLocations))
             .putBoolean("is_premium", sanitized.isPremium)
             .putBoolean("dev_simulate_premium", sanitized.devSimulatePremium)
+            .putBoolean("debug_bar_enabled", sanitized.debugBarEnabled)
             .putBoolean("network_floating_bar_enabled", sanitized.networkFloatingBarEnabled)
             .putBoolean("test_aa_map_surface_enabled", sanitized.testAaMapSurfaceEnabled)
             .putInt("route_station_radius_m", sanitized.routeStationSearchRadiusMeters)
@@ -765,6 +768,10 @@ open class SettingsManager(
                 saveSettings(_settings.value.copy(lastIsRoaming = value))
             }
         }
+
+    open fun setDebugBarEnabled(enabled: Boolean) {
+        saveSettings(_settings.value.copy(debugBarEnabled = enabled))
+    }
 
     open fun setNetworkFloatingBarEnabled(enabled: Boolean) {
         saveSettings(_settings.value.copy(networkFloatingBarEnabled = enabled))
