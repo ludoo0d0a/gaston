@@ -312,6 +312,7 @@ fun PoiOverlayHost(
                     }
                 }
             } else null,
+            showRawDetail = settings.devRawDetail,
             onNavigate = {
                 val uri = IntentNavigationHelper.getNavigationUri(poi)
                 context.startActivity(Intent(Intent.ACTION_VIEW, uri))

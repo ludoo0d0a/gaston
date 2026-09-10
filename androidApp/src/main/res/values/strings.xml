@@ -654,6 +654,7 @@
     <string name="screen_developer">developer</string>
     <string name="dev_developer_settings">Developer Settings</string>
     <string name="dev_premium_mode">premium mode</string>
+    <string name="dev_raw_detail">raw detail</string>
     <string name="dev_network_floating_bar">network floating bar</string>
     <string name="dev_debug_grid">debug grid in map</string>
     <string name="dev_test_aa_map_surface">test AA map surface</string>
@@ -745,7 +746,9 @@
     <string name="error_map_components">Failed to load map components.</string>
     <string name="error_map_dependencies">Dependencies could not be initialized.</string>
     <string name="dev_premium_mode_subtitle">Simulate premium features override</string>
+    <string name="dev_raw_detail_subtitle">Display raw JSON data per source in station details</string>
     <string name="dev_network_floating_bar_subtitle">Show a floating network status overlay</string>
+    <string name="poi_section_raw_data">Raw Source Data</string>
     <string name="dev_debug_grid_subtitle">Draw debugging tile boundaries grid on map</string>
     <string name="dev_test_aa_map_surface_subtitle">Emulate the Android Auto map on your mobile device</string>
     <string name="dev_disable_cache_subtitle">Bypass on-device caching of POI data</string>

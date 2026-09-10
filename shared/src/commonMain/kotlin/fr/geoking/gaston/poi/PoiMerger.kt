@@ -274,6 +274,7 @@ object PoiMerger {
 
         val mergedSources = mergeSources(existing.source, incoming.source)
         val mergedSourceUpdates = mergeSourceUpdates(existing.sourceUpdates, incoming.sourceUpdates)
+        val mergedRawSourceData = mergeRawSourceData(existing.rawSourceData, incoming.rawSourceData)
 
         val brandExisting = BrandRegistry.findBrand(existing.name, existing.brand)
         val brandIncoming = BrandRegistry.findBrand(incoming.name, incoming.brand)
@@ -312,6 +313,7 @@ object PoiMerger {
             chargePointCount = mergeMaxOrNull(existing.chargePointCount, incoming.chargePointCount),
             source = mergedSources,
             sourceUpdates = mergedSourceUpdates,
+            rawSourceData = mergedRawSourceData,
         )
     }
 
@@ -396,6 +398,19 @@ object PoiMerger {
             val existing = merged[source]
             if (existing == null || timestamp > existing) {
                 merged[source] = timestamp
+            }
+        }
+        return merged.takeIf { it.isNotEmpty() }
+    }
+
+    private fun mergeRawSourceData(a: Map<String, String>?, b: Map<String, String>?): Map<String, String>? {
+        if (a == null) return b
+        if (b == null) return a
+        val merged = a.toMutableMap()
+        for ((source, raw) in b) {
+            val existing = merged[source]
+            if (existing == null || existing.isBlank()) {
+                merged[source] = raw
             }
         }
         return merged.takeIf { it.isNotEmpty() }

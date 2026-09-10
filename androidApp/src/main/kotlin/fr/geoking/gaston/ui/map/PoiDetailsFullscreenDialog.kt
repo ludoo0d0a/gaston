@@ -30,6 +30,10 @@ import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.shared.datetime.DateTimeUtils
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.ColorHelper
+import fr.geoking.gaston.ui.components.JsonTree
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -51,6 +55,7 @@ fun PoiDetailsFullscreenDialog(
     onToggleFavorite: (() -> Unit)? = null,
     onNavigate: (() -> Unit)? = null,
     onDismiss: () -> Unit,
+    showRawDetail: Boolean = false,
     /** When true, renders as full-screen content (for marketing captures) instead of a [Dialog]. */
     embedded: Boolean = false,
 ) {
@@ -446,6 +451,49 @@ fun PoiDetailsFullscreenDialog(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
+                            }
+                        }
+
+                        if (showRawDetail) {
+                            SectionHeader(stringResource(R.string.poi_section_raw_data))
+                            val sourceList = remember(poi.source, poi.rawSourceData) {
+                                val keys = poi.rawSourceData?.keys.orEmpty()
+                                (sources + keys).distinct().ifEmpty { listOfNotNull(poi.source) }
+                            }
+                            sourceList.forEach { s ->
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Source: $s",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                val rawString = poi.rawSourceData?.get(s)
+                                val jsonElement = remember(rawString, poi) {
+                                    if (!rawString.isNullOrBlank()) {
+                                        try {
+                                            Json.parseToJsonElement(rawString)
+                                        } catch (e: Exception) {
+                                            JsonPrimitive(rawString)
+                                        }
+                                    } else {
+                                        try {
+                                            Json.encodeToJsonElement(Poi.serializer(), poi)
+                                        } catch (e: Exception) {
+                                            JsonPrimitive(poi.toString())
+                                        }
+                                    }
+                                }
+                                Surface(
+                                    color = Color(0xFF0F172A),
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(8.dp)) {
+                                        JsonTree(jsonElement = jsonElement, initialExpanded = false)
+                                    }
+                                }
                             }
                         }
                     }
