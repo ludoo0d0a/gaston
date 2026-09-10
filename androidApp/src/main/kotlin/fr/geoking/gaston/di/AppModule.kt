@@ -64,7 +64,7 @@ val appModule = module {
 
             install(ResponseObserver) {
                 onResponse { response ->
-                    if (settingsManager.settings.value.debugLoggingEnabled) {
+                    if (settingsManager.settings.value.debugLoggingEnabled || settingsManager.settings.value.debugBarEnabled) {
                         val request = response.request
                         val reqBody = request.attributes.getOrNull(requestBodyKey)
                         val contentLength = response.headers["Content-Length"]?.toLongOrNull()
@@ -102,7 +102,7 @@ val appModule = module {
 
             install(createClientPlugin("NetworkDebugLog") {
                 on(io.ktor.client.plugins.api.Send) { request ->
-                    if (settingsManager.settings.value.debugLoggingEnabled) {
+                    if (settingsManager.settings.value.debugLoggingEnabled || settingsManager.settings.value.debugBarEnabled) {
                         val content = request.body
                         if (content is io.ktor.http.content.TextContent) {
                             request.attributes.put(requestBodyKey, content.text)

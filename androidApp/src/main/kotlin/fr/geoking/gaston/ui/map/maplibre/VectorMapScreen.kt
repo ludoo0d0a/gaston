@@ -78,13 +78,11 @@ import fr.geoking.gaston.ui.components.MapLoadingOverlay
 import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
-import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.MapBaseViewControl
 import fr.geoking.gaston.ui.map.maplibre.resolvePhoneMapLibreStyle
 import fr.geoking.gaston.ui.map.PoiDetailCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.AddPoiSheet
-import fr.geoking.gaston.ui.map.DebugLogOverlay
 import fr.geoking.gaston.ui.components.MapLocateMeButton
 import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.ui.map.MapCameraSample
@@ -570,24 +568,6 @@ fun VectorMapScreen(
                             .zIndex(1f)
                     )
 
-                    if (settings.debugLoggingEnabled) {
-                        val detectedCountries = remember(currentTarget) {
-                            fr.geoking.gaston.countryDisplayLabelAtMapPosition(
-                                currentTarget.latitude,
-                                currentTarget.longitude
-                            )
-                        }
-                        DebugLogOverlay(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(top = 72.dp, end = 16.dp)
-                                .zIndex(2f),
-                            detectedCountries = detectedCountries,
-                            onRefresh = {
-                                mapActions.refresh(true, currentMapCameraSample())
-                            }
-                        )
-                    }
                 }
             }
         }

@@ -2427,7 +2427,23 @@ private fun DeveloperSection(
                 )
             }
 
-            // 3. Network floating bar
+            // 3. Debug bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.dev_debug_bar), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.dev_debug_bar_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.debugBarEnabled,
+                    onCheckedChange = { onUpdate(settings.copy(debugBarEnabled = it)) }
+                )
+            }
+
+            // 4. Network floating bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

@@ -655,6 +655,7 @@
     <string name="dev_developer_settings">Paramètres développeur</string>
     <string name="dev_premium_mode">mode premium</string>
     <string name="dev_raw_detail">détail brut</string>
+    <string name="dev_debug_bar">barre de débogage</string>
     <string name="dev_network_floating_bar">barre réseau flottante</string>
     <string name="dev_debug_grid">grille de débogage sur la carte</string>
     <string name="dev_test_aa_map_surface">tester la surface de carte AA</string>
@@ -747,6 +748,7 @@
     <string name="error_map_dependencies">Les dépendances n\'ont pas pu être initialisées.</string>
     <string name="dev_premium_mode_subtitle">Simuler le mode Premium</string>
     <string name="dev_raw_detail_subtitle">Afficher les données JSON brutes par source dans les détails de station</string>
+    <string name="dev_debug_bar_subtitle">Afficher le bouton de débogage flottant pour inspecter les requêtes HTTP</string>
     <string name="dev_network_floating_bar_subtitle">Afficher une barre d\'état réseau flottante</string>
     <string name="poi_section_raw_data">Données brutes par source</string>
     <string name="dev_debug_grid_subtitle">Afficher la grille de débogage des tuiles sur la carte</string>

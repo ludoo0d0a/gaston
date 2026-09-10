@@ -35,6 +35,8 @@ import fr.geoking.gaston.shared.network.NetworkStatus
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.di.MapModuleLoader
 import fr.geoking.gaston.ui.map.maplibre.DirectionsMapScreen
+import androidx.compose.ui.zIndex
+import fr.geoking.gaston.ui.map.DebugLogOverlay
 import fr.geoking.gaston.ui.map.MapFactory
 import fr.geoking.gaston.ui.EmergencyScreen
 import fr.geoking.gaston.ui.PhoneNetworkLocationScreen
@@ -803,6 +805,18 @@ fun MainUI(
                             selectedSearchLocation = dashboardSelectedLocation,
                             onLocationSelected = { dashboardSelectedLocation = it }
                         )
+                    }
+                }
+
+                if (settings.debugBarEnabled || settings.debugLoggingEnabled) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 80.dp, end = 16.dp)
+                            .zIndex(10f),
+                        contentAlignment = Alignment.TopEnd
+                    ) {
+                        DebugLogOverlay()
                     }
                 }
 
