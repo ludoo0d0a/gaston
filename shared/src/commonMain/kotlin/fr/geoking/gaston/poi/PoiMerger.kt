@@ -91,9 +91,6 @@ object PoiMerger {
     private fun isSamePoi(a: Poi, b: Poi): Boolean {
         if (a.id == b.id) return true
 
-        // 0. Match by reference ID (e.g. ref:FR:prix-carburants)
-        if (hasMatchingRefId(a, b)) return true
-
         // Fast reject on approximate deltas before doing haversine.
         val maxDist = maxOf(MERGE_DISTANCE_WITH_NAME_METERS, MERGE_DISTANCE_WITH_BRAND_METERS)
         val latDeltaMeters = abs(a.latitude - b.latitude) * 111_000.0
@@ -138,17 +135,6 @@ object PoiMerger {
         return false
     }
 
-    private fun hasMatchingRefId(a: Poi, b: Poi): Boolean {
-        val refA = a.refId?.takeIf { it.isNotBlank() }
-        val refB = b.refId?.takeIf { it.isNotBlank() }
-
-        if (refA != null && refB != null && refA == refB) return true
-        if (refA != null && (refA == b.id || "osm:$refA" == b.id)) return true
-        if (refB != null && (refB == a.id || "osm:$refB" == a.id)) return true
-
-        return false
-    }
-
     private fun isGasStation(p: Poi): Boolean =
         p.poiCategory == PoiCategory.Gas ||
             (p.poiCategory == null && !p.isElectric)
@@ -174,11 +160,6 @@ object PoiMerger {
 
     /** True when [candidate] is a better source of map coordinates than [current]. */
     private fun preferCoordsFrom(candidate: Poi, current: Poi): Boolean {
-        val candIsOsm = candidate.source?.contains("OpenStreetMap", ignoreCase = true) == true
-        val currIsOsm = current.source?.contains("OpenStreetMap", ignoreCase = true) == true
-        if (candIsOsm && !currIsOsm) return true
-        if (!candIsOsm && currIsOsm) return false
-
         val brandCand = BrandRegistry.findBrand(candidate.name, candidate.brand)
         val brandCurr = BrandRegistry.findBrand(current.name, current.brand)
         if (brandCand != null && brandCurr == null) return true
@@ -304,13 +285,11 @@ object PoiMerger {
 
         val useIncomingCoords = preferCoordsFrom(incoming, existing)
         val mergedName = if (isBetterName(incoming.name, existing.name)) incoming.name else existing.name
-        val mergedRefId = preferNonBlank(existing.refId, incoming.refId)
 
         return existing.copy(
             // Prefer coordinates from the branded / specific-name source (often OSM).
             latitude = if (useIncomingCoords) incoming.latitude else existing.latitude,
             longitude = if (useIncomingCoords) incoming.longitude else existing.longitude,
-            refId = mergedRefId,
             isElectric = mergedIsElectric,
             poiCategory = mergedPoiCategory,
             extraCategories = mergedExtraCategories,

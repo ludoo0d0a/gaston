@@ -307,9 +307,7 @@ data class Poi(
     /** The source of the POI data (e.g. "Routex", "DataGouv", "Chargy"). */
     val source: String? = null,
     /** Latest price update timestamp per source. */
-    val sourceUpdates: Map<String, String>? = null,
-    /** Reference ID from external registry (e.g. ref:FR:prix-carburants for French fuel stations). */
-    val refId: String? = null
+    val sourceUpdates: Map<String, String>? = null
 )
 
 /**
@@ -492,7 +490,11 @@ object MapPoiFilter {
             if (selectedFuelIds.isNotEmpty()) {
                 val prices = poi.fuelPrices
                 if (!prices.isNullOrEmpty()) {
-                    val stationFuelIds = prices.mapNotNull { fuelNameToId(it.fuelName) }.toSet()
+                    val availablePrices = prices.filter { !it.outOfStock && it.price > 0.0 }
+                    if (availablePrices.isEmpty()) {
+                        return false
+                    }
+                    val stationFuelIds = availablePrices.mapNotNull { fuelNameToId(it.fuelName) }.toSet()
                     if (stationFuelIds.intersect(selectedFuelIds).isEmpty()) {
                         return false
                     }

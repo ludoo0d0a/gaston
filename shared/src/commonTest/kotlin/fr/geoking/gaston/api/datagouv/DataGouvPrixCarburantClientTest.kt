@@ -258,4 +258,34 @@ class DataGouvPrixCarburantClientTest {
         assertEquals("Route", station.brand)
         assertEquals("Route", station.name)
     }
+
+    @Test
+    fun parseFuels_parsesRupturesCorrectly() {
+        val body = """
+            {
+                "results": [
+                    {
+                        "id": "57120005",
+                        "latitude": 49.25,
+                        "longitude": 6.096,
+                        "gazole_prix": 1.85,
+                        "gazole_rupture_type": "temporaire",
+                        "sp95_prix": 1.95,
+                        "carburants_rupture_definitive": "E85;GPLc"
+                    }
+                ]
+            }
+        """.trimIndent()
+
+        val stations = client.parseRecords(body)
+        assertEquals(1, stations.size)
+        val fuels = stations[0].fuels
+        val gazole = fuels.find { it.name == "Gazole" }
+        assertNotNull(gazole)
+        assertEquals(true, gazole.outOfStock)
+
+        val sp95 = fuels.find { it.name == "SP95" }
+        assertNotNull(sp95)
+        assertEquals(false, sp95.outOfStock)
+    }
 }

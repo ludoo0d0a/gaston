@@ -46,7 +46,21 @@ class DataGouvProvider(
             radiusKm = effectiveRadiusKm,
             limit = limit
         )
-        return stations.map { station ->
+        return stations.mapNotNull { station ->
+            val fuelPrices = station.prices.map { p ->
+                FuelPrice(
+                    fuelName = p.fuelName,
+                    price = p.price,
+                    updatedAt = p.updatedAt,
+                    outOfStock = p.outOfStock
+                )
+            }.ifEmpty { null }
+
+            val availablePrices = fuelPrices?.filter { !it.outOfStock && it.price > 0.0 }
+            if (availablePrices.isNullOrEmpty()) {
+                return@mapNotNull null
+            }
+
             Poi(
                 id = station.id,
                 name = station.name,
@@ -55,14 +69,7 @@ class DataGouvProvider(
                 longitude = station.longitude,
                 brand = station.brand,
                 isOnHighway = station.isOnHighway,
-                fuelPrices = station.prices.map { p ->
-                    FuelPrice(
-                        fuelName = p.fuelName,
-                        price = p.price,
-                        updatedAt = p.updatedAt,
-                        outOfStock = p.outOfStock
-                    )
-                }.ifEmpty { null },
+                fuelPrices = fuelPrices,
                 source = "DataGouv"
             )
         }

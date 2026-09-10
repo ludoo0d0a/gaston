@@ -614,42 +614,4 @@ class PoiMergerTest {
         assertEquals(58, merged[0].irveDetails?.availableConnectors)
         assertEquals(68, merged[0].irveDetails?.totalConnectors)
     }
-
-    @Test
-    fun mergePois_mergesByRefIdFartherThan300mAndPrefersOsmCoords() {
-        // ROMBASDIS scenario: DataGouv station 57120005 placed at wrong coords ~678m away from OSM node
-        val dataGouv = Poi(
-            id = "57120005",
-            name = "RUE DU MUGUET",
-            address = "RUE DU MUGUET, 57120, Rombas",
-            latitude = 49.25,
-            longitude = 6.096,
-            brand = "E.Leclerc",
-            poiCategory = PoiCategory.Gas,
-            fuelPrices = listOf(FuelPrice("Gazole", 1.65, updatedAt = "2026-07-09T16:04:50Z")),
-            source = "DataGouvPrixCarburant",
-            refId = null
-        )
-
-        val osm = Poi(
-            id = "osm:4897671239",
-            name = "E. Leclerc",
-            address = "Rombas",
-            latitude = 49.2458398,
-            longitude = 6.1028324,
-            brand = "E.Leclerc",
-            poiCategory = PoiCategory.Gas,
-            source = "OpenStreetMap",
-            refId = "57120005"
-        )
-
-        val merged = PoiMerger.mergePois(listOf(dataGouv, osm))
-        assertEquals(1, merged.size, "Should merge stations sharing same refId even if >300m apart")
-        assertEquals(49.2458398, merged[0].latitude, "Should prefer correct coordinates from OpenStreetMap")
-        assertEquals(6.1028324, merged[0].longitude, "Should prefer correct coordinates from OpenStreetMap")
-        assertEquals("E. Leclerc", merged[0].name)
-        assertEquals("Leclerc", merged[0].brand)
-        assertEquals("57120005", merged[0].refId)
-        assertEquals(listOf("Gazole"), merged[0].fuelPrices?.map { it.fuelName })
-    }
 }
