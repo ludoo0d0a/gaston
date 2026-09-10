@@ -56,13 +56,9 @@ class DataGouvProvider(
                 )
             }.ifEmpty { null }
 
-            val availablePrices = fuelPrices?.filter { !it.outOfStock && it.price > 0.0 }
-            if (availablePrices.isNullOrEmpty()) {
-                return@mapNotNull null
-            }
-
             Poi(
                 id = station.id,
+                refId = station.id,
                 name = station.name,
                 address = station.address,
                 latitude = station.latitude,

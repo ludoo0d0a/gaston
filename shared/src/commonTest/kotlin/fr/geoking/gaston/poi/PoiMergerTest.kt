@@ -614,4 +614,47 @@ class PoiMergerTest {
         assertEquals(58, merged[0].irveDetails?.availableConnectors)
         assertEquals(68, merged[0].irveDetails?.totalConnectors)
     }
+
+    @Test
+    fun mergePois_mergesByRefIdEvenIfDistanceIsLargeAndPrefersOsmCoords() {
+        // Rombas E.Leclerc case:
+        // DataGouv / GasApi: (49.250000, 6.096000), refId="57120005"
+        // Overpass: (49.2458398, 6.1028324), refId="57120005" (~685m apart)
+        val dataGouvAndGasApiPoi = Poi(
+            id = "57120005",
+            refId = "57120005",
+            name = "E.Leclerc Express ROMBASDIS",
+            address = "RUE DU MUGUET, 57120, ROMBAS",
+            latitude = 49.250000,
+            longitude = 6.096000,
+            brand = "Leclerc",
+            poiCategory = PoiCategory.Gas,
+            fuelPrices = listOf(FuelPrice("Gazole", 1.879)),
+            source = "DataGouv + GasAPI"
+        )
+
+        val overpassPoi = Poi(
+            id = "osm:4897671239",
+            refId = "57120005",
+            name = "E. Leclerc",
+            address = "Rue du Muguet, Rombas",
+            latitude = 49.2458398,
+            longitude = 6.1028324,
+            brand = "E.Leclerc",
+            poiCategory = PoiCategory.Gas,
+            source = "OpenStreetMap"
+        )
+
+        val merged = PoiMerger.mergePois(listOf(dataGouvAndGasApiPoi, overpassPoi))
+        assertEquals(1, merged.size, "Should merge POIs with matching refId despite distance > 300m")
+
+        val result = merged[0]
+        assertEquals("57120005", result.refId)
+        assertEquals(49.2458398, result.latitude, 1e-6, "Should prefer OSM latitude")
+        assertEquals(6.1028324, result.longitude, 1e-6, "Should prefer OSM longitude")
+        assertTrue(result.source?.contains("DataGouv") == true, "Source should include DataGouv")
+        assertTrue(result.source?.contains("GasAPI") == true, "Source should include GasAPI")
+        assertTrue(result.source?.contains("OpenStreetMap") == true, "Source should include OpenStreetMap")
+        assertEquals(listOf("Gazole"), result.fuelPrices?.map { it.fuelName }, "Fuel prices should be preserved")
+    }
 }

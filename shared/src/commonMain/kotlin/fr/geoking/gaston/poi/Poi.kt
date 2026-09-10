@@ -304,6 +304,8 @@ data class Poi(
     val irveDetails: IrveDetails? = null,
     /** Restaurant/fast food only: opening hours, cuisine, brand (e.g. from Overpass). */
     val restaurantDetails: RestaurantDetails? = null,
+    /** Reference ID for cross-source matching (e.g. French government station ID `ref:FR:prix-carburants` / `57120005`). */
+    val refId: String? = null,
     /** The source of the POI data (e.g. "Routex", "DataGouv", "Chargy"). */
     val source: String? = null,
     /** Latest price update timestamp per source. */
