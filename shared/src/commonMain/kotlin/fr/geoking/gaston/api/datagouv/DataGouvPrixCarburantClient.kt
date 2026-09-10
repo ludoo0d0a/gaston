@@ -120,6 +120,62 @@ class DataGouvPrixCarburantClient(
         )
     }
 
+    private fun parseRuptures(record: JsonObject): Set<String> {
+        val ruptures = mutableSetOf<String>()
+
+        listOf("carburants_rupture_temporaire", "carburants_rupture_definitive").forEach { key ->
+            val value = record[key]?.jsonPrimitive?.contentOrNull
+            if (!value.isNullOrBlank()) {
+                value.split(";").forEach { name ->
+                    if (name.isNotBlank()) ruptures.add(name.trim().lowercase())
+                }
+            }
+        }
+
+        val ruptureElement = record["rupture"]
+        val ruptureArray = try {
+            when {
+                ruptureElement is kotlinx.serialization.json.JsonPrimitive && ruptureElement.content.startsWith("[") ->
+                    json.parseToJsonElement(ruptureElement.content).jsonArray
+                ruptureElement is JsonArray -> ruptureElement
+                else -> null
+            }
+        } catch (e: Exception) {
+            null
+        }
+
+        if (ruptureArray != null) {
+            for (item in ruptureArray) {
+                val obj = item as? JsonObject ?: continue
+                val nom = obj["nom"]?.jsonPrimitive?.contentOrNull
+                    ?: obj["@nom"]?.jsonPrimitive?.contentOrNull
+                    ?: obj["name"]?.jsonPrimitive?.contentOrNull
+                    ?: continue
+                val fin = obj["fin"]?.jsonPrimitive?.contentOrNull
+                    ?: obj["@fin"]?.jsonPrimitive?.contentOrNull
+                if (fin.isNullOrBlank()) {
+                    ruptures.add(nom.trim().lowercase())
+                }
+            }
+        }
+
+        listOf(
+            "gazole" to "Gazole",
+            "sp95" to "SP95",
+            "sp98" to "SP98",
+            "e10" to "E10",
+            "e85" to "E85",
+            "gplc" to "GPLc"
+        ).forEach { (prefix, fuelName) ->
+            val ruptureType = record["${prefix}_rupture_type"]?.jsonPrimitive?.contentOrNull
+            if (!ruptureType.isNullOrBlank()) {
+                ruptures.add(fuelName.lowercase())
+            }
+        }
+
+        return ruptures
+    }
+
     internal fun parseGeo(record: JsonObject): Pair<Double, Double>? {
         val latRaw = record["latitude"]?.jsonPrimitive?.contentOrNull
         val lngRaw = record["longitude"]?.jsonPrimitive?.contentOrNull
@@ -156,6 +212,7 @@ class DataGouvPrixCarburantClient(
     }
 
     private fun parseFuels(record: JsonObject): List<DataGouvPrixCarburantFuelPrice> {
+        val ruptures = parseRuptures(record)
         val list = mutableListOf<DataGouvPrixCarburantFuelPrice>()
         val prixElement = record["prix"]
         val prixArray = try {
@@ -181,7 +238,15 @@ class DataGouvPrixCarburantClient(
                     ?: obj["value"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
                 val maj = obj["maj"]?.jsonPrimitive?.contentOrNull
                     ?: obj["@maj"]?.jsonPrimitive?.contentOrNull
-                if (raw != null) list.add(DataGouvPrixCarburantFuelPrice(name = nom, priceEur = raw, updatedAt = maj))
+                val isRupture = nom.trim().lowercase() in ruptures
+                if (raw != null) {
+                    list.add(DataGouvPrixCarburantFuelPrice(
+                        name = nom,
+                        priceEur = raw,
+                        updatedAt = maj,
+                        outOfStock = isRupture
+                    ))
+                }
             }
         }
 
@@ -196,8 +261,14 @@ class DataGouvPrixCarburantClient(
         ).forEach { (fieldPrefix, fuelName) ->
             val price = record["${fieldPrefix}_prix"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
             val maj = record["${fieldPrefix}_maj"]?.jsonPrimitive?.contentOrNull
+            val isRupture = fuelName.lowercase() in ruptures
             if (price != null && list.none { it.name.equals(fuelName, ignoreCase = true) }) {
-                list.add(DataGouvPrixCarburantFuelPrice(name = fuelName, priceEur = price, updatedAt = maj))
+                list.add(DataGouvPrixCarburantFuelPrice(
+                    name = fuelName,
+                    priceEur = price,
+                    updatedAt = maj,
+                    outOfStock = isRupture
+                ))
             }
         }
 
@@ -207,7 +278,13 @@ class DataGouvPrixCarburantClient(
         if (singleNom != null && singleVal != null) {
             val exists = list.any { it.name == singleNom }
             if (!exists) {
-                list.add(DataGouvPrixCarburantFuelPrice(name = singleNom, priceEur = singleVal, updatedAt = singleMaj))
+                val isRupture = singleNom.trim().lowercase() in ruptures
+                list.add(DataGouvPrixCarburantFuelPrice(
+                    name = singleNom,
+                    priceEur = singleVal,
+                    updatedAt = singleMaj,
+                    outOfStock = isRupture
+                ))
             }
         }
         return list
@@ -260,5 +337,6 @@ data class DataGouvPrixCarburantStation(
 data class DataGouvPrixCarburantFuelPrice(
     val name: String,
     val priceEur: Double,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    val outOfStock: Boolean = false
 )

@@ -490,7 +490,11 @@ object MapPoiFilter {
             if (selectedFuelIds.isNotEmpty()) {
                 val prices = poi.fuelPrices
                 if (!prices.isNullOrEmpty()) {
-                    val stationFuelIds = prices.mapNotNull { fuelNameToId(it.fuelName) }.toSet()
+                    val availablePrices = prices.filter { !it.outOfStock && it.price > 0.0 }
+                    if (availablePrices.isEmpty()) {
+                        return false
+                    }
+                    val stationFuelIds = availablePrices.mapNotNull { fuelNameToId(it.fuelName) }.toSet()
                     if (stationFuelIds.intersect(selectedFuelIds).isEmpty()) {
                         return false
                     }

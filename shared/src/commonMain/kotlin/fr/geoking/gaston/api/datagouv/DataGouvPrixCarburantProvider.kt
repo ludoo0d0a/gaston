@@ -49,16 +49,22 @@ class DataGouvPrixCarburantProvider(
             ?: radiusKm
 
         val stations = prixCarburantClient.getStations(latitude, longitude, effectiveRadiusKm, limit)
-        return stations.map { station ->
+        return stations.mapNotNull { station ->
             val fuelPrices = station.fuels.map { p ->
                 FuelPrice(
                     fuelName = p.name,
                     price = p.priceEur,
                     updatedAt = p.updatedAt,
-                    outOfStock = false
+                    outOfStock = p.outOfStock
                 )
             }.ifEmpty { null }
-            val latestUpdate = fuelPrices?.mapNotNull { it.updatedAt }?.maxOrNull()
+
+            val availablePrices = fuelPrices?.filter { !it.outOfStock && it.price > 0.0 }
+            if (availablePrices.isNullOrEmpty()) {
+                return@mapNotNull null
+            }
+
+            val latestUpdate = fuelPrices.mapNotNull { it.updatedAt }.maxOrNull()
 
             Poi(
                 id = station.id,
