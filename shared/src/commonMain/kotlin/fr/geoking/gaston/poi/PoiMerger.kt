@@ -91,6 +91,10 @@ object PoiMerger {
     private fun isSamePoi(a: Poi, b: Poi): Boolean {
         if (a.id == b.id) return true
 
+        if (!a.refId.isNullOrBlank() && !b.refId.isNullOrBlank() && a.refId == b.refId) {
+            return true
+        }
+
         // Fast reject on approximate deltas before doing haversine.
         val maxDist = maxOf(MERGE_DISTANCE_WITH_NAME_METERS, MERGE_DISTANCE_WITH_BRAND_METERS)
         val latDeltaMeters = abs(a.latitude - b.latitude) * 111_000.0
@@ -160,6 +164,11 @@ object PoiMerger {
 
     /** True when [candidate] is a better source of map coordinates than [current]. */
     private fun preferCoordsFrom(candidate: Poi, current: Poi): Boolean {
+        val candOsm = candidate.source?.contains("OpenStreetMap", ignoreCase = true) == true || candidate.id.startsWith("osm:")
+        val currOsm = current.source?.contains("OpenStreetMap", ignoreCase = true) == true || current.id.startsWith("osm:")
+        if (candOsm && !currOsm) return true
+        if (!candOsm && currOsm) return false
+
         val brandCand = BrandRegistry.findBrand(candidate.name, candidate.brand)
         val brandCurr = BrandRegistry.findBrand(current.name, current.brand)
         if (brandCand != null && brandCurr == null) return true
@@ -286,6 +295,7 @@ object PoiMerger {
 
         val useIncomingCoords = preferCoordsFrom(incoming, existing)
         val mergedName = if (isBetterName(incoming.name, existing.name)) incoming.name else existing.name
+        val mergedRefId = preferNonBlank(existing.refId, incoming.refId)
 
         return existing.copy(
             // Prefer coordinates from the branded / specific-name source (often OSM).
@@ -311,6 +321,7 @@ object PoiMerger {
             operator = existing.operator ?: incoming.operator,
             isOnHighway = existing.isOnHighway || incoming.isOnHighway,
             chargePointCount = mergeMaxOrNull(existing.chargePointCount, incoming.chargePointCount),
+            refId = mergedRefId,
             source = mergedSources,
             sourceUpdates = mergedSourceUpdates,
             rawSourceData = mergedRawSourceData,
