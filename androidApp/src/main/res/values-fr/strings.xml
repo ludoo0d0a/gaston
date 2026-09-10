@@ -511,6 +511,8 @@
     <string name="fuel_sp98">SP98</string>
     <string name="fuel_gplc">GPLc</string>
     <string name="fuel_e85">E85</string>
+    <string name="fuel_out_of_stock">Rupture de stock</string>
+    <string name="fuel_out_of_stock_short">Rupture</string>
     <string name="route_cheapest_badge">MOINS CHER</string>
     <string name="route_calculating">Calcul de l\'itinéraire…</string>
     <string name="route_calculating_short">Calcul…</string>

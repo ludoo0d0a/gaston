@@ -108,8 +108,8 @@ fun PoiDetailCard(
                         )
                     }
                     Text(
-                        text = if (fp.outOfStock) "—" else "€%.3f".format(fp.price),
-                        color = if (fp.outOfStock) Color.White.copy(alpha = 0.5f) else Color(0xFF22C55E),
+                        text = if (fp.outOfStock) androidx.compose.ui.res.stringResource(R.string.fuel_out_of_stock_short) else "€%.3f".format(fp.price),
+                        color = if (fp.outOfStock) Color(0xFFEF4444) else Color(0xFF22C55E),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )

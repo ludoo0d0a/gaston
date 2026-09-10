@@ -186,18 +186,22 @@ class DataGouvPrixCarburantClient(
         }
 
         // data.economie.gouv.fr Explore v2.1 (flux instantané v2) provides individual fuel fields
-        listOf(
+        val fuelFieldSpecs = listOf(
             "gazole" to "Gazole",
             "sp95" to "SP95",
             "sp98" to "SP98",
             "e10" to "E10",
             "e85" to "E85",
             "gplc" to "GPLc"
-        ).forEach { (fieldPrefix, fuelName) ->
+        )
+
+        fuelFieldSpecs.forEach { (fieldPrefix, fuelName) ->
             val price = record["${fieldPrefix}_prix"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
             val maj = record["${fieldPrefix}_maj"]?.jsonPrimitive?.contentOrNull
+            val ruptureType = record["${fieldPrefix}_rupture_type"]?.jsonPrimitive?.contentOrNull
+            val isRupture = !ruptureType.isNullOrBlank()
             if (price != null && list.none { it.name.equals(fuelName, ignoreCase = true) }) {
-                list.add(DataGouvPrixCarburantFuelPrice(name = fuelName, priceEur = price, updatedAt = maj))
+                list.add(DataGouvPrixCarburantFuelPrice(name = fuelName, priceEur = price, updatedAt = maj, outOfStock = isRupture))
             }
         }
 
@@ -210,6 +214,67 @@ class DataGouvPrixCarburantClient(
                 list.add(DataGouvPrixCarburantFuelPrice(name = singleNom, priceEur = singleVal, updatedAt = singleMaj))
             }
         }
+
+        // Parse rupture array or json string in record["rupture"] or list of indisponibles
+        val ruptureElement = record["rupture"]
+        val ruptureArray = try {
+            when {
+                ruptureElement is kotlinx.serialization.json.JsonPrimitive && ruptureElement.content.startsWith("[") ->
+                    json.parseToJsonElement(ruptureElement.content).jsonArray
+                ruptureElement is JsonArray -> ruptureElement
+                else -> null
+            }
+        } catch (e: Exception) {
+            null
+        }
+
+        val ruptureFuels = mutableMapOf<String, String?>() // fuelName -> debut
+        if (ruptureArray != null) {
+            for (r in ruptureArray) {
+                val obj = r as? JsonObject ?: continue
+                val rawNom = obj["nom"]?.jsonPrimitive?.contentOrNull
+                    ?: obj["@nom"]?.jsonPrimitive?.contentOrNull
+                    ?: obj["name"]?.jsonPrimitive?.contentOrNull
+                    ?: continue
+                val debut = obj["debut"]?.jsonPrimitive?.contentOrNull
+                    ?: obj["@debut"]?.jsonPrimitive?.contentOrNull
+                val normalized = when (rawNom.trim().uppercase()) {
+                    "GAZOLE" -> "Gazole"
+                    "SP95" -> "SP95"
+                    "SP98" -> "SP98"
+                    "E10" -> "E10"
+                    "E85" -> "E85"
+                    "GPLC", "GPL" -> "GPLc"
+                    else -> rawNom.trim()
+                }
+                ruptureFuels[normalized] = debut
+            }
+        }
+
+        fuelFieldSpecs.forEach { (fieldPrefix, fuelName) ->
+            val ruptureType = record["${fieldPrefix}_rupture_type"]?.jsonPrimitive?.contentOrNull
+            val ruptureDebut = record["${fieldPrefix}_rupture_debut"]?.jsonPrimitive?.contentOrNull
+            if (!ruptureType.isNullOrBlank() && !ruptureFuels.containsKey(fuelName)) {
+                ruptureFuels[fuelName] = ruptureDebut
+            }
+        }
+
+        ruptureFuels.forEach { (fuelName, debut) ->
+            val existingIndex = list.indexOfFirst { it.name.equals(fuelName, ignoreCase = true) }
+            if (existingIndex >= 0) {
+                list[existingIndex] = list[existingIndex].copy(outOfStock = true)
+            } else {
+                list.add(
+                    DataGouvPrixCarburantFuelPrice(
+                        name = fuelName,
+                        priceEur = 0.0,
+                        updatedAt = debut,
+                        outOfStock = true
+                    )
+                )
+            }
+        }
+
         return list
     }
 
@@ -260,5 +325,6 @@ data class DataGouvPrixCarburantStation(
 data class DataGouvPrixCarburantFuelPrice(
     val name: String,
     val priceEur: Double,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    val outOfStock: Boolean = false
 )

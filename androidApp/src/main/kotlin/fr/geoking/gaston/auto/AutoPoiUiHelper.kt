@@ -75,7 +75,7 @@ object AutoPoiUiHelper {
         )
 
     private fun formatFuelPriceText(fp: FuelPrice): String {
-        val priceStr = if (fp.outOfStock) "—" else "€%.3f".format(fp.price)
+        val priceStr = if (fp.outOfStock) "Rupture" else "€%.3f".format(fp.price)
         val updated = fp.updatedAt?.let { " (${DateTimeUtils.formatRelativeTime(it)})" } ?: ""
         return "$priceStr$updated"
     }

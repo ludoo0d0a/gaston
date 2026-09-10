@@ -55,7 +55,7 @@ class DataGouvPrixCarburantProvider(
                     fuelName = p.name,
                     price = p.priceEur,
                     updatedAt = p.updatedAt,
-                    outOfStock = false
+                    outOfStock = p.outOfStock
                 )
             }.ifEmpty { null }
             val latestUpdate = fuelPrices?.mapNotNull { it.updatedAt }?.maxOrNull()

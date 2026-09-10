@@ -258,4 +258,56 @@ class DataGouvPrixCarburantClientTest {
         assertEquals("Route", station.brand)
         assertEquals("Route", station.name)
     }
+
+    @Test
+    fun parseRecords_AlloEuropeServices_parsesAvailableAndOutOfStockFuels() {
+        val body = """
+            {
+                "results": [
+                    {
+                        "id": "57210001",
+                        "latitude": "4922100",
+                        "longitude": "616300",
+                        "cp": "57280",
+                        "pop": "R",
+                        "adresse": "59 Route de Thionville",
+                        "ville": "Maizières-lès-Metz",
+                        "marque": "Total",
+                        "nom": "ALLO EUROPE SERVICES",
+                        "prix": "{\"@nom\": \"Gazole\", \"@id\": \"1\", \"@maj\": \"2026-09-10 08:03:08\", \"@valeur\": \"2.250\"}",
+                        "rupture": "[{\"@nom\": \"E85\", \"@id\": \"3\", \"@debut\": \"2017-09-12 11:59:47\", \"@type\": \"definitive\"}, {\"@nom\": \"GPLc\", \"@id\": \"4\", \"@debut\": \"2017-09-12 11:59:48\", \"@type\": \"definitive\"}, {\"@nom\": \"SP95\", \"@id\": \"2\", \"@debut\": \"2022-12-27 07:13:24\", \"@type\": \"definitive\"}, {\"@nom\": \"SP98\", \"@id\": \"6\", \"@debut\": \"2026-09-09 10:25:25\", \"@type\": \"temporaire\"}, {\"@nom\": \"E10\", \"@id\": \"5\", \"@debut\": \"2026-09-10 10:20:33\", \"@type\": \"temporaire\"}]",
+                        "gazole_prix": 2.25,
+                        "sp98_rupture_type": "temporaire",
+                        "e10_rupture_type": "temporaire",
+                        "sp95_rupture_type": "definitive"
+                    }
+                ]
+            }
+        """.trimIndent()
+
+        val stations = client.parseRecords(body)
+        assertEquals(1, stations.size)
+        val station = stations[0]
+        assertEquals("57210001", station.id)
+        assertEquals("ALLO EUROPE SERVICES", station.name)
+        assertEquals("Total", station.brand)
+        assertEquals("59 Route de Thionville, 57280, Maizières-lès-Metz", station.address)
+
+        val gazole = station.fuels.find { it.name == "Gazole" }
+        assertNotNull(gazole)
+        assertEquals(2.25, gazole.priceEur)
+        assertEquals(false, gazole.outOfStock)
+
+        val e10 = station.fuels.find { it.name == "E10" }
+        assertNotNull(e10)
+        assertEquals(true, e10.outOfStock)
+
+        val sp98 = station.fuels.find { it.name == "SP98" }
+        assertNotNull(sp98)
+        assertEquals(true, sp98.outOfStock)
+
+        val sp95 = station.fuels.find { it.name == "SP95" }
+        assertNotNull(sp95)
+        assertEquals(true, sp95.outOfStock)
+    }
 }

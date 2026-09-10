@@ -228,8 +228,8 @@ fun PoiDetailsFullscreenDialog(
                                                 fontSize = 14.sp
                                             )
                                             Text(
-                                                text = if (fp.outOfStock) "—" else "€%.3f".format(fp.price),
-                                                color = if (fp.outOfStock) Color.White.copy(alpha = 0.5f) else Color(0xFF22C55E),
+                                                text = if (fp.outOfStock) stringResource(R.string.fuel_out_of_stock) else "€%.3f".format(fp.price),
+                                                color = if (fp.outOfStock) Color(0xFFEF4444) else Color(0xFF22C55E),
                                                 fontSize = 14.sp,
                                                 fontWeight = FontWeight.Medium
                                             )
