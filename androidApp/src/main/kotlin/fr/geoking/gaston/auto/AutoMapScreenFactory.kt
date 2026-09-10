@@ -24,6 +24,7 @@ object AutoMapScreenFactory {
             communityRepo = mapDeps.communityRepo,
             favoritesRepo = mapDeps.favoritesRepo,
             title = title,
+            mapDeps = mapDeps,
         )
         CarMapMode.Custom -> CustomMapPoiScreen(
             carContext = carContext,
@@ -38,6 +39,7 @@ object AutoMapScreenFactory {
             communityRepo = mapDeps.communityRepo,
             favoritesRepo = mapDeps.favoritesRepo,
             title = title,
+            mapDeps = mapDeps,
         )
         CarMapMode.MapLibre -> MapLibrePoiScreen(
             carContext = carContext,
@@ -53,6 +55,7 @@ object AutoMapScreenFactory {
             favoritesRepo = mapDeps.favoritesRepo,
             title = title,
             canvasMapModeConfig = CanvasMapModeConfig.mapLibre(carContext),
+            mapDeps = mapDeps,
         )
         CarMapMode.MapTiler -> MapLibrePoiScreen(
             carContext = carContext,
@@ -68,6 +71,7 @@ object AutoMapScreenFactory {
             favoritesRepo = mapDeps.favoritesRepo,
             title = title,
             canvasMapModeConfig = CanvasMapModeConfig.mapTiler(carContext),
+            mapDeps = mapDeps,
         )
         CarMapMode.Protomaps -> MapLibrePoiScreen(
             carContext = carContext,
@@ -83,6 +87,7 @@ object AutoMapScreenFactory {
             favoritesRepo = mapDeps.favoritesRepo,
             title = title,
             canvasMapModeConfig = CanvasMapModeConfig.protomaps(carContext),
+            mapDeps = mapDeps,
         )
         CarMapMode.Mapsforge -> fr.geoking.gaston.auto.mapsforge.MapsforgePoiScreen(
             carContext = carContext,
@@ -97,6 +102,7 @@ object AutoMapScreenFactory {
             communityRepo = mapDeps.communityRepo,
             favoritesRepo = mapDeps.favoritesRepo,
             title = title,
+            mapDeps = mapDeps,
         )
     }
 }

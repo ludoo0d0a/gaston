@@ -41,6 +41,7 @@ import fr.geoking.gaston.auto.AutoMapPoiHitTest
 import fr.geoking.gaston.auto.AutoMapSettingsScreen
 import fr.geoking.gaston.auto.AutoPoiUiHelper
 import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.auto.actionMapIcon
 import fr.geoking.gaston.auto.actionSettingsIcon
 import fr.geoking.gaston.auto.actionZoomInIcon
 import fr.geoking.gaston.auto.actionZoomOutIcon
@@ -51,8 +52,10 @@ import fr.geoking.gaston.auto.shouldAddTrailPoint
 import fr.geoking.gaston.auto.shouldRedrawFromMovement
 import fr.geoking.gaston.auto.shouldRequeryForViewportChange
 import fr.geoking.gaston.auto.shouldRequeryPois
+import fr.geoking.gaston.auto.swapMapMode
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
+import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProvidersAt
@@ -96,7 +99,8 @@ class MapsforgePoiScreen(
     private val communityRepo: CommunityPoiRepository? = null,
     private val favoritesRepo: FavoritesRepository? = null,
     private val title: String = carContext.getString(R.string.dashboard_nearby_stations),
-    private val itineraryPoints: List<Pair<Double, Double>> = emptyList()
+    private val itineraryPoints: List<Pair<Double, Double>> = emptyList(),
+    private val mapDeps: MapDeps? = null
 ) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
 
     private val mapManager = MapsforgeMapManager(carContext)
@@ -798,6 +802,15 @@ class MapsforgePoiScreen(
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
                     .build()
             )
+
+        if (mapDeps != null) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionMapIcon())
+                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
+                    .build()
+            )
+        }
 
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {

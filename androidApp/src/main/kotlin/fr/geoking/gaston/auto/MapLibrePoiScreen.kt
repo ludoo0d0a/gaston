@@ -43,6 +43,7 @@ import fr.geoking.gaston.poi.PoiSearchResult
 import fr.geoking.gaston.poi.PoiProviderError
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
+import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.poi.LoadedPoiRegion
 import fr.geoking.gaston.poi.mergeLoadedRegion
@@ -90,6 +91,7 @@ open class MapLibrePoiScreen(
     private val title: String = carContext.getString(R.string.dashboard_nearby_stations),
     private val itineraryPoints: List<Pair<Double, Double>> = emptyList(),
     private val canvasMapModeConfig: CanvasMapModeConfig = CanvasMapModeConfig.mapLibre(carContext),
+    private val mapDeps: MapDeps? = null,
 ) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
 
     private var pois: List<Poi> = emptyList()
@@ -950,6 +952,15 @@ open class MapLibrePoiScreen(
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
                     .build()
             )
+
+        if (mapDeps != null) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionMapIcon())
+                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
+                    .build()
+            )
+        }
 
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {

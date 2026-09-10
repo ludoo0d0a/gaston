@@ -24,6 +24,7 @@ import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
+import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiMerger
@@ -57,7 +58,8 @@ class NativeMapPoiScreen(
     private val settingsManager: SettingsManager,
     private val communityRepo: CommunityPoiRepository? = null,
     private val favoritesRepo: FavoritesRepository? = null,
-    private val title: String = carContext.getString(R.string.dashboard_nearby_stations)
+    private val title: String = carContext.getString(R.string.dashboard_nearby_stations),
+    private val mapDeps: MapDeps? = null
 ) : Screen(carContext), DefaultLifecycleObserver {
 
     private var pois: List<Poi> = emptyList()
@@ -217,6 +219,15 @@ class NativeMapPoiScreen(
                 }
                 .build()
         )
+
+        if (mapDeps != null) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionMapIcon())
+                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
+                    .build()
+            )
+        }
 
         val fuelIdsForFilter = effectiveEnergies - "electric"
         if (hasFuelFilter && (isCheapestFilterActive || pois.any { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForFilter } == true })) {

@@ -406,7 +406,8 @@ Reference implementations: `AutoAboutScreen.kt` (long scrollable text, no action
 
 `CustomMapPoiScreen` / `MapLibrePoiScreen` split controls across templates:
 
-- **ActionStrip** (top-right): minimal — settings icon, optional API-errors icon (max 1–2 actions).
+- **ActionStrip** (top-right): minimal — settings icon, map-mode swap icon (cycles `CarMapMode`), optional
+  cheapest-filter icon (max 3 actions in practice, hard cap 4).
 - **Nested ListTemplate Header** end actions: zoom, recenter, compass/orientation (icon + title where needed).
 
 Do not put all map controls on the ActionStrip; strict hosts reject overloaded strips.
