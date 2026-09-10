@@ -26,7 +26,10 @@ data class PmtilesServerMap(
     val minLat: Double = -90.0,
     val maxLat: Double = 90.0,
     val minLon: Double = -180.0,
-    val maxLon: Double = 180.0
+    val maxLon: Double = 180.0,
+    /** Base file name (without extension) used on disk. Aliases (e.g. "Moselle" -> "Lorraine")
+     *  share the same downloaded file as their canonical region instead of duplicating storage. */
+    val storageKey: String = name,
 ) {
     fun contains(lat: Double, lon: Double): Boolean =
         lat in minLat..maxLat && lon in minLon..maxLon
@@ -68,6 +71,38 @@ object PmtilesPresetServers {
             minLat = 49.4, maxLat = 50.2, minLon = 5.7, maxLon = 6.6
         ),
         PmtilesServerMap(
+            name = "Lorraine",
+            region = "France",
+            url = "$BBBIKE_PMTILES/europe/france/lorraine/lorraine.osm.pmtiles-shortbread.zip",
+            sizeEstimateMb = 106,
+            minLat = 48.3, maxLat = 49.7, minLon = 5.2, maxLon = 7.6
+        ),
+        // "Grand Est" (the 2016-merged region) has no single published extract; it is covered by the
+        // Alsace + Champagne-Ardenne + Lorraine entries here. Moselle is a département fully inside
+        // Lorraine with no separate extract, so it shares the Lorraine file via storageKey.
+        PmtilesServerMap(
+            name = "Moselle",
+            region = "France",
+            url = "$BBBIKE_PMTILES/europe/france/lorraine/lorraine.osm.pmtiles-shortbread.zip",
+            sizeEstimateMb = 106,
+            minLat = 48.75, maxLat = 49.65, minLon = 6.05, maxLon = 7.05,
+            storageKey = "Lorraine",
+        ),
+        PmtilesServerMap(
+            name = "Alsace",
+            region = "France",
+            url = "$BBBIKE_PMTILES/europe/france/alsace/alsace.osm.pmtiles-shortbread.zip",
+            sizeEstimateMb = 68,
+            minLat = 47.3, maxLat = 49.1, minLon = 6.8, maxLon = 8.3
+        ),
+        PmtilesServerMap(
+            name = "Champagne-Ardenne",
+            region = "France",
+            url = "$BBBIKE_PMTILES/europe/france/champagne-ardenne/champagne-ardenne.osm.pmtiles-shortbread.zip",
+            sizeEstimateMb = 75,
+            minLat = 47.8, maxLat = 50.3, minLon = 3.4, maxLon = 5.9
+        ),
+        PmtilesServerMap(
             name = "Belgium",
             region = "Europe",
             url = "$BBBIKE_PMTILES/europe/belgium/belgium.osm.pmtiles-shortbread.zip",
@@ -88,6 +123,15 @@ object PmtilesPresetServers {
             sizeEstimateMb = 2766,
             minLat = 41.3, maxLat = 51.1, minLon = -5.2, maxLon = 9.6
         )
+    )
+
+    /** Quick-access regions surfaced directly in Settings, without opening the full preset list. */
+    val PRIORITY_REGIONS: List<PmtilesServerMap> = listOf(
+        PRESET_MAPS.first { it.name == "Lorraine" },
+        PRESET_MAPS.first { it.name == "Moselle" },
+        PRESET_MAPS.first { it.name == "Alsace" },
+        PRESET_MAPS.first { it.name == "Champagne-Ardenne" },
+        PRESET_MAPS.first { it.name == "Luxembourg" },
     )
 
     fun getRecommendedPreset(lat: Double?, lon: Double?): PmtilesServerMap {
@@ -132,6 +176,9 @@ class PmtilesMapManager(
             settingsManager?.setOfflinePmtilesPath(active.absolutePath)
         }
     }
+
+    /** Total bytes used on disk by installed `.pmtiles` files. */
+    fun getUsedStorageBytes(): Long = _installedMaps.value.sumOf { it.length() }
 
     fun getActiveMapFile(): File? {
         val configuredPath = settingsManager?.settings?.value?.offlinePmtilesPath

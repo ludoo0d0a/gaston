@@ -370,94 +370,156 @@ private fun MapConfig(
             }
         }
 
-        if (settings.phoneMapEngine == MapEngine.Mapsforge) {
-            val mapManager = remember(context) { fr.geoking.gaston.auto.mapsforge.MapsforgeMapManager(context) }
-            val installedMaps by mapManager.installedMaps.collectAsState()
-            var showDownloadDialog by remember { mutableStateOf(false) }
-            val activeMap = remember(installedMaps) { mapManager.getActiveMapFile() }
+        // Offline maps by region — always shown regardless of the currently selected engine, since
+        // Android Auto (Mapsforge/Protomaps) maps are often prepared ahead of time from the phone.
+        Column {
+            Text(
+                stringResource(R.string.offline_maps_by_region_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            Text(
+                stringResource(R.string.offline_maps_by_region_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
 
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+            // Mapsforge (.map)
+            run {
+                val mapManager = remember(context) { fr.geoking.gaston.auto.mapsforge.MapsforgeMapManager(context) }
+                val installedMaps by mapManager.installedMaps.collectAsState()
+                val downloadProgress by mapManager.downloadProgress.collectAsState()
+                val scope = rememberCoroutineScope()
+                var showDownloadDialog by remember { mutableStateOf(false) }
+                val activeMap = remember(installedMaps) { mapManager.getActiveMapFile() }
+                val usedBytes = remember(installedMaps) { mapManager.getUsedStorageBytes() }
+
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp)
                 ) {
-                    Text(
-                        stringResource(R.string.mapsforge_offline_maps),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        stringResource(R.string.mapsforge_active_map) + ": " + (activeMap?.name ?: stringResource(R.string.network_none)),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Button(
-                        onClick = { showDownloadDialog = true },
-                        modifier = Modifier.padding(top = 4.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(stringResource(R.string.mapsforge_offline_maps))
+                        Text(
+                            stringResource(R.string.mapsforge_offline_maps),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            stringResource(R.string.mapsforge_active_map) + ": " + (activeMap?.name ?: stringResource(R.string.network_none)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            stringResource(R.string.offline_maps_storage_used, fr.geoking.gaston.util.formatStorageSize(usedBytes)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        fr.geoking.gaston.auto.mapsforge.MapsforgePresetServers.PRIORITY_REGIONS.forEach { preset ->
+                            fr.geoking.gaston.ui.map.MapsforgePresetDownloadRow(
+                                preset = preset,
+                                installedMaps = installedMaps,
+                                progress = downloadProgress,
+                                scope = scope,
+                                mapManager = mapManager,
+                                onMapFileChanged = {},
+                            )
+                        }
+
+                        Button(
+                            onClick = { showDownloadDialog = true },
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Text(stringResource(R.string.offline_maps_other_regions))
+                        }
                     }
+                }
+
+                if (showDownloadDialog) {
+                    fr.geoking.gaston.ui.map.MapsforgeMapDownloadDialog(
+                        mapManager = mapManager,
+                        onDismiss = { showDownloadDialog = false }
+                    )
                 }
             }
 
-            if (showDownloadDialog) {
-                fr.geoking.gaston.ui.map.MapsforgeMapDownloadDialog(
-                    mapManager = mapManager,
-                    onDismiss = { showDownloadDialog = false }
-                )
-            }
-        }
-        if (settings.carMapMode == CarMapMode.Protomaps) {
-            val pmtilesManager = remember(context) { fr.geoking.gaston.auto.pmtiles.PmtilesMapManager(context, settingsManager = null) }
-            val installedMaps by pmtilesManager.installedMaps.collectAsState()
-            var showPmtilesDownloadDialog by remember { mutableStateOf(false) }
-            val activeMap = remember(installedMaps, settings.offlinePmtilesPath) {
-                settings.offlinePmtilesPath?.let { File(it) }?.takeIf { it.exists() } ?: pmtilesManager.getActiveMapFile()
-            }
+            // Protomaps / PMTiles (.pmtiles)
+            run {
+                val pmtilesManager = remember(context) { fr.geoking.gaston.auto.pmtiles.PmtilesMapManager(context, settingsManager = null) }
+                val installedMaps by pmtilesManager.installedMaps.collectAsState()
+                val downloadProgress by pmtilesManager.downloadProgress.collectAsState()
+                val scope = rememberCoroutineScope()
+                var showPmtilesDownloadDialog by remember { mutableStateOf(false) }
+                val activeMap = remember(installedMaps, settings.offlinePmtilesPath) {
+                    settings.offlinePmtilesPath?.let { File(it) }?.takeIf { it.exists() } ?: pmtilesManager.getActiveMapFile()
+                }
+                val usedBytes = remember(installedMaps) { pmtilesManager.getUsedStorageBytes() }
+                val onPmtilesChanged: () -> Unit = {
+                    val newActive = pmtilesManager.getActiveMapFile()
+                    onUpdate(settings.copy(offlinePmtilesPath = newActive?.absolutePath))
+                }
 
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(
-                        "Cartes PMTiles hors-ligne (Protomaps)",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        "Carte PMTiles active: " + (activeMap?.name ?: stringResource(R.string.network_none)),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Button(
-                        onClick = { showPmtilesDownloadDialog = true },
-                        modifier = Modifier.padding(top = 4.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Télécharger cartes PMTiles")
+                        Text(
+                            "Cartes PMTiles hors-ligne (Protomaps)",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "Carte PMTiles active: " + (activeMap?.name ?: stringResource(R.string.network_none)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            stringResource(R.string.offline_maps_storage_used, fr.geoking.gaston.util.formatStorageSize(usedBytes)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        fr.geoking.gaston.auto.pmtiles.PmtilesPresetServers.PRIORITY_REGIONS.forEach { preset ->
+                            fr.geoking.gaston.ui.map.PmtilesPresetDownloadRow(
+                                preset = preset,
+                                installedMaps = installedMaps,
+                                progress = downloadProgress,
+                                scope = scope,
+                                mapManager = pmtilesManager,
+                                onMapFileChanged = onPmtilesChanged,
+                            )
+                        }
+
+                        Button(
+                            onClick = { showPmtilesDownloadDialog = true },
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Text(stringResource(R.string.offline_maps_other_regions))
+                        }
                     }
                 }
-            }
 
-            if (showPmtilesDownloadDialog) {
-                fr.geoking.gaston.ui.map.PmtilesMapDownloadDialog(
-                    mapManager = pmtilesManager,
-                    onDismiss = { showPmtilesDownloadDialog = false },
-                    onMapFileChanged = {
-                        val newActive = pmtilesManager.getActiveMapFile()
-                        onUpdate(settings.copy(offlinePmtilesPath = newActive?.absolutePath))
-                    }
-                )
+                if (showPmtilesDownloadDialog) {
+                    fr.geoking.gaston.ui.map.PmtilesMapDownloadDialog(
+                        mapManager = pmtilesManager,
+                        onDismiss = { showPmtilesDownloadDialog = false },
+                        onMapFileChanged = onPmtilesChanged,
+                    )
+                }
             }
         }
 
