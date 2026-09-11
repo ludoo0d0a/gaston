@@ -22,6 +22,28 @@ class AutoMapSettingsScreen(
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
 
+        val mapModeLabel = when (settings.carMapMode) {
+            fr.geoking.gaston.CarMapMode.Native -> carContext.getString(R.string.map_mode_google)
+            fr.geoking.gaston.CarMapMode.Custom -> carContext.getString(R.string.map_mode_custom)
+            fr.geoking.gaston.CarMapMode.MapLibre -> carContext.getString(R.string.map_mode_maplibre)
+            fr.geoking.gaston.CarMapMode.MapTiler -> carContext.getString(R.string.map_mode_maptiler)
+            fr.geoking.gaston.CarMapMode.Protomaps -> carContext.getString(R.string.map_mode_protomaps)
+            fr.geoking.gaston.CarMapMode.Mapsforge -> carContext.getString(R.string.map_mode_mapsforge)
+        }
+
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.settings_map_mode))
+                .addText(mapModeLabel)
+                .setOnClickListener {
+                    val entries = fr.geoking.gaston.CarMapMode.entries
+                    val nextMode = entries[(settings.carMapMode.ordinal + 1) % entries.size]
+                    settingsManager.setCarMapMode(nextMode)
+                    invalidate()
+                }
+                .build()
+        )
+
         val dataSourceText = when (settings.poiProviderSelectionMode) {
             PoiProviderSelectionMode.Auto -> {
                 val net = networkService.status.value
