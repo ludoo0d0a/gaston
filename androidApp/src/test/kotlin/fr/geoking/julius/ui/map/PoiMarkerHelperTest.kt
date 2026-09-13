@@ -129,11 +129,42 @@ class PoiMarkerHelperTest {
         // Only fuel filter -> fuel price
         assertEquals("€1.500", PoiMarkerHelper.getPoiLabel(hybridPoi, setOf("sp95"), emptySet()))
 
-        // Only electric filter -> power
+        // Only electric filter -> power (never fuel price)
         assertEquals("50kW", PoiMarkerHelper.getPoiLabel(hybridPoi, setOf("electric"), emptySet()))
 
         // Both filters -> fuel price (Priority 1)
         assertEquals("€1.500", PoiMarkerHelper.getPoiLabel(hybridPoi, setOf("sp95", "electric"), emptySet()))
+    }
+
+    @Test
+    fun `getPoiLabel for hybrid station in Electric selector mode returns electric power and no fuel price`() {
+        val hybridPoiWithoutPower = Poi(
+            id = "3b",
+            name = "PowerDot - Station U - Algrange",
+            address = "Super U Algrange",
+            latitude = 49.35,
+            longitude = 6.05,
+            isElectric = true,
+            powerKw = null,
+            fuelPrices = listOf(FuelPrice("gazole", 1.85), FuelPrice("sp95", 1.90))
+        )
+
+        val hybridPoiWithPower = Poi(
+            id = "3c",
+            name = "PowerDot - Station U - Algrange",
+            address = "Super U Algrange",
+            latitude = 49.35,
+            longitude = 6.05,
+            isElectric = true,
+            powerKw = 150.0,
+            fuelPrices = listOf(FuelPrice("gazole", 1.85), FuelPrice("sp95", 1.90))
+        )
+
+        // Electric-only mode with power -> shows power (150kW)
+        assertEquals("150kW", PoiMarkerHelper.getPoiLabel(hybridPoiWithPower, setOf("electric"), emptySet()))
+
+        // Electric-only mode without power -> returns null (no label / no fuel price)
+        assertNull(PoiMarkerHelper.getPoiLabel(hybridPoiWithoutPower, setOf("electric"), emptySet()))
     }
 
     @Test

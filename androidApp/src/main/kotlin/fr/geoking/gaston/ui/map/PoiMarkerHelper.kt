@@ -300,6 +300,19 @@ object PoiMarkerHelper {
         val isHybrid = poi.isElectric && !poi.fuelPrices.isNullOrEmpty()
         val hasAnyIrveFilter = hasElectricInFilter || hasPowerFilter
 
+        // When in Electric-only filter mode (electric selected, no fuel selected),
+        // any electric/hybrid station shows ONLY electric info (power kW or null, no fuel price).
+        if (hasAnyIrveFilter && !hasFuelFilter && (poi.isElectric || category == PoiCategory.Irve)) {
+            val power = poi.powerKw
+            if (power != null) {
+                val matches = !hasPowerFilter || MapPoiFilter.powerMatchesAnyLevel(power, effectivePowerLevels)
+                if (matches) {
+                    return formatIrvePowerLabel(power)
+                }
+            }
+            return null
+        }
+
         // Priority 1: Fuel
         if (category == PoiCategory.Gas || (isHybrid && (hasFuelFilter || !hasAnyIrveFilter))) {
             val prices = poi.fuelPrices
@@ -315,7 +328,7 @@ object PoiMarkerHelper {
         }
 
         // Priority 2: IRVE
-        if (hasAnyIrveFilter && (category == PoiCategory.Irve || isHybrid)) {
+        if (hasAnyIrveFilter && (category == PoiCategory.Irve || isHybrid || poi.isElectric)) {
             val power = poi.powerKw
             if (power != null) {
                 val matches = (hasElectricInFilter && !hasPowerFilter) || (hasPowerFilter && MapPoiFilter.powerMatchesAnyLevel(power, effectivePowerLevels))
@@ -348,6 +361,19 @@ object PoiMarkerHelper {
         val isHybrid = poi.isElectric && !poi.fuelPrices.isNullOrEmpty()
         val hasAnyIrveFilter = hasElectricInFilter || hasPowerFilter
 
+        // When in Electric-only filter mode (electric selected, no fuel selected),
+        // any electric/hybrid station uses IRVE color coding.
+        if (hasAnyIrveFilter && !hasFuelFilter && (poi.isElectric || category == PoiCategory.Irve)) {
+            val power = poi.powerKw
+            if (power != null) {
+                val matches = !hasPowerFilter || MapPoiFilter.powerMatchesAnyLevel(power, effectivePowerLevels)
+                if (matches) {
+                    return ColorHelper.getPowerColor(power).toArgb()
+                }
+            }
+            return 0xFF28A745.toInt() // Default IRVE green
+        }
+
         // Priority 1: Fuel
         if (category == PoiCategory.Gas || (isHybrid && hasFuelFilter)) {
             if (fuelIds.size == 1) {
@@ -358,7 +384,7 @@ object PoiMarkerHelper {
         }
 
         // Priority 2: IRVE
-        if (category == PoiCategory.Irve || (isHybrid && hasAnyIrveFilter)) {
+        if (category == PoiCategory.Irve || (isHybrid && hasAnyIrveFilter) || (poi.isElectric && hasAnyIrveFilter)) {
             val power = poi.powerKw
             if (power != null) {
                 val matches = (hasElectricInFilter && !hasPowerFilter) || (hasPowerFilter && MapPoiFilter.powerMatchesAnyLevel(power, effectivePowerLevels))
