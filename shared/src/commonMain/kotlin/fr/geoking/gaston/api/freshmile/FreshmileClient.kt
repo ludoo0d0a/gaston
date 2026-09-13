@@ -51,12 +51,7 @@ class FreshmileClient(
         val responseText = httpClient.get("$baseUrl/map-locations") {
             header("Accept", "application/json")
             parameter("zoom", zoom)
-            url {
-                parameters.append("bbox[]", minLng.toString())
-                parameters.append("bbox[]", minLat.toString())
-                parameters.append("bbox[]", maxLng.toString())
-                parameters.append("bbox[]", maxLat.toString())
-            }
+            parameter("bbox", "$minLng,$minLat,$maxLng,$maxLat")
         }.bodyAsText()
 
         val response = json.decodeFromString<FreshmileMapLocationsResponseDto>(responseText)
