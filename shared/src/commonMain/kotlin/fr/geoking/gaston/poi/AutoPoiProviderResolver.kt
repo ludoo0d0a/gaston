@@ -63,6 +63,7 @@ fun autoProvidersForCountries(
                     resolved.add(PoiProviderType.QualiCharge)
                     resolved.add(PoiProviderType.Gireve)
                     resolved.add(PoiProviderType.Atlante)
+                    resolved.add(PoiProviderType.Freshmile)
                     resolved.add(PoiProviderType.OpenChargeMap)
                     resolved.add(PoiProviderType.EcoMovement)
                     PoiProviderType.DataGouvElec
@@ -83,6 +84,7 @@ fun autoProvidersForCountries(
                     if (iso in setOf("IT", "ES", "PT")) {
                         resolved.add(PoiProviderType.Atlante)
                     }
+                    resolved.add(PoiProviderType.Freshmile)
                     resolved.add(PoiProviderType.EcoMovement)
                     PoiProviderType.OpenChargeMap
                 }

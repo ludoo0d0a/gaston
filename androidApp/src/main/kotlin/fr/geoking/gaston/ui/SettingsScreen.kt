@@ -163,6 +163,7 @@ private fun poiProviderLabelRes(type: PoiProviderType): Int = when (type) {
     PoiProviderType.QualiCharge -> R.string.provider_qualicharge
     PoiProviderType.Gireve -> R.string.provider_gireve
     PoiProviderType.Atlante -> R.string.provider_atlante
+    PoiProviderType.Freshmile -> R.string.provider_freshmile
     PoiProviderType.Chargy -> R.string.provider_chargy
     PoiProviderType.CharGyUk -> R.string.provider_chargy_uk
     PoiProviderType.OpenChargeMap -> R.string.provider_openchargemap
@@ -793,6 +794,7 @@ private fun SourcesConfig(
         ProviderUiInfo(PoiProviderType.QualiCharge, listOf("FR")),
         ProviderUiInfo(PoiProviderType.Gireve, listOf("FR")),
         ProviderUiInfo(PoiProviderType.Atlante, listOf("IT", "FR", "ES", "PT")),
+        ProviderUiInfo(PoiProviderType.Freshmile, listOf("FR", "DE", "IT", "ES", "PT", "BE", "NL", "LU", "CH", "AT", "UK", "GB", "IE", "SE", "NO", "FI", "DK", "PL", "CZ", "SK", "HU", "RO", "BG", "GR", "HR", "SI", "EE", "LV", "LT", "AD", "MC", "SM", "VA", "LI", "MT", "CY")),
         ProviderUiInfo(PoiProviderType.Chargy, listOf("LU")),
         ProviderUiInfo(PoiProviderType.CharGyUk, listOf("GB")),
         ProviderUiInfo(PoiProviderType.OpenChargeMap, listOf("GLOBAL")),

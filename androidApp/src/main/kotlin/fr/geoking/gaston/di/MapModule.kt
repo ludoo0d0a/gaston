@@ -25,6 +25,8 @@ import fr.geoking.gaston.api.poland.EipaAvailabilityClient
 import fr.geoking.gaston.api.poland.EipaAvailabilityProvider
 import fr.geoking.gaston.api.atlante.AtlanteClient
 import fr.geoking.gaston.api.atlante.AtlanteProvider
+import fr.geoking.gaston.api.freshmile.FreshmileClient
+import fr.geoking.gaston.api.freshmile.FreshmileProvider
 import fr.geoking.gaston.api.qualicharge.QualiChargeAvailabilityProvider
 import fr.geoking.gaston.api.qualicharge.QualiChargeDynamiqueClient
 import fr.geoking.gaston.api.qualicharge.QualiChargeProvider
@@ -242,6 +244,10 @@ val mapModule = module {
     single<PoiProvider>(named("atlante_provider")) {
         AtlanteProvider(get(), radiusKm = 15, limit = 100)
     }
+    single { FreshmileClient(get()) }
+    single<PoiProvider>(named("freshmile_provider")) {
+        FreshmileProvider(get(), radiusKm = 15, limit = 150)
+    }
     single<OpenChargeMapClient> {
         OpenChargeMapClient(get(), apiKey = BuildConfig.OPENCHARGEMAP_KEY)
     }
@@ -363,6 +369,7 @@ val mapModule = module {
             qualiCharge = get(named("qualicharge_provider")),
             gireve = get(named("gireve_provider")),
             atlante = get(named("atlante_provider")),
+            freshmile = get(named("freshmile_provider")),
             openChargeMap = get(named("openchargemap")),
             chargy = get(named("chargy")),
             charGyUk = get(named("chargyuk")),

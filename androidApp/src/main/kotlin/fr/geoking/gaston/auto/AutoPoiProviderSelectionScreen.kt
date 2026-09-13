@@ -44,6 +44,7 @@ class AutoPoiProviderSelectionScreen(
         PoiProviderType.QualiCharge to "QualiCharge IRVE (Electric)",
         PoiProviderType.Gireve to "Gireve IRVE (Electric)",
         PoiProviderType.Atlante to "Atlante IRVE (Electric)",
+        PoiProviderType.Freshmile to "Freshmile Charge (Electric)",
         PoiProviderType.OpenChargeMap to "Open Charge Map",
         PoiProviderType.Chargy to "Chargy (Luxembourg)",
         PoiProviderType.CharGyUk to "char.gy (UK)",

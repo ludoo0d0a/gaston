@@ -78,6 +78,7 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("Belib (Paris EV)", "https://opendata.paris.fr", null),
     UsedApi("QualiCharge IRVE (dispo temps réel)", "https://transport.data.gouv.fr", null),
     UsedApi("Atlante Live Stations", "https://map.atlante.energy/geodata.json", null),
+    UsedApi("Freshmile Charge", "https://charge.freshmile.com", null),
     UsedApi("Belgium NAP EV (Road / transportdata.be)", "https://transportdata.be", null),
 
     // POIs & amenities
