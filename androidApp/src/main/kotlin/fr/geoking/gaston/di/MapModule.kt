@@ -28,6 +28,9 @@ import fr.geoking.gaston.api.atlante.AtlanteProvider
 import fr.geoking.gaston.api.qualicharge.QualiChargeAvailabilityProvider
 import fr.geoking.gaston.api.qualicharge.QualiChargeDynamiqueClient
 import fr.geoking.gaston.api.qualicharge.QualiChargeProvider
+import fr.geoking.gaston.api.gireve.GireveAvailabilityProvider
+import fr.geoking.gaston.api.gireve.GireveClient
+import fr.geoking.gaston.api.gireve.GireveProvider
 import fr.geoking.gaston.api.switzerland.IchTankeStromAvailabilityClient
 import fr.geoking.gaston.api.switzerland.IchTankeStromAvailabilityProvider
 import fr.geoking.gaston.SettingsManager
@@ -231,6 +234,10 @@ val mapModule = module {
     single<PoiProvider>(named("qualicharge_provider")) {
         QualiChargeProvider(get(), radiusKm = 15, limit = 100)
     }
+    single { GireveClient(get()) }
+    single<PoiProvider>(named("gireve_provider")) {
+        GireveProvider(get(), radiusKm = 15, limit = 100)
+    }
     single { AtlanteClient(get()) }
     single<PoiProvider>(named("atlante_provider")) {
         AtlanteProvider(get(), radiusKm = 15, limit = 100)
@@ -354,6 +361,7 @@ val mapModule = module {
             argentinaEnergia = get(named("argentinaenergia")),
             dataGouvElec = get(named("datagouvelec")),
             qualiCharge = get(named("qualicharge_provider")),
+            gireve = get(named("gireve_provider")),
             atlante = get(named("atlante_provider")),
             openChargeMap = get(named("openchargemap")),
             chargy = get(named("chargy")),
@@ -391,6 +399,9 @@ val mapModule = module {
     single { QualiChargeDynamiqueClient(get()) }
     single<BorneAvailabilityProvider>(named("qualicharge")) {
         QualiChargeAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+    }
+    single<BorneAvailabilityProvider>(named("gireve")) {
+        GireveAvailabilityProvider(get(), radiusKm = 15, limit = 200)
     }
     single { BelgiumNapAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("belgium_nap")) {
@@ -467,6 +478,7 @@ val mapModule = module {
         BorneAvailabilityProviderFactory(
             belibProvider = get(named("belib")),
             qualiChargeProvider = get(named("qualicharge")),
+            gireveProvider = get(named("gireve")),
             belgiumNapProvider = get(named("belgium_nap")),
             ecoMovementProvider = if (BuildConfig.ECO_MOVEMENT_KEY.isBlank()) {
                 null

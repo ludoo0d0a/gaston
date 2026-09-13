@@ -21,6 +21,7 @@ import fr.geoking.gaston.parking.ParkingRegion
 class BorneAvailabilityProviderFactory(
     private val belibProvider: BorneAvailabilityProvider,
     private val qualiChargeProvider: BorneAvailabilityProvider? = null,
+    private val gireveProvider: BorneAvailabilityProvider? = null,
     private val belgiumNapProvider: BorneAvailabilityProvider? = null,
     private val ecoMovementProvider: BorneAvailabilityProvider? = null,
     private val dotNlProvider: BorneAvailabilityProvider? = null,
@@ -39,8 +40,18 @@ class BorneAvailabilityProviderFactory(
     private val parisLonMin = 2.22
     private val parisLonMax = 2.47
 
+    private val franceAvailabilityProvider: BorneAvailabilityProvider? = run {
+        val frPrimary = when {
+            qualiChargeProvider != null && gireveProvider != null ->
+                MergedBorneAvailabilityProvider(primary = qualiChargeProvider, secondary = gireveProvider)
+            qualiChargeProvider != null -> qualiChargeProvider
+            else -> gireveProvider
+        }
+        frPrimary
+    }
+
     private val parisMergedProvider: BorneAvailabilityProvider? =
-        qualiChargeProvider?.let { MergedBorneAvailabilityProvider(primary = it, secondary = belibProvider) }
+        franceAvailabilityProvider?.let { MergedBorneAvailabilityProvider(primary = it, secondary = belibProvider) }
 
     /**
      * Returns a provider that can supply availability for the given coordinates, or null if none.
@@ -65,7 +76,7 @@ class BorneAvailabilityProviderFactory(
                 when {
                     inParis && parisMergedProvider != null -> parisMergedProvider
                     inParis -> belibProvider
-                    qualiChargeProvider != null -> qualiChargeProvider
+                    franceAvailabilityProvider != null -> franceAvailabilityProvider
                     else -> ecoMovementProvider
                 }
             }
