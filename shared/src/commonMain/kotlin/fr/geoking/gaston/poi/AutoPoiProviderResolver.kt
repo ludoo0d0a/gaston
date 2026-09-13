@@ -61,6 +61,7 @@ fun autoProvidersForCountries(
             when (iso) {
                 "FR" -> {
                     resolved.add(PoiProviderType.QualiCharge)
+                    resolved.add(PoiProviderType.Atlante)
                     resolved.add(PoiProviderType.OpenChargeMap)
                     resolved.add(PoiProviderType.EcoMovement)
                     PoiProviderType.DataGouvElec
@@ -78,6 +79,9 @@ fun autoProvidersForCountries(
                 }
                 else -> {
                     // Eco-Movement carries live EVSE status for DE, NL, AT, … when key is set.
+                    if (iso in setOf("IT", "ES", "PT")) {
+                        resolved.add(PoiProviderType.Atlante)
+                    }
                     resolved.add(PoiProviderType.EcoMovement)
                     PoiProviderType.OpenChargeMap
                 }

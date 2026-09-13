@@ -69,6 +69,7 @@ class SelectorPoiProvider(
     private val argentinaEnergia: PoiProvider,
     private val dataGouvElec: PoiProvider,
     private val qualiCharge: PoiProvider,
+    private val atlante: PoiProvider,
     private val openChargeMap: PoiProvider,
     private val chargy: PoiProvider,
     private val charGyUk: PoiProvider,
@@ -167,6 +168,7 @@ class SelectorPoiProvider(
         PoiProviderType.ArgentinaEnergia -> argentinaEnergia
         PoiProviderType.DataGouvElec -> dataGouvElec
         PoiProviderType.QualiCharge -> qualiCharge
+        PoiProviderType.Atlante -> atlante
         PoiProviderType.OpenChargeMap -> openChargeMap
         PoiProviderType.Chargy -> chargy
         PoiProviderType.CharGyUk -> charGyUk
@@ -899,6 +901,7 @@ class SelectorPoiProvider(
         dataGouv.clearCache()
         dataGouvElec.clearCache()
         qualiCharge.clearCache()
+        atlante.clearCache()
         openChargeMap.clearCache()
         chargy.clearCache()
         charGyUk.clearCache()
