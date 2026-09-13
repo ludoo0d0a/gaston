@@ -538,19 +538,14 @@ object MapPoiFilter {
         }
     }
 
-    /** Returns true if [powerKw] falls into any of the selected [levels] buckets. */
-    fun powerMatchesAnyLevel(powerKw: Double, levels: Set<Int>): Boolean =
-        levels.any { level ->
-            when (level) {
-                0 -> true
-                20 -> powerKw in 20.0..49.9
-                50 -> powerKw in 50.0..99.9
-                100 -> powerKw in 100.0..199.9
-                200 -> powerKw in 200.0..299.9
-                300 -> powerKw >= 300.0
-                else -> powerKw >= level
-            }
-        }
+    /** Returns true if [powerKw] satisfies the minimum power selected in [levels]. */
+    fun powerMatchesAnyLevel(powerKw: Double, levels: Set<Int>): Boolean {
+        if (levels.isEmpty()) return true
+        val validLevels = levels.filter { it > 0 }
+        if (validLevels.isEmpty()) return true
+        val minLevel = validLevels.minOrNull() ?: return true
+        return powerKw >= minLevel
+    }
 
     /**
      * Filters [pois] to the cheapest stations for [selectedFuelIds].

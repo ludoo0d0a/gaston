@@ -36,6 +36,26 @@ class PoiTest {
     }
 
     @Test
+    fun powerMatchesAnyLevel_requiresMinimumSelectedPower() {
+        // Selection 100+ (level 100): should NOT match 20 kW or 50 kW, SHOULD match 100 kW, 150 kW, 300 kW
+        val levels100 = setOf(100)
+        assertTrue(!MapPoiFilter.powerMatchesAnyLevel(20.0, levels100), "100+ selection should exclude 20kW")
+        assertTrue(!MapPoiFilter.powerMatchesAnyLevel(50.0, levels100), "100+ selection should exclude 50kW")
+        assertTrue(MapPoiFilter.powerMatchesAnyLevel(100.0, levels100), "100+ selection should include 100kW")
+        assertTrue(MapPoiFilter.powerMatchesAnyLevel(150.0, levels100), "100+ selection should include 150kW")
+
+        // Selection 50+ (level 50): should NOT match 20 kW, SHOULD match 50 kW and above
+        val levels50 = setOf(50)
+        assertTrue(!MapPoiFilter.powerMatchesAnyLevel(20.0, levels50), "50+ selection should exclude 20kW")
+        assertTrue(MapPoiFilter.powerMatchesAnyLevel(50.0, levels50), "50+ selection should include 50kW")
+        assertTrue(MapPoiFilter.powerMatchesAnyLevel(120.0, levels50), "50+ selection should include 120kW")
+
+        // Empty selection or setOf(0): matches any power
+        assertTrue(MapPoiFilter.powerMatchesAnyLevel(20.0, emptySet()), "Empty levels should match any power")
+        assertTrue(MapPoiFilter.powerMatchesAnyLevel(20.0, setOf(0)), "0kW selection should match any power")
+    }
+
+    @Test
     fun matchesEnergyFilter_correctlyFilters() {
         val gasPoi = Poi(
             "1", "Gas", "Address", 0.0, 0.0, isElectric = false,
