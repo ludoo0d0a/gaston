@@ -170,6 +170,7 @@ enum class PoiProviderType(
     DataGouvElec(providesElectric = true),
     QualiCharge(providesElectric = true),
     Atlante(providesElectric = true),
+    Freshmile(providesElectric = true),
     OpenChargeMap(providesElectric = true),
     Chargy(providesElectric = true),
     /** char.gy UK Open Data API (OCPI 2.2.1). */

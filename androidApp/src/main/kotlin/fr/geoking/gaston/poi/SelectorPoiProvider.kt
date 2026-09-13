@@ -70,6 +70,7 @@ class SelectorPoiProvider(
     private val dataGouvElec: PoiProvider,
     private val qualiCharge: PoiProvider,
     private val atlante: PoiProvider,
+    private val freshmile: PoiProvider,
     private val openChargeMap: PoiProvider,
     private val chargy: PoiProvider,
     private val charGyUk: PoiProvider,
@@ -169,6 +170,7 @@ class SelectorPoiProvider(
         PoiProviderType.DataGouvElec -> dataGouvElec
         PoiProviderType.QualiCharge -> qualiCharge
         PoiProviderType.Atlante -> atlante
+        PoiProviderType.Freshmile -> freshmile
         PoiProviderType.OpenChargeMap -> openChargeMap
         PoiProviderType.Chargy -> chargy
         PoiProviderType.CharGyUk -> charGyUk
@@ -902,6 +904,7 @@ class SelectorPoiProvider(
         dataGouvElec.clearCache()
         qualiCharge.clearCache()
         atlante.clearCache()
+        freshmile.clearCache()
         openChargeMap.clearCache()
         chargy.clearCache()
         charGyUk.clearCache()
