@@ -122,7 +122,7 @@ fun PoiDetailCard(
         modifier = modifier
             .defaultMinSize(minHeight = 160.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFF1D4ED8) else Color(0xFF0F172A),
+            containerColor = Color(0xFF0F172A),
             contentColor = Color.White
         ),
         shape = MaterialTheme.shapes.large
