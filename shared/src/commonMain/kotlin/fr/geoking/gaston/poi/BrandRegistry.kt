@@ -112,6 +112,46 @@ object BrandRegistry {
         "orange charging" to "Orange Charging",
         "equans" to "Equans",
         "essent" to "Essent",
+        // Manufacturers & Networks
+        "e-totem" to "e-Totem",
+        "etotem" to "e-Totem",
+        "dbt-cev" to "DBT-CEV",
+        "dbt" to "DBT-CEV",
+        "lafon" to "Lafon",
+        "anyos" to "ANYOS",
+        "wattpark" to "Wattpark",
+        "ze-watt" to "Ze-Watt",
+        "zewatt" to "Ze-Watt",
+        "sermes" to "Sermes",
+        "saintronic" to "Saintronic",
+        "schneider electric" to "Schneider Electric",
+        "schneider" to "Schneider Electric",
+        "legrand" to "Legrand",
+        "hager" to "Hager",
+        "mersen" to "Mersen",
+        "valeo" to "Valeo",
+        "g2mobility" to "G2mobility",
+        "ecoload" to "Ecoload",
+        "cahors" to "Cahors",
+        "abb e-mobility" to "ABB E-mobility",
+        "abb" to "ABB E-mobility",
+        "alpitronic" to "Alpitronic",
+        "alfen" to "Alfen",
+        "wallbox" to "Wallbox",
+        "circontrol" to "Circontrol",
+        "kempower" to "Kempower",
+        "tritium" to "Tritium",
+        "siemens" to "Siemens",
+        "mennekes" to "Mennekes",
+        "eaton" to "Eaton",
+        "starcharge" to "StarCharge",
+        "star charge" to "StarCharge",
+        "huawei digital power" to "Huawei Digital Power",
+        "huawei" to "Huawei Digital Power",
+        "nayax" to "Nayax",
+        "daze" to "Daze",
+        "easee" to "Easee",
+        "zaptec" to "Zaptec",
     )
 
     /** brand_id (lowercase) -> is gas station brand. */
@@ -135,7 +175,12 @@ object BrandRegistry {
         "enovos", "superchargy", "sudstroum", "electris", "creos", "luminus", "eneco", "eneco emobility",
         "blue corner", "bluecorner", "dats 24", "dats24", "vandebron", "leaseplan", "greenflux", "sparki",
         "edi", "powerpass", "citypower", "strohm", "rebel mobility", "optimile", "opcharge", "vattenfall",
-        "orange charging", "equans", "essent"
+        "orange charging", "equans", "essent",
+        "e-totem", "etotem", "dbt-cev", "dbt", "lafon", "anyos", "wattpark", "ze-watt", "zewatt",
+        "sermes", "saintronic", "schneider electric", "schneider", "legrand", "hager", "mersen",
+        "valeo", "g2mobility", "ecoload", "cahors", "abb e-mobility", "abb", "alpitronic", "alfen",
+        "wallbox", "circontrol", "kempower", "tritium", "siemens", "mennekes", "eaton", "starcharge",
+        "star charge", "huawei digital power", "huawei", "nayax", "daze", "easee", "zaptec"
     )
 
     /** Set of brand keys that have a dedicated icon in the application. */
@@ -149,7 +194,12 @@ object BrandRegistry {
         "delmonicos", "easycharge", "easy charge", "izivia", "electra", "engie", "engie vianeo",
         "iecharge", "nw iecharge", "eborn", "e-born", "reveo", "bump", "qovoltis", "metropolis",
         "chargepoint", "zeplug", "mobilize", "stationse", "stations-e", "waat", "enbw",
-        "shell recharge", "evbox", "virta", "monta"
+        "shell recharge", "evbox", "virta", "monta",
+        "e-totem", "etotem", "dbt-cev", "dbt", "lafon", "anyos", "wattpark", "ze-watt", "zewatt",
+        "sermes", "saintronic", "schneider electric", "schneider", "legrand", "hager", "mersen",
+        "valeo", "g2mobility", "ecoload", "cahors", "abb e-mobility", "abb", "alpitronic", "alfen",
+        "wallbox", "circontrol", "kempower", "tritium", "siemens", "mennekes", "eaton", "starcharge",
+        "star charge", "huawei digital power", "huawei", "nayax", "daze", "easee", "zaptec"
     )
 
     /** Returns true if the brand has a dedicated icon. */
