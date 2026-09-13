@@ -169,6 +169,7 @@ enum class PoiProviderType(
     AustraliaPetrolSpy(providesFuel = true),
     DataGouvElec(providesElectric = true),
     QualiCharge(providesElectric = true),
+    Atlante(providesElectric = true),
     OpenChargeMap(providesElectric = true),
     Chargy(providesElectric = true),
     /** char.gy UK Open Data API (OCPI 2.2.1). */

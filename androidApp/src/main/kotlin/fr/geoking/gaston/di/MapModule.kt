@@ -23,6 +23,8 @@ import fr.geoking.gaston.api.nobil.NobilClient
 import fr.geoking.gaston.api.nobil.SwedenNobilAvailabilityProvider
 import fr.geoking.gaston.api.poland.EipaAvailabilityClient
 import fr.geoking.gaston.api.poland.EipaAvailabilityProvider
+import fr.geoking.gaston.api.atlante.AtlanteClient
+import fr.geoking.gaston.api.atlante.AtlanteProvider
 import fr.geoking.gaston.api.qualicharge.QualiChargeAvailabilityProvider
 import fr.geoking.gaston.api.qualicharge.QualiChargeDynamiqueClient
 import fr.geoking.gaston.api.qualicharge.QualiChargeProvider
@@ -229,6 +231,10 @@ val mapModule = module {
     single<PoiProvider>(named("qualicharge_provider")) {
         QualiChargeProvider(get(), radiusKm = 15, limit = 100)
     }
+    single { AtlanteClient(get()) }
+    single<PoiProvider>(named("atlante_provider")) {
+        AtlanteProvider(get(), radiusKm = 15, limit = 100)
+    }
     single<OpenChargeMapClient> {
         OpenChargeMapClient(get(), apiKey = BuildConfig.OPENCHARGEMAP_KEY)
     }
@@ -348,6 +354,7 @@ val mapModule = module {
             argentinaEnergia = get(named("argentinaenergia")),
             dataGouvElec = get(named("datagouvelec")),
             qualiCharge = get(named("qualicharge_provider")),
+            atlante = get(named("atlante_provider")),
             openChargeMap = get(named("openchargemap")),
             chargy = get(named("chargy")),
             charGyUk = get(named("chargyuk")),
