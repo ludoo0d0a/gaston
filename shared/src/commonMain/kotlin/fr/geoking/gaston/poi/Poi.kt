@@ -169,6 +169,7 @@ enum class PoiProviderType(
     AustraliaPetrolSpy(providesFuel = true),
     DataGouvElec(providesElectric = true),
     QualiCharge(providesElectric = true),
+    Gireve(providesElectric = true),
     Atlante(providesElectric = true),
     OpenChargeMap(providesElectric = true),
     Chargy(providesElectric = true),
