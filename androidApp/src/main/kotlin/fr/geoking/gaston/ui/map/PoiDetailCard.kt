@@ -88,7 +88,8 @@ fun PoiDetailCard(
             val matchColor = fuelId?.let { ColorHelper.getFuelColor(it) }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = fp.fuelName,
@@ -98,21 +99,41 @@ fun PoiDetailCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val updatedAt = fp.updatedAt
-                    if (updatedAt != null) {
+                    if (fp.outOfStock) {
+                        val shortageLabel = when {
+                            fp.shortageType?.contains("temp", ignoreCase = true) == true -> stringResource(R.string.poi_shortage_temporary)
+                            fp.shortageType?.contains("def", ignoreCase = true) == true -> stringResource(R.string.poi_shortage_definitive)
+                            else -> stringResource(R.string.poi_shortage_out_of_stock)
+                        }
+                        Surface(
+                            color = Color(0xFFEF4444).copy(alpha = 0.2f),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = shortageLabel,
+                                color = Color(0xFFEF4444),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    } else {
+                        val updatedAt = fp.updatedAt
+                        if (updatedAt != null) {
+                            Text(
+                                text = fr.geoking.gaston.shared.datetime.DateTimeUtils.formatRelativeTime(updatedAt),
+                                color = Color.White.copy(alpha = 0.5f),
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                        }
                         Text(
-                            text = fr.geoking.gaston.shared.datetime.DateTimeUtils.formatRelativeTime(updatedAt),
-                            color = Color.White.copy(alpha = 0.5f),
-                            fontSize = 10.sp,
-                            modifier = Modifier.padding(end = 8.dp)
+                            text = "€%.3f".format(fp.price),
+                            color = Color(0xFF22C55E),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
-                    Text(
-                        text = if (fp.outOfStock) "—" else "€%.3f".format(fp.price),
-                        color = if (fp.outOfStock) Color.White.copy(alpha = 0.5f) else Color(0xFF22C55E),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
                 }
             }
         }

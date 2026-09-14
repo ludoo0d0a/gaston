@@ -283,9 +283,15 @@ class DataGouvPrixCarburantClientTest {
         val gazole = fuels.find { it.name == "Gazole" }
         assertNotNull(gazole)
         assertEquals(true, gazole.outOfStock)
+        assertEquals("temporaire", gazole.shortageType)
 
         val sp95 = fuels.find { it.name == "SP95" }
         assertNotNull(sp95)
         assertEquals(false, sp95.outOfStock)
+
+        val e85 = fuels.find { it.name == "E85" }
+        assertNotNull(e85)
+        assertEquals(true, e85.outOfStock)
+        assertEquals("définitive", e85.shortageType)
     }
 }

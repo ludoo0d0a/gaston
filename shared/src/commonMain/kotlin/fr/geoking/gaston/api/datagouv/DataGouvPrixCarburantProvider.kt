@@ -55,7 +55,9 @@ class DataGouvPrixCarburantProvider(
                     fuelName = p.name,
                     price = p.priceEur,
                     updatedAt = p.updatedAt,
-                    outOfStock = p.outOfStock
+                    outOfStock = p.outOfStock,
+                    shortageType = p.shortageType,
+                    shortageStart = p.shortageStart
                 )
             }.ifEmpty { null }
 
