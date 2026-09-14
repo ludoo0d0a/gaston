@@ -52,6 +52,20 @@ class PoiMarkerHelperTest {
     }
 
     @Test
+    fun `getPoiLabel returns cross icon when selected fuel is out of stock`() {
+        val poi = Poi(
+            id = "1",
+            name = "Station 1",
+            address = "Address 1",
+            latitude = 0.0,
+            longitude = 0.0,
+            fuelPrices = listOf(FuelPrice("Gazole", 1.60, outOfStock = true, shortageType = "temporaire"))
+        )
+        val label = PoiMarkerHelper.getPoiLabel(poi, setOf("gazole"), emptySet())
+        assertEquals("❌", label)
+    }
+
+    @Test
     fun `getPoiLabel ignores out of stock fuel prices`() {
         val poi = Poi(
             id = "1",

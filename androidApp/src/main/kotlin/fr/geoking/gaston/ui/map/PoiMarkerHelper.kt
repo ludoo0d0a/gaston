@@ -103,6 +103,7 @@ object PoiMarkerHelper {
         var labelRect = RectF()
         var labelBaseline = 0f
         val hasLabel = !label.isNullOrEmpty()
+        val isCrossLabel = label == "❌"
 
         if (hasLabel || showAvailBars) {
             val labelText = label
@@ -119,7 +120,7 @@ object PoiMarkerHelper {
 
             val padH = w * 0.08f
             val padV = if (hasLabel) (textH * 0.22f).coerceIn(w * 0.04f, w * 0.12f) else w * 0.04f
-            val tw = if (labelText != null) textPaint.measureText(labelText) else w * 0.40f
+            val tw = if (isCrossLabel) w * 0.25f else if (labelText != null) textPaint.measureText(labelText) else w * 0.40f
             val rw = (tw + padH * 2).coerceAtMost(w - w * 0.06f)
             val rh = textH + padV * 2 + (if (hasLabel && showAvailBars) barRowGap else 0f) + barRowH
             val rx = (w - rw) / 2f
@@ -197,7 +198,22 @@ object PoiMarkerHelper {
             canvas.drawRoundRect(labelRect, corner, corner, bgPaint)
             canvas.drawRoundRect(labelRect, corner, corner, labelStroke)
             if (label != null) {
-                canvas.drawText(label, labelRect.centerX(), labelBaseline, textPaint)
+                if (isCrossLabel) {
+                    val cx = labelRect.centerX()
+                    val cy = labelRect.centerY()
+                    val size = (labelRect.height() * 0.52f).coerceAtLeast(8f)
+                    val half = size / 2f
+                    val crossPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        color = Color.RED
+                        style = Paint.Style.STROKE
+                        strokeWidth = (size * 0.28f).coerceAtLeast(3f)
+                        strokeCap = Paint.Cap.ROUND
+                    }
+                    canvas.drawLine(cx - half, cy - half, cx + half, cy + half, crossPaint)
+                    canvas.drawLine(cx + half, cy - half, cx - half, cy + half, crossPaint)
+                } else {
+                    canvas.drawText(label, labelRect.centerX(), labelBaseline, textPaint)
+                }
             }
             if (showAvailBars) {
                 val barRowTop = if (hasLabel) {
@@ -317,13 +333,19 @@ object PoiMarkerHelper {
         if (category == PoiCategory.Gas || (isHybrid && (hasFuelFilter || !hasAnyIrveFilter))) {
             val prices = poi.fuelPrices
             if (!prices.isNullOrEmpty()) {
-                val matchingPrices = if (hasFuelFilter) {
-                    prices.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                if (hasFuelFilter) {
+                    val matchingFuels = prices.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                    if (matchingFuels.isNotEmpty()) {
+                        val availableMatching = matchingFuels.filter { !it.outOfStock && it.price > 0.0 }
+                        val bestPrice = availableMatching.minByOrNull { it.price }?.price
+                        if (bestPrice != null) return "€%.3f".format(bestPrice)
+                        if (matchingFuels.any { it.outOfStock }) return "❌"
+                    }
                 } else {
-                    prices.filter { !it.outOfStock }
+                    val availablePrices = prices.filter { !it.outOfStock && it.price > 0.0 }
+                    val bestPrice = availablePrices.minByOrNull { it.price }?.price
+                    if (bestPrice != null) return "€%.3f".format(bestPrice)
                 }
-                val bestPrice = matchingPrices.minByOrNull { it.price }?.price
-                if (bestPrice != null) return "€%.3f".format(bestPrice)
             }
         }
 

@@ -563,6 +563,10 @@
     <string name="poi_section_charging_details">Détails recharge</string>
     <string name="poi_section_services">Services</string>
     <string name="poi_section_restaurant">Restaurant</string>
+    <string name="poi_shortage_out_of_stock">Rupture de stock</string>
+    <string name="poi_shortage_temporary">Rupture temporaire</string>
+    <string name="poi_shortage_definitive">Rupture définitive</string>
+    <string name="poi_shortage_since">Depuis le %1$s</string>
     <string name="poi_no_extra_details">Aucun détail supplémentaire</string>
     <string name="poi_free">Gratuit</string>
     <string name="poi_reservation_possible">Réservation possible</string>

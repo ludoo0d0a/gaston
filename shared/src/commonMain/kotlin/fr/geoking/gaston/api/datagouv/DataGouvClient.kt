@@ -165,13 +165,17 @@ class DataGouvClient(
                 val raw = obj["valeur"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
                     ?: obj["value"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
                 val outOfStock = obj["rupture"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false
+                val type = obj["rupture_type"]?.jsonPrimitive?.contentOrNull ?: obj["type"]?.jsonPrimitive?.contentOrNull
+                val start = obj["rupture_debut"]?.jsonPrimitive?.contentOrNull ?: obj["debut"]?.jsonPrimitive?.contentOrNull
                 val maj = obj["maj"]?.jsonPrimitive?.contentOrNull
                 if (raw != null) {
                     list.add(DataGouvPrice(
                         fuelName = nom,
                         price = raw,
                         updatedAt = maj,
-                        outOfStock = outOfStock
+                        outOfStock = outOfStock,
+                        shortageType = type,
+                        shortageStart = start
                     ))
                 }
             }
@@ -181,6 +185,8 @@ class DataGouvClient(
         val singleNom = record["prix_nom"]?.jsonPrimitive?.contentOrNull
         val singleVal = record["prix_valeur"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
         val singleRupture = record["prix_rupture"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false
+        val singleType = record["prix_rupture_type"]?.jsonPrimitive?.contentOrNull
+        val singleStart = record["prix_rupture_debut"]?.jsonPrimitive?.contentOrNull
         if (singleNom != null && singleVal != null) {
             val exists = list.any { it.fuelName == singleNom }
             if (!exists) {
@@ -188,7 +194,9 @@ class DataGouvClient(
                     fuelName = singleNom,
                     price = singleVal,
                     updatedAt = record["prix_maj"]?.jsonPrimitive?.contentOrNull,
-                    outOfStock = singleRupture
+                    outOfStock = singleRupture,
+                    shortageType = singleType,
+                    shortageStart = singleStart
                 ))
             }
         }
@@ -215,5 +223,7 @@ data class DataGouvPrice(
     val fuelName: String,
     val price: Double,
     val updatedAt: String? = null,
-    val outOfStock: Boolean = false
+    val outOfStock: Boolean = false,
+    val shortageType: String? = null,
+    val shortageStart: String? = null
 )

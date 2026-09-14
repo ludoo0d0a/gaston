@@ -265,7 +265,9 @@ data class FuelPrice(
     val fuelName: String,
     val price: Double,
     val updatedAt: String? = null,
-    val outOfStock: Boolean = false
+    val outOfStock: Boolean = false,
+    val shortageType: String? = null,
+    val shortageStart: String? = null
 )
 
 @Serializable
@@ -497,11 +499,7 @@ object MapPoiFilter {
             if (selectedFuelIds.isNotEmpty()) {
                 val prices = poi.fuelPrices
                 if (!prices.isNullOrEmpty()) {
-                    val availablePrices = prices.filter { !it.outOfStock && it.price > 0.0 }
-                    if (availablePrices.isEmpty()) {
-                        return false
-                    }
-                    val stationFuelIds = availablePrices.mapNotNull { fuelNameToId(it.fuelName) }.toSet()
+                    val stationFuelIds = prices.mapNotNull { fuelNameToId(it.fuelName) }.toSet()
                     if (stationFuelIds.intersect(selectedFuelIds).isEmpty()) {
                         return false
                     }

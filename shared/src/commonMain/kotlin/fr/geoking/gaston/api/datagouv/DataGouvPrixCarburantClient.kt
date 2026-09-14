@@ -120,14 +120,28 @@ class DataGouvPrixCarburantClient(
         )
     }
 
-    private fun parseRuptures(record: JsonObject): Set<String> {
-        val ruptures = mutableSetOf<String>()
+    private data class RuptureInfo(
+        val type: String? = null,
+        val start: String? = null
+    )
 
-        listOf("carburants_rupture_temporaire", "carburants_rupture_definitive").forEach { key ->
-            val value = record[key]?.jsonPrimitive?.contentOrNull
-            if (!value.isNullOrBlank()) {
-                value.split(";").forEach { name ->
-                    if (name.isNotBlank()) ruptures.add(name.trim().lowercase())
+    private fun parseRuptures(record: JsonObject): Map<String, RuptureInfo> {
+        val ruptures = mutableMapOf<String, RuptureInfo>()
+
+        val tempValue = record["carburants_rupture_temporaire"]?.jsonPrimitive?.contentOrNull
+        if (!tempValue.isNullOrBlank()) {
+            tempValue.split(";").forEach { name ->
+                if (name.isNotBlank()) {
+                    ruptures[name.trim().lowercase()] = RuptureInfo(type = "temporaire")
+                }
+            }
+        }
+
+        val defValue = record["carburants_rupture_definitive"]?.jsonPrimitive?.contentOrNull
+        if (!defValue.isNullOrBlank()) {
+            defValue.split(";").forEach { name ->
+                if (name.isNotBlank()) {
+                    ruptures[name.trim().lowercase()] = RuptureInfo(type = "définitive")
                 }
             }
         }
@@ -153,8 +167,18 @@ class DataGouvPrixCarburantClient(
                     ?: continue
                 val fin = obj["fin"]?.jsonPrimitive?.contentOrNull
                     ?: obj["@fin"]?.jsonPrimitive?.contentOrNull
+                val debut = obj["debut"]?.jsonPrimitive?.contentOrNull
+                    ?: obj["@debut"]?.jsonPrimitive?.contentOrNull
+                    ?: obj["start"]?.jsonPrimitive?.contentOrNull
+                val type = obj["type"]?.jsonPrimitive?.contentOrNull
+                    ?: obj["@type"]?.jsonPrimitive?.contentOrNull
                 if (fin.isNullOrBlank()) {
-                    ruptures.add(nom.trim().lowercase())
+                    val key = nom.trim().lowercase()
+                    val existing = ruptures[key]
+                    ruptures[key] = RuptureInfo(
+                        type = type ?: existing?.type,
+                        start = debut ?: existing?.start
+                    )
                 }
             }
         }
@@ -168,8 +192,14 @@ class DataGouvPrixCarburantClient(
             "gplc" to "GPLc"
         ).forEach { (prefix, fuelName) ->
             val ruptureType = record["${prefix}_rupture_type"]?.jsonPrimitive?.contentOrNull
-            if (!ruptureType.isNullOrBlank()) {
-                ruptures.add(fuelName.lowercase())
+            val ruptureDebut = record["${prefix}_rupture_debut"]?.jsonPrimitive?.contentOrNull
+            if (!ruptureType.isNullOrBlank() || !ruptureDebut.isNullOrBlank()) {
+                val key = fuelName.lowercase()
+                val existing = ruptures[key]
+                ruptures[key] = RuptureInfo(
+                    type = ruptureType ?: existing?.type,
+                    start = ruptureDebut ?: existing?.start
+                )
             }
         }
 
@@ -238,13 +268,17 @@ class DataGouvPrixCarburantClient(
                     ?: obj["value"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
                 val maj = obj["maj"]?.jsonPrimitive?.contentOrNull
                     ?: obj["@maj"]?.jsonPrimitive?.contentOrNull
-                val isRupture = nom.trim().lowercase() in ruptures
+                val normKey = nom.trim().lowercase()
+                val ruptureInfo = ruptures[normKey]
+                val isRupture = normKey in ruptures
                 if (raw != null) {
                     list.add(DataGouvPrixCarburantFuelPrice(
                         name = nom,
                         priceEur = raw,
                         updatedAt = maj,
-                        outOfStock = isRupture
+                        outOfStock = isRupture,
+                        shortageType = ruptureInfo?.type,
+                        shortageStart = ruptureInfo?.start
                     ))
                 }
             }
@@ -261,13 +295,17 @@ class DataGouvPrixCarburantClient(
         ).forEach { (fieldPrefix, fuelName) ->
             val price = record["${fieldPrefix}_prix"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
             val maj = record["${fieldPrefix}_maj"]?.jsonPrimitive?.contentOrNull
-            val isRupture = fuelName.lowercase() in ruptures
+            val normKey = fuelName.lowercase()
+            val ruptureInfo = ruptures[normKey]
+            val isRupture = normKey in ruptures
             if (price != null && list.none { it.name.equals(fuelName, ignoreCase = true) }) {
                 list.add(DataGouvPrixCarburantFuelPrice(
                     name = fuelName,
                     priceEur = price,
                     updatedAt = maj,
-                    outOfStock = isRupture
+                    outOfStock = isRupture,
+                    shortageType = ruptureInfo?.type,
+                    shortageStart = ruptureInfo?.start
                 ))
             }
         }
@@ -278,15 +316,46 @@ class DataGouvPrixCarburantClient(
         if (singleNom != null && singleVal != null) {
             val exists = list.any { it.name == singleNom }
             if (!exists) {
-                val isRupture = singleNom.trim().lowercase() in ruptures
+                val normKey = singleNom.trim().lowercase()
+                val ruptureInfo = ruptures[normKey]
+                val isRupture = normKey in ruptures
                 list.add(DataGouvPrixCarburantFuelPrice(
                     name = singleNom,
                     priceEur = singleVal,
                     updatedAt = singleMaj,
-                    outOfStock = isRupture
+                    outOfStock = isRupture,
+                    shortageType = ruptureInfo?.type,
+                    shortageStart = ruptureInfo?.start
                 ))
             }
         }
+
+        // Ensure fuels reported as in rupture (even if missing from price lists) are included
+        val knownFuelNames = mapOf(
+            "gazole" to "Gazole",
+            "sp95" to "SP95",
+            "sp98" to "SP98",
+            "e10" to "E10",
+            "e85" to "E85",
+            "gplc" to "GPLc",
+            "gpl" to "GPLc"
+        )
+        for ((key, ruptureInfo) in ruptures) {
+            val displayName = knownFuelNames[key] ?: key.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+            if (list.none { it.name.equals(displayName, ignoreCase = true) || it.name.trim().lowercase() == key }) {
+                list.add(
+                    DataGouvPrixCarburantFuelPrice(
+                        name = displayName,
+                        priceEur = 0.0,
+                        updatedAt = null,
+                        outOfStock = true,
+                        shortageType = ruptureInfo.type,
+                        shortageStart = ruptureInfo.start
+                    )
+                )
+            }
+        }
+
         return list
     }
 
@@ -338,5 +407,7 @@ data class DataGouvPrixCarburantFuelPrice(
     val name: String,
     val priceEur: Double,
     val updatedAt: String? = null,
-    val outOfStock: Boolean = false
+    val outOfStock: Boolean = false,
+    val shortageType: String? = null,
+    val shortageStart: String? = null
 )

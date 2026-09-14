@@ -222,21 +222,53 @@ fun PoiDetailsFullscreenDialog(
                                 prices.forEach { fp ->
                                     val fuelId = MapPoiFilter.fuelNameToId(fp.fuelName)
                                     val matchColor = fuelId?.let { ColorHelper.getFuelColor(it) }
-                                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                    Column(modifier = Modifier.padding(vertical = 6.dp)) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(
                                                 text = fp.fuelName,
                                                 color = matchColor ?: MaterialTheme.colorScheme.onSurface,
-                                                fontSize = 14.sp
-                                            )
-                                            Text(
-                                                text = if (fp.outOfStock) "—" else "€%.3f".format(fp.price),
-                                                color = if (fp.outOfStock) Color.White.copy(alpha = 0.5f) else Color(0xFF22C55E),
                                                 fontSize = 14.sp,
                                                 fontWeight = FontWeight.Medium
+                                            )
+                                            if (fp.outOfStock) {
+                                                val shortageLabel = when {
+                                                    fp.shortageType?.contains("temp", ignoreCase = true) == true -> stringResource(R.string.poi_shortage_temporary)
+                                                    fp.shortageType?.contains("def", ignoreCase = true) == true -> stringResource(R.string.poi_shortage_definitive)
+                                                    else -> stringResource(R.string.poi_shortage_out_of_stock)
+                                                }
+                                                Surface(
+                                                    color = Color(0xFFEF4444).copy(alpha = 0.2f),
+                                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = shortageLabel,
+                                                        color = Color(0xFFEF4444),
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                    )
+                                                }
+                                            } else {
+                                                Text(
+                                                    text = "€%.3f".format(fp.price),
+                                                    color = Color(0xFF22C55E),
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                        val start = fp.shortageStart
+                                        if (fp.outOfStock && !start.isNullOrBlank()) {
+                                            val formattedStart = DateTimeUtils.formatRelativeTime(start)
+                                            Text(
+                                                text = stringResource(R.string.poi_shortage_since, formattedStart),
+                                                color = Color(0xFFEF4444).copy(alpha = 0.8f),
+                                                fontSize = 11.sp,
+                                                modifier = Modifier.padding(top = 2.dp)
                                             )
                                         }
                                     }

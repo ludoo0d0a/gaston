@@ -449,7 +449,14 @@ object PoiMerger {
         }
         val picked = if (chooseB) b else a
         val other = if (chooseB) a else b
-        return picked.copy(outOfStock = a.outOfStock || b.outOfStock, price = picked.price)
+        val shortageType = picked.shortageType ?: other.shortageType
+        val shortageStart = picked.shortageStart ?: other.shortageStart
+        return picked.copy(
+            outOfStock = a.outOfStock || b.outOfStock,
+            price = picked.price,
+            shortageType = shortageType,
+            shortageStart = shortageStart
+        )
     }
 
     private fun mergeIrveDetails(a: IrveDetails?, b: IrveDetails?): IrveDetails? {
