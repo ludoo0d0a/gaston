@@ -99,6 +99,7 @@ class GireveTest {
         assertEquals("Freshmile", poi.brand)
         assertTrue(poi.isElectric)
         assertEquals(PoiCategory.Irve, poi.poiCategory)
+        assertEquals(22.0, poi.powerKw)
         assertEquals(2, poi.chargePointCount)
 
         assertNotNull(poi.irveDetails)

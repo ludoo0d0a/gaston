@@ -53,6 +53,7 @@ class GireveProvider(
                 ?: "Station IRVE Gireve"
 
             val brandName = first.operatorName ?: first.enseigneName ?: first.amenageurName
+            val maxPowerKw = pdcs.mapNotNull { it.puissanceNominale }.maxOrNull()
 
             Poi(
                 id = "gireve_$stationKey",
@@ -63,6 +64,7 @@ class GireveProvider(
                 longitude = first.longitude,
                 isElectric = true,
                 poiCategory = PoiCategory.Irve,
+                powerKw = maxPowerKw,
                 chargePointCount = total,
                 irveDetails = IrveDetails(
                     availableConnectors = available,

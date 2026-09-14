@@ -78,11 +78,12 @@ class FreshmileProvider(
                 val isAvailable = props?.isAvailable == true
                 val availableEvses = if (isAvailable) (totalEvses ?: 1) else 0
 
-                val estimatedPowerKw = when (props?.bestPowerCategory?.lowercase()?.trim()) {
-                    "normal" -> 22.0
-                    "fast" -> 50.0
-                    "superfast", "ultrafast", "ultra_fast" -> 150.0
-                    else -> null
+                val rawPowerCat = props?.bestPowerCategory?.lowercase()?.trim()
+                val estimatedPowerKw = when (rawPowerCat) {
+                    "normal", "slow" -> 22.0
+                    "fast", "accelerated" -> 50.0
+                    "superfast", "ultrafast", "ultra_fast", "rapid", "hyper" -> 150.0
+                    else -> rawPowerCat?.replace("kw", "")?.trim()?.toDoubleOrNull()
                 }
 
                 Poi(
