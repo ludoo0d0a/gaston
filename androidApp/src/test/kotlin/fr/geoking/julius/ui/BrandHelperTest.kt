@@ -101,6 +101,51 @@ class BrandHelperTest {
     }
 
     @Test
+    fun testNewManufacturerBrandsMatching() {
+        val manufacturers = listOf(
+            "e-Totem" to R.drawable.ic_brand_etotem,
+            "DBT-CEV" to R.drawable.ic_brand_dbt,
+            "Lafon" to R.drawable.ic_brand_lafon,
+            "ANYOS" to R.drawable.ic_brand_anyos,
+            "Wattpark" to R.drawable.ic_brand_wattpark,
+            "Ze-Watt" to R.drawable.ic_brand_zewatt,
+            "Sermes" to R.drawable.ic_brand_sermes,
+            "Saintronic" to R.drawable.ic_brand_saintronic,
+            "Schneider Electric" to R.drawable.ic_brand_schneider,
+            "Legrand" to R.drawable.ic_brand_legrand,
+            "Hager" to R.drawable.ic_brand_hager,
+            "Mersen" to R.drawable.ic_brand_mersen,
+            "Valeo" to R.drawable.ic_brand_valeo,
+            "G2mobility" to R.drawable.ic_brand_g2mobility,
+            "Ecoload" to R.drawable.ic_brand_ecoload,
+            "Cahors" to R.drawable.ic_brand_cahors,
+            "ABB E-mobility" to R.drawable.ic_brand_abb,
+            "Alpitronic" to R.drawable.ic_brand_alpitronic,
+            "Alfen" to R.drawable.ic_brand_alfen,
+            "Wallbox" to R.drawable.ic_brand_wallbox,
+            "Circontrol" to R.drawable.ic_brand_circontrol,
+            "Kempower" to R.drawable.ic_brand_kempower,
+            "Tritium" to R.drawable.ic_brand_tritium,
+            "Siemens" to R.drawable.ic_brand_siemens,
+            "Mennekes" to R.drawable.ic_brand_mennekes,
+            "Eaton" to R.drawable.ic_brand_eaton,
+            "StarCharge" to R.drawable.ic_brand_starcharge,
+            "Huawei Digital Power" to R.drawable.ic_brand_huawei,
+            "Nayax" to R.drawable.ic_brand_nayax,
+            "Daze" to R.drawable.ic_brand_daze,
+            "Easee" to R.drawable.ic_brand_easee,
+            "Zaptec" to R.drawable.ic_brand_zaptec,
+        )
+
+        for ((name, expectedIconRes) in manufacturers) {
+            val info = BrandHelper.getBrandInfo(name)
+            assertNotNull(info, "BrandInfo for $name should not be null")
+            assertEquals(name, info.displayName)
+            assertEquals(expectedIconRes, info.iconResId)
+        }
+    }
+
+    @Test
     fun testBeneluxElectricBrandsInBrandHelper() {
         val electricBrands = BrandHelper.getElectricBrands()
         val names = electricBrands.map { it.second }
