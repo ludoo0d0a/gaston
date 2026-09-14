@@ -100,8 +100,9 @@ class FreshmileProviderTest {
     }
     """.trimIndent()
 
-    private fun createMockClient(): FreshmileClient {
+    private fun createMockClient(onRequest: ((io.ktor.client.request.HttpRequestData) -> Unit)? = null): FreshmileClient {
         val mockEngine = MockEngine { request ->
+            onRequest?.invoke(request)
             val path = request.url.encodedPath
             val jsonContent = if (path.contains("locations/")) sampleLocationDetailJson else sampleMapLocationsJson
             respond(
@@ -112,6 +113,23 @@ class FreshmileProviderTest {
         }
         val httpClient = HttpClient(mockEngine)
         return FreshmileClient(httpClient)
+    }
+
+    @Test
+    fun getMapLocations_requestsBboxAsSingleCommaSeparatedString() = runBlocking {
+        var capturedBbox: String? = null
+        var capturedZoom: String? = null
+        val client = createMockClient { request ->
+            if (request.url.encodedPath.contains("map-locations")) {
+                capturedBbox = request.url.parameters["bbox"]
+                capturedZoom = request.url.parameters["zoom"]
+            }
+        }
+
+        client.getMapLocations(5.84, 48.92, 6.46, 49.49, zoom = 11)
+
+        assertEquals("5.84,48.92,6.46,49.49", capturedBbox)
+        assertEquals("11", capturedZoom)
     }
 
     @Test
