@@ -58,6 +58,7 @@ class GireveClient(
                     amenageurName = staticInfo.amenageurName,
                     enseigneName = staticInfo.enseigneName,
                     address = staticInfo.address,
+                    puissanceNominale = staticInfo.puissanceNominale,
                     distanceKm = dist
                 ) to dist
             }
@@ -104,6 +105,8 @@ class GireveClient(
         val idxEns = header.indexOf("nom_enseigne")
         val idxAddr = header.indexOf("adresse_station")
         val idxXy = header.indexOf("coordonneesXY")
+        val idxPuissance = header.indexOf("puissance_nominale").takeIf { it >= 0 }
+            ?: header.indexOf("puissance_maximale")
         if (idxPdc < 0 || idxXy < 0) return emptyMap()
 
         val out = HashMap<String, GireveStaticInfo>(65_536)
@@ -118,6 +121,9 @@ class GireveClient(
             val amenageurName = fields.getOrNull(idxAmen)?.trim()?.takeIf { it.isNotBlank() }
             val enseigneName = fields.getOrNull(idxEns)?.trim()?.takeIf { it.isNotBlank() }
             val address = fields.getOrNull(idxAddr)?.trim()?.takeIf { it.isNotBlank() }
+            val puissanceNominale = if (idxPuissance >= 0) {
+                fields.getOrNull(idxPuissance)?.trim()?.replace(',', '.')?.toDoubleOrNull()
+            } else null
 
             out[id] = GireveStaticInfo(
                 stationId = stationId,
@@ -126,6 +132,7 @@ class GireveClient(
                 amenageurName = amenageurName,
                 enseigneName = enseigneName,
                 address = address,
+                puissanceNominale = puissanceNominale,
                 latitude = lat,
                 longitude = lon
             )
@@ -213,6 +220,7 @@ data class GireveStaticInfo(
     val amenageurName: String?,
     val enseigneName: String?,
     val address: String?,
+    val puissanceNominale: Double? = null,
     val latitude: Double,
     val longitude: Double
 )
@@ -229,5 +237,6 @@ data class GirevePdcRecord(
     val amenageurName: String? = null,
     val enseigneName: String? = null,
     val address: String? = null,
+    val puissanceNominale: Double? = null,
     val distanceKm: Double = 0.0
 )

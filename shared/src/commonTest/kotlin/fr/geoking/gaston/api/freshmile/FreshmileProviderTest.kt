@@ -156,6 +156,36 @@ class FreshmileProviderTest {
     }
 
     @Test
+    fun getGasStations_parsesNumericBestPowerCategory() = runBlocking {
+        val numericPowerJson = """
+        {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "geometry": { "type": "Point", "coordinates": [2.35, 48.85] },
+              "id": "STATION_NUMERIC",
+              "properties": {
+                "location_id": 999,
+                "best_power_category": "50kW",
+                "is_available": true,
+                "total_evses": 2
+              }
+            }
+          ]
+        }
+        """.trimIndent()
+
+        val mockEngine = MockEngine { respond(numericPowerJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }
+        val client = FreshmileClient(HttpClient(mockEngine))
+        val provider = FreshmileProvider(client)
+
+        val pois = provider.getGasStations(48.85, 2.35)
+        assertEquals(1, pois.size)
+        assertEquals(50.0, pois.first().powerKw)
+    }
+
+    @Test
     fun getLocationDetail_parsesLocationDetailsCorrectly() = runBlocking {
         val client = createMockClient()
         val detail = client.getLocationDetail(199034)
