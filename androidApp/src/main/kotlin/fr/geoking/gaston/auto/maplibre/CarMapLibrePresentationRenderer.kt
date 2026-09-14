@@ -27,10 +27,6 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
 import java.util.Collections
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.ln
-import kotlin.math.tan
 
 /**
  * High-performance MapLibre Renderer for Android Auto using the Presentation API.
@@ -228,41 +224,11 @@ class CarMapLibrePresentationRenderer(
 
     private inner class MapPresentation(context: Context, display: android.view.Display) : Presentation(context, display) {
         lateinit var mapView: MapView
-        lateinit var hudView: HUDView
 
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
-            val root = android.widget.FrameLayout(context)
             mapView = MapView(context)
-            hudView = HUDView(context)
-
-            root.addView(mapView)
-            root.addView(hudView)
-            setContentView(root)
-        }
-
-        inner class HUDView(ctx: Context) : android.view.View(ctx) {
-            var bearing: Float = 0f
-            var zoom: Float = 0f
-            var latitude: Double = 0.0
-            var modeLabel: String = ""
-            var visibleArea: Rect? = null
-
-            override fun onDraw(canvas: android.graphics.Canvas) {
-                super.onDraw(canvas)
-                AutoMapOverlayHelper.drawCompassAndScale(
-                    canvas = canvas,
-                    context = context,
-                    visibleArea = visibleArea,
-                    surfaceWidth = width,
-                    surfaceHeight = height,
-                    bearing = bearing,
-                    zoom = zoom,
-                    latitude = latitude,
-                    isDensityScaled = true,
-                    modeLabel = modeLabel,
-                )
-            }
+            setContentView(mapView)
         }
     }
 
