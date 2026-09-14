@@ -28,7 +28,8 @@ class AutoMapSettingsScreen(
             fr.geoking.gaston.CarMapMode.MapLibre -> carContext.getString(R.string.map_mode_maplibre)
             fr.geoking.gaston.CarMapMode.MapTiler -> carContext.getString(R.string.map_mode_maptiler)
             fr.geoking.gaston.CarMapMode.Protomaps -> carContext.getString(R.string.map_mode_protomaps)
-            fr.geoking.gaston.CarMapMode.Mapsforge -> carContext.getString(R.string.map_mode_mapsforge)
+            fr.geoking.gaston.CarMapMode.Mapbox -> carContext.getString(R.string.map_mode_mapbox)
+            fr.geoking.gaston.CarMapMode.MapLibrePresentation -> carContext.getString(R.string.map_mode_maplibre) + " (Pres)"
         }
 
         listBuilder.addItem(
@@ -76,16 +77,6 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(carContext.getString(R.string.mapsforge_offline_maps))
-                .addText(carContext.getString(R.string.mapsforge_offline_maps_subtitle))
-                .setOnClickListener {
-                    val mapManager = fr.geoking.gaston.auto.mapsforge.MapsforgeMapManager(carContext)
-                    screenManager.push(fr.geoking.gaston.auto.mapsforge.AutoMapsforgeMapManagementScreen(carContext, mapManager))
-                }
-                .build()
-        )
 
         val themeLabel = when (settings.mapTheme) {
             MapTheme.Dark -> carContext.getString(R.string.map_theme_dark_matter)

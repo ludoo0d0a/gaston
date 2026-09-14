@@ -30,13 +30,15 @@ enum class CarMapMode {
     MapTiler,
   /** Offline Protomaps PMTiles (manual file in phone settings). */
     Protomaps,
-  /** Offline Mapsforge `.map` (manual file in phone settings). */
-    Mapsforge;
+  /** Mapbox native Android Auto extension. */
+    Mapbox,
+  /** MapLibre vector via Presentation API (High Performance / 60 FPS). */
+    MapLibrePresentation;
 
     fun next(): CarMapMode = entries[(ordinal + 1) % entries.size]
 
     val requiresOfflineMapFile: Boolean
-        get() = this == Protomaps || this == Mapsforge
+        get() = this == Protomaps
 }
 enum class MapEngine { Google, MapLibre, Custom, Mapsforge }
 enum class ThemeMode { System, Light, Dark }
@@ -157,8 +159,6 @@ data class AppSettings(
     val carMapMode: CarMapMode = CarMapMode.Native,
     /** Absolute path to a local `.pmtiles` file (Protomaps AA mode). Set manually on phone — never auto-downloaded. */
     val offlinePmtilesPath: String? = null,
-    /** Absolute path to a local Mapsforge `.map` file. Set manually on phone — never auto-downloaded. */
-    val offlineMapsforgePath: String? = null,
     val googleUserName: String? = null,
     val isLoggedIn: Boolean = false,
     val tollDataPath: String? = null,
@@ -272,7 +272,6 @@ open class SettingsManager(
             CarMapMode.valueOf(prefs.getString("car_map_mode", CarMapMode.Native.name) ?: CarMapMode.Native.name)
         } catch (_: Exception) { CarMapMode.Native }
         val offlinePmtilesPath = prefs.getString("offline_pmtiles_path", null)?.takeIf { it.isNotBlank() }
-        val offlineMapsforgePath = prefs.getString("offline_mapsforge_path", null)?.takeIf { it.isNotBlank() }
 
         val vehicleType = try {
             VehicleType.valueOf(prefs.getString("vehicle_type", VehicleType.Car.name) ?: VehicleType.Car.name)
@@ -431,7 +430,6 @@ open class SettingsManager(
             .putString("vehicle_type", settings.vehicleType.name)
             .putString("car_map_mode", settings.carMapMode.name)
             .putString("offline_pmtiles_path", settings.offlinePmtilesPath)
-            .putString("offline_mapsforge_path", settings.offlineMapsforgePath)
             .putString("google_user_name", sanitized.googleUserName)
             .putBoolean("is_logged_in", sanitized.isLoggedIn)
             .putString("toll_data_path", sanitized.tollDataPath)
@@ -485,9 +483,6 @@ open class SettingsManager(
         saveSettings(_settings.value.copy(offlinePmtilesPath = path?.takeIf { it.isNotBlank() }))
     }
 
-    open fun setOfflineMapsforgePath(path: String?) {
-        saveSettings(_settings.value.copy(offlineMapsforgePath = path?.takeIf { it.isNotBlank() }))
-    }
 
     open fun setMapTheme(theme: MapTheme) {
         saveSettings(_settings.value.copy(mapTheme = theme))

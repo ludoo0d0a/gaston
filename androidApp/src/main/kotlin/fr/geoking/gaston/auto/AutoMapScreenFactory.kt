@@ -89,7 +89,7 @@ object AutoMapScreenFactory {
             canvasMapModeConfig = CanvasMapModeConfig.protomaps(carContext),
             mapDeps = mapDeps,
         )
-        CarMapMode.Mapsforge -> fr.geoking.gaston.auto.mapsforge.MapsforgePoiScreen(
+        CarMapMode.Mapbox -> MapLibrePoiScreen(
             carContext = carContext,
             poiProvider = mapDeps.poiProvider,
             availabilityProviderFactory = mapDeps.availabilityProviderFactory,
@@ -102,6 +102,23 @@ object AutoMapScreenFactory {
             communityRepo = mapDeps.communityRepo,
             favoritesRepo = mapDeps.favoritesRepo,
             title = title,
+            canvasMapModeConfig = CanvasMapModeConfig.mapbox(carContext),
+            mapDeps = mapDeps,
+        )
+        CarMapMode.MapLibrePresentation -> MapLibrePoiScreen(
+            carContext = carContext,
+            poiProvider = mapDeps.poiProvider,
+            availabilityProviderFactory = mapDeps.availabilityProviderFactory,
+            settingsManager = settingsManager,
+            routePlanner = mapDeps.routePlanner,
+            routingClient = mapDeps.routingClient,
+            tollCalculator = mapDeps.tollCalculator,
+            trafficProviderFactory = mapDeps.trafficProviderFactory,
+            geocodingClient = mapDeps.geocodingClient,
+            communityRepo = mapDeps.communityRepo,
+            favoritesRepo = mapDeps.favoritesRepo,
+            title = title,
+            canvasMapModeConfig = CanvasMapModeConfig.mapLibrePresentation(carContext),
             mapDeps = mapDeps,
         )
     }

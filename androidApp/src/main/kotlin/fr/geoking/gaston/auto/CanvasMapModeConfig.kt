@@ -9,6 +9,8 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.maplibre.CarMapLibreRenderer
 import fr.geoking.gaston.auto.maplibre.MapsforgeAaRenderer
+import fr.geoking.gaston.auto.maplibre.CarMapLibrePresentationRenderer
+import fr.geoking.gaston.auto.mapbox.CarMapboxRenderer
 import fr.geoking.gaston.auto.maplibre.resolveAutoMapStyleUrl
 import fr.geoking.gaston.auto.maplibre.resolveMapTilerStyleUrl
 import fr.geoking.gaston.auto.maplibre.resolveProtomapsLocalPath
@@ -96,6 +98,62 @@ data class CanvasMapModeConfig(
             styleUrlResolver = { _, _ -> null },
             createRenderer = { ctx, lifecycle, config ->
                 MapsforgeAaRenderer(ctx, lifecycle).apply {
+                    hudModeLabel = config.hudLabel
+                }
+            },
+            createStationDetailScreen = { carContext, poi, availability, searchLat, searchLon, zoom, orientationMode, bearing, effectiveEnergies, effectivePowerLevels, settingsManager, favoritesRepo, onDisposed ->
+                MapLibreStationDetailScreen(
+                    carContext = carContext,
+                    poi = poi,
+                    availability = availability,
+                    searchLat = searchLat,
+                    searchLon = searchLon,
+                    zoom = zoom,
+                    orientationMode = orientationMode,
+                    bearing = bearing,
+                    effectiveEnergies = effectiveEnergies,
+                    effectivePowerLevels = effectivePowerLevels,
+                    settingsManager = settingsManager,
+                    favoritesRepo = favoritesRepo,
+                    onDisposed = onDisposed,
+                )
+            },
+        )
+
+        fun mapbox(carContext: CarContext): CanvasMapModeConfig = CanvasMapModeConfig(
+            logTag = "MapboxPoiScreen",
+            hudLabel = carContext.getString(R.string.map_mode_mapbox),
+            styleUrlResolver = { _, _ -> "mapbox://styles/mapbox/streets-v12" },
+            createRenderer = { ctx, lifecycle, config ->
+                CarMapboxRenderer(ctx, lifecycle).apply {
+                    hudModeLabel = config.hudLabel
+                }
+            },
+            createStationDetailScreen = { carContext, poi, availability, searchLat, searchLon, zoom, orientationMode, bearing, effectiveEnergies, effectivePowerLevels, settingsManager, favoritesRepo, onDisposed ->
+                MapLibreStationDetailScreen(
+                    carContext = carContext,
+                    poi = poi,
+                    availability = availability,
+                    searchLat = searchLat,
+                    searchLon = searchLon,
+                    zoom = zoom,
+                    orientationMode = orientationMode,
+                    bearing = bearing,
+                    effectiveEnergies = effectiveEnergies,
+                    effectivePowerLevels = effectivePowerLevels,
+                    settingsManager = settingsManager,
+                    favoritesRepo = favoritesRepo,
+                    onDisposed = onDisposed,
+                )
+            },
+        )
+
+        fun mapLibrePresentation(carContext: CarContext): CanvasMapModeConfig = CanvasMapModeConfig(
+            logTag = "MapLibrePresPoiScreen",
+            hudLabel = carContext.getString(R.string.map_mode_maplibre) + " (Pres)",
+            styleUrlResolver = { settings, ctx -> resolveAutoMapStyleUrl(settings, ctx) },
+            createRenderer = { ctx, lifecycle, config ->
+                CarMapLibrePresentationRenderer(ctx, lifecycle).apply {
                     hudModeLabel = config.hudLabel
                 }
             },
