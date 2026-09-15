@@ -952,6 +952,12 @@ open class MapLibrePoiScreen(
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
                     .build()
             )
+            .addAction(
+                Action.Builder()
+                    .setTitle(carContext.getString(R.string.action_legend))
+                    .setOnClickListener { screenManager.push(MapLegendScreen(carContext)) }
+                    .build()
+            )
 
         if (mapDeps != null) {
             actionStripBuilder.addAction(

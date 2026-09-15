@@ -682,6 +682,18 @@ class CustomMapPoiScreen(
         return Header.Builder()
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
+            .addEndHeaderAction(
+                Action.Builder()
+                    .setIcon(carContext.actionCompassIcon())
+                    .setOnClickListener { toggleMapOrientation() }
+                    .build()
+            )
+            .addEndHeaderAction(
+                Action.Builder()
+                    .setIcon(carContext.actionRecenterIcon())
+                    .setOnClickListener { recenterMap() }
+                    .build()
+            )
     }
 
     private fun applyMapOrientationToRenderer() {
@@ -921,6 +933,12 @@ class CustomMapPoiScreen(
                 Action.Builder()
                     .setIcon(carContext.actionSettingsIcon())
                     .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
+                    .setTitle(carContext.getString(R.string.action_legend))
+                    .setOnClickListener { screenManager.push(MapLegendScreen(carContext)) }
                     .build()
             )
 

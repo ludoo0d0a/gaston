@@ -817,4 +817,9 @@
     <string name="offline_maps_by_region_subtitle">Download maps for your usual regions for offline navigation, both on the phone and in Android Auto</string>
     <string name="offline_maps_storage_used">Storage used: %1$s</string>
     <string name="offline_maps_other_regions">Other regions…</string>
+    <string name="action_legend">Legend</string>
+    <string name="screen_map_legend">Map Legend</string>
+    <string name="legend_available">Available</string>
+    <string name="legend_unavailable">Unavailable</string>
+    <string name="legend_selected">Selected</string>
 </resources>

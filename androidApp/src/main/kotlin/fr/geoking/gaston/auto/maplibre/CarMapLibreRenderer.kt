@@ -95,10 +95,23 @@ class CarMapLibreRenderer(
     private var lastStyleLoadedAtMs: Long = 0L
     private var surfaceValid: Boolean = false
 
-    private val searchRadiusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.RED
+    private val userLocationPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#4285F4")
+        style = Paint.Style.FILL
+    }
+    private val userLocationStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
         style = Paint.Style.STROKE
-        strokeWidth = 3f
+        strokeWidth = 4f
+        strokeJoin = Paint.Join.ROUND
+    }
+    private val arrowPath = Path().apply {
+        val radius = 24f
+        moveTo(0f, -radius)
+        lineTo(-radius * 0.8f, radius * 0.8f)
+        lineTo(0f, radius * 0.4f)
+        lineTo(radius * 0.8f, radius * 0.8f)
+        close()
     }
 
     private val waitingBasemapPaint = Paint().apply {
@@ -530,6 +543,7 @@ class CarMapLibreRenderer(
 
         drawSearchRadius(canvas)
         drawPois(canvas)
+        drawUserLocation(canvas)
 
         if (bearing != 0f) {
             canvas.restore()
@@ -698,6 +712,30 @@ class CarMapLibreRenderer(
                 canvas.drawBitmap(bitmap, drawX - bitmap.width / 2f, drawY - bitmap.height, null)
             }
         }
+    }
+
+    private fun drawUserLocation(canvas: Canvas) {
+        val uLat = searchRadiusCenterLat ?: return
+        val uLon = searchRadiusCenterLon ?: return
+
+        val centerX = lonToTileX(lon, zoom)
+        val centerY = latToTileY(lat, zoom)
+
+        val tileX = lonToTileX(uLon, zoom)
+        val tileY = latToTileY(uLat, zoom)
+
+        val drawX = ((tileX - centerX) * TILE_SIZE + centerPxX).toFloat()
+        val drawY = ((tileY - centerY) * TILE_SIZE + centerPxY).toFloat()
+
+        val rotation = headingDegrees
+
+        canvas.save()
+        canvas.translate(drawX, drawY)
+        canvas.rotate(rotation)
+
+        canvas.drawPath(arrowPath, userLocationPaint)
+        canvas.drawPath(arrowPath, userLocationStrokePaint)
+        canvas.restore()
     }
 
     private fun lonToTileX(lon: Double, zoom: Int): Double =
