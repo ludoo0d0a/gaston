@@ -1,6 +1,6 @@
 package fr.geoking.gaston.poi
 
-import fr.geoking.gaston.api.datagouv.DataGouvProvider
+import fr.geoking.gaston.api.datagouv.DataGouvPrixQuotidienProvider
 import fr.geoking.gaston.api.datagouv.DataGouvPrixCarburantProvider
 import fr.geoking.gaston.api.gas.GasApiProvider
 import fr.geoking.gaston.api.openchargemap.OpenChargeMapClient
@@ -59,10 +59,8 @@ class MapViewportBoundaryTest {
     }
 
     @Test
-    fun dataGouvProvider_queriesCircumscribedCircleForMapViewport() = runBlocking {
-        var requestedUrl = ""
-        val mockEngine = MockEngine { request ->
-            requestedUrl = request.url.toString()
+    fun dataGouvPrixQuotidienProvider_isDisabled() = runBlocking {
+        val mockEngine = MockEngine { _ ->
             respond(
                 content = """{"results": []}""",
                 status = HttpStatusCode.OK,
@@ -70,22 +68,10 @@ class MapViewportBoundaryTest {
             )
         }
         val httpClient = HttpClient(mockEngine)
-        val provider = DataGouvProvider(httpClient)
+        val provider = DataGouvPrixQuotidienProvider(httpClient)
 
-        val centerLat = 49.19315887687151
-        val centerLng = 6.145889998649892
-        val viewport = calculateBoundsFromMapViewport(
-            centerLat = centerLat,
-            centerLng = centerLng,
-            zoom = 12.0f,
-            mapWidthPx = 1080,
-            mapHeightPx = 2340
-        )
-
-        provider.getGasStations(centerLat, centerLng, viewport)
-
-        assertTrue(requestedUrl.contains("within_distance"))
-        assertTrue(requestedUrl.contains("33km"))
+        val result = provider.getGasStations(49.193, 6.145, null)
+        assertTrue(result.isEmpty(), "DataGouvPrixQuotidienProvider should be disabled and return empty list")
     }
 
     @Test

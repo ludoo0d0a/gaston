@@ -17,7 +17,6 @@ class AutoPoiProviderSelectionScreen(
         PoiProviderType.Routex to "Routex",
         PoiProviderType.Etalab to "data.gouv.fr (Fuel instant)",
         PoiProviderType.GasApi to "gas-api.ovh",
-        PoiProviderType.DataGouv to "data.gouv.fr (Fuel daily)",
         PoiProviderType.UkCma to "UK Fuel Finder (CMA)",
         PoiProviderType.ItalyMimit to "MIMIT (Italy official)",
         PoiProviderType.SloveniaGorivaSi to "goriva.si (Slovenia official)",

@@ -35,7 +35,7 @@ private fun resultsAsList(obj: JsonObject): List<JsonElement> {
  * API: [data.economie.gouv.fr](https://data.economie.gouv.fr/explore/dataset/prix-carburants-quotidien/api/).
  *
  * Data includes station locations (address, coordinates) and fuel prices, updated daily (J-1).
- * The export may omit historical fields such as `marque`; [DataGouvProvider] can enrich brands via Gas API.
+ * The export may omit historical fields such as `marque`; [DataGouvPrixQuotidienProvider] can enrich brands via Gas API.
  * No API key required. Licence: Licence Ouverte 1.0.
  */
 class DataGouvClient(
