@@ -49,7 +49,7 @@ import fr.geoking.gaston.api.evpricesfr.EvPricesFrClient
 import fr.geoking.gaston.api.datagouv.DataGouvCampingClient
 import fr.geoking.gaston.api.datagouv.DataGouvCampingProvider
 import fr.geoking.gaston.api.datagouv.DataGouvElecProvider
-import fr.geoking.gaston.api.datagouv.DataGouvProvider
+import fr.geoking.gaston.api.datagouv.DataGouvPrixQuotidienProvider
 import fr.geoking.gaston.api.datagouv.DataGouvPrixCarburantProvider
 import fr.geoking.gaston.api.minetur.SpainMineturProvider
 import fr.geoking.gaston.api.tankerkoenig.GermanyTankerkoenigProvider
@@ -224,7 +224,7 @@ val mapModule = module {
         ArgentinaEnergiaProvider(get(), radiusKm = 20, limit = 80)
     }
     single<PoiProvider>(named("datagouv")) {
-        DataGouvProvider(
+        DataGouvPrixQuotidienProvider(
             client = get(),
             radiusKm = 10,
             limit = 100

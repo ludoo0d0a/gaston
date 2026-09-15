@@ -6,7 +6,8 @@ import fr.geoking.gaston.api.us.EiaPetroleumClient
 import fr.geoking.gaston.api.us.UsaEiaProvider
 import fr.geoking.gaston.api.belgium.BelgiumPetrolPricesClient
 import fr.geoking.gaston.api.croatia.CroatiaMzoeProvider
-import fr.geoking.gaston.api.datagouv.DataGouvProvider
+import fr.geoking.gaston.api.datagouv.DataGouvPrixCarburantProvider
+import fr.geoking.gaston.api.datagouv.DataGouvPrixQuotidienProvider
 import fr.geoking.gaston.api.denmark.FuelpricesDKProvider
 import fr.geoking.gaston.api.dgeg.PortugalDgegProvider
 import fr.geoking.gaston.api.econtrol.AustriaEControlProvider
@@ -38,7 +39,8 @@ import io.ktor.client.HttpClient
 internal object RealApiTestProviders {
 
     fun create(client: HttpClient, probe: CountryStationProbe): PoiProvider? = when (probe.fuelProvider) {
-        PoiProviderType.DataGouv -> DataGouvProvider(client, radiusKm = 10, limit = 100)
+        PoiProviderType.Etalab -> DataGouvPrixCarburantProvider(client, radiusKm = 10, limit = 100)
+        PoiProviderType.DataGouvPrixQuotidien -> DataGouvPrixQuotidienProvider(client, radiusKm = 10, limit = 100)
         PoiProviderType.UkCma -> UkCmaFuelProvider(client, radiusKm = 15, limit = 200)
         PoiProviderType.ItalyMimit -> MimitFuelProvider(client, radiusKm = 15, limit = 200)
         PoiProviderType.SloveniaGorivaSi -> GorivaSiProvider(client, radiusKm = 15, limit = 200)

@@ -14,10 +14,10 @@ class PoiFetchCacheTest {
 
     @Test
     fun buildPoiFetchKey_ignoresCategoryOrder() {
-        val providers = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass)
+        val providers = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass)
         assertEquals(
             buildPoiFetchKey(providers),
-            buildPoiFetchKey(setOf(PoiProviderType.Overpass, PoiProviderType.DataGouv)),
+            buildPoiFetchKey(setOf(PoiProviderType.Overpass, PoiProviderType.Etalab)),
         )
     }
 
@@ -74,7 +74,7 @@ class PoiFetchCacheTest {
             centerLng = 2.35,
             maxRadiusKmLoaded = 10,
             loadedAtMs = System.currentTimeMillis(),
-            loadedProviders = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+            loadedProviders = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
             loadedCategories = setOf(PoiCategory.Gas, PoiCategory.Irve, PoiCategory.Parking),
         )
         val nowMs = System.currentTimeMillis()
@@ -83,7 +83,7 @@ class PoiFetchCacheTest {
             centerLat = 48.85,
             centerLng = 2.35,
             requiredRadiusKm = 10,
-            providers = setOf(PoiProviderType.DataGouv),
+            providers = setOf(PoiProviderType.Etalab),
             categoriesToFetch = setOf(PoiCategory.Gas, PoiCategory.Irve),
             nowMs = nowMs,
         )
@@ -107,19 +107,19 @@ class PoiFetchCacheTest {
             centerLat = 48.85,
             centerLng = 2.35,
             requiredRadiusKm = 10,
-            providers = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+            providers = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
             categoriesToFetch = setOf(PoiCategory.Gas, PoiCategory.Irve, PoiCategory.Parking),
             nowMs = System.currentTimeMillis(),
         )
         assertFalse(coverage.fullyCovered)
         assertTrue(PoiCategory.Gas in coverage.missingCategories)
-        assertTrue(PoiProviderType.DataGouv in coverage.missingProviders)
+        assertTrue(PoiProviderType.Etalab in coverage.missingProviders)
     }
 
     @Test
     fun providersForIncrementalFetch_reQueriesOverpassForMissingAmenities() {
         val providers = providersForIncrementalFetch(
-            allProviders = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+            allProviders = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
             missingProviders = emptySet(),
             missingCategories = setOf(PoiCategory.Parking),
         )
@@ -128,14 +128,14 @@ class PoiFetchCacheTest {
 
     @Test
     fun providersForIncrementalFetch_fetchesElectricWhenIrveMissingAfterFuelLoad() {
-        val all = setOf(PoiProviderType.DataGouv, PoiProviderType.DataGouvElec, PoiProviderType.Overpass)
+        val all = setOf(PoiProviderType.Etalab, PoiProviderType.DataGouvElec, PoiProviderType.Overpass)
         val providers = providersForIncrementalFetch(
             allProviders = all,
             missingProviders = emptySet(),
             missingCategories = setOf(PoiCategory.Irve),
         )
         assertTrue(PoiProviderType.DataGouvElec in providers)
-        assertFalse(PoiProviderType.DataGouv in providers)
+        assertFalse(PoiProviderType.Etalab in providers)
     }
 
     @Test
@@ -146,7 +146,7 @@ class PoiFetchCacheTest {
             centerLng = 2.35,
             maxRadiusKmLoaded = 10,
             loadedAtMs = nowMs,
-            loadedProviders = setOf(PoiProviderType.DataGouv, PoiProviderType.DataGouvElec),
+            loadedProviders = setOf(PoiProviderType.Etalab, PoiProviderType.DataGouvElec),
             loadedCategories = setOf(PoiCategory.Gas, PoiCategory.Irve),
             categoryLoadedAtMs = mapOf(
                 PoiCategory.Gas to nowMs - 60_000L,
@@ -158,7 +158,7 @@ class PoiFetchCacheTest {
             centerLat = 48.85,
             centerLng = 2.35,
             requiredRadiusKm = 10,
-            providers = setOf(PoiProviderType.DataGouv, PoiProviderType.DataGouvElec),
+            providers = setOf(PoiProviderType.Etalab, PoiProviderType.DataGouvElec),
             categoriesToFetch = setOf(PoiCategory.Irve),
             nowMs = nowMs,
         )
@@ -173,7 +173,7 @@ class PoiFetchCacheTest {
             centerLng = 2.35,
             maxRadiusKmLoaded = 10,
             loadedAtMs = nowMs,
-            loadedProviders = setOf(PoiProviderType.DataGouv),
+            loadedProviders = setOf(PoiProviderType.Etalab),
             loadedCategories = setOf(PoiCategory.Gas),
             categoryLoadedAtMs = mapOf(PoiCategory.Gas to nowMs - 60_000L),
         )
@@ -182,14 +182,14 @@ class PoiFetchCacheTest {
             centerLat = 48.85,
             centerLng = 2.35,
             requiredRadiusKm = 10,
-            providers = setOf(PoiProviderType.DataGouv, PoiProviderType.DataGouvElec),
+            providers = setOf(PoiProviderType.Etalab, PoiProviderType.DataGouvElec),
             categoriesToFetch = setOf(PoiCategory.Irve),
             nowMs = nowMs,
         )
         assertFalse(coverage.fullyCovered)
         assertTrue(PoiCategory.Irve in coverage.missingCategories)
         val toFetch = providersForIncrementalFetch(
-            allProviders = setOf(PoiProviderType.DataGouv, PoiProviderType.DataGouvElec),
+            allProviders = setOf(PoiProviderType.Etalab, PoiProviderType.DataGouvElec),
             missingProviders = coverage.missingProviders,
             missingCategories = coverage.missingCategories,
         )
@@ -198,7 +198,7 @@ class PoiFetchCacheTest {
 
     @Test
     fun buildPoiFetchKey_stableAcrossEnergyMode() {
-        val fuelProviders = setOf(PoiProviderType.DataGouv, PoiProviderType.DataGouvElec)
+        val fuelProviders = setOf(PoiProviderType.Etalab, PoiProviderType.DataGouvElec)
         assertEquals(buildPoiFetchKey(fuelProviders), buildPoiFetchKey(fuelProviders))
     }
 
@@ -214,7 +214,7 @@ class PoiFetchCacheTest {
             ),
         )
         val routexKey = buildPoiFetchKey(setOf(PoiProviderType.Routex, PoiProviderType.Overpass))
-        val dataGouvKey = buildPoiFetchKey(setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass))
+        val dataGouvKey = buildPoiFetchKey(setOf(PoiProviderType.Etalab, PoiProviderType.Overpass))
 
         val afterRoutex = invalidateRegionCoverageOnProviderSetChange(
             providers = setOf(PoiProviderType.Routex, PoiProviderType.Overpass),
@@ -232,7 +232,7 @@ class PoiFetchCacheTest {
             loadedProviders = setOf(PoiProviderType.Routex, PoiProviderType.Overpass),
         )
         val afterSwitchToFuel = invalidateRegionCoverageOnProviderSetChange(
-            providers = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+            providers = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
             lastKey = afterRoutex,
             loadedRegions = regions,
         )
@@ -248,12 +248,12 @@ class PoiFetchCacheTest {
                 centerLng = 2.35,
                 maxRadiusKmLoaded = 10,
                 loadedAtMs = 1L,
-                loadedProviders = setOf(PoiProviderType.DataGouv),
+                loadedProviders = setOf(PoiProviderType.Etalab),
             ),
         )
-        val key = buildPoiFetchKey(setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass))
+        val key = buildPoiFetchKey(setOf(PoiProviderType.Etalab, PoiProviderType.Overpass))
         val result = invalidateRegionCoverageOnProviderSetChange(
-            providers = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+            providers = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
             lastKey = key,
             loadedRegions = regions,
         )
@@ -306,7 +306,7 @@ class PoiFetchCacheTest {
             centerLng = 2.35,
             maxRadiusKmLoaded = 10,
             loadedAtMs = parkingLoadedAt,
-            loadedProviders = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+            loadedProviders = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
             loadedCategories = setOf(PoiCategory.Gas, PoiCategory.Parking),
             categoryLoadedAtMs = mapOf(
                 PoiCategory.Gas to gasLoadedAt,
@@ -318,7 +318,7 @@ class PoiFetchCacheTest {
             centerLat = 48.85,
             centerLng = 2.35,
             requiredRadiusKm = 10,
-            providers = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+            providers = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
             categoriesToFetch = setOf(PoiCategory.Gas, PoiCategory.Parking),
             nowMs = nowMs,
         )
@@ -343,12 +343,12 @@ class PoiFetchCacheTest {
             centerLng = 2.0,
             requiredRadiusKm = 12,
             loadedAtMs = 2L,
-            fetchedProviders = setOf(PoiProviderType.DataGouv),
+            fetchedProviders = setOf(PoiProviderType.Etalab),
             fetchedCategories = setOf(PoiCategory.Gas),
         )
         assertEquals(12, merged.maxRadiusKmLoaded)
         assertTrue(PoiProviderType.Overpass in merged.loadedProviders)
-        assertTrue(PoiProviderType.DataGouv in merged.loadedProviders)
+        assertTrue(PoiProviderType.Etalab in merged.loadedProviders)
         assertTrue(PoiCategory.Parking in merged.loadedCategories)
         assertTrue(PoiCategory.Gas in merged.loadedCategories)
         assertEquals(2L, merged.categoryLoadedAtMs[PoiCategory.Gas])
@@ -361,12 +361,12 @@ class PoiFetchCacheTest {
             useVehicleFilter = true,
             fuelCard = FuelCard.Routex,
             poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
-            selectedPoiProviders = setOf(PoiProviderType.DataGouv)
+            selectedPoiProviders = setOf(PoiProviderType.Etalab)
         )
         val providers = settings.effectiveProviders()
         assertTrue(PoiProviderType.Routex in providers)
         assertTrue(PoiProviderType.Overpass in providers)
-        assertTrue(PoiProviderType.DataGouv in providers)
+        assertTrue(PoiProviderType.Etalab in providers)
     }
 
     @Test
@@ -376,7 +376,7 @@ class PoiFetchCacheTest {
             mapEnergyMode = EnergyFilterMode.Fuel,
         )
         val providers = settings.effectiveProviders(countryCodes = listOf("FR"))
-        assertTrue(PoiProviderType.DataGouv in providers)
+        assertTrue(PoiProviderType.Etalab in providers)
         assertTrue(PoiProviderType.GasApi in providers)
         assertTrue(PoiProviderType.Overpass in providers)
         assertFalse(PoiProviderType.DataGouvElec in providers)
@@ -393,7 +393,7 @@ class PoiFetchCacheTest {
         assertTrue(PoiProviderType.DataGouvElec in providers)
         assertTrue(PoiProviderType.OpenChargeMap in providers)
         assertTrue(PoiProviderType.Overpass in providers)
-        assertFalse(PoiProviderType.DataGouv in providers)
+        assertFalse(PoiProviderType.Etalab in providers)
     }
 
     @Test
@@ -402,7 +402,7 @@ class PoiFetchCacheTest {
             poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
             mapEnergyMode = EnergyFilterMode.Fuel,
             selectedPoiProviders = setOf(
-                PoiProviderType.DataGouv,
+                PoiProviderType.Etalab,
                 PoiProviderType.DataGouvElec,
                 PoiProviderType.OpenChargeMap,
                 PoiProviderType.Overpass,
@@ -410,7 +410,7 @@ class PoiFetchCacheTest {
         )
         val providers = settings.effectiveProviders()
         assertEquals(
-            setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+            setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
             providers,
         )
     }
@@ -421,7 +421,7 @@ class PoiFetchCacheTest {
             poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
             mapEnergyMode = EnergyFilterMode.Electric,
             selectedPoiProviders = setOf(
-                PoiProviderType.DataGouv,
+                PoiProviderType.Etalab,
                 PoiProviderType.DataGouvElec,
                 PoiProviderType.OpenChargeMap,
                 PoiProviderType.Overpass,

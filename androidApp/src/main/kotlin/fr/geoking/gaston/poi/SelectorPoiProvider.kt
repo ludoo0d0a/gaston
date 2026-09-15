@@ -145,7 +145,7 @@ class SelectorPoiProvider(
         PoiProviderType.Routex -> routex
         PoiProviderType.Etalab -> dataGouvPrixCarburant
         PoiProviderType.GasApi -> gasApi
-        PoiProviderType.DataGouv -> dataGouv
+        PoiProviderType.DataGouvPrixQuotidien -> dataGouv
         PoiProviderType.UkCma -> ukCma
         PoiProviderType.ItalyMimit -> italyMimit
         PoiProviderType.SloveniaGorivaSi -> sloveniaGorivaSi

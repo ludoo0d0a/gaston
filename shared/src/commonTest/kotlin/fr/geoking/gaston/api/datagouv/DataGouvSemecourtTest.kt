@@ -55,17 +55,16 @@ class DataGouvSemecourtTest {
             )
         }
         val client = HttpClient(engine)
-        val provider = DataGouvProvider(client)
+        val dataGouvClient = DataGouvClient(client)
 
-        val pois = provider.getGasStations(49.199, 6.15, null)
+        val stations = dataGouvClient.getStations(49.199, 6.15, 10)
 
-        assertEquals(1, pois.size, "Should merge records with same ID")
-        val poi = pois[0]
-        assertEquals("57280001", poi.id)
-        assertEquals(genericStationName("SEMéCOURT"), poi.name)
-        assertEquals("VOIE ROMAINE, 57280, SEMéCOURT", poi.address)
-        val prices = poi.fuelPrices
-        assertNotNull(prices)
+        assertEquals(1, stations.size, "Should merge records with same ID")
+        val station = stations[0]
+        assertEquals("57280001", station.id)
+        assertEquals(genericStationName("SEMéCOURT"), station.name)
+        assertEquals("VOIE ROMAINE, 57280, SEMéCOURT", station.address)
+        val prices = station.prices
         assertEquals(2, prices.size)
         assertTrue(prices.any { it.fuelName == "E10" })
         assertTrue(prices.any { it.fuelName == "Gazole" })

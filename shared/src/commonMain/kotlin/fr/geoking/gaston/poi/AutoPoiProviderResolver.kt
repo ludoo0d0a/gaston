@@ -23,7 +23,7 @@ fun autoProvidersForCountries(
             when (iso) {
                 "FR" -> {
                     resolved.add(PoiProviderType.GasApi)
-                    PoiProviderType.DataGouv
+                    PoiProviderType.Etalab
                 }
                 "GB", "UK" -> PoiProviderType.UkCma
                 "IT" -> PoiProviderType.ItalyMimit

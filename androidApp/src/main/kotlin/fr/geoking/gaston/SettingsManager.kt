@@ -128,7 +128,7 @@ data class AppSettings(
     val useVehicleFilter: Boolean = false,
     /** When [Auto], provider set is derived from current country (GPS / network). */
     val poiProviderSelectionMode: PoiProviderSelectionMode = PoiProviderSelectionMode.Manual,
-    val selectedPoiProviders: Set<PoiProviderType> = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+    val selectedPoiProviders: Set<PoiProviderType> = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
     val mapEnergyMode: EnergyFilterMode = EnergyFilterMode.Fuel,
     val selectedMapEnergyTypes: Set<String> = DEFAULT_MAP_ENERGY_TYPES,
     val mapEnseigneType: String = DEFAULT_MAP_ENSEIGNE_TYPE,
@@ -235,10 +235,14 @@ open class SettingsManager(
         }
 
         val selectedProviders = run {
-            val stored = prefs.getStringSet("poi_providers", null)?.mapNotNull {
-                try { PoiProviderType.valueOf(it) } catch (_: Exception) { null }
+            val stored = prefs.getStringSet("poi_providers", null)?.mapNotNull { name ->
+                if (name == "DataGouv" || name == "DataGouvPrixQuotidien") {
+                    PoiProviderType.Etalab
+                } else {
+                    try { PoiProviderType.valueOf(name) } catch (_: Exception) { null }
+                }
             }?.toSet()
-            val base = (stored ?: setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass))
+            val base = (stored ?: setOf(PoiProviderType.Etalab, PoiProviderType.Overpass))
                 .sanitizeUserPoiProviderSelection()
             // Older builds merged Overpass at runtime without persisting it; keep that once in prefs.
             if (!prefs.getBoolean("poi_providers_overpass_migrated_v1", false)) {

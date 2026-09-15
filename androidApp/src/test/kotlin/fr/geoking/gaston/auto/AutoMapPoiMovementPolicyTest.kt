@@ -20,7 +20,7 @@ class AutoMapPoiMovementPolicyTest {
         centerLng = centerLng,
         maxRadiusKmLoaded = maxRadiusKm,
         loadedAtMs = 0L,
-        loadedProviders = setOf(PoiProviderType.DataGouv),
+        loadedProviders = setOf(PoiProviderType.Etalab),
         loadedCategories = setOf(PoiCategory.Gas),
     )
 
