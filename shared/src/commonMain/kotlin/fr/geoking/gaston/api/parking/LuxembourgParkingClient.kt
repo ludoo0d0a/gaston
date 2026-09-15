@@ -44,9 +44,9 @@ class LuxembourgParkingClient(
             val isFull = obj["complet"]?.jsonPrimitive?.booleanOrNull ?: false
             val isBreakdown = obj["panne"]?.jsonPrimitive?.booleanOrNull ?: false
 
-            val locObj = obj["localisation"]?.jsonObject
-            val lat = locObj?.get("latitude")?.jsonPrimitive?.doubleOrNull ?: return@mapNotNull null
-            val lon = locObj?.get("longitude")?.jsonPrimitive?.doubleOrNull ?: return@mapNotNull null
+            val locObj = obj["localisation"]?.jsonObject ?: return@mapNotNull null
+            val lat = locObj.get("latitude")?.jsonPrimitive?.doubleOrNull ?: return@mapNotNull null
+            val lon = locObj.get("longitude")?.jsonPrimitive?.doubleOrNull ?: return@mapNotNull null
 
             val quartierObj = locObj.get("quartier")?.jsonObject
             val quartier = quartierObj?.get("en")?.jsonPrimitive?.content

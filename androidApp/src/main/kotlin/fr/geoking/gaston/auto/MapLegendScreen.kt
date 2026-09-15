@@ -6,6 +6,7 @@ import androidx.car.app.model.Action
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.Row
+import fr.geoking.gaston.R
 import androidx.car.app.model.Template
 import androidx.car.app.model.ListTemplate
 
@@ -18,19 +19,19 @@ class MapLegendScreen(carContext: CarContext) : Screen(carContext) {
             .addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.legend_available))
-                    .setSubtitle("Blue marker: Station is available")
+                    .addText("Blue marker: Station is available")
                     .build()
             )
             .addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.legend_unavailable))
-                    .setSubtitle("Gray marker: Station is unavailable")
+                    .addText("Gray marker: Station is unavailable")
                     .build()
             )
             .addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.legend_selected))
-                    .setSubtitle("Highlighted border: Currently selected station")
+                    .addText("Highlighted border: Currently selected station")
                     .build()
             )
             .build()

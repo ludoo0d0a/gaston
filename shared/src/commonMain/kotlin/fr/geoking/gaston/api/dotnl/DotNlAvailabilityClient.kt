@@ -62,8 +62,9 @@ class DotNlAvailabilityClient(
 
         return locations.asSequence()
             .flatMap { loc ->
-                val lat = loc.coordinates?.latitude?.toDoubleOrNull() ?: return@flatMap emptySequence()
-                val lon = loc.coordinates?.longitude?.toDoubleOrNull() ?: return@flatMap emptySequence()
+                val coords = loc.coordinates ?: return@flatMap emptySequence()
+                val lat = coords.latitude?.toDoubleOrNull() ?: return@flatMap emptySequence()
+                val lon = coords.longitude?.toDoubleOrNull() ?: return@flatMap emptySequence()
                 val dist = haversineKm(latitude, longitude, lat, lon)
                 if (dist > radiusKm) return@flatMap emptySequence()
                 (loc.evses.orEmpty()).asSequence().mapNotNull { evse ->
