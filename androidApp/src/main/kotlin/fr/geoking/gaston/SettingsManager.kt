@@ -494,7 +494,6 @@ open class SettingsManager(
         saveSettings(_settings.value.copy(offlineMapsforgePath = path?.takeIf { it.isNotBlank() }))
     }
 
-
     open fun setMapTheme(theme: MapTheme) {
         saveSettings(_settings.value.copy(mapTheme = theme))
     }

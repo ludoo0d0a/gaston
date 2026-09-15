@@ -2063,6 +2063,7 @@ private fun ErrorLogContent(
     var showClearConfirm by remember { mutableStateOf(false) }
 
     val genericErrorLabel = stringResource(R.string.error_log_generic)
+    val errorCopiedLabel = stringResource(R.string.error_copied_to_clipboard)
 
     if (showClearConfirm) {
         AlertDialog(
@@ -2161,7 +2162,7 @@ private fun ErrorLogContent(
                         }
                         scope.launch {
                             clipboard.setClipEntry(androidx.compose.ui.platform.ClipEntry(android.content.ClipData.newPlainText("All Errors", allErrors)))
-                            snackbarHostState?.showSnackbar(context.getString(R.string.error_copied_to_clipboard))
+                            snackbarHostState?.showSnackbar(errorCopiedLabel)
                         }
                     },
                     modifier = Modifier.weight(1f)
@@ -2216,7 +2217,7 @@ private fun ErrorLogContent(
                         .clickable {
                             scope.launch {
                                 clipboard.setClipEntry(androidx.compose.ui.platform.ClipEntry(android.content.ClipData.newPlainText("Error Detail", fullText)))
-                                snackbarHostState?.showSnackbar(context.getString(R.string.error_copied_to_clipboard))
+                                snackbarHostState?.showSnackbar(errorCopiedLabel)
                             }
                         }
                 ) {
@@ -2257,7 +2258,7 @@ private fun ErrorLogContent(
                                 onClick = {
                                     scope.launch {
                                         clipboard.setClipEntry(androidx.compose.ui.platform.ClipEntry(android.content.ClipData.newPlainText("Error Detail", fullText)))
-                                        snackbarHostState?.showSnackbar(context.getString(R.string.error_copied_to_clipboard))
+                                        snackbarHostState?.showSnackbar(errorCopiedLabel)
                                     }
                                 },
                                 modifier = Modifier.size(24.dp)
@@ -2343,6 +2344,7 @@ private fun DeveloperSection(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val cacheClearedLabel = stringResource(R.string.cache_cleared)
     var showClearCacheConfirm by remember { mutableStateOf(false) }
 
     if (showClearCacheConfirm) {
@@ -2356,7 +2358,7 @@ private fun DeveloperSection(
                         showClearCacheConfirm = false
                         scope.launch {
                             CacheManager.clearAllCaches(context)
-                            snackbarHostState.showSnackbar(context.getString(R.string.cache_cleared))
+                            snackbarHostState.showSnackbar(cacheClearedLabel)
                         }
                     }
                 ) {

@@ -327,5 +327,9 @@ dependencies {
 
     // Ads (AdMob)
     implementation(libs.play.services.ads)
+
+    // AGP 9.4 lint-checks InferredThreadDetector uses PersistentMap but does not ship
+    // kotlinx-collections-immutable on androidLintTool — without it lintAnalyze crashes.
+    "androidLintTool"("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
 }
 

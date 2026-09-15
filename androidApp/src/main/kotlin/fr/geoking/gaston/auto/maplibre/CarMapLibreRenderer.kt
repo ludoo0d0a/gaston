@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
@@ -104,6 +105,12 @@ class CarMapLibreRenderer(
         style = Paint.Style.STROKE
         strokeWidth = 4f
         strokeJoin = Paint.Join.ROUND
+    }
+
+    private val searchRadiusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#4285F4")
+        style = Paint.Style.STROKE
+        strokeWidth = 2f
     }
     private val arrowPath = Path().apply {
         val radius = 24f
@@ -718,14 +725,14 @@ class CarMapLibreRenderer(
         val uLat = searchRadiusCenterLat ?: return
         val uLon = searchRadiusCenterLon ?: return
 
-        val centerX = lonToTileX(lon, zoom)
-        val centerY = latToTileY(lat, zoom)
+        val centerX = lonToTileX(centerLon, zoom)
+        val centerY = latToTileY(centerLat, zoom)
 
         val tileX = lonToTileX(uLon, zoom)
         val tileY = latToTileY(uLat, zoom)
 
-        val drawX = ((tileX - centerX) * TILE_SIZE + centerPxX).toFloat()
-        val drawY = ((tileY - centerY) * TILE_SIZE + centerPxY).toFloat()
+        val drawX = ((tileX - centerX) * AutoSurfaceRenderer.TILE_SIZE + centerPxXForHitTest()).toFloat()
+        val drawY = ((tileY - centerY) * AutoSurfaceRenderer.TILE_SIZE + centerPxYForHitTest()).toFloat()
 
         val rotation = headingDegrees
 

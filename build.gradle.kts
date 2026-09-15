@@ -24,7 +24,12 @@ tasks.register("clean", Delete::class) {
 }
 
 allprojects {
-    configurations.all {
+    configurations.configureEach {
+        // AGP lint (androidLintTool) ships with Kotlin 2.2.x APIs. Forcing app stdlib 2.4.0
+        // onto that classpath breaks InferredThreadDetector via KotlinReflectionInternalError.
+        if (name == "androidLintTool" || name == "lintChecks" || name == "lintPublish") {
+            return@configureEach
+        }
         resolutionStrategy.eachDependency {
             if (requested.group == "org.jetbrains.kotlin") {
                 if (requested.name == "kotlin-stdlib" || requested.name == "kotlin-stdlib-common") {

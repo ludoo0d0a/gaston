@@ -63,8 +63,9 @@ class CharGyUkProvider(
         val results = mutableListOf<Poi>()
 
         for (loc in locations) {
-            val lat = loc.coordinates?.latitude?.toDoubleOrNull() ?: continue
-            val lon = loc.coordinates?.longitude?.toDoubleOrNull() ?: continue
+            val coords = loc.coordinates ?: continue
+            val lat = coords.latitude?.toDoubleOrNull() ?: continue
+            val lon = coords.longitude?.toDoubleOrNull() ?: continue
 
             val dist = haversineKm(latitude, longitude, lat, lon)
             if (dist > effectiveRadiusKm) continue

@@ -3,15 +3,16 @@ package fr.geoking.gaston.shared.location
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkSettings
 import fr.geoking.gaston.shared.network.NetworkStatus
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.onSubscription
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -86,11 +87,15 @@ class ConnectivityManagerTest {
         delay(100)
 
         val crossingEvents = mutableListOf<String>()
+        val subscribed = CompletableDeferred<Unit>()
         val job = launch {
-            manager.borderCrossingEvents.collect {
-                crossingEvents.add(it)
-            }
+            manager.borderCrossingEvents
+                .onSubscription { subscribed.complete(Unit) }
+                .collect {
+                    crossingEvents.add(it)
+                }
         }
+        subscribed.await()
 
         // Change country
         service.updateStatus(NetworkStatus(countryCode = "BE", countryName = "Belgium"))
@@ -121,11 +126,15 @@ class ConnectivityManagerTest {
         delay(100)
 
         val crossingEvents = mutableListOf<String>()
+        val subscribed = CompletableDeferred<Unit>()
         val job = launch {
-            manager.borderCrossingEvents.collect {
-                crossingEvents.add(it)
-            }
+            manager.borderCrossingEvents
+                .onSubscription { subscribed.complete(Unit) }
+                .collect {
+                    crossingEvents.add(it)
+                }
         }
+        subscribed.await()
 
         // Simulate a border crossing where the status has a new code but a STALE name (e.g. if the service didn't update it yet)
         service.updateStatus(NetworkStatus(countryCode = "BE", countryName = "France"))
