@@ -267,7 +267,13 @@ dependencies {
     implementation(libs.maps.compose)
     implementation(libs.maplibre.android)
     implementation(libs.mapbox.maps)
-    implementation(libs.mapbox.android.auto)
+    implementation(libs.mapsforge.core)
+    implementation(libs.mapsforge.map)
+    implementation(libs.mapsforge.map.android) {
+        exclude(group = "com.caverock", module = "androidsvg")
+    }
+    implementation(libs.mapsforge.map.reader)
+    implementation(libs.mapsforge.themes)
     // Bundle Apache HTTP legacy classes for Play Services Maps Dynamite (removed from Android 9+ bootclasspath)
     implementation(libs.httpclient.android)
 

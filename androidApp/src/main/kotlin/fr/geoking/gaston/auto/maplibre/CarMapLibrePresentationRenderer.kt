@@ -16,12 +16,15 @@ import androidx.lifecycle.Lifecycle
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.AutoMapCamera
 import fr.geoking.gaston.auto.AaMapSurfaceRenderer
+import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
 import fr.geoking.gaston.auto.AutoMapHeading
+import fr.geoking.gaston.auto.AutoMapPoiHitTest
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.MapLibreMap
@@ -70,9 +73,7 @@ class CarMapLibrePresentationRenderer(
     override fun setStyleUrl(url: String) {
         if (styleUrl == url) return
         styleUrl = url
-        mapboxMap?.getStyle { style ->
-            style.setStyleUrl(url)
-        }
+        mapboxMap?.setStyle(url)
     }
 
     override fun updateLocation(lat: Double, lon: Double, zoomLevel: Int) {
@@ -104,7 +105,7 @@ class CarMapLibrePresentationRenderer(
         effectiveEnergyTypes: Set<String>,
         effectivePowerLevels: Set<Int>,
         availability: Map<String, StationAvailabilitySummary>,
-        selectedId: String? = null,
+        selectedId: String?,
     ) {
         lastPois = newPois
         this.effectiveEnergyTypes = effectiveEnergyTypes
@@ -155,7 +156,7 @@ class CarMapLibrePresentationRenderer(
                     container.height,
                     container.dpi,
                     surface,
-                    0, 0, 0
+                    0, null, null
                 )
                 this.virtualDisplay = virtualDisplay
 
@@ -170,7 +171,7 @@ class CarMapLibrePresentationRenderer(
 
                 mapView?.getMapAsync { map ->
                     this.mapboxMap = map
-                    map.setStyle(Style.Builder().setUri(styleUrl).build()) { style ->
+                    map.setStyle(Style.Builder().fromUri(styleUrl)) { style ->
                         // Initialize basic style
                     }
                     updateCamera()
@@ -204,7 +205,7 @@ class CarMapLibrePresentationRenderer(
             .zoom(zoom.toDouble())
             .bearing(bearing.toDouble())
             .build()
-        map.move(cameraPosition)
+        map.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
     }
 
     private fun updateMarkers() {

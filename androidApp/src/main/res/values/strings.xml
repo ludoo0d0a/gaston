@@ -728,12 +728,16 @@
     <string name="map_mode_maptiler">MapTiler</string>
     <string name="map_mode_protomaps">Protomaps</string>
     <string name="map_mode_mapsforge">Mapsforge</string>
+    <string name="map_mode_mapbox">Mapbox</string>
+    <string name="map_mode_maplibre_presentation">MapLibre Presentation</string>
     <string name="map_mode_google_desc">Host Google map (zoom controlled by car)</string>
     <string name="map_mode_custom_desc">Raster OSM / OpenFreeMap tiles on app surface</string>
     <string name="map_mode_maplibre_desc">Vector OpenFreeMap via MapLibre snapshot</string>
     <string name="map_mode_maptiler_desc">Vector MapTiler styles (API key required)</string>
     <string name="map_mode_protomaps_desc">Offline PMTiles file (download on phone)</string>
     <string name="map_mode_mapsforge_desc">Offline Mapsforge .map file (download on phone)</string>
+    <string name="map_mode_mapbox_desc">Mapbox SDK vector renderer</string>
+    <string name="map_mode_maplibre_presentation_desc">High performance MapLibre Presentation API</string>
     <string name="map_offline_unavailable">No offline map available — download in phone Settings</string>
     <string name="settings_offline_maps">Offline maps</string>
     <string name="settings_offline_pmtiles_path">Protomaps PMTiles file path</string>

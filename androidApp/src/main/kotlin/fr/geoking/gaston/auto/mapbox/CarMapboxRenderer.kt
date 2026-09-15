@@ -26,7 +26,6 @@ import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import com.mapbox.maps.MapOptions
 import com.mapbox.maps.Style
-import com.mapbox.maps.plugin.animation.AnimationOptions
 import java.util.Collections
 import kotlin.math.PI
 import kotlin.math.cos
