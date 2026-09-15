@@ -159,6 +159,7 @@ data class AppSettings(
     val carMapMode: CarMapMode = CarMapMode.Native,
     /** Absolute path to a local `.pmtiles` file (Protomaps AA mode). Set manually on phone — never auto-downloaded. */
     val offlinePmtilesPath: String? = null,
+    val offlineMapsforgePath: String? = null,
     val googleUserName: String? = null,
     val isLoggedIn: Boolean = false,
     val tollDataPath: String? = null,
@@ -272,6 +273,7 @@ open class SettingsManager(
             CarMapMode.valueOf(prefs.getString("car_map_mode", CarMapMode.Native.name) ?: CarMapMode.Native.name)
         } catch (_: Exception) { CarMapMode.Native }
         val offlinePmtilesPath = prefs.getString("offline_pmtiles_path", null)?.takeIf { it.isNotBlank() }
+        val offlineMapsforgePath = prefs.getString("offline_mapsforge_path", null)?.takeIf { it.isNotBlank() }
 
         val vehicleType = try {
             VehicleType.valueOf(prefs.getString("vehicle_type", VehicleType.Car.name) ?: VehicleType.Car.name)
@@ -430,6 +432,7 @@ open class SettingsManager(
             .putString("vehicle_type", settings.vehicleType.name)
             .putString("car_map_mode", settings.carMapMode.name)
             .putString("offline_pmtiles_path", settings.offlinePmtilesPath)
+            .putString("offline_mapsforge_path", settings.offlineMapsforgePath)
             .putString("google_user_name", sanitized.googleUserName)
             .putBoolean("is_logged_in", sanitized.isLoggedIn)
             .putString("toll_data_path", sanitized.tollDataPath)
@@ -481,6 +484,10 @@ open class SettingsManager(
 
     open fun setOfflinePmtilesPath(path: String?) {
         saveSettings(_settings.value.copy(offlinePmtilesPath = path?.takeIf { it.isNotBlank() }))
+    }
+
+    open fun setOfflineMapsforgePath(path: String?) {
+        saveSettings(_settings.value.copy(offlineMapsforgePath = path?.takeIf { it.isNotBlank() }))
     }
 
 

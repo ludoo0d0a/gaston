@@ -97,7 +97,8 @@ private fun CarMapMode.displayLabel(): String = when (this) {
     CarMapMode.MapLibre -> stringResource(R.string.map_mode_maplibre)
     CarMapMode.MapTiler -> stringResource(R.string.map_mode_maptiler)
     CarMapMode.Protomaps -> stringResource(R.string.map_mode_protomaps)
-    CarMapMode.Mapsforge -> stringResource(R.string.map_mode_mapsforge)
+    CarMapMode.Mapbox -> stringResource(R.string.map_mode_mapbox)
+    CarMapMode.MapLibrePresentation -> stringResource(R.string.map_mode_maplibre_presentation)
 }
 
 @Composable
@@ -107,7 +108,8 @@ private fun CarMapMode.displayDescription(): String = when (this) {
     CarMapMode.MapLibre -> stringResource(R.string.map_mode_maplibre_desc)
     CarMapMode.MapTiler -> stringResource(R.string.map_mode_maptiler_desc)
     CarMapMode.Protomaps -> stringResource(R.string.map_mode_protomaps_desc)
-    CarMapMode.Mapsforge -> stringResource(R.string.map_mode_mapsforge_desc)
+    CarMapMode.Mapbox -> stringResource(R.string.map_mode_mapbox_desc)
+    CarMapMode.MapLibrePresentation -> stringResource(R.string.map_mode_maplibre_presentation_desc)
 }
 
 @Composable
