@@ -27,9 +27,6 @@ data class NetworkLog(
     val queryParams: Map<String, List<String>> get() = parseQueryParams(url)
 }
 
-    val queryParams: Map<String, List<String>> get() = parseQueryParams(url)
-}
-
 fun parseQueryParams(url: String): Map<String, List<String>> {
     val queryIndex = url.indexOf('?')
     if (queryIndex == -1) return emptyMap()
