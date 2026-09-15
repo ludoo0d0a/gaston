@@ -10,7 +10,8 @@ fun CarMapMode.displayLabel(carContext: CarContext): String = when (this) {
     CarMapMode.MapLibre -> carContext.getString(R.string.map_mode_maplibre)
     CarMapMode.MapTiler -> carContext.getString(R.string.map_mode_maptiler)
     CarMapMode.Protomaps -> carContext.getString(R.string.map_mode_protomaps)
-    CarMapMode.Mapsforge -> carContext.getString(R.string.map_mode_mapsforge)
+    CarMapMode.Mapbox -> carContext.getString(R.string.map_mode_mapbox)
+    CarMapMode.MapLibrePresentation -> carContext.getString(R.string.map_mode_maplibre_presentation)
 }
 
 fun CarMapMode.displayDescription(carContext: CarContext): String = when (this) {
@@ -19,5 +20,6 @@ fun CarMapMode.displayDescription(carContext: CarContext): String = when (this) 
     CarMapMode.MapLibre -> carContext.getString(R.string.map_mode_maplibre_desc)
     CarMapMode.MapTiler -> carContext.getString(R.string.map_mode_maptiler_desc)
     CarMapMode.Protomaps -> carContext.getString(R.string.map_mode_protomaps_desc)
-    CarMapMode.Mapsforge -> carContext.getString(R.string.map_mode_mapsforge_desc)
+    CarMapMode.Mapbox -> carContext.getString(R.string.map_mode_mapbox_desc)
+    CarMapMode.MapLibrePresentation -> carContext.getString(R.string.map_mode_maplibre_presentation_desc)
 }

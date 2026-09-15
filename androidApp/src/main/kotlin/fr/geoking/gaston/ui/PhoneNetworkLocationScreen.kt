@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -80,13 +81,14 @@ fun PhoneNetworkLocationScreen(
     }
     val operatorName = networkStatus.operatorName ?: stringResource(R.string.network_unknown)
     val unknownCountry = stringResource(R.string.network_unknown)
+    val displayLocale = LocalConfiguration.current.locales[0]
     val positionCountryLabel = formatCountryLabel(
         networkStatus.locationCountryName,
         networkStatus.locationCountryCode,
         unknownCountry
     )
     val networkCountryLabel = formatCountryLabel(
-        name = networkStatus.telephonyCountryCode?.let { Locale("", it).getDisplayCountry(Locale.getDefault()) },
+        name = networkStatus.telephonyCountryCode?.let { Locale("", it).getDisplayCountry(displayLocale) },
         code = networkStatus.telephonyCountryCode,
         unknown = unknownCountry
     )

@@ -107,6 +107,12 @@ kotlin {
     }
 }
 
+dependencies {
+    // AGP 9.4 lint-checks InferredThreadDetector uses PersistentMap but does not ship
+    // kotlinx-collections-immutable on androidLintTool — without it lintAnalyze crashes.
+    "androidLintTool"("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
+}
+
 // Configure publishing to avoid archives configuration deprecation
 // Note: The Kotlin Multiplatform plugin still uses 'archives' internally.
 // This warning will be resolved when the plugin is updated for full Gradle 9 compatibility.

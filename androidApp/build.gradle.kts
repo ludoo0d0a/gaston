@@ -267,7 +267,13 @@ dependencies {
     implementation(libs.maps.compose)
     implementation(libs.maplibre.android)
     implementation(libs.mapbox.maps)
-    implementation(libs.mapbox.android.auto)
+    implementation(libs.mapsforge.core)
+    implementation(libs.mapsforge.map)
+    implementation(libs.mapsforge.map.android) {
+        exclude(group = "com.caverock", module = "androidsvg")
+    }
+    implementation(libs.mapsforge.map.reader)
+    implementation(libs.mapsforge.themes)
     // Bundle Apache HTTP legacy classes for Play Services Maps Dynamite (removed from Android 9+ bootclasspath)
     implementation(libs.httpclient.android)
 
@@ -321,5 +327,9 @@ dependencies {
 
     // Ads (AdMob)
     implementation(libs.play.services.ads)
+
+    // AGP 9.4 lint-checks InferredThreadDetector uses PersistentMap but does not ship
+    // kotlinx-collections-immutable on androidLintTool — without it lintAnalyze crashes.
+    "androidLintTool"("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
 }
 

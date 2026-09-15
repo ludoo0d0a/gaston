@@ -728,12 +728,16 @@
     <string name="map_mode_maptiler">MapTiler</string>
     <string name="map_mode_protomaps">Protomaps</string>
     <string name="map_mode_mapsforge">Mapsforge</string>
+    <string name="map_mode_mapbox">Mapbox</string>
+    <string name="map_mode_maplibre_presentation">MapLibre Presentation</string>
     <string name="map_mode_google_desc">Carte Google hôte (zoom contrôlé par la voiture)</string>
     <string name="map_mode_custom_desc">Tuiles raster OSM / OpenFreeMap sur surface app</string>
     <string name="map_mode_maplibre_desc">Vecteur OpenFreeMap via snapshot MapLibre</string>
     <string name="map_mode_maptiler_desc">Styles MapTiler vectoriels (clé API requise)</string>
     <string name="map_mode_protomaps_desc">Fichier PMTiles hors ligne (télécharger sur le téléphone)</string>
     <string name="map_mode_mapsforge_desc">Fichier Mapsforge .map hors ligne (télécharger sur le téléphone)</string>
+    <string name="map_mode_mapbox_desc">Rendu vectoriel Mapbox SDK</string>
+    <string name="map_mode_maplibre_presentation_desc">API MapLibre Presentation haute performance</string>
     <string name="map_offline_unavailable">Aucune carte hors ligne — téléchargez dans Réglages du téléphone</string>
     <string name="settings_offline_maps">Cartes hors ligne</string>
     <string name="settings_offline_pmtiles_path">Chemin fichier PMTiles Protomaps</string>
@@ -813,4 +817,9 @@
     <string name="offline_maps_by_region_subtitle">Téléchargez les cartes de vos régions habituelles pour la navigation hors-ligne, sur le téléphone comme en Android Auto</string>
     <string name="offline_maps_storage_used">Stockage utilisé : %1$s</string>
     <string name="offline_maps_other_regions">Autres régions…</string>
+    <string name="action_legend">Légende</string>
+    <string name="screen_map_legend">Légende de la carte</string>
+    <string name="legend_available">Disponible</string>
+    <string name="legend_unavailable">Indisponible</string>
+    <string name="legend_selected">Sélectionné</string>
 </resources>
