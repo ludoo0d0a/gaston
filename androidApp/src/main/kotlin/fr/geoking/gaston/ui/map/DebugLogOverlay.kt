@@ -247,6 +247,49 @@ private fun DebugLogOverlayContent(
     }
 }
 
+private fun formatBytes(bytes: Long): String {
+    if (bytes < 1024) return "$bytes B"
+    val exp = (Math.log(bytes.toDouble()) / Math.log(1024.0)).toInt()
+    val pre = "KMGTPE"[exp - 1]
+    return String.format("%.1f %sB", bytes / Math.pow(1024.0, exp.toDouble()), pre)
+}
+
+@Composable
+private fun DataUsageSummary() {
+    val rx = android.net.TrafficStats.getUidRxBytes(android.os.Process.myUid())
+    val tx = android.net.TrafficStats.getUidTxBytes(android.os.Process.myUid())
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                "App Data Consumption (since boot)",
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Received", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                    Text(formatBytes(rx), color = Color(0xFF4ADE80), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("Sent", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                    Text(formatBytes(tx), color = Color(0xFF60A5FA), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun NetworkDebugTab(
     logs: List<NetworkLog>,
@@ -265,6 +308,9 @@ private fun NetworkDebugTab(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
             )
         }
+
+        DataUsageSummary()
+
         if (availableHosts.isNotEmpty()) {
             LazyRow(
                 modifier = Modifier

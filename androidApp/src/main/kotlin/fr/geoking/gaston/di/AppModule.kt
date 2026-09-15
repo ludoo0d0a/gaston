@@ -68,6 +68,7 @@ val appModule = module {
                         val request = response.request
                         val reqBody = request.attributes.getOrNull(requestBodyKey)
                         val contentLength = response.headers["Content-Length"]?.toLongOrNull()
+                        val responseSizeBytes = contentLength ?: response.bodyAsText().length.toLong()
 
                         // Safely read response body if missing or small (under 512KB) to prevent OOM
                         val respBody = if (contentLength != null && contentLength > 512 * 1024) {
@@ -93,7 +94,9 @@ val appModule = module {
                                 responseBody = respBody,
                                 statusCode = response.status.value,
                                 durationMs = response.responseTime.timestamp - response.requestTime.timestamp,
-                                timestamp = System.currentTimeMillis()
+                                timestamp = System.currentTimeMillis(),
+                                requestSizeBytes = reqBody?.length?.toLong() ?: 0L,
+                                responseSizeBytes = responseSizeBytes
                             )
                         )
                     }

@@ -16,11 +16,16 @@ data class NetworkLog(
     val responseBody: String?,
     val statusCode: Int?,
     val durationMs: Long,
-    val timestamp: Long
+    val timestamp: Long,
+    val requestSizeBytes: Long = 0,
+    val responseSizeBytes: Long = 0,
 ) {
     // Helper to allow reading properties from other modules without smart cast issues on nullables
     val safeRequestBody: String get() = requestBody ?: ""
     val safeResponseBody: String get() = responseBody ?: ""
+
+    val queryParams: Map<String, List<String>> get() = parseQueryParams(url)
+}
 
     val queryParams: Map<String, List<String>> get() = parseQueryParams(url)
 }
@@ -104,6 +109,12 @@ object DebugLogStore {
     private val _logs = MutableStateFlow<List<NetworkLog>>(emptyList())
     val logs: StateFlow<List<NetworkLog>> = _logs.asStateFlow()
 
+    private val _totalBytesSent = MutableStateFlow(0L)
+    val totalBytesSent: StateFlow<Long> = _totalBytesSent.asStateFlow()
+
+    private val _totalBytesReceived = MutableStateFlow(0L)
+    val totalBytesReceived: StateFlow<Long> = _totalBytesReceived.asStateFlow()
+
     private const val MAX_LOGS = 50
 
     fun addLog(log: NetworkLog) {
@@ -116,6 +127,13 @@ object DebugLogStore {
                 next
             }
         }
+        _totalBytesSent.update { it + log.requestSizeBytes }
+        _totalBytesReceived.update { it + log.responseSizeBytes }
+    }
+
+    fun setTotalBytes(sent: Long, received: Long) {
+        _totalBytesSent.value = sent
+        _totalBytesReceived.value = received
     }
 
     fun clearLogs() {
@@ -125,5 +143,7 @@ object DebugLogStore {
     fun clearAll() {
         clearLogs()
         ProviderTraceStore.clear()
+        _totalBytesSent.value = 0
+        _totalBytesReceived.value = 0
     }
 }
