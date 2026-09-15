@@ -2,6 +2,7 @@ pluginManagement {
     repositories {
         google()
         gradlePluginPortal()
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
         mavenCentral()
     }
 }
@@ -15,6 +16,7 @@ dependencyResolutionManagement {
                 includeGroupAndSubgroups("com.mapbox")
             }
         }
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
         mavenCentral()
     }
 }

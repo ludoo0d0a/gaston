@@ -122,7 +122,7 @@ enum class PoiProviderType(
     Routex(providesFuel = true),
     Etalab(providesFuel = true),
     GasApi(providesFuel = true),
-    DataGouv(providesFuel = true),
+    DataGouvPrixQuotidien(providesFuel = true),
     /** UK interim fuel price open data scheme (CMA / Fuel Finder retailer feeds). */
     UkCma(providesFuel = true),
     /** Italy MIMIT open data (pipe-delimited CSV exports). */
@@ -198,7 +198,9 @@ enum class PoiProviderType(
     Hybrid(providesFuel = true, providesElectric = true),
 }
 
-private val POI_DATA_SOURCES_DISABLED_FOR_USER_SELECTION: Set<PoiProviderType> = emptySet()
+private val POI_DATA_SOURCES_DISABLED_FOR_USER_SELECTION: Set<PoiProviderType> = setOf(
+    PoiProviderType.DataGouvPrixQuotidien
+)
 
 /** True if this source is shown in map / Auto POI data source pickers. */
 fun PoiProviderType.isUserSelectablePoiDataSource(): Boolean =
@@ -207,8 +209,10 @@ fun PoiProviderType.isUserSelectablePoiDataSource(): Boolean =
 /**
  * Ensures user selection is valid.
  */
-fun Set<PoiProviderType>.sanitizeUserPoiProviderSelection(): Set<PoiProviderType> =
-    this.filter { it.isUserSelectablePoiDataSource() }.toSet()
+fun Set<PoiProviderType>.sanitizeUserPoiProviderSelection(): Set<PoiProviderType> {
+    val filtered = this.filter { it.isUserSelectablePoiDataSource() }.toSet()
+    return filtered.ifEmpty { setOf(PoiProviderType.Etalab, PoiProviderType.Overpass) }
+}
 
 /** True if any selected provider can supply fuel POIs (for filter / mode chips). */
 fun Iterable<PoiProviderType>.anyProvidesFuel(): Boolean = any { it.providesFuel }

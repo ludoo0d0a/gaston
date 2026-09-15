@@ -116,7 +116,7 @@ class AutoMapScreenPushDepthTest {
                 settingsManager = settingsManager,
             )
 
-            CarMapMode.MapLibre, CarMapMode.MapTiler, CarMapMode.Protomaps -> MapLibreStationDetailScreen(
+            CarMapMode.MapLibre, CarMapMode.MapTiler, CarMapMode.Protomaps, CarMapMode.Mapbox, CarMapMode.MapLibrePresentation -> MapLibreStationDetailScreen(
                 carContext = carContext,
                 poi = poi,
                 availability = availability,
@@ -128,21 +128,6 @@ class AutoMapScreenPushDepthTest {
                 effectiveEnergies = emptySet(),
                 effectivePowerLevels = emptySet(),
                 settingsManager = settingsManager,
-            )
-
-            CarMapMode.Mapsforge -> MapsforgeStationDetailScreen(
-                carContext = carContext,
-                poi = poi,
-                availability = availability,
-                searchLat = poi.latitude,
-                searchLon = poi.longitude,
-                zoom = AutoMapCamera.DEFAULT_ZOOM,
-                orientationMode = MapOrientationMode.HeadingUp,
-                bearing = 0f,
-                effectiveEnergies = emptySet(),
-                effectivePowerLevels = emptySet(),
-                settingsManager = settingsManager,
-                mapManager = MapsforgeMapManager(carContext),
             )
         }
     }

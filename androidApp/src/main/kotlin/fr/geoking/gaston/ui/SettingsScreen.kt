@@ -176,7 +176,7 @@ private fun poiProviderLabelRes(type: PoiProviderType): Int = when (type) {
     PoiProviderType.Routex -> R.string.provider_routex
     PoiProviderType.Etalab -> R.string.provider_etalab
     PoiProviderType.GasApi -> R.string.provider_gasapi
-    PoiProviderType.DataGouv -> R.string.provider_datagouv
+    PoiProviderType.DataGouvPrixQuotidien -> R.string.provider_datagouv
     PoiProviderType.UkCma -> R.string.provider_uk_cma
     PoiProviderType.ItalyMimit -> R.string.provider_italy_mimit
     PoiProviderType.SloveniaGorivaSi -> R.string.provider_slovenia_goriva
@@ -809,7 +809,6 @@ private fun SourcesConfig(
         ProviderUiInfo(PoiProviderType.Routex, listOf("EU")),
         ProviderUiInfo(PoiProviderType.Etalab, listOf("FR")),
         ProviderUiInfo(PoiProviderType.GasApi, listOf("FR")),
-        ProviderUiInfo(PoiProviderType.DataGouv, listOf("FR")),
         ProviderUiInfo(PoiProviderType.UkCma, listOf("GB")),
         ProviderUiInfo(PoiProviderType.ItalyMimit, listOf("IT")),
         ProviderUiInfo(PoiProviderType.SloveniaGorivaSi, listOf("SI")),
@@ -2537,7 +2536,7 @@ fun SettingsScreenPreview() {
         object : SettingsManager(context) {
             private val mockSettings = MutableStateFlow(
                 AppSettings(
-                    selectedPoiProviders = setOf(PoiProviderType.DataGouv, PoiProviderType.Overpass),
+                    selectedPoiProviders = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
                 )
             )
             override val settings: StateFlow<AppSettings> = mockSettings.asStateFlow()
