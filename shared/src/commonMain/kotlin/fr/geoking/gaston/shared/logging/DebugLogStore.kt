@@ -119,6 +119,8 @@ object DebugLogStore {
             val next = current.toMutableList()
             next.add(0, log)
             if (next.size > MAX_LOGS) {
+                val evicted = next.subList(MAX_LOGS, next.size)
+                evicted.forEach { DebugLogPayloadCache.remove(it.id) }
                 next.take(MAX_LOGS)
             } else {
                 next
@@ -135,6 +137,7 @@ object DebugLogStore {
 
     fun clearLogs() {
         _logs.value = emptyList()
+        DebugLogPayloadCache.clear()
     }
 
     fun clearAll() {

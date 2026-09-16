@@ -654,12 +654,21 @@ private fun LogDetailsDialog(log: NetworkLog, onDismiss: () -> Unit) {
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
-                        DetailSection(stringResource(R.string.debug_overlay_request_headers))
-                        log.requestHeaders.forEach { (k, v) ->
-                            DetailItem(k, v.joinToString(", "))
+                        CollapsibleDetailSection(
+                            title = stringResource(R.string.debug_overlay_request_headers),
+                            initiallyExpanded = false
+                        ) {
+                            Column {
+                                log.requestHeaders.forEach { (k, v) ->
+                                    DetailItem(k, v.joinToString(", "))
+                                }
+                            }
                         }
 
-                        val reqBody = log.safeRequestBody
+                        val reqBody = remember(log.id) {
+                            fr.geoking.gaston.shared.logging.DebugLogPayloadCache.get(log.id, isRequest = true)
+                                ?: log.safeRequestBody
+                        }
                         if (reqBody.isNotBlank()) {
                             Spacer(modifier = Modifier.height(16.dp))
                             DetailSection(stringResource(R.string.debug_overlay_request_body))
@@ -668,13 +677,22 @@ private fun LogDetailsDialog(log: NetworkLog, onDismiss: () -> Unit) {
 
                         log.responseHeaders?.let { headers ->
                             Spacer(modifier = Modifier.height(16.dp))
-                            DetailSection(stringResource(R.string.debug_overlay_response_headers))
-                            headers.forEach { (k, v) ->
-                                DetailItem(k, v.joinToString(", "))
+                            CollapsibleDetailSection(
+                                title = stringResource(R.string.debug_overlay_response_headers),
+                                initiallyExpanded = false
+                            ) {
+                                Column {
+                                    headers.forEach { (k, v) ->
+                                        DetailItem(k, v.joinToString(", "))
+                                    }
+                                }
                             }
                         }
 
-                        val respBody = log.safeResponseBody
+                        val respBody = remember(log.id) {
+                            fr.geoking.gaston.shared.logging.DebugLogPayloadCache.get(log.id, isRequest = false)
+                                ?: log.safeResponseBody
+                        }
                         if (respBody.isNotBlank()) {
                             Spacer(modifier = Modifier.height(16.dp))
                             DetailSection(stringResource(R.string.debug_overlay_response_body))
@@ -696,15 +714,48 @@ private fun LogDetailsDialog(log: NetworkLog, onDismiss: () -> Unit) {
     }
 }
 
+@Composable
+private fun CollapsibleDetailSection(
+    title: String,
+    initiallyExpanded: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    var expanded by remember { mutableStateOf(initiallyExpanded) }
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        if (expanded) {
+            Box(modifier = Modifier.padding(start = 12.dp)) {
+                content()
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FullscreenBodyDialog(body: String, onDismiss: () -> Unit) {
     val jsonElement = remember(body) {
-        try {
-            Json.parseToJsonElement(body)
-        } catch (e: Exception) {
-            null
-        }
+        fr.geoking.gaston.shared.logging.parseAndLimitJson(body)
     }
 
     AlertDialog(
@@ -788,11 +839,7 @@ private fun BodyContent(
     onFullscreen: (() -> Unit)? = null
 ) {
     val jsonElement = remember(body) {
-        try {
-            Json.parseToJsonElement(body)
-        } catch (e: Exception) {
-            null
-        }
+        fr.geoking.gaston.shared.logging.parseAndLimitJson(body)
     }
 
     Box(modifier = Modifier.fillMaxWidth()) {

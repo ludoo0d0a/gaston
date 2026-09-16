@@ -59,40 +59,13 @@ internal fun JsonTree(
             if (isExpanded) {
                 when (value) {
                     is JsonObject -> {
-                        val entries = value.entries.toList()
-                        val visibleEntries = entries.take(MAX_JSON_CONTAINER_ITEMS)
-                        visibleEntries.forEach { (k, v) ->
+                        value.entries.forEach { (k, v) ->
                             collectNodes("$path/$k", k, v, depth + 1)
-                        }
-                        if (entries.size > MAX_JSON_CONTAINER_ITEMS) {
-                            val truncatedCount = entries.size - MAX_JSON_CONTAINER_ITEMS
-                            list.add(
-                                JsonNode(
-                                    path = "$path/__truncated",
-                                    key = null,
-                                    value = JsonPrimitive("... ($truncatedCount items truncated)"),
-                                    depth = depth + 1,
-                                    truncatedItemCount = truncatedCount
-                                )
-                            )
                         }
                     }
                     is JsonArray -> {
-                        val visibleElements = value.take(MAX_JSON_CONTAINER_ITEMS)
-                        visibleElements.forEachIndexed { i, v ->
+                        value.forEachIndexed { i, v ->
                             collectNodes("$path/$i", i.toString(), v, depth + 1)
-                        }
-                        if (value.size > MAX_JSON_CONTAINER_ITEMS) {
-                            val truncatedCount = value.size - MAX_JSON_CONTAINER_ITEMS
-                            list.add(
-                                JsonNode(
-                                    path = "$path/__truncated",
-                                    key = null,
-                                    value = JsonPrimitive("... ($truncatedCount items truncated)"),
-                                    depth = depth + 1,
-                                    truncatedItemCount = truncatedCount
-                                )
-                            )
                         }
                     }
                     else -> {}
