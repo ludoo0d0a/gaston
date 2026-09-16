@@ -640,6 +640,13 @@
     <string name="debug_overlay_request_body">Request Body</string>
     <string name="debug_overlay_response_headers">Response Headers</string>
     <string name="debug_overlay_response_body">Response Body</string>
+    <string name="debug_overlay_tab_data_consumption">Data Usage</string>
+    <string name="debug_overlay_reset_data_consumption">Reset</string>
+    <string name="debug_overlay_no_data_consumption">No data consumption recorded yet.</string>
+    <string name="debug_overlay_total_consumption">Total Data Usage</string>
+    <string name="debug_overlay_bytes_rx">Received (Rx)</string>
+    <string name="debug_overlay_bytes_tx">Sent (Tx)</string>
+    <string name="debug_overlay_requests">requests</string>
     <string name="filter_battery_swap">Swap</string>
     <string name="filter_battery_swap_title">Battery Swap</string>
     <string name="map_libre_poi_map">MapLibre POI map</string>
