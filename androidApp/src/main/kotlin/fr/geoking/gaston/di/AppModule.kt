@@ -69,22 +69,31 @@ val appModule = module {
                         val reqBody = request.attributes.getOrNull(requestBodyKey)
                         val contentLength = response.headers["Content-Length"]?.toLongOrNull()
                         val responseSizeBytes = contentLength ?: response.bodyAsText().length.toLong()
+                        val logId = UUID.randomUUID().toString()
 
-                        // Safely read response body if missing or small (under 512KB) to prevent OOM
+                        var rawRespBodyText: String? = null
                         val respBody = if (contentLength != null && contentLength > 512 * 1024) {
                             "[body omitted: $contentLength bytes]"
                         } else {
                             try {
                                 val bodyText = response.bodyAsText()
+                                rawRespBodyText = bodyText
                                 truncateDebugBody(bodyText)
                             } catch (e: Throwable) {
                                 "[body unreadable: ${e.message}]"
                             }
                         }
 
+                        if (!reqBody.isNullOrBlank()) {
+                            fr.geoking.gaston.shared.logging.DebugLogPayloadCache.store(logId, isRequest = true, body = reqBody)
+                        }
+                        if (!rawRespBodyText.isNullOrBlank()) {
+                            fr.geoking.gaston.shared.logging.DebugLogPayloadCache.store(logId, isRequest = false, body = rawRespBodyText)
+                        }
+
                         DebugLogStore.addLog(
                             NetworkLog(
-                                id = UUID.randomUUID().toString(),
+                                id = logId,
                                 url = request.url.toString(),
                                 host = request.url.host,
                                 method = request.method.value,

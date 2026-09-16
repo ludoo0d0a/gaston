@@ -24,6 +24,8 @@ class GastonApplication : Application() {
             }
 
             // Safe to call once; uses test ids by default unless overridden by local.properties/env
+            fr.geoking.gaston.shared.logging.DebugLogPayloadCache.storage =
+                fr.geoking.gaston.feature.logging.AndroidDebugPayloadStorage(this)
             MobileAds.initialize(this)
             RevenueCatInitializer.initialize(this, BuildConfig.REVENUECAT_API_KEY)
             startKoin {
