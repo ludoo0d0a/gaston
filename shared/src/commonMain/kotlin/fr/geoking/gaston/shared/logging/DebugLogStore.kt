@@ -5,6 +5,47 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+data class HostDataConsumption(
+    val host: String,
+    val providerName: String? = null,
+    val bytesSent: Long = 0L,
+    val bytesReceived: Long = 0L,
+    val requestCount: Int = 0,
+) {
+    val totalBytes: Long get() = bytesSent + bytesReceived
+}
+
+fun resolveProviderName(host: String): String? {
+    val h = host.lowercase()
+    return when {
+        h.contains("e-control.at") -> "Austria E-Control"
+        h.contains("openchargemap") -> "OpenChargeMap"
+        h.contains("data.economie.gouv.fr") || h.contains("transport.data.gouv.fr") -> "DataGouv / Etalab"
+        h.contains("freshmile") -> "Freshmile"
+        h.contains("atlante.energy") -> "Atlante"
+        h.contains("char.gy") -> "CharGy UK"
+        h.contains("vdl.lu") -> "Luxembourg VDL"
+        h.contains("chargy.lu") -> "Chargy Luxembourg"
+        h.contains("tankerkoenig") -> "Germany Tankerkoenig"
+        h.contains("mityc.es") -> "Spain Minetur"
+        h.contains("overpass") -> "OpenStreetMap / Overpass"
+        h.contains("nominatim") -> "Nominatim Geocoding"
+        h.contains("tile.openstreetmap.org") -> "OSM Map Tiles"
+        h.contains("mimit.gov.it") -> "Italy Mimit"
+        h.contains("dgeg.gov.pt") -> "Portugal DGEG"
+        h.contains("fuelo.net") -> "Fuelo"
+        h.contains("fastned") -> "Fastned"
+        h.contains("eco-movement") -> "EcoMovement"
+        h.contains("gireve") -> "Gireve"
+        h.contains("qualicharge") -> "QualiCharge"
+        h.contains("openvancamp") -> "OpenVanCamp"
+        h.contains("comparis") || h.contains("gas-api.ch") -> "Switzerland Comparis"
+        h.contains("weatherapi") || h.contains("open-meteo") -> "Weather API"
+        h.contains("mapbox") -> "Mapbox"
+        else -> null
+    }
+}
+
 data class NetworkLog(
     val id: String,
     val url: String,
@@ -112,6 +153,9 @@ object DebugLogStore {
     private val _totalBytesReceived = MutableStateFlow(0L)
     val totalBytesReceived: StateFlow<Long> = _totalBytesReceived.asStateFlow()
 
+    private val _hostConsumption = MutableStateFlow<Map<String, HostDataConsumption>>(emptyMap())
+    val hostConsumption: StateFlow<Map<String, HostDataConsumption>> = _hostConsumption.asStateFlow()
+
     private const val MAX_LOGS = 50
 
     fun addLog(log: NetworkLog) {
@@ -128,11 +172,32 @@ object DebugLogStore {
         }
         _totalBytesSent.update { it + log.requestSizeBytes }
         _totalBytesReceived.update { it + log.responseSizeBytes }
+
+        if (log.host.isNotBlank()) {
+            _hostConsumption.update { currentMap ->
+                val existing = currentMap[log.host] ?: HostDataConsumption(
+                    host = log.host,
+                    providerName = resolveProviderName(log.host)
+                )
+                val updated = existing.copy(
+                    bytesSent = existing.bytesSent + log.requestSizeBytes,
+                    bytesReceived = existing.bytesReceived + log.responseSizeBytes,
+                    requestCount = existing.requestCount + 1
+                )
+                currentMap + (log.host to updated)
+            }
+        }
     }
 
     fun setTotalBytes(sent: Long, received: Long) {
         _totalBytesSent.value = sent
         _totalBytesReceived.value = received
+    }
+
+    fun resetDataConsumption() {
+        _hostConsumption.value = emptyMap()
+        _totalBytesSent.value = 0L
+        _totalBytesReceived.value = 0L
     }
 
     fun clearLogs() {
@@ -143,7 +208,6 @@ object DebugLogStore {
     fun clearAll() {
         clearLogs()
         ProviderTraceStore.clear()
-        _totalBytesSent.value = 0
-        _totalBytesReceived.value = 0
+        resetDataConsumption()
     }
 }

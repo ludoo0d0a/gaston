@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,6 +37,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.*
 import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.shared.logging.DebugLogStore
+import fr.geoking.gaston.shared.logging.HostDataConsumption
 import fr.geoking.gaston.shared.logging.NetworkLog
 import fr.geoking.gaston.shared.logging.ProviderTraceEntry
 import fr.geoking.gaston.ui.components.JsonTree
@@ -99,6 +101,7 @@ fun DebugLogOverlay(
 private enum class DebugOverlayTab {
     Network,
     Providers,
+    DataConsumption,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -115,6 +118,9 @@ private fun DebugLogOverlayContent(
     val settings by settingsManager.settings.collectAsState()
     val logs by DebugLogStore.logs.collectAsState()
     val providerTraces by ProviderTraceStore.entries.collectAsState()
+    val hostConsumptionMap by DebugLogStore.hostConsumption.collectAsState()
+    val totalBytesSent by DebugLogStore.totalBytesSent.collectAsState()
+    val totalBytesReceived by DebugLogStore.totalBytesReceived.collectAsState()
     var selectedLog by remember { mutableStateOf<NetworkLog?>(null) }
     var selectedTrace by remember { mutableStateOf<ProviderTraceEntry?>(null) }
     var selectedHost by remember { mutableStateOf<String?>(null) }
@@ -163,6 +169,7 @@ private fun DebugLogOverlayContent(
                                 when (selectedTab) {
                                     DebugOverlayTab.Network -> "${stringResource(R.string.dashboard_network)} (${logs.size})"
                                     DebugOverlayTab.Providers -> "${stringResource(R.string.debug_overlay_providers)} (${providerTraces.size})"
+                                    DebugOverlayTab.DataConsumption -> "${stringResource(R.string.debug_overlay_tab_data_consumption)} (${hostConsumptionMap.size})"
                                 },
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
@@ -216,6 +223,11 @@ private fun DebugLogOverlayContent(
                             onClick = { selectedTab = DebugOverlayTab.Providers },
                             text = { Text(stringResource(R.string.debug_overlay_providers), fontSize = 12.sp) },
                         )
+                        Tab(
+                            selected = selectedTab == DebugOverlayTab.DataConsumption,
+                            onClick = { selectedTab = DebugOverlayTab.DataConsumption },
+                            text = { Text(stringResource(R.string.debug_overlay_tab_data_consumption), fontSize = 12.sp) },
+                        )
                     }
 
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -231,6 +243,14 @@ private fun DebugLogOverlayContent(
                             DebugOverlayTab.Providers -> ProviderTraceTab(
                                 traces = providerTraces,
                                 onTraceClick = { selectedTrace = it },
+                            )
+                            DebugOverlayTab.DataConsumption -> DataConsumptionTab(
+                                hostConsumptions = remember(hostConsumptionMap) {
+                                    hostConsumptionMap.values.sortedByDescending { it.totalBytes }
+                                },
+                                totalSent = totalBytesSent,
+                                totalReceived = totalBytesReceived,
+                                onResetClick = { DebugLogStore.resetDataConsumption() }
                             )
                         }
                     }
@@ -879,6 +899,201 @@ private fun BodyContent(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun DataConsumptionTab(
+    hostConsumptions: List<HostDataConsumption>,
+    totalSent: Long,
+    totalReceived: Long,
+    onResetClick: () -> Unit,
+) {
+    val totalBytes = totalSent + totalReceived
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            stringResource(R.string.debug_overlay_total_consumption),
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            formatBytes(totalBytes),
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Button(
+                        onClick = onResetClick,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.RestartAlt,
+                            contentDescription = stringResource(R.string.debug_overlay_reset_data_consumption),
+                            modifier = Modifier.size(16.dp),
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.debug_overlay_reset_data_consumption),
+                            fontSize = 11.sp,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "${stringResource(R.string.debug_overlay_bytes_rx)}: ${formatBytes(totalReceived)}",
+                        color = Color(0xFF4ADE80),
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        "${stringResource(R.string.debug_overlay_bytes_tx)}: ${formatBytes(totalSent)}",
+                        color = Color(0xFF60A5FA),
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }
+
+        if (hostConsumptions.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    stringResource(R.string.debug_overlay_no_data_consumption),
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 12.sp,
+                )
+            }
+        } else {
+            val maxBytes = remember(hostConsumptions) {
+                hostConsumptions.maxOfOrNull { it.totalBytes }?.coerceAtLeast(1L) ?: 1L
+            }
+
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(hostConsumptions, key = { it.host }) { hostData ->
+                    HostConsumptionItem(hostData = hostData, maxBytes = maxBytes)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HostConsumptionItem(hostData: HostDataConsumption, maxBytes: Long) {
+    val fraction = (hostData.totalBytes.toFloat() / maxBytes.toFloat()).coerceIn(0f, 1f)
+    val providerName = hostData.providerName
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                if (!providerName.isNullOrBlank()) {
+                    Text(
+                        text = providerName,
+                        color = Color(0xFF93C5FD),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        text = hostData.host,
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 11.sp
+                    )
+                } else {
+                    Text(
+                        text = hostData.host,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = formatBytes(hostData.totalBytes),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+                Text(
+                    text = "${hostData.requestCount} ${stringResource(R.string.debug_overlay_requests)}",
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 10.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        LinearProgressIndicator(
+            progress = { fraction },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp)),
+            color = Color(0xFF38BDF8),
+            trackColor = Color.White.copy(alpha = 0.1f)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Rx: ${formatBytes(hostData.bytesReceived)}",
+                color = Color(0xFF4ADE80),
+                fontSize = 10.sp
+            )
+            Text(
+                text = "Tx: ${formatBytes(hostData.bytesSent)}",
+                color = Color(0xFF60A5FA),
+                fontSize = 10.sp
+            )
+        }
+
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 8.dp),
+            color = Color.White.copy(alpha = 0.1f)
+        )
     }
 }
 
