@@ -29,6 +29,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout geoking-tools
+        uses: actions/checkout@v4
+        with:
+          repository: ludoo0d0a/geoking-tools
+          path: geoking-tools
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -89,6 +95,7 @@ jobs:
 
       - name: Build and sign with Gradle
         env:
+          GK_TOOLS: ${{ github.workspace }}/geoking-tools
           # Unset secrets resolve to "" so requireProp in build.gradle.kts succeeds.
           GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
           GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}

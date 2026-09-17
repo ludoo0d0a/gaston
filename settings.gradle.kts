@@ -26,11 +26,11 @@ include(":androidApp")
 include(":shared")
 
 val gkToolsRoot = System.getenv("GK_TOOLS")
-    ?: listOf("../../geoking-tools", "../geoking-tools")
+    ?: listOf("geoking-tools", "../geoking-tools", "../../geoking-tools")
         .map { rootDir.resolve(it) }
         .firstOrNull { it.resolve("android").isDirectory }
         ?.absolutePath
-    ?: error("geoking-tools not found; clone as sibling of android/ (or of this repo) or set GK_TOOLS")
+    ?: error("geoking-tools not found; clone as sibling (or path/geoking-tools), set GK_TOOLS, or checkout in CI")
 
 includeBuild("$gkToolsRoot/android") {
     dependencySubstitution {

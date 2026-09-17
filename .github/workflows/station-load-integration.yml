@@ -31,6 +31,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout geoking-tools
+        uses: actions/checkout@v4
+        with:
+          repository: ludoo0d0a/geoking-tools
+          path: geoking-tools
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -43,6 +49,7 @@ jobs:
       - name: Run country station load integration tests
         id: run_tests
         env:
+          GK_TOOLS: ${{ github.workspace }}/geoking-tools
           RUN_REAL_API_TESTS: "1"
           STATION_LOAD_PROBE_REPORT: ${{ github.workspace }}/shared/build/station-load-probe-report.json
           FUELPRICES_DK_KEY: ${{ secrets.FUELPRICES_DK_KEY }}
