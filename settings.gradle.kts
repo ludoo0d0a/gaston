@@ -24,3 +24,16 @@ dependencyResolutionManagement {
 rootProject.name = "Gaston"
 include(":androidApp")
 include(":shared")
+
+val gkToolsRoot = System.getenv("GK_TOOLS")
+    ?: listOf("../../geoking-tools", "../geoking-tools")
+        .map { rootDir.resolve(it) }
+        .firstOrNull { it.resolve("android").isDirectory }
+        ?.absolutePath
+    ?: error("geoking-tools not found; clone as sibling of android/ (or of this repo) or set GK_TOOLS")
+
+includeBuild("$gkToolsRoot/android") {
+    dependencySubstitution {
+        substitute(module("fr.geoking.tools:debug-bar")).using(project(":debug-bar"))
+    }
+}

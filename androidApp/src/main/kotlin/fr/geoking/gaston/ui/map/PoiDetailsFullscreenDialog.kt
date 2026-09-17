@@ -30,7 +30,7 @@ import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.shared.datetime.DateTimeUtils
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.ColorHelper
-import fr.geoking.gaston.ui.components.JsonTree
+import fr.geoking.tools.debugbar.JsonTree
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
