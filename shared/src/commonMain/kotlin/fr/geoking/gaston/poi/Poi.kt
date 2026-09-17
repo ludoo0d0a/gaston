@@ -114,10 +114,20 @@ enum class PoiCategory {
  * POI data source. [providesFuel] / [providesElectric] classify providers for UI (e.g. filter mode), not OSM extras.
  */
 @Serializable
+/**
+ * How a [PoiProviderType] loads data on the device.
+ * [File] = national/bulk dump (CSV/JSON/gz) downloaded then filtered locally — heavy on cellular.
+ */
+enum class PoiProviderFetchKind {
+    Api,
+    File,
+}
+
 enum class PoiProviderType(
     val providesFuel: Boolean = false,
     val providesElectric: Boolean = false,
     val providesSwap: Boolean = false,
+    val fetchKind: PoiProviderFetchKind = PoiProviderFetchKind.Api,
 ) {
     Routex(providesFuel = true),
     Etalab(providesFuel = true),
@@ -126,7 +136,7 @@ enum class PoiProviderType(
     /** UK interim fuel price open data scheme (CMA / Fuel Finder retailer feeds). */
     UkCma(providesFuel = true),
     /** Italy MIMIT open data (pipe-delimited CSV exports). */
-    ItalyMimit(providesFuel = true),
+    ItalyMimit(providesFuel = true, fetchKind = PoiProviderFetchKind.File),
     /** Slovenia goriva.si public REST API. */
     SloveniaGorivaSi(providesFuel = true),
     /** Norway DrivstoffAppen public API (real-time). */
@@ -143,8 +153,8 @@ enum class PoiProviderType(
     Fuelo(providesFuel = true),
     /** Australia NSW FuelCheck API (API key + secret required). */
     AustraliaNswFuelCheck(providesFuel = true),
-    /** Croatia MZOE dataset (mzoe-gor.hr). */
-    CroatiaMzoe(providesFuel = true),
+    /** Croatia MZOE national JSON dump (mzoe-gor.hr). */
+    CroatiaMzoe(providesFuel = true, fetchKind = PoiProviderFetchKind.File),
     /** Finland polttoaine.net prices (HTML scraping). */
     FinlandPolttoaine(providesFuel = true),
     /** Greece fuelgr.gr prices (nearby query). */
@@ -159,8 +169,8 @@ enum class PoiProviderType(
     SerbiaNis(providesFuel = true),
     /** Mexico CRE places + prices open data. */
     MexicoCre(providesFuel = true),
-    /** Argentina Secretaría de Energía open data. */
-    ArgentinaEnergia(providesFuel = true),
+    /** Argentina Secretaría de Energía open CSV. */
+    ArgentinaEnergia(providesFuel = true, fetchKind = PoiProviderFetchKind.File),
     /** Switzerland fuel prices via Comparis.ch (__NEXT_DATA__). */
     SwitzerlandComparis(providesFuel = true),
     /** Western Australia FuelWatch open API. */
@@ -168,8 +178,10 @@ enum class PoiProviderType(
     /** Australia-wide fuel prices via PetrolSpy. */
     AustraliaPetrolSpy(providesFuel = true),
     DataGouvElec(providesElectric = true),
-    QualiCharge(providesElectric = true),
-    Gireve(providesElectric = true),
+    /** QualiCharge IRVE dynamique — national CSV static + dynamic dumps. */
+    QualiCharge(providesElectric = true, fetchKind = PoiProviderFetchKind.File),
+    /** Gireve IRVE — national CSV static + dynamic dumps. */
+    Gireve(providesElectric = true, fetchKind = PoiProviderFetchKind.File),
     Atlante(providesElectric = true),
     Freshmile(providesElectric = true),
     OpenChargeMap(providesElectric = true),
@@ -184,8 +196,8 @@ enum class PoiProviderType(
     EcoMovement(providesElectric = true),
     /** Luxembourg OSM fuel + OpenVan.camp weekly reference prices (CC BY 4.0). */
     OpenVanCamp(providesFuel = true),
-    /** Spanish government fuel prices (Minetur). */
-    SpainMinetur(providesFuel = true),
+    /** Spanish government fuel prices (Minetur) — full national dump then filter. */
+    SpainMinetur(providesFuel = true, fetchKind = PoiProviderFetchKind.File),
     /** German fuel prices via Tankerkönig (MTS-K). */
     GermanyTankerkoenig(providesFuel = true),
     /** Austrian fuel prices via E-Control. */
@@ -197,6 +209,10 @@ enum class PoiProviderType(
     Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }
+
+/** True when this source downloads a bulk national file (CSV/JSON/gz) rather than a geo-filtered API. */
+val PoiProviderType.isBulkFileDownload: Boolean
+    get() = fetchKind == PoiProviderFetchKind.File
 
 private val POI_DATA_SOURCES_DISABLED_FOR_USER_SELECTION: Set<PoiProviderType> = setOf(
     PoiProviderType.DataGouvPrixQuotidien

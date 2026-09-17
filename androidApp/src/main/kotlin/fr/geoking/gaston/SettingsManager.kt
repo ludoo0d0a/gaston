@@ -131,6 +131,11 @@ data class AppSettings(
     /** When [Auto], provider set is derived from current country (GPS / network). */
     val poiProviderSelectionMode: PoiProviderSelectionMode = PoiProviderSelectionMode.Manual,
     val selectedPoiProviders: Set<PoiProviderType> = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
+    /**
+     * When true, bulk file providers (national CSV/JSON dumps) only fetch on Wi‑Fi.
+     * Geo-filtered APIs are unaffected.
+     */
+    val bulkFileDownloadsWifiOnly: Boolean = false,
     val mapEnergyMode: EnergyFilterMode = EnergyFilterMode.Fuel,
     val selectedMapEnergyTypes: Set<String> = DEFAULT_MAP_ENERGY_TYPES,
     val mapEnseigneType: String = DEFAULT_MAP_ENSEIGNE_TYPE,
@@ -331,6 +336,7 @@ open class SettingsManager(
             useVehicleFilter = prefs.getBoolean("use_vehicle_filter", false),
             poiProviderSelectionMode = poiProviderSelectionMode,
             selectedPoiProviders = selectedProviders,
+            bulkFileDownloadsWifiOnly = prefs.getBoolean("bulk_file_downloads_wifi_only", false),
             mapEnergyMode = mapEnergyMode,
             selectedMapEnergyTypes = selectedMapEnergyTypes,
             mapEnseigneType = prefs.getString("map_enseigne_type", DEFAULT_MAP_ENSEIGNE_TYPE) ?: DEFAULT_MAP_ENSEIGNE_TYPE,
@@ -411,6 +417,7 @@ open class SettingsManager(
             .putBoolean("use_vehicle_filter", settings.useVehicleFilter)
             .putString("poi_provider_selection_mode", settings.poiProviderSelectionMode.name)
             .putStringSet("poi_providers", settings.selectedPoiProviders.map { it.name }.toSet())
+            .putBoolean("bulk_file_downloads_wifi_only", settings.bulkFileDownloadsWifiOnly)
             .putString("map_energy_mode", settings.mapEnergyMode.name)
             .putStringSet("map_energy_types", settings.selectedMapEnergyTypes)
             .putString("map_enseigne_type", settings.mapEnseigneType)
@@ -472,6 +479,10 @@ open class SettingsManager(
 
     open fun setPoiProviderTypes(types: Set<PoiProviderType>) {
         saveSettings(_settings.value.copy(selectedPoiProviders = types.sanitizeUserPoiProviderSelection()))
+    }
+
+    open fun setBulkFileDownloadsWifiOnly(enabled: Boolean) {
+        saveSettings(_settings.value.copy(bulkFileDownloadsWifiOnly = enabled))
     }
 
     open fun setUseVehicleFilter(enabled: Boolean) {

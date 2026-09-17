@@ -7,6 +7,7 @@ import fr.geoking.gaston.effectiveProviders
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.isOtherModeActive
 import fr.geoking.gaston.VehicleType
+import fr.geoking.gaston.feature.network.BulkFileNetworkAccess
 import fr.geoking.gaston.parking.ParkingRegion
 import fr.geoking.gaston.api.openvan.OpenVanCampClient
 import fr.geoking.gaston.api.openvan.OpenVanCampProvider
@@ -19,6 +20,7 @@ import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.shared.logging.ProviderTraceEntry
 import fr.geoking.gaston.shared.logging.ProviderTracePhase
 import fr.geoking.gaston.shared.logging.ProviderTraceStore
+import fr.geoking.gaston.shared.network.NetworkService
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlinx.serialization.json.Json
@@ -89,6 +91,7 @@ class SelectorPoiProvider(
     private val dataGouvCamping: PoiProvider?,
     private val poiCacheDao: PoiCacheDao,
     private val settingsManager: SettingsManager,
+    private val networkService: NetworkService,
     private val historyRepo: StationPriceHistoryRepository? = null
 ) : PoiProvider, CoroutineScope {
 
@@ -139,6 +142,27 @@ class SelectorPoiProvider(
         } else {
             listOfNotNull(ParkingRegion.containing(latitude, longitude)?.countryCode)
         }
+    }
+
+    /** Drops bulk-file providers when Settings → Wi‑Fi only is on and the device is not on Wi‑Fi. */
+    private fun applyBulkFileNetworkPolicy(providers: Set<PoiProviderType>): Set<PoiProviderType> {
+        val settings = settingsManager.settings.value
+        val networkType = networkService.status.value.networkType
+        if (BulkFileNetworkAccess.allowFetch(settings, networkType)) return providers
+        return providers.filterNot { it.isBulkFileDownload }.toSet()
+    }
+
+    private fun resolveEffectiveProviders(
+        settings: AppSettings,
+        isoCountries: List<String>,
+    ): Set<PoiProviderType> {
+        val raw = try {
+            settings.effectiveProviders(countryCodes = isoCountries)
+        } catch (e: Exception) {
+            Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
+            settings.selectedPoiProviders
+        }
+        return applyBulkFileNetworkPolicy(raw)
     }
 
     private fun getProvider(type: PoiProviderType): PoiProvider = when (type) {
@@ -408,12 +432,7 @@ class SelectorPoiProvider(
             hasViewport = request.viewport != null
         )
 
-        val providers = try {
-            settings.effectiveProviders(countryCodes = isoCountries)
-        } catch (e: Exception) {
-            Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
-            settings.selectedPoiProviders
-        }
+        val providers = resolveEffectiveProviders(settings, isoCountries)
 
         if (providers.isEmpty()) {
             traceProvider(
@@ -665,12 +684,7 @@ class SelectorPoiProvider(
             hasViewport = request.viewport != null
         )
 
-        val providers = try {
-            settings.effectiveProviders(countryCodes = isoCountries)
-        } catch (e: Exception) {
-            Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
-            settings.selectedPoiProviders
-        }
+        val providers = resolveEffectiveProviders(settings, isoCountries)
 
         if (providers.isEmpty()) {
             traceProvider(
@@ -965,12 +979,7 @@ class SelectorPoiProvider(
             hasViewport = viewport != null
         )
 
-        val providers = try {
-            settings.effectiveProviders(countryCodes = isoCountries)
-        } catch (e: Exception) {
-            Log.e("SelectorPoiProvider", "Failed to resolve providers from settings", e)
-            settings.selectedPoiProviders
-        }
+        val providers = resolveEffectiveProviders(settings, isoCountries)
 
         if (providers.isEmpty()) {
             traceProvider(

@@ -6,6 +6,7 @@ import androidx.car.app.Screen
 import androidx.car.app.model.*
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.poi.PoiProviderType
+import fr.geoking.gaston.poi.isBulkFileDownload
 import fr.geoking.gaston.poi.isUserSelectablePoiDataSource
 
 class AutoPoiProviderSelectionScreen(
@@ -66,7 +67,13 @@ class AutoPoiProviderSelectionScreen(
 
         options.forEach { (type, label) ->
             val isSelected = settings.selectedPoiProviders.contains(type)
-            val displayLabel = if (isSelected) "$label (Selected)" else label
+            val kind = if (type.isBulkFileDownload) {
+                carContext.getString(R.string.provider_fetch_kind_file)
+            } else {
+                carContext.getString(R.string.provider_fetch_kind_api)
+            }
+            val base = "$label · $kind"
+            val displayLabel = if (isSelected) "$base (Selected)" else base
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(displayLabel)

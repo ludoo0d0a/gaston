@@ -47,6 +47,7 @@ import fr.geoking.gaston.ThemeMode
 import fr.geoking.gaston.feature.auth.GoogleAuthManager
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
+import fr.geoking.gaston.poi.isBulkFileDownload
 import fr.geoking.gaston.poi.isUserSelectablePoiDataSource
 import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.premium.BillingManager
@@ -759,6 +760,15 @@ private fun SourcesConfig(
     fun providerLabel(type: PoiProviderType): String =
         context.getString(poiProviderLabelRes(type))
 
+    fun providerFetchKindLabel(type: PoiProviderType): String =
+        context.getString(
+            if (type.isBulkFileDownload) R.string.provider_fetch_kind_file
+            else R.string.provider_fetch_kind_api
+        )
+
+    fun providerChipLabel(type: PoiProviderType): String =
+        "${providerLabel(type)} · ${providerFetchKindLabel(type)}"
+
     fun countryLabel(code: String): String {
         val c = code.uppercase()
         return when (c) {
@@ -868,6 +878,7 @@ private fun SourcesConfig(
 
     var countryFilterText by remember { mutableStateOf("") }
     var energyFilter by remember { mutableStateOf("all") }
+    var pendingBulkEnable by remember { mutableStateOf<Set<PoiProviderType>?>(null) }
     val filteredCountryKeys = remember(sortedCountryKeys, countryFilterText, energyFilter, providersByCountry) {
         val q = countryFilterText.trim().lowercase()
         val baseKeys = if (q.isEmpty()) sortedCountryKeys
@@ -925,12 +936,41 @@ private fun SourcesConfig(
             }
         }
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                Text(
+                    stringResource(R.string.settings_bulk_file_wifi_only),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    stringResource(R.string.settings_bulk_file_wifi_only_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = settings.bulkFileDownloadsWifiOnly,
+                onCheckedChange = { onUpdate(settings.copy(bulkFileDownloadsWifiOnly = it)) },
+            )
+        }
+
         Column {
             Text(
                 stringResource(R.string.filter_data_sources),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                stringResource(R.string.filter_data_sources_fetch_kind_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp),
             )
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -995,12 +1035,25 @@ private fun SourcesConfig(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
                             .clickable {
-                                val next = if (allOn) {
-                                    settings.selectedPoiProviders - allTypesInCountry
+                                if (allOn) {
+                                    onUpdate(
+                                        settings.copy(
+                                            selectedPoiProviders = settings.selectedPoiProviders - allTypesInCountry
+                                        )
+                                    )
                                 } else {
-                                    settings.selectedPoiProviders + allTypesInCountry
+                                    val newlyEnabled = allTypesInCountry - settings.selectedPoiProviders
+                                    val bulkNew = newlyEnabled.filter { it.isBulkFileDownload }.toSet()
+                                    if (bulkNew.isNotEmpty()) {
+                                        pendingBulkEnable = allTypesInCountry
+                                    } else {
+                                        onUpdate(
+                                            settings.copy(
+                                                selectedPoiProviders = settings.selectedPoiProviders + allTypesInCountry
+                                            )
+                                        )
+                                    }
                                 }
-                                onUpdate(settings.copy(selectedPoiProviders = next))
                             }
                             .padding(vertical = 4.dp, horizontal = 2.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1057,17 +1110,25 @@ private fun SourcesConfig(
                                 FilterChip(
                                     selected = settings.selectedPoiProviders.contains(p.type),
                                     onClick = {
-                                        val next =
-                                            if (settings.selectedPoiProviders.contains(p.type)) {
-                                                settings.selectedPoiProviders - p.type
-                                            } else {
-                                                settings.selectedPoiProviders + p.type
-                                            }
-                                        onUpdate(settings.copy(selectedPoiProviders = next))
+                                        if (settings.selectedPoiProviders.contains(p.type)) {
+                                            onUpdate(
+                                                settings.copy(
+                                                    selectedPoiProviders = settings.selectedPoiProviders - p.type
+                                                )
+                                            )
+                                        } else if (p.type.isBulkFileDownload) {
+                                            pendingBulkEnable = setOf(p.type)
+                                        } else {
+                                            onUpdate(
+                                                settings.copy(
+                                                    selectedPoiProviders = settings.selectedPoiProviders + p.type
+                                                )
+                                            )
+                                        }
                                     },
                                     label = {
                                         Text(
-                                            providerLabel(p.type),
+                                            providerChipLabel(p.type),
                                             maxLines = 1,
                                             style = chipLabelStyle,
                                         )
@@ -1090,6 +1151,43 @@ private fun SourcesConfig(
                 }
             }
 
+        }
+
+        pendingBulkEnable?.let { typesToEnable ->
+            val names = typesToEnable
+                .filter { it.isBulkFileDownload }
+                .joinToString(", ") { providerLabel(it) }
+            AlertDialog(
+                onDismissRequest = { pendingBulkEnable = null },
+                title = { Text(stringResource(R.string.dialog_bulk_file_title)) },
+                text = {
+                    Text(
+                        stringResource(
+                            R.string.dialog_bulk_file_message,
+                            names.ifBlank { providerLabel(typesToEnable.first()) },
+                        )
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onUpdate(
+                                settings.copy(
+                                    selectedPoiProviders = settings.selectedPoiProviders + typesToEnable
+                                )
+                            )
+                            pendingBulkEnable = null
+                        }
+                    ) {
+                        Text(stringResource(R.string.action_enable))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingBulkEnable = null }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                },
+            )
         }
     }
 }

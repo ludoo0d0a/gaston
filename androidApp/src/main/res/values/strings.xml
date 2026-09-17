@@ -63,6 +63,7 @@
     <string name="vehicle_filters_active">Vehicle filters active: %1$s\nUsing your vehicle\'s predefined preferences.</string>
     <string name="action_back">Back</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_enable">Enable</string>
     <string name="action_ok">OK</string>
     <string name="action_done">Done</string>
     <string name="action_save">Save</string>
@@ -237,6 +238,13 @@
     <string name="filter_selection_mode">Selection mode</string>
     <string name="filter_auto_sources_hint">Auto selects sources based on your current country. Your manual selection below remains as a fallback.</string>
     <string name="filter_data_sources">Data sources</string>
+    <string name="filter_data_sources_fetch_kind_hint">Each source is tagged api (geo query) or file (national download).</string>
+    <string name="settings_bulk_file_wifi_only">File downloads on Wi‑Fi only</string>
+    <string name="settings_bulk_file_wifi_only_subtitle">Skip bulk CSV/JSON dumps on cellular. Cached data still shows when available.</string>
+    <string name="provider_fetch_kind_api">api</string>
+    <string name="provider_fetch_kind_file">file</string>
+    <string name="dialog_bulk_file_title">Large file download</string>
+    <string name="dialog_bulk_file_message">%1$s downloads a national data file (often several MB). This can use a lot of mobile data. Continue?</string>
     <string name="filter_by_country">Filter by country or region</string>
     <string name="filter_country_placeholder">France, DE, global…</string>
     <string name="filter_no_country_match">No country matches this filter.</string>

@@ -12,6 +12,7 @@ import fr.geoking.gaston.api.belib.BelibAvailabilityClient
 import fr.geoking.gaston.api.belib.BelibAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
+import fr.geoking.gaston.api.belib.WifiGatedBulkAvailabilityProvider
 import fr.geoking.gaston.api.dotnl.DotNlAvailabilityClient
 import fr.geoking.gaston.api.dotnl.DotNlAvailabilityProvider
 import fr.geoking.gaston.api.finland.DigitrafficAfirAvailabilityClient
@@ -387,6 +388,7 @@ val mapModule = module {
             dataGouvCamping = get(named("datagouvcamping")),
             poiCacheDao = get<fr.geoking.gaston.persistence.AppDatabase>().poiCacheDao(),
             settingsManager = get(),
+            networkService = get(),
             historyRepo = get()
         )
     }
@@ -405,26 +407,50 @@ val mapModule = module {
     }
     single { QualiChargeDynamiqueClient(get()) }
     single<BorneAvailabilityProvider>(named("qualicharge")) {
-        QualiChargeAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+        WifiGatedBulkAvailabilityProvider(
+            QualiChargeAvailabilityProvider(get(), radiusKm = 15, limit = 200),
+            settingsManager = get(),
+            networkService = get(),
+        )
     }
     single<BorneAvailabilityProvider>(named("gireve")) {
-        GireveAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+        WifiGatedBulkAvailabilityProvider(
+            GireveAvailabilityProvider(get(), radiusKm = 15, limit = 200),
+            settingsManager = get(),
+            networkService = get(),
+        )
     }
     single { BelgiumNapAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("belgium_nap")) {
-        BelgiumNapAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+        WifiGatedBulkAvailabilityProvider(
+            BelgiumNapAvailabilityProvider(get(), radiusKm = 15, limit = 200),
+            settingsManager = get(),
+            networkService = get(),
+        )
     }
     single { DotNlAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("dotnl")) {
-        DotNlAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+        WifiGatedBulkAvailabilityProvider(
+            DotNlAvailabilityProvider(get(), radiusKm = 15, limit = 200),
+            settingsManager = get(),
+            networkService = get(),
+        )
     }
     single { IchTankeStromAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("ich_tanke_strom")) {
-        IchTankeStromAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+        WifiGatedBulkAvailabilityProvider(
+            IchTankeStromAvailabilityProvider(get(), radiusKm = 15, limit = 200),
+            settingsManager = get(),
+            networkService = get(),
+        )
     }
     single { DigitrafficAfirAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("digitraffic_afir")) {
-        DigitrafficAfirAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+        WifiGatedBulkAvailabilityProvider(
+            DigitrafficAfirAvailabilityProvider(get(), radiusKm = 15, limit = 200),
+            settingsManager = get(),
+            networkService = get(),
+        )
     }
     single {
         AustriaEControlEvClient(
@@ -445,7 +471,11 @@ val mapModule = module {
         )
     }
     single<BorneAvailabilityProvider>(named("eipa")) {
-        EipaAvailabilityProvider(get(), radiusKm = 15, limit = 200)
+        WifiGatedBulkAvailabilityProvider(
+            EipaAvailabilityProvider(get(), radiusKm = 15, limit = 200),
+            settingsManager = get(),
+            networkService = get(),
+        )
     }
     single(named("nobil_nor_client")) {
         NobilClient(
@@ -455,7 +485,11 @@ val mapModule = module {
         )
     }
     single<BorneAvailabilityProvider>(named("nobil_nor")) {
-        NobilAvailabilityProvider(get(named("nobil_nor_client")), radiusKm = 15, limit = 200)
+        WifiGatedBulkAvailabilityProvider(
+            NobilAvailabilityProvider(get(named("nobil_nor_client")), radiusKm = 15, limit = 200),
+            settingsManager = get(),
+            networkService = get(),
+        )
     }
     single(named("nobil_swe_client")) {
         NobilClient(
@@ -465,7 +499,11 @@ val mapModule = module {
         )
     }
     single<BorneAvailabilityProvider>(named("nobil_swe")) {
-        SwedenNobilAvailabilityProvider(get(named("nobil_swe_client")), radiusKm = 15, limit = 200)
+        WifiGatedBulkAvailabilityProvider(
+            SwedenNobilAvailabilityProvider(get(named("nobil_swe_client")), radiusKm = 15, limit = 200),
+            settingsManager = get(),
+            networkService = get(),
+        )
     }
     single { ItalyPunAvailabilityClient(get()) }
     single<BorneAvailabilityProvider>(named("italy_pun")) {

@@ -8,6 +8,7 @@
     <string name="action_back">Retour</string>
     <string name="action_body_viewer">Corps de la réponse</string>
     <string name="action_cancel">Annuler</string>
+    <string name="action_enable">Activer</string>
     <string name="action_clear">Effacer</string>
     <string name="action_close">Fermer</string>
     <string name="action_copy">Copier</string>
@@ -129,6 +130,13 @@
     <string name="filter_chip_my_favorites">Mes favoris</string>
     <string name="filter_country_placeholder">France, DE, global…</string>
     <string name="filter_data_sources">Sources de données</string>
+    <string name="filter_data_sources_fetch_kind_hint">Chaque source est marquée api (requête géo) ou file (téléchargement national).</string>
+    <string name="settings_bulk_file_wifi_only">Fichiers uniquement en Wi‑Fi</string>
+    <string name="settings_bulk_file_wifi_only_subtitle">Ignore les dumps CSV/JSON nationaux en données mobiles. Le cache reste affiché s\'il existe.</string>
+    <string name="provider_fetch_kind_api">api</string>
+    <string name="provider_fetch_kind_file">file</string>
+    <string name="dialog_bulk_file_title">Gros fichier à télécharger</string>
+    <string name="dialog_bulk_file_message">%1$s télécharge un fichier national (souvent plusieurs Mo). Cela peut consommer beaucoup de données mobiles. Continuer ?</string>
     <string name="filter_debug_logging">Journalisation debug</string>
     <string name="filter_exclusive_swap">Le filtre échange de batterie est exclusif. Les autres filtres électriques sont désactivés.</string>
     <string name="filter_google_traffic">Couche trafic Google</string>
