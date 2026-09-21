@@ -684,12 +684,6 @@ class CustomMapPoiScreen(
             .setStartHeaderAction(Action.BACK)
             .addEndHeaderAction(
                 Action.Builder()
-                    .setIcon(carContext.actionCompassIcon())
-                    .setOnClickListener { toggleMapOrientation() }
-                    .build()
-            )
-            .addEndHeaderAction(
-                Action.Builder()
                     .setIcon(carContext.actionRecenterIcon())
                     .setOnClickListener { recenterMap() }
                     .build()
@@ -929,27 +923,6 @@ class CustomMapPoiScreen(
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
 
         val actionStripBuilder = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionSettingsIcon())
-                    .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
-                    .build()
-            )
-            .addAction(
-                Action.Builder()
-                    .setTitle(carContext.getString(R.string.action_legend))
-                    .setOnClickListener { screenManager.push(MapLegendScreen(carContext)) }
-                    .build()
-            )
-
-        if (mapDeps != null) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionMapIcon())
-                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
-                    .build()
-            )
-        }
 
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
@@ -968,6 +941,29 @@ class CustomMapPoiScreen(
                     syncRendererWithMapState()
                     invalidate()
                 }
+            )
+        }
+
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setIcon(carContext.actionCompassIcon())
+                .setOnClickListener { toggleMapOrientation() }
+                .build()
+        )
+
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setIcon(carContext.actionSettingsIcon())
+                .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
+                .build()
+        )
+
+        if (mapDeps != null) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionMapIcon())
+                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
+                    .build()
             )
         }
         val actionStrip = actionStripBuilder.build()
