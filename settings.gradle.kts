@@ -30,10 +30,11 @@ val gkToolsRoot = System.getenv("GK_TOOLS")
         .map { rootDir.resolve(it) }
         .firstOrNull { it.resolve("android").isDirectory }
         ?.absolutePath
-    ?: error("geoking-tools not found; clone as sibling (or path/geoking-tools), set GK_TOOLS, or checkout in CI")
 
-includeBuild("$gkToolsRoot/android") {
-    dependencySubstitution {
-        substitute(module("fr.geoking.tools:debug-bar")).using(project(":debug-bar"))
+if (gkToolsRoot != null) {
+    includeBuild("$gkToolsRoot/android") {
+        dependencySubstitution {
+            substitute(module("fr.geoking.tools:debug-bar")).using(project(":debug-bar"))
+        }
     }
 }
