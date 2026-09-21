@@ -678,16 +678,23 @@ class CustomMapPoiScreen(
         )
     }
 
-    private fun mapContentHeaderBuilder(title: String, currentSettings: AppSettings): Header.Builder {
-        return Header.Builder()
+    private fun mapContentHeaderBuilder(
+        title: String,
+        @Suppress("UNUSED_PARAMETER") currentSettings: AppSettings,
+        cheapestAction: Action? = null,
+    ): Header.Builder {
+        val builder = Header.Builder()
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
-            .addEndHeaderAction(
-                Action.Builder()
-                    .setIcon(carContext.actionRecenterIcon())
-                    .setOnClickListener { recenterMap() }
-                    .build()
-            )
+        if (cheapestAction != null) {
+            builder.addEndHeaderAction(cheapestAction)
+        }
+        return builder.addEndHeaderAction(
+            Action.Builder()
+                .setIcon(carContext.actionRecenterIcon())
+                .setOnClickListener { recenterMap() }
+                .build()
+        )
     }
 
     private fun applyMapOrientationToRenderer() {
@@ -925,23 +932,23 @@ class CustomMapPoiScreen(
         val actionStripBuilder = ActionStrip.Builder()
 
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
-        if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
-            actionStripBuilder.addAction(
-                carContext.cheapestFilterAction(isCheapestFilterActive) {
-                    if (isCheapestFilterActive) {
-                        isCheapestFilterActive = false
-                        sortByPrice = false
-                    } else {
-                        isCheapestFilterActive = true
-                        sortByPrice = true
-                        val filtered = getFilteredPois(currentSettings)
-                        carContext.getCarService(AppManager::class.java)
-                            .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
-                    }
-                    syncRendererWithMapState()
-                    invalidate()
+        val cheapestAction = if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
+            carContext.cheapestFilterAction(isCheapestFilterActive) {
+                if (isCheapestFilterActive) {
+                    isCheapestFilterActive = false
+                    sortByPrice = false
+                } else {
+                    isCheapestFilterActive = true
+                    sortByPrice = true
+                    val filtered = getFilteredPois(currentSettings)
+                    carContext.getCarService(AppManager::class.java)
+                        .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
                 }
-            )
+                syncRendererWithMapState()
+                invalidate()
+            }
+        } else {
+            null
         }
 
         actionStripBuilder.addAction(
@@ -989,10 +996,11 @@ class CustomMapPoiScreen(
 
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
+        val contentHeader = mapContentHeaderBuilder(title, currentSettings, cheapestAction).build()
         val contentTemplate = if (isLoading) {
             ListTemplate.Builder()
                 .setLoading(true)
-                .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
+                .setHeader(contentHeader)
                 .build()
         } else {
             val filteredPoisForSorting = getFilteredPois(currentSettings)
@@ -1035,7 +1043,7 @@ class CustomMapPoiScreen(
             }
 
             ListTemplate.Builder()
-                .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
+                .setHeader(contentHeader)
                 .setSingleList(itemListBuilder.build())
                 .build()
         }
