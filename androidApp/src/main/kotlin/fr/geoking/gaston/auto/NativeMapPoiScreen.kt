@@ -211,24 +211,6 @@ class NativeMapPoiScreen(
 
         val actionStripBuilder = ActionStrip.Builder()
 
-        actionStripBuilder.addAction(
-            Action.Builder()
-                .setIcon(carContext.actionSettingsIcon())
-                .setOnClickListener {
-                    screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
-                }
-                .build()
-        )
-
-        if (mapDeps != null) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionMapIcon())
-                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
-                    .build()
-            )
-        }
-
         val fuelIdsForFilter = effectiveEnergies - "electric"
         if (hasFuelFilter && (isCheapestFilterActive || pois.any { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForFilter } == true })) {
             actionStripBuilder.addAction(
@@ -246,6 +228,24 @@ class NativeMapPoiScreen(
                     }
                     invalidate()
                 }
+            )
+        }
+
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setIcon(carContext.actionSettingsIcon())
+                .setOnClickListener {
+                    screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
+                }
+                .build()
+        )
+
+        if (mapDeps != null) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionMapIcon())
+                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
+                    .build()
             )
         }
         val actionStrip = actionStripBuilder.build()

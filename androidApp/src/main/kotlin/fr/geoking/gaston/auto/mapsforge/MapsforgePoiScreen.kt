@@ -41,7 +41,9 @@ import fr.geoking.gaston.auto.AutoMapPoiHitTest
 import fr.geoking.gaston.auto.AutoMapSettingsScreen
 import fr.geoking.gaston.auto.AutoPoiUiHelper
 import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.auto.actionCompassIcon
 import fr.geoking.gaston.auto.actionMapIcon
+import fr.geoking.gaston.auto.actionRecenterIcon
 import fr.geoking.gaston.auto.actionSettingsIcon
 import fr.geoking.gaston.auto.actionZoomInIcon
 import fr.geoking.gaston.auto.actionZoomOutIcon
@@ -592,11 +594,48 @@ class MapsforgePoiScreen(
         return Header.Builder()
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
+            .addEndHeaderAction(
+                Action.Builder()
+                    .setIcon(carContext.actionRecenterIcon())
+                    .setOnClickListener { recenterMap() }
+                    .build()
+            )
     }
 
     private fun applyMapOrientationToRenderer() {
         surfaceRenderer?.setMapOrientation(orientationMode, lastKnownBearingDegrees)
         lastMapOrientationUpdateMillis = System.currentTimeMillis()
+    }
+
+    private fun toggleMapOrientation() {
+        orientationMode = when (orientationMode) {
+            MapOrientationMode.NorthUp -> MapOrientationMode.HeadingUp
+            MapOrientationMode.HeadingUp -> MapOrientationMode.NorthUp
+        }
+        applyMapOrientationToRenderer()
+        if (orientationMode == MapOrientationMode.HeadingUp) {
+            lifecycleScope.launch { refreshHeadingFromLocation() }
+        } else {
+            syncRendererWithMapState()
+        }
+        invalidate()
+    }
+
+    private fun recenterMap() {
+        lifecycleScope.launch {
+            val location = LocationHelper.getCurrentLocation(carContext)
+            if (location != null) {
+                searchLat = location.latitude
+                searchLon = location.longitude
+                settingsManager.saveLastKnownLocation(location.latitude, location.longitude)
+                searchCenterFlow.value = searchLat to searchLon
+                lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+                surfaceRenderer?.updateLocation(searchLat, searchLon, zoom)
+                surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
+                applyMapOrientationToRenderer()
+            }
+            loadPois(preserveZoom = true)
+        }
     }
 
     private fun startHeadingUpdates() {
@@ -796,21 +835,6 @@ class MapsforgePoiScreen(
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
 
         val actionStripBuilder = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionSettingsIcon())
-                    .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
-                    .build()
-            )
-
-        if (mapDeps != null) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionMapIcon())
-                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
-                    .build()
-            )
-        }
 
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
@@ -829,6 +853,29 @@ class MapsforgePoiScreen(
                     syncRendererWithMapState()
                     invalidate()
                 }
+            )
+        }
+
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setIcon(carContext.actionCompassIcon())
+                .setOnClickListener { toggleMapOrientation() }
+                .build()
+        )
+
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setIcon(carContext.actionSettingsIcon())
+                .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
+                .build()
+        )
+
+        if (mapDeps != null) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionMapIcon())
+                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
+                    .build()
             )
         }
         val actionStrip = actionStripBuilder.build()
