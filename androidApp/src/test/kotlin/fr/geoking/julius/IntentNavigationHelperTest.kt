@@ -13,6 +13,19 @@ import org.robolectric.RobolectricTestRunner
 class IntentNavigationHelperTest {
 
     @Test
+    fun `getNavigationUri uses coordinates only`() {
+        val poi = fr.geoking.gaston.poi.Poi(
+            id = "1",
+            name = "TotalEnergies Relais Paris",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            address = "10 Avenue des Champs-Élysées"
+        )
+        val uri = IntentNavigationHelper.getNavigationUri(poi)
+        assertEquals("geo:48.8566,2.3522?q=48.8566,2.3522", uri.toString())
+    }
+
+    @Test
     fun `parse geo uri with coords and query`() {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:48.8566,2.3522?q=Paris"))
         val nav = IntentNavigationHelper.parseNavIntent(intent)!!
