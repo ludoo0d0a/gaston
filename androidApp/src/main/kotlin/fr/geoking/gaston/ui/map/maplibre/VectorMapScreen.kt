@@ -160,6 +160,7 @@ fun VectorMapScreen(
 
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
     var cameraPosition by remember { mutableStateOf<CameraPosition?>(null) }
+    var visibleMapViewport by remember { mutableStateOf<MapViewport?>(null) }
     var showAddPoiSheet by remember { mutableStateOf(false) }
     var addPoiLinkedOfficialId by remember { mutableStateOf<String?>(null) }
     var addPoiInitialName by remember { mutableStateOf("") }
@@ -178,19 +179,30 @@ fun VectorMapScreen(
         }
     }
 
-    DisposableEffect(mapLibreMap) {
+    DisposableEffect(mapLibreMap, mapSizePx) {
         val map = mapLibreMap
         if (map == null) {
             cameraPosition = null
+            visibleMapViewport = null
             onDispose { }
         } else {
-            cameraPosition = map.cameraPosition
-            val idleListener = MapLibreMap.OnCameraIdleListener {
+            fun syncCamera() {
                 cameraPosition = map.cameraPosition
+                val bounds = map.projection.getVisibleRegion(/* ignorePadding = */ false).latLngBounds
+                val zoom = map.cameraPosition.zoom.toFloat()
+                visibleMapViewport = MapViewport(
+                    zoom = zoom,
+                    mapWidthPx = mapSizePx.width.coerceAtLeast(1),
+                    mapHeightPx = mapSizePx.height.coerceAtLeast(1),
+                    minLat = bounds.latitudeSouth,
+                    maxLat = bounds.latitudeNorth,
+                    minLng = bounds.longitudeWest,
+                    maxLng = bounds.longitudeEast,
+                )
             }
-            val moveListener = MapLibreMap.OnCameraMoveListener {
-                cameraPosition = map.cameraPosition
-            }
+            syncCamera()
+            val idleListener = MapLibreMap.OnCameraIdleListener { syncCamera() }
+            val moveListener = MapLibreMap.OnCameraMoveListener { syncCamera() }
             map.addOnCameraIdleListener(idleListener)
             map.addOnCameraMoveListener(moveListener)
             onDispose {
@@ -239,7 +251,7 @@ fun VectorMapScreen(
         requestLocationPermission = { launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
     )
 
-    val poisInView = remember(mapData.cachedPois, currentTarget, cameraPosition?.zoom, mapSizePx, settings, effectiveProviders) {
+    val poisInView = remember(mapData.cachedPois, currentTarget, cameraPosition?.zoom, mapSizePx, settings, effectiveProviders, visibleMapViewport) {
         val filteredByFilters = StationMapFilters.apply(
             settings = settings,
             pois = mapData.cachedPois,
@@ -247,15 +259,20 @@ fun VectorMapScreen(
             skipWhenOnlyOverpass = true
         )
 
-        val currentZoom = (cameraPosition?.zoom ?: defaultZoom).toFloat()
-        filterPoisByViewport(
-            pois = filteredByFilters,
-            lat = currentTarget.latitude,
-            lon = currentTarget.longitude,
-            zoom = currentZoom,
-            widthPx = mapSizePx.width,
-            heightPx = mapSizePx.height
-        )
+        val viewport = visibleMapViewport
+        if (viewport != null) {
+            filterPoisByViewport(filteredByFilters, viewport)
+        } else {
+            val currentZoom = (cameraPosition?.zoom ?: defaultZoom).toFloat()
+            filterPoisByViewport(
+                pois = filteredByFilters,
+                lat = currentTarget.latitude,
+                lon = currentTarget.longitude,
+                zoom = currentZoom,
+                widthPx = mapSizePx.width,
+                heightPx = mapSizePx.height
+            )
+        }
     }
 
     val basePois = remember(poisInView, showFavoritesOnly, favoriteIds) {

@@ -261,13 +261,14 @@ class CustomMapPoiScreen(
             skipWhenOnlyOverpass = true
         )
 
+        val (fitW, fitH) = mapFitSizePx()
         val visiblePois = filterPoisByViewport(
             pois = basePois,
             lat = searchLat,
             lon = searchLon,
             zoom = zoom.toFloat(),
-            widthPx = mapWidthPx,
-            heightPx = mapHeightPx
+            widthPx = fitW,
+            heightPx = fitH
         )
 
         return if (isCheapestFilterActive) {

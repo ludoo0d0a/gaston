@@ -3,6 +3,7 @@ package fr.geoking.gaston
 import fr.geoking.gaston.parking.ParkingRegion
 import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.MapPoiFilter
+import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderType
@@ -394,6 +395,11 @@ object StationMapFilters {
 
 }
 
+/**
+ * Keeps only POIs inside the map screen boundary computed from center/zoom/size.
+ * Returns an empty list when [widthPx]/[heightPx] are not yet known so markers never
+ * spill outside the viewport (including when the cheapest filter is applied next).
+ */
 fun filterPoisByViewport(
     pois: List<Poi>,
     lat: Double,
@@ -402,7 +408,11 @@ fun filterPoisByViewport(
     widthPx: Int,
     heightPx: Int
 ): List<Poi> {
-    if (widthPx <= 0 || heightPx <= 0) return pois
+    if (widthPx <= 0 || heightPx <= 0) return emptyList()
     val viewport = calculateBoundsFromMapViewport(lat, lon, zoom, widthPx, heightPx)
-    return pois.filter { viewport.contains(it.latitude, it.longitude) }
+    return filterPoisByViewport(pois, viewport)
 }
+
+/** Keeps only POIs inside [viewport] (explicit lat/lng bounds). */
+fun filterPoisByViewport(pois: List<Poi>, viewport: MapViewport): List<Poi> =
+    pois.filter { viewport.contains(it.latitude, it.longitude) }

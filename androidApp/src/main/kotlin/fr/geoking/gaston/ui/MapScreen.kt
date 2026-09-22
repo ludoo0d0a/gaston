@@ -274,7 +274,15 @@ fun MapScreen(
         requestLocationPermission = { launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
     )
 
-    val poisInView = remember(mapData.cachedPois, cameraPositionState.position.target, cameraPositionState.position.zoom, mapSizePx, settings, effectiveProviders) {
+    val poisInView = remember(
+        mapData.cachedPois,
+        cameraPositionState.position.target,
+        cameraPositionState.position.zoom,
+        mapSizePx,
+        settings,
+        effectiveProviders,
+        cameraPositionState.projection?.visibleRegion?.latLngBounds,
+    ) {
         val filteredByFilters = StationMapFilters.apply(
             settings = settings,
             pois = mapData.cachedPois,
@@ -282,14 +290,21 @@ fun MapScreen(
             skipWhenOnlyOverpass = true
         )
 
-        filterPoisByViewport(
-            pois = filteredByFilters,
-            lat = cameraPositionState.position.target.latitude,
-            lon = cameraPositionState.position.target.longitude,
-            zoom = cameraPositionState.position.zoom,
-            widthPx = mapSizePx.width,
-            heightPx = mapSizePx.height
-        )
+        val latLngBounds = cameraPositionState.projection?.visibleRegion?.latLngBounds
+        if (latLngBounds != null) {
+            filteredByFilters.filter { poi ->
+                latLngBounds.contains(LatLng(poi.latitude, poi.longitude))
+            }
+        } else {
+            filterPoisByViewport(
+                pois = filteredByFilters,
+                lat = cameraPositionState.position.target.latitude,
+                lon = cameraPositionState.position.target.longitude,
+                zoom = cameraPositionState.position.zoom,
+                widthPx = mapSizePx.width,
+                heightPx = mapSizePx.height
+            )
+        }
     }
 
     val basePois = remember(poisInView, showFavoritesOnly, favoriteIds) {

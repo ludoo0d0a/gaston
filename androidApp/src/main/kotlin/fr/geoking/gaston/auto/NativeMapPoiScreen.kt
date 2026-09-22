@@ -100,11 +100,17 @@ class NativeMapPoiScreen(
             skipWhenOnlyOverpass = true
         )
 
+        // Host PlaceListMap has no zoom/size API; clip to the same nearby search radius.
+        val maxKm = AutoMapCamera.DEFAULT_NEARBY_SEARCH_RADIUS_KM.toDouble()
+        val visiblePois = basePois.filter { poi ->
+            approxDistanceKm(searchLat, searchLon, poi.latitude, poi.longitude) <= maxKm
+        }
+
         return if (isCheapestFilterActive) {
             val fuelIds = currentSettings.effectiveMapEnergyFilterIds() - "electric"
             val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
             MapPoiFilter.filterCheapest(
-                pois = basePois,
+                pois = visiblePois,
                 selectedFuelIds = fuelIds,
                 isLuxembourg = isLuxembourg,
                 fromLat = searchLat,
@@ -112,7 +118,7 @@ class NativeMapPoiScreen(
                 limit = MapPoiFilter.CAR_CHEAPEST_COUNT,
             )
         } else {
-            basePois
+            visiblePois
         }
     }
 
