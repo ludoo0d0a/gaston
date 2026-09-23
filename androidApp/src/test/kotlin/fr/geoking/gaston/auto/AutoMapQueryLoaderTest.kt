@@ -25,9 +25,29 @@ class AutoMapQueryLoaderTest {
             surfaceHeight = 300,
             nowMs = 450L,
         )
-        // Loader sits to the left of the compass — with density=1f, cx = 360 - 16 - 48 - 12 - 14 = 270, cy = 20 + 16 + 24 = 60
-        val sampleX = 270
-        val sampleY = 60
+        // Loader sits to the left of compass above zoom buttons — density=1f, cx = 360 - 16 - 28 - 28 - 12 - 14 = 262, cy = 280 - 16 - 28 - 2*(56+8) = 108
+        val sampleX = 262
+        val sampleY = 108
+        val pixel = bitmap.getPixel(sampleX, sampleY)
+        assertTrue(pixel != Color.BLACK)
+    }
+
+    @Test
+    fun draw_positionsCorrectly_whenMenuIsOnRight() {
+        val bitmap = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(Color.BLACK)
+        AutoMapQueryLoader.draw(
+            canvas = canvas,
+            density = 1f,
+            visibleArea = Rect(0, 20, 260, 280),
+            surfaceWidth = 400,
+            surfaceHeight = 300,
+            nowMs = 450L,
+        )
+        // Menu on right: compass at bottom-left, loader to its right: cx = 0 + 16 + 28 + 28 + 12 + 14 = 98, cy = 108
+        val sampleX = 98
+        val sampleY = 108
         val pixel = bitmap.getPixel(sampleX, sampleY)
         assertTrue(pixel != Color.BLACK)
     }
