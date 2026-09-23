@@ -302,6 +302,7 @@ class NativeMapPoiScreen(
 
         displayPois.take(listLimit).forEach { item ->
             val availability = availabilityByPoiId[item.id]
+            val isFav = favoritesRepo?.isFavorite(item.id) == true
             itemListBuilder.addItem(
                 AutoPoiUiHelper.buildPoiRow(
                     carContext = carContext,
@@ -311,6 +312,7 @@ class NativeMapPoiScreen(
                     effectivePowerLevels = effectivePowerLevels,
                     distanceFromLatLon = searchLat to searchLon,
                     includePlace = true,
+                    isFavorite = isFav,
                 ) {
                 loadPoisJob?.cancel()
                 isLoading = false

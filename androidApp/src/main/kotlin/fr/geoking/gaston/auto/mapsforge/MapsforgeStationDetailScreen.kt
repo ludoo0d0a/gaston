@@ -92,6 +92,7 @@ class MapsforgeStationDetailScreen(
             maxRows = listLimit,
             includePlace = false,
             onHeaderClick = null,
+            isFavorite = isFavorite,
         )
 
         val itemListBuilder = ItemList.Builder()
