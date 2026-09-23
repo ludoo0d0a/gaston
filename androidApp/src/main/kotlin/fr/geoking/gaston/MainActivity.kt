@@ -84,7 +84,7 @@ import fr.geoking.gaston.ui.components.DisclaimerDialog
 
 class MainActivity : ComponentActivity() {
 
-    private val inAppUpdateHelper by lazy { InAppUpdateHelper(applicationContext) }
+    private val inAppUpdateHelper by lazy { InAppUpdateHelper(applicationContext, notificationHelper) }
     private val mapDepsState = MutableStateFlow<MapDeps?>(null)
     private val pendingNavDestination = MutableStateFlow<NavDestination?>(null)
 
