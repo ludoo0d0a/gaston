@@ -712,12 +712,7 @@ open class MapLibrePoiScreen(
         if (cheapestAction != null) {
             builder.addEndHeaderAction(cheapestAction)
         }
-        return builder.addEndHeaderAction(
-            Action.Builder()
-                .setIcon(carContext.actionRecenterIcon())
-                .setOnClickListener { recenterMap() }
-                .build()
-        )
+        return builder
     }
 
     private fun applyMapOrientationToRenderer() {
@@ -1044,6 +1039,7 @@ open class MapLibrePoiScreen(
             val limitedPois = sortedPois.take(listLimit)
             limitedPois.forEach { item ->
                 val availability = availabilityByPoiId[item.id]
+                val isFav = favoritesRepo?.isFavorite(item.id) == true
                 itemListBuilder.addItem(
                     AutoPoiUiHelper.buildPoiRow(
                         carContext = carContext,
@@ -1054,6 +1050,7 @@ open class MapLibrePoiScreen(
                         distanceFromLatLon = userLat to userLon,
                         includePlace = false,
                         browsable = true,
+                        isFavorite = isFav,
                     ) {
                         openStationDetail(item, availability)
                     }

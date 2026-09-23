@@ -43,7 +43,6 @@ import fr.geoking.gaston.auto.AutoPoiUiHelper
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.auto.actionCompassIcon
 import fr.geoking.gaston.auto.actionMapIcon
-import fr.geoking.gaston.auto.actionRecenterIcon
 import fr.geoking.gaston.auto.actionSettingsIcon
 import fr.geoking.gaston.auto.actionZoomInIcon
 import fr.geoking.gaston.auto.actionZoomOutIcon
@@ -602,12 +601,7 @@ class MapsforgePoiScreen(
         if (cheapestAction != null) {
             builder.addEndHeaderAction(cheapestAction)
         }
-        return builder.addEndHeaderAction(
-            Action.Builder()
-                .setIcon(carContext.actionRecenterIcon())
-                .setOnClickListener { recenterMap() }
-                .build()
-        )
+        return builder
     }
 
     private fun applyMapOrientationToRenderer() {
@@ -952,6 +946,7 @@ class MapsforgePoiScreen(
             val limitedPois = sortedPois.take(listLimit)
             limitedPois.forEach { item ->
                 val availability = availabilityByPoiId[item.id]
+                val isFav = favoritesRepo?.isFavorite(item.id) == true
                 itemListBuilder.addItem(
                     AutoPoiUiHelper.buildPoiRow(
                         carContext = carContext,
@@ -962,6 +957,7 @@ class MapsforgePoiScreen(
                         distanceFromLatLon = userLat to userLon,
                         includePlace = false,
                         browsable = true,
+                        isFavorite = isFav,
                     ) {
                         openStationDetail(item, availability)
                     }

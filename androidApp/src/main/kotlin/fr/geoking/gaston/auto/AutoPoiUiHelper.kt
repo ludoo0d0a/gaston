@@ -221,10 +221,12 @@ object AutoPoiUiHelper {
         distanceFromLatLon: Pair<Double, Double>? = null,
         includePlace: Boolean = false,
         browsable: Boolean = true,
+        isFavorite: Boolean = false,
         onClick: () -> Unit
     ): Row {
         val resolvedAvailability = poi.resolveAvailabilitySummary(availability)
-        val title = poiDisplayName(poi)
+        val baseTitle = poiDisplayName(poi)
+        val title = if (isFavorite) "⭐ $baseTitle" else baseTitle
         val carIcon = buildPoiIcon(
             carContext = carContext,
             poi = poi,
@@ -319,7 +321,8 @@ object AutoPoiUiHelper {
         distanceFromLatLon: Pair<Double, Double>? = null,
         onHeaderClick: (() -> Unit)? = null,
         maxRows: Int = 6,
-        includePlace: Boolean = false
+        includePlace: Boolean = false,
+        isFavorite: Boolean = false
     ): List<Row> {
         val resolvedAvailability = poi.resolveAvailabilitySummary(availability)
         val rows = mutableListOf<Row>()
@@ -330,7 +333,7 @@ object AutoPoiUiHelper {
         fun canAddRow() = rows.size < maxRows
 
         // 1. Station name + address (template title is name-only on map detail screens)
-        val title = poiDetailTitle(poi)
+        val title = if (isFavorite) "⭐ ${poiDetailTitle(poi)}" else poiDetailTitle(poi)
         val brandIcon = buildPoiIcon(carContext, poi, effectiveEnergyTypes, effectivePowerLevels)
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
 

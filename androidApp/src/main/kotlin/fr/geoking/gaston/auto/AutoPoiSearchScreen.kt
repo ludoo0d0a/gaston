@@ -22,6 +22,7 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.poi.PoiSearchRequest
 import kotlinx.coroutines.launch
+import fr.geoking.gaston.community.FavoritesRepository
 
 /**
  * Screen allowing users to search for POIs (fuel or electric stations) by name, brand or type.
@@ -30,7 +31,8 @@ class AutoPoiSearchScreen(
     carContext: CarContext,
     private val poiProvider: PoiProvider,
     private val settingsManager: SettingsManager,
-    private val availabilityProviderFactory: BorneAvailabilityProviderFactory
+    private val availabilityProviderFactory: BorneAvailabilityProviderFactory,
+    private val favoritesRepo: FavoritesRepository? = null,
 ) : Screen(carContext) {
 
     private var searchText = ""
@@ -96,6 +98,7 @@ class AutoPoiSearchScreen(
 
         filteredPois.take(6).forEach { poi ->
             val availability = availabilityByPoiId[poi.id]
+            val isFav = favoritesRepo?.isFavorite(poi.id) == true
             itemListBuilder.addItem(
                 AutoPoiUiHelper.buildPoiRow(
                     carContext = carContext,
@@ -104,7 +107,8 @@ class AutoPoiSearchScreen(
                     effectiveEnergyTypes = effectiveEnergies,
                     effectivePowerLevels = effectivePowerLevels,
                     distanceFromLatLon = searchLat to searchLon,
-                    includePlace = false
+                    includePlace = false,
+                    isFavorite = isFav,
                 ) {
                     screenManager.push(
                         PoiDetailScreen(
