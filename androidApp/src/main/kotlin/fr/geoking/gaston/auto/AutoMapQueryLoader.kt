@@ -42,14 +42,27 @@ object AutoMapQueryLoader {
             ?: Rect(0, 0, surfaceWidth.coerceAtLeast(1), surfaceHeight.coerceAtLeast(1))
 
         // Compass measurements (matching drawCompass in AutoMapOverlayHelper)
-        val compassRadius = 24f * density
+        val isMenuOnRight = (surfaceWidth - area.right) > area.left + (20 * density)
+        val compassRadius = 28f * density
         val margin = 16f * density
-        val compassCenterY = area.top + margin + compassRadius
+        val buttonSpacing = 8f * density
+        val compassCenterY = area.bottom - margin - compassRadius - 2f * (compassRadius * 2f + buttonSpacing)
 
-        // Reposition loader to be perfectly side-by-side with the compass with no overlap, at the same height
+        // Reposition loader to be side-by-side with the compass at the same height
         val spacing = 12f * density
         val loaderRadius = 14f * density // 28dp diameter/size on screen
-        val cx = area.right - margin - (compassRadius * 2f) - spacing - loaderRadius
+
+        val compassCenterX = if (isMenuOnRight) {
+            area.left + margin + compassRadius
+        } else {
+            area.right - margin - compassRadius
+        }
+
+        val cx = if (isMenuOnRight) {
+            compassCenterX + compassRadius + spacing + loaderRadius
+        } else {
+            compassCenterX - compassRadius - spacing - loaderRadius
+        }
         val cy = compassCenterY
 
         // Dynamic stroke scaling based on density

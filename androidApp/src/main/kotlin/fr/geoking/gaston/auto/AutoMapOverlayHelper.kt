@@ -136,11 +136,14 @@ object AutoMapOverlayHelper {
         val density = context.resources.displayMetrics.density
         val area = visibleArea ?: Rect(0, 0, surfaceWidth, surfaceHeight)
 
-        // 1. Draw Compass (Top-Right of visible area)
-        drawCompass(canvas, area, bearing, density)
+        // Detect if content card/menu is on the right side of the screen
+        val isMenuOnRight = (surfaceWidth - area.right) > area.left + (20 * density)
 
-        // 2. Draw Scale (Bottom-Left of visible area)
-        drawScale(canvas, area, zoom, latitude, density, isDensityScaled)
+        // 1. Draw Compass (Above Zoom + and - buttons)
+        drawCompass(canvas, area, bearing, density, isMenuOnRight)
+
+        // 2. Draw Scale (Bottom-Left if menu on left, Bottom-Right if menu on right)
+        drawScale(canvas, area, zoom, latitude, density, isDensityScaled, isMenuOnRight)
 
         // 3. Always-on mode + zoom chip (top-left of visible map area)
         drawZoomDebug(canvas, area, zoom, density, modeLabel)
@@ -182,12 +185,18 @@ object AutoMapOverlayHelper {
         }
     }
 
-    private fun drawCompass(canvas: Canvas, area: Rect, bearing: Float, density: Float) {
-        val compassRadius = 24f * density
+    private fun drawCompass(canvas: Canvas, area: Rect, bearing: Float, density: Float, isMenuOnRight: Boolean) {
+        val compassRadius = 28f * density // 56dp diameter, matching Zoom (+) / (-) map action strip buttons
         val margin = 16f * density
+        val buttonSpacing = 8f * density
 
-        val cx = area.right - margin - compassRadius
-        val cy = area.top + margin + compassRadius
+        // Position above the two mapActionStrip zoom buttons (+ and -)
+        val cy = area.bottom - margin - compassRadius - 2f * (compassRadius * 2f + buttonSpacing)
+        val cx = if (isMenuOnRight) {
+            area.left + margin + compassRadius
+        } else {
+            area.right - margin - compassRadius
+        }
 
         val needleLength = compassRadius * 0.65f
         val needleWidth = compassRadius * 0.38f
@@ -225,11 +234,11 @@ object AutoMapOverlayHelper {
         val nPaint = Paint().apply {
             isAntiAlias = true
             color = Color.WHITE
-            textSize = 7.5f * density
+            textSize = 8.5f * density
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("N", cx, cy - compassRadius + 9.5f * density, nPaint)
+        canvas.drawText("N", cx, cy - compassRadius + 11f * density, nPaint)
 
         // Red triangle (North pointer - Left half, bright red)
         val redLeftPath = Path().apply {
@@ -318,7 +327,8 @@ object AutoMapOverlayHelper {
         zoom: Float,
         latitude: Double,
         density: Float,
-        isDensityScaled: Boolean
+        isDensityScaled: Boolean,
+        isMenuOnRight: Boolean
     ) {
         // Standard Mercator projection calculation (meters per coordinate pixel / DP)
         val metersPerPixel = 156543.03392 * cos(Math.toRadians(latitude)) / Math.pow(2.0, zoom.toDouble()) * (256.0 / AutoSurfaceRenderer.TILE_SIZE)
@@ -343,7 +353,11 @@ object AutoMapOverlayHelper {
         }
 
         val margin = 16f * density
-        val x = area.left + margin
+        val x = if (isMenuOnRight) {
+            area.right - margin - scaleWidthPx
+        } else {
+            area.left + margin
+        }
         val y = area.bottom - margin
 
         // Draw a dark background capsule
