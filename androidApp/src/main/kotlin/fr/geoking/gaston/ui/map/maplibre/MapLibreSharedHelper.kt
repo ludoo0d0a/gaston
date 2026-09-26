@@ -8,6 +8,7 @@ import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
@@ -28,6 +29,10 @@ object MapLibreSharedHelper {
     const val POI_ID_PROPERTY = "poi-id"
     const val SEARCH_RADIUS_SOURCE_ID = "search-radius-source"
     const val SEARCH_RADIUS_LAYER_ID = "search-radius-layer"
+    const val USER_LOCATION_SOURCE_ID = "user-location-source"
+    const val USER_LOCATION_LAYER_ID = "user-location-layer"
+    const val USER_LOCATION_ICON_ID = "user-location-arrow-icon"
+    const val HEADING_PROPERTY = "user-heading"
 
     /**
      * Initializes the POI source and symbol layer.
@@ -155,6 +160,57 @@ object MapLibreSharedHelper {
                     Feature.fromGeometry(LineString.fromLngLats(ring))
                 )
             )
+        }
+    }
+
+    /**
+     * Initializes the user location symbol layer with the blue navigation arrow icon.
+     */
+    fun initUserLocationLayer(context: Context, map: MapLibreMap) {
+        map.getStyle { style ->
+            if (style.getImage(USER_LOCATION_ICON_ID) == null) {
+                val density = context.resources.displayMetrics.density
+                val bitmap = fr.geoking.gaston.ui.map.UserLocationMarkerHelper.createUserLocationBitmap(density)
+                style.addImage(USER_LOCATION_ICON_ID, bitmap)
+            }
+            if (style.getSource(USER_LOCATION_SOURCE_ID) == null) {
+                style.addSource(GeoJsonSource(USER_LOCATION_SOURCE_ID))
+            }
+            if (style.getLayer(USER_LOCATION_LAYER_ID) == null) {
+                val symbolLayer = SymbolLayer(USER_LOCATION_LAYER_ID, USER_LOCATION_SOURCE_ID).withProperties(
+                    PropertyFactory.iconImage(USER_LOCATION_ICON_ID),
+                    PropertyFactory.iconAnchor(Property.ICON_ANCHOR_CENTER),
+                    PropertyFactory.iconRotate(Expression.get(HEADING_PROPERTY)),
+                    PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
+                    PropertyFactory.iconAllowOverlap(true),
+                    PropertyFactory.iconIgnorePlacement(true)
+                )
+                style.addLayer(symbolLayer)
+            }
+        }
+    }
+
+    /**
+     * Synchronizes user location (blue navigation arrow) position and heading on the map style.
+     */
+    fun syncUserLocationLayer(
+        context: Context,
+        map: MapLibreMap,
+        userLat: Double?,
+        userLon: Double?,
+        userHeading: Float
+    ) {
+        map.getStyle { style ->
+            initUserLocationLayer(context, map)
+            val source = style.getSourceAs<GeoJsonSource>(USER_LOCATION_SOURCE_ID) ?: return@getStyle
+            if (userLat == null || userLon == null) {
+                source.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+                return@getStyle
+            }
+            val feature = Feature.fromGeometry(Point.fromLngLat(userLon, userLat)).apply {
+                addNumberProperty(HEADING_PROPERTY, userHeading)
+            }
+            source.setGeoJson(FeatureCollection.fromFeature(feature))
         }
     }
 }

@@ -209,6 +209,20 @@ fun MapScreen(
         }
     )
 
+    var userLat by remember { mutableStateOf<Double?>(null) }
+    var userLon by remember { mutableStateOf<Double?>(null) }
+    var userHeading by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission) {
+            LocationHelper.getLocationUpdates(context).collect { loc ->
+                userLat = loc.latitude
+                userLon = loc.longitude
+                userHeading = fr.geoking.gaston.auto.AutoMapHeading.resolveBearing(loc, userHeading)
+            }
+        }
+    }
+
     val defaultLat = initialSelectedPoi?.latitude ?: initialCenter?.latitude ?: settings.lastKnownLat ?: 48.8566
     val defaultLng = initialSelectedPoi?.longitude ?: initialCenter?.longitude ?: settings.lastKnownLon ?: 2.3522
     val defaultZoom = initialZoom ?: if (initialSelectedPoi != null || initialCenter != null) 15f else 12f
@@ -370,13 +384,24 @@ fun MapScreen(
             },
             onLocateMe = {
                 scope.launch {
-                    val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                    cameraPositionState.animate(
-                        CameraUpdateFactory.newLatLngZoom(
-                            LatLng(lat, lon),
-                            12f
+                    val targetLat = userLat
+                    val targetLon = userLon
+                    if (targetLat != null && targetLon != null) {
+                        cameraPositionState.animate(
+                            CameraUpdateFactory.newLatLngZoom(
+                                LatLng(targetLat, targetLon),
+                                cameraPositionState.position.zoom.coerceAtLeast(15f)
+                            )
                         )
-                    )
+                    } else {
+                        val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                        cameraPositionState.animate(
+                            CameraUpdateFactory.newLatLngZoom(
+                                LatLng(lat, lon),
+                                15f
+                            )
+                        )
+                    }
                 }
             },
             onShowSettings = {
@@ -595,6 +620,24 @@ fun MapScreen(
                         val effectiveEnergies = settings.effectiveMapEnergyFilterIds()
                         val effectivePowerLevels = settings.effectiveIrvePowerLevels()
 
+                        val userLocationIcon = remember(context) {
+                            val density = context.resources.displayMetrics.density
+                            val bitmap = fr.geoking.gaston.ui.map.UserLocationMarkerHelper.createUserLocationBitmap(density)
+                            BitmapDescriptorFactory.fromBitmap(bitmap)
+                        }
+
+                        if (userLat != null && userLon != null) {
+                            Marker(
+                                state = MarkerState(position = LatLng(userLat!!, userLon!!)),
+                                icon = userLocationIcon,
+                                rotation = userHeading,
+                                anchor = Offset(0.5f, 0.5f),
+                                flat = true,
+                                zIndex = 100f,
+                                onClick = { true }
+                            )
+                        }
+
                         val poisToShow = filteredPois
 
                         val fuelIdsForCheapest = effectiveEnergies - "electric"
@@ -698,17 +741,34 @@ fun MapScreen(
                             .zIndex(1f)
                     )
 
-                    MapLocateMeButton(
+                    MapControlsOverlay(
                         onLocateMe = {
                             scope.launch {
-                                val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                                cameraPositionState.animate(
-                                    CameraUpdateFactory.newLatLngZoom(
-                                        LatLng(lat, lon),
-                                        12f
+                                val targetLat = userLat
+                                val targetLon = userLon
+                                if (targetLat != null && targetLon != null) {
+                                    cameraPositionState.animate(
+                                        CameraUpdateFactory.newLatLngZoom(
+                                            LatLng(targetLat, targetLon),
+                                            cameraPositionState.position.zoom.coerceAtLeast(15f)
+                                        )
                                     )
-                                )
+                                } else {
+                                    val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                                    cameraPositionState.animate(
+                                        CameraUpdateFactory.newLatLngZoom(
+                                            LatLng(lat, lon),
+                                            15f
+                                        )
+                                    )
+                                }
                             }
+                        },
+                        onZoomIn = {
+                            scope.launch { cameraPositionState.animate(CameraUpdateFactory.zoomIn()) }
+                        },
+                        onZoomOut = {
+                            scope.launch { cameraPositionState.animate(CameraUpdateFactory.zoomOut()) }
                         },
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
