@@ -2,7 +2,6 @@ package fr.geoking.gaston.auto
 
 import fr.geoking.gaston.R
 import android.content.Intent
-import android.net.Uri
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
@@ -12,6 +11,7 @@ import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.intent.IntentNavigationHelper
 
 /**
  * Extra actions for the host-rendered native POI map. Map orientation cannot be changed here
@@ -43,7 +43,7 @@ class AutoMapMoreOptionsScreen(
                     .setImage(carContext.actionMapIcon())
                     .setOnClickListener {
                         val intent = Intent(CarContext.ACTION_NAVIGATE).apply {
-                            data = Uri.parse("geo:$lat,$lon?q=$lat,$lon")
+                            data = IntentNavigationHelper.getNavigationUri(lat, lon)
                         }
                         carContext.startCarApp(intent)
                     }

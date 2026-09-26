@@ -10,8 +10,14 @@ data class NavDestination(
 )
 
 object IntentNavigationHelper {
+    fun getNavigationUri(latitude: Double, longitude: Double): Uri {
+        val latStr = "%.6f".format(java.util.Locale.US, latitude)
+        val lonStr = "%.6f".format(java.util.Locale.US, longitude)
+        return Uri.parse("geo:$latStr,$lonStr?q=$latStr,$lonStr")
+    }
+
     fun getNavigationUri(poi: fr.geoking.gaston.poi.Poi): Uri {
-        return Uri.parse("geo:${poi.latitude},${poi.longitude}?q=${poi.latitude},${poi.longitude}")
+        return getNavigationUri(poi.latitude, poi.longitude)
     }
 
     fun parseNavIntent(intent: Intent): NavDestination? {
