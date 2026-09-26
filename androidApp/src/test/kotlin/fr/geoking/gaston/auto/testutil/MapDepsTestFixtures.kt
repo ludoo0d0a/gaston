@@ -19,4 +19,9 @@ fun fakeMapDeps(poiProvider: PoiProvider = FakePoiProvider()): MapDeps = MapDeps
     routingClient = FakeRoutingClient(),
     tollCalculator = TollCalculator { null },
     geocodingClient = FakeGeocodingClient(),
+    dangerZoneRepository = fr.geoking.gaston.aac.DangerZoneRepository(
+        franceRadarsClient = fr.geoking.gaston.api.radars.FranceRadarsClient(
+            client = io.ktor.client.HttpClient(),
+        )
+    ),
 )

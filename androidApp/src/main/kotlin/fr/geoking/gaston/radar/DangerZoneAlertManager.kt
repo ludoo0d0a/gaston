@@ -2,30 +2,32 @@ package fr.geoking.gaston.radar
 
 import android.location.Location
 import fr.geoking.gaston.SettingsManager
-import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.aac.DangerZone
+import fr.geoking.gaston.aac.DangerZoneEvaluator
+import fr.geoking.gaston.aac.RoadSafetyMessages
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Legacy POI-based alert path (unit tests / transitional).
- * Production AAC loop uses [DangerZoneAlertManager] + [fr.geoking.gaston.aac.DangerZoneRepository].
+ * AAC alert engine: evaluates local [DangerZone]s (no map POI search / network each tick).
  */
-class RadarAlertManager(
+class DangerZoneAlertManager(
     private val settingsManager: SettingsManager,
-    private val audioNotifier: RadarAudioNotifier
+    private val audioNotifier: RadarAudioNotifier,
 ) {
-    private val alertedRadarIds = mutableSetOf<String>()
+    private val alertedZoneIds = mutableSetOf<String>()
     private var lastLocation: Location? = null
+    private var safetyTipSpokenAtMs: Long = 0L
 
     private val _hudState = MutableStateFlow(DangerZoneHudState())
     val hudState: StateFlow<DangerZoneHudState> = _hudState.asStateFlow()
 
-    fun evaluateAndAlert(location: Location, nearbyRadarPois: List<Poi>) {
+    fun evaluateAndAlert(location: Location, zones: List<DangerZone>) {
         val settings = settingsManager.settings.value
         if (!settings.radarWarningEnabled) {
-            alertedRadarIds.clear()
+            alertedZoneIds.clear()
             lastLocation = location
             _hudState.value = DangerZoneHudState()
             return
@@ -53,45 +55,44 @@ class RadarAlertManager(
                 val prev = lastLocation!!
                 val distKm = haversineKm(prev.latitude, prev.longitude, curLat, curLon)
                 if (distKm > 0.005) {
-                    RadarTrajectoryHelper.calculateBearing(prev.latitude, prev.longitude, curLat, curLon)
+                    DangerZoneEvaluator.calculateBearing(prev.latitude, prev.longitude, curLat, curLon)
                 } else null
             }
             else -> null
         }
 
-        val warningDistanceMeters = settings.radarWarningDistanceMeters.coerceIn(300, 4000)
-
         var activeHudLimit: Int? = null
         var anyActive = false
 
-        for (radar in nearbyRadarPois) {
-            val eval = RadarTrajectoryHelper.evaluateRadar(
+        for (zone in zones) {
+            val eval = DangerZoneEvaluator.evaluate(
                 vehLat = curLat,
                 vehLon = curLon,
                 vehSpeedKmH = speedKmH,
                 vehBearing = bearing,
-                radar = radar,
-                warningDistanceMeters = warningDistanceMeters
+                zone = zone,
             )
 
-            if (eval.isWithinWarningDistance) {
+            if (eval.isInside) {
                 anyActive = true
                 if (activeHudLimit == null && eval.speedLimitKmH != null) {
                     activeHudLimit = eval.speedLimitKmH
                 }
-                if (radar.id !in alertedRadarIds) {
-                    alertedRadarIds.add(radar.id)
+                if (zone.id !in alertedZoneIds) {
+                    alertedZoneIds.add(zone.id)
                     if (eval.isOverspeed) {
                         audioNotifier.playOverSpeedBeepsAndSpeak(eval.speedLimitKmH)
                     } else {
                         audioNotifier.playOkSpeedBeeps()
                         audioNotifier.speakDangerZone(eval.speedLimitKmH)
                     }
+                    maybeSpeakSafetyTip(location.time)
                 }
             } else {
-                if (radar.id in alertedRadarIds) {
-                    if (eval.distanceMeters > warningDistanceMeters * 1.3 || !eval.isAhead) {
-                        alertedRadarIds.remove(radar.id)
+                if (zone.id in alertedZoneIds) {
+                    // Left the extended zone (or opposite carriageway filter)
+                    if (eval.distanceToCenterMeters > zone.radiusMeters * 1.2 || !eval.isAhead) {
+                        alertedZoneIds.remove(zone.id)
                     }
                 }
             }
@@ -101,15 +102,23 @@ class RadarAlertManager(
             active = anyActive,
             speedLimitKmH = activeHudLimit,
         )
-
         lastLocation = location
     }
 
+    private fun maybeSpeakSafetyTip(nowMs: Long) {
+        if (nowMs - safetyTipSpokenAtMs < 30 * 60 * 1000L) return
+        safetyTipSpokenAtMs = nowMs
+        // Tip is visual in settings; TTS tip reserved for overspeed path only to avoid chatter.
+        // Channel exists via RoadSafetyMessages for future periodic announcement.
+        @Suppress("UNUSED_VARIABLE")
+        val tip = RoadSafetyMessages.randomTip(nowMs)
+    }
+
     fun clearAlerts() {
-        alertedRadarIds.clear()
+        alertedZoneIds.clear()
         lastLocation = null
         _hudState.value = DangerZoneHudState()
     }
 
-    fun getAlertedRadarIds(): Set<String> = alertedRadarIds.toSet()
+    fun getAlertedZoneIds(): Set<String> = alertedZoneIds.toSet()
 }

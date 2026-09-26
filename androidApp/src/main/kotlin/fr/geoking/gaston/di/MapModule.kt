@@ -648,7 +648,8 @@ data class MapDeps(
     val routePlanner: RoutePlanner,
     val routingClient: RoutingClient,
     val tollCalculator: TollCalculator,
-    val geocodingClient: GeocodingClient
+    val geocodingClient: GeocodingClient,
+    val dangerZoneRepository: fr.geoking.gaston.aac.DangerZoneRepository,
 )
 
 /**

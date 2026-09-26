@@ -81,12 +81,19 @@ Historique phase 0 : 2026-09 — go niveau A + gel Playstore.
 
 ## Phase 4 — Moteur & qualité
 
-- [ ] Boucle GPS découplée du `search` carte → cache local de zones
-- [ ] `DangerZoneAlertManager` (remplace / évolue `RadarAlertManager`)
-- [ ] Trajectoire : tronçon concerné, pas chaussée opposée si possible
-- [ ] Perf / batterie (plus de fetch réseau toutes les 2 s)
-- [ ] Tests non-régression libellés (pas de « radar + distance »)
-- [ ] Doc technique architecture AAC
+- [x] Boucle GPS découplée du `search` carte → cache local de zones
+- [x] `DangerZoneAlertManager` (remplace / évolue `RadarAlertManager`)
+- [x] Trajectoire : tronçon concerné, pas chaussée opposée si possible
+- [x] Perf / batterie (plus de fetch réseau toutes les 2 s)
+- [x] Tests non-régression libellés (pas de « radar + distance »)
+- [x] Doc technique architecture AAC
+
+### Notes phase 4
+
+- `MainActivity` → `DangerZoneRepository.zonesNear` + `DangerZoneAlertManager`.
+- Bearing ±40° conserve le filtre chaussée opposée (heuristique).
+- Doc : [`AAC_ARCHITECTURE.md`](AAC_ARCHITECTURE.md).
+- `RadarAlertManager` conservé pour tests legacy POI.
 
 ## Phase 5 — Store / legal / support
 
