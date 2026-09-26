@@ -369,24 +369,36 @@ private fun MainActivityComposeRoot(
         }
     }
 
-    MainUI(
-        diagnostics = diagnostics,
-        settingsManager = settingsManager,
-        authManager = authManager,
-        mapDepsState = mapDepsState,
-        onRequestMapDeps = onRequestMapDeps,
-        networkService = networkService,
-        fuelForecastRepository = fuelForecastRepository,
-        inAppUpdateHelper = inAppUpdateHelper,
-        onStartUpdate = { info -> inAppUpdateHelper.startUpdate(info, updateResultLauncher) },
-        isUpdateInProgress = isUpdateInProgress,
-        pendingNavDestinationFlow = pendingNavDestination,
-        isPlaystoreDistribution = isPlaystoreDistribution,
-        hasLocationPermission = hasLocationPermission,
-        onRequestLocationPermission = {
-            locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+    val hudState by radarAlertManager.hudState.collectAsState()
+
+    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+        MainUI(
+            diagnostics = diagnostics,
+            settingsManager = settingsManager,
+            authManager = authManager,
+            mapDepsState = mapDepsState,
+            onRequestMapDeps = onRequestMapDeps,
+            networkService = networkService,
+            fuelForecastRepository = fuelForecastRepository,
+            inAppUpdateHelper = inAppUpdateHelper,
+            onStartUpdate = { info -> inAppUpdateHelper.startUpdate(info, updateResultLauncher) },
+            isUpdateInProgress = isUpdateInProgress,
+            pendingNavDestinationFlow = pendingNavDestination,
+            isPlaystoreDistribution = isPlaystoreDistribution,
+            hasLocationPermission = hasLocationPermission,
+            onRequestLocationPermission = {
+                locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+        )
+        if (hudState.active) {
+            fr.geoking.gaston.ui.aac.DangerZoneHudBanner(
+                speedLimitKmH = hudState.speedLimitKmH,
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.TopCenter)
+                    .zIndex(10f)
+            )
         }
-    )
+    }
 }
 
 @Composable

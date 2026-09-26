@@ -46,15 +46,23 @@ Historique phase 0 : 2026-09 — go niveau A + gel Playstore.
 
 ## Phase 2 — Libellés / UX
 
-- [ ] UI : « zones de danger » / AAC, plus « avertisseur de radars »
-- [ ] TTS : « Zone de danger » + VMA, plus « Attention, radar… »
-- [ ] Plus de noms d’alerte du type `Radar X km/h`
-- [ ] HUD : VMA + entrée en zone
-- [ ] Feature **off** par défaut (ou on seulement si conforme)
-- [ ] Retirer / borner le choix libre 300–2000 m
-- [ ] Au moins un canal de messages de sécurité routière
-- [ ] i18n FR conforme
-- [ ] Android Auto : même vocabulaire zone/VMA
+- [x] UI : « zones de danger » / AAC, plus « avertisseur de radars »
+- [x] TTS : « Zone de danger » + VMA, plus « Attention, radar… »
+- [x] Plus de noms d’alerte du type `Radar X km/h`
+- [x] HUD : VMA + entrée en zone
+- [x] Feature **off** par défaut (ou on seulement si conforme)
+- [x] Retirer / borner le choix libre 300–2000 m
+- [x] Au moins un canal de messages de sécurité routière
+- [x] i18n FR conforme
+- [x] Android Auto : même vocabulaire zone/VMA
+
+### Notes phase 2
+
+- Strings `aac_*` (FR + default) ; About blurb AAC.
+- TTS via `DangerZoneAlertCopy` ; chips distance retirés (distance = type de voie).
+- HUD : `DangerZoneHudBanner` + `RadarAlertManager.hudState`.
+- `RoadSafetyMessages` + tip dans les réglages.
+- AA : `amenity_speed_camera` → « Zone de danger ».
 
 ## Phase 3 — Données
 

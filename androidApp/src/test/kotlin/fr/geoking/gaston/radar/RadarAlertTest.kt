@@ -33,6 +33,10 @@ class RadarAlertTest {
             lastSpokenSpeedLimit = speedLimitKmH
         }
 
+        override fun speakDangerZone(speedLimitKmH: Int?) {
+            lastSpokenSpeedLimit = speedLimitKmH
+        }
+
         override fun shutdown() {}
     }
 

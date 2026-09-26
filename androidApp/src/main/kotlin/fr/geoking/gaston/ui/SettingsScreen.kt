@@ -691,7 +691,7 @@ private fun MapConfig(
         if (BuildConfig.AAC_ALERTS_AVAILABLE) {
             Column {
                 Text(
-                    "Avertisseur de radars",
+                    stringResource(R.string.aac_settings_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 12.dp)
@@ -703,8 +703,12 @@ private fun MapConfig(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Alerte radars en approche", style = MaterialTheme.typography.titleSmall)
-                        Text("Alertes sonores et vocales lors de l'approche d'un radar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.aac_settings_switch_title), style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            stringResource(R.string.aac_settings_switch_subtitle),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                     Switch(
                         checked = settings.radarWarningEnabled,
@@ -715,24 +719,16 @@ private fun MapConfig(
                 if (settings.radarWarningEnabled) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        "Distance d'avertissement: ${settings.radarWarningDistanceMeters} m",
+                        stringResource(R.string.aac_settings_distance_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        listOf(300, 500, 1000, 1500, 2000).forEach { dist ->
-                            FilterChip(
-                                selected = settings.radarWarningDistanceMeters == dist,
-                                onClick = { onUpdate(settings.copy(radarWarningDistanceMeters = dist)) },
-                                label = { Text("${dist} m") }
-                            )
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.aac_settings_safety_tip),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
@@ -1670,6 +1666,18 @@ private fun AboutContent(
         AboutRowClickable(
             label = stringResource(id = R.string.about_view_disclaimer),
             onClick = onShowDisclaimer
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.aac_about_blurb),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.aac_support_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(32.dp))
         Text(
