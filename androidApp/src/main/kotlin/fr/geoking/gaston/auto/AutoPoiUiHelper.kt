@@ -74,10 +74,27 @@ object AutoPoiUiHelper {
                 .thenBy { it.price }
         )
 
-    private fun formatFuelPriceText(fp: FuelPrice): String {
-        val priceStr = if (fp.outOfStock) "—" else "€%.3f".format(fp.price)
+    private fun shortageLabel(carContext: CarContext, fp: FuelPrice): String {
+        val type = fp.shortageType
+        return when {
+            type?.contains("temp", ignoreCase = true) == true ->
+                carContext.getString(R.string.poi_shortage_temporary)
+            type?.contains("def", ignoreCase = true) == true ->
+                carContext.getString(R.string.poi_shortage_definitive)
+            else -> carContext.getString(R.string.poi_shortage_out_of_stock)
+        }
+    }
+
+    private fun formatFuelPriceText(carContext: CarContext, fp: FuelPrice): String {
+        if (fp.outOfStock) {
+            val since = fp.shortageStart
+                ?.takeIf { it.isNotBlank() }
+                ?.let { " (${carContext.getString(R.string.poi_shortage_since, DateTimeUtils.formatRelativeTime(it))})" }
+                ?: ""
+            return "❌ ${shortageLabel(carContext, fp)}$since"
+        }
         val updated = fp.updatedAt?.let { " (${DateTimeUtils.formatRelativeTime(it)})" } ?: ""
-        return "$priceStr$updated"
+        return "€%.3f".format(fp.price) + updated
     }
 
     /**
@@ -113,7 +130,7 @@ object AutoPoiUiHelper {
             )
             rowBuilder.setTitle(fp.fuelName)
         }
-        rowBuilder.addText(formatFuelPriceText(fp))
+        rowBuilder.addText(formatFuelPriceText(carContext, fp))
 
         if (includePlace) {
             metadata?.let { rowBuilder.setMetadata(it) }
@@ -204,10 +221,12 @@ object AutoPoiUiHelper {
         distanceFromLatLon: Pair<Double, Double>? = null,
         includePlace: Boolean = false,
         browsable: Boolean = true,
+        isFavorite: Boolean = false,
         onClick: () -> Unit
     ): Row {
         val resolvedAvailability = poi.resolveAvailabilitySummary(availability)
-        val title = poiDisplayName(poi)
+        val baseTitle = poiDisplayName(poi)
+        val title = if (isFavorite) "⭐ $baseTitle" else baseTitle
         val carIcon = buildPoiIcon(
             carContext = carContext,
             poi = poi,
@@ -302,7 +321,8 @@ object AutoPoiUiHelper {
         distanceFromLatLon: Pair<Double, Double>? = null,
         onHeaderClick: (() -> Unit)? = null,
         maxRows: Int = 6,
-        includePlace: Boolean = false
+        includePlace: Boolean = false,
+        isFavorite: Boolean = false
     ): List<Row> {
         val resolvedAvailability = poi.resolveAvailabilitySummary(availability)
         val rows = mutableListOf<Row>()
@@ -313,7 +333,7 @@ object AutoPoiUiHelper {
         fun canAddRow() = rows.size < maxRows
 
         // 1. Station name + address (template title is name-only on map detail screens)
-        val title = poiDetailTitle(poi)
+        val title = if (isFavorite) "⭐ ${poiDetailTitle(poi)}" else poiDetailTitle(poi)
         val brandIcon = buildPoiIcon(carContext, poi, effectiveEnergyTypes, effectivePowerLevels)
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
 
@@ -508,7 +528,7 @@ object AutoPoiUiHelper {
             sb.appendLine(carContext.getString(R.string.poi_section_prices))
             val nameWidth = fuelPrices.maxOf { it.fuelName.length }.coerceIn(4, 14)
             fuelPrices.forEach { fp ->
-                val priceStr = formatFuelPriceText(fp)
+                val priceStr = formatFuelPriceText(carContext, fp)
                 sb.appendLine("${fp.fuelName.padEnd(nameWidth)}  $priceStr")
             }
 

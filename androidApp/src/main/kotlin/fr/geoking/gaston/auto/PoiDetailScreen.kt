@@ -103,7 +103,8 @@ class PoiDetailScreen(
                     lat to lon
                 }
             },
-            maxRows = listLimit - reservedRows
+            maxRows = listLimit - reservedRows,
+            isFavorite = isFavorite,
         )
 
         val itemListBuilder = ItemList.Builder()

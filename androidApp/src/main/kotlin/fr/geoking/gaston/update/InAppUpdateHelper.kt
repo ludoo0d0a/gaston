@@ -10,6 +10,7 @@ import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
+import fr.geoking.gaston.feature.notification.NotificationHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
  * the app will automatically call [completeUpdate] to install and restart.
  */
 class InAppUpdateHelper(
-    private val context: android.content.Context
+    private val context: android.content.Context,
+    private val notificationHelper: NotificationHelper? = null
 ) {
     private val appUpdateManager: AppUpdateManager = AppUpdateManagerFactory.create(context)
 
@@ -76,6 +78,7 @@ class InAppUpdateHelper(
                 appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
             ) {
                 _updateAvailable.value = appUpdateInfo
+                notificationHelper?.showUpdateAvailableNotification()
                 return@addOnSuccessListener
             }
 

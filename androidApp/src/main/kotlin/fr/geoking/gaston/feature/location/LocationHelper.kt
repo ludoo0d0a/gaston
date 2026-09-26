@@ -5,9 +5,16 @@ import android.content.Context
 import android.location.Location
 import android.util.Log
 import fr.geoking.gaston.SettingsManager
+import android.os.Looper
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -75,5 +82,36 @@ object LocationHelper {
         // Final hardcoded fallback: Paris
         Log.d(TAG, "No GPS and no stored location, falling back to Paris")
         return 48.8566 to 2.3522
+    }
+
+    /**
+     * Emits continuous [Location] updates via a Kotlin [Flow].
+     */
+    @SuppressLint("MissingPermission")
+    fun getLocationUpdates(context: Context, intervalMs: Long = 2000L): Flow<Location> = callbackFlow {
+        val fusedClient = LocationServices.getFusedLocationProviderClient(context)
+        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMs)
+            .setMinUpdateIntervalMillis(1000L)
+            .build()
+
+        val callback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let { trySend(it) }
+            }
+        }
+
+        try {
+            fusedClient.requestLocationUpdates(locationRequest, callback, Looper.getMainLooper())
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to request location updates", e)
+        }
+
+        awaitClose {
+            try {
+                fusedClient.removeLocationUpdates(callback)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to remove location updates", e)
+            }
+        }
     }
 }

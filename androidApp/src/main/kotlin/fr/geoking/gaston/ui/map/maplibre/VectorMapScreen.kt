@@ -84,6 +84,7 @@ import fr.geoking.gaston.ui.map.PoiDetailCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.AddPoiSheet
 import fr.geoking.gaston.ui.components.MapLocateMeButton
+import fr.geoking.gaston.ui.components.MapControlsOverlay
 import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.ui.map.MapCameraSample
 import fr.geoking.gaston.ui.map.MapErrorBanner
@@ -158,8 +159,23 @@ fun VectorMapScreen(
         }
     )
 
+    var userLat by remember { mutableStateOf<Double?>(null) }
+    var userLon by remember { mutableStateOf<Double?>(null) }
+    var userHeading by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission) {
+            LocationHelper.getLocationUpdates(context).collect { loc ->
+                userLat = loc.latitude
+                userLon = loc.longitude
+                userHeading = fr.geoking.gaston.auto.AutoMapHeading.resolveBearing(loc, userHeading)
+            }
+        }
+    }
+
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
     var cameraPosition by remember { mutableStateOf<CameraPosition?>(null) }
+    var visibleMapViewport by remember { mutableStateOf<MapViewport?>(null) }
     var showAddPoiSheet by remember { mutableStateOf(false) }
     var addPoiLinkedOfficialId by remember { mutableStateOf<String?>(null) }
     var addPoiInitialName by remember { mutableStateOf("") }
@@ -178,19 +194,30 @@ fun VectorMapScreen(
         }
     }
 
-    DisposableEffect(mapLibreMap) {
+    DisposableEffect(mapLibreMap, mapSizePx) {
         val map = mapLibreMap
         if (map == null) {
             cameraPosition = null
+            visibleMapViewport = null
             onDispose { }
         } else {
-            cameraPosition = map.cameraPosition
-            val idleListener = MapLibreMap.OnCameraIdleListener {
+            fun syncCamera() {
                 cameraPosition = map.cameraPosition
+                val bounds = map.projection.getVisibleRegion(/* ignorePadding = */ false).latLngBounds
+                val zoom = map.cameraPosition.zoom.toFloat()
+                visibleMapViewport = MapViewport(
+                    zoom = zoom,
+                    mapWidthPx = mapSizePx.width.coerceAtLeast(1),
+                    mapHeightPx = mapSizePx.height.coerceAtLeast(1),
+                    minLat = bounds.latitudeSouth,
+                    maxLat = bounds.latitudeNorth,
+                    minLng = bounds.longitudeWest,
+                    maxLng = bounds.longitudeEast,
+                )
             }
-            val moveListener = MapLibreMap.OnCameraMoveListener {
-                cameraPosition = map.cameraPosition
-            }
+            syncCamera()
+            val idleListener = MapLibreMap.OnCameraIdleListener { syncCamera() }
+            val moveListener = MapLibreMap.OnCameraMoveListener { syncCamera() }
             map.addOnCameraIdleListener(idleListener)
             map.addOnCameraMoveListener(moveListener)
             onDispose {
@@ -239,7 +266,7 @@ fun VectorMapScreen(
         requestLocationPermission = { launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
     )
 
-    val poisInView = remember(mapData.cachedPois, currentTarget, cameraPosition?.zoom, mapSizePx, settings, effectiveProviders) {
+    val poisInView = remember(mapData.cachedPois, currentTarget, cameraPosition?.zoom, mapSizePx, settings, effectiveProviders, visibleMapViewport) {
         val filteredByFilters = StationMapFilters.apply(
             settings = settings,
             pois = mapData.cachedPois,
@@ -247,15 +274,20 @@ fun VectorMapScreen(
             skipWhenOnlyOverpass = true
         )
 
-        val currentZoom = (cameraPosition?.zoom ?: defaultZoom).toFloat()
-        filterPoisByViewport(
-            pois = filteredByFilters,
-            lat = currentTarget.latitude,
-            lon = currentTarget.longitude,
-            zoom = currentZoom,
-            widthPx = mapSizePx.width,
-            heightPx = mapSizePx.height
-        )
+        val viewport = visibleMapViewport
+        if (viewport != null) {
+            filterPoisByViewport(filteredByFilters, viewport)
+        } else {
+            val currentZoom = (cameraPosition?.zoom ?: defaultZoom).toFloat()
+            filterPoisByViewport(
+                pois = filteredByFilters,
+                lat = currentTarget.latitude,
+                lon = currentTarget.longitude,
+                zoom = currentZoom,
+                widthPx = mapSizePx.width,
+                heightPx = mapSizePx.height
+            )
+        }
     }
 
     val basePois = remember(poisInView, showFavoritesOnly, favoriteIds) {
@@ -319,13 +351,24 @@ fun VectorMapScreen(
             },
             onLocateMe = {
                 scope.launch {
-                    val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                    mapLibreMap?.animateCamera(
-                        CameraUpdateFactory.newLatLngZoom(
-                            LatLng(lat, lon),
-                            12.0
+                    val targetLat = userLat
+                    val targetLon = userLon
+                    if (targetLat != null && targetLon != null) {
+                        mapLibreMap?.animateCamera(
+                            CameraUpdateFactory.newLatLngZoom(
+                                LatLng(targetLat, targetLon),
+                                (cameraPosition?.zoom ?: defaultZoom).coerceAtLeast(15.0)
+                            )
                         )
-                    )
+                    } else {
+                        val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                        mapLibreMap?.animateCamera(
+                            CameraUpdateFactory.newLatLngZoom(
+                                LatLng(lat, lon),
+                                15.0
+                            )
+                        )
+                    }
                 }
             },
             onShowSettings = {
@@ -509,7 +552,10 @@ fun VectorMapScreen(
                             selectedPoi = poi
                         },
                         effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
-                        effectivePowerLevels = settings.effectiveIrvePowerLevels()
+                        effectivePowerLevels = settings.effectiveIrvePowerLevels(),
+                        userLat = userLat,
+                        userLon = userLon,
+                        userHeading = userHeading
                     )
 
                     MapLoadingOverlay(
@@ -550,17 +596,34 @@ fun VectorMapScreen(
                             .zIndex(1f)
                     )
 
-                    MapLocateMeButton(
+                    MapControlsOverlay(
                         onLocateMe = {
                             scope.launch {
-                                val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                                mapLibreMap?.animateCamera(
-                                    CameraUpdateFactory.newLatLngZoom(
-                                        LatLng(lat, lon),
-                                        12.0
+                                val targetLat = userLat
+                                val targetLon = userLon
+                                if (targetLat != null && targetLon != null) {
+                                    mapLibreMap?.animateCamera(
+                                        CameraUpdateFactory.newLatLngZoom(
+                                            LatLng(targetLat, targetLon),
+                                            (cameraPosition?.zoom ?: defaultZoom).coerceAtLeast(15.0)
+                                        )
                                     )
-                                )
+                                } else {
+                                    val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                                    mapLibreMap?.animateCamera(
+                                        CameraUpdateFactory.newLatLngZoom(
+                                            LatLng(lat, lon),
+                                            15.0
+                                        )
+                                    )
+                                }
                             }
+                        },
+                        onZoomIn = {
+                            scope.launch { mapLibreMap?.animateCamera(CameraUpdateFactory.zoomIn()) }
+                        },
+                        onZoomOut = {
+                            scope.launch { mapLibreMap?.animateCamera(CameraUpdateFactory.zoomOut()) }
                         },
                         modifier = Modifier
                             .align(Alignment.BottomEnd)

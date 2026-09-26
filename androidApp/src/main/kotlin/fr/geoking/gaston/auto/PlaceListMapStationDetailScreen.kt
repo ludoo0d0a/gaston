@@ -75,6 +75,7 @@ class PlaceListMapStationDetailScreen(
             maxRows = listLimit,
             includePlace = true,
             onHeaderClick = null,
+            isFavorite = isFavorite,
         )
 
         val itemListBuilder = ItemList.Builder()

@@ -105,6 +105,7 @@ class AutoFavoritesScreen(
                     effectivePowerLevels = powerLevels,
                     distanceFromLatLon = distanceFrom,
                     includePlace = false,
+                    isFavorite = true,
                 ) {
                     screenManager.push(
                         PoiDetailScreen(

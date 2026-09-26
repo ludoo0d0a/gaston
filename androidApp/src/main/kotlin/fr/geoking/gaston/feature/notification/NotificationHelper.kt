@@ -17,6 +17,7 @@ class NotificationHelper(private val context: Context) {
     companion object {
         private const val CHANNEL_ID = "gaston_alerts"
         private const val NOTIFICATION_ID_BORDER = 1001
+        private const val NOTIFICATION_ID_UPDATE = 1002
     }
 
     private val notificationManager =
@@ -56,6 +57,29 @@ class NotificationHelper(private val context: Context) {
         val notification = builder.build()
         notificationManager.notify(NOTIFICATION_ID_BORDER, notification)
         CarNotificationManager.from(context).notify(NOTIFICATION_ID_BORDER, builder)
+    }
+
+    fun showUpdateAvailableNotification() {
+        if (!canPostNotifications()) return
+
+        val title = context.getString(R.string.update_available_title)
+        val message = context.getString(R.string.update_available_message)
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notifications)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .extend(
+                CarAppExtender.Builder()
+                    .setImportance(NotificationManager.IMPORTANCE_HIGH)
+                    .build()
+            )
+
+        val notification = builder.build()
+        notificationManager.notify(NOTIFICATION_ID_UPDATE, notification)
+        CarNotificationManager.from(context).notify(NOTIFICATION_ID_UPDATE, builder)
     }
 
     fun canPostNotifications(): Boolean {

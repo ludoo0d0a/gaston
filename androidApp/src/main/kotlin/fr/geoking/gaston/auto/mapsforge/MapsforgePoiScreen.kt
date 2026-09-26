@@ -41,6 +41,7 @@ import fr.geoking.gaston.auto.AutoMapPoiHitTest
 import fr.geoking.gaston.auto.AutoMapSettingsScreen
 import fr.geoking.gaston.auto.AutoPoiUiHelper
 import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.auto.actionCompassIcon
 import fr.geoking.gaston.auto.actionMapIcon
 import fr.geoking.gaston.auto.actionSettingsIcon
 import fr.geoking.gaston.auto.actionZoomInIcon
@@ -107,6 +108,7 @@ class MapsforgePoiScreen(
     private var pois: List<Poi> = emptyList()
     private var errors: List<PoiProviderError> = emptyList()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
+    private var favoriteIds: Set<String> = emptySet()
     private var isLoading = true
     private var isQueryPending = false
     private var queryGeneration: Int = 0
@@ -265,13 +267,14 @@ class MapsforgePoiScreen(
             skipWhenOnlyOverpass = true
         )
 
+        val (fitW, fitH) = mapFitSizePx()
         val visiblePois = filterPoisByViewport(
             pois = basePois,
             lat = searchLat,
             lon = searchLon,
             zoom = zoom.toFloat(),
-            widthPx = mapWidthPx,
-            heightPx = mapHeightPx
+            widthPx = fitW,
+            heightPx = fitH
         )
 
         return if (isCheapestFilterActive) {
@@ -588,15 +591,54 @@ class MapsforgePoiScreen(
         }
     }
 
-    private fun mapContentHeaderBuilder(title: String, currentSettings: AppSettings): Header.Builder {
-        return Header.Builder()
+    private fun mapContentHeaderBuilder(
+        title: String,
+        @Suppress("UNUSED_PARAMETER") currentSettings: AppSettings,
+        cheapestAction: Action? = null,
+    ): Header.Builder {
+        val builder = Header.Builder()
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
+        if (cheapestAction != null) {
+            builder.addEndHeaderAction(cheapestAction)
+        }
+        return builder
     }
 
     private fun applyMapOrientationToRenderer() {
         surfaceRenderer?.setMapOrientation(orientationMode, lastKnownBearingDegrees)
         lastMapOrientationUpdateMillis = System.currentTimeMillis()
+    }
+
+    private fun toggleMapOrientation() {
+        orientationMode = when (orientationMode) {
+            MapOrientationMode.NorthUp -> MapOrientationMode.HeadingUp
+            MapOrientationMode.HeadingUp -> MapOrientationMode.NorthUp
+        }
+        applyMapOrientationToRenderer()
+        if (orientationMode == MapOrientationMode.HeadingUp) {
+            lifecycleScope.launch { refreshHeadingFromLocation() }
+        } else {
+            syncRendererWithMapState()
+        }
+        invalidate()
+    }
+
+    private fun recenterMap() {
+        lifecycleScope.launch {
+            val location = LocationHelper.getCurrentLocation(carContext)
+            if (location != null) {
+                searchLat = location.latitude
+                searchLon = location.longitude
+                settingsManager.saveLastKnownLocation(location.latitude, location.longitude)
+                searchCenterFlow.value = searchLat to searchLon
+                lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+                surfaceRenderer?.updateLocation(searchLat, searchLon, zoom)
+                surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
+                applyMapOrientationToRenderer()
+            }
+            loadPois(preserveZoom = true)
+        }
     }
 
     private fun startHeadingUpdates() {
@@ -758,7 +800,10 @@ class MapsforgePoiScreen(
         surfaceRenderer?.reloadMapsforgeDataStore()
         startHeadingUpdates()
         syncRendererWithMapState()
-        invalidate()
+        lifecycleScope.launch {
+            favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
+            invalidate()
+        }
     }
 
     override fun onStop(owner: LifecycleOwner) {
@@ -796,12 +841,40 @@ class MapsforgePoiScreen(
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
 
         val actionStripBuilder = ActionStrip.Builder()
-            .addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionSettingsIcon())
-                    .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
-                    .build()
-            )
+
+        val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
+        val cheapestAction = if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
+            carContext.cheapestFilterAction(isCheapestFilterActive) {
+                if (isCheapestFilterActive) {
+                    isCheapestFilterActive = false
+                    sortByPrice = false
+                } else {
+                    isCheapestFilterActive = true
+                    sortByPrice = true
+                    val filtered = getFilteredPois(currentSettings)
+                    carContext.getCarService(AppManager::class.java)
+                        .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
+                }
+                syncRendererWithMapState()
+                invalidate()
+            }
+        } else {
+            null
+        }
+
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setIcon(carContext.actionCompassIcon())
+                .setOnClickListener { toggleMapOrientation() }
+                .build()
+        )
+
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setIcon(carContext.actionSettingsIcon())
+                .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
+                .build()
+        )
 
         if (mapDeps != null) {
             actionStripBuilder.addAction(
@@ -809,26 +882,6 @@ class MapsforgePoiScreen(
                     .setIcon(carContext.actionMapIcon())
                     .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
                     .build()
-            )
-        }
-
-        val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
-        if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
-            actionStripBuilder.addAction(
-                carContext.cheapestFilterAction(isCheapestFilterActive) {
-                    if (isCheapestFilterActive) {
-                        isCheapestFilterActive = false
-                        sortByPrice = false
-                    } else {
-                        isCheapestFilterActive = true
-                        sortByPrice = true
-                        val filtered = getFilteredPois(currentSettings)
-                        carContext.getCarService(AppManager::class.java)
-                            .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
-                    }
-                    syncRendererWithMapState()
-                    invalidate()
-                }
             )
         }
         val actionStrip = actionStripBuilder.build()
@@ -854,10 +907,11 @@ class MapsforgePoiScreen(
 
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
+        val contentHeader = mapContentHeaderBuilder(title, currentSettings, cheapestAction).build()
         val contentTemplate = if (isLoading) {
             ListTemplate.Builder()
                 .setLoading(true)
-                .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
+                .setHeader(contentHeader)
                 .build()
         } else {
             val filteredPoisForSorting = getFilteredPois(currentSettings)
@@ -896,6 +950,7 @@ class MapsforgePoiScreen(
             val limitedPois = sortedPois.take(listLimit)
             limitedPois.forEach { item ->
                 val availability = availabilityByPoiId[item.id]
+                val isFav = item.id in favoriteIds
                 itemListBuilder.addItem(
                     AutoPoiUiHelper.buildPoiRow(
                         carContext = carContext,
@@ -906,6 +961,7 @@ class MapsforgePoiScreen(
                         distanceFromLatLon = userLat to userLon,
                         includePlace = false,
                         browsable = true,
+                        isFavorite = isFav,
                     ) {
                         openStationDetail(item, availability)
                     }
@@ -913,7 +969,7 @@ class MapsforgePoiScreen(
             }
 
             ListTemplate.Builder()
-                .setHeader(mapContentHeaderBuilder(title, currentSettings).build())
+                .setHeader(contentHeader)
                 .setSingleList(itemListBuilder.build())
                 .build()
         }

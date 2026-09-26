@@ -149,7 +149,7 @@ enum class PoiProviderType(
     NetherlandsAnwb(providesFuel = true),
     /** Denmark fuel prices via Fuelprices.dk (API key required). */
     DenmarkFuelpricesDk(providesFuel = true),
-    /** Multi-country fuel station scraper via Fuelo.net. */
+    /** Gap-fill scraper via Fuelo.net for countries without a dedicated fuel API. */
     Fuelo(providesFuel = true),
     /** Australia NSW FuelCheck API (API key + secret required). */
     AustraliaNswFuelCheck(providesFuel = true),
@@ -206,6 +206,8 @@ enum class PoiProviderType(
     BelgiumOfficial(providesFuel = true),
     /** US state-level weekly retail fuel prices (EIA petroleum/pri/gnd) + OSM stations. */
     UsaEia(providesFuel = true),
+    /** French speed cameras (radars fixes) open data from data.gouv.fr. */
+    FranceRadars(fetchKind = PoiProviderFetchKind.File),
     Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }

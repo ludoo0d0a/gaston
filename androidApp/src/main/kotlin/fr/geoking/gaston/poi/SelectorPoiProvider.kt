@@ -86,6 +86,7 @@ class SelectorPoiProvider(
     private val austriaEControl: PoiProvider,
     private val belgiumOfficial: PoiProvider,
     private val usaEia: PoiProvider,
+    private val franceRadars: PoiProvider,
     private val openVanCampClient: OpenVanCampClient,
     private val overpass: PoiProvider,
     private val dataGouvCamping: PoiProvider?,
@@ -209,6 +210,7 @@ class SelectorPoiProvider(
         PoiProviderType.AustriaEControl -> austriaEControl
         PoiProviderType.BelgiumOfficial -> belgiumOfficial
         PoiProviderType.UsaEia -> usaEia
+        PoiProviderType.FranceRadars -> franceRadars
         PoiProviderType.Overpass -> overpass
         PoiProviderType.Hybrid -> hybridProvider
     }
@@ -951,6 +953,7 @@ class SelectorPoiProvider(
         austriaEControl.clearCache()
         belgiumOfficial.clearCache()
         usaEia.clearCache()
+        franceRadars.clearCache()
         overpass.clearCache()
     }
 

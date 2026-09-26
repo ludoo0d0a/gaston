@@ -29,7 +29,10 @@ fun LibreMap(
     availabilityByPoiId: Map<String, StationAvailabilitySummary>,
     onPoiClick: (Poi?) -> Unit,
     effectiveEnergyTypes: Set<String>,
-    effectivePowerLevels: Set<Int>
+    effectivePowerLevels: Set<Int>,
+    userLat: Double? = null,
+    userLon: Double? = null,
+    userHeading: Float = 0f
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -44,8 +47,11 @@ fun LibreMap(
         availabilityByPoiId,
         effectiveEnergyTypes,
         effectivePowerLevels,
+        userLat,
+        userLon,
+        userHeading
     ) {
-        arrayOf(poisInView, selectedPoiId, availabilityByPoiId, effectiveEnergyTypes, effectivePowerLevels)
+        arrayOf(poisInView, selectedPoiId, availabilityByPoiId, effectiveEnergyTypes, effectivePowerLevels, userLat, userLon, userHeading)
     }
 
     MapLibreView(
@@ -92,6 +98,13 @@ fun LibreMap(
                 effectiveEnergyTypes = effectiveEnergyTypes,
                 effectivePowerLevels = effectivePowerLevels,
                 sizeProvider = { _, isSelected -> if (isSelected) 150 else 120 }
+            )
+            MapLibreSharedHelper.syncUserLocationLayer(
+                context = context,
+                map = map,
+                userLat = userLat,
+                userLon = userLon,
+                userHeading = userHeading
             )
         }
     )

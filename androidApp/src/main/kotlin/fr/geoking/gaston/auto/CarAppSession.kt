@@ -39,6 +39,7 @@ class CarAppSession : Session(), KoinComponent {
     private val networkService: NetworkService by inject()
     private val fuelForecastRepository: FuelForecastRepository by inject()
     private val connectivityManager: ConnectivityManager by inject()
+    private val inAppUpdateHelper: fr.geoking.gaston.update.InAppUpdateHelper by inject()
 
     private var cachedMapDeps: MapDeps? = null
 
@@ -91,6 +92,12 @@ class CarAppSession : Session(), KoinComponent {
     }
 
     override fun onCreateScreen(intent: Intent): Screen {
+        try {
+            inAppUpdateHelper.checkForUpdate()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to check for update in CarAppSession", e)
+        }
+
         val nav = IntentNavigationHelper.parseNavIntent(intent)
         if (nav != null) {
             val mapDeps = getMapDeps()

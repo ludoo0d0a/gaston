@@ -172,7 +172,7 @@ fun CarContext.actionRefreshIcon(): CarIcon = carIcon(R.drawable.ic_refresh, Aut
 fun CarContext.actionCheapestIcon(active: Boolean): CarIcon =
     carIcon(R.drawable.ic_cheapest_price, if (active) AutoCarIcons.onFuel else AutoCarIcons.primary)
 
-/** Icon-only cheapest-price toggle. Active uses [Action.FLAG_PRIMARY] so the strip background tints. */
+/** Icon-only cheapest-price toggle. Active uses [Action.FLAG_PRIMARY] so the header/strip background tints. */
 fun CarContext.cheapestFilterAction(active: Boolean, onToggle: () -> Unit): Action {
     val builder = Action.Builder()
         .setIcon(actionCheapestIcon(active))

@@ -59,6 +59,19 @@ fun DirectionsMapScreen(
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
     var cameraPosition by remember { mutableStateOf<CameraPosition?>(null) }
 
+    val context = LocalContext.current
+    var userLat by remember { mutableStateOf<Double?>(null) }
+    var userLon by remember { mutableStateOf<Double?>(null) }
+    var userHeading by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(Unit) {
+        fr.geoking.gaston.feature.location.LocationHelper.getLocationUpdates(context).collect { loc ->
+            userLat = loc.latitude
+            userLon = loc.longitude
+            userHeading = fr.geoking.gaston.auto.AutoMapHeading.resolveBearing(loc, userHeading)
+        }
+    }
+
     DisposableEffect(mapLibreMap) {
         val map = mapLibreMap
         if (map == null) {
@@ -81,7 +94,6 @@ fun DirectionsMapScreen(
         }
     }
 
-    val context = LocalContext.current
     val initialCameraPosition = remember(route) {
         route?.points?.firstOrNull()?.let { point ->
             CameraPosition.Builder()
@@ -116,9 +128,11 @@ fun DirectionsMapScreen(
         onBack = onBack,
         onRefresh = { /* Route is fixed, but could refresh POIs if needed */ },
         onLocateMe = {
-            route?.points?.firstOrNull()?.let { point ->
+            val targetLat = userLat ?: route?.points?.firstOrNull()?.first
+            val targetLon = userLon ?: route?.points?.firstOrNull()?.second
+            if (targetLat != null && targetLon != null) {
                 mapLibreMap?.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(LatLng(point.first, point.second), 15.0)
+                    CameraUpdateFactory.newLatLngZoom(LatLng(targetLat, targetLon), 15.0)
                 )
             }
         },
@@ -143,9 +157,11 @@ fun DirectionsMapScreen(
 
             MapLocateMeButton(
                 onLocateMe = {
-                    route?.points?.firstOrNull()?.let { point ->
+                    val targetLat = userLat ?: route?.points?.firstOrNull()?.first
+                    val targetLon = userLon ?: route?.points?.firstOrNull()?.second
+                    if (targetLat != null && targetLon != null) {
                         mapLibreMap?.animateCamera(
-                            CameraUpdateFactory.newLatLngZoom(LatLng(point.first, point.second), 15.0)
+                            CameraUpdateFactory.newLatLngZoom(LatLng(targetLat, targetLon), 15.0)
                         )
                     }
                 },
@@ -241,6 +257,14 @@ fun DirectionsMapScreen(
                         // Update route if changed (though it's mostly fixed here)
                         val routePoints = route?.points?.map { org.maplibre.geojson.Point.fromLngLat(it.second, it.first) } ?: emptyList()
                         style.getSourceAs<GeoJsonSource>("route-source")?.setGeoJson(org.maplibre.geojson.LineString.fromLngLats(routePoints))
+
+                        MapLibreSharedHelper.syncUserLocationLayer(
+                            context = context,
+                            map = map,
+                            userLat = userLat,
+                            userLon = userLon,
+                            userHeading = userHeading
+                        )
                     }
                 }
             )

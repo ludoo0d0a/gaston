@@ -2,7 +2,6 @@ package fr.geoking.gaston.auto
 
 import fr.geoking.gaston.R
 import android.content.Intent
-import android.net.Uri
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action

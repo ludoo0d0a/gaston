@@ -64,6 +64,7 @@ class NativeMapPoiScreen(
 
     private var pois: List<Poi> = emptyList()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
+    private var favoriteIds: Set<String> = emptySet()
     private var isLoading = true
     private var searchLat: Double = settingsManager.settings.value.lastKnownLat ?: 48.8566
     private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
@@ -100,11 +101,17 @@ class NativeMapPoiScreen(
             skipWhenOnlyOverpass = true
         )
 
+        // Host PlaceListMap has no zoom/size API; clip to the same nearby search radius.
+        val maxKm = AutoMapCamera.DEFAULT_NEARBY_SEARCH_RADIUS_KM.toDouble()
+        val visiblePois = basePois.filter { poi ->
+            approxDistanceKm(searchLat, searchLon, poi.latitude, poi.longitude) <= maxKm
+        }
+
         return if (isCheapestFilterActive) {
             val fuelIds = currentSettings.effectiveMapEnergyFilterIds() - "electric"
             val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
             MapPoiFilter.filterCheapest(
-                pois = basePois,
+                pois = visiblePois,
                 selectedFuelIds = fuelIds,
                 isLuxembourg = isLuxembourg,
                 fromLat = searchLat,
@@ -112,7 +119,7 @@ class NativeMapPoiScreen(
                 limit = MapPoiFilter.CAR_CHEAPEST_COUNT,
             )
         } else {
-            basePois
+            visiblePois
         }
     }
 
@@ -175,7 +182,10 @@ class NativeMapPoiScreen(
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
         loadPoisJob?.cancel()
         isLoading = false
-        invalidate()
+        lifecycleScope.launch {
+            favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
+            invalidate()
+        }
         startRefreshLoop()
     }
 
@@ -211,24 +221,6 @@ class NativeMapPoiScreen(
 
         val actionStripBuilder = ActionStrip.Builder()
 
-        actionStripBuilder.addAction(
-            Action.Builder()
-                .setIcon(carContext.actionSettingsIcon())
-                .setOnClickListener {
-                    screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
-                }
-                .build()
-        )
-
-        if (mapDeps != null) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionMapIcon())
-                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
-                    .build()
-            )
-        }
-
         val fuelIdsForFilter = effectiveEnergies - "electric"
         if (hasFuelFilter && (isCheapestFilterActive || pois.any { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForFilter } == true })) {
             actionStripBuilder.addAction(
@@ -246,6 +238,24 @@ class NativeMapPoiScreen(
                     }
                     invalidate()
                 }
+            )
+        }
+
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setIcon(carContext.actionSettingsIcon())
+                .setOnClickListener {
+                    screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
+                }
+                .build()
+        )
+
+        if (mapDeps != null) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionMapIcon())
+                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
+                    .build()
             )
         }
         val actionStrip = actionStripBuilder.build()
@@ -296,6 +306,7 @@ class NativeMapPoiScreen(
 
         displayPois.take(listLimit).forEach { item ->
             val availability = availabilityByPoiId[item.id]
+            val isFav = item.id in favoriteIds
             itemListBuilder.addItem(
                 AutoPoiUiHelper.buildPoiRow(
                     carContext = carContext,
@@ -305,6 +316,7 @@ class NativeMapPoiScreen(
                     effectivePowerLevels = effectivePowerLevels,
                     distanceFromLatLon = searchLat to searchLon,
                     includePlace = true,
+                    isFavorite = isFav,
                 ) {
                 loadPoisJob?.cancel()
                 isLoading = false

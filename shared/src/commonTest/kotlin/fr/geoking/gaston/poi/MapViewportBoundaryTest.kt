@@ -22,6 +22,19 @@ import kotlin.test.assertTrue
 class MapViewportBoundaryTest {
 
     @Test
+    fun mapViewport_contains_filtersToScreenBoundary() {
+        val viewport = calculateBoundsFromMapViewport(
+            centerLat = 49.0,
+            centerLng = 6.0,
+            zoom = 14.0f,
+            mapWidthPx = 800,
+            mapHeightPx = 600,
+        )
+        assertTrue(viewport.contains(49.0, 6.0))
+        assertTrue(!viewport.contains(50.0, 7.0))
+    }
+
+    @Test
     fun radiusKmFromMapViewport_calculatesCorrectRadiusFromZoomAndDimensions() {
         // Near Metz / Thionville: lat = 49.19315887687151, lng = 6.145889998649892
         // At zoom 12.0 with viewport 1080x2340 px

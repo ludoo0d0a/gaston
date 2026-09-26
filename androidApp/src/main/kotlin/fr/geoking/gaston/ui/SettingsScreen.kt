@@ -206,6 +206,7 @@ private fun poiProviderLabelRes(type: PoiProviderType): Int = when (type) {
     PoiProviderType.AustriaEControl -> R.string.provider_austria_econtrol
     PoiProviderType.BelgiumOfficial -> R.string.provider_belgium_official
     PoiProviderType.UsaEia -> R.string.provider_usa_eia
+    PoiProviderType.FranceRadars -> R.string.provider_france_radars
     else -> R.string.provider_overpass
 }
 
@@ -686,6 +687,54 @@ private fun MapConfig(
             }
         }
 
+        // Radar Warnings
+        Column {
+            Text(
+                "Avertisseur de radars",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Alerte radars en approche", style = MaterialTheme.typography.titleSmall)
+                    Text("Alertes sonores et vocales lors de l'approche d'un radar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.radarWarningEnabled,
+                    onCheckedChange = { onUpdate(settings.copy(radarWarningEnabled = it)) },
+                )
+            }
+
+            if (settings.radarWarningEnabled) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    "Distance d'avertissement: ${settings.radarWarningDistanceMeters} m",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(300, 500, 1000, 1500, 2000).forEach { dist ->
+                        FilterChip(
+                            selected = settings.radarWarningDistanceMeters == dist,
+                            onClick = { onUpdate(settings.copy(radarWarningDistanceMeters = dist)) },
+                            label = { Text("${dist} m") }
+                        )
+                    }
+                }
+            }
+        }
+
         // Traffic
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -789,15 +838,12 @@ private fun SourcesConfig(
         }
     }
 
-    // Keep this list in sync with FueloProvider.getConfigForLocation()
+    // Keep in sync with FueloProvider.getConfigForLocation()
+    // (only countries without a dedicated fuel provider)
     val fueloSupported = listOf(
         "BG", "CZ", "HU", "PL", "SK",
         "EE", "LV", "LT",
-        "CH", "BA", "TR", "MK",
-        "PT-AC", "PT-MA", "PT",
-        "ES-CN", "ES-IB", "ES",
-        "IE", "GB",
-        "AT", "BE", "DE", "FR", "GR", "HR", "IT", "NL", "RO", "RS", "SI"
+        "BA", "TR", "MK",
     )
 
     val providers = listOf(
@@ -850,6 +896,7 @@ private fun SourcesConfig(
         ProviderUiInfo(PoiProviderType.AustriaEControl, listOf("AT")),
         ProviderUiInfo(PoiProviderType.BelgiumOfficial, listOf("BE")),
         ProviderUiInfo(PoiProviderType.UsaEia, listOf("US")),
+        ProviderUiInfo(PoiProviderType.FranceRadars, listOf("FR")),
     )
         .filter { it.type.isUserSelectablePoiDataSource() }
         .distinctBy { it.type }
