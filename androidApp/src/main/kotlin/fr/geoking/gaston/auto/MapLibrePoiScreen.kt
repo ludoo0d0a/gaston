@@ -97,6 +97,7 @@ open class MapLibrePoiScreen(
     private var pois: List<Poi> = emptyList()
     private var errors: List<PoiProviderError> = emptyList()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
+    private var favoriteIds: Set<String> = emptySet()
     private var isLoading = true
     private var isQueryPending = false
     private var queryGeneration: Int = 0
@@ -905,7 +906,10 @@ open class MapLibrePoiScreen(
         mapRenderer?.updateLocation(searchLat, searchLon, zoom)
         startHeadingUpdates()
         syncRendererWithMapState()
-        invalidate()
+        lifecycleScope.launch {
+            favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
+            invalidate()
+        }
     }
 
     override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
@@ -1039,7 +1043,7 @@ open class MapLibrePoiScreen(
             val limitedPois = sortedPois.take(listLimit)
             limitedPois.forEach { item ->
                 val availability = availabilityByPoiId[item.id]
-                val isFav = favoritesRepo?.isFavorite(item.id) == true
+                val isFav = item.id in favoriteIds
                 itemListBuilder.addItem(
                     AutoPoiUiHelper.buildPoiRow(
                         carContext = carContext,

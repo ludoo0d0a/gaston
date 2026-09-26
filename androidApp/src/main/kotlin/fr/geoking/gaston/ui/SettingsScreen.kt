@@ -206,8 +206,8 @@ private fun poiProviderLabelRes(type: PoiProviderType): Int = when (type) {
     PoiProviderType.AustriaEControl -> R.string.provider_austria_econtrol
     PoiProviderType.BelgiumOfficial -> R.string.provider_belgium_official
     PoiProviderType.UsaEia -> R.string.provider_usa_eia
-    else -> R.string.provider_overpass
     PoiProviderType.FranceRadars -> R.string.provider_france_radars
+    else -> R.string.provider_overpass
 }
 
 @Composable

@@ -64,6 +64,7 @@ class NativeMapPoiScreen(
 
     private var pois: List<Poi> = emptyList()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
+    private var favoriteIds: Set<String> = emptySet()
     private var isLoading = true
     private var searchLat: Double = settingsManager.settings.value.lastKnownLat ?: 48.8566
     private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
@@ -181,7 +182,10 @@ class NativeMapPoiScreen(
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
         loadPoisJob?.cancel()
         isLoading = false
-        invalidate()
+        lifecycleScope.launch {
+            favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
+            invalidate()
+        }
         startRefreshLoop()
     }
 
@@ -302,7 +306,7 @@ class NativeMapPoiScreen(
 
         displayPois.take(listLimit).forEach { item ->
             val availability = availabilityByPoiId[item.id]
-            val isFav = favoritesRepo?.isFavorite(item.id) == true
+            val isFav = item.id in favoriteIds
             itemListBuilder.addItem(
                 AutoPoiUiHelper.buildPoiRow(
                     carContext = carContext,

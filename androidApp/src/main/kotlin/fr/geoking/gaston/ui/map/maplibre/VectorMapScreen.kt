@@ -84,6 +84,7 @@ import fr.geoking.gaston.ui.map.PoiDetailCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.AddPoiSheet
 import fr.geoking.gaston.ui.components.MapLocateMeButton
+import fr.geoking.gaston.ui.components.MapControlsOverlay
 import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.ui.map.MapCameraSample
 import fr.geoking.gaston.ui.map.MapErrorBanner

@@ -41,6 +41,7 @@ class AutoPoiSearchScreen(
     private var searchLat: Double = settingsManager.settings.value.lastKnownLat ?: 48.8566
     private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
+    private var favoriteIds: Set<String> = emptySet()
 
     init {
         loadNearbyPois()
@@ -56,6 +57,7 @@ class AutoPoiSearchScreen(
             searchLon = lon
 
             try {
+                favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
                 val result = poiProvider.searchResult(
                     PoiSearchRequest(searchLat, searchLon, null, emptySet(), skipFilters = true)
                 )
@@ -98,7 +100,7 @@ class AutoPoiSearchScreen(
 
         filteredPois.take(6).forEach { poi ->
             val availability = availabilityByPoiId[poi.id]
-            val isFav = favoritesRepo?.isFavorite(poi.id) == true
+            val isFav = poi.id in favoriteIds
             itemListBuilder.addItem(
                 AutoPoiUiHelper.buildPoiRow(
                     carContext = carContext,
