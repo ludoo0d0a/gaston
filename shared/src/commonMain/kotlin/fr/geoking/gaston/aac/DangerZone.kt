@@ -116,11 +116,19 @@ object DangerZoneFactory {
     fun mapCsvTypeToKind(csvType: String?): DangerZoneKind {
         val t = csvType?.uppercase()?.trim().orEmpty()
         return when {
-            t.contains("FEU") || t.contains("FEUX") -> DangerZoneKind.HeightenedVigilance
-            t.contains("CHANTIER") || t.contains("TRAVAUX") -> DangerZoneKind.HeightenedVigilance
+            t.contains("FEU") || t.contains("FEUX") || t.contains("ETFR") ->
+                DangerZoneKind.HeightenedVigilance
+            t.contains("ETPN") || t.contains("PASSAGE") ->
+                DangerZoneKind.HeightenedVigilance
+            t.contains("CHANTIER") || t.contains("TRAVAUX") ->
+                DangerZoneKind.HeightenedVigilance
             t.isEmpty() ||
                 t.contains("FIXE") ||
                 t.contains("ETD") ||
+                t.contains("ETF") ||
+                t.contains("ETT") ||
+                t.contains("ETU") ||
+                t.contains("ETVM") ||
                 t.contains("DISCRIMINANT") ||
                 t.contains("TRONCON") ||
                 t.contains("TRONÇON") ||

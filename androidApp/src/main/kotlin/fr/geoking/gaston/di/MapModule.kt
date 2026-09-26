@@ -330,7 +330,19 @@ val mapModule = module {
             limit = 100,
         )
     }
-    single { FranceRadarsClient(get()) }
+    single {
+        val diskCache = fr.geoking.gaston.aac.AndroidTextFileCache(androidContext())
+        val resolver = fr.geoking.gaston.aac.FranceRadarsCsvResolver(
+            client = get(),
+            fallbackUrl = FranceRadarsClient.DEFAULT_CSV_URL,
+        )
+        FranceRadarsClient(
+            client = get(),
+            diskCache = diskCache,
+            csvResolver = resolver,
+        )
+    }
+    single { fr.geoking.gaston.aac.DangerZoneRepository(get()) }
     single<PoiProvider>(named("franceradars")) {
         FranceRadarsProvider(get(), defaultRadiusKm = 25.0)
     }

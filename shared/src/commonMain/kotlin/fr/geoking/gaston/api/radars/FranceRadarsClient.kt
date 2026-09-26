@@ -1,5 +1,7 @@
 package fr.geoking.gaston.api.radars
 
+import fr.geoking.gaston.aac.FranceRadarsCsvResolver
+import fr.geoking.gaston.aac.TextFileCache
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.shared.location.haversineKm
@@ -11,22 +13,30 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * Client for French speed cameras dataset from data.gouv.fr ("Liste des radars fixes en France").
+ * Client for French fixed speed-control dataset from data.gouv.fr.
  * Open Data licence: Licence Ouverte v2.0 (Etalab).
+ *
+ * Resolves the latest CSV via data.gouv API when possible; falls back to [DEFAULT_CSV_URL].
+ * Memory cache + optional [TextFileCache] disk TTL (24 h).
  */
 class FranceRadarsClient(
     private val client: HttpClient,
-    private val csvUrl: String = DEFAULT_CSV_URL
+    private val csvUrl: String = DEFAULT_CSV_URL,
+    private val diskCache: TextFileCache? = null,
+    private val csvResolver: FranceRadarsCsvResolver? = null,
 ) {
     companion object {
         const val DEFAULT_CSV_URL =
             "https://static.data.gouv.fr/resources/liste-des-radars-fixes-en-france/20251230-134204/jeu-de-donnees-liste-des-radars-fixes-en-france-12-2025.csv"
+        const val DISK_CACHE_KEY = "france_radars_csv"
         private const val CACHE_TTL_MS = 24 * 60 * 60 * 1000L // 24 hours
     }
 
     private val mutex = Mutex()
     private var cachedRadars: List<FranceRadarRecord>? = null
     private var cacheTimestamp: Long = 0L
+    private var resolvedUrl: String? = null
+    private var resolvedVersion: String? = null
 
     suspend fun getRadarsNear(
         latitude: Double,
@@ -52,7 +62,10 @@ class FranceRadarsClient(
         mutex.withLock {
             cachedRadars = null
             cacheTimestamp = 0L
+            resolvedUrl = null
+            resolvedVersion = null
         }
+        diskCache?.clear(DISK_CACHE_KEY)
     }
 
     private suspend fun ensureCachedRadars(): List<FranceRadarRecord> {
@@ -61,6 +74,19 @@ class FranceRadarsClient(
             val existing = cachedRadars
             if (existing != null && (now - cacheTimestamp) < CACHE_TTL_MS) {
                 return existing
+            }
+        }
+
+        // Disk cache
+        diskCache?.read(DISK_CACHE_KEY)?.let { cached ->
+            if ((now - cached.storedAtEpochMs) < CACHE_TTL_MS) {
+                val parsed = parseCsv(cached.body)
+                mutex.withLock {
+                    cachedRadars = parsed
+                    cacheTimestamp = cached.storedAtEpochMs
+                    resolvedVersion = cached.version
+                }
+                return parsed
             }
         }
 
@@ -73,11 +99,17 @@ class FranceRadarsClient(
     }
 
     private suspend fun fetchAndParseRadars(): List<FranceRadarRecord> {
-        val response = client.get(csvUrl)
+        val resolved = csvResolver?.resolveLatestCsvUrl()
+        val url = resolved?.url ?: csvUrl
+        resolvedUrl = url
+        resolvedVersion = resolved?.resourceId ?: resolved?.lastModified
+
+        val response = client.get(url)
         val body = response.bodyAsText()
-        if (response.status.value != 200) {
+        if (response.status.value !in 200..299) {
             throw NetworkException(response.status.value, "FranceRadars CSV fetch error: ${body.take(200)}")
         }
+        diskCache?.write(DISK_CACHE_KEY, body, resolvedVersion)
         return parseCsv(body)
     }
 
@@ -97,7 +129,6 @@ class FranceRadarsClient(
         for (line in lines) {
             val parts = line.split(";").map { it.trim() }
             if (!headerParsed) {
-                // Try to resolve column indices from header
                 val headerLower = parts.map { it.lowercase() }
                 for ((idx, col) in headerLower.withIndex()) {
                     when {

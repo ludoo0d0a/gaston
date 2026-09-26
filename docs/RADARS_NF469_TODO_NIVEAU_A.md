@@ -66,13 +66,18 @@ Historique phase 0 : 2026-09 — go niveau A + gel Playstore.
 
 ## Phase 3 — Données
 
-- [ ] CSV data.gouv : URL dynamique + versioning
-- [ ] Cache disque + TTL
-- [ ] Types CSV → kinds de zone sans dire « contrôle ici »
-- [ ] Désactiver OSM `speed_camera` pour les **alertes** en FR
-- [ ] Source(s) de zones **hors radar** (accidentalité / vigilance…)
-- [ ] Mix d’alertes (pas 100 % issues de radars)
-- [ ] Pas de communautaire « forces de l’ordre » sans process L. 130-11
+- [x] CSV data.gouv : URL dynamique + versioning
+- [x] Cache disque + TTL
+- [x] Types CSV → kinds de zone sans dire « contrôle ici »
+- [x] Désactiver OSM `speed_camera` pour les **alertes** en FR
+- [x] Source(s) de zones **hors radar** (accidentalité / vigilance…)
+- [x] Mix d’alertes (pas 100 % issues de radars)
+- [x] Pas de communautaire « forces de l’ordre » sans process L. 130-11
+
+### Notes phase 3
+
+- Voir [`AAC_DATA.md`](AAC_DATA.md) : resolver data.gouv, disk TTL, `StaticNonRadarDangerZones`, `DangerZoneRepository`.
+- Zones hors radar = échantillon stub + chemin open data documenté (BAAC) — pas encore BAAC live.
 
 ## Phase 4 — Moteur & qualité
 
