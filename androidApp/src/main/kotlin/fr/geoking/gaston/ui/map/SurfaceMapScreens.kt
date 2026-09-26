@@ -90,6 +90,18 @@ fun SurfaceCustomMapScreen(
     var bearing by remember { mutableStateOf(0f) }
     var orientationMode by remember { mutableStateOf(MapOrientationMode.NorthUp) }
 
+    var userLat by remember { mutableStateOf<Double?>(null) }
+    var userLon by remember { mutableStateOf<Double?>(null) }
+    var userHeading by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(Unit) {
+        LocationHelper.getLocationUpdates(context).collect { loc ->
+            userLat = loc.latitude
+            userLon = loc.longitude
+            userHeading = AutoMapHeading.resolveBearing(loc, userHeading)
+        }
+    }
+
     var surfaceWidth by remember { mutableStateOf(0) }
     var surfaceHeight by remember { mutableStateOf(0) }
     var selectedPoi by remember { mutableStateOf<Poi?>(initialSelectedPoi) }
@@ -183,9 +195,18 @@ fun SurfaceCustomMapScreen(
                 onRefresh = { mapActions.refresh(true, MapCameraSample(mapLat, mapLon, zoom.toFloat())) },
                 onLocateMe = {
                     scope.launch {
-                        val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                        mapLat = lat
-                        mapLon = lon
+                        val uLat = userLat
+                        val uLon = userLon
+                        if (uLat != null && uLon != null) {
+                            mapLat = uLat
+                            mapLon = uLon
+                            zoom = zoom.coerceAtLeast(15)
+                        } else {
+                            val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                            mapLat = lat
+                            mapLon = lon
+                            zoom = 15
+                        }
                     }
                 },
                 onShowSettings = {
@@ -248,10 +269,13 @@ fun SurfaceCustomMapScreen(
                     Box(modifier = Modifier.fillMaxSize()) {
                         var surfaceRendererRef by remember { mutableStateOf<AutoSurfaceRenderer?>(null) }
 
-                        LaunchedEffect(mapLat, mapLon, zoom, bearing, orientationMode, filteredPois, selectedPoi) {
+                        LaunchedEffect(mapLat, mapLon, zoom, bearing, orientationMode, filteredPois, selectedPoi, userLat, userLon, userHeading) {
                             val r = surfaceRendererRef ?: return@LaunchedEffect
                             r.updateLocation(mapLat, mapLon, zoom)
                             r.setMapOrientation(orientationMode, bearing)
+                            if (userLat != null && userLon != null) {
+                                r.updateUserLocation(userLat!!, userLon!!, userHeading)
+                            }
                             r.updatePois(
                                 newPois = filteredPois,
                                 effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
@@ -332,9 +356,18 @@ fun SurfaceCustomMapScreen(
                         MapControlsOverlay(
                             onLocateMe = {
                                 scope.launch {
-                                    val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                                    mapLat = lat
-                                    mapLon = lon
+                                    val uLat = userLat
+                                    val uLon = userLon
+                                    if (uLat != null && uLon != null) {
+                                        mapLat = uLat
+                                        mapLon = uLon
+                                        zoom = zoom.coerceAtLeast(15)
+                                    } else {
+                                        val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                                        mapLat = lat
+                                        mapLon = lon
+                                        zoom = 15
+                                    }
                                 }
                             },
                             onZoomIn = { if (zoom < 18) zoom += 1 },
@@ -407,6 +440,18 @@ fun SurfaceMapsforgeMapScreen(
     var zoom by remember { mutableStateOf((initialZoom ?: 14f).toInt().coerceIn(4, 18)) }
     var bearing by remember { mutableStateOf(0f) }
     var orientationMode by remember { mutableStateOf(MapOrientationMode.NorthUp) }
+
+    var userLat by remember { mutableStateOf<Double?>(null) }
+    var userLon by remember { mutableStateOf<Double?>(null) }
+    var userHeading by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(Unit) {
+        LocationHelper.getLocationUpdates(context).collect { loc ->
+            userLat = loc.latitude
+            userLon = loc.longitude
+            userHeading = AutoMapHeading.resolveBearing(loc, userHeading)
+        }
+    }
 
     var surfaceWidth by remember { mutableStateOf(0) }
     var surfaceHeight by remember { mutableStateOf(0) }
@@ -505,9 +550,18 @@ fun SurfaceMapsforgeMapScreen(
                 onRefresh = { mapActions.refresh(true, MapCameraSample(mapLat, mapLon, zoom.toFloat())) },
                 onLocateMe = {
                     scope.launch {
-                        val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                        mapLat = lat
-                        mapLon = lon
+                        val uLat = userLat
+                        val uLon = userLon
+                        if (uLat != null && uLon != null) {
+                            mapLat = uLat
+                            mapLon = uLon
+                            zoom = zoom.coerceAtLeast(15)
+                        } else {
+                            val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                            mapLat = lat
+                            mapLon = lon
+                            zoom = 15
+                        }
                     }
                 },
                 onShowSettings = {
@@ -568,10 +622,13 @@ fun SurfaceMapsforgeMapScreen(
                     }
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        LaunchedEffect(mapLat, mapLon, zoom, bearing, orientationMode, filteredPois, selectedPoi) {
+                        LaunchedEffect(mapLat, mapLon, zoom, bearing, orientationMode, filteredPois, selectedPoi, userLat, userLon, userHeading) {
                             val r = surfaceRendererRef ?: return@LaunchedEffect
                             r.updateLocation(mapLat, mapLon, zoom)
                             r.setMapOrientation(orientationMode, bearing)
+                            if (userLat != null && userLon != null) {
+                                r.updateUserLocation(userLat!!, userLon!!, userHeading)
+                            }
                             r.updatePois(
                                 newPois = filteredPois,
                                 effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
@@ -660,9 +717,18 @@ fun SurfaceMapsforgeMapScreen(
                         MapControlsOverlay(
                             onLocateMe = {
                                 scope.launch {
-                                    val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                                    mapLat = lat
-                                    mapLon = lon
+                                    val uLat = userLat
+                                    val uLon = userLon
+                                    if (uLat != null && uLon != null) {
+                                        mapLat = uLat
+                                        mapLon = uLon
+                                        zoom = zoom.coerceAtLeast(15)
+                                    } else {
+                                        val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
+                                        mapLat = lat
+                                        mapLon = lon
+                                        zoom = 15
+                                    }
                                 }
                             },
                             onZoomIn = { if (zoom < 18) zoom += 1 },
