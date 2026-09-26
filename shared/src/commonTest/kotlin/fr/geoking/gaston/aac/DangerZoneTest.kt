@@ -25,6 +25,28 @@ class DangerZoneTest {
     }
 
     @Test
+    fun fromOsmHighwayMapping() {
+        assertEquals(RoadNetworkClass.Motorway, DangerZoneDistances.fromOsmHighway("motorway"))
+        assertEquals(RoadNetworkClass.Motorway, DangerZoneDistances.fromOsmHighway("motorway_link"))
+        assertEquals(RoadNetworkClass.ExtraUrban, DangerZoneDistances.fromOsmHighway("trunk"))
+        assertEquals(RoadNetworkClass.ExtraUrban, DangerZoneDistances.fromOsmHighway("primary_link"))
+        assertEquals(RoadNetworkClass.Urban, DangerZoneDistances.fromOsmHighway("residential"))
+        assertEquals(null, DangerZoneDistances.fromOsmHighway(null))
+        assertEquals(null, DangerZoneDistances.fromOsmHighway("  "))
+        assertTrue(DangerZoneDistances.osmHighwayRank("motorway") > DangerZoneDistances.osmHighwayRank("trunk"))
+        assertTrue(DangerZoneDistances.osmHighwayRank("trunk") > DangerZoneDistances.osmHighwayRank("residential"))
+    }
+
+    @Test
+    fun thoroughfareHeuristic() {
+        assertTrue(ThoroughfareHighwayHeuristic.isLikelyHighway("Autoroute A7"))
+        assertTrue(ThoroughfareHighwayHeuristic.isLikelyHighway("A104"))
+        assertTrue(ThoroughfareHighwayHeuristic.isLikelyHighway("I-95"))
+        assertFalse(ThoroughfareHighwayHeuristic.isLikelyHighway("Rue de Rivoli"))
+        assertFalse(ThoroughfareHighwayHeuristic.isLikelyHighway(null))
+    }
+
+    @Test
     fun speedControlPointBecomesExtendedZoneNotPinAlert() {
         val zone = DangerZoneFactory.fromSpeedControlPoint(
             id = "fr_dz_1",

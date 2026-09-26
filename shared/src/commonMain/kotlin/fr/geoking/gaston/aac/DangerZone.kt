@@ -9,7 +9,7 @@ import kotlin.math.sin
 
 /**
  * Road network class used to pick AAC alert distances (AFFTAC-style heuristics).
- * Map-matching can refine later; VMA / tags are OK for Level A.
+ * Prefer OSM map-matching via [OsmRoadClassifier]; VMA / thoroughfare are fallbacks.
  */
 enum class RoadNetworkClass {
     /** ~4 km alert radius */
@@ -76,6 +76,28 @@ object DangerZoneDistances {
         speedLimitKmH != null && speedLimitKmH >= 110 -> RoadNetworkClass.Motorway
         speedLimitKmH != null && speedLimitKmH >= 70 -> RoadNetworkClass.ExtraUrban
         else -> RoadNetworkClass.Urban
+    }
+
+    /**
+     * Road class from an OSM `highway=*` tag. Returns null for blank/unknown tags.
+     * motorway / motorway_link → Motorway; trunk / primary (+ links) → ExtraUrban; else Urban.
+     */
+    fun fromOsmHighway(tag: String?): RoadNetworkClass? {
+        val t = tag?.trim()?.lowercase().orEmpty()
+        if (t.isEmpty()) return null
+        return when (t) {
+            "motorway", "motorway_link" -> RoadNetworkClass.Motorway
+            "trunk", "trunk_link", "primary", "primary_link" -> RoadNetworkClass.ExtraUrban
+            else -> RoadNetworkClass.Urban
+        }
+    }
+
+    /** Rank for picking the strongest highway among several nearby ways (higher = stronger). */
+    fun osmHighwayRank(tag: String?): Int = when (fromOsmHighway(tag)) {
+        RoadNetworkClass.Motorway -> 3
+        RoadNetworkClass.ExtraUrban -> 2
+        RoadNetworkClass.Urban -> 1
+        null -> 0
     }
 }
 

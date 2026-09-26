@@ -86,14 +86,14 @@ fun EmergencyScreen(
     var address by remember { mutableStateOf<String?>(null) }
     var latLng by remember { mutableStateOf<Pair<Double, Double>?>(null) }
     var detectedCountryCode by remember { mutableStateOf<String?>(null) }
-    var thoroughfare by remember { mutableStateOf<String?>(null) }
+    var onHighway by remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshTick) {
         loading = true
         address = null
         latLng = null
         detectedCountryCode = null
-        thoroughfare = null
+        onHighway = false
         val location = withContext(Dispatchers.IO) {
             LocationHelper.getCurrentLocation(context)
         }
@@ -104,7 +104,13 @@ fun EmergencyScreen(
             }
             address = info?.address
             detectedCountryCode = info?.countryCode
-            thoroughfare = info?.thoroughfare
+            onHighway = withContext(Dispatchers.IO) {
+                classifyOnHighway(
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    thoroughfare = info?.thoroughfare,
+                )
+            }
         } else {
             address = context.getString(R.string.emergency_gps_unavailable)
         }
@@ -119,7 +125,6 @@ fun EmergencyScreen(
     }
 
     val universalNumber = remember(countryCode) { universalNumberFor(countryCode) }
-    val onHighway = remember(thoroughfare) { isLikelyHighway(thoroughfare) }
 
     GastonTheme {
         Scaffold(
@@ -470,19 +475,22 @@ private fun universalNumberFor(countryCode: String?): String {
     }
 }
 
-private fun isLikelyHighway(thoroughfare: String?): Boolean {
-    if (thoroughfare.isNullOrBlank()) return false
-    val s = thoroughfare.lowercase()
-    val keywords = listOf(
-        "autoroute", "motorway", "highway", "interstate",
-        "autobahn", "autostrada", "autovía", "autopista",
-        "snelweg", "freeway"
-    )
-    if (keywords.any { it in s }) return true
-    // French autoroute codes (e.g. "A7", "A104") and US interstate codes ("I-95").
-    if (Regex("^[a-z]\\s?\\d{1,4}\\b").containsMatchIn(s)) return true
-    if (Regex("^i-\\s?\\d{1,3}\\b").containsMatchIn(s)) return true
-    return false
+private suspend fun classifyOnHighway(
+    latitude: Double,
+    longitude: Double,
+    thoroughfare: String?,
+): Boolean {
+    return try {
+        fr.geoking.gaston.di.MapModuleLoader.ensureLoaded()
+        val classifier = org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.aac.OsmRoadClassifier>()
+        classifier.classify(
+            latitude = latitude,
+            longitude = longitude,
+            thoroughfare = thoroughfare,
+        ).isOnMotorway
+    } catch (_: Exception) {
+        fr.geoking.gaston.aac.ThoroughfareHighwayHeuristic.isLikelyHighway(thoroughfare)
+    }
 }
 
 private data class GeocodeMeta(val address: String?, val countryCode: String?, val thoroughfare: String?)

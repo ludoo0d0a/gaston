@@ -300,6 +300,7 @@ val mapModule = module {
         }
     }
     single { OverpassClient(get()) }
+    single { fr.geoking.gaston.aac.OsmRoadClassifier(get()) }
     single<PoiProvider>(named("overpass")) {
         OverpassProvider(get(), radiusKm = 5, limit = 100)
     }
@@ -342,7 +343,7 @@ val mapModule = module {
             csvResolver = resolver,
         )
     }
-    single { fr.geoking.gaston.aac.DangerZoneRepository(get()) }
+    single { fr.geoking.gaston.aac.DangerZoneRepository(get(), get()) }
     single<PoiProvider>(named("franceradars")) {
         FranceRadarsProvider(get(), defaultRadiusKm = 25.0)
     }
