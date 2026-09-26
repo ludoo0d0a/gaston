@@ -149,7 +149,7 @@ enum class PoiProviderType(
     NetherlandsAnwb(providesFuel = true),
     /** Denmark fuel prices via Fuelprices.dk (API key required). */
     DenmarkFuelpricesDk(providesFuel = true),
-    /** Multi-country fuel station scraper via Fuelo.net. */
+    /** Gap-fill scraper via Fuelo.net for countries without a dedicated fuel API. */
     Fuelo(providesFuel = true),
     /** Australia NSW FuelCheck API (API key + secret required). */
     AustraliaNswFuelCheck(providesFuel = true),

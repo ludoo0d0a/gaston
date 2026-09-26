@@ -838,15 +838,12 @@ private fun SourcesConfig(
         }
     }
 
-    // Keep this list in sync with FueloProvider.getConfigForLocation()
+    // Keep in sync with FueloProvider.getConfigForLocation()
+    // (only countries without a dedicated fuel provider)
     val fueloSupported = listOf(
         "BG", "CZ", "HU", "PL", "SK",
         "EE", "LV", "LT",
-        "CH", "BA", "TR", "MK",
-        "PT-AC", "PT-MA", "PT",
-        "ES-CN", "ES-IB", "ES",
-        "IE", "GB",
-        "AT", "BE", "DE", "FR", "GR", "HR", "IT", "NL", "RO", "RS", "SI"
+        "BA", "TR", "MK",
     )
 
     val providers = listOf(

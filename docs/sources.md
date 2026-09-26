@@ -21,7 +21,7 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **DGEG (Preços Combustíveis)** | Portugal | Fuel | `https://precoscombustiveis.dgeg.gov.pt/api/PrecoComb/PesquisarPostos` | No |
 | **ANWB** | Netherlands + Belgium + Luxembourg | Fuel | `https://api.anwb.nl/routing/points-of-interest/v3/all` | No |
 | **Fuelprices.dk** | Denmark | Fuel | `https://fuelprices.dk/api` | Yes — `FUELPRICES_DK_KEY` |
-| **Fuelo.net** | Multi-country (EU + more) | Fuel | `https://{country}.fuelo.net/...` | No |
+| **Fuelo.net** | Gap-fill only (BG, CZ, HU, PL, SK, Baltics, BA, TR, MK) | Fuel | `https://{country}.fuelo.net/...` | No |
 | **FuelCheck (NSW)** | Australia (NSW) | Fuel | `https://api.onegov.nsw.gov.au/FuelPriceCheck/v1/fuel/prices` | Yes — `NSW_FUELCHECK_KEY` + secret |
 | **MZOE** | Croatia | Fuel | `https://mzoe-gor.hr/data.json` | No |
 | **polttoaine.net** | Finland | Fuel | `https://www.polttoaine.net/` | No |
