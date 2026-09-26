@@ -33,14 +33,18 @@ class FranceRadarsClient(
         longitude: Double,
         radiusKm: Double = 15.0
     ): List<Poi> {
+        return getRecordsNear(latitude, longitude, radiusKm).map { it.toPoi() }
+    }
+
+    /** Raw records for AAC zone conversion (not for alert pin UX). */
+    suspend fun getRecordsNear(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double = 15.0
+    ): List<FranceRadarRecord> {
         val allRadars = ensureCachedRadars()
-        return allRadars.mapNotNull { radar ->
-            val dist = haversineKm(latitude, longitude, radar.latitude, radar.longitude)
-            if (dist <= radiusKm) {
-                radar.toPoi()
-            } else {
-                null
-            }
+        return allRadars.filter { radar ->
+            haversineKm(latitude, longitude, radar.latitude, radar.longitude) <= radiusKm
         }
     }
 
@@ -142,22 +146,24 @@ data class FranceRadarRecord(
     val longitude: Double
 ) {
     fun toPoi(): Poi {
+        // Neutral POI label — alert UX must use DangerZone / AAC copy, not "Radar X km/h".
         val speedLabel = if (vma != null && vma > 0) "$vma km/h" else null
-        val title = if (speedLabel != null) "Radar $speedLabel" else "Radar ($type)"
+        val title = if (speedLabel != null) "Zone $speedLabel" else "Zone de vigilance ($type)"
         return Poi(
             id = "fr_radar_$id",
             name = title,
-            address = "Radar $type — France",
+            address = "France",
             latitude = latitude,
             longitude = longitude,
-            brand = "Radar",
+            brand = null,
             isElectric = false,
             poiCategory = PoiCategory.Radar,
             source = "FranceRadars",
             rawSourceData = mapOf(
                 "vma" to (vma?.toString() ?: "NA"),
                 "type" to type,
-                "id" to id
+                "id" to id,
+                "aac_zone" to "true"
             )
         )
     }

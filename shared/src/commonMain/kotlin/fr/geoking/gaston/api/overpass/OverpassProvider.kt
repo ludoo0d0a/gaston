@@ -50,7 +50,15 @@ class OverpassProvider(
             ?: radiusKm
 
         val cat = request.categories.ifEmpty { supportedCategories() }
-        val wanted = cat.filter { it in supportedCategories() }.toSet()
+        // Level A FR: do not surface OSM speed_camera as exact control pins on the map / alerts.
+        val wanted = cat.filter { it in supportedCategories() }
+            .filterNot {
+                it == PoiCategory.Radar && fr.geoking.gaston.aac.AacMapPolicy.isLikelyFrance(
+                    request.latitude,
+                    request.longitude
+                )
+            }
+            .toSet()
         if (wanted.isEmpty()) return emptyList()
         val amenityValues = wanted.mapNotNull { categoryToOsmAmenity(it) }.toSet()
         val tourismValues = wanted.mapNotNull { categoryToOsmTourism(it) }.toSet()

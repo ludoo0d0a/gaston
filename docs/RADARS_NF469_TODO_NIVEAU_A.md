@@ -29,13 +29,20 @@ Historique phase 0 : 2026-09 — go niveau A + gel Playstore.
 
 ## Phase 1 — Modèle « zones » (cœur)
 
-- [ ] Introduire `DangerZone` (géométrie, VMA?, kind, source)
-- [ ] Convertir radars fixes CSV → **zones étendues** (plus de point de contrôle exposé)
-- [ ] Distances selon réseau : ~4 km autoroute / ~2 km hors agglo / ~300 m agglo
-- [ ] Classification de voie pour choisir la distance
-- [ ] Alerte sur **entrée / présence dans la zone**
-- [ ] En FR : plus de pin carte « radar exact » pour les alertes
-- [ ] Tests : géométrie, distances, pas de fuite de coordonnée contrôle
+- [x] Introduire `DangerZone` (géométrie, VMA?, kind, source)
+- [x] Convertir radars fixes CSV → **zones étendues** (plus de point de contrôle exposé)
+- [x] Distances selon réseau : ~4 km autoroute / ~2 km hors agglo / ~300 m agglo
+- [x] Classification de voie pour choisir la distance
+- [x] Alerte sur **entrée / présence dans la zone**
+- [x] En FR : plus de pin carte « radar exact » pour les alertes
+- [x] Tests : géométrie, distances, pas de fuite de coordonnée contrôle
+
+### Notes phase 1
+
+- Modèle : `shared/.../aac/DangerZone.kt` (+ `DangerZoneFactory`, `DangerZoneEvaluator`, `DangerZoneAlertCopy`).
+- Conversion : `FranceRadarRecord.toDangerZone()` ; `FranceRadarsProvider.search` ne renvoie plus de pins (zones via records).
+- Classification voie : heuristique VMA (≥110 autoroute, ≥70 hors agglo, sinon agglo) — map-matching reporté.
+- FR : OSM `speed_camera` filtré dans `OverpassProvider` sur bbox France.
 
 ## Phase 2 — Libellés / UX
 
