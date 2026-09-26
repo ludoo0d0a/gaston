@@ -687,49 +687,51 @@ private fun MapConfig(
             }
         }
 
-        // Radar Warnings
-        Column {
-            Text(
-                "Avertisseur de radars",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Alerte radars en approche", style = MaterialTheme.typography.titleSmall)
-                    Text("Alertes sonores et vocales lors de l'approche d'un radar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(
-                    checked = settings.radarWarningEnabled,
-                    onCheckedChange = { onUpdate(settings.copy(radarWarningEnabled = it)) },
-                )
-            }
-
-            if (settings.radarWarningEnabled) {
-                Spacer(modifier = Modifier.height(12.dp))
+        // AAC / danger-zone alerts (frozen on Playstore until Level A — BuildConfig.AAC_ALERTS_AVAILABLE)
+        if (BuildConfig.AAC_ALERTS_AVAILABLE) {
+            Column {
                 Text(
-                    "Distance d'avertissement: ${settings.radarWarningDistanceMeters} m",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    "Avertisseur de radars",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 12.dp)
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                FlowRow(
+
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    listOf(300, 500, 1000, 1500, 2000).forEach { dist ->
-                        FilterChip(
-                            selected = settings.radarWarningDistanceMeters == dist,
-                            onClick = { onUpdate(settings.copy(radarWarningDistanceMeters = dist)) },
-                            label = { Text("${dist} m") }
-                        )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Alerte radars en approche", style = MaterialTheme.typography.titleSmall)
+                        Text("Alertes sonores et vocales lors de l'approche d'un radar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Switch(
+                        checked = settings.radarWarningEnabled,
+                        onCheckedChange = { onUpdate(settings.copy(radarWarningEnabled = it)) },
+                    )
+                }
+
+                if (settings.radarWarningEnabled) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Distance d'avertissement: ${settings.radarWarningDistanceMeters} m",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(300, 500, 1000, 1500, 2000).forEach { dist ->
+                            FilterChip(
+                                selected = settings.radarWarningDistanceMeters == dist,
+                                onClick = { onUpdate(settings.copy(radarWarningDistanceMeters = dist)) },
+                                label = { Text("${dist} m") }
+                            )
+                        }
                     }
                 }
             }

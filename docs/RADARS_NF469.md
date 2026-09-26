@@ -4,7 +4,7 @@ Document de suivi pour la fonctionnalité d’alertes radars / zones de danger d
 
 > **Disclaimer :** ce document n’est pas un avis juridique. Le référentiel NF 469 complet est commercial (AFNOR / INFOCERT). Les distances et formulations ci‑dessous reprennent les pratiques publiques du protocole AFFTAC / sécurité routière, pas le texte certifié ligne à ligne.
 
-**Statut global (sept. 2026) :** prototype technique **fonctionnel** côté téléphone, **non conforme** au modèle « assistant d’aide à la conduite » attendu en France. Pas de certification NF 469. Pas d’alertes dédiées Android Auto.
+**Statut global (sept. 2026) :** prototype technique **fonctionnel** côté téléphone. **Niveau A en cours** (branche AAC) : go produit décidé, alertes **off par défaut**, flavor Playstore gelé (`AAC_ALERTS_AVAILABLE=false`) tant que A n’est pas atteint. Pas de certification NF 469 (niveau B hors scope). Pas d’alertes dédiées Android Auto.
 
 ---
 
@@ -296,3 +296,4 @@ NF 469 s’appuie aussi sur ISO/CEI **25051** (qualité logiciel) + moyens de co
 | 2026-09 | Création du doc : inventaire code actuel vs écart NF 469 / R. 413-15. |
 | 2026-09 | Todo list phasée niveau A (conformité produit) / B (certification NF 469). |
 | 2026-09 | Checklist niveau A extraite dans [`RADARS_NF469_TODO_NIVEAU_A.md`](RADARS_NF469_TODO_NIVEAU_A.md). |
+| 2026-09 | Phase 0 niveau A : go AAC FR ; défaut alertes OFF ; Playstore `AAC_ALERTS_AVAILABLE=false`. |

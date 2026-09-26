@@ -340,7 +340,10 @@ private fun MainActivityComposeRoot(
     }
 
     LaunchedEffect(hasLocationPermission, settings.radarWarningEnabled) {
-        if (hasLocationPermission && settings.radarWarningEnabled) {
+        if (hasLocationPermission &&
+            BuildConfig.AAC_ALERTS_AVAILABLE &&
+            settings.radarWarningEnabled
+        ) {
             onRequestMapDeps()
             while (isActive) {
                 val loc = LocationHelper.getCurrentLocation(context)

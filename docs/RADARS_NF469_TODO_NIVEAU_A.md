@@ -13,9 +13,19 @@ Contexte & écarts : [`RADARS_NF469.md`](RADARS_NF469.md).
 
 ## Phase 0 — Go / no-go
 
-- [ ] Décider de viser l’AAC FR (niveau A)
-- [ ] Geler le comportement actuel sur Play FR tant que A n’est pas atteint (feature off, flag build, ou hors listing FR)
+- [x] Décider de viser l’AAC FR (niveau A)
+- [x] Geler le comportement actuel sur Play FR tant que A n’est pas atteint (feature off, flag build, ou hors listing FR)
 - [ ] Avis juridique écrit sur le périmètre A (recommandé)
+
+### Décision (phase 0)
+
+| Item | Décision |
+|------|----------|
+| Objectif | **Niveau A** (conformité produit R. 413-15 / AAC FR). **Niveau B (NF 469)** hors scope. |
+| Play FR | Feature alertes **off par défaut** ; flavor `playstore` : `BuildConfig.AAC_ALERTS_AVAILABLE=false` tant que A n’est pas atteint (toggle UI masqué / boucle GPS inactive). Flavor `full` : disponible pour tests internes, toujours **off** par défaut. |
+| Avis juridique | **Recommandé** avant exposition large Play FR — *non fourni ici* (pas d’avis inventé). Owner produit / légal à solliciter. |
+
+Historique phase 0 : 2026-09 — go niveau A + gel Playstore.
 
 ## Phase 1 — Modèle « zones » (cœur)
 
