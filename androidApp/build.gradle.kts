@@ -142,14 +142,16 @@ configure<ApplicationExtension> {
             buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "false")
             // Internal builds may exercise AAC alerts (still off by default in settings).
             buildConfigField("boolean", "AAC_ALERTS_AVAILABLE", "true")
+            buildConfigField("boolean", "AAC_ALERTS_KILL_SWITCH", "false")
         }
         create("playstore") {
             dimension = "distribution"
             // The "playstore" variant is restricted to POI category to satisfy Google Play Car App Library requirements.
             buildConfigField("boolean", "IS_PLAYSTORE_DISTRIBUTION", "true")
-            // Frozen until Level A (R. 413-15 / AAC) is reached — see docs/RADARS_NF469_TODO_NIVEAU_A.md.
-            // Flip to true in Phase 5 once Level A exit criteria are met.
-            buildConfigField("boolean", "AAC_ALERTS_AVAILABLE", "false")
+            // Level A reached: opt-in AAC allowed on Play (still default OFF in settings).
+            buildConfigField("boolean", "AAC_ALERTS_AVAILABLE", "true")
+            // Emergency kill: set true in a hotfix build to disable AAC alerts without removing the APK.
+            buildConfigField("boolean", "AAC_ALERTS_KILL_SWITCH", "false")
         }
     }
 

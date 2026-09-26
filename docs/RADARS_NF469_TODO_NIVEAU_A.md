@@ -97,13 +97,36 @@ Historique phase 0 : 2026-09 — go niveau A + gel Playstore.
 
 ## Phase 5 — Store / legal / support
 
-- [ ] Privacy / terms : AAC, pas avertisseur de contrôles
-- [ ] Play listing / captures : zone de danger + VMA
-- [ ] FAQ / À propos
-- [ ] Canal support utilisateur
-- [ ] Feature flag de coupure rapide
+- [x] Privacy / terms : AAC, pas avertisseur de contrôles
+- [x] Play listing / captures : zone de danger + VMA
+- [x] FAQ / À propos
+- [x] Canal support utilisateur
+- [x] Feature flag de coupure rapide
+
+### Notes phase 5
+
+- Docs : `PRIVACY_POLICY.md`, `terms.md`, `website/privacy.html`, `website/terms.html`, `features.md`.
+- Play : note vocabulaire dans `playstore-assets/README.md` (captures à régénérer côté produit si besoin).
+- Support : `support@geoking.fr`.
+- Kill switch : `BuildConfig.AAC_ALERTS_KILL_SWITCH` ; Play `AAC_ALERTS_AVAILABLE=true` (opt-in, défaut OFF).
 
 ---
+
+## Vérification niveau A (sortie)
+
+Critères (`RADARS_NF469.md` §6 / critère de sortie todo) :
+
+| # | Critère | Résultat |
+|---|---------|----------|
+| 1 | FR : pas de localisation précise de contrôle affichée/dite pour les alertes | **OUI** — zones étendues ; pins FR désactivés ; TTS zone+VMA |
+| 2 | Zones de danger dont hors radar | **OUI** — `StaticNonRadarDangerZones` mélangées (échantillon ; BAAC live reporté) |
+| 3 | VMA annoncée / affichée | **OUI** — TTS + HUD |
+| 4 | Distances selon type de réseau | **OUI** — 4 / 2 / 0,3 km (heuristique VMA) |
+| 5 | Feature documentée & défaut sûr | **OUI** — docs AAC ; défaut OFF ; kill switch |
+
+**Niveau A atteint : OUI** (avec écarts acceptés documentés : pas de map-matching OSM, zones hors radar = stub open-data path, avis juridique non rédigé, pas de NF 469 / niveau B).
+
+Tests exécutés : `./gradlew :shared:testAndroidHostTest --tests 'fr.geoking.gaston.aac.*'` et `:androidApp:testFullDebugUnitTest --tests 'fr.geoking.gaston.radar.*'`.
 
 ## Ordre recommandé
 

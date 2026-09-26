@@ -341,6 +341,7 @@ private fun MainActivityComposeRoot(
     LaunchedEffect(hasLocationPermission, settings.radarWarningEnabled) {
         if (hasLocationPermission &&
             BuildConfig.AAC_ALERTS_AVAILABLE &&
+            !BuildConfig.AAC_ALERTS_KILL_SWITCH &&
             settings.radarWarningEnabled
         ) {
             onRequestMapDeps()

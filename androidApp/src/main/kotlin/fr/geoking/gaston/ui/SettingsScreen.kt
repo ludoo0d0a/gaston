@@ -687,8 +687,8 @@ private fun MapConfig(
             }
         }
 
-        // AAC / danger-zone alerts (frozen on Playstore until Level A — BuildConfig.AAC_ALERTS_AVAILABLE)
-        if (BuildConfig.AAC_ALERTS_AVAILABLE) {
+        // AAC / danger-zone alerts (gated by availability + emergency kill switch)
+        if (BuildConfig.AAC_ALERTS_AVAILABLE && !BuildConfig.AAC_ALERTS_KILL_SWITCH) {
             Column {
                 Text(
                     stringResource(R.string.aac_settings_title),

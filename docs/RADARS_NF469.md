@@ -4,7 +4,7 @@ Document de suivi pour la fonctionnalité d’alertes radars / zones de danger d
 
 > **Disclaimer :** ce document n’est pas un avis juridique. Le référentiel NF 469 complet est commercial (AFNOR / INFOCERT). Les distances et formulations ci‑dessous reprennent les pratiques publiques du protocole AFFTAC / sécurité routière, pas le texte certifié ligne à ligne.
 
-**Statut global (sept. 2026) :** prototype technique **fonctionnel** côté téléphone. **Niveau A en cours** (branche AAC) : go produit décidé, alertes **off par défaut**, flavor Playstore gelé (`AAC_ALERTS_AVAILABLE=false`) tant que A n’est pas atteint. Pas de certification NF 469 (niveau B hors scope). Pas d’alertes dédiées Android Auto.
+**Statut global (sept. 2026) :** **Niveau A (AAC FR / R. 413-15) atteint** sur branche produit — zones de danger + VMA, défaut OFF, kill switch. **Niveau B (NF 469)** hors scope. Pas d’alertes dédiées Android Auto.
 
 ---
 
@@ -269,14 +269,14 @@ NF 469 s’appuie aussi sur ISO/CEI **25051** (qualité logiciel) + moyens de co
 
 | Exigence (esprit NF 469 / R. 413-15) | État Gaston |
 |--------------------------------------|-------------|
-| Pas de localisation précise du contrôle | Non — points GPS + markers |
-| Vocabulaire zone de danger / VMA | Non — « radar » partout |
-| Distances selon réseau | Non — distance utilisateur fixe |
-| Zones de danger hors radars | Absent |
-| Qualité / SAV / process certif | Absent |
-| Alertes trajectoire + VMA | Oui (technique) |
-| Open data radars fixes FR | Oui |
-| Tests unitaires alertes / CSV | Oui |
+| Pas de localisation précise du contrôle | **Oui (A)** — zones étendues ; pins FR alertes off |
+| Vocabulaire zone de danger / VMA | **Oui (A)** |
+| Distances selon réseau | **Oui (A)** — heuristique VMA 4/2/0,3 km |
+| Zones de danger hors radars | **Oui (A)** — échantillon + chemin BAAC documenté |
+| Qualité / SAV / process certif | Partiel (A) — support + docs ; **pas** audit NF 469 |
+| Alertes trajectoire + VMA | Oui |
+| Open data radars fixes FR | Oui (+ URL dynamique) |
+| Tests unitaires alertes / CSV | Oui (+ labels AAC) |
 
 ---
 
@@ -297,3 +297,4 @@ NF 469 s’appuie aussi sur ISO/CEI **25051** (qualité logiciel) + moyens de co
 | 2026-09 | Todo list phasée niveau A (conformité produit) / B (certification NF 469). |
 | 2026-09 | Checklist niveau A extraite dans [`RADARS_NF469_TODO_NIVEAU_A.md`](RADARS_NF469_TODO_NIVEAU_A.md). |
 | 2026-09 | Phase 0 niveau A : go AAC FR ; défaut alertes OFF ; Playstore `AAC_ALERTS_AVAILABLE=false`. |
+| 2026-09 | Niveau A livré (phases 0–5) : zones, VMA, mix hors radar, engine local, legal/support ; Play `AAC_ALERTS_AVAILABLE=true` + kill switch. |
