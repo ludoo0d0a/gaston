@@ -17,12 +17,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.isActive
+import fr.geoking.gaston.feature.location.LocationHelper
+import fr.geoking.gaston.poi.PoiCategory
+import fr.geoking.gaston.poi.PoiSearchRequest
+import fr.geoking.gaston.radar.AndroidRadarAudioNotifier
+import fr.geoking.gaston.radar.RadarAlertManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -318,6 +325,45 @@ private fun MainActivityComposeRoot(
         installStatus == InstallStatus.PENDING ||
                 installStatus == InstallStatus.DOWNLOADING ||
                 installStatus == InstallStatus.INSTALLING
+    }
+
+    val audioNotifier = remember(context) { AndroidRadarAudioNotifier(context) }
+    val radarAlertManager = remember(context, settingsManager, audioNotifier) {
+        RadarAlertManager(settingsManager, audioNotifier)
+    }
+
+    DisposableEffect(radarAlertManager, audioNotifier) {
+        onDispose {
+            radarAlertManager.clearAlerts()
+            audioNotifier.shutdown()
+        }
+    }
+
+    LaunchedEffect(hasLocationPermission, settings.radarWarningEnabled) {
+        if (hasLocationPermission && settings.radarWarningEnabled) {
+            onRequestMapDeps()
+            while (isActive) {
+                val loc = LocationHelper.getCurrentLocation(context)
+                val provider = mapDepsState.value?.poiProvider
+                if (loc != null && provider != null) {
+                    try {
+                        val radarPois = provider.search(
+                            PoiSearchRequest(
+                                latitude = loc.latitude,
+                                longitude = loc.longitude,
+                                categories = setOf(PoiCategory.Radar),
+                                skipFilters = true
+                            )
+                        )
+                        radarAlertManager.evaluateAndAlert(loc, radarPois)
+                    } catch (e: Exception) {
+                        if (e is kotlinx.coroutines.CancellationException) throw e
+                        android.util.Log.w("MainActivity", "Radar alert check error", e)
+                    }
+                }
+                delay(2000)
+            }
+        }
     }
 
     MainUI(

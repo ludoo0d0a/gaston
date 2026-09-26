@@ -206,6 +206,8 @@ enum class PoiProviderType(
     BelgiumOfficial(providesFuel = true),
     /** US state-level weekly retail fuel prices (EIA petroleum/pri/gnd) + OSM stations. */
     UsaEia(providesFuel = true),
+    /** French speed cameras (radars fixes) open data from data.gouv.fr. */
+    FranceRadars(fetchKind = PoiProviderFetchKind.File),
     Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }

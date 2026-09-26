@@ -47,6 +47,8 @@ import fr.geoking.gaston.api.ecomovement.EcoMovementOcpiProvider
 import fr.geoking.gaston.api.fastned.FastnedOcpiClient
 import fr.geoking.gaston.api.fastned.FastnedOcpiProvider
 import fr.geoking.gaston.api.evpricesfr.EvPricesFrClient
+import fr.geoking.gaston.api.radars.FranceRadarsClient
+import fr.geoking.gaston.api.radars.FranceRadarsProvider
 import fr.geoking.gaston.api.datagouv.DataGouvCampingClient
 import fr.geoking.gaston.api.datagouv.DataGouvCampingProvider
 import fr.geoking.gaston.api.datagouv.DataGouvElecProvider
@@ -328,6 +330,10 @@ val mapModule = module {
             limit = 100,
         )
     }
+    single { FranceRadarsClient(get()) }
+    single<PoiProvider>(named("franceradars")) {
+        FranceRadarsProvider(get(), defaultRadiusKm = 25.0)
+    }
     single { DataGouvCampingClient(get()) }
     single<PoiProvider>(named("datagouvcamping")) {
         val base = DataGouvCampingProvider(get(), radiusKm = 15, limit = 50)
@@ -383,6 +389,7 @@ val mapModule = module {
             austriaEControl = get(named("austriaecontrol")),
             belgiumOfficial = get(named("belgiumofficial")),
             usaEia = get(named("usaeia")),
+            franceRadars = get(named("franceradars")),
             openVanCampClient = get(),
             overpass = get(named("overpass")),
             dataGouvCamping = get(named("datagouvcamping")),
