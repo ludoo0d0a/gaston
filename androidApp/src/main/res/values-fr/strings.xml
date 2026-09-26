@@ -73,7 +73,7 @@
     <string name="amenity_restaurant">Restaurant</string>
     <string name="amenity_shop">Boutique</string>
     <string name="amenity_showers">Douches</string>
-    <string name="amenity_speed_camera">Radar</string>
+    <string name="amenity_speed_camera">Zone de danger</string>
     <string name="amenity_toilets">Toilettes</string>
     <string name="amenity_truck_stop">Aire de poids lourds</string>
     <string name="amenity_viewpoint">Point de vue</string>
@@ -456,7 +456,18 @@
     <string name="provider_austria_econtrol">E-Control (Autriche)</string>
     <string name="provider_belgium_official">Belgique (officiel)</string>
     <string name="provider_usa_eia">EIA (moyenne état US)</string>
-    <string name="provider_france_radars">Radars (data.gouv.fr France)</string>
+    <string name="provider_france_radars">Zones de danger (data.gouv.fr France)</string>
+
+    <!-- AAC / niveau A -->
+    <string name="aac_settings_title">Assistant d\'aide à la conduite</string>
+    <string name="aac_settings_switch_title">Alertes zones de danger</string>
+    <string name="aac_settings_switch_subtitle">Alertes sonores et vocales à l\'entrée d\'une zone de danger, avec la limitation de vitesse si connue. Désactivé par défaut.</string>
+    <string name="aac_settings_distance_note">La distance d\'alerte dépend du type de voie (~4 km autoroute, ~2 km hors agglo, ~300 m en agglo).</string>
+    <string name="aac_settings_safety_tip">Sécurité routière : respectez les distances de sécurité et adaptez votre vitesse aux conditions.</string>
+    <string name="aac_hud_zone_entry">Zone de danger</string>
+    <string name="aac_hud_vma">Limitation %1$d km/h</string>
+    <string name="aac_about_blurb">Gaston peut annoncer des zones de danger et la limitation de vitesse (assistant d\'aide à la conduite). Il n\'affiche pas la position précise d\'un contrôle.</string>
+    <string name="aac_support_hint">Questions sur cette fonctionnalité : contact indiqué dans la politique de confidentialité.</string>
     <string name="emergency_useful_numbers">Numéros utiles</string>
     <string name="emergency_useful_numbers_country">Numéros utiles · %1$s</string>
     <string name="emergency_useful_numbers_auto">Numéros utiles%1$s</string>

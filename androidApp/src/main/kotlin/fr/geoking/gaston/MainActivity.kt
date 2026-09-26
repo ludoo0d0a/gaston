@@ -26,10 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.isActive
 import fr.geoking.gaston.feature.location.LocationHelper
-import fr.geoking.gaston.poi.PoiCategory
-import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.radar.AndroidRadarAudioNotifier
-import fr.geoking.gaston.radar.RadarAlertManager
+import fr.geoking.gaston.radar.DangerZoneAlertManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -122,7 +120,8 @@ class MainActivity : ComponentActivity() {
                 routePlanner = get(),
                 routingClient = get(),
                 tollCalculator = get(),
-                geocodingClient = get()
+                geocodingClient = get(),
+                dangerZoneRepository = get(),
             )
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "ensureMapDeps: failed to load map dependencies", e)
@@ -328,37 +327,39 @@ private fun MainActivityComposeRoot(
     }
 
     val audioNotifier = remember(context) { AndroidRadarAudioNotifier(context) }
-    val radarAlertManager = remember(context, settingsManager, audioNotifier) {
-        RadarAlertManager(settingsManager, audioNotifier)
+    val dangerZoneAlertManager = remember(context, settingsManager, audioNotifier) {
+        DangerZoneAlertManager(settingsManager, audioNotifier)
     }
 
-    DisposableEffect(radarAlertManager, audioNotifier) {
+    DisposableEffect(dangerZoneAlertManager, audioNotifier) {
         onDispose {
-            radarAlertManager.clearAlerts()
+            dangerZoneAlertManager.clearAlerts()
             audioNotifier.shutdown()
         }
     }
 
     LaunchedEffect(hasLocationPermission, settings.radarWarningEnabled) {
-        if (hasLocationPermission && settings.radarWarningEnabled) {
+        if (hasLocationPermission &&
+            BuildConfig.AAC_ALERTS_AVAILABLE &&
+            !BuildConfig.AAC_ALERTS_KILL_SWITCH &&
+            settings.radarWarningEnabled
+        ) {
             onRequestMapDeps()
             while (isActive) {
                 val loc = LocationHelper.getCurrentLocation(context)
-                val provider = mapDepsState.value?.poiProvider
-                if (loc != null && provider != null) {
+                val zoneRepo = mapDepsState.value?.dangerZoneRepository
+                if (loc != null && zoneRepo != null) {
                     try {
-                        val radarPois = provider.search(
-                            PoiSearchRequest(
-                                latitude = loc.latitude,
-                                longitude = loc.longitude,
-                                categories = setOf(PoiCategory.Radar),
-                                skipFilters = true
-                            )
+                        // Local zone cache — CSV fetch only on TTL / area refresh, not every tick.
+                        val zones = zoneRepo.zonesNear(
+                            latitude = loc.latitude,
+                            longitude = loc.longitude,
+                            radiusKm = 25.0,
                         )
-                        radarAlertManager.evaluateAndAlert(loc, radarPois)
+                        dangerZoneAlertManager.evaluateAndAlert(loc, zones)
                     } catch (e: Exception) {
                         if (e is kotlinx.coroutines.CancellationException) throw e
-                        android.util.Log.w("MainActivity", "Radar alert check error", e)
+                        android.util.Log.w("MainActivity", "Danger zone alert check error", e)
                     }
                 }
                 delay(2000)
@@ -366,24 +367,36 @@ private fun MainActivityComposeRoot(
         }
     }
 
-    MainUI(
-        diagnostics = diagnostics,
-        settingsManager = settingsManager,
-        authManager = authManager,
-        mapDepsState = mapDepsState,
-        onRequestMapDeps = onRequestMapDeps,
-        networkService = networkService,
-        fuelForecastRepository = fuelForecastRepository,
-        inAppUpdateHelper = inAppUpdateHelper,
-        onStartUpdate = { info -> inAppUpdateHelper.startUpdate(info, updateResultLauncher) },
-        isUpdateInProgress = isUpdateInProgress,
-        pendingNavDestinationFlow = pendingNavDestination,
-        isPlaystoreDistribution = isPlaystoreDistribution,
-        hasLocationPermission = hasLocationPermission,
-        onRequestLocationPermission = {
-            locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+    val hudState by dangerZoneAlertManager.hudState.collectAsState()
+
+    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+        MainUI(
+            diagnostics = diagnostics,
+            settingsManager = settingsManager,
+            authManager = authManager,
+            mapDepsState = mapDepsState,
+            onRequestMapDeps = onRequestMapDeps,
+            networkService = networkService,
+            fuelForecastRepository = fuelForecastRepository,
+            inAppUpdateHelper = inAppUpdateHelper,
+            onStartUpdate = { info -> inAppUpdateHelper.startUpdate(info, updateResultLauncher) },
+            isUpdateInProgress = isUpdateInProgress,
+            pendingNavDestinationFlow = pendingNavDestination,
+            isPlaystoreDistribution = isPlaystoreDistribution,
+            hasLocationPermission = hasLocationPermission,
+            onRequestLocationPermission = {
+                locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+        )
+        if (hudState.active) {
+            fr.geoking.gaston.ui.aac.DangerZoneHudBanner(
+                speedLimitKmH = hudState.speedLimitKmH,
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.TopCenter)
+                    .zIndex(10f)
+            )
         }
-    )
+    }
 }
 
 @Composable

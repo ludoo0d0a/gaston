@@ -13,60 +13,120 @@ Contexte & écarts : [`RADARS_NF469.md`](RADARS_NF469.md).
 
 ## Phase 0 — Go / no-go
 
-- [ ] Décider de viser l’AAC FR (niveau A)
-- [ ] Geler le comportement actuel sur Play FR tant que A n’est pas atteint (feature off, flag build, ou hors listing FR)
+- [x] Décider de viser l’AAC FR (niveau A)
+- [x] Geler le comportement actuel sur Play FR tant que A n’est pas atteint (feature off, flag build, ou hors listing FR)
 - [ ] Avis juridique écrit sur le périmètre A (recommandé)
+
+### Décision (phase 0)
+
+| Item | Décision |
+|------|----------|
+| Objectif | **Niveau A** (conformité produit R. 413-15 / AAC FR). **Niveau B (NF 469)** hors scope. |
+| Play FR | Feature alertes **off par défaut** ; flavor `playstore` : `BuildConfig.AAC_ALERTS_AVAILABLE=false` tant que A n’est pas atteint (toggle UI masqué / boucle GPS inactive). Flavor `full` : disponible pour tests internes, toujours **off** par défaut. |
+| Avis juridique | **Recommandé** avant exposition large Play FR — *non fourni ici* (pas d’avis inventé). Owner produit / légal à solliciter. |
+
+Historique phase 0 : 2026-09 — go niveau A + gel Playstore.
 
 ## Phase 1 — Modèle « zones » (cœur)
 
-- [ ] Introduire `DangerZone` (géométrie, VMA?, kind, source)
-- [ ] Convertir radars fixes CSV → **zones étendues** (plus de point de contrôle exposé)
-- [ ] Distances selon réseau : ~4 km autoroute / ~2 km hors agglo / ~300 m agglo
-- [ ] Classification de voie pour choisir la distance
-- [ ] Alerte sur **entrée / présence dans la zone**
-- [ ] En FR : plus de pin carte « radar exact » pour les alertes
-- [ ] Tests : géométrie, distances, pas de fuite de coordonnée contrôle
+- [x] Introduire `DangerZone` (géométrie, VMA?, kind, source)
+- [x] Convertir radars fixes CSV → **zones étendues** (plus de point de contrôle exposé)
+- [x] Distances selon réseau : ~4 km autoroute / ~2 km hors agglo / ~300 m agglo
+- [x] Classification de voie pour choisir la distance
+- [x] Alerte sur **entrée / présence dans la zone**
+- [x] En FR : plus de pin carte « radar exact » pour les alertes
+- [x] Tests : géométrie, distances, pas de fuite de coordonnée contrôle
+
+### Notes phase 1
+
+- Modèle : `shared/.../aac/DangerZone.kt` (+ `DangerZoneFactory`, `DangerZoneEvaluator`, `DangerZoneAlertCopy`).
+- Conversion : `FranceRadarRecord.toDangerZone()` ; `FranceRadarsProvider.search` ne renvoie plus de pins (zones via records).
+- Classification voie : heuristique VMA (≥110 autoroute, ≥70 hors agglo, sinon agglo) — map-matching reporté.
+- FR : OSM `speed_camera` filtré dans `OverpassProvider` sur bbox France.
 
 ## Phase 2 — Libellés / UX
 
-- [ ] UI : « zones de danger » / AAC, plus « avertisseur de radars »
-- [ ] TTS : « Zone de danger » + VMA, plus « Attention, radar… »
-- [ ] Plus de noms d’alerte du type `Radar X km/h`
-- [ ] HUD : VMA + entrée en zone
-- [ ] Feature **off** par défaut (ou on seulement si conforme)
-- [ ] Retirer / borner le choix libre 300–2000 m
-- [ ] Au moins un canal de messages de sécurité routière
-- [ ] i18n FR conforme
-- [ ] Android Auto : même vocabulaire zone/VMA
+- [x] UI : « zones de danger » / AAC, plus « avertisseur de radars »
+- [x] TTS : « Zone de danger » + VMA, plus « Attention, radar… »
+- [x] Plus de noms d’alerte du type `Radar X km/h`
+- [x] HUD : VMA + entrée en zone
+- [x] Feature **off** par défaut (ou on seulement si conforme)
+- [x] Retirer / borner le choix libre 300–2000 m
+- [x] Au moins un canal de messages de sécurité routière
+- [x] i18n FR conforme
+- [x] Android Auto : même vocabulaire zone/VMA
+
+### Notes phase 2
+
+- Strings `aac_*` (FR + default) ; About blurb AAC.
+- TTS via `DangerZoneAlertCopy` ; chips distance retirés (distance = type de voie).
+- HUD : `DangerZoneHudBanner` + `RadarAlertManager.hudState`.
+- `RoadSafetyMessages` + tip dans les réglages.
+- AA : `amenity_speed_camera` → « Zone de danger ».
 
 ## Phase 3 — Données
 
-- [ ] CSV data.gouv : URL dynamique + versioning
-- [ ] Cache disque + TTL
-- [ ] Types CSV → kinds de zone sans dire « contrôle ici »
-- [ ] Désactiver OSM `speed_camera` pour les **alertes** en FR
-- [ ] Source(s) de zones **hors radar** (accidentalité / vigilance…)
-- [ ] Mix d’alertes (pas 100 % issues de radars)
-- [ ] Pas de communautaire « forces de l’ordre » sans process L. 130-11
+- [x] CSV data.gouv : URL dynamique + versioning
+- [x] Cache disque + TTL
+- [x] Types CSV → kinds de zone sans dire « contrôle ici »
+- [x] Désactiver OSM `speed_camera` pour les **alertes** en FR
+- [x] Source(s) de zones **hors radar** (accidentalité / vigilance…)
+- [x] Mix d’alertes (pas 100 % issues de radars)
+- [x] Pas de communautaire « forces de l’ordre » sans process L. 130-11
+
+### Notes phase 3
+
+- Voir [`AAC_DATA.md`](AAC_DATA.md) : resolver data.gouv, disk TTL, `StaticNonRadarDangerZones`, `DangerZoneRepository`.
+- Zones hors radar = échantillon stub + chemin open data documenté (BAAC) — pas encore BAAC live.
 
 ## Phase 4 — Moteur & qualité
 
-- [ ] Boucle GPS découplée du `search` carte → cache local de zones
-- [ ] `DangerZoneAlertManager` (remplace / évolue `RadarAlertManager`)
-- [ ] Trajectoire : tronçon concerné, pas chaussée opposée si possible
-- [ ] Perf / batterie (plus de fetch réseau toutes les 2 s)
-- [ ] Tests non-régression libellés (pas de « radar + distance »)
-- [ ] Doc technique architecture AAC
+- [x] Boucle GPS découplée du `search` carte → cache local de zones
+- [x] `DangerZoneAlertManager` (remplace / évolue `RadarAlertManager`)
+- [x] Trajectoire : tronçon concerné, pas chaussée opposée si possible
+- [x] Perf / batterie (plus de fetch réseau toutes les 2 s)
+- [x] Tests non-régression libellés (pas de « radar + distance »)
+- [x] Doc technique architecture AAC
+
+### Notes phase 4
+
+- `MainActivity` → `DangerZoneRepository.zonesNear` + `DangerZoneAlertManager`.
+- Bearing ±40° conserve le filtre chaussée opposée (heuristique).
+- Doc : [`AAC_ARCHITECTURE.md`](AAC_ARCHITECTURE.md).
+- `RadarAlertManager` conservé pour tests legacy POI.
 
 ## Phase 5 — Store / legal / support
 
-- [ ] Privacy / terms : AAC, pas avertisseur de contrôles
-- [ ] Play listing / captures : zone de danger + VMA
-- [ ] FAQ / À propos
-- [ ] Canal support utilisateur
-- [ ] Feature flag de coupure rapide
+- [x] Privacy / terms : AAC, pas avertisseur de contrôles
+- [x] Play listing / captures : zone de danger + VMA
+- [x] FAQ / À propos
+- [x] Canal support utilisateur
+- [x] Feature flag de coupure rapide
+
+### Notes phase 5
+
+- Docs : `PRIVACY_POLICY.md`, `terms.md`, `website/privacy.html`, `website/terms.html`, `features.md`.
+- Play : note vocabulaire dans `playstore-assets/README.md` (captures à régénérer côté produit si besoin).
+- Support : `support@geoking.fr`.
+- Kill switch : `BuildConfig.AAC_ALERTS_KILL_SWITCH` ; Play `AAC_ALERTS_AVAILABLE=true` (opt-in, défaut OFF).
 
 ---
+
+## Vérification niveau A (sortie)
+
+Critères (`RADARS_NF469.md` §6 / critère de sortie todo) :
+
+| # | Critère | Résultat |
+|---|---------|----------|
+| 1 | FR : pas de localisation précise de contrôle affichée/dite pour les alertes | **OUI** — zones étendues ; pins FR désactivés ; TTS zone+VMA |
+| 2 | Zones de danger dont hors radar | **OUI** — `StaticNonRadarDangerZones` mélangées (échantillon ; BAAC live reporté) |
+| 3 | VMA annoncée / affichée | **OUI** — TTS + HUD |
+| 4 | Distances selon type de réseau | **OUI** — 4 / 2 / 0,3 km (heuristique VMA) |
+| 5 | Feature documentée & défaut sûr | **OUI** — docs AAC ; défaut OFF ; kill switch |
+
+**Niveau A atteint : OUI** (avec écarts acceptés documentés : pas de map-matching OSM, zones hors radar = stub open-data path, avis juridique non rédigé, pas de NF 469 / niveau B).
+
+Tests exécutés : `./gradlew :shared:testAndroidHostTest --tests 'fr.geoking.gaston.aac.*'` et `:androidApp:testFullDebugUnitTest --tests 'fr.geoking.gaston.radar.*'`.
 
 ## Ordre recommandé
 

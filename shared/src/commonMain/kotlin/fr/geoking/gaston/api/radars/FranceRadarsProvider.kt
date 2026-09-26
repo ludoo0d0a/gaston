@@ -23,11 +23,9 @@ class FranceRadarsProvider(
         if (!shouldQuery(request.latitude, request.longitude, request.viewport)) {
             return emptyList()
         }
-        val radius = request.viewport?.let {
-            radiusKmFromMapViewport(request.latitude, request.longitude, it).toDouble().coerceIn(2.0, 100.0)
-        } ?: defaultRadiusKm
-
-        return client.getRadarsNear(request.latitude, request.longitude, radiusKm = radius)
+        // Level A (FR): do not expose exact control points as map POIs for alerts.
+        // Zones are built via FranceRadarsClient.getRecordsNear → DangerZoneFactory.
+        return emptyList()
     }
 
     override suspend fun getGasStations(

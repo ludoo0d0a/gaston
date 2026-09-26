@@ -300,6 +300,7 @@ val mapModule = module {
         }
     }
     single { OverpassClient(get()) }
+    single { fr.geoking.gaston.aac.OsmRoadClassifier(get()) }
     single<PoiProvider>(named("overpass")) {
         OverpassProvider(get(), radiusKm = 5, limit = 100)
     }
@@ -330,7 +331,19 @@ val mapModule = module {
             limit = 100,
         )
     }
-    single { FranceRadarsClient(get()) }
+    single {
+        val diskCache = fr.geoking.gaston.aac.AndroidTextFileCache(androidContext())
+        val resolver = fr.geoking.gaston.aac.FranceRadarsCsvResolver(
+            client = get(),
+            fallbackUrl = FranceRadarsClient.DEFAULT_CSV_URL,
+        )
+        FranceRadarsClient(
+            client = get(),
+            diskCache = diskCache,
+            csvResolver = resolver,
+        )
+    }
+    single { fr.geoking.gaston.aac.DangerZoneRepository(get(), get()) }
     single<PoiProvider>(named("franceradars")) {
         FranceRadarsProvider(get(), defaultRadiusKm = 25.0)
     }
@@ -636,7 +649,8 @@ data class MapDeps(
     val routePlanner: RoutePlanner,
     val routingClient: RoutingClient,
     val tollCalculator: TollCalculator,
-    val geocodingClient: GeocodingClient
+    val geocodingClient: GeocodingClient,
+    val dangerZoneRepository: fr.geoking.gaston.aac.DangerZoneRepository,
 )
 
 /**

@@ -5,11 +5,13 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import fr.geoking.gaston.aac.DangerZoneAlertCopy
 import java.util.Locale
 
 interface RadarAudioNotifier {
     fun playOkSpeedBeeps()
     fun playOverSpeedBeepsAndSpeak(speedLimitKmH: Int?)
+    fun speakDangerZone(speedLimitKmH: Int?)
     fun shutdown()
 }
 
@@ -47,7 +49,6 @@ class AndroidRadarAudioNotifier(
     }
 
     override fun playOkSpeedBeeps() {
-        // Play two short discreet beeps for OK speed
         try {
             toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 100)
         } catch (e: Exception) {
@@ -56,23 +57,19 @@ class AndroidRadarAudioNotifier(
     }
 
     override fun playOverSpeedBeepsAndSpeak(speedLimitKmH: Int?) {
-        // Play rapid close beeps for overspeed
         try {
             toneGenerator?.startTone(ToneGenerator.TONE_CDMA_HIGH_L, 300)
         } catch (e: Exception) {
             Log.w(TAG, "ToneGenerator error", e)
         }
+        speakDangerZone(speedLimitKmH)
+    }
 
-        // Speak warning via TTS
-        val phrase = if (speedLimitKmH != null && speedLimitKmH > 0) {
-            "Attention, radar à $speedLimitKmH km/h"
-        } else {
-            "Attention, radar en approche"
-        }
-
+    override fun speakDangerZone(speedLimitKmH: Int?) {
+        val phrase = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH)
         if (isTtsReady) {
             try {
-                tts?.speak(phrase, TextToSpeech.QUEUE_ADD, null, "radar_warning_${System.currentTimeMillis()}")
+                tts?.speak(phrase, TextToSpeech.QUEUE_ADD, null, "danger_zone_${System.currentTimeMillis()}")
             } catch (e: Exception) {
                 Log.w(TAG, "TTS speak failed", e)
             }

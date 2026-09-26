@@ -8,8 +8,8 @@ Gaston ("we", "our", or "the app") is a fuel and EV charging station finder for 
 
 ### 1.1 Location (ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION)
 
-- **Purpose:** To show nearby stations on the map and compute distances / route context.
-- **When used:** Only while using map/search features that require location.
+- **Purpose:** To show nearby stations on the map and compute distances / route context. Optionally, if you enable the **driving assistant** (danger-zone alerts), location is also used on-device to detect entry into extended danger zones and announce the posted speed limit (VMA). This is an **aide à la conduite** feature: it does **not** show the precise location of enforcement controls.
+- **When used:** Only while using map/search features that require location, or while danger-zone alerts are enabled.
 - **Storage:** Location is not stored by the app as a history (unless a specific feature explicitly persists a place you entered, like route history).
 
 ### 1.2 Internet (INTERNET)
@@ -35,7 +35,7 @@ Gaston ("we", "our", or "the app") is a fuel and EV charging station finder for 
 
 ## 5. Contact
 
-For questions about this policy, contact: [your-email@example.com]
+For questions about this policy or the driving-assistant (danger zones) feature, contact: support@geoking.fr
 
 ---
 
