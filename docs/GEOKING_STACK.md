@@ -16,7 +16,7 @@ Gaston **uses geoking-ci** for Play release and debug CI. Shared scripts come fr
 
 ```bash
 ./scripts/gk --list
-./scripts/release-play-local.sh   # when Actions credits are out
+./scripts/build-and-publish.sh   # when Actions credits are out
 ./scripts/debug-play-dhu.sh       # Gaston-specific DHU (custom, not symlink)
 ./scripts/run-dhu.sh
 ```

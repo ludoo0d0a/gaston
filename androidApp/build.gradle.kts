@@ -161,7 +161,7 @@ configure<ApplicationExtension> {
         }
     }
 
-    // geoking-ci / local release-play-local: KEYSTORE_FILE + passwords via env.
+    // geoking-ci / local build-and-publish: KEYSTORE_FILE + passwords via env.
     // Absent locally → release stays unsigned; CI injects the upload keystore.
     val keystorePath = System.getenv("KEYSTORE_FILE")
     signingConfigs {
