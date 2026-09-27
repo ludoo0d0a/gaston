@@ -32,8 +32,6 @@ configure<ApplicationExtension> {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")
         }
         targetSdk = 36
-        val ciRunNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
-        val ciRunAttempt = System.getenv("GITHUB_RUN_ATTEMPT")?.toIntOrNull() ?: 1
         val localProps = rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
             Properties().apply { file.inputStream().use { load(it) } }
         } ?: Properties()
@@ -45,15 +43,22 @@ configure<ApplicationExtension> {
         fun sanitizeBuildConfigString(s: String): String =
             s.trim().replace("\\", "\\\\").replace("\"", "\\\"").replace(Regex("[\r\n]+"), " ")
         val localVersionCode = prop("VERSION_CODE").takeIf { it.isNotEmpty() }?.toIntOrNull()
+        // Prefer explicit VERSION_CODE (geoking-ci / local release). Else Gaston legacy
+        // (run_number * 10 + attempt). Else local.properties / default.
         val computedVersionCode = when {
-            ciRunNumber != null -> (ciRunNumber * 10) + ciRunAttempt
             localVersionCode != null -> localVersionCode
+            System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() != null -> {
+                val run = System.getenv("GITHUB_RUN_NUMBER")!!.toInt()
+                val attempt = System.getenv("GITHUB_RUN_ATTEMPT")?.toIntOrNull() ?: 1
+                (run * 10) + attempt
+            }
             else -> 2
         }
-        val computedVersionName = if (ciRunNumber != null) {
-            "1.0.$ciRunNumber"
-        } else {
-            "1.0"
+        val versionNameEnv = System.getenv("VERSION_NAME")?.trim()?.removePrefix("v")?.takeIf { it.isNotEmpty() }
+        val computedVersionName = when {
+            versionNameEnv != null -> versionNameEnv
+            System.getenv("GITHUB_RUN_NUMBER") != null -> "1.0.${System.getenv("GITHUB_RUN_NUMBER")}"
+            else -> "1.0"
         }
         versionCode = computedVersionCode
         versionName = computedVersionName
@@ -67,8 +72,9 @@ configure<ApplicationExtension> {
 
         // Optional: GitHub PAT for in-app GitHub features (user can also configure at runtime).
         val githubToken = sanitizeBuildConfigString(prop("GITHUB_TOKEN"))
-        val googleWebClientId = sanitizeBuildConfigString(prop("GOOGLE_WEB_CLIENT_ID"))
-        val mobiliteitLuxembourgKey = sanitizeBuildConfigString(prop("MOBILITEIT_LUXEMBOURG_KEY"))
+        val googleWebClientId = sanitizeBuildConfigString(
+            prop("GOOGLE_WEB_CLIENT_ID").ifEmpty { prop("WEB_CLIENT_ID") }
+        )        val mobiliteitLuxembourgKey = sanitizeBuildConfigString(prop("MOBILITEIT_LUXEMBOURG_KEY"))
         val tomtomKey = sanitizeBuildConfigString(prop("TOMTOM_KEY"))
         val openChargeMapKey = sanitizeBuildConfigString(prop("OPENCHARGEMAP_KEY"))
         val chargyApiKey = sanitizeBuildConfigString(prop("CHARGY_API_KEY"))
@@ -155,6 +161,20 @@ configure<ApplicationExtension> {
         }
     }
 
+    // geoking-ci / local release-play-local: KEYSTORE_FILE + passwords via env.
+    // Absent locally → release stays unsigned; CI injects the upload keystore.
+    val keystorePath = System.getenv("KEYSTORE_FILE")
+    signingConfigs {
+        create("release") {
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             isDebuggable = true
@@ -167,6 +187,9 @@ configure<ApplicationExtension> {
             isMinifyEnabled = true
             isShrinkResources = true
             buildConfigField("boolean", "AUTO_DASHBOARD_DEV_MODE", "false")
+            if (keystorePath != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

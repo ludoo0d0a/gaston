@@ -27,6 +27,8 @@ Integration tests (real APIs, optional in CI): `CountryStationLoadRealApiTests` 
 
 Prerequisites: JDK 17+, `local.properties` with `sdk.dir` (and optional `GOOGLE_MAPS_KEY`). Never commit secrets.
 
+Shared GeoKing scripts/CI (additive): [`docs/GEOKING_STACK.md`](docs/GEOKING_STACK.md) — `./scripts/gk --list`.
+
 ## Where to change things
 
 - New country/API feed → `shared/.../api/<country>/` following existing `*Client` + `*Provider` pairs

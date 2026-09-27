@@ -1,0 +1,61 @@
+{
+  "project": {
+    "id": "gaston-c8f44",
+    "projectNumber": "305319734071",
+    "name": "Gaston",
+    "package": "fr.geoking.gaston",
+    "playStorePackage": "fr.geoking.gaston",
+    "storageBucket": "gaston-c8f44.firebasestorage.app",
+    "firebaseAndroidAppId": "1:305319734071:android:0a5bbce83d2bd52b2688b2",
+    "repo": "gaston",
+    "githubOwner": "ludoo0d0a",
+    "website": "https://gaston.geoking.fr"
+  },
+  "build": {
+    "gradleModule": ":androidApp",
+    "googleServices": "androidApp/google-services.json",
+    "keystoreAlias": "key0",
+    "keystoreDn": "CN=Gaston, OU=GeoKing, O=GeoKing, L=Paris, C=FR",
+    "mainActivity": ".MainActivity",
+    "signInLogTag": "GastonSignIn",
+    "playStore": {
+      "requireWearScreenshots": false,
+      "listingsDir": "playstore-assets"
+    }
+  },
+  "urls": {
+    "website": {
+      "home": "https://gaston.geoking.fr",
+      "policy": "https://gaston.geoking.fr/privacy.html",
+      "terms": "https://gaston.geoking.fr/terms.html"
+    },
+    "store": {
+      "listing": "https://play.google.com/store/apps/details?id=fr.geoking.gaston"
+    },
+    "firebase": {
+      "console": "https://console.firebase.google.com/project/gaston-c8f44/",
+      "settings": "https://console.firebase.google.com/project/gaston-c8f44/settings/general",
+      "authProviders": "https://console.firebase.google.com/project/gaston-c8f44/authentication/providers",
+      "authUsers": "https://console.firebase.google.com/project/gaston-c8f44/authentication/users"
+    },
+    "gcp": {
+      "console": "https://console.cloud.google.com/welcome?project=gaston-c8f44",
+      "credentials": "https://console.cloud.google.com/apis/credentials?project=gaston-c8f44",
+      "oauthConsent": "https://console.cloud.google.com/apis/credentials/consent?project=gaston-c8f44",
+      "playDeveloperApi": "https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com?project=gaston-c8f44",
+      "serviceAccounts": "https://console.cloud.google.com/iam-admin/serviceaccounts?project=gaston-c8f44"
+    },
+    "play": {
+      "developerId": "8648842673731499425",
+      "appId": "TODO_PLAY_APP_ID",
+      "dashboard": "https://play.google.com/console/u/0/developers/8648842673731499425/",
+      "integrity": "https://play.google.com/console/u/0/developers/8648842673731499425/",
+      "integrityHelp": "https://support.google.com/googleplay/android-developer/answer/9842756?hl=en"
+    },
+    "github": {
+      "repo": "https://github.com/ludoo0d0a/gaston",
+      "actions": "https://github.com/ludoo0d0a/gaston/actions",
+      "actionsSecrets": "https://github.com/ludoo0d0a/gaston/settings/secrets/actions"
+    }
+  }
+}

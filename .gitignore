@@ -37,3 +37,6 @@ gaston-*.json
 
 ## Temporary folders
 tmp/
+
+# Local symlink to shared tools (link-scripts.sh; CI checks out the repo here)
+/geoking-tools

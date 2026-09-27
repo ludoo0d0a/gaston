@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Source for scripts/whatsnew.py → playstore/whatsnew/ (geoking-ci Play upload). -->
+<whatsnew>
+  <release versionCode="1" versionName="1.0">
+    <locale code="en-US">Automated Play release from geoking-ci.</locale>
+    <locale code="fr-FR">Publication Play automatisée via geoking-ci.</locale>
+  </release>
+</whatsnew>

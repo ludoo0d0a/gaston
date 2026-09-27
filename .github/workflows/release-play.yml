@@ -1,0 +1,49 @@
+name: Release to Play Store
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Play Store track'
+        default: internal
+        type: choice
+        options: [internal, alpha, beta, production]
+      changesNotSentForReview:
+        description: 'Skip auto-review (managed publishing / draft-style)'
+        default: false
+        type: boolean
+      cancelLastRunningAction:
+        description: 'Cancel any in-progress run of this workflow'
+        default: true
+        type: boolean
+
+concurrency:
+  group: play-release
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.cancelLastRunningAction }}
+
+jobs:
+  release:
+    uses: ludoo0d0a/geoking-ci/.github/workflows/release-play.yml@main
+    with:
+      package_name: fr.geoking.gaston
+      gradle_module: ':androidApp'
+      bundle_task: bundlePlaystoreRelease
+      aab_glob: 'androidApp/build/outputs/bundle/playstoreRelease/*.aab'
+      google_services_path: 'androidApp/google-services.json'
+      whatsnew_script: geoking-tools/bin/whatsnew.py
+      unit_test_tasks: ':androidApp:testFullDebugUnitTest :shared:testAndroidHostTest'
+      gradle_version: wrapper
+      java_version: '21'
+      # Keep Gaston versionCode scheme (run*10+attempt) above prior Play uploads.
+      version_code_override: ${{ github.run_number * 10 + github.run_attempt }}
+      version_name_override: ${{ github.ref_type == 'tag' && github.ref_name || format('1.0.{0}', github.run_number) }}
+      is_workflow_dispatch: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+      workflow_dispatch_track: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.track || '' }}
+      workflow_dispatch_skip_review: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.changesNotSentForReview == 'true' && 'true' || 'false' }}
+    secrets: inherit
