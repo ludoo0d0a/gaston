@@ -18,14 +18,10 @@ on:
         description: 'Skip auto-review (managed publishing / draft-style)'
         default: false
         type: boolean
-      cancelLastRunningAction:
-        description: 'Cancel any in-progress run of this workflow'
-        default: true
-        type: boolean
 
 concurrency:
   group: play-release
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.cancelLastRunningAction }}
+  cancel-in-progress: true
 
 jobs:
   release:
