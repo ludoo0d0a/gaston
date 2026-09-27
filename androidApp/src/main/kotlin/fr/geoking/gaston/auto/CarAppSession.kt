@@ -57,7 +57,8 @@ class CarAppSession : Session(), KoinComponent {
                     routePlanner = get<RoutePlanner>(),
                     routingClient = get<RoutingClient>(),
                     tollCalculator = get<TollCalculator>(),
-                    geocodingClient = get<GeocodingClient>()
+                    geocodingClient = get<GeocodingClient>(),
+                    dangerZoneRepository = get(),
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load map dependencies", e)

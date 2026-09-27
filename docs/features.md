@@ -26,6 +26,17 @@
 
 ---
 
+## Driving assistant (France — Level A)
+
+**As a** driver in France,  
+**I want** optional danger-zone alerts with posted speed limits,  
+**so that** I get an aide à la conduite without precise enforcement-control locations.
+
+- Opt-in (default **off**); Play builds gated by `AAC_ALERTS_AVAILABLE` / kill switch.
+- See [`docs/RADARS_NF469_TODO_NIVEAU_A.md`](RADARS_NF469_TODO_NIVEAU_A.md), [`docs/AAC_ARCHITECTURE.md`](AAC_ARCHITECTURE.md).
+
+---
+
 ## Summary
 
 | Vehicle type | Goal |

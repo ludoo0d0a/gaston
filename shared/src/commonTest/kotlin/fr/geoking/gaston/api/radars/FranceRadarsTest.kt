@@ -2,6 +2,7 @@ package fr.geoking.gaston.api.radars
 
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiSearchRequest
+import fr.geoking.gaston.api.radars.toDangerZone
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -59,17 +60,28 @@ Numéro de radar;Type de radar;Date de mise en service;VMA ;Latitude; Longitude
         val poi = record.toPoi()
 
         assertEquals("fr_radar_12014", poi.id)
-        assertEquals("Radar 110 km/h", poi.name)
+        assertEquals("Zone 110 km/h", poi.name)
         assertEquals(PoiCategory.Radar, poi.poiCategory)
         assertEquals(48.8566, poi.latitude, 0.0001)
         assertEquals(2.3522, poi.longitude, 0.0001)
         assertFalse(poi.isElectric)
         assertEquals("FranceRadars", poi.source)
         assertEquals("110", poi.rawSourceData?.get("vma"))
+        assertFalse(poi.name.contains("Radar", ignoreCase = true))
     }
 
     @Test
-    fun testProviderScopingAndSearch() = runBlocking {
+    fun testToDangerZoneExtended() {
+        val record = FranceRadarRecord("12014", "FIXE", 130, 48.8566, 2.3522)
+        val zone = record.toDangerZone()
+        assertEquals("fr_dz_12014", zone.id)
+        assertEquals(4_000.0, zone.radiusMeters)
+        assertEquals(130, zone.speedLimitKmH)
+        assertTrue(zone.contains(48.8566, 2.3522))
+    }
+
+    @Test
+    fun testProviderNoLongerExposesExactControlPins() = runBlocking {
         val mockEngine = MockEngine {
             respond(
                 content = sampleCsv,
@@ -81,14 +93,15 @@ Numéro de radar;Type de radar;Date de mise en service;VMA ;Latitude; Longitude
         val client = FranceRadarsClient(httpClient)
         val provider = FranceRadarsProvider(client, defaultRadiusKm = 10.0)
 
-        // Scoped to FR
         assertTrue(provider.shouldQuery(48.8566, 2.3522))
 
+        // Level A: map search returns no exact control pins
         val results = provider.search(PoiSearchRequest(48.8566, 2.3522, categories = setOf(PoiCategory.Radar)))
+        assertTrue(results.isEmpty())
 
-        // Near Paris (48.8566, 2.3522), records 12014 and 12015 are close
-        assertTrue(results.isNotEmpty())
-        assertTrue(results.any { it.id == "fr_radar_12014" })
-        assertTrue(results.all { it.poiCategory == PoiCategory.Radar })
+        // Zones still available via records
+        val records = client.getRecordsNear(48.8566, 2.3522, radiusKm = 10.0)
+        assertTrue(records.isNotEmpty())
+        assertTrue(records.any { it.id == "12014" })
     }
 }

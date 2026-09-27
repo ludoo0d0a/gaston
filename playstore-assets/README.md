@@ -88,6 +88,10 @@ Format: PNG · 9:16 · 320–3 840 px per side · max 8 MB each.
 4. **Feature graphic** → upload `feature-graphic-1024x500.png`
 5. **Phone screenshots** → upload `screenshot-1-map.png` through `screenshot-5-android-auto.png`
 
+### AAC / danger zones (Level A)
+
+When describing the driving-assistant feature on the Play listing (FR or EN short/full description), use **zone de danger** / **limitation de vitesse (VMA)** vocabulary. Do **not** market the app as a radar warner or show screenshots of exact control pins. Prefer HUD/settings shots that say « Zone de danger » + VMA.
+
 ---
 
 ## Android Launcher Icons

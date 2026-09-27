@@ -136,6 +136,25 @@ open class OverpassClient(
     }
 
     /**
+     * Fetch highway ways near a point for road-class map-matching (no full geometry).
+     * Uses Overpass `around:` + `out center tags` so ways include a representative center.
+     */
+    open suspend fun queryHighwayWaysAround(
+        latitude: Double,
+        longitude: Double,
+        radiusMeters: Int = 40,
+        limit: Int = 50,
+    ): List<OverpassElement> {
+        val r = radiusMeters.coerceIn(10, 200)
+        val query = """
+            [out:json][timeout:15];
+            way(around:$r,$latitude,$longitude)["highway"];
+            out center tags qt ${limit.coerceIn(1, 100)};
+        """.trimIndent()
+        return parseElements(executeQuery(query), nodesOnly = false)
+    }
+
+    /**
      * Public Overpass instances reject generic OkHttp/Ktor User-Agents with HTTP 406
      * (Apache "Not Acceptable"). Identify the app like Nominatim requests.
      */

@@ -40,6 +40,7 @@ class AutoEmergencyScreen(
     private var longitude: Double? = null
     private var detectedCountryCode: String? = null
     private var isLoadingLocation = true
+    private var onHighway = false
 
     init {
         lifecycleScope.launch {
@@ -54,6 +55,7 @@ class AutoEmergencyScreen(
     private fun loadLocation() {
         lifecycleScope.launch {
             isLoadingLocation = true
+            onHighway = false
             invalidate()
 
             val location = LocationHelper.getCurrentLocation(carContext)
@@ -63,6 +65,7 @@ class AutoEmergencyScreen(
                 invalidate()
 
                 val geocoder = Geocoder(carContext, Locale.getDefault())
+                var thoroughfare: String? = null
                 try {
                     val addressObj = withTimeoutOrNull(5000) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -83,12 +86,38 @@ class AutoEmergencyScreen(
                     }
                     locationAddress = addressObj?.let { formatAddress(it) }
                     detectedCountryCode = addressObj?.countryCode
+                    thoroughfare = addressObj?.thoroughfare ?: addressObj?.featureName
                 } catch (e: Exception) {
                     Log.e("AutoEmergency", "Geocoding failed", e)
                 }
+
+                onHighway = classifyOnHighway(
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    thoroughfare = thoroughfare,
+                )
             }
             isLoadingLocation = false
             invalidate()
+        }
+    }
+
+    private suspend fun classifyOnHighway(
+        latitude: Double,
+        longitude: Double,
+        thoroughfare: String?,
+    ): Boolean {
+        return try {
+            fr.geoking.gaston.di.MapModuleLoader.ensureLoaded()
+            val classifier = org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.aac.OsmRoadClassifier>()
+            classifier.classify(
+                latitude = latitude,
+                longitude = longitude,
+                thoroughfare = thoroughfare,
+            ).isOnMotorway
+        } catch (e: Exception) {
+            Log.w("AutoEmergency", "Road classify failed", e)
+            fr.geoking.gaston.aac.ThoroughfareHighwayHeuristic.isLikelyHighway(thoroughfare)
         }
     }
 
@@ -101,7 +130,7 @@ class AutoEmergencyScreen(
         return sb.toString()
     }
 
-    override fun onGetTemplate(): Template {
+    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoEmergencyScreen", "ListTemplate") {
         val listBuilder = ItemList.Builder()
 
         val countryCode = detectedCountryCode ?: networkStatus.countryCode
@@ -138,6 +167,15 @@ class AutoEmergencyScreen(
         locationRow.setImage(carContext.actionMapIcon())
         listBuilder.addItem(locationRow.build())
 
+        if (onHighway) {
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.highway))
+                    .addText(carContext.getString(R.string.emergency_on_highway))
+                    .build()
+            )
+        }
+
         // Local Emergency Numbers
         val contacts = EmergencyContactRegistry.contactsFor(countryCode)
         if (contacts.isNotEmpty()) {
@@ -160,7 +198,7 @@ class AutoEmergencyScreen(
             )
         }
 
-        return ListTemplate.Builder()
+        ListTemplate.Builder()
             .setSingleList(listBuilder.build())
             .setHeader(
                 Header.Builder()

@@ -13,7 +13,7 @@
     <string name="amenity_restaurant">Restaurant</string>
     <string name="amenity_shop">Shop</string>
     <string name="amenity_showers">Showers</string>
-    <string name="amenity_speed_camera">Radar</string>
+    <string name="amenity_speed_camera">Danger zone</string>
     <string name="amenity_toilets">Toilets</string>
     <string name="amenity_truck_stop">Truck stop</string>
     <string name="amenity_viewpoint">Viewpoint</string>
@@ -454,7 +454,18 @@
     <string name="provider_austria_econtrol">E-Control (Austria)</string>
     <string name="provider_belgium_official">Belgium (official)</string>
     <string name="provider_usa_eia">EIA (US state average)</string>
-    <string name="provider_france_radars">Radars (data.gouv.fr France)</string>
+    <string name="provider_france_radars">Danger zones (data.gouv.fr France)</string>
+
+    <!-- AAC / Level A driving assistant -->
+    <string name="aac_settings_title">Driving assistant</string>
+    <string name="aac_settings_switch_title">Danger zone alerts</string>
+    <string name="aac_settings_switch_subtitle">Audio and spoken alerts when entering a danger zone, with posted speed limit when known. Off by default.</string>
+    <string name="aac_settings_distance_note">Alert distance follows the road type (~4 km motorway, ~2 km rural, ~300 m urban).</string>
+    <string name="aac_settings_safety_tip">Road safety: keep a safe following distance and adapt your speed to conditions.</string>
+    <string name="aac_hud_zone_entry">Danger zone</string>
+    <string name="aac_hud_vma">Speed limit %1$d km/h</string>
+    <string name="aac_about_blurb">Gaston can announce danger zones and speed limits (driving assistant). It does not show the precise location of enforcement controls.</string>
+    <string name="aac_support_hint">Questions about this feature: use the contact listed in Privacy Policy.</string>
     <string name="emergency_useful_numbers">Useful numbers</string>
     <string name="emergency_useful_numbers_country">Useful numbers · %1$s</string>
     <string name="emergency_useful_numbers_auto">Useful Numbers%1$s</string>

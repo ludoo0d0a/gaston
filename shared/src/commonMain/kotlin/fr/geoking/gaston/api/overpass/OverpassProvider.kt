@@ -50,7 +50,15 @@ class OverpassProvider(
             ?: radiusKm
 
         val cat = request.categories.ifEmpty { supportedCategories() }
-        val wanted = cat.filter { it in supportedCategories() }.toSet()
+        // Level A FR: do not surface OSM speed_camera as exact control pins on the map / alerts.
+        val wanted = cat.filter { it in supportedCategories() }
+            .filterNot {
+                it == PoiCategory.Radar && fr.geoking.gaston.aac.AacMapPolicy.isLikelyFrance(
+                    request.latitude,
+                    request.longitude
+                )
+            }
+            .toSet()
         if (wanted.isEmpty()) return emptyList()
         val amenityValues = wanted.mapNotNull { categoryToOsmAmenity(it) }.toSet()
         val tourismValues = wanted.mapNotNull { categoryToOsmTourism(it) }.toSet()
@@ -162,7 +170,7 @@ class OverpassProvider(
             )
 
             val apiName = if (category == PoiCategory.Radar) {
-                el.tags["maxspeed"]?.let { "Radar $it km/h" } ?: el.name(lang)
+                el.tags["maxspeed"]?.let { "Zone $it km/h" } ?: el.name(lang)
             } else {
                 el.name(lang)
             }
@@ -267,7 +275,7 @@ class OverpassProvider(
         PoiCategory.RestArea -> OverpassTranslator.translate("Rest area", lang) ?: "Rest area"
         PoiCategory.Restaurant -> OverpassTranslator.translate("Restaurant", lang) ?: "Restaurant"
         PoiCategory.FastFood -> OverpassTranslator.translate("Fast food", lang) ?: "Fast food"
-        PoiCategory.Radar -> OverpassTranslator.translate("Radar", lang) ?: "Radar"
+        PoiCategory.Radar -> OverpassTranslator.translate("Zone de danger", lang) ?: "Danger zone"
         PoiCategory.Parking -> OverpassTranslator.translate("Parking", lang) ?: "Parking"
         PoiCategory.Viewpoint -> OverpassTranslator.translate("Viewpoint", lang) ?: "Viewpoint"
         PoiCategory.Gas -> OverpassTranslator.translate("Gas station", lang) ?: "Gas station"

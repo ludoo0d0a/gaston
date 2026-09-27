@@ -177,7 +177,8 @@ data class AppSettings(
     val debugBarEnabled: Boolean = false,
     val networkFloatingBarEnabled: Boolean = false,
     val testAaMapSurfaceEnabled: Boolean = false,
-    val radarWarningEnabled: Boolean = true,
+    /** AAC danger-zone alerts. Default OFF (R. 413-15 / Level A — no radar-warner by default). */
+    val radarWarningEnabled: Boolean = false,
     val radarWarningDistanceMeters: Int = 1000,
     val routeStationSearchRadiusMeters: Int = 2000,
     val filterOnlyHighwayStations: Boolean = false,
@@ -377,7 +378,7 @@ open class SettingsManager(
             debugBarEnabled = prefs.getBoolean("debug_bar_enabled", false),
             networkFloatingBarEnabled = prefs.getBoolean("network_floating_bar_enabled", false),
             testAaMapSurfaceEnabled = prefs.getBoolean("test_aa_map_surface_enabled", false),
-            radarWarningEnabled = prefs.getBoolean("radar_warning_enabled", true),
+            radarWarningEnabled = prefs.getBoolean("radar_warning_enabled", false),
             radarWarningDistanceMeters = prefs.getInt("radar_warning_distance_m", 1000),
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
             filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false),
