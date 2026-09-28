@@ -139,7 +139,7 @@ class AutoNetworkLocationInfoScreen(
         )
         val networkCountry = formatCountryLabel(
             name = networkStatus.telephonyCountryCode?.let {
-                Locale("", it).getDisplayCountry(Locale.getDefault())
+                fr.geoking.gaston.displayCountryName(it)
             },
             code = networkStatus.telephonyCountryCode,
             unknown = unknown
@@ -199,7 +199,7 @@ class AutoNetworkLocationInfoScreen(
 
     private fun formatCountryLabel(name: String?, code: String?, unknown: String): String {
         val displayName = name?.takeIf { it.isNotBlank() }
-            ?: code?.takeIf { it.isNotBlank() }?.let { Locale("", it).getDisplayCountry(Locale.getDefault()) }
+            ?: code?.takeIf { it.isNotBlank() }?.let { fr.geoking.gaston.displayCountryName(it) }
                 ?.takeIf { it.isNotBlank() }
             ?: code
         return displayName?.takeIf { it.isNotBlank() } ?: unknown

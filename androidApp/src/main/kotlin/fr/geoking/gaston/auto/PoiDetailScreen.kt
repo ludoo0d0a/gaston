@@ -7,7 +7,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
-import androidx.car.app.model.ActionStrip
+import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.LongMessageTemplate
@@ -86,7 +86,7 @@ class PoiDetailScreen(
 
         val hasPrevOrNext = poiList.isNotEmpty() &&
             (currentIndex > 0 || currentIndex < poiList.size - 1)
-        // ListTemplate ActionStrip max 2: Navigate + (star OR prev/next).
+        // ListTemplate header end-actions max 2: Navigate + (star OR prev/next).
         // When prev/next occupies the second slot, expose favorite as a list row instead.
         val favoriteOnStrip = favoritesRepo != null && !hasPrevOrNext
         val favoriteAsRow = favoritesRepo != null && hasPrevOrNext
@@ -134,24 +134,25 @@ class PoiDetailScreen(
                 .build()
         )
 
-        val actionStripBuilder = ActionStrip.Builder()
+        val headerBuilder = Header.Builder()
+            .setTitle(title)
+            .setStartHeaderAction(Action.BACK)
             // Navigate must work while driving — do not wrap in ParkedOnlyOnClickListener.
-            .addAction(carContext.navigateToStationAction(poi))
+            .addEndHeaderAction(carContext.navigateToStationAction(poi))
 
         if (favoriteOnStrip) {
-            actionStripBuilder.addAction(
+            headerBuilder.addEndHeaderAction(
                 carContext.favoriteStationAction(isFavorite) { toggleFavorite() }
             )
         } else if (poiList.isNotEmpty() && currentIndex > 0) {
-            // Previous / Next actions in ActionStrip (max 2 for ListTemplate)
-            actionStripBuilder.addAction(
+            headerBuilder.addEndHeaderAction(
                 Action.Builder()
                     .setIcon(carContext.actionPreviousIcon())
                     .setOnClickListener(ParkedOnlyOnClickListener.create { moveTo(currentIndex - 1) })
                     .build()
             )
         } else if (poiList.isNotEmpty() && currentIndex < poiList.size - 1) {
-            actionStripBuilder.addAction(
+            headerBuilder.addEndHeaderAction(
                 Action.Builder()
                     .setIcon(carContext.actionNextIcon())
                     .setOnClickListener(ParkedOnlyOnClickListener.create { moveTo(currentIndex + 1) })
@@ -160,10 +161,8 @@ class PoiDetailScreen(
         }
 
         ListTemplate.Builder()
-            .setTitle(title)
-            .setHeaderAction(Action.BACK)
+            .setHeader(headerBuilder.build())
             .setSingleList(itemListBuilder.build())
-            .setActionStrip(actionStripBuilder.build())
             .build()
     }
 

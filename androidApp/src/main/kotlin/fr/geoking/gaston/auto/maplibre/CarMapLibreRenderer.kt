@@ -31,6 +31,7 @@ import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.maps.Style
 import org.maplibre.android.snapshotter.MapSnapshot
 import org.maplibre.android.snapshotter.MapSnapshotter
 import java.util.Collections
@@ -408,7 +409,7 @@ class CarMapLibreRenderer(
             if (snapshotter == null || styleChanged) {
                 reusableSnapshotter?.cancel()
                 val options = MapSnapshotter.Options(surfaceWidth, surfaceHeight)
-                    .withStyle(styleUrl)
+                    .withStyleBuilder(Style.Builder().fromUri(styleUrl))
                     .withCameraPosition(cameraPosition)
                     .withPixelRatio(1f)
                     .withLogo(false)

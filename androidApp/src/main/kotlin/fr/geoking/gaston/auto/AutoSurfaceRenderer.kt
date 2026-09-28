@@ -21,6 +21,8 @@ import java.net.URL
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -30,6 +32,7 @@ import kotlin.math.hypot
 import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.tan
+import kotlin.concurrent.withLock
 
 data class TileError(
     val url: String,
@@ -65,6 +68,8 @@ class AutoSurfaceRenderer(
     private var forceRedraw = false
     private var tileRedrawPending = false
     private var lastDrawMillis: Long = 0
+    private val drawLock = ReentrantLock()
+    private val drawCondition = drawLock.newCondition()
     private var lat: Double = initialLat
     private var lon: Double = initialLon
     private var zoom: Int = 13
@@ -222,9 +227,9 @@ class AutoSurfaceRenderer(
     }
 
     fun stop() {
-        synchronized(this) {
+        drawLock.withLock {
             running = false
-            (this as java.lang.Object).notifyAll()
+            drawCondition.signalAll()
         }
         executor.shutdownNow()
         try { drawThread.join(500) } catch (_: Exception) {}
@@ -232,21 +237,21 @@ class AutoSurfaceRenderer(
     }
 
     fun invalidate(force: Boolean = false) {
-        synchronized(this) {
+        drawLock.withLock {
             needsRedraw = true
             if (force) forceRedraw = true
             tileRedrawPending = false
-            (this as java.lang.Object).notifyAll()
+            drawCondition.signalAll()
         }
     }
 
     /** Incremental redraw when a tile finishes loading; does not flash the full gray background. */
     private fun scheduleTileRedraw() {
-        synchronized(this) {
+        drawLock.withLock {
             if (!tileRedrawPending) {
                 tileRedrawPending = true
                 needsRedraw = true
-                (this as java.lang.Object).notifyAll()
+                drawCondition.signalAll()
             }
         }
     }
@@ -383,7 +388,8 @@ class AutoSurfaceRenderer(
 
     private fun runDrawLoop() {
         while (running) {
-            synchronized(this) {
+            drawLock.lock()
+            try {
                 while (running) {
                     val now = System.currentTimeMillis()
                     val timeSinceLastDraw = now - lastDrawMillis
@@ -397,16 +403,16 @@ class AutoSurfaceRenderer(
                         if (needsRedraw && !forceRedraw) {
                             val waitTime = currentMinInterval - timeSinceLastDraw
                             if (waitTime > 0) {
-                                (this as java.lang.Object).wait(waitTime)
+                                drawCondition.await(waitTime, TimeUnit.MILLISECONDS)
                                 continue
                             }
                         }
                         val nextCheckTime = lastMissingTileCheckTime + 2000L
                         val remaining = nextCheckTime - System.currentTimeMillis()
                         if (hasMissingTiles && remaining > 0) {
-                            (this as java.lang.Object).wait(remaining.coerceAtMost(2000L))
+                            drawCondition.await(remaining.coerceAtMost(2000L), TimeUnit.MILLISECONDS)
                         } else {
-                            (this as java.lang.Object).wait()
+                            drawCondition.await()
                         }
                     } catch (e: InterruptedException) {
                         return
@@ -415,6 +421,8 @@ class AutoSurfaceRenderer(
                 needsRedraw = false
                 forceRedraw = false
                 tileRedrawPending = false
+            } finally {
+                drawLock.unlock()
             }
             if (!running) break
 

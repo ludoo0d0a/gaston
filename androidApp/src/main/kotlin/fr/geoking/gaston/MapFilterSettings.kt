@@ -237,6 +237,10 @@ fun countryCodesAtMapPosition(latitude: Double, longitude: Double): List<String>
 }
 
 /** Human-readable countries for the map position (same regions as auto provider selection). */
+/** Display name for an ISO 3166-1 alpha-2 code (avoids deprecated [Locale] language/country ctor). */
+fun displayCountryName(isoCountryCode: String, displayLocale: Locale = Locale.getDefault()): String =
+    Locale.Builder().setRegion(isoCountryCode.trim()).build().getDisplayCountry(displayLocale)
+
 fun countryDisplayLabelAtMapPosition(
     latitude: Double,
     longitude: Double,
@@ -246,7 +250,7 @@ fun countryDisplayLabelAtMapPosition(
     if (isos.isEmpty()) return "Unknown region"
 
     return isos.joinToString(" / ") { iso ->
-        val name = Locale("", iso).getDisplayCountry(locale).ifBlank { null }
+        val name = displayCountryName(iso, locale).ifBlank { null }
         if (name != null && !name.equals(iso, ignoreCase = true)) "$name ($iso)" else iso
     }
 }

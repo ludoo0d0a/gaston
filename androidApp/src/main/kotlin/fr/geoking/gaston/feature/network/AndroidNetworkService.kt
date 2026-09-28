@@ -142,7 +142,7 @@ class AndroidNetworkService(
                             }
                         }
                         if (locationCountryName == null && locationCountryCode != null) {
-                            locationCountryName = Locale("", locationCountryCode).getDisplayCountry(Locale.getDefault())
+                            locationCountryName = fr.geoking.gaston.displayCountryName(locationCountryCode)
                         }
 
                         cachedLocationCountryCode = locationCountryCode
@@ -164,7 +164,7 @@ class AndroidNetworkService(
 
             // Fallback to localized display name if we have a code but no name
             if (finalCountryName == null && finalCountryCode != null) {
-                finalCountryName = Locale("", finalCountryCode).getDisplayCountry(Locale.getDefault())
+                finalCountryName = fr.geoking.gaston.displayCountryName(finalCountryCode)
             }
 
             val countrySource = when {

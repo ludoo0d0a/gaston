@@ -88,7 +88,7 @@ fun PhoneNetworkLocationScreen(
         unknownCountry
     )
     val networkCountryLabel = formatCountryLabel(
-        name = networkStatus.telephonyCountryCode?.let { Locale("", it).getDisplayCountry(displayLocale) },
+        name = networkStatus.telephonyCountryCode?.let { fr.geoking.gaston.displayCountryName(it, displayLocale) },
         code = networkStatus.telephonyCountryCode,
         unknown = unknownCountry
     )
@@ -182,7 +182,7 @@ fun PhoneNetworkLocationScreen(
 
 private fun formatCountryLabel(name: String?, code: String?, unknown: String): String {
     val displayName = name?.takeIf { it.isNotBlank() }
-        ?: code?.takeIf { it.isNotBlank() }?.let { Locale("", it).getDisplayCountry(Locale.getDefault()) }
+        ?: code?.takeIf { it.isNotBlank() }?.let { fr.geoking.gaston.displayCountryName(it) }
             ?.takeIf { it.isNotBlank() }
         ?: code
     return displayName?.takeIf { it.isNotBlank() } ?: unknown

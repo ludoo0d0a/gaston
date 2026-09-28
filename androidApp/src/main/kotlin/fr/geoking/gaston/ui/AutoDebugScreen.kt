@@ -18,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -338,19 +340,19 @@ fun AutoDebugScreen(
                 title = { Text(stringResource(R.string.auto_debug_title)) },
                 navigationIcon = {
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.action_back)) } },
                         state = rememberTooltipState()
                     ) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                         }
                     }
                 },
                 actions = {
                     // 1. Simulate Menu Action
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_simulate_menu)) } },
                         state = rememberTooltipState()
                     ) {
@@ -359,7 +361,7 @@ fun AutoDebugScreen(
                             modifier = Modifier.testTag("toggle_visible_area_btn")
                         ) {
                             Icon(
-                                imageVector = if (visibleAreaEnabled) Icons.Default.MenuOpen else Icons.Default.Menu,
+                                imageVector = if (visibleAreaEnabled) Icons.AutoMirrored.Filled.MenuOpen else Icons.Default.Menu,
                                 contentDescription = stringResource(R.string.auto_debug_simulate_menu),
                                 tint = if (visibleAreaEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -368,7 +370,7 @@ fun AutoDebugScreen(
 
                     // 2. North-Up Toggle Action
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_toggle_orientation)) } },
                         state = rememberTooltipState()
                     ) {
@@ -392,7 +394,7 @@ fun AutoDebugScreen(
 
                     // 3. Simulate Travel Action
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_simulate_travel)) } },
                         state = rememberTooltipState()
                     ) {
@@ -437,7 +439,7 @@ fun AutoDebugScreen(
 
                     // 4. Map Tile Debug Grid Action
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_tile_grid)) } },
                         state = rememberTooltipState()
                     ) {
@@ -1003,7 +1005,7 @@ fun MapSurfaceAndControls(
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(
-                    imageVector = if (isFabMenuExpanded) Icons.Default.Close else Icons.Default.MenuOpen,
+                    imageVector = if (isFabMenuExpanded) Icons.Default.Close else Icons.AutoMirrored.Filled.MenuOpen,
                     contentDescription = stringResource(R.string.auto_debug_actions)
                 )
             }

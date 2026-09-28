@@ -39,7 +39,7 @@ class DangerZoneAlertManager(
         val curLon = location.longitude
 
         val speedKmH = when {
-            location.hasSpeed() && location.speed >= 0 -> (location.speed * 3.6).toDouble()
+            location.hasSpeed() && location.speed >= 0 -> (location.speed * 3.6)
             lastLocation != null -> {
                 val prev = lastLocation!!
                 val dtSec = (location.time - prev.time) / 1000.0

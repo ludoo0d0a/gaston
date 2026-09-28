@@ -13,7 +13,7 @@ object AutoMapFollowFocalPoint {
 
     data class FocalPoint(val x: Double, val y: Double)
 
-    /** MapLibre [org.maplibre.android.maps.MapLibreMap.setPadding] insets (px). */
+    /** MapLibre camera padding insets (px) via [org.maplibre.android.camera.CameraUpdateFactory.paddingTo]. */
     data class MapPadding(val left: Int, val top: Int, val right: Int, val bottom: Int)
 
     /**

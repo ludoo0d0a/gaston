@@ -282,50 +282,60 @@ class AutoRoutePlanningScreen(
             }
         }
 
-        val actionStripBuilder = ActionStrip.Builder()
-        actionStripBuilder.addAction(
-            Action.Builder()
-                .setTitle(carContext.getString(R.string.action_edit))
-                .setIcon(carContext.actionSettingsIcon())
-                .setOnClickListener {
-                    step = Step.ORIGIN
-                    invalidate()
-                }
-                .build()
-        )
-
         val canShowMap = !loading || currentRoutePoints != null
-        if (canShowMap) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setTitle(carContext.getString(R.string.action_show_on_map))
-                    .setIcon(carContext.actionMapIcon())
-                    .setOnClickListener { showOnMap() }
-                    .build()
-            )
-        }
-
-        if (!loading && stations.isNotEmpty()) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setTitle(carContext.getString(R.string.action_start_nav))
-                    .setIcon(carContext.actionMapIcon())
-                    .setOnClickListener { openExternalDirections() }
-                    .build()
-            )
-        }
-
-        val actionStrip = actionStripBuilder.build()
 
         val headerBuilder = Header.Builder()
             .setTitle(if (loading) carContext.getString(loadingMessageResId) else carContext.getString(R.string.screen_route_pois))
             .setStartHeaderAction(Action.BACK)
+            .addEndHeaderAction(
+                Action.Builder()
+                    .setTitle(carContext.getString(R.string.action_edit))
+                    .setIcon(carContext.actionSettingsIcon())
+                    .setOnClickListener {
+                        step = Step.ORIGIN
+                        invalidate()
+                    }
+                    .build()
+            )
+
+        // Header end-actions max 2: prefer start-nav when stations exist, else show-on-map.
+        when {
+            !loading && stations.isNotEmpty() -> {
+                headerBuilder.addEndHeaderAction(
+                    Action.Builder()
+                        .setTitle(carContext.getString(R.string.action_start_nav))
+                        .setIcon(carContext.actionMapIcon())
+                        .setOnClickListener { openExternalDirections() }
+                        .build()
+                )
+            }
+            canShowMap -> {
+                headerBuilder.addEndHeaderAction(
+                    Action.Builder()
+                        .setTitle(carContext.getString(R.string.action_show_on_map))
+                        .setIcon(carContext.actionMapIcon())
+                        .setOnClickListener { showOnMap() }
+                        .build()
+                )
+            }
+        }
+
+        // When start-nav took the second slot, expose show-on-map as a list row.
+        if (!loading && stations.isNotEmpty() && canShowMap) {
+            list.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.action_show_on_map))
+                    .setImage(carContext.actionMapIcon())
+                    .setOnClickListener { showOnMap() }
+                    .setBrowsable(true)
+                    .build()
+            )
+        }
 
         return ListTemplate.Builder()
             .setHeader(headerBuilder.build())
             .setLoading(loading)
             .setSingleList(list.build())
-            .setActionStrip(actionStrip)
             .build()
     }
 

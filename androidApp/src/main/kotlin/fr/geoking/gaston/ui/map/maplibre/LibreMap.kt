@@ -13,6 +13,7 @@ import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.map.PhoneMapPoiHitTest
 import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 
@@ -64,7 +65,7 @@ fun LibreMap(
             .build(),
         onMapReady = { map ->
             mapLibreMap = map
-            map.setPadding(0, 0, 0, paddingBottomPx)
+            map.moveCamera(CameraUpdateFactory.paddingTo(0.0, 0.0, 0.0, paddingBottomPx.toDouble()))
             lastPaddingBottomPx[0] = paddingBottomPx
             onMapReady(map)
             MapLibreSharedHelper.initPoiLayer(map)
@@ -73,20 +74,20 @@ fun LibreMap(
             val map = mapLibreMap ?: return@MapLibreView
             val screenPoint = map.projection.toScreenLocation(latLng)
             val nearestPoi = PhoneMapPoiHitTest.findNearestPoiAtScreenPoint(
-                screenX = screenPoint.x.toFloat(),
-                screenY = screenPoint.y.toFloat(),
+                screenX = screenPoint.x,
+                screenY = screenPoint.y,
                 pois = poisInView,
                 markerWidthPx = 120,
             ) { poi ->
                 val pos = map.projection.toScreenLocation(LatLng(poi.latitude, poi.longitude))
-                pos.x.toFloat() to pos.y.toFloat()
+                pos.x to pos.y
             }
             onPoiClick(nearestPoi)
         },
         syncToken = syncToken,
         update = { map ->
             if (lastPaddingBottomPx[0] != paddingBottomPx) {
-                map.setPadding(0, 0, 0, paddingBottomPx)
+                map.moveCamera(CameraUpdateFactory.paddingTo(0.0, 0.0, 0.0, paddingBottomPx.toDouble()))
                 lastPaddingBottomPx[0] = paddingBottomPx
             }
             MapLibreSharedHelper.syncPoiLayer(

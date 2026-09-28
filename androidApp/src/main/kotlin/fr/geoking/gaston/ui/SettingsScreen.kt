@@ -14,8 +14,9 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.DirectionsBike
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -828,7 +829,7 @@ private fun SourcesConfig(
             else -> {
                 if (c.length == 2) {
                     // Prefer device locale for display names.
-                    Locale("", c).getDisplayCountry(Locale.getDefault()).ifBlank { c }
+                    fr.geoking.gaston.displayCountryName(c).ifBlank { c }
                 } else {
                     c
                 }
@@ -1969,7 +1970,7 @@ private fun VehicleConfig(
                             fr.geoking.gaston.VehicleType.Truck -> Icons.Default.LocalShipping
                             fr.geoking.gaston.VehicleType.Motorcycle -> Icons.Default.TwoWheeler
                             fr.geoking.gaston.VehicleType.Motorhome -> Icons.Default.Home
-                            fr.geoking.gaston.VehicleType.Bicycle -> Icons.Default.DirectionsBike
+                            fr.geoking.gaston.VehicleType.Bicycle -> Icons.AutoMirrored.Filled.DirectionsBike
                         }
                         val label = when (type) {
                             fr.geoking.gaston.VehicleType.Car -> stringResource(R.string.vehicle_type_car)
