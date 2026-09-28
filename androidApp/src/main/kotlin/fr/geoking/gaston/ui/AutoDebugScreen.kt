@@ -340,7 +340,7 @@ fun AutoDebugScreen(
                 title = { Text(stringResource(R.string.auto_debug_title)) },
                 navigationIcon = {
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.action_back)) } },
                         state = rememberTooltipState()
                     ) {
@@ -352,7 +352,7 @@ fun AutoDebugScreen(
                 actions = {
                     // 1. Simulate Menu Action
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_simulate_menu)) } },
                         state = rememberTooltipState()
                     ) {
@@ -370,7 +370,7 @@ fun AutoDebugScreen(
 
                     // 2. North-Up Toggle Action
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_toggle_orientation)) } },
                         state = rememberTooltipState()
                     ) {
@@ -394,7 +394,7 @@ fun AutoDebugScreen(
 
                     // 3. Simulate Travel Action
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_simulate_travel)) } },
                         state = rememberTooltipState()
                     ) {
@@ -439,7 +439,7 @@ fun AutoDebugScreen(
 
                     // 4. Map Tile Debug Grid Action
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
                         tooltip = { PlainTooltip { Text(stringResource(R.string.auto_debug_tile_grid)) } },
                         state = rememberTooltipState()
                     ) {
