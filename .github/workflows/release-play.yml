@@ -37,7 +37,8 @@ jobs:
       gradle_version: wrapper
       java_version: '21'
       # Keep Gaston versionCode scheme (run*10+attempt) above prior Play uploads.
-      version_code_override: ${{ github.run_number * 10 + github.run_attempt }}
+      # Must be a string — reusable workflow_call inputs reject bare numbers.
+      version_code_override: ${{ format('{0}', github.run_number * 10 + github.run_attempt) }}
       version_name_override: ${{ github.ref_type == 'tag' && github.ref_name || format('1.0.{0}', github.run_number) }}
       is_workflow_dispatch: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
       workflow_dispatch_track: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.track || '' }}
