@@ -327,8 +327,9 @@ private fun MainActivityComposeRoot(
     }
 
     val audioNotifier = remember(context) { AndroidRadarAudioNotifier(context) }
-    val dangerZoneAlertManager = remember(context, settingsManager, audioNotifier) {
-        DangerZoneAlertManager(settingsManager, audioNotifier)
+    val notificationHelper = remember(context) { fr.geoking.gaston.feature.notification.NotificationHelper(context) }
+    val dangerZoneAlertManager = remember(context, settingsManager, audioNotifier, notificationHelper) {
+        DangerZoneAlertManager(settingsManager, audioNotifier, notificationHelper)
     }
 
     DisposableEffect(dangerZoneAlertManager, audioNotifier) {

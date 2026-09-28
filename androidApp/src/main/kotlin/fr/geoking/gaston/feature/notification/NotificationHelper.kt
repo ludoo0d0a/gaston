@@ -12,12 +12,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import fr.geoking.gaston.R
 
-class NotificationHelper(private val context: Context) {
+open class NotificationHelper(private val context: Context) {
 
     companion object {
         private const val CHANNEL_ID = "gaston_alerts"
         private const val NOTIFICATION_ID_BORDER = 1001
         private const val NOTIFICATION_ID_UPDATE = 1002
+        private const val NOTIFICATION_ID_DANGER_ZONE = 1003
     }
 
     private val notificationManager =
@@ -80,6 +81,34 @@ class NotificationHelper(private val context: Context) {
         val notification = builder.build()
         notificationManager.notify(NOTIFICATION_ID_UPDATE, notification)
         CarNotificationManager.from(context).notify(NOTIFICATION_ID_UPDATE, builder)
+    }
+
+    open fun showDangerZoneNotification(speedLimitKmH: Int?) {
+        if (!canPostNotifications()) return
+
+        val title = context.getString(R.string.notification_danger_zone_title)
+        val message = if (speedLimitKmH != null && speedLimitKmH > 0) {
+            context.getString(R.string.notification_danger_zone_message_speed, speedLimitKmH)
+        } else {
+            context.getString(R.string.notification_danger_zone_message)
+        }
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_poi_radar)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_VIBRATE)
+            .setAutoCancel(true)
+            .extend(
+                CarAppExtender.Builder()
+                    .setImportance(NotificationManager.IMPORTANCE_HIGH)
+                    .build()
+            )
+
+        val notification = builder.build()
+        notificationManager.notify(NOTIFICATION_ID_DANGER_ZONE, notification)
+        CarNotificationManager.from(context).notify(NOTIFICATION_ID_DANGER_ZONE, builder)
     }
 
     fun canPostNotifications(): Boolean {

@@ -416,6 +416,8 @@ class CustomMapPoiScreen(
             effectivePowerLevels = settings.effectiveIrvePowerLevels(),
             selectedId = selected?.id,
             availability = availabilityByPoiId,
+            isDevMode = settings.isDevMode,
+            radarWarningDistanceMeters = settings.radarWarningDistanceMeters,
         )
         val (userLat, userLon) = searchCenterFlow.value
         renderer.updateSearchRadius(

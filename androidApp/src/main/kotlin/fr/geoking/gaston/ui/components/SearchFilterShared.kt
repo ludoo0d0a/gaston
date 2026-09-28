@@ -287,10 +287,8 @@ fun SearchCategorySelector(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Ensure parking is first
-                    val sortedAmenities = OVERPASS_AMENITY_OPTIONS.sortedBy { if (it.first == "parking") 0 else 1 }
-                    items(sortedAmenities.size) { index ->
-                        val (id, resId) = sortedAmenities[index]
+                    items(OVERPASS_AMENITY_OPTIONS.size) { index ->
+                        val (id, resId) = OVERPASS_AMENITY_OPTIONS[index]
                         val isSelected = settings.selectedOverpassAmenityTypes.contains(id)
                         FilterChip(
                             selected = isSelected,
@@ -304,6 +302,7 @@ fun SearchCategorySelector(
                                 Icon(
                                     imageVector = AmenityIconCatalog.iconForOsmId(id),
                                     contentDescription = null,
+                                    tint = if (id == "speed_camera") Color(0xFFEF4444) else LocalContentColor.current,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }

@@ -280,7 +280,9 @@ fun SurfaceCustomMapScreen(
                                 newPois = filteredPois,
                                 effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
                                 effectivePowerLevels = settings.effectiveIrvePowerLevels(),
-                                selectedId = selectedPoi?.id
+                                selectedId = selectedPoi?.id,
+                                isDevMode = settings.isDevMode,
+                                radarWarningDistanceMeters = settings.radarWarningDistanceMeters,
                             )
                         }
 

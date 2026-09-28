@@ -640,6 +640,18 @@ fun MapScreen(
 
                         val poisToShow = filteredPois
 
+                        if (settings.isDevMode) {
+                            poisToShow.filter { it.poiCategory == PoiCategory.Radar }.forEach { poi ->
+                                Circle(
+                                    center = LatLng(poi.latitude, poi.longitude),
+                                    radius = settings.radarWarningDistanceMeters.toDouble().coerceIn(300.0, 4000.0),
+                                    strokeColor = Color(0xFFEF4444),
+                                    strokeWidth = 4f,
+                                    fillColor = Color(0x22EF4444)
+                                )
+                            }
+                        }
+
                         val fuelIdsForCheapest = effectiveEnergies - "electric"
                         val top3Prices = remember(poisToShow, fuelIdsForCheapest) {
                             if (fuelIdsForCheapest.isEmpty()) emptyList<Double>()

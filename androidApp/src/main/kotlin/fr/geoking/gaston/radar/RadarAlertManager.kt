@@ -2,6 +2,7 @@ package fr.geoking.gaston.radar
 
 import android.location.Location
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.feature.notification.NotificationHelper
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 class RadarAlertManager(
     private val settingsManager: SettingsManager,
-    private val audioNotifier: RadarAudioNotifier
+    private val audioNotifier: RadarAudioNotifier,
+    private val notificationHelper: NotificationHelper? = null,
 ) {
     private val alertedRadarIds = mutableSetOf<String>()
     private var lastLocation: Location? = null
@@ -87,6 +89,7 @@ class RadarAlertManager(
                         audioNotifier.playOkSpeedBeeps()
                         audioNotifier.speakDangerZone(eval.speedLimitKmH)
                     }
+                    notificationHelper?.showDangerZoneNotification(eval.speedLimitKmH)
                 }
             } else {
                 if (radar.id in alertedRadarIds) {

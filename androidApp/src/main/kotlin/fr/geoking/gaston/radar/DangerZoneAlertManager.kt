@@ -5,6 +5,7 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.aac.DangerZone
 import fr.geoking.gaston.aac.DangerZoneEvaluator
 import fr.geoking.gaston.aac.RoadSafetyMessages
+import fr.geoking.gaston.feature.notification.NotificationHelper
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class DangerZoneAlertManager(
     private val settingsManager: SettingsManager,
     private val audioNotifier: RadarAudioNotifier,
+    private val notificationHelper: NotificationHelper? = null,
 ) {
     private val alertedZoneIds = mutableSetOf<String>()
     private var lastLocation: Location? = null
@@ -86,6 +88,7 @@ class DangerZoneAlertManager(
                         audioNotifier.playOkSpeedBeeps()
                         audioNotifier.speakDangerZone(eval.speedLimitKmH)
                     }
+                    notificationHelper?.showDangerZoneNotification(eval.speedLimitKmH)
                     maybeSpeakSafetyTip(location.time)
                 }
             } else {

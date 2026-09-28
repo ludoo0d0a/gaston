@@ -22,6 +22,7 @@ import fr.geoking.gaston.auto.AutoMapPoiHitTest
 import fr.geoking.gaston.auto.AutoMapQueryLoader
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.mapsforge.core.model.Tile
@@ -119,6 +120,8 @@ class CarMapsforgeRenderer(
     private var effectiveEnergyTypes: Set<String> = emptySet()
     private var effectivePowerLevels: Set<Int> = emptySet()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
+    var isDevMode: Boolean = false
+    var radarWarningDistanceMeters: Int = 1000
 
     private var historyPoints: List<Pair<Double, Double>> = emptyList()
     private var itineraryPoints: List<Pair<Double, Double>> = emptyList()
@@ -378,13 +381,17 @@ class CarMapsforgeRenderer(
         effectivePowerLevels: Set<Int>,
         selectedId: String? = selectedPoiId,
         availability: Map<String, StationAvailabilitySummary> = availabilityByPoiId,
+        isDevMode: Boolean = this.isDevMode,
+        radarWarningDistanceMeters: Int = this.radarWarningDistanceMeters,
     ) {
         val newIds = newPois.map { it.id }
         if (poiIds == newIds &&
             this.effectiveEnergyTypes == effectiveEnergyTypes &&
             this.effectivePowerLevels == effectivePowerLevels &&
             this.selectedPoiId == selectedId &&
-            this.availabilityByPoiId == availability
+            this.availabilityByPoiId == availability &&
+            this.isDevMode == isDevMode &&
+            this.radarWarningDistanceMeters == radarWarningDistanceMeters
         ) {
             return
         }
@@ -394,6 +401,8 @@ class CarMapsforgeRenderer(
         this.effectivePowerLevels = effectivePowerLevels
         this.selectedPoiId = selectedId
         this.availabilityByPoiId = availability
+        this.isDevMode = isDevMode
+        this.radarWarningDistanceMeters = radarWarningDistanceMeters
         invalidate()
     }
 
@@ -928,7 +937,40 @@ class CarMapsforgeRenderer(
         drawPoints(historyPoints)
     }
 
+    private fun drawRadarPreventionCircles(canvas: Canvas) {
+        if (!isDevMode) return
+        val centerX = lonToTileX(lon, zoom)
+        val centerY = latToTileY(lat, zoom)
+        val warningDistanceKm = (radarWarningDistanceMeters.toDouble().coerceIn(300.0, 4000.0)) / 1000.0
+
+        val circleFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#22EF4444")
+            style = Paint.Style.FILL
+        }
+        val circleStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#EF4444")
+            style = Paint.Style.STROKE
+            strokeWidth = 3f * context.resources.displayMetrics.density
+        }
+
+        pois.filter { it.poiCategory == PoiCategory.Radar }.forEach { poi ->
+            val tileX = lonToTileX(poi.longitude, zoom)
+            val tileY = latToTileY(poi.latitude, zoom)
+
+            val drawX = ((tileX - centerX) * TILE_SIZE + centerPxX).toFloat()
+            val drawY = ((tileY - centerY) * TILE_SIZE + centerPxY).toFloat()
+
+            val radiusPx = AutoMapCamera.radiusPxForKm(poi.latitude, zoom, warningDistanceKm)
+            if (radiusPx >= 2f) {
+                canvas.drawCircle(drawX, drawY, radiusPx, circleFillPaint)
+                canvas.drawCircle(drawX, drawY, radiusPx, circleStrokePaint)
+            }
+        }
+    }
+
     private fun drawPois(canvas: Canvas) {
+        drawRadarPreventionCircles(canvas)
+
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
         val bearing = mapBearingDegrees
