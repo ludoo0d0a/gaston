@@ -50,7 +50,9 @@
       "appId": "TODO_PLAY_APP_ID",
       "dashboard": "https://play.google.com/console/u/0/developers/8648842673731499425/",
       "integrity": "https://play.google.com/console/u/0/developers/8648842673731499425/",
-      "integrityHelp": "https://support.google.com/googleplay/android-developer/answer/9842756?hl=en"
+      "integrityHelp": "https://support.google.com/googleplay/android-developer/answer/9842756?hl=en",
+      "usersAndPermissions": "https://play.google.com/console/u/0/developers/8648842673731499425/users-and-permissions",
+      "apiAccess": "https://play.google.com/console/u/0/developers/8648842673731499425/api-access"
     },
     "github": {
       "repo": "https://github.com/ludoo0d0a/gaston",
