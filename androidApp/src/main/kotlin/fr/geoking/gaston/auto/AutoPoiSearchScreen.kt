@@ -90,8 +90,8 @@ class AutoPoiSearchScreen(
 
         val itemListBuilder = ItemList.Builder()
             .setNoItemsMessage(
-                if (isLoadingPois) carContext.getString(R.string.poi_loading_nearby_stations)
-                else carContext.getString(R.string.poi_no_matching_stations)
+                if (isLoadingPois) carContext.getString(R.string.poi_searching)
+                else carContext.getString(R.string.poi_no_results)
             )
 
         val currentSettings = settingsManager.settings.value
