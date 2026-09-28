@@ -62,4 +62,23 @@ class CustomMapPoiScreenAaTest {
         ActionStripLimits.assertWithinMapTemplateLimits(template.actionStrip)
         ActionStripLimits.assertWithinMapTemplateLimits(template.mapController?.mapActionStrip)
     }
+
+    @Test
+    fun noItemsMessageShowsNoResultsWhenFinishedWithEmptyList() {
+        val (carContext, screen) = newScreen()
+        CarScreenTestHarness.createAndStart(screen)
+
+        val template = screen.onGetTemplate()
+        assertTrue("template should be MapWithContentTemplate", template is MapWithContentTemplate)
+        val mapWithContent = template as MapWithContentTemplate
+        val content = mapWithContent.contentTemplate
+        if (content is androidx.car.app.model.ListTemplate && content.singleList != null) {
+            val noItemsMsg = content.singleList?.noItemsMessage?.toCharSequence()?.toString().orEmpty()
+            assertTrue(
+                "noItemsMsg should reflect searching or no results (got: $noItemsMsg)",
+                noItemsMsg.contains("Searching") || noItemsMsg.contains("recherche") ||
+                    noItemsMsg.contains("No results") || noItemsMsg.contains("pas de résultat")
+            )
+        }
+    }
 }

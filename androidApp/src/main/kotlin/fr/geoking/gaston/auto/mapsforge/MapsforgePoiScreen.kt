@@ -931,8 +931,14 @@ class MapsforgePoiScreen(
                 6
             }
 
+            val noItemsMessage = if (isLoading || isQueryPending) {
+                carContext.getString(R.string.poi_searching)
+            } else {
+                carContext.getString(R.string.poi_no_results)
+            }
+
             val itemListBuilder = ItemList.Builder()
-                .setNoItemsMessage(carContext.getString(R.string.poi_no_pois_found))
+                .setNoItemsMessage(noItemsMessage)
 
             val activeMap = mapManager.getActiveMapFile()
             if (activeMap == null) {
