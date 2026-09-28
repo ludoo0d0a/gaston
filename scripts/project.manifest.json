@@ -14,7 +14,7 @@
   "build": {
     "gradleModule": ":androidApp",
     "googleServices": "androidApp/google-services.json",
-    "keystoreAlias": "key0",
+    "keystoreAlias": "gaston-app",
     "keystoreDn": "CN=Gaston, OU=GeoKing, O=GeoKing, L=Paris, C=FR",
     "mainActivity": ".MainActivity",
     "signInLogTag": "GastonSignIn",
