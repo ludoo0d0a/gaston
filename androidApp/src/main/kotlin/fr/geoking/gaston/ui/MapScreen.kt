@@ -628,7 +628,7 @@ fun MapScreen(
 
                         if (userLat != null && userLon != null) {
                             Marker(
-                                state = MarkerState(position = LatLng(userLat!!, userLon!!)),
+                                state = rememberUpdatedMarkerState(position = LatLng(userLat!!, userLon!!)),
                                 icon = userLocationIcon,
                                 rotation = userHeading,
                                 anchor = Offset(0.5f, 0.5f),
@@ -692,7 +692,7 @@ fun MapScreen(
                             }
 
                             Marker(
-                                state = MarkerState(position = LatLng(poi.latitude, poi.longitude)),
+                                state = rememberUpdatedMarkerState(position = LatLng(poi.latitude, poi.longitude)),
                                 title = poi.name,
                                 snippet = poi.address,
                                 icon = markerBitmap,
@@ -719,7 +719,7 @@ fun MapScreen(
                                 TrafficSeverity.Unknown -> 60f
                             }
                             Marker(
-                                state = MarkerState(position = LatLng(lat, lon)),
+                                state = rememberUpdatedMarkerState(position = LatLng(lat, lon)),
                                 title = "${event.roadRef}${event.direction?.let { " ($it)" } ?: ""}",
                                 snippet = event.message,
                                 icon = BitmapDescriptorFactory.defaultMarker(hue),
