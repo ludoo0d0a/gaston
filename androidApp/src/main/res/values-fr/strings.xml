@@ -849,4 +849,7 @@
     <string name="legend_available">Disponible</string>
     <string name="legend_unavailable">Indisponible</string>
     <string name="legend_selected">Sélectionné</string>
+    <string name="notification_danger_zone_title">Zone de danger</string>
+    <string name="notification_danger_zone_message">Attention, zone de danger à proximité</string>
+    <string name="notification_danger_zone_message_speed">Zone de danger — Vitesse limitée à %d km/h</string>
 </resources>

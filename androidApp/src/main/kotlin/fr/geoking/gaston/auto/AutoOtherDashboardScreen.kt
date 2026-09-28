@@ -25,11 +25,12 @@ class AutoOtherDashboardScreen(
         OVERPASS_AMENITY_OPTIONS.forEach { (id, resId) ->
             val label = carContext.getString(resId)
             val iconResId = getAmenityIcon(id)
+            val iconTint = if (id == "speed_camera") AutoCarIcons.emergency else AutoCarIcons.primary
 
             gridBuilder.addItem(
                 GridItem.Builder()
                     .setTitle(label)
-                    .setImage(carContext.carIcon(iconResId, AutoCarIcons.primary))
+                    .setImage(carContext.carIcon(iconResId, iconTint))
                     .setOnClickListener {
                         settingsManager.setOtherMode(id)
                         val mapDeps = getMapDeps()

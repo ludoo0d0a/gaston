@@ -192,6 +192,7 @@ data class AppSettings(
     val lastIsRoaming: Boolean = false,
 ) {
     val hasPremiumFeatures: Boolean get() = isPremium || devSimulatePremium
+    val isDevMode: Boolean get() = BuildConfig.DEBUG_DEV || devSimulatePremium || devRawDetail || debugBarEnabled
 }
 
 open class SettingsManager(

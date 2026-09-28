@@ -82,7 +82,7 @@ object AmenityIconCatalog {
         PoiCategory.RestArea -> Style(Icons.Rounded.Forest, 0xFF16A34A.toInt())
         PoiCategory.Restaurant -> Style(Icons.Rounded.Restaurant, 0xFFDC2626.toInt())
         PoiCategory.FastFood -> Style(Icons.Rounded.Fastfood, 0xFFEA580C.toInt())
-        PoiCategory.Radar -> Style(Icons.Rounded.Speed, 0xFF333333.toInt())
+        PoiCategory.Radar -> Style(Icons.Rounded.Speed, 0xFFEF4444.toInt())
         PoiCategory.Parking -> Style(Icons.Rounded.LocalParking, 0xFF1D4ED8.toInt())
         PoiCategory.Viewpoint -> Style(Icons.Rounded.Visibility, 0xFF6366F1.toInt())
         PoiCategory.BatterySwap -> Style(Icons.Rounded.SwapHoriz, 0xFFF59E0B.toInt())

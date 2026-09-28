@@ -74,7 +74,8 @@ configure<ApplicationExtension> {
         val githubToken = sanitizeBuildConfigString(prop("GITHUB_TOKEN"))
         val googleWebClientId = sanitizeBuildConfigString(
             prop("GOOGLE_WEB_CLIENT_ID").ifEmpty { prop("WEB_CLIENT_ID") }
-        )        val mobiliteitLuxembourgKey = sanitizeBuildConfigString(prop("MOBILITEIT_LUXEMBOURG_KEY"))
+        )
+        val mobiliteitLuxembourgKey = sanitizeBuildConfigString(prop("MOBILITEIT_LUXEMBOURG_KEY"))
         val tomtomKey = sanitizeBuildConfigString(prop("TOMTOM_KEY"))
         val openChargeMapKey = sanitizeBuildConfigString(prop("OPENCHARGEMAP_KEY"))
         val chargyApiKey = sanitizeBuildConfigString(prop("CHARGY_API_KEY"))

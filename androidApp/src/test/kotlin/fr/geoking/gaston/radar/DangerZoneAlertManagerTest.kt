@@ -55,6 +55,41 @@ class DangerZoneAlertManagerTest {
         alertManager = DangerZoneAlertManager(settingsManager, audioNotifier)
     }
 
+    private class MockNotificationHelper(context: android.content.Context) : fr.geoking.gaston.feature.notification.NotificationHelper(context) {
+        var notificationCount = 0
+        var lastSpeedLimit: Int? = null
+
+        override fun showDangerZoneNotification(speedLimitKmH: Int?) {
+            notificationCount++
+            lastSpeedLimit = speedLimitKmH
+        }
+    }
+
+    @Test
+    fun triggersNotificationOnZoneEntry() {
+        val context = RuntimeEnvironment.getApplication()
+        val mockNotification = MockNotificationHelper(context)
+        val manager = DangerZoneAlertManager(settingsManager, audioNotifier, mockNotification)
+
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "z2",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            speedLimitKmH = 80,
+            source = "test",
+            roadClassOverride = RoadNetworkClass.Urban,
+        )
+        val loc = Location("test").apply {
+            latitude = 48.8566
+            longitude = 2.3522
+            time = System.currentTimeMillis()
+        }
+        manager.evaluateAndAlert(loc, listOf(zone))
+
+        kotlin.test.assertEquals(1, mockNotification.notificationCount)
+        kotlin.test.assertEquals(80, mockNotification.lastSpeedLimit)
+    }
+
     @Test
     fun alertsOnZoneEntryWithVma() {
         val zone = DangerZoneFactory.fromSpeedControlPoint(
