@@ -9,7 +9,9 @@
     "firebaseAndroidAppId": "1:305319734071:android:0a5bbce83d2bd52b2688b2",
     "repo": "gaston",
     "githubOwner": "ludoo0d0a",
-    "website": "https://gaston.geoking.fr"
+    "website": "https://gaston.geoking.fr",
+    "playGcpProjectId": "gaston-494416",
+    "playServiceAccountEmail": "sa-gaston@gaston-494416.iam.gserviceaccount.com"
   },
   "build": {
     "gradleModule": ":androidApp",
@@ -45,22 +47,118 @@
       "console": "https://console.cloud.google.com/welcome?project=gaston-c8f44",
       "credentials": "https://console.cloud.google.com/apis/credentials?project=gaston-c8f44",
       "oauthConsent": "https://console.cloud.google.com/apis/credentials/consent?project=gaston-c8f44",
-      "playDeveloperApi": "https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com?project=gaston-c8f44",
-      "serviceAccounts": "https://console.cloud.google.com/iam-admin/serviceaccounts?project=gaston-c8f44"
+      "playDeveloperApi": "https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com?project=gaston-494416",
+      "serviceAccounts": "https://console.cloud.google.com/iam-admin/serviceaccounts?project=gaston-c8f44",
+      "playServiceAccounts": "https://console.cloud.google.com/iam-admin/serviceaccounts?project=gaston-494416"
     },
     "play": {
       "developerId": "8648842673731499425",
-      "appId": "TODO_PLAY_APP_ID",
-      "dashboard": "https://play.google.com/console/u/0/developers/8648842673731499425/",
-      "integrity": "https://play.google.com/console/u/0/developers/8648842673731499425/",
+      "appId": "4974244435243198358",
+      "dashboard": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4974244435243198358/app-dashboard",
+      "integrity": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4974244435243198358/keymanagement",
       "integrityHelp": "https://support.google.com/googleplay/android-developer/answer/9842756?hl=en",
       "usersAndPermissions": "https://play.google.com/console/u/0/developers/8648842673731499425/users-and-permissions",
-      "apiAccess": "https://play.google.com/console/u/0/developers/8648842673731499425/api-access"
+      "apiAccess": "https://play.google.com/console/u/0/developers/8648842673731499425/api-access",
+      "appContent": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4974244435243198358/app-content/overview",
+      "releases": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4974244435243198358/releases/overview",
+      "storeListing": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4974244435243198358/main-store-listing",
+      "publishingOverview": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4974244435243198358/publishing",
+      "internalTesting": "https://play.google.com/console/u/0/developers/8648842673731499425/app/4974244435243198358/tracks/internal-testing"
     },
     "github": {
       "repo": "https://github.com/ludoo0d0a/gaston",
       "actions": "https://github.com/ludoo0d0a/gaston/actions",
       "actionsSecrets": "https://github.com/ludoo0d0a/gaston/settings/secrets/actions"
+    },
+    "gemini": {
+      "apiKeys": "https://aistudio.google.com/apikey"
+    }
+  },
+  "playConsole": {
+    "appType": "APPLICATION",
+    "category": "MAPS_AND_NAVIGATION",
+    "defaultLanguage": "fr-FR",
+    "contact": {
+      "email": "ludovic.valente@gmail.com",
+      "website": "https://gaston.geoking.fr",
+      "privacyPolicyUrl": "https://gaston.geoking.fr/privacy.html"
+    },
+    "storeListing": {
+      "locales": [
+        "fr-FR",
+        "en-US"
+      ],
+      "icon": "playstore-assets/icon-512.png",
+      "featureGraphic": "playstore-assets/feature-graphic-1024x500.png",
+      "listingsDir": "playstore-assets"
+    },
+    "distribution": {
+      "countries": [
+        "FR",
+        "BE",
+        "LU",
+        "CH",
+        "DE",
+        "ES",
+        "IT",
+        "NL",
+        "PT",
+        "AT"
+      ],
+      "managedPublishing": false,
+      "internalTesting": {
+        "testersListName": "Gaston internal",
+        "optInUrl": ""
+      }
+    },
+    "declarations": {
+      "governmentApp": false,
+      "financialFeatures": false,
+      "healthApp": false,
+      "containsAds": false,
+      "advertisingId": {
+        "usesAdvertisingId": true,
+        "purposes": [
+          "ANALYTICS"
+        ],
+        "note": "Firebase Analytics merges com.google.android.gms.permission.AD_ID. Answer Yes + Analytics, or tools:node=remove the permission and answer No."
+      },
+      "signInRequired": false,
+      "allFeaturesAvailableWithoutRestriction": true,
+      "targetAge": "18+",
+      "contentRating": {
+        "questionnaireCategory": "OTHER",
+        "notes": ""
+      },
+      "dataSafety": {
+        "csv": "scripts/playstore/data_safety.csv",
+        "collectsOrShares": true,
+        "encryptedInTransit": true,
+        "inAppAccounts": false,
+        "outsideAppAccounts": false,
+        "userDataDeletion": false,
+        "dataTypes": [],
+        "perType": {
+          "collectedAndShared": true,
+          "ephemeral": false,
+          "required": true,
+          "purposes": [
+            "APP_FUNCTIONALITY",
+            "ANALYTICS"
+          ]
+        }
+      },
+      "foregroundServices": {
+        "mediaPlayback": false
+      }
+    },
+    "release": {
+      "productionVersionName": "",
+      "productionVersionCode": null,
+      "releaseNotes": {
+        "en-US": "",
+        "fr-FR": ""
+      }
     }
   }
 }

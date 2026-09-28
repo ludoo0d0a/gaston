@@ -102,8 +102,9 @@ firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
-revenuecat-purchases = { module = "com.revenuecat.purchases:purchases-kmp-core", version.ref = "revenuecat" }
-revenuecat-purchases-ui = { module = "com.revenuecat.purchases:purchases-kmp-ui", version.ref = "revenuecat" }
+# Aliases must not nest (revenuecat-purchases + revenuecat-purchases-ui collapses .purchases into a group accessor).
+revenuecat-kmp-core = { module = "com.revenuecat.purchases:purchases-kmp-core", version.ref = "revenuecat" }
+revenuecat-kmp-ui = { module = "com.revenuecat.purchases:purchases-kmp-ui", version.ref = "revenuecat" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -64,8 +64,10 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.kermit)
             implementation(libs.kotlinx.datetime)
-            implementation(libs.revenuecat.purchases)
-            implementation(libs.revenuecat.purchases.ui)
+            // Play-only: Amazon excludes are applied via configurations below (KMP
+            // implementation(notation) { } only accepts String, not catalog Providers).
+            implementation(libs.revenuecat.kmp.core)
+            implementation(libs.revenuecat.kmp.ui)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
@@ -73,7 +75,7 @@ kotlin {
         }
 
         if (kmpHostTargetsEnabled) {
-            val desktopMain by getting {
+            getByName("desktopMain") {
                 dependencies {
                     implementation(libs.ktor.client.okhttp)
                 }
@@ -81,7 +83,7 @@ kotlin {
             iosMain.dependencies {
                 implementation(libs.ktor.client.darwin)
             }
-            val desktopTest by getting {
+            getByName("desktopTest") {
                 dependencies {
                     implementation(libs.junit.jupiter.api)
                     runtimeOnly(libs.junit.jupiter.engine)
@@ -105,6 +107,12 @@ kotlin {
             implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
         }
     }
+}
+
+// Drop Amazon Appstore IAP brought in transitively by RevenueCat (R8 stack-map noise on Play builds).
+configurations.configureEach {
+    exclude(group = "com.revenuecat.purchases", module = "purchases-store-amazon")
+    exclude(group = "com.amazon.device", module = "amazon-appstore-sdk")
 }
 
 dependencies {
