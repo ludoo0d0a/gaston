@@ -40,3 +40,15 @@ tmp/
 
 # Local symlink to shared tools (link-scripts.sh; CI checks out the repo here)
 /geoking-tools
+
+# Local secrets / tooling (geoking-tools)
+local.properties
+composeApp/google-services.json
+*.keystore
+*.jks
+scripts/.keystore-credentials
+scripts/.play-service-account.json
+scripts/.adb-wireless
+playstore/whatsnew/
+/secrets/*.json
+.wrangler/
