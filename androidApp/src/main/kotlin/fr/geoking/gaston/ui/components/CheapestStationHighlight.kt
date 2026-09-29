@@ -26,7 +26,7 @@ object CheapestStationHighlight {
         if (fuelIds.isEmpty()) return null
         return stations.mapNotNull { poi ->
             poi.fuelPrices
-                ?.filter { !it.outOfStock && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                ?.filter { !it.outOfStock && it.price > 0.0 && MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
                 ?.minByOrNull { it.price }
                 ?.price
         }.minOrNull()
@@ -36,6 +36,7 @@ object CheapestStationHighlight {
         if (minPrice == null || fuelIds.isEmpty()) return false
         return poi.fuelPrices?.any {
             !it.outOfStock &&
+                it.price > 0.0 &&
                 MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds &&
                 it.price == minPrice
         } == true

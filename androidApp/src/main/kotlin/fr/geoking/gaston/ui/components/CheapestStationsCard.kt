@@ -318,7 +318,9 @@ private fun CheapestStationItem(
                     prices.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
                 }
 
-                val bestPrice = matchingPrices.minByOrNull { it.price }
+                val availablePrices = matchingPrices.filter { !it.outOfStock && it.price > 0.0 }
+                val bestPrice = availablePrices.minByOrNull { it.price }
+
                 if (bestPrice != null) {
                     val formattedPrice = "€%.3f".format(bestPrice.price)
                     if (isCheapest) {
@@ -334,6 +336,21 @@ private fun CheapestStationItem(
                     val fuelId = MapPoiFilter.fuelNameToId(bestPrice.fuelName)
                     Text(
                         text = bestPrice.fuelName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = fuelId?.let { ColorHelper.getFuelColor(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else if (matchingPrices.isNotEmpty()) {
+                    // Matching fuels exist, but all are out of stock / in shortage (or price <= 0)
+                    Text(
+                        text = "❌",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    val sampleFuel = matchingPrices.firstOrNull()
+                    val fuelId = sampleFuel?.let { MapPoiFilter.fuelNameToId(it.fuelName) }
+                    Text(
+                        text = sampleFuel?.fuelName ?: "Rupture",
                         style = MaterialTheme.typography.labelSmall,
                         color = fuelId?.let { ColorHelper.getFuelColor(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -208,16 +208,38 @@ class PhoneDashboardViewModel(
         }
         val fuelIds = fuelSettings.effectiveMapEnergyFilterIds() - "electric"
 
-        StationMapFilters.apply(
+        val candidatePois = StationMapFilters.apply(
             settings = fuelSettings,
             pois = rawPois,
             providers = currentProviders,
             skipWhenOnlyOverpass = true
         )
             .filter { approxDistanceKm(baseLat, baseLon, it.latitude, it.longitude) <= 10.0 }
+
+        val availablePois = candidatePois.filter { poi ->
+            val prices = poi.fuelPrices
+            if (prices.isNullOrEmpty()) {
+                true
+            } else {
+                prices.any { fp ->
+                    (fuelIds.isEmpty() || MapPoiFilter.fuelNameToId(fp.fuelName) in fuelIds) &&
+                        !fp.outOfStock && fp.price > 0.0
+                }
+            }
+        }
+
+        val poisToList = availablePois.ifEmpty { candidatePois }
+
+        poisToList
             .sortedWith { a, b ->
-                val pricesA = if (fuelIds.isEmpty()) a.fuelPrices else a.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
-                val pricesB = if (fuelIds.isEmpty()) b.fuelPrices else b.fuelPrices?.filter { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds }
+                val pricesA = a.fuelPrices?.filter {
+                    (fuelIds.isEmpty() || MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds) &&
+                        !it.outOfStock && it.price > 0.0
+                }
+                val pricesB = b.fuelPrices?.filter {
+                    (fuelIds.isEmpty() || MapPoiFilter.fuelNameToId(it.fuelName) in fuelIds) &&
+                        !it.outOfStock && it.price > 0.0
+                }
 
                 val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
                 val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
