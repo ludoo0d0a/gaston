@@ -588,7 +588,7 @@ object MapPoiFilter {
         val originLat = fromLat
         val originLon = fromLon
         val pricedPois = pois.mapNotNull { poi ->
-            val minPrice = poi.fuelPrices?.filter { !it.outOfStock && fuelNameToId(it.fuelName) in selectedFuelIds }
+            val minPrice = poi.fuelPrices?.filter { !it.outOfStock && it.price > 0.0 && fuelNameToId(it.fuelName) in selectedFuelIds }
                 ?.minOfOrNull { it.price } ?: return@mapNotNull null
             val distanceKm = if (originLat != null && originLon != null) {
                 approxDistanceKm(originLat, originLon, poi.latitude, poi.longitude)
@@ -633,8 +633,8 @@ object MapPoiFilter {
     ): List<Poi> {
         return if (sortByPrice && selectedFuelIds.isNotEmpty()) {
             pois.sortedWith { a, b ->
-                val pricesA = a.fuelPrices?.filter { fuelNameToId(it.fuelName) in selectedFuelIds }
-                val pricesB = b.fuelPrices?.filter { fuelNameToId(it.fuelName) in selectedFuelIds }
+                val pricesA = a.fuelPrices?.filter { !it.outOfStock && it.price > 0.0 && fuelNameToId(it.fuelName) in selectedFuelIds }
+                val pricesB = b.fuelPrices?.filter { !it.outOfStock && it.price > 0.0 && fuelNameToId(it.fuelName) in selectedFuelIds }
 
                 val priceA = pricesA?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE
                 val priceB = pricesB?.minByOrNull { it.price }?.price ?: Double.MAX_VALUE

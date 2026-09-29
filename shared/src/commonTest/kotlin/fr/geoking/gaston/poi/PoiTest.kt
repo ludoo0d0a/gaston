@@ -198,6 +198,57 @@ class PoiTest {
         assertEquals(listOf("p1", "p2", "p3", "p4", "p5", "p6-tie"), result.map { it.id })
     }
 
+    @Test
+    fun filterCheapest_ignoresOutOfStockAndZeroPrices() {
+        val originLat = 48.8566
+        val originLon = 2.3522
+        val pois = listOf(
+            Poi("shortage-1", "S1", "Addr", originLat, originLon, isElectric = false,
+                fuelPrices = listOf(FuelPrice("Gazole", 0.0, outOfStock = true))),
+            Poi("shortage-2", "S2", "Addr", originLat + 0.01, originLon, isElectric = false,
+                fuelPrices = listOf(FuelPrice("Gazole", 1.20, outOfStock = true))),
+            Poi("available-1", "S3", "Addr", originLat + 0.02, originLon, isElectric = false,
+                fuelPrices = listOf(FuelPrice("Gazole", 1.65, outOfStock = false))),
+            Poi("available-2", "S4", "Addr", originLat + 0.03, originLon, isElectric = false,
+                fuelPrices = listOf(FuelPrice("Gazole", 1.70, outOfStock = false))),
+        )
+
+        val result = MapPoiFilter.filterCheapest(
+            pois = pois,
+            selectedFuelIds = setOf("gazole"),
+            isLuxembourg = false,
+            fromLat = originLat,
+            fromLon = originLon,
+            limit = 5,
+        )
+
+        assertEquals(listOf("available-1", "available-2"), result.map { it.id })
+    }
+
+    @Test
+    fun sortPois_ignoresOutOfStockPrices() {
+        val originLat = 48.8566
+        val originLon = 2.3522
+        val pois = listOf(
+            Poi("shortage-zero", "S1", "Addr", originLat, originLon, isElectric = false,
+                fuelPrices = listOf(FuelPrice("Gazole", 0.0, outOfStock = true))),
+            Poi("available-expensive", "S2", "Addr", originLat + 0.01, originLon, isElectric = false,
+                fuelPrices = listOf(FuelPrice("Gazole", 1.80, outOfStock = false))),
+            Poi("available-cheap", "S3", "Addr", originLat + 0.02, originLon, isElectric = false,
+                fuelPrices = listOf(FuelPrice("Gazole", 1.60, outOfStock = false))),
+        )
+
+        val sorted = MapPoiFilter.sortPois(
+            pois = pois,
+            lat = originLat,
+            lon = originLon,
+            sortByPrice = true,
+            selectedFuelIds = setOf("gazole")
+        )
+
+        assertEquals(listOf("available-cheap", "available-expensive", "shortage-zero"), sorted.map { it.id })
+    }
+
     private fun pricedPoi(id: String, lat: Double, lon: Double, price: Double?): Poi = Poi(
         id = id,
         name = id,
