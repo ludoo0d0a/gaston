@@ -343,7 +343,8 @@ val mapModule = module {
             csvResolver = resolver,
         )
     }
-    single { fr.geoking.gaston.aac.DangerZoneRepository(get(), get()) }
+    single { fr.geoking.gaston.aac.RadarOsmEnricher(get()) }
+    single { fr.geoking.gaston.aac.DangerZoneRepository(get(), get(), get()) }
     single<PoiProvider>(named("franceradars")) {
         FranceRadarsProvider(get(), defaultRadiusKm = 25.0)
     }

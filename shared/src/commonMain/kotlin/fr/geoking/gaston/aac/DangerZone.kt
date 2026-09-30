@@ -36,6 +36,9 @@ enum class DangerZoneKind {
  *
  * [centerLatitude]/[centerLongitude] are the geometric center of the zone buffer, not an
  * exposed "exact control point" for alert UX. Callers must not present these as a radar pin.
+ *
+ * Optional OSM merge fields ([monitoredBearingDegrees], [directionConfidence], …) enrich
+ * data.gouv anchors without requiring OSM for coverage.
  */
 data class DangerZone(
     val id: String,
@@ -46,6 +49,11 @@ data class DangerZone(
     val kind: DangerZoneKind,
     val source: String,
     val roadClass: RoadNetworkClass,
+    val monitoredBearingDegrees: Double? = null,
+    val monitoredBidirectional: Boolean = false,
+    val directionConfidence: DirectionConfidence = DirectionConfidence.None,
+    val osmNodeId: Long? = null,
+    val matchedDistanceMeters: Double? = null,
 ) {
     fun contains(latitude: Double, longitude: Double): Boolean {
         val distM = haversineKm(latitude, longitude, centerLatitude, centerLongitude) * 1000.0
@@ -55,6 +63,15 @@ data class DangerZone(
     fun distanceMetersFrom(latitude: Double, longitude: Double): Double {
         return haversineKm(latitude, longitude, centerLatitude, centerLongitude) * 1000.0
     }
+
+    fun withOsmDirection(info: OsmDirectionInfo, speedLimitOverride: Int? = null): DangerZone = copy(
+        speedLimitKmH = speedLimitKmH ?: speedLimitOverride ?: info.osmMaxspeedKmH,
+        monitoredBearingDegrees = info.monitoredBearingDegrees,
+        monitoredBidirectional = info.bidirectional,
+        directionConfidence = info.confidence,
+        osmNodeId = info.osmNodeId,
+        matchedDistanceMeters = info.matchedDistanceMeters,
+    )
 }
 
 object DangerZoneDistances {
@@ -203,6 +220,7 @@ data class DangerZoneEvaluation(
 object DangerZoneEvaluator {
     const val DEFAULT_TOLERANCE_ANGLE_DEGREES = 40.0
     const val MIN_SPEED_KMH_FOR_BEARING = 5.0
+    const val MONITOR_DIRECTION_TOLERANCE_DEGREES = OsmSpeedCameraDirection.MONITOR_TOLERANCE_DEGREES
 
     private fun toRadians(degrees: Double): Double = degrees * PI / 180.0
     private fun toDegrees(radians: Double): Double = radians * 180.0 / PI
@@ -242,10 +260,25 @@ object DangerZoneEvaluator {
 
         // Alert on presence in zone; when moving, prefer zone ahead of trajectory
         // (reduces opposite-carriageway noise without requiring full map-matching).
-        val alertActive = if (vehBearing != null && vehSpeedKmH >= MIN_SPEED_KMH_FOR_BEARING) {
+        var alertActive = if (vehBearing != null && vehSpeedKmH >= MIN_SPEED_KMH_FOR_BEARING) {
             isInside && isAhead
         } else {
             isInside
+        }
+
+        // High-confidence OSM monitored direction: drop opposite-sense approaches.
+        if (alertActive &&
+            zone.directionConfidence == DirectionConfidence.High &&
+            !zone.monitoredBidirectional
+        ) {
+            val dir = OsmDirectionInfo(
+                confidence = zone.directionConfidence,
+                monitoredBearingDegrees = zone.monitoredBearingDegrees,
+                bidirectional = zone.monitoredBidirectional,
+            )
+            if (!OsmSpeedCameraDirection.isVehicleCompatible(vehBearing, dir, MONITOR_DIRECTION_TOLERANCE_DEGREES)) {
+                alertActive = false
+            }
         }
 
         val speedLimit = zone.speedLimitKmH

@@ -7,9 +7,22 @@
 - Versioning: disk meta stores resource id / last_modified string alongside CSV body (`AndroidTextFileCache`, TTL 24 h).
 - Records → **extended** `DangerZone` via `toDangerZone()` (never alert pins).
 
-## OSM `speed_camera`
+## OSM merge (Overpass) — direction enrichment
 
-- Disabled for FR map/alerts (`OverpassProvider` + `AacMapPolicy.isLikelyFrance`). Outside FR, labels use « Zone … » wording.
+- **Ancre alertes** = toujours data.gouv (`DangerZoneRepository`).
+- **Enrichissement** = `RadarOsmEnricher` + `OverpassClient.querySpeedCamerasInBbox` :
+  - match spatial ≤ **40 m**
+  - relation `type=enforcement` (`from`→`to`) → `DirectionConfidence.High`
+  - `direction=forward|backward` + way géométrie → High
+  - `direction=both` → High bidirectionnel
+  - `direction=` degrés / cardinaux → **Low** (pas de filtre d’alerte)
+- `DangerZoneEvaluator` filtre le sens véhicule seulement si **High** et non bidirectionnel (±45°).
+- Pas d’API OSM `api/0.6` (écriture).
+
+## Carte amenity `speed_camera`
+
+- Overpass `highway=speed_camera` + FranceRadars markers.
+- `RadarPoiMerger` déduplique : si OSM ≤ 40 m d’un pin FranceRadars, on garde FranceRadars.
 
 ## Non-radar zones
 
@@ -19,4 +32,4 @@
 
 ## Mix policy
 
-`DangerZoneRepository.zonesNear` merges FranceRadars zones + static non-radar samples within the vehicle radius.
+`DangerZoneRepository.zonesNear` merges FranceRadars zones (optionally OSM-direction-enriched) + static non-radar samples within the vehicle radius.

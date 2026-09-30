@@ -40,35 +40,26 @@ Document de suivi pour la fonctionnalité d’alertes radars / zones de danger d
 ## 2. Architecture actuelle dans Gaston
 
 ```
-data.gouv.fr CSV (radars fixes FR)     OSM Overpass (highway=speed_camera)
-        │                                         │
-        ▼                                         ▼
- FranceRadarsClient/Provider              OverpassProvider
-        │                                         │
-        └────────────► SelectorPoiProvider ◄──────┘
-                              │
-              PoiCategory.Radar (markers carte + détail)
-                              │
-              MainActivity loop (~2 s) si radarWarningEnabled
-                              │
-                      RadarAlertManager
-                              │
-                 RadarTrajectoryHelper (bearing, VMA, distance)
-                              │
-                      RadarAudioNotifier (beeps + TTS)
+data.gouv.fr CSV (ancres FR) ──► DangerZoneRepository ──► RadarOsmEnricher ◄── Overpass
+                                      │                         (direction / enforcement)
+                                      ▼
+                              DangerZoneAlertManager (+ filtre sens si High)
 ```
+
+Carte amenity : FranceRadars + Overpass `speed_camera`, dédupliqués par `RadarPoiMerger` (≤40 m).
+
+Détail merge / confiance : [`AAC_DATA.md`](AAC_DATA.md).
 
 | Couche | Fichiers clés |
 |--------|----------------|
 | Données FR | `shared/.../api/radars/FranceRadarsClient.kt`, `FranceRadarsProvider.kt` |
-| POI / merge | `PoiCategory.Radar`, `PoiProviderType.FranceRadars`, `SelectorPoiProvider` |
-| OSM | `OverpassProvider` (`speed_camera`) |
-| Alertes | `androidApp/.../radar/RadarAlertManager.kt`, `RadarTrajectoryHelper.kt`, `RadarAudioNotifier.kt` |
-| Réglages | `SettingsManager` (`radarWarningEnabled`, `radarWarningDistanceMeters`), UI dans `SettingsScreen` |
-| Boucle GPS | `MainActivity` (permission + provider `search` catégorie Radar) |
-| Tests | `FranceRadarsTest`, `RadarAlertTest` |
+| Merge OSM | `RadarOsmEnricher`, `OsmSpeedCameraDirection`, `OverpassClient.querySpeedCamerasInBbox` |
+| POI / dédup | `RadarPoiMerger`, `SelectorPoiProvider` |
+| Alertes | `DangerZoneRepository`, `DangerZoneAlertManager`, `DangerZoneEvaluator` |
+| Réglages | `SettingsManager` (`radarWarningEnabled`, …) |
+| Tests | `RadarOsmMergeTest`, `FranceRadarsTest`, `DangerZoneTest` |
 
-**Source open data :** CSV « Liste des radars fixes en France » (data.gouv.fr, Licence Ouverte). URL **figée** dans le client (snapshot daté, ex. `…-12-2025.csv`), cache mémoire **24 h**.
+**Source open data :** CSV « Liste des radars fixes en France » (data.gouv.fr), URL dynamique + fallback, cache disque **24 h**.
 
 ---
 

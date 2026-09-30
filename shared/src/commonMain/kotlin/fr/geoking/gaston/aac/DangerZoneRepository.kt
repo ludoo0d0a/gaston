@@ -10,10 +10,13 @@ import kotlinx.coroutines.coroutineScope
 
 /**
  * Local zone cache around the vehicle — used by the AAC alert loop (no map POI search).
+ *
+ * Anchors on data.gouv France radars, optionally enriched with OSM direction via [RadarOsmEnricher].
  */
 class DangerZoneRepository(
     private val franceRadarsClient: FranceRadarsClient,
     private val roadClassifier: OsmRoadClassifier? = null,
+    private val radarOsmEnricher: RadarOsmEnricher? = null,
 ) {
     private var cachedZones: List<DangerZone> = emptyList()
     private var cacheCenterLat: Double = Double.NaN
@@ -24,6 +27,7 @@ class DangerZoneRepository(
      * Returns danger zones near the vehicle, refreshing when the vehicle leaves the cached area.
      * Mixes France open-data speed-control areas (as extended zones) with non-radar samples.
      * When [roadClassifier] is set, OSM highway tags refine zone [DangerZone.roadClass] / radius.
+     * When [radarOsmEnricher] is set, OSM speed_camera / enforcement enrich monitored direction.
      */
     suspend fun zonesNear(
         latitude: Double,
@@ -36,7 +40,7 @@ class DangerZoneRepository(
 
         if (needRefresh) {
             val records = franceRadarsClient.getRecordsNear(latitude, longitude, radiusKm)
-            val fromRadars = classifyRadarZones(records)
+            val fromRadars = classifyAndEnrich(records)
             val nonRadar = StaticNonRadarDangerZones.near(latitude, longitude, radiusKm)
             cachedZones = fromRadars + nonRadar
             cacheCenterLat = latitude
@@ -49,8 +53,18 @@ class DangerZoneRepository(
         }
     }
 
-    private suspend fun classifyRadarZones(records: List<FranceRadarRecord>): List<DangerZone> {
-        val classifier = roadClassifier ?: return records.map { it.toDangerZone() }
+    private suspend fun classifyAndEnrich(records: List<FranceRadarRecord>): List<DangerZone> {
+        val overrides = classifyRoadOverrides(records)
+        val enricher = radarOsmEnricher
+        return if (enricher != null) {
+            enricher.enrichToZones(records, roadClassOverrides = overrides)
+        } else {
+            records.map { it.toDangerZone(roadClassOverride = overrides[it.id]) }
+        }
+    }
+
+    private suspend fun classifyRoadOverrides(records: List<FranceRadarRecord>): Map<String, RoadNetworkClass> {
+        val classifier = roadClassifier ?: return emptyMap()
         return coroutineScope {
             records.chunked(CLASSIFY_PARALLELISM).flatMap { chunk ->
                 chunk.map { record ->
@@ -61,10 +75,10 @@ class DangerZoneRepository(
                             speedLimitKmH = record.vma,
                         )
                         val override = ctx.roadClass.takeIf { ctx.source == RoadContextSource.Osm }
-                        record.toDangerZone(roadClassOverride = override)
+                        if (override != null) record.id to override else null
                     }
                 }.awaitAll()
-            }
+            }.filterNotNull().toMap()
         }
     }
 

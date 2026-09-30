@@ -913,7 +913,7 @@ class SelectorPoiProvider(
     }
 
     private fun applyPostFilters(pois: List<Poi>, request: PoiSearchRequest, providers: Set<PoiProviderType>): List<Poi> {
-        return if (!request.skipFilters) {
+        val filtered = if (!request.skipFilters) {
             StationMapFilters.apply(
                 settings = settingsManager.settings.value,
                 pois = pois,
@@ -923,6 +923,7 @@ class SelectorPoiProvider(
         } else {
             pois
         }
+        return fr.geoking.gaston.aac.RadarPoiMerger.dedupeRadarAmenities(filtered)
     }
 
     override suspend fun search(request: PoiSearchRequest): List<Poi> {

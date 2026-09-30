@@ -155,10 +155,38 @@ open class OverpassClient(
     }
 
     /**
+     * Speed cameras in a bbox plus enforcement relations (from/to node coords when available).
+     * Also returns nearby highway ways with lightweight geometry endpoints for forward/backward.
+     */
+    open suspend fun querySpeedCamerasInBbox(
+        minLat: Double,
+        minLon: Double,
+        maxLat: Double,
+        maxLon: Double,
+        limit: Int = 300,
+    ): SpeedCameraOverpassBundle {
+        val bbox = "$minLat,$minLon,$maxLat,$maxLon"
+        val query = """
+            [out:json][timeout:25];
+            (
+              node["highway"="speed_camera"]($bbox);
+            )->.cams;
+            .cams out body;
+            rel(bn.cams)["type"="enforcement"]->.enf;
+            .enf out;
+            node(r.enf)->.enfnodes;
+            .enfnodes out body;
+            way(around.cams:40)["highway"]->.ways;
+            .ways out geom qt ${limit.coerceIn(1, 200)};
+        """.trimIndent()
+        return parseSpeedCameraBundle(executeQuery(query), limit)
+    }
+
+    /**
      * Public Overpass instances reject generic OkHttp/Ktor User-Agents with HTTP 406
      * (Apache "Not Acceptable"). Identify the app like Nominatim requests.
      */
-    private suspend fun executeQuery(query: String): String {
+    protected suspend fun executeQuery(query: String): String {
         val response = mutex.withLock {
             client.submitForm(
                 url = baseUrl,
@@ -175,6 +203,64 @@ open class OverpassClient(
             throw NetworkException(response.status.value, "Overpass API error: ${body.take(500)}")
         }
         return body
+    }
+
+    private fun parseSpeedCameraBundle(body: String, limit: Int): SpeedCameraOverpassBundle {
+        val root = json.parseToJsonElement(body).jsonObject
+        val arr = root["elements"]?.jsonArray ?: return SpeedCameraOverpassBundle()
+        val nodes = mutableMapOf<Long, OverpassElement>()
+        val cameras = mutableListOf<OverpassElement>()
+        val ways = mutableListOf<OverpassWayGeom>()
+        val relations = mutableListOf<OverpassEnforcementRelation>()
+
+        for (el in arr) {
+            val obj = el.jsonObject
+            val type = obj["type"]?.jsonPrimitive?.content ?: continue
+            val id = obj["id"]?.jsonPrimitive?.content?.toLongOrNull() ?: continue
+            val tags = (obj["tags"] as? JsonObject)?.mapValues { (_, v) ->
+                (v as? kotlinx.serialization.json.JsonPrimitive)?.content ?: ""
+            } ?: emptyMap()
+            when (type) {
+                "node" -> {
+                    val lat = obj["lat"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: continue
+                    val lon = obj["lon"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: continue
+                    val node = OverpassElement(id = id, lat = lat, lon = lon, tags = tags)
+                    nodes[id] = node
+                    if (tags["highway"] == "speed_camera") {
+                        cameras.add(node)
+                    }
+                }
+                "way" -> {
+                    val geometry = obj["geometry"]?.jsonArray?.mapNotNull { pt ->
+                        val p = pt.jsonObject
+                        val lat = p["lat"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: return@mapNotNull null
+                        val lon = p["lon"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: return@mapNotNull null
+                        lat to lon
+                    }.orEmpty()
+                    if (geometry.size >= 2) {
+                        ways.add(OverpassWayGeom(id = id, tags = tags, points = geometry))
+                    }
+                }
+                "relation" -> {
+                    if (tags["type"] != "enforcement") continue
+                    val members = obj["members"]?.jsonArray?.mapNotNull { m ->
+                        val mo = m.jsonObject
+                        val role = mo["role"]?.jsonPrimitive?.content.orEmpty()
+                        val ref = mo["ref"]?.jsonPrimitive?.content?.toLongOrNull() ?: return@mapNotNull null
+                        val mType = mo["type"]?.jsonPrimitive?.content.orEmpty()
+                        OverpassRelationMember(type = mType, ref = ref, role = role)
+                    }.orEmpty()
+                    relations.add(OverpassEnforcementRelation(id = id, tags = tags, members = members))
+                }
+            }
+        }
+
+        return SpeedCameraOverpassBundle(
+            cameras = cameras.take(limit),
+            nodesById = nodes,
+            ways = ways,
+            enforcementRelations = relations,
+        )
     }
 
     private fun parseElements(body: String, nodesOnly: Boolean = true): List<OverpassElement> {
@@ -213,6 +299,44 @@ open class OverpassClient(
         }
     }
 }
+
+data class OverpassRelationMember(
+    val type: String,
+    val ref: Long,
+    val role: String,
+)
+
+data class OverpassEnforcementRelation(
+    val id: Long,
+    val tags: Map<String, String>,
+    val members: List<OverpassRelationMember>,
+)
+
+data class OverpassWayGeom(
+    val id: Long,
+    val tags: Map<String, String>,
+    val points: List<Pair<Double, Double>>,
+) {
+    fun bearingDegrees(): Double? {
+        if (points.size < 2) return null
+        val (lat1, lon1) = points.first()
+        val (lat2, lon2) = points.last()
+        return fr.geoking.gaston.aac.DangerZoneEvaluator.calculateBearing(lat1, lon1, lat2, lon2)
+    }
+
+    fun center(): Pair<Double, Double> {
+        val lat = points.map { it.first }.average()
+        val lon = points.map { it.second }.average()
+        return lat to lon
+    }
+}
+
+data class SpeedCameraOverpassBundle(
+    val cameras: List<OverpassElement> = emptyList(),
+    val nodesById: Map<Long, OverpassElement> = emptyMap(),
+    val ways: List<OverpassWayGeom> = emptyList(),
+    val enforcementRelations: List<OverpassEnforcementRelation> = emptyList(),
+)
 
 data class OverpassElement(
     val id: Long,
