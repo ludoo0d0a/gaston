@@ -68,27 +68,32 @@ val appModule = module {
                         val request = response.request
                         val reqBody = request.attributes.getOrNull(requestBodyKey)
                         val contentLength = response.headers["Content-Length"]?.toLongOrNull()
-                        val responseSizeBytes = contentLength ?: response.bodyAsText().length.toLong()
                         val logId = UUID.randomUUID().toString()
 
-                        var rawRespBodyText: String? = null
-                        val respBody = if (contentLength != null && contentLength > 512 * 1024) {
-                            "[body omitted: $contentLength bytes]"
-                        } else {
-                            try {
-                                val bodyText = response.bodyAsText()
-                                rawRespBodyText = bodyText
-                                truncateDebugBody(bodyText)
-                            } catch (e: Throwable) {
-                                "[body unreadable: ${e.message}]"
-                            }
+                        // Always keep a truncated preview (never omit). Truncation avoids
+                        // OOM in the log store / debug-bar Compose viewer.
+                        val (respBody, bodyLength) = try {
+                            val bodyText = response.bodyAsText()
+                            truncateDebugBody(bodyText) to bodyText.length.toLong()
+                        } catch (e: Throwable) {
+                            "[body unreadable: ${e.message}]" to 0L
                         }
+                        val responseSizeBytes = contentLength ?: bodyLength
 
-                        if (!reqBody.isNullOrBlank()) {
-                            fr.geoking.gaston.shared.logging.DebugLogPayloadCache.store(logId, isRequest = true, body = reqBody)
+                        val truncatedReq = truncateDebugBody(reqBody)
+                        if (!truncatedReq.isNullOrBlank()) {
+                            fr.geoking.gaston.shared.logging.DebugLogPayloadCache.store(
+                                logId,
+                                isRequest = true,
+                                body = truncatedReq,
+                            )
                         }
-                        if (!rawRespBodyText.isNullOrBlank()) {
-                            fr.geoking.gaston.shared.logging.DebugLogPayloadCache.store(logId, isRequest = false, body = rawRespBodyText)
+                        if (!respBody.isNullOrBlank()) {
+                            fr.geoking.gaston.shared.logging.DebugLogPayloadCache.store(
+                                logId,
+                                isRequest = false,
+                                body = respBody,
+                            )
                         }
 
                         DebugLogStore.addLog(
@@ -98,7 +103,7 @@ val appModule = module {
                                 host = request.url.host,
                                 method = request.method.value,
                                 requestHeaders = request.headers.toMap(),
-                                requestBody = truncateDebugBody(reqBody),
+                                requestBody = truncatedReq,
                                 responseHeaders = response.headers.toMap(),
                                 responseBody = respBody,
                                 statusCode = response.status.value,
@@ -280,7 +285,7 @@ val appModule = module {
 
 private const val DEBUG_BODY_MAX_CHARS = 8_192
 
-/** Cap debug request payloads so oversized POSTs cannot OOM the log store. */
+/** Cap debug request/response payloads so oversized bodies cannot OOM the log store. */
 private fun truncateDebugBody(body: String?, maxChars: Int = DEBUG_BODY_MAX_CHARS): String? {
     if (body == null) return null
     if (body.length <= maxChars) return body
