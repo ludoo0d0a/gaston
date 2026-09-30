@@ -488,9 +488,17 @@ fun PoiDetailsFullscreenDialog(
 
                         if (showRawDetail) {
                             SectionHeader(stringResource(R.string.poi_section_raw_data))
+                            // Only list real provider sources / JSON payloads — skip metadata
+                            // keys (e.g. FranceRadars vma/type/id/aac_zone) already present in JSON.
                             val sourceList = remember(poi.source, poi.rawSourceData) {
-                                val keys = poi.rawSourceData?.keys.orEmpty()
-                                (sources + keys).distinct().ifEmpty { listOfNotNull(poi.source) }
+                                val jsonPayloadKeys = poi.rawSourceData
+                                    ?.filter { (_, v) ->
+                                        val t = v.trimStart()
+                                        t.startsWith("{") || t.startsWith("[")
+                                    }
+                                    ?.keys
+                                    .orEmpty()
+                                (sources + jsonPayloadKeys).distinct().ifEmpty { listOfNotNull(poi.source) }
                             }
                             sourceList.forEach { s ->
                                 Spacer(modifier = Modifier.height(8.dp))
