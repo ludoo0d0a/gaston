@@ -37,10 +37,13 @@ import fr.geoking.gaston.poi.PoiCategory
  */
 object AmenityIconCatalog {
 
-    /** Glyph color used when the icon is rendered on a white circle map marker head. */
+    /** Map marker head style: glyph on a circular disc. */
     data class Style(
         val icon: ImageVector,
-        val glyphArgb: Int
+        val glyphArgb: Int,
+        /** Disc fill; default white. Use a saturated color for alert amenities (e.g. radar). */
+        val discFillArgb: Int = 0xFFFFFFFF.toInt(),
+        val discStrokeArgb: Int = 0xFFDDDDDD.toInt(),
     )
 
     /**
@@ -82,7 +85,13 @@ object AmenityIconCatalog {
         PoiCategory.RestArea -> Style(Icons.Rounded.Forest, 0xFF16A34A.toInt())
         PoiCategory.Restaurant -> Style(Icons.Rounded.Restaurant, 0xFFDC2626.toInt())
         PoiCategory.FastFood -> Style(Icons.Rounded.Fastfood, 0xFFEA580C.toInt())
-        PoiCategory.Radar -> Style(Icons.Rounded.Speed, 0xFFEF4444.toInt())
+        // Red disc + white speed glyph for OSM speed_camera / danger-zone amenity
+        PoiCategory.Radar -> Style(
+            icon = Icons.Rounded.Speed,
+            glyphArgb = 0xFFFFFFFF.toInt(),
+            discFillArgb = 0xFFEF4444.toInt(),
+            discStrokeArgb = 0xFFB91C1C.toInt(),
+        )
         PoiCategory.Parking -> Style(Icons.Rounded.LocalParking, 0xFF1D4ED8.toInt())
         PoiCategory.Viewpoint -> Style(Icons.Rounded.Visibility, 0xFF6366F1.toInt())
         PoiCategory.BatterySwap -> Style(Icons.Rounded.SwapHoriz, 0xFFF59E0B.toInt())
@@ -102,13 +111,13 @@ object AmenityIconCatalog {
      */
     fun headBitmap(style: Style, sizePx: Int): Bitmap {
         val bucket = ((sizePx + 7) / 8) * 8
-        val key = "${System.identityHashCode(style.icon)}_${style.glyphArgb}_${bucket}"
+        val key = "${System.identityHashCode(style.icon)}_${style.glyphArgb}_${style.discFillArgb}_${bucket}"
         synchronized(headBitmapCache) {
             headBitmapCache.get(key)?.let { return it }
         }
         val bitmap = Bitmap.createBitmap(bucket, bucket, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        drawCircleHead(canvas, bucket)
+        drawCircleHead(canvas, bucket, style.discFillArgb, style.discStrokeArgb)
         // Inset matches the legacy layer-list (4.8dp out of 48dp = 10% on each side).
         val inset = bucket * 0.20f
         val glyphSize = bucket - inset
@@ -127,18 +136,23 @@ object AmenityIconCatalog {
         synchronized(headBitmapCache) { headBitmapCache.evictAll() }
     }
 
-    private fun drawCircleHead(canvas: Canvas, sizePx: Int) {
+    private fun drawCircleHead(
+        canvas: Canvas,
+        sizePx: Int,
+        fillArgb: Int = 0xFFFFFFFF.toInt(),
+        strokeArgb: Int = 0xFFDDDDDD.toInt(),
+    ) {
         val cx = sizePx / 2f
         val cy = sizePx / 2f
         val radius = sizePx / 2f - sizePx * 0.021f
         val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            color = 0xFFFFFFFF.toInt()
+            color = fillArgb
             isDither = true
         }
         val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            color = 0xFFDDDDDD.toInt()
+            color = strokeArgb
             strokeWidth = (sizePx * 0.021f).coerceAtLeast(1f)
             isDither = true
         }

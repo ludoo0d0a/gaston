@@ -50,15 +50,7 @@ class OverpassProvider(
             ?: radiusKm
 
         val cat = request.categories.ifEmpty { supportedCategories() }
-        // Level A FR: do not surface OSM speed_camera as exact control pins on the map / alerts.
-        val wanted = cat.filter { it in supportedCategories() }
-            .filterNot {
-                it == PoiCategory.Radar && fr.geoking.gaston.aac.AacMapPolicy.isLikelyFrance(
-                    request.latitude,
-                    request.longitude
-                )
-            }
-            .toSet()
+        val wanted = cat.filter { it in supportedCategories() }.toSet()
         if (wanted.isEmpty()) return emptyList()
         val amenityValues = wanted.mapNotNull { categoryToOsmAmenity(it) }.toSet()
         val tourismValues = wanted.mapNotNull { categoryToOsmTourism(it) }.toSet()
@@ -194,6 +186,16 @@ class OverpassProvider(
                 ?: el.tags["ref:FR"]
                 ?: el.tags["ref"]?.takeIf { it.length >= 5 && it.all { c -> c.isDigit() } }
 
+            val radarRaw = if (category == PoiCategory.Radar) {
+                buildMap<String, String> {
+                    el.tags["maxspeed"]?.let { maxspeed ->
+                        val digits = maxspeed.filter { ch -> ch.isDigit() }
+                        put("vma", digits.ifBlank { maxspeed })
+                    }
+                    put("highway", "speed_camera")
+                }
+            } else null
+
             Poi(
                 id = "osm:${el.id}",
                 name = name?.takeIf { it.isNotBlank() } ?: categoryDisplayName(category, lang),
@@ -209,7 +211,8 @@ class OverpassProvider(
                 irveDetails = irveDetails,
                 amenities = amenities,
                 refId = refId,
-                source = "OpenStreetMap"
+                source = "OpenStreetMap",
+                rawSourceData = radarRaw
             )
         }
     }

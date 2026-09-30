@@ -166,6 +166,24 @@ class SelectorPoiProvider(
         return applyBulkFileNetworkPolicy(raw)
     }
 
+    /**
+     * When the danger-zone / speed_camera amenity is requested in France, always query
+     * [PoiProviderType.FranceRadars] (official open data), even if not in user selection.
+     */
+    private fun withFranceRadarsForAmenity(
+        providers: Set<PoiProviderType>,
+        categories: Set<PoiCategory>,
+        isoCountries: List<String>,
+        latitude: Double,
+        longitude: Double,
+    ): Set<PoiProviderType> {
+        if (PoiCategory.Radar !in categories) return providers
+        val inFr = isoCountries.any { fr.geoking.gaston.aac.AacMapPolicy.isFrance(it) } ||
+            fr.geoking.gaston.aac.AacMapPolicy.isLikelyFrance(latitude, longitude)
+        if (!inFr) return providers
+        return applyBulkFileNetworkPolicy(providers + PoiProviderType.FranceRadars)
+    }
+
     private fun getProvider(type: PoiProviderType): PoiProvider = when (type) {
         PoiProviderType.Routex -> routex
         PoiProviderType.Etalab -> dataGouvPrixCarburant
@@ -434,7 +452,14 @@ class SelectorPoiProvider(
             hasViewport = request.viewport != null
         )
 
-        val providers = resolveEffectiveProviders(settings, isoCountries)
+        val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
+        val providers = withFranceRadarsForAmenity(
+            providers = resolveEffectiveProviders(settings, isoCountries),
+            categories = categoriesToFetch,
+            isoCountries = isoCountries,
+            latitude = request.latitude,
+            longitude = request.longitude,
+        )
 
         if (providers.isEmpty()) {
             traceProvider(
@@ -446,7 +471,6 @@ class SelectorPoiProvider(
             return@channelFlow
         }
 
-        val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
         traceProviderResolved(
             source = "searchFlow",
             providers = providers,
@@ -686,7 +710,14 @@ class SelectorPoiProvider(
             hasViewport = request.viewport != null
         )
 
-        val providers = resolveEffectiveProviders(settings, isoCountries)
+        val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
+        val providers = withFranceRadarsForAmenity(
+            providers = resolveEffectiveProviders(settings, isoCountries),
+            categories = categoriesToFetch,
+            isoCountries = isoCountries,
+            latitude = request.latitude,
+            longitude = request.longitude,
+        )
 
         if (providers.isEmpty()) {
             traceProvider(
@@ -697,7 +728,6 @@ class SelectorPoiProvider(
             return PoiSearchResult()
         }
 
-        val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
         traceProviderResolved(
             source = "searchResult",
             providers = providers,

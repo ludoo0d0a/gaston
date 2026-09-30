@@ -1022,10 +1022,10 @@ class AutoSurfaceRenderer(
     }
 
     private fun drawRadarPreventionCircles(canvas: Canvas) {
-        if (!isDevMode) return
+        val radarPois = pois.filter { it.poiCategory == PoiCategory.Radar }
+        if (radarPois.isEmpty()) return
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
-        val warningDistanceKm = (radarWarningDistanceMeters.toDouble().coerceIn(300.0, 4000.0)) / 1000.0
 
         val circleFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#22EF4444")
@@ -1037,14 +1037,17 @@ class AutoSurfaceRenderer(
             strokeWidth = 3f * context.resources.displayMetrics.density
         }
 
-        pois.filter { it.poiCategory == PoiCategory.Radar }.forEach { poi ->
+        radarPois.forEach { poi ->
             val tileX = lonToTileX(poi.longitude, zoom)
             val tileY = latToTileY(poi.latitude, zoom)
 
             val drawX = ((tileX - centerX) * TILE_SIZE + centerPxX).toFloat()
             val drawY = ((tileY - centerY) * TILE_SIZE + centerPxY).toFloat()
 
-            val radiusPx = AutoMapCamera.radiusPxForKm(poi.latitude, zoom, warningDistanceKm)
+            val radiusKm = fr.geoking.gaston.aac.DangerZoneDistances.radiusMetersForRadarPoiVma(
+                poi.rawSourceData?.get("vma")
+            ) / 1000.0
+            val radiusPx = AutoMapCamera.radiusPxForKm(poi.latitude, zoom, radiusKm)
             if (radiusPx >= 2f) {
                 canvas.drawCircle(drawX, drawY, radiusPx, circleFillPaint)
                 canvas.drawCircle(drawX, drawY, radiusPx, circleStrokePaint)

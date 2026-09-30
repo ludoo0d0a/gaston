@@ -2,17 +2,11 @@ package fr.geoking.gaston.aac
 
 /**
  * Map / alert presentation policy for AAC Level A (France).
+ *
+ * Alerts must use extended [DangerZone]s (never “radar à X m”).
+ * Map amenity display uses Overpass `highway=speed_camera` (red markers) when selected.
  */
 object AacMapPolicy {
-    /**
-     * Exact speed-control pins must not be shown on the map in France for alert UX.
-     * Prefer extended danger zones (not drawn as control markers).
-     */
-    fun shouldShowExactControlPin(countryCode: String?): Boolean {
-        val cc = countryCode?.uppercase()?.trim()
-        return cc != null && cc != "FR" && cc != "FRA"
-    }
-
     fun isFrance(countryCode: String?): Boolean {
         val cc = countryCode?.uppercase()?.trim()
         return cc == "FR" || cc == "FRA"

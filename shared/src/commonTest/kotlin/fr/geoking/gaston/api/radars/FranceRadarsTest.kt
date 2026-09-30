@@ -81,7 +81,7 @@ Numéro de radar;Type de radar;Date de mise en service;VMA ;Latitude; Longitude
     }
 
     @Test
-    fun testProviderNoLongerExposesExactControlPins() = runBlocking {
+    fun testProviderExposesZoneCenterPoisForMapAmenity() = runBlocking {
         val mockEngine = MockEngine {
             respond(
                 content = sampleCsv,
@@ -95,13 +95,13 @@ Numéro de radar;Type de radar;Date de mise en service;VMA ;Latitude; Longitude
 
         assertTrue(provider.shouldQuery(48.8566, 2.3522))
 
-        // Level A: map search returns no exact control pins
         val results = provider.search(PoiSearchRequest(48.8566, 2.3522, categories = setOf(PoiCategory.Radar)))
-        assertTrue(results.isEmpty())
+        assertTrue(results.isNotEmpty())
+        assertTrue(results.any { it.id == "fr_radar_12014" })
+        assertTrue(results.all { it.poiCategory == PoiCategory.Radar })
+        assertTrue(results.none { it.name.contains("Radar", ignoreCase = true) })
 
-        // Zones still available via records
         val records = client.getRecordsNear(48.8566, 2.3522, radiusKm = 10.0)
-        assertTrue(records.isNotEmpty())
         assertTrue(records.any { it.id == "12014" })
     }
 }

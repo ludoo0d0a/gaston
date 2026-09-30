@@ -174,6 +174,9 @@ fun providersForIncrementalFetch(
     if (needsAmenityFetch && PoiProviderType.Overpass in allProviders) {
         result += PoiProviderType.Overpass
     }
+    if (PoiCategory.Radar in missingCategories && PoiProviderType.FranceRadars in allProviders) {
+        result += PoiProviderType.FranceRadars
+    }
     // If Overpass is an explicit provider for Gas or Irve, and they are missing, include it.
     if (PoiProviderType.Overpass in allProviders) {
         if (PoiCategory.Gas in missingCategories || PoiCategory.Irve in missingCategories) {

@@ -65,7 +65,11 @@ object PoiMarkerHelper {
         val categoryColor = getPoiColor(poi, category, effectiveEnergyTypes, effectivePowerLevels)
 
         val availKey = availability?.let { "${it.availableCount}/${it.totalCount}" } ?: "na"
-        val headKey = if (amenityStyle != null) "amenity_${System.identityHashCode(amenityStyle.icon)}_${amenityStyle.glyphArgb}" else headDrawableId.toString()
+        val headKey = if (amenityStyle != null) {
+            "amenity_${System.identityHashCode(amenityStyle.icon)}_${amenityStyle.glyphArgb}_${amenityStyle.discFillArgb}"
+        } else {
+            headDrawableId.toString()
+        }
         val cacheKey = "${poi.id}_${label}_${headKey}_${categoryColor}_${isSelected}_${cheapestRank}_${sizePx}_${availKey}_$MARKER_LAYOUT_CACHE_TAG"
         synchronized(cache) {
             cache.get(cacheKey)?.let { return it }

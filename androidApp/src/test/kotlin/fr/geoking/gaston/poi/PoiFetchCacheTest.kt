@@ -127,6 +127,17 @@ class PoiFetchCacheTest {
     }
 
     @Test
+    fun providersForIncrementalFetch_includesFranceRadarsWhenRadarMissing() {
+        val providers = providersForIncrementalFetch(
+            allProviders = setOf(PoiProviderType.Overpass, PoiProviderType.FranceRadars),
+            missingProviders = emptySet(),
+            missingCategories = setOf(PoiCategory.Radar),
+        )
+        assertTrue(PoiProviderType.FranceRadars in providers)
+        assertTrue(PoiProviderType.Overpass in providers)
+    }
+
+    @Test
     fun providersForIncrementalFetch_fetchesElectricWhenIrveMissingAfterFuelLoad() {
         val all = setOf(PoiProviderType.Etalab, PoiProviderType.DataGouvElec, PoiProviderType.Overpass)
         val providers = providersForIncrementalFetch(

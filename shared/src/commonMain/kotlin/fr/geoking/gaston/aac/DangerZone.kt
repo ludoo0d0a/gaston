@@ -68,6 +68,12 @@ object DangerZoneDistances {
         RoadNetworkClass.Urban -> URBAN_METERS
     }
 
+    /** Map circle radius for a radar / danger-zone amenity POI (from `vma` in rawSourceData). */
+    fun radiusMetersForRadarPoiVma(vmaRaw: String?): Double {
+        val vma = vmaRaw?.toIntOrNull()?.takeIf { it > 0 }
+        return radiusMetersFor(classifyFromSpeedLimitKmH(vma))
+    }
+
     /**
      * Heuristic road class from posted speed limit (VMA) when map-matching is unavailable.
      * ≥110 → motorway, ≥70 → extra-urban, else urban.
