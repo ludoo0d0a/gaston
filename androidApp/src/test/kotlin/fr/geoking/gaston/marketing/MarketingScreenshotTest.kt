@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.core.view.drawToBitmap
 import org.junit.Rule
 import org.junit.Test
@@ -34,7 +34,7 @@ class MarketingScreenshotTest {
 
     private val repoRoot: File
         get() {
-            val cwd = File(System.getProperty("user.dir"))
+            val cwd = File(checkNotNull(System.getProperty("user.dir")))
             return if (File(cwd, "playstore-assets").isDirectory) cwd else checkNotNull(cwd.parentFile)
         }
 
@@ -43,6 +43,7 @@ class MarketingScreenshotTest {
         composeRule.setContent {
             MarketingScreenshotFrame { content() }
         }
+        composeRule.waitForIdle()
         Thread.sleep(1200)
         val decor = composeRule.activity.window.decorView
         decor.measure(
