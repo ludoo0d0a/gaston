@@ -15,7 +15,7 @@ Kotlin Multiplatform fuel & EV station finder — `:shared` (models, networking,
 ./gradlew :shared:testAndroidHostTest            # shared unit tests on JVM
 ```
 
-- JDK 17+, Android Studio Koala+
+- JDK 21 via mise (`mise.toml`), Android Studio Koala+
 - Secrets in `local.properties` only (never commit keys). See `docs/ENV_VARS.md`, `docs/API_KEYS.md`
 - New POI/country providers: follow existing `*Provider` / `*Client` patterns under `shared/src/commonMain/kotlin/fr/geoking/gaston/api/`
 

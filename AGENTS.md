@@ -25,7 +25,7 @@ E2E tests (Maestro): Flows are in `.maestro/`. Run with `maestro test .maestro/`
 
 Integration tests (real APIs, optional in CI): `CountryStationLoadRealApiTests` via workflow in `.github/workflows/station-load-integration.yml`.
 
-Prerequisites: JDK 17+, `local.properties` with `sdk.dir` (and optional `GOOGLE_MAPS_KEY`). Never commit secrets.
+Prerequisites: JDK 21 via [mise](https://mise.jdx.dev/) (`mise.toml` / `mise install`), `local.properties` with `sdk.dir` (and optional `GOOGLE_MAPS_KEY`). Never commit secrets.
 
 Shared GeoKing scripts/CI (additive): [`docs/GEOKING_STACK.md`](docs/GEOKING_STACK.md) — `./scripts/gk --list`.
 

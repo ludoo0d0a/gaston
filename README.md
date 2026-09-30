@@ -146,7 +146,7 @@ Quick access to road-trip essentials when something goes wrong, plus highway tol
 ### Prerequisites
 
 - Android Studio Koala or newer
-- JDK 17+
+- JDK 21 (via [mise](https://mise.jdx.dev/); `mise.toml` pins `java = "21"`)
 
 ### Build
 
