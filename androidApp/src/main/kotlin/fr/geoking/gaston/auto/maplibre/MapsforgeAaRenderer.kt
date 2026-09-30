@@ -24,6 +24,7 @@ import fr.geoking.gaston.auto.AutoSurfaceRenderer
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.auto.OfflineMapAvailability
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.mapsforge.core.model.LatLong
@@ -333,6 +334,20 @@ class MapsforgeAaRenderer(
         val mapCenterY = latToTileY(centerLat, zoom)
         val cx = centerPxXForHitTest().toFloat()
         val cy = centerPxYForHitTest().toFloat()
+
+        AutoMapOverlayHelper.drawRadarDangerZoneCircles(
+            canvas = canvas,
+            density = carContext.resources.displayMetrics.density,
+            zoom = zoom,
+            radarPois = lastPois.filter { it.poiCategory == PoiCategory.Radar },
+        ) { poi ->
+            val tileX = lonToTileX(poi.longitude, zoom)
+            val tileY = latToTileY(poi.latitude, zoom)
+            val drawX = ((tileX - mapCenterX) * AutoSurfaceRenderer.TILE_SIZE + cx).toFloat()
+            val drawY = ((tileY - mapCenterY) * AutoSurfaceRenderer.TILE_SIZE + cy).toFloat()
+            drawX to drawY
+        }
+
         lastPois.forEach { poi ->
             val bitmap = PoiMarkerHelper.getMarkerBitmap(
                 context = carContext,

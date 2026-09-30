@@ -15,6 +15,17 @@ class DangerZoneTest {
     }
 
     @Test
+    fun radiusMetersForRadarPoiVma() {
+        assertEquals(4_000.0, DangerZoneDistances.radiusMetersForRadarPoiVma("130"))
+        assertEquals(4_000.0, DangerZoneDistances.radiusMetersForRadarPoiVma("110"))
+        assertEquals(2_000.0, DangerZoneDistances.radiusMetersForRadarPoiVma("90"))
+        assertEquals(2_000.0, DangerZoneDistances.radiusMetersForRadarPoiVma("70"))
+        assertEquals(300.0, DangerZoneDistances.radiusMetersForRadarPoiVma("50"))
+        assertEquals(300.0, DangerZoneDistances.radiusMetersForRadarPoiVma("NA"))
+        assertEquals(300.0, DangerZoneDistances.radiusMetersForRadarPoiVma(null))
+    }
+
+    @Test
     fun classifyFromVmaHeuristic() {
         assertEquals(RoadNetworkClass.Motorway, DangerZoneDistances.classifyFromSpeedLimitKmH(130))
         assertEquals(RoadNetworkClass.Motorway, DangerZoneDistances.classifyFromSpeedLimitKmH(110))

@@ -260,6 +260,8 @@ fun DirectionsMapScreen(
 
                         style.getSourceAs<GeoJsonSource>("poi-source")?.setGeoJson(FeatureCollection.fromFeatures(features))
 
+                        MapLibreSharedHelper.syncRadarDangerZoneLayer(map, filteredPois)
+
                         // Update route if changed (though it's mostly fixed here)
                         val routePoints = route?.points?.map { org.maplibre.geojson.Point.fromLngLat(it.second, it.first) } ?: emptyList()
                         style.getSourceAs<GeoJsonSource>("route-source")?.setGeoJson(org.maplibre.geojson.LineString.fromLngLats(routePoints))

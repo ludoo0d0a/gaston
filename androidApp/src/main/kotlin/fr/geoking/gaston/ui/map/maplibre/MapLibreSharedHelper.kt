@@ -1,14 +1,17 @@
 package fr.geoking.gaston.ui.map.maplibre
 
 import android.content.Context
+import fr.geoking.gaston.aac.DangerZoneDistances
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.AutoMapCamera
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
@@ -18,6 +21,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
+import org.maplibre.geojson.Polygon
 
 /**
  * Shared utility to deduplicate and share MapLibre layer configuration, POI symbol markers, and
@@ -29,6 +33,9 @@ object MapLibreSharedHelper {
     const val POI_ID_PROPERTY = "poi-id"
     const val SEARCH_RADIUS_SOURCE_ID = "search-radius-source"
     const val SEARCH_RADIUS_LAYER_ID = "search-radius-layer"
+    const val RADAR_ZONE_SOURCE_ID = "radar-danger-zone-source"
+    const val RADAR_ZONE_FILL_LAYER_ID = "radar-danger-zone-fill"
+    const val RADAR_ZONE_LINE_LAYER_ID = "radar-danger-zone-line"
     const val USER_LOCATION_SOURCE_ID = "user-location-source"
     const val USER_LOCATION_LAYER_ID = "user-location-layer"
     const val USER_LOCATION_ICON_ID = "user-location-arrow-icon"
@@ -112,6 +119,55 @@ object MapLibreSharedHelper {
 
             style.getSourceAs<GeoJsonSource>(POI_SOURCE_ID)
                 ?.setGeoJson(FeatureCollection.fromFeatures(features))
+        }
+        syncRadarDangerZoneLayer(map, pois)
+    }
+
+    /**
+     * VMA-based danger-zone circles around radar amenity POIs (fill + stroke).
+     */
+    fun syncRadarDangerZoneLayer(map: MapLibreMap, pois: List<Poi>) {
+        map.getStyle { style ->
+            if (style.getSource(RADAR_ZONE_SOURCE_ID) == null) {
+                style.addSource(GeoJsonSource(RADAR_ZONE_SOURCE_ID))
+            }
+            if (style.getLayer(RADAR_ZONE_FILL_LAYER_ID) == null) {
+                val fill = FillLayer(RADAR_ZONE_FILL_LAYER_ID, RADAR_ZONE_SOURCE_ID).withProperties(
+                    PropertyFactory.fillColor("#EF4444"),
+                    PropertyFactory.fillOpacity(0.13f)
+                )
+                if (style.getLayer(POI_LAYER_ID) != null) {
+                    style.addLayerBelow(fill, POI_LAYER_ID)
+                } else {
+                    style.addLayer(fill)
+                }
+            }
+            if (style.getLayer(RADAR_ZONE_LINE_LAYER_ID) == null) {
+                val line = LineLayer(RADAR_ZONE_LINE_LAYER_ID, RADAR_ZONE_SOURCE_ID).withProperties(
+                    PropertyFactory.lineColor("#EF4444"),
+                    PropertyFactory.lineWidth(2.5f),
+                    PropertyFactory.lineOpacity(0.9f)
+                )
+                if (style.getLayer(POI_LAYER_ID) != null) {
+                    style.addLayerBelow(line, POI_LAYER_ID)
+                } else {
+                    style.addLayer(line)
+                }
+            }
+
+            val source = style.getSourceAs<GeoJsonSource>(RADAR_ZONE_SOURCE_ID) ?: return@getStyle
+            val features = pois.filter { it.poiCategory == PoiCategory.Radar }.mapNotNull { poi ->
+                val radiusKm = DangerZoneDistances.radiusMetersForRadarPoiVma(
+                    poi.rawSourceData?.get("vma")
+                ) / 1000.0
+                if (radiusKm <= 0.0) return@mapNotNull null
+                val ring = AutoMapCamera.circleLatLngRing(poi.latitude, poi.longitude, radiusKm).map { (lat, lon) ->
+                    Point.fromLngLat(lon, lat)
+                }
+                if (ring.size < 4) return@mapNotNull null
+                Feature.fromGeometry(Polygon.fromLngLats(listOf(ring)))
+            }
+            source.setGeoJson(FeatureCollection.fromFeatures(features))
         }
     }
 

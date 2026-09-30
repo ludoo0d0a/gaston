@@ -7,9 +7,45 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
+import fr.geoking.gaston.aac.DangerZoneDistances
+import fr.geoking.gaston.poi.Poi
 import kotlin.math.cos
 
 object AutoMapOverlayHelper {
+
+    /**
+     * VMA-based danger-zone circles around radar amenity POIs (AFFTAC distances:
+     * ~4 km / ~2 km / ~300 m). [toScreenXy] maps each POI to canvas coordinates.
+     */
+    fun drawRadarDangerZoneCircles(
+        canvas: Canvas,
+        density: Float,
+        zoom: Int,
+        radarPois: List<Poi>,
+        toScreenXy: (Poi) -> Pair<Float, Float>,
+    ) {
+        if (radarPois.isEmpty()) return
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#22EF4444")
+            style = Paint.Style.FILL
+        }
+        val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#EF4444")
+            style = Paint.Style.STROKE
+            strokeWidth = 3f * density
+        }
+        for (poi in radarPois) {
+            val (drawX, drawY) = toScreenXy(poi)
+            val radiusKm = DangerZoneDistances.radiusMetersForRadarPoiVma(
+                poi.rawSourceData?.get("vma")
+            ) / 1000.0
+            val radiusPx = AutoMapCamera.radiusPxForKm(poi.latitude, zoom, radiusKm)
+            if (radiusPx >= 2f) {
+                canvas.drawCircle(drawX, drawY, radiusPx, fillPaint)
+                canvas.drawCircle(drawX, drawY, radiusPx, strokePaint)
+            }
+        }
+    }
 
     enum class MapLibreStatusSeverity {
         Ok,
