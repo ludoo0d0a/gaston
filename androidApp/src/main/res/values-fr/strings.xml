@@ -227,6 +227,7 @@
     <string name="route_error">Erreur</string>
     <string name="route_locate_place">Localiser un lieu</string>
     <string name="action_locate_me">Me localiser</string>
+    <string name="action_reset_north">Remettre le nord en haut</string>
     <string name="route_origin">Départ</string>
     <string name="route_origin_placeholder">Adresse ou ville de départ</string>
     <string name="route_plan_menu">Planifier un itinéraire</string>
@@ -236,6 +237,7 @@
     <string name="route_search_at_destination">Rechercher à destination</string>
     <string name="route_to_direction">Itinéraire vers une direction</string>
     <string name="route_where_to">Où allez-vous ?</string>
+    <string name="route_change_place">Changer de lieu</string>
     <string name="screen_about">À propos</string>
     <string name="screen_add_poi">Ajouter un POI</string>
     <string name="screen_advanced_filters">Filtres avancés</string>

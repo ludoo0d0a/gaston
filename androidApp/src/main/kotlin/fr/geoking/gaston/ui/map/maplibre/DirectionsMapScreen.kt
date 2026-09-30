@@ -28,7 +28,7 @@ import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.components.CheapestStationHighlight
 import fr.geoking.gaston.ui.components.MapScaffold
-import fr.geoking.gaston.ui.components.MapLocateMeButton
+import fr.geoking.gaston.ui.components.MapControlsOverlay
 import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
@@ -127,15 +127,6 @@ fun DirectionsMapScreen(
         mapCenterLongitude = route?.points?.firstOrNull()?.second,
         onBack = onBack,
         onRefresh = { /* Route is fixed, but could refresh POIs if needed */ },
-        onLocateMe = {
-            val targetLat = userLat ?: route?.points?.firstOrNull()?.first
-            val targetLon = userLon ?: route?.points?.firstOrNull()?.second
-            if (targetLat != null && targetLon != null) {
-                mapLibreMap?.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(LatLng(targetLat, targetLon), 15.0)
-                )
-            }
-        },
         onShowSettings = { /* Maybe show simplified settings? */ },
         onShowSources = { /* Not used in directions map */ }
     ) { padding ->
@@ -155,7 +146,22 @@ fun DirectionsMapScreen(
                     .zIndex(1f)
             )
 
-            MapLocateMeButton(
+            MapControlsOverlay(
+                bearing = (cameraPosition?.bearing ?: 0.0).toFloat(),
+                onResetNorth = {
+                    val map = mapLibreMap ?: return@MapControlsOverlay
+                    val current = map.cameraPosition
+                    map.animateCamera(
+                        CameraUpdateFactory.newCameraPosition(
+                            CameraPosition.Builder()
+                                .target(current.target)
+                                .zoom(current.zoom)
+                                .tilt(current.tilt)
+                                .bearing(0.0)
+                                .build()
+                        )
+                    )
+                },
                 onLocateMe = {
                     val targetLat = userLat ?: route?.points?.firstOrNull()?.first
                     val targetLon = userLon ?: route?.points?.firstOrNull()?.second

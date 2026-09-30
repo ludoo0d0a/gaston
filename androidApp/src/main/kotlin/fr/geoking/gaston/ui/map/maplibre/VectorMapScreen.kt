@@ -83,7 +83,6 @@ import fr.geoking.gaston.ui.map.maplibre.resolvePhoneMapLibreStyle
 import fr.geoking.gaston.ui.map.PoiDetailCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.AddPoiSheet
-import fr.geoking.gaston.ui.components.MapLocateMeButton
 import fr.geoking.gaston.ui.components.MapControlsOverlay
 import fr.geoking.gaston.ui.components.MapOverlayWidgets
 import fr.geoking.gaston.ui.map.MapCameraSample
@@ -349,28 +348,6 @@ fun VectorMapScreen(
             onRefresh = {
                 mapActions.refresh(true, currentMapCameraSample())
             },
-            onLocateMe = {
-                scope.launch {
-                    val targetLat = userLat
-                    val targetLon = userLon
-                    if (targetLat != null && targetLon != null) {
-                        mapLibreMap?.animateCamera(
-                            CameraUpdateFactory.newLatLngZoom(
-                                LatLng(targetLat, targetLon),
-                                (cameraPosition?.zoom ?: defaultZoom).coerceAtLeast(15.0)
-                            )
-                        )
-                    } else {
-                        val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                        mapLibreMap?.animateCamera(
-                            CameraUpdateFactory.newLatLngZoom(
-                                LatLng(lat, lon),
-                                15.0
-                            )
-                        )
-                    }
-                }
-            },
             onShowSettings = {
                 initialSettingsPage = SettingsScreenPage.MapConfig
                 showMapSettings = true
@@ -460,7 +437,9 @@ fun VectorMapScreen(
                                 }
                             },
                             onOpenRoutes = { _, _ -> },
-                            onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) }
+                            onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) },
+                            placeholder = stringResource(R.string.route_change_place),
+                            autoFocus = true,
                         )
                     }
                 }
@@ -597,6 +576,21 @@ fun VectorMapScreen(
                     )
 
                     MapControlsOverlay(
+                        bearing = (cameraPosition?.bearing ?: 0.0).toFloat(),
+                        onResetNorth = {
+                            val map = mapLibreMap ?: return@MapControlsOverlay
+                            val current = map.cameraPosition
+                            map.animateCamera(
+                                CameraUpdateFactory.newCameraPosition(
+                                    CameraPosition.Builder()
+                                        .target(current.target)
+                                        .zoom(current.zoom)
+                                        .tilt(current.tilt)
+                                        .bearing(0.0)
+                                        .build()
+                                )
+                            )
+                        },
                         onLocateMe = {
                             scope.launch {
                                 val targetLat = userLat

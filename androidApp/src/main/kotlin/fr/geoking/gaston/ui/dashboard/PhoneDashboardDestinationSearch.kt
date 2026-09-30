@@ -36,8 +36,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.res.painterResource
 import fr.geoking.gaston.R
@@ -70,10 +73,14 @@ fun PhoneDashboardDestinationSearch(
     settings: AppSettings,
     onLocationSelected: (GeocodedPlace?) -> Unit,
     onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
-    onToggleFavorite: (GeocodedPlace) -> Unit
+    onToggleFavorite: (GeocodedPlace) -> Unit,
+    placeholder: String = stringResource(R.string.route_where_to),
+    autoFocus: Boolean = false,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
     var destQuery by remember(selectedSearchLocation?.label) {
         mutableStateOf(selectedSearchLocation?.label.orEmpty())
     }
@@ -81,6 +88,13 @@ fun PhoneDashboardDestinationSearch(
     var isSearching by remember { mutableStateOf(false) }
     var destFocused by remember { mutableStateOf(false) }
     var destFieldHeight by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(autoFocus) {
+        if (autoFocus) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
 
     LaunchedEffect(
         destQuery,
@@ -146,10 +160,11 @@ fun PhoneDashboardDestinationSearch(
                 destQuery = it
                 destFocused = true
             },
-            placeholder = { Text(stringResource(R.string.route_where_to)) },
+            placeholder = { Text(placeholder) },
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("dashboard_search_field")
+                .focusRequester(focusRequester)
                 .onFocusChanged {
                     destFocused = it.isFocused
                 }

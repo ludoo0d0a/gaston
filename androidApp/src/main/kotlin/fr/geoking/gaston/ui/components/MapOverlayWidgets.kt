@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.R
 import kotlin.math.cos
@@ -99,8 +101,30 @@ fun MapZoomControls(
 }
 
 @Composable
+fun MapCompassButton(
+    bearing: Float,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val description = stringResource(R.string.action_reset_north)
+    SmallFloatingActionButton(
+        onClick = onClick,
+        modifier = modifier.semantics { contentDescription = description },
+        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        MapCompassWidget(
+            bearing = bearing,
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+@Composable
 fun MapControlsOverlay(
     modifier: Modifier = Modifier,
+    bearing: Float = 0f,
+    onResetNorth: (() -> Unit)? = null,
     onLocateMe: (() -> Unit)? = null,
     onZoomIn: (() -> Unit)? = null,
     onZoomOut: (() -> Unit)? = null,
@@ -112,6 +136,9 @@ fun MapControlsOverlay(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        if (onResetNorth != null) {
+            MapCompassButton(bearing = bearing, onClick = onResetNorth)
+        }
         if (onLocateMe != null) {
             MapLocateMeButton(onLocateMe = onLocateMe)
         }
@@ -126,6 +153,7 @@ fun MapControlsOverlay(
     }
 }
 
+/** Needle-only compass (no disc) — intended inside [MapCompassButton] / FAB chrome. */
 @Composable
 fun MapCompassWidget(
     bearing: Float,
@@ -134,54 +162,37 @@ fun MapCompassWidget(
     Canvas(modifier = modifier.size(40.dp)) {
         val cx = size.width / 2
         val cy = size.height / 2
-        val needleLength = size.height * 0.4f
-        val needleWidth = size.width * 0.25f
+        val needleLength = size.minDimension * 0.42f
+        val needleWidth = size.minDimension * 0.28f
 
         rotate(-bearing, pivot = Offset(cx, cy)) {
-            // Draw a background circle
-            drawCircle(
-                color = Color.Black.copy(alpha = 0.3f),
-                radius = size.width / 2,
-                center = Offset(cx, cy)
-            )
-            drawCircle(
-                color = Color.White.copy(alpha = 0.5f),
-                radius = size.width / 2,
-                center = Offset(cx, cy),
-                style = Stroke(width = 1.dp.toPx())
-            )
-
-            // Red triangle (North pointer)
             val redPath = Path().apply {
                 moveTo(cx, cy - needleLength)
                 lineTo(cx - needleWidth / 2, cy)
                 lineTo(cx + needleWidth / 2, cy)
                 close()
             }
-            drawPath(redPath, color = Color.Red)
+            drawPath(redPath, color = Color(0xFFFF3B30))
 
-            // White triangle (South pointer)
             val whitePath = Path().apply {
                 moveTo(cx, cy + needleLength)
                 lineTo(cx - needleWidth / 2, cy)
                 lineTo(cx + needleWidth / 2, cy)
                 close()
             }
-            drawPath(whitePath, color = Color.White)
+            drawPath(whitePath, color = Color(0xFFB0B0B0))
 
-            // Draw outlines
-            drawPath(redPath, color = Color.Black, style = Stroke(width = 1.dp.toPx()))
-            drawPath(whitePath, color = Color.Black, style = Stroke(width = 1.dp.toPx()))
+            drawPath(redPath, color = Color.Black.copy(alpha = 0.35f), style = Stroke(width = 1.dp.toPx()))
+            drawPath(whitePath, color = Color.Black.copy(alpha = 0.35f), style = Stroke(width = 1.dp.toPx()))
 
-            // Center pivot point
             drawCircle(
                 color = Color.DarkGray,
-                radius = 3.dp.toPx(),
+                radius = 2.5.dp.toPx(),
                 center = Offset(cx, cy)
             )
             drawCircle(
                 color = Color.White,
-                radius = 1.5.dp.toPx(),
+                radius = 1.25.dp.toPx(),
                 center = Offset(cx, cy)
             )
         }

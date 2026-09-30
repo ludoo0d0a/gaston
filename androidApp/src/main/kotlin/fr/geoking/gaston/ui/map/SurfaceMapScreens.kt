@@ -193,22 +193,6 @@ fun SurfaceCustomMapScreen(
                 mapCenterLongitude = mapLon,
                 onBack = onBack,
                 onRefresh = { mapActions.refresh(true, MapCameraSample(mapLat, mapLon, zoom.toFloat())) },
-                onLocateMe = {
-                    scope.launch {
-                        val uLat = userLat
-                        val uLon = userLon
-                        if (uLat != null && uLon != null) {
-                            mapLat = uLat
-                            mapLon = uLon
-                            zoom = zoom.coerceAtLeast(15)
-                        } else {
-                            val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                            mapLat = lat
-                            mapLon = lon
-                            zoom = 15
-                        }
-                    }
-                },
                 onShowSettings = {
                     initialSettingsPage = SettingsScreenPage.MapConfig
                     showMapSettings = true
@@ -261,7 +245,9 @@ fun SurfaceCustomMapScreen(
                                     }
                                 },
                                 onOpenRoutes = { _, _ -> },
-                                onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) }
+                                onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) },
+                                placeholder = stringResource(R.string.route_change_place),
+                                autoFocus = true,
                             )
                         }
                     }
@@ -356,6 +342,8 @@ fun SurfaceCustomMapScreen(
                         )
 
                         MapControlsOverlay(
+                            bearing = bearing,
+                            onResetNorth = { bearing = 0f },
                             onLocateMe = {
                                 scope.launch {
                                     val uLat = userLat
@@ -550,22 +538,6 @@ fun SurfaceMapsforgeMapScreen(
                 mapCenterLongitude = mapLon,
                 onBack = onBack,
                 onRefresh = { mapActions.refresh(true, MapCameraSample(mapLat, mapLon, zoom.toFloat())) },
-                onLocateMe = {
-                    scope.launch {
-                        val uLat = userLat
-                        val uLon = userLon
-                        if (uLat != null && uLon != null) {
-                            mapLat = uLat
-                            mapLon = uLon
-                            zoom = zoom.coerceAtLeast(15)
-                        } else {
-                            val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                            mapLat = lat
-                            mapLon = lon
-                            zoom = 15
-                        }
-                    }
-                },
                 onShowSettings = {
                     initialSettingsPage = SettingsScreenPage.MapConfig
                     showMapSettings = true
@@ -618,7 +590,9 @@ fun SurfaceMapsforgeMapScreen(
                                     }
                                 },
                                 onOpenRoutes = { _, _ -> },
-                                onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) }
+                                onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) },
+                                placeholder = stringResource(R.string.route_change_place),
+                                autoFocus = true,
                             )
                         }
                     }
@@ -717,6 +691,8 @@ fun SurfaceMapsforgeMapScreen(
                         )
 
                         MapControlsOverlay(
+                            bearing = bearing,
+                            onResetNorth = { bearing = 0f },
                             onLocateMe = {
                                 scope.launch {
                                     val uLat = userLat

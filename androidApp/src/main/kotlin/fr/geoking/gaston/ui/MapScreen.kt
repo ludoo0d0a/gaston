@@ -382,28 +382,6 @@ fun MapScreen(
             onRefresh = {
                 mapActions.refresh(true, currentMapCameraSample())
             },
-            onLocateMe = {
-                scope.launch {
-                    val targetLat = userLat
-                    val targetLon = userLon
-                    if (targetLat != null && targetLon != null) {
-                        cameraPositionState.animate(
-                            CameraUpdateFactory.newLatLngZoom(
-                                LatLng(targetLat, targetLon),
-                                cameraPositionState.position.zoom.coerceAtLeast(15f)
-                            )
-                        )
-                    } else {
-                        val (lat, lon) = LocationHelper.getInitialLocation(context, settingsManager)
-                        cameraPositionState.animate(
-                            CameraUpdateFactory.newLatLngZoom(
-                                LatLng(lat, lon),
-                                15f
-                            )
-                        )
-                    }
-                }
-            },
             onShowSettings = {
                 initialSettingsPage = SettingsScreenPage.MapConfig
                 showMapSettings = true
@@ -490,7 +468,9 @@ fun MapScreen(
                                 }
                             },
                             onOpenRoutes = { _, _ -> },
-                            onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) }
+                            onToggleFavorite = { settingsManager.toggleFavoriteLocation(it) },
+                            placeholder = stringResource(R.string.route_change_place),
+                            autoFocus = true,
                         )
                     }
                 }
@@ -584,7 +564,10 @@ fun MapScreen(
                             mapType = googleMapType,
                             mapStyleOptions = null // On phone, keep map in day theme
                         ),
-                        uiSettings = MapUiSettings(myLocationButtonEnabled = hasLocationPermission),
+                        uiSettings = MapUiSettings(
+                            myLocationButtonEnabled = false,
+                            compassEnabled = false,
+                        ),
                         contentPadding = PaddingValues(bottom = mapPaddingBottom),
                         onMapClick = { latLng ->
                             val projection = cameraPositionState.projection
@@ -756,6 +739,17 @@ fun MapScreen(
                     )
 
                     MapControlsOverlay(
+                        bearing = cameraPositionState.position.bearing,
+                        onResetNorth = {
+                            scope.launch {
+                                val current = cameraPositionState.position
+                                cameraPositionState.animate(
+                                    CameraUpdateFactory.newCameraPosition(
+                                        CameraPosition.Builder(current).bearing(0f).build()
+                                    )
+                                )
+                            }
+                        },
                         onLocateMe = {
                             scope.launch {
                                 val targetLat = userLat
