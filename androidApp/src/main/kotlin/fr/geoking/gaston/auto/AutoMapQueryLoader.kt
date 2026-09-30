@@ -44,18 +44,19 @@ object AutoMapQueryLoader {
         // Compass measurements (matching drawCompass in AutoMapOverlayHelper)
         val isMenuOnRight = (surfaceWidth - area.right) > area.left + (20 * density)
         val compassRadius = 28f * density
-        val margin = 16f * density
+        val bottomMargin = 16f * density
+        val edgeMargin = 4f * density
         val buttonSpacing = 8f * density
-        val compassCenterY = area.bottom - margin - compassRadius - 2f * (compassRadius * 2f + buttonSpacing)
+        val compassCenterY = area.bottom - bottomMargin - compassRadius - 2f * (compassRadius * 2f + buttonSpacing)
 
         // Reposition loader to be side-by-side with the compass at the same height
         val spacing = 12f * density
         val loaderRadius = 14f * density // 28dp diameter/size on screen
 
         val compassCenterX = if (isMenuOnRight) {
-            area.left + margin + compassRadius
+            area.left + edgeMargin + compassRadius
         } else {
-            area.right - margin - compassRadius
+            area.right - edgeMargin - compassRadius
         }
 
         val cx = if (isMenuOnRight) {

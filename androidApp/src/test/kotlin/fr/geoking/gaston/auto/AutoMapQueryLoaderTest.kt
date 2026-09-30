@@ -25,8 +25,9 @@ class AutoMapQueryLoaderTest {
             surfaceHeight = 300,
             nowMs = 450L,
         )
-        // Loader sits to the left of compass above zoom buttons — density=1f, cx = 360 - 16 - 28 - 28 - 12 - 14 = 262, cy = 280 - 16 - 28 - 2*(56+8) = 108
-        val sampleX = 262
+        // Loader sits to the left of compass above zoom buttons — density=1f, edgeMargin=4
+        // cx = 360 - 4 - 28 - 28 - 12 - 14 = 274, cy = 280 - 16 - 28 - 2*(56+8) = 108
+        val sampleX = 274
         val sampleY = 108
         val pixel = bitmap.getPixel(sampleX, sampleY)
         assertTrue(pixel != Color.BLACK)
@@ -45,8 +46,8 @@ class AutoMapQueryLoaderTest {
             surfaceHeight = 300,
             nowMs = 450L,
         )
-        // Menu on right: compass at bottom-left, loader to its right: cx = 0 + 16 + 28 + 28 + 12 + 14 = 98, cy = 108
-        val sampleX = 98
+        // Menu on right: compass at bottom-left, loader to its right: cx = 0 + 4 + 28 + 28 + 12 + 14 = 86, cy = 108
+        val sampleX = 86
         val sampleY = 108
         val pixel = bitmap.getPixel(sampleX, sampleY)
         assertTrue(pixel != Color.BLACK)

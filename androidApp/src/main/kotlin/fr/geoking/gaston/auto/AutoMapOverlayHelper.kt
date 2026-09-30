@@ -187,15 +187,17 @@ object AutoMapOverlayHelper {
 
     private fun drawCompass(canvas: Canvas, area: Rect, bearing: Float, density: Float, isMenuOnRight: Boolean) {
         val compassRadius = 28f * density // 56dp diameter, matching Zoom (+) / (-) map action strip buttons
-        val margin = 16f * density
+        val bottomMargin = 16f * density
+        // Hug the side edge like the host mapActionStrip zoom buttons (closer than the old 16dp inset)
+        val edgeMargin = 4f * density
         val buttonSpacing = 8f * density
 
         // Position above the two mapActionStrip zoom buttons (+ and -)
-        val cy = area.bottom - margin - compassRadius - 2f * (compassRadius * 2f + buttonSpacing)
+        val cy = area.bottom - bottomMargin - compassRadius - 2f * (compassRadius * 2f + buttonSpacing)
         val cx = if (isMenuOnRight) {
-            area.left + margin + compassRadius
+            area.left + edgeMargin + compassRadius
         } else {
-            area.right - margin - compassRadius
+            area.right - edgeMargin - compassRadius
         }
 
         val needleLength = compassRadius * 0.65f
