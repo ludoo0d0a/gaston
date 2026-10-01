@@ -345,7 +345,7 @@ val mapModule = module {
             csvResolver = resolver,
         )
     }
-    single { LufopOpenSpeedCamClient(get()) }
+    single { LufopOpenSpeedCamClient(get(), apiKey = BuildConfig.LUFOP_API_KEY) }
     single { fr.geoking.gaston.aac.RadarOsmEnricher(get()) }
     single { fr.geoking.gaston.aac.DangerZoneRepository(franceRadarsClient = get(), lufopOpenSpeedCamClient = get(), roadClassifier = get(), radarOsmEnricher = get()) }
     single<PoiProvider>(named("franceradars")) {

@@ -208,8 +208,8 @@ enum class PoiProviderType(
     UsaEia(providesFuel = true),
     /** French speed cameras (radars fixes) open data from data.gouv.fr. */
     FranceRadars(fetchKind = PoiProviderFetchKind.File),
-    /** Lufop / OpenSpeedCam speed cameras dataset. */
-    LufopOpenSpeedCam(fetchKind = PoiProviderFetchKind.File),
+    /** Lufop API (api.lufop.net) speed cameras / danger zones. Requires LUFOP_API_KEY. */
+    LufopOpenSpeedCam,
     Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }

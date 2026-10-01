@@ -10,6 +10,7 @@ Some keys can also be entered in the app under **Settings → App config** (stor
 |----------|-----------------|--------------|
 | `GOOGLE_MAPS_KEY` | — | Map tiles ([setup guide](MAPS_API_KEY_SETUP.md)) |
 | `OPENCHARGEMAP_KEY` | Yes | Open Charge Map provider |
+| `LUFOP_API_KEY` | — | Lufop speed cameras / danger zones ([api.lufop.net](https://api.lufop.net/)) |
 | `ECO_MOVEMENT_KEY` | Yes | Eco-Movement OCPI provider |
 | `NREL_AFDC_KEY` | — | NREL/AFDC alt-fuel stations (US + Canada EV) |
 | `FUELPRICES_DK_KEY` | Yes | Fuelprices.dk (Denmark) |
@@ -39,6 +40,22 @@ Some keys can also be entered in the app under **Settings → App config** (stor
 4. Copy the API key shown on **My Apps** into `local.properties` or Settings.
 
 Without a key, the API may rate-limit or reject heavy use.
+
+---
+
+## Lufop (speed cameras / danger zones)
+
+| | |
+|---|---|
+| **Property** | `LUFOP_API_KEY` |
+| **Auth** | Query parameter `key=` on `https://api.lufop.net/api` |
+| **Docs** | [api.lufop.net](https://api.lufop.net/) |
+
+1. Create an account on [api.lufop.net](https://api.lufop.net/) and request an API key (Free plan exists with daily quotas).
+2. Set `LUFOP_API_KEY=…` in `local.properties` (or CI env).
+3. Without a key, the Lufop provider returns no POIs / zones.
+
+Gaston queries by GPS (`q` + `m`) in JSON. Attribution to Lufop is required (CC BY-SA).
 
 ---
 

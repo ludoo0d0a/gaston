@@ -457,7 +457,7 @@
     <string name="provider_belgium_official">Belgium (official)</string>
     <string name="provider_usa_eia">EIA (US state average)</string>
     <string name="provider_france_radars">Danger zones (data.gouv.fr France)</string>
-    <string name="provider_lufop_openspeedcam">Lufop / OpenSpeedCam</string>
+    <string name="provider_lufop_openspeedcam">Lufop</string>
 
     <!-- AAC / Level A driving assistant -->
     <string name="aac_settings_title">Driving assistant</string>

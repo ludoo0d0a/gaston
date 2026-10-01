@@ -22,6 +22,7 @@ Use these names in `local.properties` or set the same name as an env var (e.g. f
 | `GOOGLE_MAPS_KEY` | Google Maps API key. **Required for map screen** (tiles); without it the map stays grey. Setup: [`MAPS_API_KEY_SETUP.md`](MAPS_API_KEY_SETUP.md). |
 | `GOOGLE_WEB_CLIENT_ID` | Google Sign-In **Web client ID**: copy from Firebase [Authentication → Sign-in method → Google](https://console.firebase.google.com/project/gaston-c8f44/authentication/providers) (`gaston-c8f44`). Details: `docs/GOOGLE_PLAY_MIGRATION.md` §5. |
 | `OPENCHARGEMAP_KEY` | Open Charge Map API key (recommended if you enable that provider). |
+| `LUFOP_API_KEY` | Lufop API key for speed cameras / danger zones ([api.lufop.net](https://api.lufop.net/)). Blank → provider returns nothing. |
 | `ECO_MOVEMENT_KEY` | Eco-Movement OCPI token (`Authorization: Token …`). Also overridable in Settings. |
 | `NOBIL_API_KEY` | NOBIL datadump (Norway/Sweden EV availability). Free CC-BY key from nobil.no. |
 | `NREL_AFDC_KEY` | NREL/AFDC Alternative Fuel Stations (US + Canada EV inventory/status). Free key from developer.nrel.gov. |

@@ -1,12 +1,12 @@
 package fr.geoking.gaston.api.radars
 
-import fr.geoking.gaston.aac.TextFileCache
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -18,22 +18,30 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
- * Client for Lufop / OpenSpeedCam speed camera dataset.
- * Memory cache + optional [TextFileCache] disk TTL (24 h).
+ * Client for the [Lufop API](https://api.lufop.net/) (speed cameras / danger zones).
+ *
+ * Geo query: `GET /api?key=…&format=json&q=lat,lon&m=…&nbr=…`
+ * [m] is ≈ 1/10 km (e.g. `m=100` ≈ 10 km). Blank [apiKey] → empty results.
  */
 class LufopOpenSpeedCamClient(
     private val client: HttpClient,
-    private val exportUrl: String = DEFAULT_EXPORT_URL,
-    private val diskCache: TextFileCache? = null,
+    private val apiKey: String = "",
+    private val baseUrl: String = DEFAULT_API_URL,
+    private val maxResults: Int = DEFAULT_MAX_RESULTS,
 ) {
     companion object {
-        const val DEFAULT_EXPORT_URL = "https://openspeedcam.net/export"
-        const val DISK_CACHE_KEY = "lufop_openspeedcam_data"
-        private const val CACHE_TTL_MS = 24 * 60 * 60 * 1000L // 24 hours
+        const val DEFAULT_API_URL = "https://api.lufop.net/api"
+        /** Free-tier max results per call (Pro allows more). */
+        const val DEFAULT_MAX_RESULTS = 200
+        private const val CACHE_TTL_MS = 30 * 60 * 1000L // 30 minutes
+        private val VMA_IN_NAME = Regex("""(?:^|\D)(\d{2,3})\s*(?:km/?h)?\s*$""", RegexOption.IGNORE_CASE)
     }
 
     private val mutex = Mutex()
     private var cachedRadars: List<LufopOpenSpeedCamRecord>? = null
+    private var cacheLat: Double = Double.NaN
+    private var cacheLon: Double = Double.NaN
+    private var cacheRadiusKm: Double = 0.0
     private var cacheTimestamp: Long = 0L
 
     suspend fun getRadarsNear(
@@ -49,7 +57,9 @@ class LufopOpenSpeedCamClient(
         longitude: Double,
         radiusKm: Double = 15.0
     ): List<LufopOpenSpeedCamRecord> {
-        val allRadars = ensureCachedRadars()
+        if (apiKey.isBlank()) return emptyList()
+
+        val allRadars = ensureCachedRadars(latitude, longitude, radiusKm)
         return allRadars.filter { radar ->
             haversineKm(latitude, longitude, radar.latitude, radar.longitude) <= radiusKm
         }
@@ -58,57 +68,69 @@ class LufopOpenSpeedCamClient(
     suspend fun clearCache() {
         mutex.withLock {
             cachedRadars = null
+            cacheLat = Double.NaN
+            cacheLon = Double.NaN
+            cacheRadiusKm = 0.0
             cacheTimestamp = 0L
         }
-        diskCache?.clear(DISK_CACHE_KEY)
     }
 
-    private suspend fun ensureCachedRadars(): List<LufopOpenSpeedCamRecord> {
+    private suspend fun ensureCachedRadars(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double,
+    ): List<LufopOpenSpeedCamRecord> {
         val now = System.currentTimeMillis()
         mutex.withLock {
             val existing = cachedRadars
-            if (existing != null && (now - cacheTimestamp) < CACHE_TTL_MS) {
-                return existing
-            }
+            val stillFresh = existing != null &&
+                (now - cacheTimestamp) < CACHE_TTL_MS &&
+                !cacheLat.isNaN() &&
+                haversineKm(latitude, longitude, cacheLat, cacheLon) <= cacheRadiusKm * 0.4 &&
+                radiusKm <= cacheRadiusKm * 1.05
+            if (stillFresh) return existing
         }
 
-        diskCache?.read(DISK_CACHE_KEY)?.let { cached ->
-            if ((now - cached.storedAtEpochMs) < CACHE_TTL_MS) {
-                val parsed = parseContent(cached.body)
-                mutex.withLock {
-                    cachedRadars = parsed
-                    cacheTimestamp = cached.storedAtEpochMs
-                }
-                return parsed
-            }
-        }
-
-        val downloaded = fetchAndParseRadars()
+        val downloaded = fetchNear(latitude, longitude, radiusKm)
         mutex.withLock {
             cachedRadars = downloaded
+            cacheLat = latitude
+            cacheLon = longitude
+            cacheRadiusKm = radiusKm
             cacheTimestamp = now
         }
         return downloaded
     }
 
-    private suspend fun fetchAndParseRadars(): List<LufopOpenSpeedCamRecord> {
-        val response = client.get(exportUrl)
+    private suspend fun fetchNear(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double,
+    ): List<LufopOpenSpeedCamRecord> {
+        // Lufop `m` ≈ 1/10 km (docs: m=100 ≈ 10 km around q=…).
+        val margin = (radiusKm * 10.0).toInt().coerceIn(1, 10_000)
+        val response = client.get(baseUrl) {
+            parameter("key", apiKey)
+            parameter("format", "json")
+            parameter("q", "$latitude,$longitude")
+            parameter("m", margin)
+            parameter("nbr", maxResults.coerceIn(1, 10_000))
+        }
         val body = response.bodyAsText()
         if (response.status.value !in 200..299) {
-            throw NetworkException(response.status.value, "Lufop / OpenSpeedCam fetch error: ${body.take(200)}")
+            throw NetworkException(response.status.value, "Lufop API fetch error: ${body.take(200)}")
         }
-        diskCache?.write(DISK_CACHE_KEY, body, null)
         return parseContent(body)
     }
 
     fun parseContent(text: String): List<LufopOpenSpeedCamRecord> {
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return emptyList()
-
+        if (trimmed.startsWith("<")) return emptyList() // HTML / XML error pages
         if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
             return parseJson(trimmed)
         }
-        return parseCsv(trimmed)
+        return emptyList()
     }
 
     private fun parseJson(jsonText: String): List<LufopOpenSpeedCamRecord> {
@@ -120,7 +142,8 @@ class LufopOpenSpeedCamClient(
             val array = when {
                 root is kotlinx.serialization.json.JsonArray -> root
                 root is kotlinx.serialization.json.JsonObject -> {
-                    root["points"]?.jsonArray
+                    root["markers"]?.jsonArray
+                        ?: root["points"]?.jsonArray
                         ?: root["elements"]?.jsonArray
                         ?: root["data"]?.jsonArray
                 }
@@ -129,18 +152,24 @@ class LufopOpenSpeedCamClient(
 
             for ((idx, elem) in array.withIndex()) {
                 val obj = elem.jsonObject
-                val lat = obj["latitude"]?.jsonPrimitive?.doubleOrNull
-                    ?: obj["lat"]?.jsonPrimitive?.doubleOrNull
+                val lat = obj["lat"]?.jsonPrimitive?.doubleOrNull
+                    ?: obj["latitude"]?.jsonPrimitive?.doubleOrNull
                     ?: continue
-                val lon = obj["longitude"]?.jsonPrimitive?.doubleOrNull
+                val lon = obj["lng"]?.jsonPrimitive?.doubleOrNull
                     ?: obj["lon"]?.jsonPrimitive?.doubleOrNull
-                    ?: obj["lng"]?.jsonPrimitive?.doubleOrNull
+                    ?: obj["longitude"]?.jsonPrimitive?.doubleOrNull
                     ?: continue
+                val name = obj["name"]?.jsonPrimitive?.content
+                val type = obj["type"]?.jsonPrimitive?.content ?: "unknown"
+                val id = obj["ID"]?.jsonPrimitive?.content
+                    ?: obj["id"]?.jsonPrimitive?.content
+                    ?: "lufop_$idx"
+                val commune = obj["commune"]?.jsonPrimitive?.content
+                val voie = obj["voie"]?.jsonPrimitive?.content
                 val speed = obj["vma"]?.jsonPrimitive?.intOrNull
                     ?: obj["speed"]?.jsonPrimitive?.intOrNull
                     ?: obj["speed_limit"]?.jsonPrimitive?.intOrNull
-                val type = obj["type"]?.jsonPrimitive?.content ?: "FIXE"
-                val id = obj["id"]?.jsonPrimitive?.content ?: "osc_$idx"
+                    ?: name?.let { extractVmaFromName(it) }
 
                 records.add(
                     LufopOpenSpeedCamRecord(
@@ -148,7 +177,10 @@ class LufopOpenSpeedCamClient(
                         type = type,
                         vma = speed,
                         latitude = lat,
-                        longitude = lon
+                        longitude = lon,
+                        name = name,
+                        commune = commune,
+                        voie = voie,
                     )
                 )
             }
@@ -158,75 +190,10 @@ class LufopOpenSpeedCamClient(
         return records
     }
 
-    private fun parseCsv(csvText: String): List<LufopOpenSpeedCamRecord> {
-        val lines = csvText.lines().map { it.trim() }.filter { it.isNotBlank() }
-        if (lines.isEmpty()) return emptyList()
-
-        val records = mutableListOf<LufopOpenSpeedCamRecord>()
-        var headerParsed = false
-
-        var idIdx = -1
-        var typeIdx = -1
-        var vmaIdx = -1
-        var latIdx = -1
-        var lonIdx = -1
-
-        val delimiter = if (lines.first().contains(";")) ";" else ","
-
-        for ((lineIdx, line) in lines.withIndex()) {
-            val parts = line.split(delimiter).map { it.trim() }
-            if (!headerParsed) {
-                val headerLower = parts.map { it.lowercase() }
-                if (headerLower.any { it.contains("lat") || it.contains("lon") || it.contains("type") || it.contains("speed") }) {
-                    for ((idx, col) in headerLower.withIndex()) {
-                        when {
-                            col.contains("numéro") || col.contains("numero") || col == "id" -> idIdx = idx
-                            col.contains("type") -> typeIdx = idx
-                            col.contains("vma") || col.contains("vitesse") || col.contains("speed") -> vmaIdx = idx
-                            col.contains("lat") -> latIdx = idx
-                            col.contains("long") || col.contains("lon") || col.contains("lng") -> lonIdx = idx
-                        }
-                    }
-                    headerParsed = true
-                    continue
-                } else {
-                    headerParsed = true
-                }
-            }
-
-            val effectiveLatIdx = if (latIdx >= 0) latIdx else (if (parts.size >= 2 && parts[0].toDoubleOrNull() != null && parts[1].toDoubleOrNull() != null) {
-                val p0 = parts[0].toDoubleOrNull()!!
-                val p1 = parts[1].toDoubleOrNull()!!
-                if (p0 in -90.0..90.0 && p1 in -180.0..180.0) {
-                    if (p0 > 20.0) 0 else 1
-                } else 0
-            } else 0)
-            val effectiveLonIdx = if (lonIdx >= 0) lonIdx else (if (effectiveLatIdx == 0) 1 else 0)
-
-            if (parts.size <= maxOf(effectiveLatIdx, effectiveLonIdx)) continue
-
-            val latStr = parts.getOrNull(effectiveLatIdx)?.replace("+", "")?.replace(",", ".")
-            val lonStr = parts.getOrNull(effectiveLonIdx)?.replace("+", "")?.replace(",", ".")
-
-            val lat = latStr?.toDoubleOrNull() ?: continue
-            val lon = lonStr?.toDoubleOrNull() ?: continue
-
-            val id = if (idIdx >= 0) parts.getOrNull(idIdx)?.ifBlank { null } ?: "osc_$lineIdx" else "osc_$lineIdx"
-            val type = if (typeIdx >= 0) parts.getOrNull(typeIdx)?.ifBlank { null } ?: "FIXE" else "FIXE"
-            val vmaRaw = if (vmaIdx >= 0) parts.getOrNull(vmaIdx) else null
-            val vma = vmaRaw?.toIntOrNull()
-
-            records.add(
-                LufopOpenSpeedCamRecord(
-                    id = id,
-                    type = type,
-                    vma = vma,
-                    latitude = lat,
-                    longitude = lon
-                )
-            )
-        }
-        return records
+    internal fun extractVmaFromName(name: String): Int? {
+        val match = VMA_IN_NAME.find(name.trim()) ?: return null
+        val value = match.groupValues[1].toIntOrNull() ?: return null
+        return value.takeIf { it in 20..160 }
     }
 }
 
@@ -235,15 +202,27 @@ data class LufopOpenSpeedCamRecord(
     val type: String,
     val vma: Int?,
     val latitude: Double,
-    val longitude: Double
+    val longitude: Double,
+    val name: String? = null,
+    val commune: String? = null,
+    val voie: String? = null,
 ) {
     fun toPoi(): Poi {
         val speedLabel = if (vma != null && vma > 0) "$vma km/h" else null
-        val title = if (speedLabel != null) "Zone $speedLabel" else "Zone de vigilance ($type)"
+        val title = when {
+            !name.isNullOrBlank() -> name
+            speedLabel != null -> "Zone $speedLabel"
+            else -> "Zone de vigilance ($type)"
+        }
+        val address = listOfNotNull(voie, commune)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString(", ")
+            .ifBlank { "Lufop" }
         return Poi(
             id = "osc_radar_$id",
             name = title,
-            address = "OpenSpeedCam / Lufop",
+            address = address,
             latitude = latitude,
             longitude = longitude,
             brand = null,
