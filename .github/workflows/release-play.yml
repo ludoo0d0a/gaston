@@ -24,7 +24,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # GHA expressions have no arithmetic (+/*); compute versionCode in shell.
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version_code: ${{ steps.vc.outputs.version_code }}
+    steps:
+      - id: vc
+        run: |
+          echo "version_code=$(( ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))" >> "$GITHUB_OUTPUT"
+
   release:
+    needs: prepare
     uses: ludoo0d0a/geoking-ci/.github/workflows/release-play.yml@main
     with:
       package_name: fr.geoking.gaston
@@ -38,7 +49,7 @@ jobs:
       java_version: '21'
       # Keep Gaston versionCode scheme (run*10+attempt) above prior Play uploads.
       # Must be a string — reusable workflow_call inputs reject bare numbers.
-      version_code_override: ${{ format('{0}', github.run_number * 10 + github.run_attempt) }}
+      version_code_override: ${{ needs.prepare.outputs.version_code }}
       version_name_override: ${{ github.ref_type == 'tag' && github.ref_name || format('1.0.{0}', github.run_number) }}
       is_workflow_dispatch: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
       workflow_dispatch_track: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.track || '' }}
