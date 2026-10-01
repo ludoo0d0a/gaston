@@ -193,6 +193,20 @@ class OverpassProvider(
                         put("vma", digits.ifBlank { maxspeed })
                     }
                     put("highway", "speed_camera")
+                    el.tags["direction"]?.takeIf { it.isNotBlank() }?.let { dir ->
+                        put(fr.geoking.gaston.aac.DangerZoneTriangle.RAW_DIRECTION, dir)
+                        val info = fr.geoking.gaston.aac.OsmSpeedCameraDirection.resolve(directionTag = dir)
+                        if (info.bidirectional) {
+                            put(fr.geoking.gaston.aac.DangerZoneTriangle.RAW_BIDIRECTIONAL, "true")
+                        } else {
+                            info.monitoredBearingDegrees?.let { bearing ->
+                                put(
+                                    fr.geoking.gaston.aac.DangerZoneTriangle.RAW_MONITORED_BEARING,
+                                    bearing.toString(),
+                                )
+                            }
+                        }
+                    }
                 }
             } else null
 
