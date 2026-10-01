@@ -58,6 +58,7 @@ class AutoPoiProviderSelectionScreen(
         PoiProviderType.BelgiumOfficial to "Belgium (official)",
         PoiProviderType.UsaEia to "EIA (US state avg)",
         PoiProviderType.LufopOpenSpeedCam to "Lufop",
+        PoiProviderType.LuxembourgRadars to "Radars (Luxembourg)",
         PoiProviderType.Overpass to "Overpass",
         PoiProviderType.Hybrid to "Hybrid (Gas + EV)"
     ).filter { (type, _) -> type.isUserSelectablePoiDataSource() }

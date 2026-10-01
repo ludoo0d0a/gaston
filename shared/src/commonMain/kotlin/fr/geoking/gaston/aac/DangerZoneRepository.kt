@@ -1,22 +1,31 @@
 package fr.geoking.gaston.aac
 
+import fr.geoking.gaston.api.overpass.OverpassClient
 import fr.geoking.gaston.api.radars.FranceRadarRecord
 import fr.geoking.gaston.api.radars.FranceRadarsClient
 import fr.geoking.gaston.api.radars.LufopOpenSpeedCamClient
+import fr.geoking.gaston.api.radars.LuxembourgRadarsClient
 import fr.geoking.gaston.api.radars.toDangerZone
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlin.math.cos
+import kotlin.math.PI
 
 /**
  * Local zone cache around the vehicle — used by the AAC alert loop (no map POI search).
  *
- * Anchors on data.gouv France radars, optionally enriched with OSM direction via [RadarOsmEnricher].
+ * Prefers Lufop + Luxembourg open data; FranceRadars remains a fallback (provider disabled in UI).
+ * When [useOsmRadarsFallback] (no Lufop API key), OSM `speed_camera` fills empty coverage.
+ * Optionally enriched with OSM direction via [RadarOsmEnricher].
  */
 class DangerZoneRepository(
     private val franceRadarsClient: FranceRadarsClient? = null,
     private val lufopOpenSpeedCamClient: LufopOpenSpeedCamClient? = null,
+    private val luxembourgRadarsClient: LuxembourgRadarsClient? = null,
+    private val overpassClient: OverpassClient? = null,
+    private val useOsmRadarsFallback: Boolean = false,
     private val roadClassifier: OsmRoadClassifier? = null,
     private val radarOsmEnricher: RadarOsmEnricher? = null,
 ) {
@@ -27,7 +36,7 @@ class DangerZoneRepository(
 
     /**
      * Returns danger zones near the vehicle, refreshing when the vehicle leaves the cached area.
-     * Mixes France open-data speed-control areas (as extended zones) with non-radar samples.
+     * Mixes open-data speed-control areas (as extended zones) with non-radar samples.
      * When [roadClassifier] is set, OSM highway tags refine zone [DangerZone.roadClass] / radius.
      * When [radarOsmEnricher] is set, OSM speed_camera / enforcement enrich monitored direction.
      */
@@ -41,16 +50,7 @@ class DangerZoneRepository(
             haversineKm(latitude, longitude, cacheCenterLat, cacheCenterLon) > cacheRadiusKm * 0.4
 
         if (needRefresh) {
-            val records = lufopOpenSpeedCamClient?.getRecordsNear(latitude, longitude, radiusKm)?.map { osc ->
-                FranceRadarRecord(
-                    id = osc.id,
-                    type = osc.type,
-                    vma = osc.vma,
-                    latitude = osc.latitude,
-                    longitude = osc.longitude
-                )
-            } ?: franceRadarsClient?.getRecordsNear(latitude, longitude, radiusKm) ?: emptyList()
-
+            val records = collectRecords(latitude, longitude, radiusKm)
             val fromRadars = classifyAndEnrich(records)
             val nonRadar = StaticNonRadarDangerZones.near(latitude, longitude, radiusKm)
             cachedZones = fromRadars + nonRadar
@@ -61,6 +61,66 @@ class DangerZoneRepository(
 
         return cachedZones.filter { zone ->
             zone.distanceMetersFrom(latitude, longitude) <= radiusKm * 1000.0 + zone.radiusMeters
+        }
+    }
+
+    private suspend fun collectRecords(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double,
+    ): List<FranceRadarRecord> {
+        val records = mutableListOf<FranceRadarRecord>()
+        lufopOpenSpeedCamClient?.getRecordsNear(latitude, longitude, radiusKm)?.forEach { osc ->
+            records.add(
+                FranceRadarRecord(
+                    id = osc.id,
+                    type = osc.type,
+                    vma = osc.vma,
+                    latitude = osc.latitude,
+                    longitude = osc.longitude,
+                )
+            )
+        }
+        luxembourgRadarsClient?.getRecordsNear(latitude, longitude, radiusKm)?.forEach { lu ->
+            records.add(lu.toFranceRadarRecord())
+        }
+        if (records.isEmpty()) {
+            franceRadarsClient?.getRecordsNear(latitude, longitude, radiusKm)?.let { records.addAll(it) }
+        }
+        if (records.isEmpty() && useOsmRadarsFallback && overpassClient != null) {
+            records.addAll(fetchOsmSpeedCameras(latitude, longitude, radiusKm))
+        }
+        return records
+    }
+
+    private suspend fun fetchOsmSpeedCameras(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double,
+    ): List<FranceRadarRecord> {
+        val client = overpassClient ?: return emptyList()
+        val latDelta = radiusKm / 111.0
+        val lonDelta = radiusKm / (111.0 * cos(latitude * PI / 180.0).coerceAtLeast(0.2))
+        return try {
+            val bundle = client.querySpeedCamerasInBbox(
+                minLat = latitude - latDelta,
+                minLon = longitude - lonDelta,
+                maxLat = latitude + latDelta,
+                maxLon = longitude + lonDelta,
+            )
+            bundle.cameras.mapNotNull { cam ->
+                if (haversineKm(latitude, longitude, cam.lat, cam.lon) > radiusKm) return@mapNotNull null
+                val vma = cam.tags["maxspeed"]?.filter { it.isDigit() }?.toIntOrNull()
+                FranceRadarRecord(
+                    id = "osm_${cam.id}",
+                    type = "OSM",
+                    vma = vma,
+                    latitude = cam.lat,
+                    longitude = cam.lon,
+                )
+            }
+        } catch (_: Exception) {
+            emptyList()
         }
     }
 

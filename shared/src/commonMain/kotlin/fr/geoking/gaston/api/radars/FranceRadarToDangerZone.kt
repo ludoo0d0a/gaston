@@ -10,13 +10,22 @@ import fr.geoking.gaston.aac.RoadNetworkClass
  */
 fun FranceRadarRecord.toDangerZone(
     roadClassOverride: RoadNetworkClass? = null,
+    source: String? = null,
 ): DangerZone {
+    val resolvedSource = source ?: when {
+        id.startsWith("lu_") -> "LuxembourgRadars"
+        else -> "FranceRadars"
+    }
+    val zoneIdPrefix = when (resolvedSource) {
+        "LuxembourgRadars" -> "lu_dz"
+        else -> "fr_dz"
+    }
     return DangerZoneFactory.fromSpeedControlPoint(
-        id = "fr_dz_$id",
+        id = "${zoneIdPrefix}_$id",
         latitude = latitude,
         longitude = longitude,
         speedLimitKmH = vma,
-        source = "FranceRadars",
+        source = resolvedSource,
         csvType = type,
         roadClassOverride = roadClassOverride,
     )

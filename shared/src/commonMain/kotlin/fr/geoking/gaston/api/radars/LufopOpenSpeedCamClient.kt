@@ -37,6 +37,9 @@ class LufopOpenSpeedCamClient(
         private val VMA_IN_NAME = Regex("""(?:^|\D)(\d{2,3})\s*(?:km/?h)?\s*$""", RegexOption.IGNORE_CASE)
     }
 
+    /** False when [apiKey] is blank — callers may fall back to OSM / official dumps. */
+    val hasApiKey: Boolean get() = apiKey.isNotBlank()
+
     private val mutex = Mutex()
     private var cachedRadars: List<LufopOpenSpeedCamRecord>? = null
     private var cacheLat: Double = Double.NaN

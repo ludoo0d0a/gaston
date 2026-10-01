@@ -51,6 +51,8 @@ import fr.geoking.gaston.api.radars.FranceRadarsClient
 import fr.geoking.gaston.api.radars.FranceRadarsProvider
 import fr.geoking.gaston.api.radars.LufopOpenSpeedCamClient
 import fr.geoking.gaston.api.radars.LufopOpenSpeedCamProvider
+import fr.geoking.gaston.api.radars.LuxembourgRadarsClient
+import fr.geoking.gaston.api.radars.LuxembourgRadarsProvider
 import fr.geoking.gaston.api.datagouv.DataGouvCampingClient
 import fr.geoking.gaston.api.datagouv.DataGouvCampingProvider
 import fr.geoking.gaston.api.datagouv.DataGouvElecProvider
@@ -346,13 +348,31 @@ val mapModule = module {
         )
     }
     single { LufopOpenSpeedCamClient(get(), apiKey = BuildConfig.LUFOP_API_KEY) }
+    single {
+        val diskCache = fr.geoking.gaston.aac.AndroidTextFileCache(androidContext())
+        LuxembourgRadarsClient(client = get(), diskCache = diskCache)
+    }
     single { fr.geoking.gaston.aac.RadarOsmEnricher(get()) }
-    single { fr.geoking.gaston.aac.DangerZoneRepository(franceRadarsClient = get(), lufopOpenSpeedCamClient = get(), roadClassifier = get(), radarOsmEnricher = get()) }
+    single {
+        val noLufopKey = BuildConfig.LUFOP_API_KEY.isBlank()
+        fr.geoking.gaston.aac.DangerZoneRepository(
+            franceRadarsClient = get(),
+            lufopOpenSpeedCamClient = get(),
+            luxembourgRadarsClient = get(),
+            overpassClient = get(),
+            useOsmRadarsFallback = noLufopKey,
+            roadClassifier = get(),
+            radarOsmEnricher = get(),
+        )
+    }
     single<PoiProvider>(named("franceradars")) {
         FranceRadarsProvider(get(), defaultRadiusKm = 25.0)
     }
     single<PoiProvider>(named("lufop_openspeedcam")) {
         LufopOpenSpeedCamProvider(get(), defaultRadiusKm = 25.0)
+    }
+    single<PoiProvider>(named("luxembourg_radars")) {
+        LuxembourgRadarsProvider(get(), defaultRadiusKm = 25.0)
     }
     single { DataGouvCampingClient(get()) }
     single<PoiProvider>(named("datagouvcamping")) {
@@ -411,13 +431,15 @@ val mapModule = module {
             usaEia = get(named("usaeia")),
             franceRadars = get(named("franceradars")),
             lufopOpenSpeedCam = get(named("lufop_openspeedcam")),
+            luxembourgRadars = get(named("luxembourg_radars")),
             openVanCampClient = get(),
             overpass = get(named("overpass")),
             dataGouvCamping = get(named("datagouvcamping")),
             poiCacheDao = get<fr.geoking.gaston.persistence.AppDatabase>().poiCacheDao(),
             settingsManager = get(),
             networkService = get(),
-            historyRepo = get()
+            historyRepo = get(),
+            useOsmRadarsFallback = BuildConfig.LUFOP_API_KEY.isBlank(),
         )
     }
     single { CommunityPoiStorage(androidContext()) }

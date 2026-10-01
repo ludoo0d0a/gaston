@@ -4,7 +4,8 @@ package fr.geoking.gaston.aac
  * Map / alert presentation policy for AAC Level A (France).
  *
  * Alerts must use extended [DangerZone]s (never “radar à X m”).
- * Map amenity display uses Overpass `highway=speed_camera` (red markers) when selected.
+ * Map amenity display uses Overpass `highway=speed_camera` when Lufop has no API key
+ * (fallback), or Lufop / Luxembourg official dumps when configured.
  */
 object AacMapPolicy {
     fun isFrance(countryCode: String?): Boolean {

@@ -14,8 +14,16 @@ object RadarPoiMerger {
         val radars = pois.filter { it.poiCategory == PoiCategory.Radar }
         if (radars.size <= 1) return pois
 
-        val primary = radars.filter { it.source == "LufopOpenSpeedCam" || it.source == "FranceRadars" }
-        val secondary = radars.filter { it.source != "LufopOpenSpeedCam" && it.source != "FranceRadars" }
+        val primary = radars.filter {
+            it.source == "LufopOpenSpeedCam" ||
+                it.source == "FranceRadars" ||
+                it.source == "LuxembourgRadars"
+        }
+        val secondary = radars.filter {
+            it.source != "LufopOpenSpeedCam" &&
+                it.source != "FranceRadars" &&
+                it.source != "LuxembourgRadars"
+        }
         if (primary.isEmpty() || secondary.isEmpty()) return pois
 
         val dropSecondaryIds = mutableSetOf<String>()

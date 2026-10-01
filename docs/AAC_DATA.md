@@ -6,6 +6,14 @@
 - Resolver: `FranceRadarsCsvResolver` calls the data.gouv dataset API and picks the newest `csv` resource (`last_modified`). Fallback: hardcoded `FranceRadarsClient.DEFAULT_CSV_URL`.
 - Versioning: disk meta stores resource id / last_modified string alongside CSV body (`AndroidTextFileCache`, TTL 24 h).
 - Records → **extended** `DangerZone` via `toDangerZone()` (never alert pins).
+- **Status:** provider kept wired (`FranceRadarsClient` + OSM enrich) but **disabled in user selection** for now; AAC uses Lufop first, FranceRadars as empty-Lufop fallback.
+
+## Luxembourg fixed radars (data.public.lu)
+
+- Dataset: [PCH : Emplacement des radars fixes](https://data.public.lu/fr/datasets/pch-emplacement-des-radars-fixes/) (CC0)
+- GeoJSON: `https://data.geoportail.lu/radar` via `LuxembourgRadarsClient` (memory + disk TTL 24 h)
+- ~39 fixed cameras; fields: ID, TRANCON, DIR / DIR_, YEAR (no VMA in feed)
+- Provider selectable for LU; also auto-queried for Radar amenity; merged into `DangerZoneRepository`
 
 ## OSM merge (Overpass) — direction enrichment
 
@@ -32,4 +40,5 @@
 
 ## Mix policy
 
-`DangerZoneRepository.zonesNear` merges FranceRadars zones (optionally OSM-direction-enriched) + static non-radar samples within the vehicle radius.
+`DangerZoneRepository.zonesNear` merges Lufop + Luxembourg (and FranceRadars if empty).  
+When `LUFOP_API_KEY` is blank, Overpass `highway=speed_camera` is used as map amenity source and as AAC fallback if official dumps return nothing. OSM enrich (`RadarOsmEnricher`) still refines direction when anchors exist.

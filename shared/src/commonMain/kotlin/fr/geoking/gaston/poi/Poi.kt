@@ -206,10 +206,12 @@ enum class PoiProviderType(
     BelgiumOfficial(providesFuel = true),
     /** US state-level weekly retail fuel prices (EIA petroleum/pri/gnd) + OSM stations. */
     UsaEia(providesFuel = true),
-    /** French speed cameras (radars fixes) open data from data.gouv.fr. */
+    /** French speed cameras (radars fixes) open data from data.gouv.fr. Kept wired; disabled in user selection for now. */
     FranceRadars(fetchKind = PoiProviderFetchKind.File),
     /** Lufop API (api.lufop.net) speed cameras / danger zones. Requires LUFOP_API_KEY. */
     LufopOpenSpeedCam,
+    /** Luxembourg fixed radars (PCH / data.public.lu GeoJSON, CC0). */
+    LuxembourgRadars(fetchKind = PoiProviderFetchKind.File),
     Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }
@@ -220,8 +222,8 @@ val PoiProviderType.isBulkFileDownload: Boolean
 
 private val POI_DATA_SOURCES_DISABLED_FOR_USER_SELECTION: Set<PoiProviderType> = setOf(
     PoiProviderType.DataGouvPrixQuotidien,
-    PoiProviderType.Overpass,
-    PoiProviderType.FranceRadars
+    PoiProviderType.Overpass, // OSM enrich remains available via RadarOsmEnricher; map amenity source hidden for now
+    PoiProviderType.FranceRadars, // kept wired for AAC fallback; hidden from user selection for now
 )
 
 /** True if this source is shown in map / Auto POI data source pickers. */

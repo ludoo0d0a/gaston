@@ -177,6 +177,12 @@ fun providersForIncrementalFetch(
     if (PoiCategory.Radar in missingCategories && PoiProviderType.LufopOpenSpeedCam in allProviders) {
         result += PoiProviderType.LufopOpenSpeedCam
     }
+    if (PoiCategory.Radar in missingCategories && PoiProviderType.LuxembourgRadars in allProviders) {
+        result += PoiProviderType.LuxembourgRadars
+    }
+    if (PoiCategory.Radar in missingCategories && PoiProviderType.Overpass in allProviders) {
+        result += PoiProviderType.Overpass
+    }
     // If Overpass is an explicit provider for Gas or Irve, and they are missing, include it.
     if (PoiProviderType.Overpass in allProviders) {
         if (PoiCategory.Gas in missingCategories || PoiCategory.Irve in missingCategories) {

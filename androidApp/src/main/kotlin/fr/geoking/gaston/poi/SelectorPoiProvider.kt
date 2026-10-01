@@ -88,13 +88,16 @@ class SelectorPoiProvider(
     private val usaEia: PoiProvider,
     private val franceRadars: PoiProvider,
     private val lufopOpenSpeedCam: PoiProvider,
+    private val luxembourgRadars: PoiProvider,
     private val openVanCampClient: OpenVanCampClient,
     private val overpass: PoiProvider,
     private val dataGouvCamping: PoiProvider?,
     private val poiCacheDao: PoiCacheDao,
     private val settingsManager: SettingsManager,
     private val networkService: NetworkService,
-    private val historyRepo: StationPriceHistoryRepository? = null
+    private val historyRepo: StationPriceHistoryRepository? = null,
+    /** When true (no Lufop API key), inject Overpass for Radar amenity fetches. */
+    private val useOsmRadarsFallback: Boolean = false,
 ) : PoiProvider, CoroutineScope {
 
     override val coroutineContext = SupervisorJob() + Dispatchers.IO
@@ -169,9 +172,10 @@ class SelectorPoiProvider(
 
     /**
      * When the danger-zone / speed_camera amenity is requested, always query
-     * [PoiProviderType.LufopOpenSpeedCam], even if not in user selection.
+     * [PoiProviderType.LufopOpenSpeedCam] and [PoiProviderType.LuxembourgRadars].
+     * If [useOsmRadarsFallback] (no Lufop key), also query Overpass `highway=speed_camera`.
      */
-    private fun withLufopOpenSpeedCamForAmenity(
+    private fun withRadarProvidersForAmenity(
         providers: Set<PoiProviderType>,
         categories: Set<PoiCategory>,
         isoCountries: List<String>,
@@ -179,7 +183,12 @@ class SelectorPoiProvider(
         longitude: Double,
     ): Set<PoiProviderType> {
         if (PoiCategory.Radar !in categories) return providers
-        return applyBulkFileNetworkPolicy(providers + PoiProviderType.LufopOpenSpeedCam)
+        val radarSources = buildSet {
+            add(PoiProviderType.LufopOpenSpeedCam)
+            add(PoiProviderType.LuxembourgRadars)
+            if (useOsmRadarsFallback) add(PoiProviderType.Overpass)
+        }
+        return applyBulkFileNetworkPolicy(providers + radarSources)
     }
 
     private fun getProvider(type: PoiProviderType): PoiProvider = when (type) {
@@ -228,6 +237,7 @@ class SelectorPoiProvider(
         PoiProviderType.UsaEia -> usaEia
         PoiProviderType.FranceRadars -> franceRadars
         PoiProviderType.LufopOpenSpeedCam -> lufopOpenSpeedCam
+        PoiProviderType.LuxembourgRadars -> luxembourgRadars
         PoiProviderType.Overpass -> overpass
         PoiProviderType.Hybrid -> hybridProvider
     }
@@ -452,7 +462,7 @@ class SelectorPoiProvider(
         )
 
         val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
-        val providers = withLufopOpenSpeedCamForAmenity(
+        val providers = withRadarProvidersForAmenity(
             providers = resolveEffectiveProviders(settings, isoCountries),
             categories = categoriesToFetch,
             isoCountries = isoCountries,
@@ -710,7 +720,7 @@ class SelectorPoiProvider(
         )
 
         val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
-        val providers = withLufopOpenSpeedCamForAmenity(
+        val providers = withRadarProvidersForAmenity(
             providers = resolveEffectiveProviders(settings, isoCountries),
             categories = categoriesToFetch,
             isoCountries = isoCountries,
@@ -985,6 +995,7 @@ class SelectorPoiProvider(
         usaEia.clearCache()
         franceRadars.clearCache()
         lufopOpenSpeedCam.clearCache()
+        luxembourgRadars.clearCache()
         overpass.clearCache()
     }
 
