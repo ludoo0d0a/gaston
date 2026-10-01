@@ -623,14 +623,12 @@ fun MapScreen(
 
                         val poisToShow = filteredPois
 
-                        // Danger-zone circles when speed_camera / Radar amenity POIs are on the map.
+                        // Directional danger-zone triangles when a unidirectional bearing is known.
                         poisToShow.filter { it.poiCategory == PoiCategory.Radar }.forEach { poi ->
-                            val radiusM = fr.geoking.gaston.aac.DangerZoneDistances.radiusMetersForRadarPoiVma(
-                                poi.rawSourceData?.get("vma")
-                            )
-                            Circle(
-                                center = LatLng(poi.latitude, poi.longitude),
-                                radius = radiusM,
+                            val ring = fr.geoking.gaston.aac.DangerZoneTriangle.latLngRingForRadarPoi(poi)
+                                ?: return@forEach
+                            Polygon(
+                                points = ring.map { (lat, lon) -> LatLng(lat, lon) },
                                 strokeColor = Color(0xFFEF4444),
                                 strokeWidth = 4f,
                                 fillColor = Color(0x22EF4444)

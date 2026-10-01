@@ -1024,14 +1024,13 @@ class AutoSurfaceRenderer(
     private fun drawRadarPreventionCircles(canvas: Canvas) {
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
-        AutoMapOverlayHelper.drawRadarDangerZoneCircles(
+        AutoMapOverlayHelper.drawRadarDangerZoneTriangles(
             canvas = canvas,
             density = context.resources.displayMetrics.density,
-            zoom = zoom,
             radarPois = pois.filter { it.poiCategory == PoiCategory.Radar },
-        ) { poi ->
-            val tileX = lonToTileX(poi.longitude, zoom)
-            val tileY = latToTileY(poi.latitude, zoom)
+        ) { lat, lon ->
+            val tileX = lonToTileX(lon, zoom)
+            val tileY = latToTileY(lat, zoom)
             val drawX = ((tileX - centerX) * TILE_SIZE + centerPxX).toFloat()
             val drawY = ((tileY - centerY) * TILE_SIZE + centerPxY).toFloat()
             drawX to drawY

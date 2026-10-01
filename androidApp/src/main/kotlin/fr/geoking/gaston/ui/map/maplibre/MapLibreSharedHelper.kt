@@ -1,7 +1,7 @@
 package fr.geoking.gaston.ui.map.maplibre
 
 import android.content.Context
-import fr.geoking.gaston.aac.DangerZoneDistances
+import fr.geoking.gaston.aac.DangerZoneTriangle
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.auto.AutoMapCamera
 import fr.geoking.gaston.poi.Poi
@@ -124,7 +124,8 @@ object MapLibreSharedHelper {
     }
 
     /**
-     * VMA-based danger-zone circles around radar amenity POIs (fill + stroke).
+     * Directional danger-zone triangles around radar amenity POIs (fill + stroke).
+     * Drawn only when a unidirectional monitored bearing is available.
      */
     fun syncRadarDangerZoneLayer(map: MapLibreMap, pois: List<Poi>) {
         map.getStyle { style ->
@@ -157,13 +158,9 @@ object MapLibreSharedHelper {
 
             val source = style.getSourceAs<GeoJsonSource>(RADAR_ZONE_SOURCE_ID) ?: return@getStyle
             val features = pois.filter { it.poiCategory == PoiCategory.Radar }.mapNotNull { poi ->
-                val radiusKm = DangerZoneDistances.radiusMetersForRadarPoiVma(
-                    poi.rawSourceData?.get("vma")
-                ) / 1000.0
-                if (radiusKm <= 0.0) return@mapNotNull null
-                val ring = AutoMapCamera.circleLatLngRing(poi.latitude, poi.longitude, radiusKm).map { (lat, lon) ->
+                val ring = DangerZoneTriangle.latLngRingForRadarPoi(poi)?.map { (lat, lon) ->
                     Point.fromLngLat(lon, lat)
-                }
+                } ?: return@mapNotNull null
                 if (ring.size < 4) return@mapNotNull null
                 Feature.fromGeometry(Polygon.fromLngLats(listOf(ring)))
             }
