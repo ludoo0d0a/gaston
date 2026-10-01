@@ -2588,6 +2588,15 @@ private fun DeveloperSection(
                     onClick = onOpenAutoDebug
                 )
                 SettingsItem(
+                    label = stringResource(R.string.dev_test_danger_zone_notification),
+                    value = stringResource(R.string.dev_test_danger_zone_notification_subtitle),
+                    onClick = {
+                        org.koin.core.context.GlobalContext.get()
+                            .get<fr.geoking.gaston.feature.notification.NotificationHelper>()
+                            .showNearRadarNotification(100)
+                    }
+                )
+                SettingsItem(
                     label = stringResource(R.string.screen_clear_cache),
                     value = stringResource(R.string.settings_clear_cache_subtitle),
                     onClick = { showClearCacheConfirm = true }

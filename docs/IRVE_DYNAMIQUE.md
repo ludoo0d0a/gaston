@@ -4,6 +4,8 @@ Real-time EV charging-point availability for **mainland France**, from QualiChar
 
 Always on when the map is centered in mainland France. In Paris, Belib is merged as a secondary source (PDCs not already present from QualiCharge).
 
+**Gireve** is a separate national IRVE dump (static + dynamic CSV). It is **not** merged with QualiCharge by default and is not included in FR auto providers — enable it only via provider settings (manual opt-in) to avoid downloading a second full-France CSV.
+
 ## Feeds (no API key)
 
 | Feed | URL |
@@ -17,7 +19,7 @@ Dynamique schema (MVP): `id_pdc_itinerance`, `etat_pdc` (`en_service` / `hors_se
 
 - **Client:** `shared/.../api/qualicharge/QualiChargeDynamiqueClient.kt` — CSV fetch/parse, short cache (~45s dynamic, ~1h static)
 - **Provider:** `QualiChargeAvailabilityProvider` implements `BorneAvailabilityProvider`
-- **Factory:** QualiCharge for mainland France; in Paris, `MergedBorneAvailabilityProvider(QualiCharge, Belib)`
+- **Factory:** QualiCharge for mainland France (Gireve only if QualiCharge is absent); in Paris, `MergedBorneAvailabilityProvider(QualiCharge, Belib)`
 - **Matching:** by `id_station_itinerance` / `IrveDetails.pdcIds`, then distance (same as Belib)
 
 Listed in Settings → About / sources (`UsedApisList`) and [`sources.md`](sources.md).

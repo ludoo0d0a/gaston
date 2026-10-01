@@ -7,7 +7,7 @@ import fr.geoking.gaston.parking.ParkingRegion
  *
  * Country assignment uses [ParkingRegion] (non-overlapping country sub-boxes where defined):
  * - **Belgium:** NAP Road / E-Flux
- * - **France:** QualiCharge IRVE dynamique; in Paris, Belib is merged as secondary
+ * - **France:** QualiCharge IRVE dynamique (Gireve only if QualiCharge is absent); in Paris, Belib is merged as secondary
  * - **Netherlands:** DOT-NL / NDW OCPI
  * - **Switzerland:** ich-tanke-strom (BFE)
  * - **Finland:** Digitraffic AFIR
@@ -40,15 +40,8 @@ class BorneAvailabilityProviderFactory(
     private val parisLonMin = 2.22
     private val parisLonMax = 2.47
 
-    private val franceAvailabilityProvider: BorneAvailabilityProvider? = run {
-        val frPrimary = when {
-            qualiChargeProvider != null && gireveProvider != null ->
-                MergedBorneAvailabilityProvider(primary = qualiChargeProvider, secondary = gireveProvider)
-            qualiChargeProvider != null -> qualiChargeProvider
-            else -> gireveProvider
-        }
-        frPrimary
-    }
+    private val franceAvailabilityProvider: BorneAvailabilityProvider? =
+        qualiChargeProvider ?: gireveProvider
 
     private val parisMergedProvider: BorneAvailabilityProvider? =
         franceAvailabilityProvider?.let { MergedBorneAvailabilityProvider(primary = it, secondary = belibProvider) }

@@ -61,7 +61,6 @@ fun autoProvidersForCountries(
             when (iso) {
                 "FR" -> {
                     resolved.add(PoiProviderType.QualiCharge)
-                    resolved.add(PoiProviderType.Gireve)
                     resolved.add(PoiProviderType.Atlante)
                     resolved.add(PoiProviderType.Freshmile)
                     resolved.add(PoiProviderType.OpenChargeMap)
