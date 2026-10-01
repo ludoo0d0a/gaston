@@ -127,14 +127,13 @@ class PoiFetchCacheTest {
     }
 
     @Test
-    fun providersForIncrementalFetch_includesFranceRadarsWhenRadarMissing() {
+    fun providersForIncrementalFetch_includesLufopOpenSpeedCamWhenRadarMissing() {
         val providers = providersForIncrementalFetch(
-            allProviders = setOf(PoiProviderType.Overpass, PoiProviderType.FranceRadars),
+            allProviders = setOf(PoiProviderType.LufopOpenSpeedCam),
             missingProviders = emptySet(),
             missingCategories = setOf(PoiCategory.Radar),
         )
-        assertTrue(PoiProviderType.FranceRadars in providers)
-        assertTrue(PoiProviderType.Overpass in providers)
+        assertTrue(PoiProviderType.LufopOpenSpeedCam in providers)
     }
 
     @Test

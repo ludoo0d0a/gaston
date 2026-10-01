@@ -459,6 +459,7 @@
     <string name="provider_belgium_official">Belgique (officiel)</string>
     <string name="provider_usa_eia">EIA (moyenne état US)</string>
     <string name="provider_france_radars">Zones de danger (data.gouv.fr France)</string>
+    <string name="provider_lufop_openspeedcam">Lufop / OpenSpeedCam</string>
 
     <!-- AAC / niveau A -->
     <string name="aac_settings_title">Assistant d\'aide à la conduite</string>

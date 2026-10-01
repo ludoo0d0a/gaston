@@ -87,6 +87,7 @@ class SelectorPoiProvider(
     private val belgiumOfficial: PoiProvider,
     private val usaEia: PoiProvider,
     private val franceRadars: PoiProvider,
+    private val lufopOpenSpeedCam: PoiProvider,
     private val openVanCampClient: OpenVanCampClient,
     private val overpass: PoiProvider,
     private val dataGouvCamping: PoiProvider?,
@@ -167,10 +168,10 @@ class SelectorPoiProvider(
     }
 
     /**
-     * When the danger-zone / speed_camera amenity is requested in France, always query
-     * [PoiProviderType.FranceRadars] (official open data), even if not in user selection.
+     * When the danger-zone / speed_camera amenity is requested, always query
+     * [PoiProviderType.LufopOpenSpeedCam], even if not in user selection.
      */
-    private fun withFranceRadarsForAmenity(
+    private fun withLufopOpenSpeedCamForAmenity(
         providers: Set<PoiProviderType>,
         categories: Set<PoiCategory>,
         isoCountries: List<String>,
@@ -178,10 +179,7 @@ class SelectorPoiProvider(
         longitude: Double,
     ): Set<PoiProviderType> {
         if (PoiCategory.Radar !in categories) return providers
-        val inFr = isoCountries.any { fr.geoking.gaston.aac.AacMapPolicy.isFrance(it) } ||
-            fr.geoking.gaston.aac.AacMapPolicy.isLikelyFrance(latitude, longitude)
-        if (!inFr) return providers
-        return applyBulkFileNetworkPolicy(providers + PoiProviderType.FranceRadars)
+        return applyBulkFileNetworkPolicy(providers + PoiProviderType.LufopOpenSpeedCam)
     }
 
     private fun getProvider(type: PoiProviderType): PoiProvider = when (type) {
@@ -229,6 +227,7 @@ class SelectorPoiProvider(
         PoiProviderType.BelgiumOfficial -> belgiumOfficial
         PoiProviderType.UsaEia -> usaEia
         PoiProviderType.FranceRadars -> franceRadars
+        PoiProviderType.LufopOpenSpeedCam -> lufopOpenSpeedCam
         PoiProviderType.Overpass -> overpass
         PoiProviderType.Hybrid -> hybridProvider
     }
@@ -453,7 +452,7 @@ class SelectorPoiProvider(
         )
 
         val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
-        val providers = withFranceRadarsForAmenity(
+        val providers = withLufopOpenSpeedCamForAmenity(
             providers = resolveEffectiveProviders(settings, isoCountries),
             categories = categoriesToFetch,
             isoCountries = isoCountries,
@@ -711,7 +710,7 @@ class SelectorPoiProvider(
         )
 
         val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
-        val providers = withFranceRadarsForAmenity(
+        val providers = withLufopOpenSpeedCamForAmenity(
             providers = resolveEffectiveProviders(settings, isoCountries),
             categories = categoriesToFetch,
             isoCountries = isoCountries,
@@ -985,6 +984,7 @@ class SelectorPoiProvider(
         belgiumOfficial.clearCache()
         usaEia.clearCache()
         franceRadars.clearCache()
+        lufopOpenSpeedCam.clearCache()
         overpass.clearCache()
     }
 
