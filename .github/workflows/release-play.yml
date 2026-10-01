@@ -24,18 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # GHA expressions have no arithmetic (+/*); compute versionCode in shell.
-  prepare:
-    runs-on: ubuntu-latest
-    outputs:
-      version_code: ${{ steps.vc.outputs.version_code }}
-    steps:
-      - id: vc
-        run: |
-          echo "version_code=$(( ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))" >> "$GITHUB_OUTPUT"
-
   release:
-    needs: prepare
     uses: ludoo0d0a/geoking-ci/.github/workflows/release-play.yml@main
     with:
       package_name: fr.geoking.gaston
@@ -47,10 +36,9 @@ jobs:
       unit_test_tasks: ':androidApp:testFullDebugUnitTest :shared:testAndroidHostTest'
       gradle_version: wrapper
       java_version: '21'
-      # Keep Gaston versionCode scheme (run*10+attempt) above prior Play uploads.
-      # Must be a string — reusable workflow_call inputs reject bare numbers.
-      version_code_override: ${{ needs.prepare.outputs.version_code }}
-      version_name_override: ${{ github.ref_type == 'tag' && github.ref_name || format('1.0.{0}', github.run_number) }}
+      # VERSION_CODE resolved in geoking-ci (max(run_number, version.properties+1) + attempt-1).
+      # Do not invent arithmetic here — GHA expressions have no +/*.
+      version_name_override: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
       is_workflow_dispatch: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
       workflow_dispatch_track: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.track || '' }}
       workflow_dispatch_skip_review: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.changesNotSentForReview == 'true' && 'true' || 'false' }}

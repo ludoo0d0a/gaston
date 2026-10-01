@@ -42,24 +42,23 @@ configure<ApplicationExtension> {
         // Sanitize for Java string literal: trim, strip newlines, escape backslash and double-quote
         fun sanitizeBuildConfigString(s: String): String =
             s.trim().replace("\\", "\\\\").replace("\"", "\\\"").replace(Regex("[\r\n]+"), " ")
-        val localVersionCode = prop("VERSION_CODE").takeIf { it.isNotEmpty() }?.toIntOrNull()
-        // Prefer explicit VERSION_CODE (geoking-ci / local release). Else Gaston legacy
-        // (run_number * 10 + attempt). Else local.properties / default.
-        val computedVersionCode = when {
-            localVersionCode != null -> localVersionCode
-            System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() != null -> {
-                val run = System.getenv("GITHUB_RUN_NUMBER")!!.toInt()
-                val attempt = System.getenv("GITHUB_RUN_ATTEMPT")?.toIntOrNull() ?: 1
-                (run * 10) + attempt
-            }
-            else -> 2
+        // GeoKing / geoking-ci: VERSION_CODE/NAME from CI env, else playstore/version.properties.
+        val versionProps = Properties().apply {
+            rootProject.file("playstore/version.properties").takeIf { it.exists() }
+                ?.inputStream()?.use { load(it) }
         }
-        val versionNameEnv = System.getenv("VERSION_NAME")?.trim()?.removePrefix("v")?.takeIf { it.isNotEmpty() }
-        val computedVersionName = when {
-            versionNameEnv != null -> versionNameEnv
-            System.getenv("GITHUB_RUN_NUMBER") != null -> "1.0.${System.getenv("GITHUB_RUN_NUMBER")}"
-            else -> "1.0"
-        }
+        val computedVersionCode = (
+            System.getenv("VERSION_CODE")?.takeIf { it.isNotBlank() }
+                ?: prop("VERSION_CODE").takeIf { it.isNotEmpty() }
+                ?: versionProps.getProperty("versionCode")
+                ?: "1"
+        ).toInt()
+        val computedVersionName = (
+            System.getenv("VERSION_NAME")?.takeIf { it.isNotBlank() }
+                ?: prop("VERSION_NAME").takeIf { it.isNotEmpty() }
+                ?: versionProps.getProperty("versionName")
+                ?: "1.0"
+        ).removePrefix("v")
         versionCode = computedVersionCode
         versionName = computedVersionName
         buildConfigField("int", "VERSION_CODE", "$computedVersionCode")
