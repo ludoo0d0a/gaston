@@ -98,9 +98,6 @@ fun autoProvidersForCountries(
         if (wantFuel && fuelProvider == null) resolved.add(PoiProviderType.Fuelo)
     }
 
-    // Always include Overpass as a secondary source for station locations.
-    resolved.add(PoiProviderType.Overpass)
-
     // If we failed to resolve anything (shouldn't happen), fall back to manual selection.
     return resolved.ifEmpty { fallbackManual }
 }

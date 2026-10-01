@@ -208,6 +208,7 @@ private fun poiProviderLabelRes(type: PoiProviderType): Int = when (type) {
     PoiProviderType.BelgiumOfficial -> R.string.provider_belgium_official
     PoiProviderType.UsaEia -> R.string.provider_usa_eia
     PoiProviderType.FranceRadars -> R.string.provider_france_radars
+    PoiProviderType.LufopOpenSpeedCam -> R.string.provider_lufop_openspeedcam
     else -> R.string.provider_overpass
 }
 
@@ -896,6 +897,7 @@ private fun SourcesConfig(
         ProviderUiInfo(PoiProviderType.BelgiumOfficial, listOf("BE")),
         ProviderUiInfo(PoiProviderType.UsaEia, listOf("US")),
         ProviderUiInfo(PoiProviderType.FranceRadars, listOf("FR")),
+        ProviderUiInfo(PoiProviderType.LufopOpenSpeedCam, listOf("GLOBAL")),
     )
         .filter { it.type.isUserSelectablePoiDataSource() }
         .distinctBy { it.type }

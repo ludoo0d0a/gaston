@@ -214,15 +214,15 @@ class RadarOsmEnricherTest {
 class RadarPoiMergerTest {
 
     @Test
-    fun dropsOsmNearFranceRadars() {
-        val france = Poi(
-            id = "fr_radar_1",
+    fun dropsOsmNearLufopOpenSpeedCam() {
+        val lufop = Poi(
+            id = "osc_radar_1",
             name = "Zone 90 km/h",
-            address = "France",
+            address = "Lufop",
             latitude = 48.8566,
             longitude = 2.3522,
             poiCategory = PoiCategory.Radar,
-            source = "FranceRadars",
+            source = "LufopOpenSpeedCam",
         )
         val osm = Poi(
             id = "osm:99",
@@ -242,9 +242,9 @@ class RadarPoiMergerTest {
             poiCategory = PoiCategory.Parking,
             source = "OpenStreetMap",
         )
-        val out = RadarPoiMerger.dedupeRadarAmenities(listOf(france, osm, parking))
+        val out = RadarPoiMerger.dedupeRadarAmenities(listOf(lufop, osm, parking))
         assertEquals(2, out.size)
-        assertTrue(out.any { it.id == "fr_radar_1" })
+        assertTrue(out.any { it.id == "osc_radar_1" })
         assertTrue(out.any { it.id == "osm:1" })
         assertFalse(out.any { it.id == "osm:99" })
     }

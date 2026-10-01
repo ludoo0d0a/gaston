@@ -130,25 +130,21 @@ class EuropeanEvCoverageTest {
                 PoiProviderType.DataGouvElec,
                 PoiProviderType.OpenChargeMap,
                 PoiProviderType.EcoMovement,
-                PoiProviderType.Overpass,
             )
             "LU" -> setOf(
                 PoiProviderType.Chargy,
                 PoiProviderType.OpenChargeMap,
                 PoiProviderType.EcoMovement,
-                PoiProviderType.Overpass,
             )
             "GB" -> setOf(
                 PoiProviderType.CharGyUk,
                 PoiProviderType.Fastned,
                 PoiProviderType.OpenChargeMap,
                 PoiProviderType.EcoMovement,
-                PoiProviderType.Overpass,
             )
             else -> setOf(
                 PoiProviderType.OpenChargeMap,
                 PoiProviderType.EcoMovement,
-                PoiProviderType.Overpass,
             )
         }
 

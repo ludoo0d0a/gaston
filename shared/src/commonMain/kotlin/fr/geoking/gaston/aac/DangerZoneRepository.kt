@@ -2,6 +2,7 @@ package fr.geoking.gaston.aac
 
 import fr.geoking.gaston.api.radars.FranceRadarRecord
 import fr.geoking.gaston.api.radars.FranceRadarsClient
+import fr.geoking.gaston.api.radars.LufopOpenSpeedCamClient
 import fr.geoking.gaston.api.radars.toDangerZone
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.async
@@ -14,7 +15,8 @@ import kotlinx.coroutines.coroutineScope
  * Anchors on data.gouv France radars, optionally enriched with OSM direction via [RadarOsmEnricher].
  */
 class DangerZoneRepository(
-    private val franceRadarsClient: FranceRadarsClient,
+    private val franceRadarsClient: FranceRadarsClient? = null,
+    private val lufopOpenSpeedCamClient: LufopOpenSpeedCamClient? = null,
     private val roadClassifier: OsmRoadClassifier? = null,
     private val radarOsmEnricher: RadarOsmEnricher? = null,
 ) {
@@ -39,7 +41,16 @@ class DangerZoneRepository(
             haversineKm(latitude, longitude, cacheCenterLat, cacheCenterLon) > cacheRadiusKm * 0.4
 
         if (needRefresh) {
-            val records = franceRadarsClient.getRecordsNear(latitude, longitude, radiusKm)
+            val records = lufopOpenSpeedCamClient?.getRecordsNear(latitude, longitude, radiusKm)?.map { osc ->
+                FranceRadarRecord(
+                    id = osc.id,
+                    type = osc.type,
+                    vma = osc.vma,
+                    latitude = osc.latitude,
+                    longitude = osc.longitude
+                )
+            } ?: franceRadarsClient?.getRecordsNear(latitude, longitude, radiusKm) ?: emptyList()
+
             val fromRadars = classifyAndEnrich(records)
             val nonRadar = StaticNonRadarDangerZones.near(latitude, longitude, radiusKm)
             cachedZones = fromRadars + nonRadar

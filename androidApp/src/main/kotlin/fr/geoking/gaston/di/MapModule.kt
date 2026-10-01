@@ -49,6 +49,8 @@ import fr.geoking.gaston.api.fastned.FastnedOcpiProvider
 import fr.geoking.gaston.api.evpricesfr.EvPricesFrClient
 import fr.geoking.gaston.api.radars.FranceRadarsClient
 import fr.geoking.gaston.api.radars.FranceRadarsProvider
+import fr.geoking.gaston.api.radars.LufopOpenSpeedCamClient
+import fr.geoking.gaston.api.radars.LufopOpenSpeedCamProvider
 import fr.geoking.gaston.api.datagouv.DataGouvCampingClient
 import fr.geoking.gaston.api.datagouv.DataGouvCampingProvider
 import fr.geoking.gaston.api.datagouv.DataGouvElecProvider
@@ -343,10 +345,14 @@ val mapModule = module {
             csvResolver = resolver,
         )
     }
+    single { LufopOpenSpeedCamClient(get()) }
     single { fr.geoking.gaston.aac.RadarOsmEnricher(get()) }
-    single { fr.geoking.gaston.aac.DangerZoneRepository(get(), get(), get()) }
+    single { fr.geoking.gaston.aac.DangerZoneRepository(franceRadarsClient = get(), lufopOpenSpeedCamClient = get(), roadClassifier = get(), radarOsmEnricher = get()) }
     single<PoiProvider>(named("franceradars")) {
         FranceRadarsProvider(get(), defaultRadiusKm = 25.0)
+    }
+    single<PoiProvider>(named("lufop_openspeedcam")) {
+        LufopOpenSpeedCamProvider(get(), defaultRadiusKm = 25.0)
     }
     single { DataGouvCampingClient(get()) }
     single<PoiProvider>(named("datagouvcamping")) {
@@ -404,6 +410,7 @@ val mapModule = module {
             belgiumOfficial = get(named("belgiumofficial")),
             usaEia = get(named("usaeia")),
             franceRadars = get(named("franceradars")),
+            lufopOpenSpeedCam = get(named("lufop_openspeedcam")),
             openVanCampClient = get(),
             overpass = get(named("overpass")),
             dataGouvCamping = get(named("datagouvcamping")),

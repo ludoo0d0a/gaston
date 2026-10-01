@@ -208,6 +208,8 @@ enum class PoiProviderType(
     UsaEia(providesFuel = true),
     /** French speed cameras (radars fixes) open data from data.gouv.fr. */
     FranceRadars(fetchKind = PoiProviderFetchKind.File),
+    /** Lufop / OpenSpeedCam speed cameras dataset. */
+    LufopOpenSpeedCam(fetchKind = PoiProviderFetchKind.File),
     Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }
@@ -217,7 +219,9 @@ val PoiProviderType.isBulkFileDownload: Boolean
     get() = fetchKind == PoiProviderFetchKind.File
 
 private val POI_DATA_SOURCES_DISABLED_FOR_USER_SELECTION: Set<PoiProviderType> = setOf(
-    PoiProviderType.DataGouvPrixQuotidien
+    PoiProviderType.DataGouvPrixQuotidien,
+    PoiProviderType.Overpass,
+    PoiProviderType.FranceRadars
 )
 
 /** True if this source is shown in map / Auto POI data source pickers. */
@@ -229,7 +233,7 @@ fun PoiProviderType.isUserSelectablePoiDataSource(): Boolean =
  */
 fun Set<PoiProviderType>.sanitizeUserPoiProviderSelection(): Set<PoiProviderType> {
     val filtered = this.filter { it.isUserSelectablePoiDataSource() }.toSet()
-    return filtered.ifEmpty { setOf(PoiProviderType.Etalab, PoiProviderType.Overpass) }
+    return filtered.ifEmpty { setOf(PoiProviderType.Etalab) }
 }
 
 /** True if any selected provider can supply fuel POIs (for filter / mode chips). */
