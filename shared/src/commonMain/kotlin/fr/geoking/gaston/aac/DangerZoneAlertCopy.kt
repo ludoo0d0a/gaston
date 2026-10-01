@@ -7,9 +7,9 @@ package fr.geoking.gaston.aac
 object DangerZoneAlertCopy {
     fun frZoneEntry(speedLimitKmH: Int?): String {
         return if (speedLimitKmH != null && speedLimitKmH > 0) {
-            "Zone de danger. Limitation $speedLimitKmH kilomètres heure."
+            "radar $speedLimitKmH km heure"
         } else {
-            "Zone de danger. Restez vigilant."
+            "radar"
         }
     }
 
