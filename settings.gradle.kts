@@ -39,7 +39,4 @@ if (gkToolsRoot != null) {
             substitute(module("fr.geoking.tools:debug-bar")).using(project(":debug-bar"))
         }
     }
-} else {
-    include(":debug-bar")
-    project(":debug-bar").projectDir = file("tools/debug-bar")
 }

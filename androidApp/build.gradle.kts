@@ -268,7 +268,7 @@ afterEvaluate {
 
 dependencies {
     implementation(project(":shared"))
-    implementation(project(":debug-bar"))
+    implementation("fr.geoking.tools:debug-bar")
 
     // Compose & Activity (lifecycle-runtime ensures LifecycleOwner is on classpath for ComponentActivity)
     implementation(libs.androidx.activity.compose)
