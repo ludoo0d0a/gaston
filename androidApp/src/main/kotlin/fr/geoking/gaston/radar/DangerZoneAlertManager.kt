@@ -13,13 +13,23 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * AAC alert engine: evaluates local [DangerZone]s (no map POI search / network each tick).
+ *
+ * Posts AA heads-up notifications (via [NotificationHelper] + CarAppExtender) on:
+ * - zone entry
+ * - near control pin (≤ [NEAR_RADAR_METERS])
  */
 class DangerZoneAlertManager(
     private val settingsManager: SettingsManager,
     private val audioNotifier: RadarAudioNotifier,
     private val notificationHelper: NotificationHelper? = null,
 ) {
+    companion object {
+        /** Distance to zone center at which the "near radar" HUN fires. */
+        const val NEAR_RADAR_METERS = 100.0
+    }
+
     private val alertedZoneIds = mutableSetOf<String>()
+    private val nearAlertedZoneIds = mutableSetOf<String>()
     private var lastLocation: Location? = null
     private var safetyTipSpokenAtMs: Long = 0L
 
@@ -30,6 +40,7 @@ class DangerZoneAlertManager(
         val settings = settingsManager.settings.value
         if (!settings.radarWarningEnabled) {
             alertedZoneIds.clear()
+            nearAlertedZoneIds.clear()
             lastLocation = location
             _hudState.value = DangerZoneHudState()
             return
@@ -91,11 +102,19 @@ class DangerZoneAlertManager(
                     notificationHelper?.showDangerZoneNotification(eval.speedLimitKmH)
                     maybeSpeakSafetyTip(location.time)
                 }
+                if (
+                    eval.distanceToCenterMeters <= NEAR_RADAR_METERS &&
+                    zone.id !in nearAlertedZoneIds
+                ) {
+                    nearAlertedZoneIds.add(zone.id)
+                    notificationHelper?.showNearRadarNotification(eval.speedLimitKmH)
+                }
             } else {
                 if (zone.id in alertedZoneIds) {
                     // Left the extended zone (or opposite carriageway filter)
                     if (eval.distanceToCenterMeters > zone.radiusMeters * 1.2 || !eval.isAhead) {
                         alertedZoneIds.remove(zone.id)
+                        nearAlertedZoneIds.remove(zone.id)
                     }
                 }
             }
@@ -119,9 +138,12 @@ class DangerZoneAlertManager(
 
     fun clearAlerts() {
         alertedZoneIds.clear()
+        nearAlertedZoneIds.clear()
         lastLocation = null
         _hudState.value = DangerZoneHudState()
     }
 
     fun getAlertedZoneIds(): Set<String> = alertedZoneIds.toSet()
+
+    fun getNearAlertedZoneIds(): Set<String> = nearAlertedZoneIds.toSet()
 }

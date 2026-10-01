@@ -327,7 +327,9 @@ private fun MainActivityComposeRoot(
     }
 
     val audioNotifier = remember(context) { AndroidRadarAudioNotifier(context) }
-    val notificationHelper = remember(context) { fr.geoking.gaston.feature.notification.NotificationHelper(context) }
+    val notificationHelper = remember {
+        org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.feature.notification.NotificationHelper>()
+    }
     val dangerZoneAlertManager = remember(context, settingsManager, audioNotifier, notificationHelper) {
         DangerZoneAlertManager(settingsManager, audioNotifier, notificationHelper)
     }

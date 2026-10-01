@@ -19,13 +19,29 @@ open class NotificationHelper(private val context: Context) {
         private const val NOTIFICATION_ID_BORDER = 1001
         private const val NOTIFICATION_ID_UPDATE = 1002
         private const val NOTIFICATION_ID_DANGER_ZONE = 1003
+        private const val NOTIFICATION_ID_NEAR_RADAR = 1004
+        /** Suppress duplicate HUNs when phone + AA alert loops both fire. */
+        private const val DEDUPE_WINDOW_MS = 8_000L
     }
 
     private val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+    private val lastPostedAtByKind = mutableMapOf<String, Pair<String, Long>>()
+
     init {
         createNotificationChannel()
+    }
+
+    @Synchronized
+    private fun shouldSuppressDuplicate(kind: String, key: String): Boolean {
+        val now = android.os.SystemClock.elapsedRealtime()
+        val prev = lastPostedAtByKind[kind]
+        if (prev != null && prev.first == key && now - prev.second < DEDUPE_WINDOW_MS) {
+            return true
+        }
+        lastPostedAtByKind[kind] = key to now
+        return false
     }
 
     private fun createNotificationChannel() {
@@ -85,6 +101,8 @@ open class NotificationHelper(private val context: Context) {
 
     open fun showDangerZoneNotification(speedLimitKmH: Int?) {
         if (!canPostNotifications()) return
+        val dedupeKey = "entry-${speedLimitKmH ?: 0}"
+        if (shouldSuppressDuplicate("danger_zone", dedupeKey)) return
 
         val title = context.getString(R.string.notification_danger_zone_title)
         val message = if (speedLimitKmH != null && speedLimitKmH > 0) {
@@ -93,23 +111,65 @@ open class NotificationHelper(private val context: Context) {
             context.getString(R.string.notification_danger_zone_message)
         }
 
+        postCarHeadsUp(
+            notificationId = NOTIFICATION_ID_DANGER_ZONE,
+            title = title,
+            message = message,
+            smallIcon = R.drawable.ic_poi_radar,
+        )
+    }
+
+    /**
+     * HUN when within ~100 m of the control pin (after zone entry).
+     * FR copy: "Radar proche %d km/h".
+     */
+    open fun showNearRadarNotification(speedLimitKmH: Int?) {
+        if (!canPostNotifications()) return
+        val dedupeKey = "near-${speedLimitKmH ?: 0}"
+        if (shouldSuppressDuplicate("near_radar", dedupeKey)) return
+
+        val title = context.getString(R.string.notification_near_radar_title)
+        val message = if (speedLimitKmH != null && speedLimitKmH > 0) {
+            context.getString(R.string.notification_near_radar_message, speedLimitKmH)
+        } else {
+            context.getString(R.string.notification_near_radar_message_generic)
+        }
+
+        postCarHeadsUp(
+            notificationId = NOTIFICATION_ID_NEAR_RADAR,
+            title = title,
+            message = message,
+            smallIcon = R.drawable.ic_poi_radar,
+        )
+    }
+
+    private fun postCarHeadsUp(
+        notificationId: Int,
+        title: String,
+        message: String,
+        smallIcon: Int,
+    ) {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_poi_radar)
+            .setSmallIcon(smallIcon)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
             .setAutoCancel(true)
             .setTimeoutAfter(6000L)
             .extend(
                 CarAppExtender.Builder()
                     .setImportance(NotificationManager.IMPORTANCE_HIGH)
+                    .setContentTitle(title)
+                    .setContentText(message)
+                    .setSmallIcon(smallIcon)
                     .build()
             )
 
         val notification = builder.build()
-        notificationManager.notify(NOTIFICATION_ID_DANGER_ZONE, notification)
-        CarNotificationManager.from(context).notify(NOTIFICATION_ID_DANGER_ZONE, builder)
+        notificationManager.notify(notificationId, notification)
+        CarNotificationManager.from(context).notify(notificationId, builder)
     }
 
     fun canPostNotifications(): Boolean {
