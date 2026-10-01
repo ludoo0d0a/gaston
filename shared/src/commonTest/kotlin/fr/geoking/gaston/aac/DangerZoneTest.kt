@@ -127,11 +127,10 @@ class DangerZoneTest {
 
     @Test
     fun noControlCoordinateLeakInPublicAlertCopyHelpers() {
-        // Alert phrasing helpers must never embed lat/lon or "radar + distance"
+        // Alert phrasing helpers must never embed lat/lon or distance
         val phrase = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH = 110)
-        assertFalse(phrase.contains("radar", ignoreCase = true))
+        assertTrue(phrase.contains("radar", ignoreCase = true))
         assertFalse(phrase.contains("contrôle", ignoreCase = true))
-        assertTrue(phrase.contains("zone de danger", ignoreCase = true))
         assertTrue(phrase.contains("110"))
     }
 

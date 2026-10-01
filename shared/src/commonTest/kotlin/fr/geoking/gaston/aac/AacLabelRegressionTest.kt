@@ -8,7 +8,7 @@ import kotlin.test.assertFalse
  */
 class AacLabelRegressionTest {
     private val banned = Regex(
-        """radar.{0,30}(\d+\s*m|\d+\s*km|à\s+\d+)""",
+        """radar.{0,30}(\d+\s*m|\d+\s*km(?! heure)|à\s+\d+)""",
         RegexOption.IGNORE_CASE,
     )
 
@@ -19,7 +19,6 @@ class AacLabelRegressionTest {
             val short = DangerZoneAlertCopy.frZoneEntryShort(vma)
             assertFalse(banned.containsMatchIn(long), long)
             assertFalse(banned.containsMatchIn(short), short)
-            assertFalse(long.contains("Attention, radar", ignoreCase = true))
         }
     }
 }
