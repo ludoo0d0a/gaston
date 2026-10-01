@@ -7,22 +7,23 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
-import fr.geoking.gaston.aac.DangerZoneDistances
+import fr.geoking.gaston.aac.DangerZoneTriangle
 import fr.geoking.gaston.poi.Poi
 import kotlin.math.cos
 
 object AutoMapOverlayHelper {
 
     /**
-     * VMA-based danger-zone circles around radar amenity POIs (AFFTAC distances:
-     * ~4 km / ~2 km / ~300 m). [toScreenXy] maps each POI to canvas coordinates.
+     * Directional danger-zone triangles for radar amenity POIs (AFFTAC distances:
+     * ~4 km / ~2 km / ~300 m). Tip at the radar; base on the entry arc when a
+     * unidirectional bearing is known. Skips POIs with missing/bidirectional direction.
+     * [toScreenXy] maps each lat/lon to canvas coordinates.
      */
-    fun drawRadarDangerZoneCircles(
+    fun drawRadarDangerZoneTriangles(
         canvas: Canvas,
         density: Float,
-        zoom: Int,
         radarPois: List<Poi>,
-        toScreenXy: (Poi) -> Pair<Float, Float>,
+        toScreenXy: (lat: Double, lon: Double) -> Pair<Float, Float>,
     ) {
         if (radarPois.isEmpty()) return
         val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -33,17 +34,19 @@ object AutoMapOverlayHelper {
             color = Color.parseColor("#EF4444")
             style = Paint.Style.STROKE
             strokeWidth = 3f * density
+            strokeJoin = Paint.Join.ROUND
         }
         for (poi in radarPois) {
-            val (drawX, drawY) = toScreenXy(poi)
-            val radiusKm = DangerZoneDistances.radiusMetersForRadarPoiVma(
-                poi.rawSourceData?.get("vma")
-            ) / 1000.0
-            val radiusPx = AutoMapCamera.radiusPxForKm(poi.latitude, zoom, radiusKm)
-            if (radiusPx >= 2f) {
-                canvas.drawCircle(drawX, drawY, radiusPx, fillPaint)
-                canvas.drawCircle(drawX, drawY, radiusPx, strokePaint)
+            val ring = DangerZoneTriangle.latLngRingForRadarPoi(poi) ?: continue
+            if (ring.size < 3) continue
+            val path = Path()
+            ring.forEachIndexed { index, (lat, lon) ->
+                val (x, y) = toScreenXy(lat, lon)
+                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
             }
+            path.close()
+            canvas.drawPath(path, fillPaint)
+            canvas.drawPath(path, strokePaint)
         }
     }
 

@@ -8,10 +8,12 @@ class RealApiTestEnvTest {
 
     @Test
     fun requireIntegrationEnv_throwsWithEnvKeyName() {
+        // Use a synthetic key that CI secrets never set, so this unit test stays deterministic.
+        val missingKey = "__GASTON_MISSING_INTEGRATION_ENV_FOR_UNIT_TEST__"
         val ex = assertFailsWith<MissingIntegrationTestEnvException> {
-            requireIntegrationEnv("FUELPRICES_DK_KEY", "Denmark fuelprices.dk API")
+            requireIntegrationEnv(missingKey, "unit-test missing-env probe")
         }
-        assertEquals(listOf("FUELPRICES_DK_KEY"), ex.envKeys)
-        assertEquals(true, ex.message!!.contains("FUELPRICES_DK_KEY"))
+        assertEquals(listOf(missingKey), ex.envKeys)
+        assertEquals(true, ex.message!!.contains(missingKey))
     }
 }

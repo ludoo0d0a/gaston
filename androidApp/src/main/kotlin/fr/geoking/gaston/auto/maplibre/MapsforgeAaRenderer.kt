@@ -335,14 +335,13 @@ class MapsforgeAaRenderer(
         val cx = centerPxXForHitTest().toFloat()
         val cy = centerPxYForHitTest().toFloat()
 
-        AutoMapOverlayHelper.drawRadarDangerZoneCircles(
+        AutoMapOverlayHelper.drawRadarDangerZoneTriangles(
             canvas = canvas,
             density = carContext.resources.displayMetrics.density,
-            zoom = zoom,
             radarPois = lastPois.filter { it.poiCategory == PoiCategory.Radar },
-        ) { poi ->
-            val tileX = lonToTileX(poi.longitude, zoom)
-            val tileY = latToTileY(poi.latitude, zoom)
+        ) { lat, lon ->
+            val tileX = lonToTileX(lon, zoom)
+            val tileY = latToTileY(lat, zoom)
             val drawX = ((tileX - mapCenterX) * AutoSurfaceRenderer.TILE_SIZE + cx).toFloat()
             val drawY = ((tileY - mapCenterY) * AutoSurfaceRenderer.TILE_SIZE + cy).toFloat()
             drawX to drawY
