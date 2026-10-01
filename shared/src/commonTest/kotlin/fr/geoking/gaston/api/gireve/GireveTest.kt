@@ -135,12 +135,46 @@ class GireveTest {
             gireveProvider = gireveAvail
         )
 
-        // Metz (France, outside Paris)
+        // Metz (France, outside Paris) — Gireve fallback when QualiCharge is absent
         val providerInMetz = factory.getProvider(49.12, 6.175)
-        assertNotNull(providerInMetz)
+        assertEquals(gireveAvail, providerInMetz)
 
         // Paris (France, inside Paris)
         val providerInParis = factory.getProvider(48.85, 2.35)
         assertNotNull(providerInParis)
+    }
+
+    @Test
+    fun borneAvailabilityProviderFactory_prefersQualiChargeOverGireve() {
+        val qualiCharge = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
+            override suspend fun getAvailability(
+                latitude: Double,
+                longitude: Double,
+                radiusKm: Int
+            ) = emptyList<fr.geoking.gaston.api.belib.PdcAvailability>()
+        }
+        val gireve = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
+            override suspend fun getAvailability(
+                latitude: Double,
+                longitude: Double,
+                radiusKm: Int
+            ) = emptyList<fr.geoking.gaston.api.belib.PdcAvailability>()
+        }
+        val belib = object : fr.geoking.gaston.api.belib.BorneAvailabilityProvider {
+            override suspend fun getAvailability(
+                latitude: Double,
+                longitude: Double,
+                radiusKm: Int
+            ) = emptyList<fr.geoking.gaston.api.belib.PdcAvailability>()
+        }
+
+        val factory = BorneAvailabilityProviderFactory(
+            belibProvider = belib,
+            qualiChargeProvider = qualiCharge,
+            gireveProvider = gireve
+        )
+
+        // Metz: QualiCharge only — not merged with Gireve
+        assertEquals(qualiCharge, factory.getProvider(49.12, 6.175))
     }
 }
