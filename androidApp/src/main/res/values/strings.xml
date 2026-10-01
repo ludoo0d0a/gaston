@@ -502,6 +502,10 @@
     <string name="update_available_title">Update available</string>
     <string name="update_available_message">A new version of gaston is available. Update now to get the latest features and improvements.</string>
     <string name="update_in_progress">Update in progress</string>
+    <string name="settings_check_update">Check for updates</string>
+    <string name="update_check_up_to_date">You\'re up to date</string>
+    <string name="update_check_error_title">Update check</string>
+    <string name="update_check_ok">OK</string>
     <string name="premium_brand_title">Gaston Premium</string>
     <string name="premium_badge">PREMIUM</string>
     <string name="premium_required_message">Gaston Premium Required</string>

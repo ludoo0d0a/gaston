@@ -53,6 +53,8 @@ import fr.geoking.gaston.poi.isUserSelectablePoiDataSource
 import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.premium.PremiumSubscriptionNotice
+import fr.geoking.gaston.update.CheckFeedback
+import fr.geoking.gaston.update.InAppUpdateHelper
 import org.koin.compose.koinInject
 import java.text.DateFormat
 import fr.geoking.gaston.BuildConfig
@@ -1334,7 +1336,26 @@ private fun MainMenu(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val billingManager = koinInject<BillingManager>()
+    val inAppUpdateHelper = koinInject<InAppUpdateHelper>()
     val subscriptionNotice by billingManager.subscriptionNotice.collectAsState()
+    val checkFeedback by inAppUpdateHelper.checkFeedback.collectAsState()
+
+    when (val feedback = checkFeedback) {
+        is CheckFeedback.UpToDate -> {
+            UpdateCheckFeedbackDialog(
+                isError = false,
+                onDismiss = { inAppUpdateHelper.resetCheckFeedback() },
+            )
+        }
+        is CheckFeedback.Error -> {
+            UpdateCheckFeedbackDialog(
+                isError = true,
+                errorMessage = feedback.message,
+                onDismiss = { inAppUpdateHelper.resetCheckFeedback() },
+            )
+        }
+        CheckFeedback.None -> Unit
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -1494,6 +1515,10 @@ private fun MainMenu(
                     label = stringResource(R.string.screen_theme),
                     value = settings.uiThemeMode.displayLabel(),
                     onClick = { onNavigate(SettingsScreenPage.Theme) }
+                )
+                SettingsItem(
+                    label = stringResource(R.string.settings_check_update),
+                    onClick = { inAppUpdateHelper.checkForUpdate(manual = true) }
                 )
                 SettingsItem(
                     label = stringResource(R.string.screen_about),

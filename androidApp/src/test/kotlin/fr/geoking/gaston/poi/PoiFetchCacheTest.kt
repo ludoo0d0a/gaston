@@ -388,7 +388,7 @@ class PoiFetchCacheTest {
         val providers = settings.effectiveProviders(countryCodes = listOf("FR"))
         assertTrue(PoiProviderType.Etalab in providers)
         assertTrue(PoiProviderType.GasApi in providers)
-        assertTrue(PoiProviderType.Overpass in providers)
+        assertFalse(PoiProviderType.Overpass in providers)
         assertFalse(PoiProviderType.DataGouvElec in providers)
         assertFalse(PoiProviderType.OpenChargeMap in providers)
     }
@@ -402,7 +402,7 @@ class PoiFetchCacheTest {
         val providers = settings.effectiveProviders(countryCodes = listOf("FR"))
         assertTrue(PoiProviderType.DataGouvElec in providers)
         assertTrue(PoiProviderType.OpenChargeMap in providers)
-        assertTrue(PoiProviderType.Overpass in providers)
+        assertFalse(PoiProviderType.Overpass in providers)
         assertFalse(PoiProviderType.Etalab in providers)
     }
 
