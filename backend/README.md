@@ -93,6 +93,13 @@ npm run ingest -- --source=fuel-history --remote
 | `minetur` / `mimit` | pois | ES / IT fuel |
 | `france-radars` / `luxembourg-radars` | zones | AAC |
 
-Prefer **one heavy dump per day** on Free (~100k D1 writes/day).
+Prefer **one heavy dump per day** on Free (~100k D1 writes/day, resets **00:00 UTC**).
+Default ingest is **upsert** (no full DELETE). `--replace` costs ≈2× writes and can
+block **all** D1 queries (including reads) until the next UTC day when the cap is hit.
+
+```bash
+npm run ingest -- --source=dotnl --remote          # upsert (~75k writes)
+npm run ingest -- --source=dotnl --remote --replace # avoid on Free
+```
 
 GHA schedule `0 3 * * *`: `luxembourg-radars` + `fuel-history` remote.

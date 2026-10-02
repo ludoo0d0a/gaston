@@ -19,8 +19,11 @@ export function sqlNum(value) {
 }
 
 /**
- * Replace all rows for a source in `pois` or `zones`, then insert in batches.
- * Uses wrangler d1 execute (--local or --remote).
+ * Upsert or full-replace rows for a source in `pois` or `zones`.
+ *
+ * Free D1 bills every deleted/inserted/updated row. Full DELETE+INSERT ≈ 2× rows
+ * and will blow the 100k/day Free cap on large sources (e.g. DOT-NL).
+ * Default `mode: "upsert"` only writes the new/updated rows.
  */
 export function replaceSourceRows({
   table,
@@ -29,6 +32,7 @@ export function replaceSourceRows({
   rows,
   local = true,
   batchSize = 40,
+  mode = "upsert",
 }) {
   if (table !== "pois" && table !== "zones") {
     throw new Error(`unsupported table ${table}`);
@@ -36,12 +40,21 @@ export function replaceSourceRows({
   mkdirSync(CACHE_SQL, { recursive: true });
   const stamp = Date.now();
   const files = [];
+  let deleteWrites = 0;
 
-  const deleteSql = `DELETE FROM ${table} WHERE source = ${sqlString(source)};`;
-  const deleteFile = join(CACHE_SQL, `${source}_delete_${stamp}.sql`);
-  writeFileSync(deleteFile, deleteSql, "utf8");
-  files.push(deleteFile);
-  runWranglerSqlFile(deleteFile, local);
+  if (mode === "replace") {
+    const deleteSql = `DELETE FROM ${table} WHERE source = ${sqlString(source)};`;
+    const deleteFile = join(CACHE_SQL, `${source}_delete_${stamp}.sql`);
+    writeFileSync(deleteFile, deleteSql, "utf8");
+    files.push(deleteFile);
+    runWranglerSqlFile(deleteFile, local);
+    deleteWrites = 1;
+  }
+
+  const conflictUpdate = columns
+    .filter((c) => c !== "id")
+    .map((c) => `${c} = excluded.${c}`)
+    .join(", ");
 
   let written = 0;
   for (let i = 0; i < rows.length; i += batchSize) {
@@ -49,7 +62,10 @@ export function replaceSourceRows({
     const values = chunk
       .map((row) => `(${columns.map((c) => row[c]).join(", ")})`)
       .join(",\n");
-    const sql = `INSERT INTO ${table} (${columns.join(", ")}) VALUES\n${values};`;
+    const sql =
+      mode === "replace"
+        ? `INSERT INTO ${table} (${columns.join(", ")}) VALUES\n${values};`
+        : `INSERT INTO ${table} (${columns.join(", ")}) VALUES\n${values}\nON CONFLICT(id) DO UPDATE SET ${conflictUpdate};`;
     const file = join(CACHE_SQL, `${source}_ins_${stamp}_${i}.sql`);
     writeFileSync(file, sql, "utf8");
     files.push(file);
@@ -59,7 +75,7 @@ export function replaceSourceRows({
 
   const metaSql = `
 INSERT INTO ingest_meta (source, last_success_at, etag_or_version, row_count, write_count)
-VALUES (${sqlString(source)}, ${sqlString(new Date().toISOString())}, NULL, ${written}, ${written + 1})
+VALUES (${sqlString(source)}, ${sqlString(new Date().toISOString())}, NULL, ${written}, ${written + deleteWrites})
 ON CONFLICT(source) DO UPDATE SET
   last_success_at = excluded.last_success_at,
   row_count = excluded.row_count,
@@ -78,7 +94,7 @@ ON CONFLICT(source) DO UPDATE SET
     }
   }
 
-  return { written, deleteWrites: 1 };
+  return { written, deleteWrites, mode };
 }
 
 function runWranglerSqlFile(file, local) {

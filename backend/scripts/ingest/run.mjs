@@ -5,9 +5,11 @@
  * Usage:
  *   node scripts/ingest/run.mjs --source=luxembourg-radars --local
  *   node scripts/ingest/run.mjs --source=france-radars --local
- *   node scripts/ingest/run.mjs --source=all --local
+ *   node scripts/ingest/run.mjs --source=dotnl --remote
+ *   node scripts/ingest/run.mjs --source=dotnl --remote --replace   # DELETE+INSERT (≈2× writes)
  *
  * Free D1 write budget ~100k/day — prefer one large source per run.
+ * Limit resets 00:00 UTC; over-limit blocks ALL D1 queries (reads too).
  */
 import {
   POI_COLUMNS,
@@ -24,6 +26,9 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/** Soft refuse remote writes above this unless --force (Free = 100k/day). */
+const REMOTE_WRITE_SOFT_LIMIT = 90_000;
+
 const SOURCES = {
   gireve: () => import("./sources/gireve.mjs"),
   qualicharge: () => import("./sources/qualicharge.mjs"),
@@ -38,13 +43,22 @@ const SOURCES = {
 };
 
 function parseArgs(argv) {
-  const out = { source: null, local: true, remote: false, help: false };
+  const out = {
+    source: null,
+    local: true,
+    remote: false,
+    help: false,
+    replace: false,
+    force: false,
+  };
   for (const a of argv) {
     if (a === "--help" || a === "-h") out.help = true;
     else if (a === "--remote") {
       out.remote = true;
       out.local = false;
     } else if (a === "--local") out.local = true;
+    else if (a === "--replace") out.replace = true;
+    else if (a === "--force") out.force = true;
     else if (a.startsWith("--source=")) out.source = a.slice("--source=".length);
   }
   return out;
@@ -52,10 +66,33 @@ function parseArgs(argv) {
 
 function printHelp() {
   console.log(`Available sources: ${Object.keys(SOURCES).join(", ")}, all
-Flags: --source=<id|all> [--local|--remote]`);
+Flags: --source=<id|all> [--local|--remote] [--replace] [--force]
+  --replace  DELETE source rows then INSERT (≈2× Free write cost)
+  --force    allow remote writes estimated over ${REMOTE_WRITE_SOFT_LIMIT}`);
 }
 
-async function runOne(sourceId, local) {
+function assertRemoteBudget({ sourceId, rowCount, mode, force }) {
+  const estimated = mode === "replace" ? rowCount * 2 : rowCount;
+  console.log(
+    JSON.stringify({
+      event: "write_budget_estimate",
+      source: sourceId,
+      rows: rowCount,
+      mode,
+      estimated_row_writes: estimated,
+      free_daily_cap: 100_000,
+    }),
+  );
+  if (estimated > REMOTE_WRITE_SOFT_LIMIT && !force) {
+    throw new Error(
+      `Refusing remote ingest for ${sourceId}: ~${estimated} row writes ` +
+        `(Free cap 100k/day). Wait until 00:00 UTC, split sources across days, ` +
+        `prefer upsert (default), or pass --force.`,
+    );
+  }
+}
+
+async function runOne(sourceId, { local, replace, force }) {
   const loader = SOURCES[sourceId];
   if (!loader) throw new Error(`Unknown source: ${sourceId}`);
   const mod = await loader();
@@ -74,6 +111,11 @@ async function runOne(sourceId, local) {
     }),
   );
 
+  const mode = replace ? "replace" : "upsert";
+  if (!local && result.table !== "fuel") {
+    assertRemoteBudget({ sourceId, rowCount, mode, force });
+  }
+
   const dumpDir = join(__dirname, "../../.cache/dumps", sourceId);
   try {
     for (const name of readdirSync(dumpDir)) {
@@ -86,6 +128,9 @@ async function runOne(sourceId, local) {
   }
 
   if (result.table === "fuel") {
+    if (!local && !force && rowCount > REMOTE_WRITE_SOFT_LIMIT) {
+      assertRemoteBudget({ sourceId, rowCount, mode: "upsert", force });
+    }
     const { writeFuelTables } = await import("./sources/fuel-history.mjs");
     const written = writeFuelTables({
       national: result.national,
@@ -108,6 +153,7 @@ async function runOne(sourceId, local) {
       rows: sqlRows,
       local,
       batchSize,
+      mode,
     });
     console.log(JSON.stringify({ event: "ingest_done", source: sourceId, ...written }));
   } else if (result.table === "zones") {
@@ -128,6 +174,7 @@ async function runOne(sourceId, local) {
       columns: ZONE_COLUMNS,
       rows: sqlRows,
       local,
+      mode,
     });
     console.log(JSON.stringify({ event: "ingest_done", source: sourceId, ...written }));
   } else {
@@ -156,7 +203,11 @@ async function main() {
   }
 
   for (const sid of list) {
-    await runOne(sid, args.local);
+    await runOne(sid, {
+      local: args.local,
+      replace: args.replace,
+      force: args.force,
+    });
   }
 }
 
