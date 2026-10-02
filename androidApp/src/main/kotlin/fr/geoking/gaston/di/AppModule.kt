@@ -3,16 +3,19 @@ package fr.geoking.gaston.di
 import android.content.Context
 import fr.geoking.gaston.feature.network.AndroidNetworkService
 import fr.geoking.gaston.feature.notification.NotificationHelper
+import fr.geoking.gaston.feature.notification.InAppNotificationCenter
 import fr.geoking.gaston.feature.weather.AndroidWeatherLookup
 import fr.geoking.gaston.feature.permission.AndroidPermissionManager
 import fr.geoking.gaston.feature.auth.GoogleAuthManager
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.R
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
 import fr.geoking.gaston.shared.location.ConnectivityManager
 import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.weather.WeatherLookup
 import fr.geoking.gaston.shared.platform.PermissionManager
 import fr.geoking.gaston.repository.FuelForecastRepository
+import fr.geoking.gaston.toll.VignetteService
 import fr.geoking.gaston.ui.dashboard.PhoneDashboardViewModel
 import org.koin.core.module.dsl.viewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -212,6 +215,8 @@ val appModule = module {
 
     single { NotificationHelper(androidContext()) }
 
+    single { InAppNotificationCenter() }
+
     single { fr.geoking.gaston.update.InAppUpdateHelper(androidContext(), get<NotificationHelper>()) }
 
     single { fr.geoking.gaston.repository.StationPriceHistoryRepository(dao = get<AppDatabase>().stationPriceSampleDao(), nationalDao = get<AppDatabase>().nationalFuelPriceDao()) }
@@ -232,6 +237,8 @@ val appModule = module {
     // Initialize ConnectivityManager here so it starts at app launch
     single(createdAtStart = true) {
         val notificationHelper = get<NotificationHelper>()
+        val notificationCenter = get<InAppNotificationCenter>()
+        val appContext = androidContext()
         ConnectivityManager(
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
             networkService = get(),
@@ -239,8 +246,30 @@ val appModule = module {
         ).also { manager ->
             // Observe border crossing events to show notifications
             CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {
-                manager.borderCrossingEvents.collect { countryName ->
-                    notificationHelper.showBorderCrossingNotification(countryName)
+                manager.borderCrossingEvents.collect { event ->
+                    val vignette = VignetteService.infoFor(event.countryCode)
+                    val title = appContext.getString(R.string.notification_border_crossing_title)
+                    val inAppMessage = if (vignette != null) {
+                        appContext.getString(
+                            R.string.notification_border_crossing_message_vignette_action,
+                            event.countryName,
+                        )
+                    } else {
+                        appContext.getString(
+                            R.string.notification_border_crossing_message,
+                            event.countryName,
+                        )
+                    }
+                    notificationCenter.add(
+                        title = title,
+                        message = inAppMessage,
+                        actionUrl = vignette?.onlineShopUrl,
+                    )
+                    // AA HUN: vignette warning text only — no shop URLs/actions while driving
+                    notificationHelper.showBorderCrossingNotification(
+                        countryName = event.countryName,
+                        requiresVignette = vignette != null,
+                    )
                 }
             }
         }

@@ -86,7 +86,7 @@ class ConnectivityManagerTest {
         // Give it a moment to initialize with the initial status
         delay(100)
 
-        val crossingEvents = mutableListOf<String>()
+        val crossingEvents = mutableListOf<BorderCrossingEvent>()
         val subscribed = CompletableDeferred<Unit>()
         val job = launch {
             manager.borderCrossingEvents
@@ -104,7 +104,8 @@ class ConnectivityManagerTest {
         delay(500)
 
         assertEquals(1, crossingEvents.size, "Expected 1 crossing event, got ${crossingEvents.size}")
-        assertEquals("Belgium", crossingEvents[0])
+        assertEquals("BE", crossingEvents[0].countryCode)
+        assertEquals("Belgium", crossingEvents[0].countryName)
         assertEquals("BE", settings.lastCountryCode)
 
         job.cancel()
@@ -125,7 +126,7 @@ class ConnectivityManagerTest {
 
         delay(100)
 
-        val crossingEvents = mutableListOf<String>()
+        val crossingEvents = mutableListOf<BorderCrossingEvent>()
         val subscribed = CompletableDeferred<Unit>()
         val job = launch {
             manager.borderCrossingEvents
@@ -143,7 +144,8 @@ class ConnectivityManagerTest {
 
         assertEquals(1, crossingEvents.size, "Expected 1 crossing event, got ${crossingEvents.size}")
         // Should fallback to country code "BE" because "France" matches the last country name but the code changed.
-        assertEquals("BE", crossingEvents[0])
+        assertEquals("BE", crossingEvents[0].countryCode)
+        assertEquals("BE", crossingEvents[0].countryName)
 
         job.cancel()
     }

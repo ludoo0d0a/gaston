@@ -77,6 +77,7 @@ fun PhoneDashboardTopBar(
             }
         },
         actions = {
+            NotificationBellAction()
             IconButton(
                 onClick = onOpenFavorites,
                 modifier = Modifier.testTag("dashboard_favorites_btn")

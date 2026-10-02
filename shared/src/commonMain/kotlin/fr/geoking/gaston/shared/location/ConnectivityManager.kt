@@ -15,8 +15,8 @@ class ConnectivityManager(
     private val networkService: NetworkService,
     private val networkSettings: NetworkSettings
 ) {
-    private val _borderCrossingEvents = MutableSharedFlow<String>()
-    val borderCrossingEvents: SharedFlow<String> = _borderCrossingEvents.asSharedFlow()
+    private val _borderCrossingEvents = MutableSharedFlow<BorderCrossingEvent>()
+    val borderCrossingEvents: SharedFlow<BorderCrossingEvent> = _borderCrossingEvents.asSharedFlow()
 
     private var lastStatus: NetworkStatus? = NetworkStatus(
         countryCode = networkSettings.lastCountryCode,
@@ -49,7 +49,12 @@ class ConnectivityManager(
             }
 
             scope.launch {
-                _borderCrossingEvents.emit(countryName)
+                _borderCrossingEvents.emit(
+                    BorderCrossingEvent(
+                        countryCode = status.countryCode,
+                        countryName = countryName,
+                    )
+                )
             }
         }
 

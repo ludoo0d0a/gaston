@@ -85,6 +85,12 @@
     <string name="notification_mark_read">Fermer</string>
     <string name="notification_border_crossing_title">Passage de frontière</string>
     <string name="notification_border_crossing_message">Bienvenue en %1$s !</string>
+    <string name="notification_border_crossing_message_vignette">Bienvenue en %1$s ! Une vignette autoroutière est obligatoire.</string>
+    <string name="notification_border_crossing_message_vignette_action">Bienvenue en %1$s ! Une vignette autoroutière est obligatoire. Appuyez pour l\'acheter en ligne.</string>
+    <string name="notification_center_title">Notifications</string>
+    <string name="notification_center_empty">Aucune notification récente</string>
+    <string name="notification_center_clear">Tout effacer</string>
+    <string name="cd_notifications">Notifications</string>
     <string name="cd_copy_error">Copier l\'erreur</string>
     <string name="cd_data_sources">Sources de données</string>
     <string name="cd_favorites">Favoris</string>

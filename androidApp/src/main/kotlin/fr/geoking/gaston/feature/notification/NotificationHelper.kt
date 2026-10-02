@@ -53,21 +53,34 @@ open class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun showBorderCrossingNotification(countryName: String) {
+    /**
+     * Phone + Android Auto HUN for a border crossing.
+     * May warn about a required vignette, but never include shop URLs/actions —
+     * those live in [InAppNotificationCenter] on the phone.
+     */
+    fun showBorderCrossingNotification(countryName: String, requiresVignette: Boolean = false) {
         if (!canPostNotifications()) return
 
         val title = context.getString(R.string.notification_border_crossing_title)
-        val message = context.getString(R.string.notification_border_crossing_message, countryName)
+        val message = if (requiresVignette) {
+            context.getString(R.string.notification_border_crossing_message_vignette, countryName)
+        } else {
+            context.getString(R.string.notification_border_crossing_message, countryName)
+        }
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notifications)
             .setContentTitle(title)
             .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .extend(
                 CarAppExtender.Builder()
                     .setImportance(NotificationManager.IMPORTANCE_HIGH)
+                    .setContentTitle(title)
+                    .setContentText(message)
+                    .setSmallIcon(R.drawable.ic_notifications)
                     .build()
             )
 

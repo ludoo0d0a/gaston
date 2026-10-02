@@ -25,6 +25,12 @@
     <string name="notification_mark_read">Dismiss</string>
     <string name="notification_border_crossing_title">Border Crossing</string>
     <string name="notification_border_crossing_message">Welcome to %1$s!</string>
+    <string name="notification_border_crossing_message_vignette">Welcome to %1$s! A motorway vignette is required.</string>
+    <string name="notification_border_crossing_message_vignette_action">Welcome to %1$s! A motorway vignette is required. Tap to buy online.</string>
+    <string name="notification_center_title">Notifications</string>
+    <string name="notification_center_empty">No recent notifications</string>
+    <string name="notification_center_clear">Clear all</string>
+    <string name="cd_notifications">Notifications</string>
     <string name="charging_station">Charging station</string>
     <string name="cheapest_stations_title">Cheapest Stations</string>
     <string name="connectors_label">Connectors: %1$s</string>
