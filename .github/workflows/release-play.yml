@@ -37,6 +37,7 @@ jobs:
       gradle_version: wrapper
       java_version: '21'
       # VERSION_CODE resolved in geoking-ci (max(run_number, version.properties+1) + attempt-1).
+      # After Play accepts N, bump playstore/version.properties to N (floor for next run is N+1).
       # Do not invent arithmetic here — GHA expressions have no +/*.
       version_name_override: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
       is_workflow_dispatch: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}

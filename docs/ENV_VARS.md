@@ -18,7 +18,8 @@ Use these names in `local.properties` or set the same name as an env var (e.g. f
 
 | Key | Usage |
 |-----|--------|
-| `VERSION_CODE` | Optional integer override for versionCode (e.g. `123`). In Play CI, leave unset — geoking-ci `resolve-version-code.sh` sets it from `max(run_number, playstore/version.properties+1)` (+ attempt bump on re-run). |
+| `VERSION_CODE` | Optional integer override for versionCode (e.g. `123`). In Play CI, leave unset — geoking-ci `resolve-version-code.sh` sets it from `max(run_number, playstore/version.properties+1)` (+ attempt bump on re-run). After a successful Play upload of code N, bump `playstore/version.properties` `versionCode` to N so the next push does not reuse N (CI `run_number` is often far below the Play floor). |
+
 | `GOOGLE_MAPS_KEY` | Google Maps API key. **Required for map screen** (tiles); without it the map stays grey. Setup: [`MAPS_API_KEY_SETUP.md`](MAPS_API_KEY_SETUP.md). |
 | `GOOGLE_WEB_CLIENT_ID` | Google Sign-In **Web client ID**: copy from Firebase [Authentication → Sign-in method → Google](https://console.firebase.google.com/project/gaston-c8f44/authentication/providers) (`gaston-c8f44`). Details: `docs/GOOGLE_PLAY_MIGRATION.md` §5. |
 | `OPENCHARGEMAP_KEY` | Open Charge Map API key (recommended if you enable that provider). |
