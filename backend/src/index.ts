@@ -1,10 +1,15 @@
 import { jsonError, requireApiKey } from "./auth";
+import { fuelForecast, fuelHistory } from "./fuel";
 import { parseSearchParams } from "./geo";
 import { searchPois } from "./pois";
 import { searchZones } from "./zones";
 
 export default {
-  async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    _ctx: ExecutionContext,
+  ): Promise<Response> {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders() });
     }
@@ -12,7 +17,7 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === "/health") {
-      return json({ ok: true, service: "gaston-api", phase: 0 });
+      return json({ ok: true, service: "gaston-api", phase: "we-fuel" });
     }
 
     const authError = requireApiKey(request, env);
@@ -52,7 +57,30 @@ export default {
       return geoJson(body);
     }
 
-    return withCors(jsonError(404, "not_found", `No route for ${url.pathname}`));
+    if (request.method === "GET" && url.pathname === "/v1/fuel/history") {
+      const country = (url.searchParams.get("country") || "FR").toUpperCase();
+      const fuel = url.searchParams.get("fuel") || "gazole";
+      const from = url.searchParams.get("from");
+      if (!/^[A-Z]{2}$/.test(country)) {
+        return withCors(jsonError(400, "bad_request", "country must be ISO-2"));
+      }
+      const body = await fuelHistory(env, country, fuel, from);
+      return json(body);
+    }
+
+    if (request.method === "GET" && url.pathname === "/v1/fuel/forecast") {
+      const country = (url.searchParams.get("country") || "FR").toUpperCase();
+      const fuel = url.searchParams.get("fuel") || "gazole";
+      if (!/^[A-Z]{2}$/.test(country)) {
+        return withCors(jsonError(400, "bad_request", "country must be ISO-2"));
+      }
+      const body = await fuelForecast(env, country, fuel);
+      return json(body);
+    }
+
+    return withCors(
+      jsonError(404, "not_found", `No route for ${url.pathname}`),
+    );
   },
 } satisfies ExportedHandler<Env>;
 
@@ -62,7 +90,7 @@ function json(data: unknown, status = 200): Response {
       status,
       headers: {
         "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store",
+        "cache-control": status === 200 ? "public, max-age=60" : "no-store",
       },
     }),
   );
@@ -74,7 +102,6 @@ function geoJson(data: unknown): Response {
       status: 200,
       headers: {
         "content-type": "application/geo+json; charset=utf-8",
-        // Short cache OK once data exists; empty results still cheap.
         "cache-control": "public, max-age=60",
       },
     }),

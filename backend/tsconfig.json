@@ -12,5 +12,6 @@
     "verbatimModuleSyntax": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "worker-configuration.d.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "worker-configuration.d.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }

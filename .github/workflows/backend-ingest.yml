@@ -1,4 +1,5 @@
-# Phase 1: ingest File dumps into D1 (local or remote). Prefer one source per run (D1 Free write budget).
+# Ingest File dumps + daily fuel history into D1.
+# Prefer one heavy source per run (D1 Free ~100k writes/day).
 
 name: Backend ingest
 
@@ -8,9 +9,10 @@ on:
       source:
         description: "Source to ingest"
         required: true
-        default: "luxembourg-radars"
+        default: "fuel-history"
         type: choice
         options:
+          - fuel-history
           - luxembourg-radars
           - france-radars
           - belgium-nap
@@ -29,7 +31,7 @@ on:
           - remote
           - local
   schedule:
-    # Daily UTC — Luxembourg only (tiny). Heavy dumps: run manually / separate days.
+    # Daily UTC: tiny LU radars + FR fuel history / Stooq (low writes).
     - cron: "0 3 * * *"
 
 jobs:
@@ -51,9 +53,10 @@ jobs:
         id: pick
         run: |
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "source=luxembourg-radars" >> "$GITHUB_OUTPUT"
+            echo "mode=schedule" >> "$GITHUB_OUTPUT"
             echo "flag=--remote" >> "$GITHUB_OUTPUT"
           else
+            echo "mode=manual" >> "$GITHUB_OUTPUT"
             echo "source=${{ inputs.source }}" >> "$GITHUB_OUTPUT"
             if [ "${{ inputs.target }}" = "remote" ]; then
               echo "flag=--remote" >> "$GITHUB_OUTPUT"
@@ -61,8 +64,17 @@ jobs:
               echo "flag=--local" >> "$GITHUB_OUTPUT"
             fi
           fi
-      - name: Ingest
+      - name: Ingest (manual)
+        if: steps.pick.outputs.mode == 'manual'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/ingest/run.mjs --source=${{ steps.pick.outputs.source }} ${{ steps.pick.outputs.flag }}
+      - name: Ingest schedule (LU + fuel history)
+        if: steps.pick.outputs.mode == 'schedule'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node scripts/ingest/run.mjs --source=luxembourg-radars --remote
+          node scripts/ingest/run.mjs --source=fuel-history --remote

@@ -34,6 +34,7 @@ const SOURCES = {
   "merged-irve": () => import("./sources/merged-irve.mjs"),
   "belgium-nap": () => import("./sources/belgium-nap.mjs"),
   dotnl: () => import("./sources/dotnl.mjs"),
+  "fuel-history": () => import("./sources/fuel-history.mjs"),
 };
 
 function parseArgs(argv) {
@@ -60,12 +61,16 @@ async function runOne(sourceId, local) {
   const mod = await loader();
   console.log(JSON.stringify({ event: "ingest_start", source: sourceId, local }));
   const result = await mod.ingest();
+  const rowCount =
+    result.table === "fuel"
+      ? (result.national?.length ?? 0) + (result.market?.length ?? 0)
+      : result.rows?.length ?? 0;
   console.log(
     JSON.stringify({
       event: "ingest_parsed",
       source: sourceId,
       table: result.table,
-      rows: result.rows.length,
+      rows: rowCount,
     }),
   );
 
@@ -80,7 +85,15 @@ async function runOne(sourceId, local) {
     }
   }
 
-  if (result.table === "pois") {
+  if (result.table === "fuel") {
+    const { writeFuelTables } = await import("./sources/fuel-history.mjs");
+    const written = writeFuelTables({
+      national: result.national,
+      market: result.market,
+      local,
+    });
+    console.log(JSON.stringify({ event: "ingest_done", source: sourceId, ...written }));
+  } else if (result.table === "pois") {
     const sqlRows = result.rows.map((r) => poiSqlCells(r));
     // Merged JSON is fat; DOT-NL station rows are lean but numerous.
     const batchSize = sourceId.startsWith("merged")
