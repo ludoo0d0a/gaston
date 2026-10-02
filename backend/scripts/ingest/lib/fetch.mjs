@@ -1,12 +1,17 @@
-const DEFAULT_UA = "gaston-backend-ingest/0.1 (+https://github.com/geoking)";
+const DEFAULT_UA =
+  "Mozilla/5.0 (compatible; gaston-backend-ingest/0.1; +https://github.com/geoking)";
 
-export async function fetchText(url, { label = url, timeoutMs = 120_000 } = {}) {
+export async function fetchText(url, { label = url, timeoutMs = 120_000, headers = {} } = {}) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       signal: ctrl.signal,
-      headers: { "user-agent": DEFAULT_UA, accept: "*/*" },
+      headers: {
+        "user-agent": DEFAULT_UA,
+        accept: "*/*",
+        ...headers,
+      },
       redirect: "follow",
     });
     const body = await res.text();

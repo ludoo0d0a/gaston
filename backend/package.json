@@ -18,7 +18,9 @@
     "ingest:gireve": "node scripts/ingest/run.mjs --source=gireve --local",
     "ingest:mimit": "node scripts/ingest/run.mjs --source=mimit --local",
     "ingest:merged-irve": "node scripts/ingest/run.mjs --source=merged-irve --local",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "ingest:belgium-nap": "node scripts/ingest/run.mjs --source=belgium-nap --local",
+    "ingest:dotnl": "node scripts/ingest/run.mjs --source=dotnl --local"
   },
   "devDependencies": {
     "@types/node": "^22.18.6",

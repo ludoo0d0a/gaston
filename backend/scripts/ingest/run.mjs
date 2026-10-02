@@ -32,6 +32,8 @@ const SOURCES = {
   minetur: () => import("./sources/minetur.mjs"),
   mimit: () => import("./sources/mimit.mjs"),
   "merged-irve": () => import("./sources/merged-irve.mjs"),
+  "belgium-nap": () => import("./sources/belgium-nap.mjs"),
+  dotnl: () => import("./sources/dotnl.mjs"),
 };
 
 function parseArgs(argv) {
@@ -80,8 +82,12 @@ async function runOne(sourceId, local) {
 
   if (result.table === "pois") {
     const sqlRows = result.rows.map((r) => poiSqlCells(r));
-    // Merged rows can carry larger JSON — keep batches small to avoid SQLITE_TOOBIG.
-    const batchSize = sourceId.startsWith("merged") ? 15 : 40;
+    // Merged JSON is fat; DOT-NL station rows are lean but numerous.
+    const batchSize = sourceId.startsWith("merged")
+      ? 15
+      : sourceId === "dotnl"
+        ? 120
+        : 40;
     const written = replaceSourceRows({
       table: "pois",
       source: result.source,

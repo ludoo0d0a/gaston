@@ -10,8 +10,12 @@ Plan: [`docs/plans/cloudflare-backend-geo-api.md`](../docs/plans/cloudflare-back
 |-------|------|
 | Workers Free | `GET /health`, `GET /v1/pois`, `GET /v1/zones` |
 | D1 Free | Indexed `pois` + `zones` |
-| R2 | Raw dump archives (optional upload on `--remote`) |
+| R2 | Raw dump archives (`gaston-dumps`) |
 | GitHub Actions | CSV/JSON ingest (not Cron Triggers) |
+
+**Account ID:** `04efa4000e37d6c1df300af5da041485`  
+**D1:** `gaston-pois` (`c7cab17b-418e-4f3a-af93-20940801a192`)  
+**R2:** `gaston-dumps`
 
 ## Prerequisites
 
@@ -60,6 +64,8 @@ npm run ingest:gireve
 npm run ingest -- --source=qualicharge --local
 npm run ingest -- --source=minetur --local
 npm run ingest -- --source=mimit --local
+npm run ingest:belgium-nap
+npm run ingest:dotnl             # ~75k stations — 1/day on Free
 ```
 
 Raw files land in `backend/.cache/dumps/` (gitignored). Prefer **one source per day** on Free.
@@ -73,6 +79,8 @@ Raw files land in `backend/.cache/dumps/` (gitignored). Prefer **one source per 
 | `minetur` | pois | ES fuel national JSON |
 | `mimit` | pois | IT stations+prices pipe CSV |
 | `merged-irve` | pois | Gireve∪QualiCharge with PoiMerger-like rules (≤50 m / ≤300 m name) |
+| `belgium-nap` | pois | BE IRVE OCPI JSON (per EVSE) |
+| `dotnl` | pois | NL IRVE — **1 row/station** (Free write budget) |
 
 Radar zones apply `RadarPoiMerger` primary-wins ≤40 m when secondary sources exist.
 

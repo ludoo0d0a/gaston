@@ -13,6 +13,8 @@ on:
         options:
           - luxembourg-radars
           - france-radars
+          - belgium-nap
+          - dotnl
           - gireve
           - qualicharge
           - minetur
