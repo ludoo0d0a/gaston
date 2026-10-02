@@ -80,6 +80,7 @@ jobs:
           GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
           WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
           OPENCHARGEMAP_KEY: ${{ secrets.OPENCHARGEMAP_KEY }}
+          LUFOP_API_KEY: ${{ secrets.LUFOP_API_KEY }}
           MOBILITEIT_LUXEMBOURG_KEY: ${{ secrets.MOBILITEIT_LUXEMBOURG_KEY }}
           TOMTOM_KEY: ${{ secrets.TOMTOM_KEY }}
           CHARGY_API_KEY: ${{ secrets.CHARGY_API_KEY }}
