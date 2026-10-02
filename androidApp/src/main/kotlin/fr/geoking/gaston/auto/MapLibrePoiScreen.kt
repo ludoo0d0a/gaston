@@ -120,6 +120,7 @@ open class MapLibrePoiScreen(
     private var headingUpdateJob: Job? = null
     private var orientationMode: MapOrientationMode = MapOrientationMode.HeadingUp
     private var lastKnownBearingDegrees: Float = 0f
+    private var lastCompassSector: Int = 0
     private var lastMapOrientationUpdateMillis: Long = 0
     private val historyPoints = mutableListOf<Pair<Double, Double>>()
 
@@ -721,6 +722,18 @@ open class MapLibrePoiScreen(
         lastMapOrientationUpdateMillis = System.currentTimeMillis()
     }
 
+    private fun mapCompassBearing(): Float =
+        AutoMapHeading.effectiveBearing(orientationMode, lastKnownBearingDegrees)
+
+    /** Rebuild ActionStrip when the 22.5° compass icon sector changes. */
+    private fun invalidateIfCompassSectorChanged() {
+        val sector = compassArrowSector(mapCompassBearing())
+        if (sector != lastCompassSector) {
+            lastCompassSector = sector
+            invalidate()
+        }
+    }
+
     protected open fun createMapRenderer(): AaMapSurfaceRenderer =
         canvasMapModeConfig.createRenderer(carContext, lifecycle, canvasMapModeConfig).also { renderer ->
             renderer.hudModeLabel = canvasMapModeConfig.hudLabel
@@ -817,6 +830,7 @@ open class MapLibrePoiScreen(
             } else if (orientationMode == MapOrientationMode.HeadingUp) {
                 applyMapOrientationToRenderer()
             }
+            invalidateIfCompassSectorChanged()
         }
     }
 
@@ -970,7 +984,7 @@ open class MapLibrePoiScreen(
 
         actionStripBuilder.addAction(
             Action.Builder()
-                .setIcon(carContext.actionCompassIcon())
+                .setIcon(carContext.actionCompassIcon(mapCompassBearing()))
                 .setOnClickListener { toggleMapOrientation() }
                 .build()
         )

@@ -47,6 +47,7 @@ import fr.geoking.gaston.auto.actionSettingsIcon
 import fr.geoking.gaston.auto.actionZoomInIcon
 import fr.geoking.gaston.auto.actionZoomOutIcon
 import fr.geoking.gaston.auto.cheapestFilterAction
+import fr.geoking.gaston.auto.compassArrowSector
 import fr.geoking.gaston.auto.maplibre.resolveAutoRasterTileUrl
 import fr.geoking.gaston.auto.safeCarTemplate
 import fr.geoking.gaston.auto.shouldAddTrailPoint
@@ -125,6 +126,7 @@ class MapsforgePoiScreen(
     private var headingUpdateJob: Job? = null
     private var orientationMode: MapOrientationMode = MapOrientationMode.HeadingUp
     private var lastKnownBearingDegrees: Float = 0f
+    private var lastCompassSector: Int = 0
     private var lastMapOrientationUpdateMillis: Long = 0
     private val historyPoints = mutableListOf<Pair<Double, Double>>()
 
@@ -612,6 +614,18 @@ class MapsforgePoiScreen(
         lastMapOrientationUpdateMillis = System.currentTimeMillis()
     }
 
+    private fun mapCompassBearing(): Float =
+        AutoMapHeading.effectiveBearing(orientationMode, lastKnownBearingDegrees)
+
+    /** Rebuild ActionStrip when the 22.5° compass icon sector changes. */
+    private fun invalidateIfCompassSectorChanged() {
+        val sector = compassArrowSector(mapCompassBearing())
+        if (sector != lastCompassSector) {
+            lastCompassSector = sector
+            invalidate()
+        }
+    }
+
     private fun toggleMapOrientation() {
         orientationMode = when (orientationMode) {
             MapOrientationMode.NorthUp -> MapOrientationMode.HeadingUp
@@ -703,6 +717,7 @@ class MapsforgePoiScreen(
             } else if (orientationMode == MapOrientationMode.HeadingUp) {
                 applyMapOrientationToRenderer()
             }
+            invalidateIfCompassSectorChanged()
         }
     }
 
@@ -866,7 +881,7 @@ class MapsforgePoiScreen(
 
         actionStripBuilder.addAction(
             Action.Builder()
-                .setIcon(carContext.actionCompassIcon())
+                .setIcon(carContext.actionCompassIcon(mapCompassBearing()))
                 .setOnClickListener { toggleMapOrientation() }
                 .build()
         )

@@ -115,7 +115,37 @@ fun CarContext.actionZoomInIcon(): CarIcon = carIcon(R.drawable.ic_add, AutoCarI
 
 fun CarContext.actionZoomOutIcon(): CarIcon = carIcon(R.drawable.ic_remove, AutoCarIcons.primary)
 
-fun CarContext.actionCompassIcon(): CarIcon = carIconUntinted(R.drawable.ic_compass)
+/**
+ * Map ActionStrip compass: picks one of 16 pre-rotated untinted needles
+ * (filled North / empty South) nearest to [bearingDegrees].
+ */
+fun compassArrowSector(bearingDegrees: Float): Int {
+    val normalized = AutoMapHeading.normalizeDegrees(bearingDegrees)
+    return ((normalized / 22.5f) + 0.5f).toInt() % 16
+}
+
+@DrawableRes
+fun compassArrowDrawableRes(bearingDegrees: Float): Int = when (compassArrowSector(bearingDegrees)) {
+    0 -> R.drawable.ic_compass_arrow_00
+    1 -> R.drawable.ic_compass_arrow_01
+    2 -> R.drawable.ic_compass_arrow_02
+    3 -> R.drawable.ic_compass_arrow_03
+    4 -> R.drawable.ic_compass_arrow_04
+    5 -> R.drawable.ic_compass_arrow_05
+    6 -> R.drawable.ic_compass_arrow_06
+    7 -> R.drawable.ic_compass_arrow_07
+    8 -> R.drawable.ic_compass_arrow_08
+    9 -> R.drawable.ic_compass_arrow_09
+    10 -> R.drawable.ic_compass_arrow_10
+    11 -> R.drawable.ic_compass_arrow_11
+    12 -> R.drawable.ic_compass_arrow_12
+    13 -> R.drawable.ic_compass_arrow_13
+    14 -> R.drawable.ic_compass_arrow_14
+    else -> R.drawable.ic_compass_arrow_15
+}
+
+fun CarContext.actionCompassIcon(bearingDegrees: Float = 0f): CarIcon =
+    carIconUntinted(compassArrowDrawableRes(bearingDegrees))
 
 fun CarContext.actionNavigateToIcon(): CarIcon = carIcon(R.drawable.ic_navigate_to, AutoCarIcons.primary)
 

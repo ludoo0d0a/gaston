@@ -115,7 +115,7 @@ fun MapCompassButton(
     ) {
         MapCompassWidget(
             bearing = bearing,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(36.dp)
         )
     }
 }
@@ -159,11 +159,11 @@ fun MapCompassWidget(
     bearing: Float,
     modifier: Modifier = Modifier
 ) {
-    Canvas(modifier = modifier.size(40.dp)) {
+    Canvas(modifier = modifier) {
         val cx = size.width / 2
         val cy = size.height / 2
-        val needleLength = size.minDimension * 0.42f
-        val needleWidth = size.minDimension * 0.28f
+        val needleLength = size.minDimension * 0.49f
+        val needleWidth = size.minDimension * 0.32f
 
         rotate(-bearing, pivot = Offset(cx, cy)) {
             val redPath = Path().apply {

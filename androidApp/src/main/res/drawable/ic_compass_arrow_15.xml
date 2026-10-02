@@ -7,7 +7,7 @@
     <group
         android:pivotX="12"
         android:pivotY="12"
-        android:rotation="0">
+        android:rotation="-337.5">
         <!-- North: solid fill -->
         <path
             android:fillColor="#FFFFFFFF"
