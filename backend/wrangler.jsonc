@@ -15,8 +15,7 @@
     {
       "binding": "DB",
       "database_name": "gaston-pois",
-      // Replace after: npx wrangler d1 create gaston-pois
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "c7cab17b-418e-4f3a-af93-20940801a192",
       "migrations_dir": "migrations"
     }
   ],
