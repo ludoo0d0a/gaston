@@ -20,7 +20,7 @@
       "hero.title":
         "Ne restez plus à sec. Trouvez le meilleur <span class='highlight-fuel'>carburant</span> et la bonne <span class='highlight-ev'>recharge</span>.",
       "hero.lead":
-        "Gaston est votre copilote routier : prix en temps réel, bornes IRVE, itinéraires intelligents — sur votre téléphone et au volant.",
+        "Gaston est votre copilote routier : prix en temps réel, bornes IRVE, carnet d’entretien, aide au constat — sur votre téléphone et au volant.",
       "hero.cta.primary": "Google Play",
       "hero.cta.secondary": "Découvrir",
       "stat.brands": "marques",
@@ -29,7 +29,7 @@
       "features.label": "Fonctionnalités",
       "features.title": "Tout pour la route, rien de superflu",
       "features.desc":
-        "Données ouvertes et publiques, filtres puissants, interface pensée pour conduire en toute sécurité.",
+        "Stations, entretien du véhicule et assistance accident — données ouvertes, filtres puissants, interface pensée pour la route.",
       "f1.title": "Prix carburant en direct",
       "f1.desc":
         "SP95, E10, SP98, diesel, GPL… Comparez Shell, TotalEnergies, Leclerc, Intermarché et des dizaines d’enseignes.",
@@ -48,6 +48,12 @@
       "f6.title": "Filtres qui persistent",
       "f6.desc":
         "Énergie, marque, connecteur, puissance, services. Réglez une fois, roulez toujours.",
+      "f7.title": "Carnet d’entretien",
+      "f7.desc":
+        "Pleins, recharges, entretiens et kilométrage par véhicule. Rappels d’échéance et export CSV.",
+      "f8.title": "Assistance accident",
+      "f8.desc":
+        "Profil prérempli, échange de numéros, checklist calme et aide au constat amiable européen.",
       "showcase.label": "Aperçu",
       "showcase.title": "Conçu pour être lu en un regard",
       "showcase.desc": "Carte, détails station, filtres et mode voiture.",
@@ -67,7 +73,7 @@
       "cta.desc":
         "Téléchargez Gaston gratuitement sur Google Play. Votre prochain plein ou recharge n’est qu’à quelques taps.",
       "cta.btn": "Installer sur Google Play",
-      "footer.tagline": "Stations carburant & recharge — Android & Android Auto.",
+      "footer.tagline": "Stations, entretien & assistance — Android & Android Auto.",
       "footer.privacy": "Confidentialité",
       "footer.terms": "Conditions",
       "footer.by": "par",
@@ -81,7 +87,7 @@
       "hero.title":
         "Never run dry. Find the best <span class='highlight-fuel'>fuel</span> and the right <span class='highlight-ev'>charge</span>.",
       "hero.lead":
-        "Gaston is your road-trip co-pilot: live prices, public charging, smart routes — on your phone and behind the wheel.",
+        "Gaston is your road-trip co-pilot: live prices, public charging, service log, accident help — on your phone and behind the wheel.",
       "hero.cta.primary": "Google Play",
       "hero.cta.secondary": "Explore",
       "stat.brands": "brands",
@@ -90,7 +96,7 @@
       "features.label": "Features",
       "features.title": "Everything for the road, nothing extra",
       "features.desc":
-        "Open public data, powerful filters, and an interface built for safe driving.",
+        "Stations, vehicle service log and accident assistance — open data, powerful filters, built for the road.",
       "f1.title": "Live fuel prices",
       "f1.desc":
         "SP95, E10, SP98, diesel, LPG… Compare Shell, TotalEnergies, Leclerc, Intermarché and dozens more.",
@@ -109,6 +115,12 @@
       "f6.title": "Filters that stick",
       "f6.desc":
         "Energy, brand, connector, power, services. Set once, drive always.",
+      "f7.title": "Service log",
+      "f7.desc":
+        "Fills, charges, services and mileage per vehicle. Due reminders and CSV export.",
+      "f8.title": "Accident assistance",
+      "f8.desc":
+        "Prefill profile, phone exchange, calm checklist and help filling the European accident statement.",
       "showcase.label": "Preview",
       "showcase.title": "Designed to read in a glance",
       "showcase.desc": "Map, station details, filters, and in-car mode.",
@@ -128,7 +140,7 @@
       "cta.desc":
         "Download Gaston free on Google Play. Your next fill-up or charge is just a few taps away.",
       "cta.btn": "Get it on Google Play",
-      "footer.tagline": "Fuel & EV stations — Android & Android Auto.",
+      "footer.tagline": "Stations, service log & assistance — Android & Android Auto.",
       "footer.privacy": "Privacy",
       "footer.terms": "Terms",
       "footer.by": "by",
