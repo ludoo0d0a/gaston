@@ -1,18 +1,24 @@
 package fr.geoking.gaston.ui.map
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.shared.logging.DebugLogPayloadCache
 import fr.geoking.gaston.shared.logging.DebugLogStore
 import fr.geoking.gaston.shared.logging.ProviderTraceStore
 import fr.geoking.tools.debugbar.DebugLogOverlay
+import fr.geoking.tools.debugbar.model.CacheStats
 import fr.geoking.tools.debugbar.model.HostDataConsumption
 import fr.geoking.tools.debugbar.model.NetworkLog
 import fr.geoking.tools.debugbar.model.ProviderTraceEntry
@@ -32,6 +38,7 @@ fun GastonDebugLogOverlay(
     modifier: Modifier = Modifier,
     detectedCountries: String? = null,
     onRefresh: (() -> Unit)? = null,
+    customInfo: List<String>? = null,
 ) {
     val settingsManager = koinInject<SettingsManager>()
     val settings by settingsManager.settings.collectAsState()
@@ -43,10 +50,25 @@ fun GastonDebugLogOverlay(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    var cacheStatsTick by remember { mutableIntStateOf(0) }
+    var cacheStats by remember { mutableStateOf(CacheStats()) }
+    LaunchedEffect(cacheStatsTick) {
+        cacheStats = CacheManager.collectStats(context)
+    }
+
     val mappedLogs = remember(logs) { logs.map { it.toDebugBarLog() } }
     val mappedTraces = remember(providerTraces) { providerTraces.map { it.toDebugBarTrace() } }
     val mappedConsumption = remember(hostConsumptionMap) {
         hostConsumptionMap.mapValues { (_, v) -> v.toDebugBarHost() }
+    }
+    val infoLines = customInfo ?: remember(settings) {
+        listOf(
+            "app=gaston ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            "flavor=${BuildConfig.FLAVOR} buildType=${BuildConfig.BUILD_TYPE}",
+            "disableCache=${settings.disableCache}",
+            "debugLogging=${settings.debugLoggingEnabled}",
+            "providers=${settings.selectedPoiProviders.sortedBy { it.name }.joinToString()}",
+        )
     }
 
     DebugLogOverlay(
@@ -60,13 +82,17 @@ fun GastonDebugLogOverlay(
         onClearCaches = {
             scope.launch {
                 CacheManager.clearAllCaches(context)
+                cacheStatsTick++
                 onRefresh?.invoke()
             }
         },
         onClearLogs = { DebugLogStore.clearAll() },
         onResetDataConsumption = { DebugLogStore.resetDataConsumption() },
+        cacheStats = cacheStats,
+        onRefreshCacheStats = { cacheStatsTick++ },
         modifier = modifier,
         detectedCountries = detectedCountries,
+        customInfo = infoLines,
     )
 }
 

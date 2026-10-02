@@ -874,9 +874,9 @@ fun MainUI(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(top = 80.dp, end = 16.dp)
+                            .padding(end = 8.dp)
                             .zIndex(10f),
-                        contentAlignment = Alignment.TopEnd
+                        contentAlignment = Alignment.CenterEnd
                     ) {
                         GastonDebugLogOverlay()
                     }
