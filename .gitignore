@@ -52,3 +52,9 @@ scripts/.adb-wireless
 playstore/whatsnew/
 /secrets/*.json
 .wrangler/
+
+## Backend (Cloudflare Workers — Node, not Gradle)
+backend/node_modules/
+backend/.dev.vars
+backend/.wrangler/
+backend/worker-configuration.d.ts

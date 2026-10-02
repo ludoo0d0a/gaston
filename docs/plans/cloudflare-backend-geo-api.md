@@ -2,7 +2,7 @@
 
 > Plan sauvegardé (2026-10-01, complété catalogue + perf ; bootstrap no-app/$0 2026-10-02).  
 > Cursor : `~/.cursor/plans/cf_backend_geo_api_67d8cead.plan.md`  
-> Statut : **non implémenté** — prêt à bootstrap backend seul.
+> Statut : **Phase 0 scaffoldée** dans [`backend/`](../../backend/) — API + D1 local ; ingest réel = Phase 1.
 
 ## Overview
 
@@ -48,7 +48,7 @@ Ne pas ajouter `backend` aux `settings.gradle.kts` Android — c’est un projet
 
 ## Todos
 
-- [ ] **Bootstrap `backend/`** : scaffold Worker Free + D1 + R2 (hors Gradle Android)
+- [x] **Bootstrap `backend/`** : scaffold Worker Free + D1 + R2 (hors Gradle Android)
 - [ ] Pipeline GHA générique (plugin par source File/dump)
 - [ ] V1 : Gireve + QualiCharge + radars FR/LU → D1 + GeoJSON API
 - [ ] V1.1 : Minetur, MIMIT, DOT-NL gz, NOBIL, Belgium NAP, EIPA…

@@ -1,0 +1,2 @@
+# Local secrets for `wrangler dev` (never commit the real `.dev.vars`).
+APP_API_KEY=dev-local-secret-change-me

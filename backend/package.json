@@ -1,0 +1,22 @@
+{
+  "name": "gaston-backend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Gaston geo API — Cloudflare Workers Free + D1 + R2 (ingest via GitHub Actions)",
+  "type": "module",
+  "scripts": {
+    "postinstall": "wrangler types",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "types": "wrangler types",
+    "db:local": "wrangler d1 migrations apply gaston-pois --local",
+    "db:remote": "wrangler d1 migrations apply gaston-pois --remote",
+    "ingest:stub": "node scripts/ingest/stub.mjs",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.6",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.40.0"
+  }
+}

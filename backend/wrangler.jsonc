@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "gaston-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  },
+  // Free plan: no cron triggers (10 ms CPU — ingest runs in GitHub Actions).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gaston-pois",
+      // Replace after: npx wrangler d1 create gaston-pois
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "DUMPS",
+      // Create with: npx wrangler r2 bucket create gaston-dumps
+      "bucket_name": "gaston-dumps"
+    }
+  ]
+}
