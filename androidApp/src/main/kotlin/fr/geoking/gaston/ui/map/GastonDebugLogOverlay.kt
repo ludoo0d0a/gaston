@@ -14,6 +14,8 @@ import androidx.compose.ui.platform.LocalContext
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.countryCodesAtMapPosition
+import fr.geoking.gaston.countryDisplayLabelAtMapPosition
 import fr.geoking.gaston.shared.logging.DebugLogPayloadCache
 import fr.geoking.gaston.shared.logging.DebugLogStore
 import fr.geoking.gaston.shared.logging.ProviderTraceStore
@@ -61,14 +63,43 @@ fun GastonDebugLogOverlay(
     val mappedConsumption = remember(hostConsumptionMap) {
         hostConsumptionMap.mapValues { (_, v) -> v.toDebugBarHost() }
     }
-    val infoLines = customInfo ?: remember(settings) {
-        listOf(
-            "app=gaston ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-            "flavor=${BuildConfig.FLAVOR} buildType=${BuildConfig.BUILD_TYPE}",
-            "disableCache=${settings.disableCache}",
-            "debugLogging=${settings.debugLoggingEnabled}",
-            "providers=${settings.selectedPoiProviders.sortedBy { it.name }.joinToString()}",
-        )
+    val positionCountries = remember(settings.lastKnownLat, settings.lastKnownLon) {
+        val lat = settings.lastKnownLat
+        val lon = settings.lastKnownLon
+        if (lat == null || lon == null) {
+            emptyList()
+        } else {
+            countryCodesAtMapPosition(lat, lon)
+        }
+    }
+    val countriesLabel = remember(settings.lastKnownLat, settings.lastKnownLon, positionCountries) {
+        val lat = settings.lastKnownLat
+        val lon = settings.lastKnownLon
+        when {
+            lat == null || lon == null -> null
+            positionCountries.isEmpty() -> "Unknown region"
+            else -> countryDisplayLabelAtMapPosition(lat, lon)
+        }
+    }
+    val infoLines = customInfo ?: remember(settings, positionCountries, countriesLabel) {
+        buildList {
+            add("app=gaston ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+            add("flavor=${BuildConfig.FLAVOR} buildType=${BuildConfig.BUILD_TYPE}")
+            val lat = settings.lastKnownLat
+            val lon = settings.lastKnownLon
+            if (lat != null && lon != null) {
+                add("position=$lat,$lon")
+            } else {
+                add("position=(none)")
+            }
+            add("countries=${countriesLabel ?: "(none)"}")
+            if (positionCountries.isNotEmpty()) {
+                add("countryCodes=${positionCountries.joinToString()}")
+            }
+            add("disableCache=${settings.disableCache}")
+            add("debugLogging=${settings.debugLoggingEnabled}")
+            add("providers=${settings.selectedPoiProviders.sortedBy { it.name }.joinToString()}")
+        }
     }
 
     DebugLogOverlay(
@@ -91,7 +122,7 @@ fun GastonDebugLogOverlay(
         cacheStats = cacheStats,
         onRefreshCacheStats = { cacheStatsTick++ },
         modifier = modifier,
-        detectedCountries = detectedCountries,
+        detectedCountries = detectedCountries ?: countriesLabel,
         customInfo = infoLines,
     )
 }
