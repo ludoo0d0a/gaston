@@ -7,7 +7,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 
+@RunWith(RobolectricTestRunner::class)
 class BulkFileAndOtherModeSettingsTest {
 
     @Test
@@ -21,6 +25,20 @@ class BulkFileAndOtherModeSettingsTest {
             selectedOverpassAmenityTypes = setOf("speed_camera"),
         )
         assertTrue(settings.isOtherModeActive())
+    }
+
+    @Test
+    fun setOverpassAmenityTypes_speedCameraEnablesLufopProviders() {
+        val manager = SettingsManager(RuntimeEnvironment.getApplication(), firestoreSync = null)
+        // Force Other mode with parking only (phone default).
+        manager.setOtherMode("parking")
+        assertEquals(setOf(PoiProviderType.Overpass), manager.settings.value.selectedPoiProviders)
+
+        manager.setOverpassAmenityTypes(setOf("speed_camera"))
+        val after = manager.settings.value
+        assertTrue(PoiProviderType.LufopOpenSpeedCam in after.selectedPoiProviders)
+        assertTrue(PoiProviderType.Overpass in after.selectedPoiProviders)
+        assertEquals(setOf("speed_camera"), after.selectedOverpassAmenityTypes)
     }
 
     @Test

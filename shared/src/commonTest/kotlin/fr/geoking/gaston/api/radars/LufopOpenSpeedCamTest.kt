@@ -20,7 +20,8 @@ class LufopOpenSpeedCamTest {
 [
   {"ID":"203301","name":"Zone de danger FR Chantier","lat":46.753419,"lng":6.379827,"type":"154","commune":"Jougne","voie":"Route de Vallorbe","flash":"Double sens","emplacement":"à droite de la voie","azimut":"45","update":"2017-11-25 22:22:36"},
   {"ID":"173140","name":"Zone de danger FR 130","lat":49.090582,"lng":5.235781,"type":"105","commune":"Les Souhesmes Rampont","voie":"A4","flash":"Double sens","emplacement":"à droite de la voie","azimut":"115","update":"2017-11-25 19:36:50"},
-  {"id":"osc_1","type":"FIXE","speed":80,"latitude":48.8566,"longitude":2.3522}
+  {"id":"osc_1","type":"FIXE","speed":80,"latitude":48.8566,"longitude":2.3522},
+  {"ID":"235323","name":"Radar Fixe FR 50","lat":48.9011723,"lng":2.3497122,"type":"15","commune":"Paris","voie":"Quai","flash":"F","azimut":"270","vitesse":"50"}
 ]
 """.trimIndent()
 
@@ -31,7 +32,7 @@ class LufopOpenSpeedCamTest {
         val client = LufopOpenSpeedCamClient(httpClient, apiKey = "test")
 
         val records = client.parseContent(sampleJson)
-        assertEquals(3, records.size)
+        assertEquals(4, records.size)
 
         val first = records[0]
         assertEquals("203301", first.id)
@@ -40,6 +41,8 @@ class LufopOpenSpeedCamTest {
         assertEquals(46.753419, first.latitude, 0.0001)
         assertEquals(6.379827, first.longitude, 0.0001)
         assertEquals("Jougne", first.commune)
+        assertEquals(45.0, first.azimut)
+        assertEquals("Double sens", first.flash)
 
         val second = records[1]
         assertEquals("173140", second.id)
@@ -50,6 +53,12 @@ class LufopOpenSpeedCamTest {
         assertEquals("osc_1", third.id)
         assertEquals(80, third.vma)
         assertEquals(48.8566, third.latitude, 0.0001)
+
+        val liveApiShape = records[3]
+        assertEquals("235323", liveApiShape.id)
+        assertEquals(50, liveApiShape.vma)
+        assertEquals(270.0, liveApiShape.azimut)
+        assertEquals("F", liveApiShape.flash)
     }
 
     @Test
@@ -72,6 +81,8 @@ class LufopOpenSpeedCamTest {
             name = "Zone de danger FR 130",
             commune = "Les Souhesmes Rampont",
             voie = "A4",
+            azimut = 115.0,
+            flash = "F",
         )
         val poi = record.toPoi()
 
@@ -84,6 +95,23 @@ class LufopOpenSpeedCamTest {
         assertFalse(poi.isElectric)
         assertEquals("LufopOpenSpeedCam", poi.source)
         assertEquals("130", poi.rawSourceData?.get("vma"))
+        assertEquals("115.0", poi.rawSourceData?.get("monitored_bearing"))
+    }
+
+    @Test
+    fun toPoi_doubleSensIsBidirectional() {
+        val poi = LufopOpenSpeedCamRecord(
+            id = "1",
+            type = "154",
+            vma = null,
+            latitude = 46.0,
+            longitude = 6.0,
+            flash = "Double sens",
+            azimut = 45.0,
+        ).toPoi()
+        assertEquals("true", poi.rawSourceData?.get("bidirectional"))
+        assertEquals("both", poi.rawSourceData?.get("direction"))
+        assertEquals(null, poi.rawSourceData?.get("monitored_bearing"))
     }
 
     @Test

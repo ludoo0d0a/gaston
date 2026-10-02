@@ -744,10 +744,26 @@ open class SettingsManager(
 
     open fun setOverpassAmenityTypes(types: Set<String>) {
         val current = _settings.value
+        // Keep radar API sources in sync when toggling speed_camera in Other mode
+        // (phone chips only call this; Auto uses setOtherMode(amenityId)).
+        val providers = if (current.isOtherModeActive()) {
+            if ("speed_camera" in types) {
+                setOf(
+                    PoiProviderType.LufopOpenSpeedCam,
+                    PoiProviderType.LuxembourgRadars,
+                    PoiProviderType.Overpass,
+                )
+            } else {
+                setOf(PoiProviderType.Overpass)
+            }
+        } else {
+            current.selectedPoiProviders
+        }
         saveSettings(
             current.copy(
                 selectedOverpassAmenityTypes = types,
                 cacheWarmAmenityTypes = current.cacheWarmAmenityTypes + types,
+                selectedPoiProviders = providers,
             )
         )
     }

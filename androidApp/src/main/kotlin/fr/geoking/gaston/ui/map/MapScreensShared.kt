@@ -64,7 +64,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
@@ -162,6 +165,31 @@ fun rememberMapDataState(
     // Tiny height changes (loader, insets) used to cancel+restart search in a loop.
     val latestMapWidthPx by rememberUpdatedState(mapWidthPx)
     val latestMapHeightPx by rememberUpdatedState(mapHeightPx)
+
+    // Phone map used to only re-search on camera moves — switching Other/speed_camera
+    // (Lufop) never triggered api.lufop.net until the user panned. Mirror Auto screens.
+    LaunchedEffect(settingsManager) {
+        settingsManager.settings
+            .map { s ->
+                listOf(
+                    s.poiProviderSelectionMode.name,
+                    s.selectedPoiProviders.sortedBy { it.name }.joinToString(","),
+                    s.selectedOverpassAmenityTypes.sorted().joinToString(","),
+                    s.mapEnergyMode.name,
+                    s.useVehicleFilter.toString(),
+                    s.disableCache.toString(),
+                    s.bulkFileDownloadPolicy.name,
+                ).joinToString("|")
+            }
+            .distinctUntilChanged()
+            .drop(1)
+            .collect {
+                val sample = lastCameraSample ?: return@collect
+                isErrorPaused = false
+                mapErrorMessage = null
+                refreshRequestFlow.emit(sample)
+            }
+    }
 
     LaunchedEffect(retryCount, isLocationPermissionGranted, cameraFlow) {
         if (!isLocationPermissionGranted) {

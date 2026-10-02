@@ -169,9 +169,15 @@ class LufopOpenSpeedCamClient(
                     ?: "lufop_$idx"
                 val commune = obj["commune"]?.jsonPrimitive?.content
                 val voie = obj["voie"]?.jsonPrimitive?.content
+                val flash = obj["flash"]?.jsonPrimitive?.content
+                val azimut = obj["azimut"]?.jsonPrimitive?.doubleOrNull
+                    ?: obj["azimut"]?.jsonPrimitive?.content?.toDoubleOrNull()
+                // Live API uses string "vitesse"; older samples use int vma/speed.
                 val speed = obj["vma"]?.jsonPrimitive?.intOrNull
                     ?: obj["speed"]?.jsonPrimitive?.intOrNull
                     ?: obj["speed_limit"]?.jsonPrimitive?.intOrNull
+                    ?: obj["vitesse"]?.jsonPrimitive?.intOrNull
+                    ?: obj["vitesse"]?.jsonPrimitive?.content?.toIntOrNull()
                     ?: name?.let { extractVmaFromName(it) }
 
                 records.add(
@@ -184,6 +190,8 @@ class LufopOpenSpeedCamClient(
                         name = name,
                         commune = commune,
                         voie = voie,
+                        azimut = azimut,
+                        flash = flash,
                     )
                 )
             }
@@ -209,6 +217,10 @@ data class LufopOpenSpeedCamRecord(
     val name: String? = null,
     val commune: String? = null,
     val voie: String? = null,
+    /** Bearing degrees from Lufop `azimut` when present. */
+    val azimut: Double? = null,
+    /** Lufop `flash` (e.g. F/B/"Double sens"). */
+    val flash: String? = null,
 ) {
     fun toPoi(): Poi {
         val speedLabel = if (vma != null && vma > 0) "$vma km/h" else null
@@ -222,6 +234,20 @@ data class LufopOpenSpeedCamRecord(
             .filter { it.isNotEmpty() }
             .joinToString(", ")
             .ifBlank { "Lufop" }
+        val bidirectional = flash?.contains("double", ignoreCase = true) == true
+        val raw = buildMap {
+            put("vma", vma?.toString() ?: "NA")
+            put("type", type)
+            put("id", id)
+            put("aac_zone", "true")
+            flash?.takeIf { it.isNotBlank() }?.let { put("flash", it) }
+            if (bidirectional) {
+                put("bidirectional", "true")
+                put("direction", "both")
+            } else {
+                azimut?.let { put("monitored_bearing", it.toString()) }
+            }
+        }
         return Poi(
             id = "osc_radar_$id",
             name = title,
@@ -232,12 +258,7 @@ data class LufopOpenSpeedCamRecord(
             isElectric = false,
             poiCategory = PoiCategory.Radar,
             source = "LufopOpenSpeedCam",
-            rawSourceData = mapOf(
-                "vma" to (vma?.toString() ?: "NA"),
-                "type" to type,
-                "id" to id,
-                "aac_zone" to "true"
-            )
+            rawSourceData = raw
         )
     }
 }

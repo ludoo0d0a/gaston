@@ -164,6 +164,16 @@ fun PhoneDashboardMainContent(
                     iconResId = R.drawable.ic_signal_cellular,
                     onClick = onOpenNetworkDiagnostics,
                     testTag = "dashboard_network_btn"
+                ),
+                DashboardRow(
+                    title = stringResource(R.string.dashboard_radars),
+                    subtitle = stringResource(R.string.dashboard_radars_subtitle),
+                    iconResId = R.drawable.ic_poi_radar,
+                    onClick = {
+                        settingsManager.setOtherMode("speed_camera")
+                        onOpenMap(null, 12.5f)
+                    },
+                    testTag = "dashboard_radars_btn"
                 )
             )
 

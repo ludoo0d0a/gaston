@@ -29,6 +29,8 @@
     <string name="cheapest_stations_title">Cheapest Stations</string>
     <string name="connectors_label">Connectors: %1$s</string>
     <string name="dashboard_network">Network</string>
+    <string name="dashboard_radars">Radars</string>
+    <string name="dashboard_radars_subtitle">Danger zones on the map</string>
     <string name="dashboard_routes">Routes</string>
     <string name="disclaimer_accept">I Accept</string>
     <string name="disclaimer_content">Gaston is a data aggregator. We do not store, control, or guarantee the quality, accuracy, or timeliness of the data provided by third-party sources. Gaston is not responsible for any errors or omissions in prices, locations, status, or any other information displayed.</string>
