@@ -12,6 +12,10 @@
     "db:local": "wrangler d1 migrations apply gaston-pois --local",
     "db:remote": "wrangler d1 migrations apply gaston-pois --remote",
     "ingest:stub": "node scripts/ingest/stub.mjs",
+    "ingest": "node scripts/ingest/run.mjs",
+    "ingest:lu": "node scripts/ingest/run.mjs --source=luxembourg-radars --local",
+    "ingest:fr-radars": "node scripts/ingest/run.mjs --source=france-radars --local",
+    "ingest:gireve": "node scripts/ingest/run.mjs --source=gireve --local",
     "check": "tsc --noEmit"
   },
   "devDependencies": {

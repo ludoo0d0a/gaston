@@ -2,7 +2,7 @@
 
 > Plan sauvegardé (2026-10-01, complété catalogue + perf ; bootstrap no-app/$0 2026-10-02).  
 > Cursor : `~/.cursor/plans/cf_backend_geo_api_67d8cead.plan.md`  
-> Statut : **Phase 0 scaffoldée** dans [`backend/`](../../backend/) — API + D1 local ; ingest réel = Phase 1.
+> Statut : **Phase 0 + Phase 1 ingest** dans [`backend/`](../../backend/) — dumps High → D1 local ; client mobile toujours hors scope.
 
 ## Overview
 
@@ -49,9 +49,9 @@ Ne pas ajouter `backend` aux `settings.gradle.kts` Android — c’est un projet
 ## Todos
 
 - [x] **Bootstrap `backend/`** : scaffold Worker Free + D1 + R2 (hors Gradle Android)
-- [ ] Pipeline GHA générique (plugin par source File/dump)
-- [ ] V1 : Gireve + QualiCharge + radars FR/LU → D1 + GeoJSON API
-- [ ] V1.1 : Minetur, MIMIT, DOT-NL gz, NOBIL, Belgium NAP, EIPA…
+- [x] Pipeline GHA générique (plugin par source File/dump)
+- [x] V1 : Gireve + QualiCharge + radars FR/LU + Minetur + MIMIT → D1 + GeoJSON API
+- [ ] V1.1 : DOT-NL gz, NOBIL, Belgium NAP, EIPA…
 - [ ] Merge serveur (`PoiMerger` / `RadarPoiMerger` / availability)
 - [ ] Couche carte : GeoJSON overlays + tuiles geohash POI ; styles hébergés optionnels
 - [ ] Garde-fous writes D1 100k/jour + doc coût

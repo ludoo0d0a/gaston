@@ -58,3 +58,4 @@ backend/node_modules/
 backend/.dev.vars
 backend/.wrangler/
 backend/worker-configuration.d.ts
+backend/.cache/
