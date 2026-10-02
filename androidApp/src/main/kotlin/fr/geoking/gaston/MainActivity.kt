@@ -83,6 +83,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fr.geoking.gaston.ui.components.DisclaimerDialog
@@ -876,7 +877,8 @@ fun MainUI(
                             .fillMaxSize()
                             .padding(end = 8.dp)
                             .zIndex(10f),
-                        contentAlignment = Alignment.CenterEnd
+                        // ~1/3 from the bottom (verticalBias 0 = center, 1 = bottom).
+                        contentAlignment = BiasAlignment(horizontalBias = 1f, verticalBias = 1f / 3f)
                     ) {
                         GastonDebugLogOverlay()
                     }
