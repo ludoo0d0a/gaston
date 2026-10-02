@@ -90,6 +90,7 @@ fun PhoneDashboardMainContent(
     onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
     onOpenFuelForecast: () -> Unit,
     onOpenEmergency: () -> Unit,
+    onOpenAccident: () -> Unit,
     onOpenSettings: (List<SettingsScreenPage>?) -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
     onOpenAutoDebug: () -> Unit = {},
@@ -196,6 +197,10 @@ fun PhoneDashboardMainContent(
 
         item {
             PhoneDashboardEmergencyCard(onOpenEmergency = onOpenEmergency)
+        }
+
+        item {
+            PhoneDashboardAccidentCard(onOpenAccident = onOpenAccident)
         }
 
         item {
@@ -363,6 +368,49 @@ private fun PhoneDashboardEmergencyCard(onOpenEmergency: () -> Unit) {
                     text = stringResource(R.string.dashboard_emergency_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = onEmergency.copy(alpha = 0.9f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PhoneDashboardAccidentCard(onOpenAccident: () -> Unit) {
+    val accent = Color(0xFFE65100)
+    val onAccent = Color.White
+    Card(
+        onClick = onOpenAccident,
+        modifier = Modifier.fillMaxWidth().testTag("dashboard_accident_card"),
+        colors = CardDefaults.cardColors(containerColor = accent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_warning),
+                contentDescription = null,
+                tint = onAccent,
+                modifier = Modifier.size(36.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.dashboard_accident),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = onAccent,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(R.string.dashboard_accident_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onAccent.copy(alpha = 0.9f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

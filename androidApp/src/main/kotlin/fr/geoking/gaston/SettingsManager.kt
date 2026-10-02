@@ -137,6 +137,9 @@ data class AppSettings(
     val vehicleGasTypes: Set<String> = DEFAULT_MAP_ENERGY_TYPES,
     val vehiclePowerLevels: Set<Int> = DEFAULT_MAP_POWER_LEVELS,
     val fuelCard: FuelCard = FuelCard.None,
+    /** Shared "Ma voiture" garage (multi-vehicle). Active entry drives filter flat fields above. */
+    val vehicles: List<UserVehicle> = emptyList(),
+    val activeVehicleId: String = "",
     val useVehicleFilter: Boolean = false,
     /** When [Auto], provider set is derived from current country (GPS / network). */
     val poiProviderSelectionMode: PoiProviderSelectionMode = PoiProviderSelectionMode.Manual,
@@ -307,6 +310,20 @@ open class SettingsManager(
             FuelCard.valueOf(prefs.getString("fuel_card", FuelCard.None.name) ?: FuelCard.None.name)
         } catch (_: Exception) { FuelCard.None }
 
+        val vehicles = run {
+            val json = prefs.getString("user_vehicles", null)
+            try {
+                if (json.isNullOrBlank()) emptyList()
+                else Json.decodeFromString<List<UserVehicle>>(json)
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+        val activeVehicleId = prefs.getString("active_vehicle_id", null)
+            ?.takeIf { id -> vehicles.any { it.id == id } }
+            ?: vehicles.firstOrNull()?.id
+            ?: ""
+
         val poiProviderSelectionMode = try {
             PoiProviderSelectionMode.valueOf(
                 prefs.getString("poi_provider_selection_mode", PoiProviderSelectionMode.Manual.name)
@@ -348,6 +365,8 @@ open class SettingsManager(
             vehicleGasTypes = prefs.getStringSet("vehicle_gas_types", null)?.toSet() ?: DEFAULT_MAP_ENERGY_TYPES,
             vehiclePowerLevels = readIntSet("vehicle_power_levels", DEFAULT_MAP_POWER_LEVELS),
             fuelCard = fuelCard,
+            vehicles = vehicles,
+            activeVehicleId = activeVehicleId,
             useVehicleFilter = prefs.getBoolean("use_vehicle_filter", false),
             poiProviderSelectionMode = poiProviderSelectionMode,
             selectedPoiProviders = selectedProviders,
@@ -404,7 +423,7 @@ open class SettingsManager(
             lastIsRoaming = prefs.getBoolean("last_is_roaming", false),
             offlinePmtilesPath = offlinePmtilesPath,
             offlineMapsforgePath = offlineMapsforgePath,
-        )
+        ).ensureVehicleGarageConsistent()
     }
 
     open fun saveSettings(settings: AppSettings) {
@@ -417,21 +436,37 @@ open class SettingsManager(
     }
 
     private fun saveSettingsInternal(settings: AppSettings, upload: Boolean) {
-        val sanitized = settings.copy(
-            evConsumptionKwhPer100km = sanitizeConsumption(settings.evConsumptionKwhPer100km),
-            gasConsumptionLper100km = sanitizeConsumption(settings.gasConsumptionLper100km)
-        )
+        val withGarage = settings.ensureVehicleGarageConsistent()
+        val sanitizedVehicles = withGarage.vehicles.map { vehicle ->
+            vehicle.copy(
+                evConsumptionKwhPer100km = sanitizeConsumption(vehicle.evConsumptionKwhPer100km),
+                gasConsumptionLper100km = sanitizeConsumption(vehicle.gasConsumptionLper100km),
+            )
+        }
+        val active = sanitizedVehicles.firstOrNull { it.id == withGarage.activeVehicleId }
+            ?: sanitizedVehicles.firstOrNull()
+        val sanitized = if (active != null) {
+            withGarage.copy(vehicles = sanitizedVehicles).withFlatFieldsFrom(active)
+        } else {
+            withGarage.copy(
+                vehicles = sanitizedVehicles,
+                evConsumptionKwhPer100km = sanitizeConsumption(withGarage.evConsumptionKwhPer100km),
+                gasConsumptionLper100km = sanitizeConsumption(withGarage.gasConsumptionLper100km),
+            )
+        }
         _settings.value = sanitized
         prefs.edit()
             .putString("ui_theme_mode", sanitized.uiThemeMode.name)
             .putString("map_theme_mode", sanitized.mapThemeMode.name)
-            .putString("vehicle_brand", settings.vehicleBrand)
-            .putString("vehicle_model", settings.vehicleModel)
-            .putString("vehicle_energy", settings.vehicleEnergy)
-            .putStringSet("vehicle_gas_types", settings.vehicleGasTypes)
-            .putStringSet("vehicle_power_levels", settings.vehiclePowerLevels.map { it.toString() }.toSet())
-            .putString("fuel_card", settings.fuelCard.name)
-            .putBoolean("use_vehicle_filter", settings.useVehicleFilter)
+            .putString("vehicle_brand", sanitized.vehicleBrand)
+            .putString("vehicle_model", sanitized.vehicleModel)
+            .putString("vehicle_energy", sanitized.vehicleEnergy)
+            .putStringSet("vehicle_gas_types", sanitized.vehicleGasTypes)
+            .putStringSet("vehicle_power_levels", sanitized.vehiclePowerLevels.map { it.toString() }.toSet())
+            .putString("fuel_card", sanitized.fuelCard.name)
+            .putString("user_vehicles", Json.encodeToString(sanitized.vehicles))
+            .putString("active_vehicle_id", sanitized.activeVehicleId)
+            .putBoolean("use_vehicle_filter", sanitized.useVehicleFilter)
             .putString("poi_provider_selection_mode", settings.poiProviderSelectionMode.name)
             .putStringSet("poi_providers", settings.selectedPoiProviders.map { it.name }.toSet())
             .putString("bulk_file_download_policy", sanitized.bulkFileDownloadPolicy.name)
@@ -667,11 +702,11 @@ open class SettingsManager(
     open fun setMapConnectorTypes(types: Set<String>) = setSelectedMapConnectorTypes(types)
 
     open fun setFuelCard(card: FuelCard) {
-        saveSettings(_settings.value.copy(fuelCard = card))
+        updateActiveVehicle { it.copy(fuelCard = card) }
     }
 
     open fun setEvRangeKm(km: Int) {
-        saveSettings(_settings.value.copy(evRangeKm = km))
+        updateActiveVehicle { it.copy(evRangeKm = km) }
     }
 
     private fun sanitizeConsumption(value: Float?): Float? {
@@ -680,28 +715,34 @@ open class SettingsManager(
         return rounded.coerceIn(1.0f, 99.0f)
     }
 
+    private fun updateActiveVehicle(transform: (UserVehicle) -> UserVehicle) {
+        val current = _settings.value
+        val vehicle = current.activeVehicle() ?: UserVehicle(id = newUserVehicleId())
+        saveSettings(current.upsertVehicle(transform(vehicle), makeActive = true))
+    }
+
     open fun setEvConsumptionKwhPer100km(value: Float?) {
-        saveSettings(_settings.value.copy(evConsumptionKwhPer100km = sanitizeConsumption(value)))
+        updateActiveVehicle { it.copy(evConsumptionKwhPer100km = sanitizeConsumption(value)) }
     }
 
     open fun setBatteryCapacityKwh(value: Float?) {
-        saveSettings(_settings.value.copy(batteryCapacityKwh = value))
+        updateActiveVehicle { it.copy(batteryCapacityKwh = value) }
     }
 
     open fun setVehicleBrand(value: String) {
-        saveSettings(_settings.value.copy(vehicleBrand = value))
+        updateActiveVehicle { it.copy(brand = value) }
     }
 
     open fun setVehicleModel(value: String) {
-        saveSettings(_settings.value.copy(vehicleModel = value))
+        updateActiveVehicle { it.copy(model = value) }
     }
 
     open fun setGasTankCapacityLiters(value: Float?) {
-        saveSettings(_settings.value.copy(gasTankCapacityLiters = value))
+        updateActiveVehicle { it.copy(gasTankCapacityLiters = value) }
     }
 
     open fun setGasConsumptionLper100km(value: Float?) {
-        saveSettings(_settings.value.copy(gasConsumptionLper100km = sanitizeConsumption(value)))
+        updateActiveVehicle { it.copy(gasConsumptionLper100km = sanitizeConsumption(value)) }
     }
 
     open fun setRouteStationSearchRadiusMeters(value: Int) {
@@ -727,7 +768,7 @@ open class SettingsManager(
     }
 
     open fun setVehicleType(type: VehicleType) {
-        saveSettings(_settings.value.copy(vehicleType = type))
+        updateActiveVehicle { it.copy(vehicleType = type) }
     }
 
     open fun setPremium(premium: Boolean) {

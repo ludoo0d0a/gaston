@@ -46,6 +46,7 @@ import fr.geoking.gaston.ui.map.MapFactory
 import fr.geoking.gaston.ui.EmergencyScreen
 import fr.geoking.gaston.ui.PhoneNetworkLocationScreen
 import fr.geoking.gaston.ui.PhoneDashboardScreen
+import fr.geoking.gaston.ui.accident.AccidentFeatureScreen
 import fr.geoking.gaston.ui.AutoDebugScreen
 import fr.geoking.gaston.ui.components.NetworkStatusIcon
 import fr.geoking.gaston.ui.dashboard.GastonTheme
@@ -429,6 +430,7 @@ fun MainUI(
     var showNetworkDiagnostics by remember { mutableStateOf(false) }
     var showAutoDebug by remember { mutableStateOf(false) }
     var showEmergency by remember { mutableStateOf(false) }
+    var showAccident by remember { mutableStateOf(false) }
     var showPlaystoreSettings by remember { mutableStateOf(false) }
     var playstoreSettingsInitialStack by remember { mutableStateOf<List<SettingsScreenPage>?>(null) }
     var showFavorites by remember { mutableStateOf(false) }
@@ -543,6 +545,16 @@ fun MainUI(
                     EmergencyScreen(
                         networkService = networkService,
                         onBack = { showEmergency = false }
+                    )
+                }
+                showAccident -> {
+                    BackHandler { showAccident = false }
+                    AccidentFeatureScreen(
+                        onBack = { showAccident = false },
+                        onOpenEmergency = {
+                            showAccident = false
+                            showEmergency = true
+                        },
                     )
                 }
                 isPlaystoreDistribution && showPlaystoreSettings -> {
@@ -698,6 +710,7 @@ fun MainUI(
                         onOpenAutoDebug = { showAutoDebug = true },
                         onOpenFuelForecast = { showFuelForecast = true },
                         onOpenEmergency = { showEmergency = true },
+                        onOpenAccident = { showAccident = true },
                         onOpenSettings = { stack ->
                             playstoreSettingsInitialStack = stack
                             showPlaystoreSettings = true
@@ -860,6 +873,7 @@ fun MainUI(
                             onOpenAutoDebug = { showAutoDebug = true },
                             onOpenFuelForecast = { showFuelForecast = true },
                             onOpenEmergency = { showEmergency = true },
+                            onOpenAccident = { showAccident = true },
                             onOpenSettings = { stack ->
                                 settingsInitialStack = stack
                                 showSettings = true

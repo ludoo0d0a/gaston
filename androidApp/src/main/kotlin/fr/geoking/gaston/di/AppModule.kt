@@ -16,6 +16,8 @@ import fr.geoking.gaston.shared.weather.WeatherLookup
 import fr.geoking.gaston.shared.platform.PermissionManager
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.toll.VignetteService
+import fr.geoking.gaston.feature.accident.AccidentProfileStore
+import fr.geoking.gaston.ui.accident.AccidentViewModel
 import fr.geoking.gaston.ui.dashboard.PhoneDashboardViewModel
 import org.koin.core.module.dsl.viewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -276,6 +278,15 @@ val appModule = module {
     }
 
     single { FuelForecastRepository(http = get(), db = get()) }
+
+    single { AccidentProfileStore(androidContext()) }
+
+    viewModel {
+        AccidentViewModel(
+            store = get(),
+            settingsManager = get(),
+        )
+    }
 
     viewModel {
         PhoneDashboardViewModel(

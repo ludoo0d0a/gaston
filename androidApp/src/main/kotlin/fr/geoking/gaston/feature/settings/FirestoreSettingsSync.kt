@@ -7,7 +7,9 @@ import com.google.firebase.firestore.SetOptions
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.BulkFileDownloadPolicy
 import fr.geoking.gaston.CarMapMode
+import fr.geoking.gaston.DEFAULT_EV_RANGE_KM
 import fr.geoking.gaston.FuelCard
+import fr.geoking.gaston.UserVehicle
 import fr.geoking.gaston.VehicleType
 import fr.geoking.gaston.poi.PoiProviderType
 import kotlinx.coroutines.tasks.await
@@ -65,6 +67,33 @@ class FirestoreSettingsSync(
             "vehicleGasTypes" to s.vehicleGasTypes.toList(),
             "vehiclePowerLevels" to s.vehiclePowerLevels.toList(),
             "fuelCard" to s.fuelCard.name,
+            "activeVehicleId" to s.activeVehicleId,
+            "vehicles" to s.vehicles.map { v ->
+                mapOf(
+                    "id" to v.id,
+                    "brand" to v.brand,
+                    "model" to v.model,
+                    "plate" to v.plate,
+                    "color" to v.color,
+                    "serialNumber" to v.serialNumber,
+                    "fuelCard" to v.fuelCard.name,
+                    "energy" to v.energy,
+                    "vehicleType" to v.vehicleType.name,
+                    "gasTypes" to v.gasTypes.toList(),
+                    "powerLevels" to v.powerLevels.toList(),
+                    "gasTankCapacityLiters" to v.gasTankCapacityLiters,
+                    "gasConsumptionLper100km" to v.gasConsumptionLper100km,
+                    "batteryCapacityKwh" to v.batteryCapacityKwh,
+                    "evRangeKm" to v.evRangeKm,
+                    "evConsumptionKwhPer100km" to v.evConsumptionKwhPer100km,
+                    "insurerName" to v.insurerName,
+                    "policyNumber" to v.policyNumber,
+                    "greenCardNumber" to v.greenCardNumber,
+                    "insurerPhone" to v.insurerPhone,
+                    "agencyName" to v.agencyName,
+                    "agencyPhone" to v.agencyPhone,
+                )
+            },
             "useVehicleFilter" to s.useVehicleFilter,
             "selectedPoiProviders" to s.selectedPoiProviders.map { it.name },
             "bulkFileDownloadPolicy" to s.bulkFileDownloadPolicy.name,
@@ -121,6 +150,66 @@ class FirestoreSettingsSync(
             )
         }
 
+        fun parseFloat(v: Any?): Float? = when (v) {
+            null -> null
+            is Double -> v.toFloat()
+            is Float -> v
+            is Long -> v.toFloat()
+            is Int -> v.toFloat()
+            is String -> v.toFloatOrNull()
+            else -> null
+        }
+
+        fun parseVehicles(v: Any): List<UserVehicle> = (v as List<*>).filterIsInstance<Map<*, *>>().mapNotNull { raw ->
+            val id = raw["id"] as? String ?: return@mapNotNull null
+            val fuel = try {
+                FuelCard.valueOf(raw["fuelCard"] as? String ?: FuelCard.None.name)
+            } catch (_: Exception) {
+                FuelCard.None
+            }
+            val vehicleType = try {
+                VehicleType.valueOf(raw["vehicleType"] as? String ?: VehicleType.Car.name)
+            } catch (_: Exception) {
+                VehicleType.Car
+            }
+            UserVehicle(
+                id = id,
+                brand = raw["brand"] as? String ?: "",
+                model = raw["model"] as? String ?: "",
+                plate = raw["plate"] as? String ?: "",
+                color = raw["color"] as? String ?: "",
+                serialNumber = raw["serialNumber"] as? String ?: "",
+                fuelCard = fuel,
+                energy = raw["energy"] as? String ?: "gas",
+                vehicleType = vehicleType,
+                gasTypes = (raw["gasTypes"] as? List<*>)?.filterIsInstance<String>()?.toSet().orEmpty(),
+                powerLevels = (raw["powerLevels"] as? List<*>)?.mapNotNull { level ->
+                    when (level) {
+                        is Long -> level.toInt()
+                        is Int -> level
+                        is Double -> level.toInt()
+                        else -> null
+                    }
+                }?.toSet().orEmpty(),
+                gasTankCapacityLiters = parseFloat(raw["gasTankCapacityLiters"]),
+                gasConsumptionLper100km = parseFloat(raw["gasConsumptionLper100km"]),
+                batteryCapacityKwh = parseFloat(raw["batteryCapacityKwh"]),
+                evRangeKm = when (val range = raw["evRangeKm"]) {
+                    is Long -> range.toInt()
+                    is Int -> range
+                    is Double -> range.toInt()
+                    else -> DEFAULT_EV_RANGE_KM
+                },
+                evConsumptionKwhPer100km = parseFloat(raw["evConsumptionKwhPer100km"]),
+                insurerName = raw["insurerName"] as? String ?: "",
+                policyNumber = raw["policyNumber"] as? String ?: "",
+                greenCardNumber = raw["greenCardNumber"] as? String ?: "",
+                insurerPhone = raw["insurerPhone"] as? String ?: "",
+                agencyName = raw["agencyName"] as? String ?: "",
+                agencyPhone = raw["agencyPhone"] as? String ?: "",
+            )
+        }
+
         return local.copy(
             vehicleBrand = pick(local.vehicleBrand, remote["vehicleBrand"], default.vehicleBrand, ::parseString),
             vehicleModel = pick(local.vehicleModel, remote["vehicleModel"], default.vehicleModel, ::parseString),
@@ -128,6 +217,8 @@ class FirestoreSettingsSync(
             vehicleGasTypes = pick(local.vehicleGasTypes, remote["vehicleGasTypes"], default.vehicleGasTypes, ::parseStringSet),
             vehiclePowerLevels = pick(local.vehiclePowerLevels, remote["vehiclePowerLevels"], default.vehiclePowerLevels, ::parseIntSet),
             fuelCard = pick(local.fuelCard, remote["fuelCard"], default.fuelCard) { parseEnum(it, FuelCard::class.java) },
+            vehicles = pick(local.vehicles, remote["vehicles"], default.vehicles, ::parseVehicles),
+            activeVehicleId = pick(local.activeVehicleId, remote["activeVehicleId"], default.activeVehicleId, ::parseString),
             useVehicleFilter = pick(local.useVehicleFilter, remote["useVehicleFilter"], default.useVehicleFilter, ::parseBoolean),
             selectedPoiProviders = pick(local.selectedPoiProviders, remote["selectedPoiProviders"], default.selectedPoiProviders, ::parsePoiProviderSet),
             bulkFileDownloadPolicy = pick(

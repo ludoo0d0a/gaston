@@ -37,6 +37,7 @@ import coil3.compose.AsyncImage
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.BulkFileDownloadPolicy
 import fr.geoking.gaston.CarMapMode
+import fr.geoking.gaston.DEFAULT_EV_RANGE_KM
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.FuelCard
@@ -46,6 +47,12 @@ import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.R
 import fr.geoking.gaston.ThemeMode
+import fr.geoking.gaston.activeVehicle
+import fr.geoking.gaston.addEmptyVehicle
+import fr.geoking.gaston.newUserVehicleId
+import fr.geoking.gaston.removeVehicle
+import fr.geoking.gaston.selectActiveVehicle
+import fr.geoking.gaston.upsertVehicle
 import fr.geoking.gaston.feature.auth.GoogleAuthManager
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.anyProvidesElectric
@@ -1496,10 +1503,14 @@ private fun MainMenu(
             ) {
                 SettingsItem(
                     label = stringResource(R.string.screen_vehicle),
-                    value = if (settings.vehicleBrand.isNotEmpty()) {
-                        "${settings.vehicleBrand} ${settings.vehicleModel}"
-                    } else {
-                        stringResource(R.string.vehicle_not_configured)
+                    value = when {
+                        settings.vehicles.size > 1 -> stringResource(
+                            R.string.vehicle_garage_count,
+                            settings.vehicles.size,
+                        )
+                        settings.vehicleBrand.isNotEmpty() ->
+                            "${settings.vehicleBrand} ${settings.vehicleModel}".trim()
+                        else -> stringResource(R.string.vehicle_not_configured)
                     },
                     onClick = { onNavigate(SettingsScreenPage.VehicleConfig) }
                 )
@@ -1926,17 +1937,22 @@ private fun VehicleConfig(
     settings: AppSettings,
     onUpdate: (AppSettings) -> Unit
 ) {
-    var gasConsumptionText by remember { mutableStateOf(settings.gasConsumptionLper100km?.toString() ?: "") }
-    var evConsumptionText by remember { mutableStateOf(settings.evConsumptionKwhPer100km?.toString() ?: "") }
+    var gasConsumptionText by remember(settings.activeVehicleId) {
+        mutableStateOf(settings.gasConsumptionLper100km?.toString() ?: "")
+    }
+    var evConsumptionText by remember(settings.activeVehicleId) {
+        mutableStateOf(settings.evConsumptionKwhPer100km?.toString() ?: "")
+    }
+    val activeVehicle = settings.activeVehicle()
 
-    LaunchedEffect(settings.gasConsumptionLper100km) {
+    LaunchedEffect(settings.activeVehicleId, settings.gasConsumptionLper100km) {
         val next = settings.gasConsumptionLper100km?.toString() ?: ""
         if (next != gasConsumptionText && next.replace(',', '.') != gasConsumptionText.replace(',', '.')) {
             gasConsumptionText = next
         }
     }
 
-    LaunchedEffect(settings.evConsumptionKwhPer100km) {
+    LaunchedEffect(settings.activeVehicleId, settings.evConsumptionKwhPer100km) {
         val next = settings.evConsumptionKwhPer100km?.toString() ?: ""
         if (next != evConsumptionText && next.replace(',', '.') != evConsumptionText.replace(',', '.')) {
             evConsumptionText = next
@@ -1962,6 +1978,13 @@ private fun VehicleConfig(
         }
     }
 
+    fun updateActiveVehicle(transform: (fr.geoking.gaston.UserVehicle) -> fr.geoking.gaston.UserVehicle) {
+        val current = settings.activeVehicle()
+            ?: fr.geoking.gaston.UserVehicle(id = newUserVehicleId())
+        val updated = transform(current)
+        onUpdate(settings.upsertVehicle(updated, makeActive = true))
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1969,6 +1992,73 @@ private fun VehicleConfig(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Garage: multiple vehicles (shared with accident prefill)
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    stringResource(R.string.vehicle_garage_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    stringResource(R.string.vehicle_garage_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (settings.vehicles.isEmpty()) {
+                    Text(
+                        stringResource(R.string.vehicle_not_configured),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        settings.vehicles.forEachIndexed { index, vehicle ->
+                            val label = vehicle.displayLabel()
+                                .ifBlank { stringResource(R.string.vehicle_unnamed, index + 1) }
+                            FilterChip(
+                                selected = vehicle.id == settings.activeVehicleId,
+                                onClick = { onUpdate(settings.selectActiveVehicle(vehicle.id)) },
+                                label = { Text(label) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.DirectionsCar, null, Modifier.size(18.dp))
+                                }
+                            )
+                        }
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { onUpdate(settings.addEmptyVehicle(makeActive = true)) },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(stringResource(R.string.vehicle_add))
+                    }
+                    if (settings.vehicles.size > 1 && activeVehicle != null) {
+                        OutlinedButton(
+                            onClick = { onUpdate(settings.removeVehicle(activeVehicle.id)) },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(stringResource(R.string.vehicle_remove))
+                        }
+                    }
+                }
+            }
+        }
+
         // Identity Section
         ElevatedCard(
             modifier = Modifier.fillMaxWidth(),
@@ -1987,12 +2077,26 @@ private fun VehicleConfig(
                     label = stringResource(R.string.vehicle_brand),
                     value = settings.vehicleBrand,
                     leadingIcon = Icons.Default.DirectionsCar
-                ) { onUpdate(settings.copy(vehicleBrand = it)) }
+                ) { value -> updateActiveVehicle { it.copy(brand = value) } }
                 ConfigTextField(
                     label = stringResource(R.string.vehicle_model),
                     value = settings.vehicleModel,
                     leadingIcon = Icons.Default.Badge
-                ) { onUpdate(settings.copy(vehicleModel = it)) }
+                ) { value -> updateActiveVehicle { it.copy(model = value) } }
+                ConfigTextField(
+                    label = stringResource(R.string.vehicle_plate),
+                    value = activeVehicle?.plate.orEmpty(),
+                    leadingIcon = Icons.Default.Badge
+                ) { value -> updateActiveVehicle { it.copy(plate = value) } }
+                ConfigTextField(
+                    label = stringResource(R.string.vehicle_color),
+                    value = activeVehicle?.color.orEmpty(),
+                ) { value -> updateActiveVehicle { it.copy(color = value) } }
+                ConfigTextField(
+                    label = stringResource(R.string.vehicle_serial_number),
+                    value = activeVehicle?.serialNumber.orEmpty(),
+                    leadingIcon = Icons.Default.Numbers
+                ) { value -> updateActiveVehicle { it.copy(serialNumber = value) } }
 
                 Text(
                     stringResource(R.string.screen_vehicle_type),
@@ -2022,7 +2126,7 @@ private fun VehicleConfig(
                         }
                         FilterChip(
                             selected = settings.vehicleType == type,
-                            onClick = { onUpdate(settings.copy(vehicleType = type)) },
+                            onClick = { updateActiveVehicle { it.copy(vehicleType = type) } },
                             label = { Text(label) },
                             leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) }
                         )
@@ -2047,13 +2151,56 @@ private fun VehicleConfig(
                         val (labelRes, icon) = info
                         FilterChip(
                             selected = settings.vehicleEnergy == id,
-                            onClick = { onUpdate(settings.copy(vehicleEnergy = id)) },
+                            onClick = { updateActiveVehicle { it.copy(energy = id) } },
                             label = { Text(stringResource(labelRes)) },
                             leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) },
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
+            }
+        }
+
+        // Constat insurance (per vehicle in garage)
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    stringResource(R.string.vehicle_insurance_section),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                ConfigTextField(
+                    label = stringResource(R.string.accident_field_insurer),
+                    value = activeVehicle?.insurerName.orEmpty(),
+                ) { value -> updateActiveVehicle { it.copy(insurerName = value) } }
+                ConfigTextField(
+                    label = stringResource(R.string.accident_field_policy),
+                    value = activeVehicle?.policyNumber.orEmpty(),
+                ) { value -> updateActiveVehicle { it.copy(policyNumber = value) } }
+                ConfigTextField(
+                    label = stringResource(R.string.accident_field_green_card),
+                    value = activeVehicle?.greenCardNumber.orEmpty(),
+                ) { value -> updateActiveVehicle { it.copy(greenCardNumber = value) } }
+                ConfigTextField(
+                    label = stringResource(R.string.accident_field_insurer_phone),
+                    value = activeVehicle?.insurerPhone.orEmpty(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                ) { value -> updateActiveVehicle { it.copy(insurerPhone = value) } }
+                ConfigTextField(
+                    label = stringResource(R.string.accident_field_agency),
+                    value = activeVehicle?.agencyName.orEmpty(),
+                ) { value -> updateActiveVehicle { it.copy(agencyName = value) } }
+                ConfigTextField(
+                    label = stringResource(R.string.accident_field_agency_phone),
+                    value = activeVehicle?.agencyPhone.orEmpty(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                ) { value -> updateActiveVehicle { it.copy(agencyPhone = value) } }
             }
         }
 
@@ -2083,7 +2230,9 @@ private fun VehicleConfig(
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.WaterDrop,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                        ) { onUpdate(settings.copy(gasTankCapacityLiters = it.toFloatOrNull())) }
+                        ) { value ->
+                            updateActiveVehicle { it.copy(gasTankCapacityLiters = value.toFloatOrNull()) }
+                        }
 
                         ConfigTextField(
                             label = stringResource(R.string.vehicle_consumption_l100),
@@ -2095,7 +2244,9 @@ private fun VehicleConfig(
                             handleConsumptionInput(
                                 input = input,
                                 onTextUpdate = { gasConsumptionText = it },
-                                onValueUpdate = { onUpdate(settings.copy(gasConsumptionLper100km = it)) }
+                                onValueUpdate = { value ->
+                                    updateActiveVehicle { it.copy(gasConsumptionLper100km = value) }
+                                }
                             )
                         }
                     }
@@ -2112,7 +2263,9 @@ private fun VehicleConfig(
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.BatteryChargingFull,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                        ) { onUpdate(settings.copy(batteryCapacityKwh = it.toFloatOrNull())) }
+                        ) { value ->
+                            updateActiveVehicle { it.copy(batteryCapacityKwh = value.toFloatOrNull()) }
+                        }
 
                         ConfigTextField(
                             label = stringResource(R.string.vehicle_range_km_label),
@@ -2120,7 +2273,11 @@ private fun VehicleConfig(
                             modifier = Modifier.weight(1f),
                             leadingIcon = Icons.Default.Map,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                        ) { onUpdate(settings.copy(evRangeKm = it.toIntOrNull() ?: 300)) }
+                        ) { value ->
+                            updateActiveVehicle {
+                                it.copy(evRangeKm = value.toIntOrNull() ?: DEFAULT_EV_RANGE_KM)
+                            }
+                        }
                     }
                     ConfigTextField(
                         label = stringResource(R.string.vehicle_consumption_kwh100),
@@ -2131,7 +2288,9 @@ private fun VehicleConfig(
                         handleConsumptionInput(
                             input = input,
                             onTextUpdate = { evConsumptionText = it },
-                            onValueUpdate = { onUpdate(settings.copy(evConsumptionKwhPer100km = it)) }
+                            onValueUpdate = { value ->
+                                updateActiveVehicle { it.copy(evConsumptionKwhPer100km = value) }
+                            }
                         )
                     }
                 }
@@ -2170,8 +2329,12 @@ private fun VehicleConfig(
                                 label = label,
                                 isSelected = settings.vehicleGasTypes.contains(id),
                                 onClick = {
-                                    val newTypes = if (settings.vehicleGasTypes.contains(id)) settings.vehicleGasTypes - id else settings.vehicleGasTypes + id
-                                    onUpdate(settings.copy(vehicleGasTypes = newTypes))
+                                    val newTypes = if (settings.vehicleGasTypes.contains(id)) {
+                                        settings.vehicleGasTypes - id
+                                    } else {
+                                        settings.vehicleGasTypes + id
+                                    }
+                                    updateActiveVehicle { it.copy(gasTypes = newTypes) }
                                 }
                             )
                         }
@@ -2187,7 +2350,7 @@ private fun VehicleConfig(
                         SelectionItem(
                             label = card.displayLabel(),
                             isSelected = settings.fuelCard == card,
-                            onSelect = { onUpdate(settings.copy(fuelCard = card)) }
+                            onSelect = { updateActiveVehicle { it.copy(fuelCard = card) } }
                         )
                     }
                 }
@@ -2209,8 +2372,12 @@ private fun VehicleConfig(
                                 label = label,
                                 isSelected = settings.vehiclePowerLevels.contains(id),
                                 onClick = {
-                                    val newLevels = if (settings.vehiclePowerLevels.contains(id)) settings.vehiclePowerLevels - id else settings.vehiclePowerLevels + id
-                                    onUpdate(settings.copy(vehiclePowerLevels = newLevels))
+                                    val newLevels = if (settings.vehiclePowerLevels.contains(id)) {
+                                        settings.vehiclePowerLevels - id
+                                    } else {
+                                        settings.vehiclePowerLevels + id
+                                    }
+                                    updateActiveVehicle { it.copy(powerLevels = newLevels) }
                                 }
                             )
                         }
