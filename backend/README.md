@@ -43,8 +43,17 @@ npm run check
 
 GitHub Actions secrets (repo Settings → Secrets):
 
-- `CLOUDFLARE_API_TOKEN` — token with D1 edit + Workers + R2
-- `CLOUDFLARE_ACCOUNT_ID` — `04efa4000e37d6c1df300af5da041485`
+- `CLOUDFLARE_API_TOKEN` — Account token: **Edit Cloudflare Workers** + **D1 Edit** + R2 read/write
+- `CLOUDFLARE_ACCOUNT_ID` — `04efa4000e37d6c1df300af5da041485` ✅ set
+
+```bash
+# One-time: create token in dashboard, copy it, then:
+pbpaste | ./scripts/ops/set-gha-cf-token.sh
+./scripts/ops/smoke-remote.sh
+gh workflow run "Backend ingest" -f source=fuel-history -f target=remote
+```
+
+Dashboard tokens: https://dash.cloudflare.com/?to=/:account/api-tokens
 
 ## API
 
