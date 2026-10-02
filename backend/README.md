@@ -72,6 +72,9 @@ Raw files land in `backend/.cache/dumps/` (gitignored). Prefer **one source per 
 | `luxembourg-radars` | zones | GeoJSON (~39) |
 | `minetur` | pois | ES fuel national JSON |
 | `mimit` | pois | IT stations+prices pipe CSV |
+| `merged-irve` | pois | Gireve∪QualiCharge with PoiMerger-like rules (≤50 m / ≤300 m name) |
+
+Radar zones apply `RadarPoiMerger` primary-wins ≤40 m when secondary sources exist.
 
 GHA: workflow **Backend ingest** (`workflow_dispatch` + daily LU). Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
 

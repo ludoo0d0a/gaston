@@ -16,6 +16,8 @@
     "ingest:lu": "node scripts/ingest/run.mjs --source=luxembourg-radars --local",
     "ingest:fr-radars": "node scripts/ingest/run.mjs --source=france-radars --local",
     "ingest:gireve": "node scripts/ingest/run.mjs --source=gireve --local",
+    "ingest:mimit": "node scripts/ingest/run.mjs --source=mimit --local",
+    "ingest:merged-irve": "node scripts/ingest/run.mjs --source=merged-irve --local",
     "check": "tsc --noEmit"
   },
   "devDependencies": {

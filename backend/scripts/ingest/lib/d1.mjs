@@ -28,7 +28,7 @@ export function replaceSourceRows({
   columns,
   rows,
   local = true,
-  batchSize = 80,
+  batchSize = 40,
 }) {
   if (table !== "pois" && table !== "zones") {
     throw new Error(`unsupported table ${table}`);

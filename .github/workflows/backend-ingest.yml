@@ -17,6 +17,7 @@ on:
           - qualicharge
           - minetur
           - mimit
+          - merged-irve
       target:
         description: "D1 target"
         required: true

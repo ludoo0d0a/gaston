@@ -17,6 +17,7 @@ import {
   zoneSqlCells,
 } from "./lib/d1.mjs";
 import { uploadRawToR2 } from "./lib/cache.mjs";
+import { dedupeRadarZones } from "./lib/merge.mjs";
 import { readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,6 +31,7 @@ const SOURCES = {
   "luxembourg-radars": () => import("./sources/luxembourg-radars.mjs"),
   minetur: () => import("./sources/minetur.mjs"),
   mimit: () => import("./sources/mimit.mjs"),
+  "merged-irve": () => import("./sources/merged-irve.mjs"),
 };
 
 function parseArgs(argv) {
@@ -71,21 +73,36 @@ async function runOne(sourceId, local) {
       uploadRawToR2(sourceId, name, join(dumpDir, name), { local });
     }
   } catch (e) {
-    console.warn(JSON.stringify({ event: "r2_skip", error: String(e.message || e) }));
+    if (e && e.code !== "ENOENT") {
+      console.warn(JSON.stringify({ event: "r2_skip", error: String(e.message || e) }));
+    }
   }
 
   if (result.table === "pois") {
     const sqlRows = result.rows.map((r) => poiSqlCells(r));
+    // Merged rows can carry larger JSON — keep batches small to avoid SQLITE_TOOBIG.
+    const batchSize = sourceId.startsWith("merged") ? 15 : 40;
     const written = replaceSourceRows({
       table: "pois",
       source: result.source,
       columns: POI_COLUMNS,
       rows: sqlRows,
       local,
+      batchSize,
     });
     console.log(JSON.stringify({ event: "ingest_done", source: sourceId, ...written }));
   } else if (result.table === "zones") {
-    const sqlRows = result.rows.map((r) => zoneSqlCells(r));
+    const deduped = dedupeRadarZones(result.rows);
+    if (deduped.length !== result.rows.length) {
+      console.log(
+        JSON.stringify({
+          event: "radar_dedupe",
+          before: result.rows.length,
+          after: deduped.length,
+        }),
+      );
+    }
+    const sqlRows = deduped.map((r) => zoneSqlCells(r));
     const written = replaceSourceRows({
       table: "zones",
       source: result.source,
