@@ -35,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.BulkFileDownloadPolicy
 import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveIrvePowerLevels
@@ -988,27 +989,38 @@ private fun SourcesConfig(
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                Text(
-                    stringResource(R.string.settings_bulk_file_wifi_only),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                stringResource(R.string.settings_bulk_file_policy),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                stringResource(R.string.settings_bulk_file_policy_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = settings.bulkFileDownloadPolicy == BulkFileDownloadPolicy.Never,
+                    onClick = { onUpdate(settings.copy(bulkFileDownloadPolicy = BulkFileDownloadPolicy.Never)) },
+                    label = { Text(stringResource(R.string.settings_bulk_file_never)) },
                 )
-                Text(
-                    stringResource(R.string.settings_bulk_file_wifi_only_subtitle),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                FilterChip(
+                    selected = settings.bulkFileDownloadPolicy == BulkFileDownloadPolicy.WifiOnly,
+                    onClick = { onUpdate(settings.copy(bulkFileDownloadPolicy = BulkFileDownloadPolicy.WifiOnly)) },
+                    label = { Text(stringResource(R.string.settings_bulk_file_wifi_only)) },
+                )
+                FilterChip(
+                    selected = settings.bulkFileDownloadPolicy == BulkFileDownloadPolicy.Allowed,
+                    onClick = { onUpdate(settings.copy(bulkFileDownloadPolicy = BulkFileDownloadPolicy.Allowed)) },
+                    label = { Text(stringResource(R.string.settings_bulk_file_allowed)) },
                 )
             }
-            Switch(
-                checked = settings.bulkFileDownloadsWifiOnly,
-                onCheckedChange = { onUpdate(settings.copy(bulkFileDownloadsWifiOnly = it)) },
-            )
         }
 
         Column {

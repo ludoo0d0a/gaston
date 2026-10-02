@@ -1,6 +1,7 @@
 package fr.geoking.gaston.feature.network
 
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.BulkFileDownloadPolicy
 import fr.geoking.gaston.shared.network.NetworkType
 
 /**
@@ -8,7 +9,10 @@ import fr.geoking.gaston.shared.network.NetworkType
  */
 object BulkFileNetworkAccess {
     fun allowFetch(settings: AppSettings, networkType: NetworkType): Boolean {
-        if (!settings.bulkFileDownloadsWifiOnly) return true
-        return networkType == NetworkType.WIFI
+        return when (settings.bulkFileDownloadPolicy) {
+            BulkFileDownloadPolicy.Never -> false
+            BulkFileDownloadPolicy.Allowed -> true
+            BulkFileDownloadPolicy.WifiOnly -> networkType == NetworkType.WIFI
+        }
     }
 }

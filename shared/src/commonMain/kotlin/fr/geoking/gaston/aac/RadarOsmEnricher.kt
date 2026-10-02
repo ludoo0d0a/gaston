@@ -7,12 +7,14 @@ import fr.geoking.gaston.api.overpass.OverpassWayGeom
 import fr.geoking.gaston.api.overpass.SpeedCameraOverpassBundle
 import fr.geoking.gaston.api.radars.FranceRadarRecord
 import fr.geoking.gaston.api.radars.toDangerZone
+import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlin.math.cos
 import kotlin.math.PI
 
 /**
- * Matches data.gouv France radar records to nearby OSM speed_camera nodes and
+ * Matches Lufop / Luxembourg / data.gouv radar anchors to nearby OSM speed_camera nodes and
  * resolves monitored traffic direction (enforcement / forward-backward / both).
  */
 class RadarOsmEnricher(
@@ -22,6 +24,44 @@ class RadarOsmEnricher(
     companion object {
         const val DEFAULT_MATCH_RADIUS_METERS = 40.0
         private const val BBOX_PAD_KM = 0.05
+
+        /** Anchor sources that lack native direction and need OSM enrich for map triangles. */
+        val ANCHOR_SOURCES: Set<String> = setOf(
+            "LufopOpenSpeedCam",
+            "LuxembourgRadars",
+            "FranceRadars",
+        )
+
+        fun alreadyHasDirection(poi: Poi): Boolean {
+            val raw = poi.rawSourceData ?: return false
+            return !raw[DangerZoneTriangle.RAW_DIRECTION].isNullOrBlank() ||
+                !raw[DangerZoneTriangle.RAW_MONITORED_BEARING].isNullOrBlank() ||
+                raw[DangerZoneTriangle.RAW_BIDIRECTIONAL]?.equals("true", ignoreCase = true) == true
+        }
+
+        fun applyDirectionToPoi(poi: Poi, info: OsmDirectionInfo): Poi {
+            if (info.confidence == DirectionConfidence.None) return poi
+            val raw = (poi.rawSourceData ?: emptyMap()).toMutableMap()
+            info.osmNodeId?.let { raw["osm_node_id"] = it.toString() }
+            info.matchedDistanceMeters?.let { raw["osm_match_m"] = it.toString() }
+            if (info.bidirectional) {
+                raw[DangerZoneTriangle.RAW_BIDIRECTIONAL] = "true"
+                raw[DangerZoneTriangle.RAW_DIRECTION] = "both"
+            } else {
+                info.monitoredBearingDegrees?.let { bearing ->
+                    raw[DangerZoneTriangle.RAW_MONITORED_BEARING] = bearing.toString()
+                }
+                // Keep a tag for diagnostics; triangles prefer monitored_bearing.
+                when {
+                    info.monitoredBearingDegrees != null ->
+                        raw.putIfAbsent(
+                            DangerZoneTriangle.RAW_DIRECTION,
+                            info.monitoredBearingDegrees.toString(),
+                        )
+                }
+            }
+            return poi.copy(rawSourceData = raw)
+        }
     }
 
     /**
@@ -34,7 +74,7 @@ class RadarOsmEnricher(
     ): List<DangerZone> {
         if (records.isEmpty()) return emptyList()
         val bundle = try {
-            fetchBundle(records)
+            fetchBundleForPoints(records.map { it.latitude to it.longitude })
         } catch (_: Exception) {
             return records.map { rec ->
                 rec.toDangerZone(roadClassOverride = roadClassOverrides[rec.id])
@@ -42,9 +82,41 @@ class RadarOsmEnricher(
         }
         return records.map { record ->
             val base = record.toDangerZone(roadClassOverride = roadClassOverrides[record.id])
-            val info = matchAndResolve(record, bundle) ?: return@map base
+            val info = matchAndResolve(record.latitude, record.longitude, record.vma, bundle)
+                ?: return@map base
             base.withOsmDirection(info)
         }
+    }
+
+    /**
+     * Enrich Lufop / Luxembourg / FranceRadars map pins with OSM direction in [Poi.rawSourceData]
+     * so [DangerZoneTriangle] can draw approach corridors. Skips pins that already have direction.
+     * Overpass failures leave POIs unchanged.
+     */
+    suspend fun enrichPois(pois: List<Poi>): List<Poi> {
+        val indices = pois.mapIndexedNotNull { index, poi ->
+            if (poi.poiCategory != PoiCategory.Radar) return@mapIndexedNotNull null
+            if (poi.source !in ANCHOR_SOURCES) return@mapIndexedNotNull null
+            if (alreadyHasDirection(poi)) return@mapIndexedNotNull null
+            index
+        }
+        if (indices.isEmpty()) return pois
+
+        val points = indices.map { i -> pois[i].latitude to pois[i].longitude }
+        val bundle = try {
+            fetchBundleForPoints(points)
+        } catch (_: Exception) {
+            return pois
+        }
+
+        val out = pois.toMutableList()
+        for (i in indices) {
+            val poi = out[i]
+            val vma = poi.rawSourceData?.get("vma")?.toIntOrNull()
+            val info = matchAndResolve(poi.latitude, poi.longitude, vma, bundle) ?: continue
+            out[i] = applyDirectionToPoi(poi, info)
+        }
+        return out
     }
 
     /**
@@ -92,18 +164,22 @@ class RadarOsmEnricher(
     }
 
     private fun matchAndResolve(
-        record: FranceRadarRecord,
+        latitude: Double,
+        longitude: Double,
+        vma: Int?,
         bundle: SpeedCameraOverpassBundle,
     ): OsmDirectionInfo? {
-        val match = bestMatch(record.latitude, record.longitude, record.vma, bundle.cameras)
-            ?: return null
+        val match = bestMatch(latitude, longitude, vma, bundle.cameras) ?: return null
         val (camera, distM) = match
         return resolveDirectionForCamera(camera, distM, bundle)
     }
 
-    private suspend fun fetchBundle(records: List<FranceRadarRecord>): SpeedCameraOverpassBundle {
-        val lats = records.map { it.latitude }
-        val lons = records.map { it.longitude }
+    private suspend fun fetchBundleForPoints(
+        points: List<Pair<Double, Double>>,
+    ): SpeedCameraOverpassBundle {
+        require(points.isNotEmpty())
+        val lats = points.map { it.first }
+        val lons = points.map { it.second }
         val padLat = BBOX_PAD_KM / 111.0
         val midLat = (lats.minOrNull()!! + lats.maxOrNull()!!) / 2.0
         val padLon = BBOX_PAD_KM / (111.0 * cos(midLat * PI / 180.0)).coerceAtLeast(0.01)

@@ -131,8 +131,11 @@
     <string name="filter_country_placeholder">France, DE, global…</string>
     <string name="filter_data_sources">Sources de données</string>
     <string name="filter_data_sources_fetch_kind_hint">Chaque source est marquée api (requête géo) ou file (téléchargement national).</string>
-    <string name="settings_bulk_file_wifi_only">Fichiers uniquement en Wi‑Fi</string>
-    <string name="settings_bulk_file_wifi_only_subtitle">Ignore les dumps CSV/JSON nationaux en données mobiles. Le cache reste affiché s\'il existe.</string>
+    <string name="settings_bulk_file_policy">Téléchargements de gros fichiers</string>
+    <string name="settings_bulk_file_policy_subtitle">Dumps CSV/JSON nationaux. Les API géo (ex. Lufop) ne sont pas concernées. Le cache reste affiché s\'il existe.</string>
+    <string name="settings_bulk_file_never">Jamais</string>
+    <string name="settings_bulk_file_wifi_only">Wi‑Fi uniquement</string>
+    <string name="settings_bulk_file_allowed">Autorisé</string>
     <string name="provider_fetch_kind_api">api</string>
     <string name="provider_fetch_kind_file">file</string>
     <string name="dialog_bulk_file_title">Gros fichier à télécharger</string>

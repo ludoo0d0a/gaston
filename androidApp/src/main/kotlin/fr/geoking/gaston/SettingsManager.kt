@@ -19,6 +19,16 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
+/** Whether national CSV/JSON dump providers may download on the current network. */
+enum class BulkFileDownloadPolicy {
+    /** Never download bulk files (use cache only). Default. */
+    Never,
+    /** Download bulk files only on Wi‑Fi. */
+    WifiOnly,
+    /** Allow bulk file downloads on any network. */
+    Allowed,
+}
+
 enum class CarMapMode {
   /** Host Google map on Android Auto ([NativeMapPoiScreen]). */
     Native,
@@ -132,10 +142,11 @@ data class AppSettings(
     val poiProviderSelectionMode: PoiProviderSelectionMode = PoiProviderSelectionMode.Manual,
     val selectedPoiProviders: Set<PoiProviderType> = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
     /**
-     * When true, bulk file providers (national CSV/JSON dumps) only fetch on Wi‑Fi.
-     * Geo-filtered APIs are unaffected.
+     * Policy for bulk file providers (national CSV/JSON dumps).
+     * Geo-filtered APIs (including Lufop) are unaffected.
+     * Default [BulkFileDownloadPolicy.Never].
      */
-    val bulkFileDownloadsWifiOnly: Boolean = false,
+    val bulkFileDownloadPolicy: BulkFileDownloadPolicy = BulkFileDownloadPolicy.Never,
     val mapEnergyMode: EnergyFilterMode = EnergyFilterMode.Fuel,
     val selectedMapEnergyTypes: Set<String> = DEFAULT_MAP_ENERGY_TYPES,
     val mapEnseigneType: String = DEFAULT_MAP_ENSEIGNE_TYPE,
@@ -340,7 +351,7 @@ open class SettingsManager(
             useVehicleFilter = prefs.getBoolean("use_vehicle_filter", false),
             poiProviderSelectionMode = poiProviderSelectionMode,
             selectedPoiProviders = selectedProviders,
-            bulkFileDownloadsWifiOnly = prefs.getBoolean("bulk_file_downloads_wifi_only", false),
+            bulkFileDownloadPolicy = SettingsManager.readBulkFileDownloadPolicy(prefs),
             mapEnergyMode = mapEnergyMode,
             selectedMapEnergyTypes = selectedMapEnergyTypes,
             mapEnseigneType = prefs.getString("map_enseigne_type", DEFAULT_MAP_ENSEIGNE_TYPE) ?: DEFAULT_MAP_ENSEIGNE_TYPE,
@@ -423,7 +434,8 @@ open class SettingsManager(
             .putBoolean("use_vehicle_filter", settings.useVehicleFilter)
             .putString("poi_provider_selection_mode", settings.poiProviderSelectionMode.name)
             .putStringSet("poi_providers", settings.selectedPoiProviders.map { it.name }.toSet())
-            .putBoolean("bulk_file_downloads_wifi_only", settings.bulkFileDownloadsWifiOnly)
+            .putString("bulk_file_download_policy", sanitized.bulkFileDownloadPolicy.name)
+            .remove("bulk_file_downloads_wifi_only")
             .putString("map_energy_mode", settings.mapEnergyMode.name)
             .putStringSet("map_energy_types", settings.selectedMapEnergyTypes)
             .putString("map_enseigne_type", settings.mapEnseigneType)
@@ -489,8 +501,15 @@ open class SettingsManager(
         saveSettings(_settings.value.copy(selectedPoiProviders = types.sanitizeUserPoiProviderSelection()))
     }
 
+    open fun setBulkFileDownloadPolicy(policy: BulkFileDownloadPolicy) {
+        saveSettings(_settings.value.copy(bulkFileDownloadPolicy = policy))
+    }
+
+    @Deprecated("Use setBulkFileDownloadPolicy", ReplaceWith("setBulkFileDownloadPolicy(if (enabled) BulkFileDownloadPolicy.WifiOnly else BulkFileDownloadPolicy.Allowed)"))
     open fun setBulkFileDownloadsWifiOnly(enabled: Boolean) {
-        saveSettings(_settings.value.copy(bulkFileDownloadsWifiOnly = enabled))
+        setBulkFileDownloadPolicy(
+            if (enabled) BulkFileDownloadPolicy.WifiOnly else BulkFileDownloadPolicy.Allowed,
+        )
     }
 
     open fun setUseVehicleFilter(enabled: Boolean) {
@@ -549,8 +568,7 @@ open class SettingsManager(
 
     open fun setEnergyFilterMode(mode: EnergyFilterMode) {
         val current = _settings.value
-        val leavingOther = current.poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
-            current.selectedPoiProviders == setOf(PoiProviderType.Overpass)
+        val leavingOther = current.isOtherModeActive()
         saveSettings(
             current.copy(
                 useVehicleFilter = false,
@@ -572,8 +590,7 @@ open class SettingsManager(
 
     open fun setMyVehicleMode() {
         val current = _settings.value
-        val leavingOther = current.poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
-            current.selectedPoiProviders == setOf(PoiProviderType.Overpass)
+        val leavingOther = current.isOtherModeActive()
         saveSettings(
             current.copy(
                 useVehicleFilter = true,
@@ -594,11 +611,19 @@ open class SettingsManager(
 
     open fun setOtherMode(amenityType: String = "parking") {
         val current = _settings.value
+        val providers = when (amenityType) {
+            "speed_camera" -> setOf(
+                PoiProviderType.LufopOpenSpeedCam,
+                PoiProviderType.LuxembourgRadars,
+                PoiProviderType.Overpass,
+            )
+            else -> setOf(PoiProviderType.Overpass)
+        }
         saveSettings(
             current.copy(
                 useVehicleFilter = false,
                 poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
-                selectedPoiProviders = setOf(PoiProviderType.Overpass),
+                selectedPoiProviders = providers,
                 selectedOverpassAmenityTypes = setOf(amenityType),
                 cacheWarmAmenityTypes = current.cacheWarmAmenityTypes + amenityType,
             )
@@ -829,6 +854,31 @@ open class SettingsManager(
         // Keep the prefs small: cap to 200 entries (arbitrary, user-level).
         val capped = map.entries.take(200).associate { it.key to it.value }
         prefs.edit().putString("poi_ratings", Json.encodeToString(capped)).apply()
+    }
+
+    companion object {
+        /**
+         * Migrates legacy `bulk_file_downloads_wifi_only` boolean into [BulkFileDownloadPolicy].
+         * New installs default to [BulkFileDownloadPolicy.Never].
+         */
+        fun readBulkFileDownloadPolicy(prefs: SharedPreferences): BulkFileDownloadPolicy {
+            prefs.getString("bulk_file_download_policy", null)?.let { stored ->
+                return try {
+                    BulkFileDownloadPolicy.valueOf(stored)
+                } catch (_: Exception) {
+                    BulkFileDownloadPolicy.Never
+                }
+            }
+            // Legacy boolean: true = WifiOnly, false = Allowed (old default was "always allow").
+            if (prefs.contains("bulk_file_downloads_wifi_only")) {
+                return if (prefs.getBoolean("bulk_file_downloads_wifi_only", false)) {
+                    BulkFileDownloadPolicy.WifiOnly
+                } else {
+                    BulkFileDownloadPolicy.Allowed
+                }
+            }
+            return BulkFileDownloadPolicy.Never
+        }
     }
 }
 

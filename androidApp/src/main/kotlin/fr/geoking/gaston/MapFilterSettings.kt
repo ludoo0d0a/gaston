@@ -24,10 +24,22 @@ fun AppSettings.effectiveEnergyFilterMode(): EnergyFilterMode {
 fun AppSettings.isSwapExclusive(): Boolean =
     !useVehicleFilter && selectedMapEnergyTypes.contains("swap")
 
+/**
+ * Amenity / radar-only sources (no fuel or EV station feed).
+ * Selecting these (e.g. Lufop) must not exit "Other" mode.
+ */
+val AMENITY_ONLY_POI_PROVIDERS: Set<PoiProviderType> = setOf(
+    PoiProviderType.Overpass,
+    PoiProviderType.LufopOpenSpeedCam,
+    PoiProviderType.LuxembourgRadars,
+    PoiProviderType.FranceRadars,
+)
+
 /** True when the user explicitly selected "Other" (amenities) mode. */
 fun AppSettings.isOtherModeActive(): Boolean =
     poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
-        selectedPoiProviders == setOf(PoiProviderType.Overpass)
+        selectedPoiProviders.isNotEmpty() &&
+        selectedPoiProviders.all { it in AMENITY_ONLY_POI_PROVIDERS }
 
 fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
     "toilets" -> PoiCategory.Toilet

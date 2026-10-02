@@ -5,6 +5,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.BulkFileDownloadPolicy
 import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.FuelCard
 import fr.geoking.gaston.VehicleType
@@ -66,7 +67,7 @@ class FirestoreSettingsSync(
             "fuelCard" to s.fuelCard.name,
             "useVehicleFilter" to s.useVehicleFilter,
             "selectedPoiProviders" to s.selectedPoiProviders.map { it.name },
-            "bulkFileDownloadsWifiOnly" to s.bulkFileDownloadsWifiOnly,
+            "bulkFileDownloadPolicy" to s.bulkFileDownloadPolicy.name,
             "selectedMapEnergyTypes" to s.selectedMapEnergyTypes.toList(),
             "mapEnseigneType" to s.mapEnseigneType,
             "mapBrands" to s.mapBrands.toList(),
@@ -129,12 +130,21 @@ class FirestoreSettingsSync(
             fuelCard = pick(local.fuelCard, remote["fuelCard"], default.fuelCard) { parseEnum(it, FuelCard::class.java) },
             useVehicleFilter = pick(local.useVehicleFilter, remote["useVehicleFilter"], default.useVehicleFilter, ::parseBoolean),
             selectedPoiProviders = pick(local.selectedPoiProviders, remote["selectedPoiProviders"], default.selectedPoiProviders, ::parsePoiProviderSet),
-            bulkFileDownloadsWifiOnly = pick(
-                local.bulkFileDownloadsWifiOnly,
-                remote["bulkFileDownloadsWifiOnly"],
-                default.bulkFileDownloadsWifiOnly,
-                ::parseBoolean,
-            ),
+            bulkFileDownloadPolicy = pick(
+                local.bulkFileDownloadPolicy,
+                remote["bulkFileDownloadPolicy"] ?: remote["bulkFileDownloadsWifiOnly"],
+                default.bulkFileDownloadPolicy,
+            ) { v ->
+                when (v) {
+                    is Boolean -> if (v) BulkFileDownloadPolicy.WifiOnly else BulkFileDownloadPolicy.Allowed
+                    is String -> try {
+                        BulkFileDownloadPolicy.valueOf(v)
+                    } catch (_: Exception) {
+                        default.bulkFileDownloadPolicy
+                    }
+                    else -> default.bulkFileDownloadPolicy
+                }
+            },
             selectedMapEnergyTypes = pick(local.selectedMapEnergyTypes, remote["selectedMapEnergyTypes"], default.selectedMapEnergyTypes, ::parseStringSet),
             mapEnseigneType = pick(local.mapEnseigneType, remote["mapEnseigneType"], default.mapEnseigneType, ::parseString),
             mapBrands = pick(local.mapBrands, remote["mapBrands"], default.mapBrands, ::parseStringSet),

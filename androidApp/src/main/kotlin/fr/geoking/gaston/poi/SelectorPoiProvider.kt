@@ -98,6 +98,8 @@ class SelectorPoiProvider(
     private val historyRepo: StationPriceHistoryRepository? = null,
     /** When true (no Lufop API key), inject Overpass for Radar amenity fetches. */
     private val useOsmRadarsFallback: Boolean = false,
+    /** OSM direction enrich for Lufop/LU map radar pins (triangles / sense). */
+    private val radarOsmEnricher: fr.geoking.gaston.aac.RadarOsmEnricher? = null,
 ) : PoiProvider, CoroutineScope {
 
     override val coroutineContext = SupervisorJob() + Dispatchers.IO
@@ -191,6 +193,35 @@ class SelectorPoiProvider(
         return applyBulkFileNetworkPolicy(providers + radarSources)
     }
 
+    /**
+     * Categories each provider should fetch. When Lufop is the primary radar source,
+     * Overpass is not queried for [PoiCategory.Radar] (enrich-only via [radarOsmEnricher]).
+     */
+    private fun buildProviderCategories(
+        providersToFetch: Set<PoiProviderType>,
+        categoriesToFetch: Set<PoiCategory>,
+        coverage: PoiCoverageResult,
+        allEffectiveProviders: Set<PoiProviderType>,
+    ): Map<PoiProviderType, Set<PoiCategory>> {
+        val lufopPrimary =
+            !useOsmRadarsFallback && PoiProviderType.LufopOpenSpeedCam in allEffectiveProviders
+        return providersToFetch.associateWith { providerType ->
+            var cats = if (coverage.geoCovered) {
+                if (providerType in coverage.missingProviders) {
+                    categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
+                } else {
+                    coverage.missingCategories.intersect(getProvider(providerType).supportedCategories())
+                }
+            } else {
+                categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
+            }
+            if (lufopPrimary && providerType == PoiProviderType.Overpass) {
+                cats = cats - PoiCategory.Radar
+            }
+            cats
+        }.filterValues { it.isNotEmpty() }
+    }
+
     private fun getProvider(type: PoiProviderType): PoiProvider = when (type) {
         PoiProviderType.Routex -> routex
         PoiProviderType.Etalab -> dataGouvPrixCarburant
@@ -265,7 +296,7 @@ class SelectorPoiProvider(
         providers: Set<PoiProviderType>,
         categoriesToFetch: Set<PoiCategory>,
         nowMs: Long,
-    ): Pair<PoiCoverageResult, PoiSearchResult?> {
+    ): Pair<PoiCoverageResult, List<Poi>?> {
         runCacheEviction(nowMs)
         val coverage = computePoiCoverage(
             regions = loadedRegions,
@@ -277,11 +308,38 @@ class SelectorPoiProvider(
             nowMs = nowMs,
         )
         if (coverage.fullyCovered) {
-            return coverage to PoiSearchResult(
-                pois = applyPostFilters(cachedPois.values.toList(), request, providers),
-            )
+            return coverage to cachedPois.values.toList()
         }
         return coverage to null
+    }
+
+    /**
+     * OSM-enrich Lufop/LU radar pins (direction for map triangles), then apply station filters + radar dedupe.
+     */
+    private suspend fun finalizePois(
+        pois: List<Poi>,
+        request: PoiSearchRequest,
+        providers: Set<PoiProviderType>,
+    ): List<Poi> {
+        val enriched = try {
+            radarOsmEnricher?.enrichPois(pois) ?: pois
+        } catch (e: Exception) {
+            Log.w("SelectorPoiProvider", "Radar OSM direction enrich failed", e)
+            pois
+        }
+        // Persist direction onto in-memory cache so triangles survive without re-query.
+        if (enriched !== pois) {
+            synchronized(cacheLock) {
+                for (poi in enriched) {
+                    if (poi.poiCategory == PoiCategory.Radar &&
+                        fr.geoking.gaston.aac.RadarOsmEnricher.alreadyHasDirection(poi)
+                    ) {
+                        cachedPois[poi.id] = poi
+                    }
+                }
+            }
+        }
+        return applyPostFilters(enriched, request, providers)
     }
 
     private fun recordLoadedRegion(
@@ -508,9 +566,12 @@ class SelectorPoiProvider(
             }
         }
         val coverage = coverageAndCache.first
-        var currentAlreadyCoveredResult = coverageAndCache.second
-        if (currentAlreadyCoveredResult != null) {
+        var currentAlreadyCoveredResult: PoiSearchResult? = null
+        coverageAndCache.second?.let { cached ->
             isFromMemory = true
+            currentAlreadyCoveredResult = PoiSearchResult(
+                pois = finalizePois(cached, request, providers),
+            )
         }
         if (currentAlreadyCoveredResult == null && !settings.disableCache) {
             // Try persistent cache
@@ -552,7 +613,7 @@ class SelectorPoiProvider(
                     effectiveProviders = providers.map { it.name }.sorted(),
                     poiCount = dbResultPois.size,
                 )
-                currentAlreadyCoveredResult = PoiSearchResult(pois = applyPostFilters(dbResultPois, request, providers))
+                currentAlreadyCoveredResult = PoiSearchResult(pois = finalizePois(dbResultPois, request, providers))
             }
         }
 
@@ -580,17 +641,12 @@ class SelectorPoiProvider(
             providers
         }
 
-        val providerCategories = providersToFetch.associateWith { providerType ->
-            if (coverage.geoCovered) {
-                if (providerType in coverage.missingProviders) {
-                    categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
-                } else {
-                    coverage.missingCategories.intersect(getProvider(providerType).supportedCategories())
-                }
-            } else {
-                categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
-            }
-        }.filterValues { it.isNotEmpty() }
+        val providerCategories = buildProviderCategories(
+            providersToFetch = providersToFetch,
+            categoriesToFetch = categoriesToFetch,
+            coverage = coverage,
+            allEffectiveProviders = providers,
+        )
 
         traceProviderFetchPlanned(
             source = "searchFlow",
@@ -607,45 +663,63 @@ class SelectorPoiProvider(
                 poiCount = cachedPois.size,
             )
             send(
-                PoiSearchResult(pois = applyPostFilters(cachedPois.values.toList(), request, providers)),
+                PoiSearchResult(pois = finalizePois(cachedPois.values.toList(), request, providers)),
             )
             return@channelFlow
         }
 
         if (coverage.geoCovered && cachedPois.isNotEmpty()) {
             send(
-                PoiSearchResult(pois = applyPostFilters(cachedPois.values.toList(), request, providers)),
+                PoiSearchResult(pois = finalizePois(cachedPois.values.toList(), request, providers)),
             )
         }
 
         val accumulated = mutableListOf<Poi>()
         val errors = mutableListOf<PoiProviderError>()
+        val successfulProviders = mutableSetOf<PoiProviderType>()
+        val successfulCategories = mutableSetOf<PoiCategory>()
         var finalEnriched = listOf<Poi>()
 
         supervisorScope {
             providerCategories.forEach { (providerType, categoriesForProvider) ->
                 launch {
-                    val (rated, providerErrors) = fetchPoisFromProviders(
-                        request = request,
-                        providerCategories = mapOf(providerType to categoriesForProvider),
-                        allProviders = providers,
-                    )
-                    flowMutex.withLock {
+                    val (rated, providerErrors) = try {
+                        fetchPoisFromProviders(
+                            request = request,
+                            providerCategories = mapOf(providerType to categoriesForProvider),
+                            allProviders = providers,
+                        )
+                    } catch (e: Exception) {
+                        if (e is kotlinx.coroutines.CancellationException) throw e
+                        Log.w("SelectorPoiProvider", "Provider $providerType failed; continuing merge", e)
+                        emptyList<Poi>() to listOf(
+                            PoiProviderError(providerType.name, e.message ?: "Unknown error"),
+                        )
+                    }
+                    val providerFailed = providerErrors.any { it.providerName == providerType.name }
+                    val snapshot = flowMutex.withLock {
                         accumulated.addAll(rated)
                         errors.addAll(providerErrors)
+                        if (!providerFailed) {
+                            successfulProviders += providerType
+                            successfulCategories += categoriesForProvider
+                        }
                         val merged = PoiMerger.mergePois(accumulated)
                         finalEnriched = merged
 
-                        val resultToEmit = synchronized(cacheLock) {
+                        synchronized(cacheLock) {
                             PoiMerger.mergeInto(cachedPois, rated)
                             rated.forEach { poiSeenAtMs[it.id] = nowMs }
-                            PoiSearchResult(
-                                pois = applyPostFilters(cachedPois.values.toList(), request, providers),
-                                errors = errors.toList(),
-                            )
+                            cachedPois.values.toList() to errors.toList()
                         }
-                        send(resultToEmit)
                     }
+                    // Enrich outside the mutex so an Overpass rate-limit cannot block sibling providers.
+                    send(
+                        PoiSearchResult(
+                            pois = finalizePois(snapshot.first, request, providers),
+                            errors = snapshot.second,
+                        )
+                    )
                 }
             }
         }
@@ -656,15 +730,18 @@ class SelectorPoiProvider(
             cachedPois.values.forEach { p ->
                 if (poiSeenAtMs[p.id] == null) poiSeenAtMs[p.id] = mergedNow
             }
-            recordLoadedRegion(
-                centerLat = request.latitude,
-                centerLng = request.longitude,
-                requiredRadiusKm = requiredRadiusKm,
-                loadedAtMs = mergedNow,
-                fetchedProviders = providerCategories.keys,
-                fetchedCategories = providerCategories.values.flatten().toSet(),
-                maxRegions = maxRegions,
-            )
+            // Only mark providers that succeeded — a failed Overpass must not block Lufop retries.
+            if (successfulProviders.isNotEmpty()) {
+                recordLoadedRegion(
+                    centerLat = request.latitude,
+                    centerLng = request.longitude,
+                    requiredRadiusKm = requiredRadiusKm,
+                    loadedAtMs = mergedNow,
+                    fetchedProviders = successfulProviders.toSet(),
+                    fetchedCategories = successfulCategories.toSet(),
+                    maxRegions = maxRegions,
+                )
+            }
             trimPoiCache(request.latitude, request.longitude, maxPoisInCache)
         }
 
@@ -672,7 +749,7 @@ class SelectorPoiProvider(
             phase = ProviderTracePhase.Complete,
             message = "searchFlow done",
             effectiveProviders = providers.map { it.name }.sorted(),
-            fetchedProviders = providerCategories.keys.map { it.name }.sorted(),
+            fetchedProviders = successfulProviders.map { it.name }.sorted(),
             poiCount = synchronized(cacheLock) { cachedPois.size },
             errors = errors.map { "${it.providerName}: ${it.message}" },
         )
@@ -764,29 +841,42 @@ class SelectorPoiProvider(
             }
         }
         val coverage = coverageAndCache.first
-        coverageAndCache.second?.let {
+        coverageAndCache.second?.let { cached ->
             traceProvider(
                 phase = ProviderTracePhase.CacheMemory,
                 message = "searchResult: region covered (memory)",
                 effectiveProviders = providers.map { it.name }.sorted(),
-                poiCount = it.pois.size,
+                poiCount = cached.size,
             )
-            return it
+            return PoiSearchResult(pois = finalizePois(cached, request, providers))
         }
 
         // Try persistent cache
         if (settings.disableCache) {
-            val providersToFetch = providers
-            val providerCategories = providersToFetch.associateWith { providerType ->
-                categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
-            }.filterValues { it.isNotEmpty() }
-
-            val (rated, errors) = fetchPoisFromProviders(
-                request = request,
-                providerCategories = providerCategories,
-                allProviders = providers,
+            val providerCategories = buildProviderCategories(
+                providersToFetch = providers,
+                categoriesToFetch = categoriesToFetch,
+                coverage = PoiCoverageResult(
+                    coveringRegion = null,
+                    missingProviders = providers,
+                    missingCategories = categoriesToFetch,
+                ),
+                allEffectiveProviders = providers,
             )
-            return PoiSearchResult(pois = applyPostFilters(rated, request, providers), errors = errors)
+
+            val (rated, errors) = try {
+                fetchPoisFromProviders(
+                    request = request,
+                    providerCategories = providerCategories,
+                    allProviders = providers,
+                )
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                emptyList<Poi>() to providerCategories.keys.map {
+                    PoiProviderError(it.name, e.message ?: "Unknown error")
+                }
+            }
+            return PoiSearchResult(pois = finalizePois(rated, request, providers), errors = errors)
         }
 
         val latDelta = requiredRadiusKm / 111.0
@@ -834,17 +924,12 @@ class SelectorPoiProvider(
             providers
         }
 
-        val providerCategories = providersToFetch.associateWith { providerType ->
-            if (coverage.geoCovered) {
-                if (providerType in coverage.missingProviders) {
-                    categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
-                } else {
-                    coverage.missingCategories.intersect(getProvider(providerType).supportedCategories())
-                }
-            } else {
-                categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
-            }
-        }.filterValues { it.isNotEmpty() }
+        val providerCategories = buildProviderCategories(
+            providersToFetch = providersToFetch,
+            categoriesToFetch = categoriesToFetch,
+            coverage = coverage,
+            allEffectiveProviders = providers,
+        )
 
         traceProviderFetchPlanned(
             source = "searchResult",
@@ -860,14 +945,30 @@ class SelectorPoiProvider(
                 effectiveProviders = providers.map { it.name }.sorted(),
                 poiCount = cachedPois.size,
             )
-            return PoiSearchResult(pois = applyPostFilters(cachedPois.values.toList(), request, providers))
+            return PoiSearchResult(pois = finalizePois(cachedPois.values.toList(), request, providers))
         }
 
-        val (rated, errors) = fetchPoisFromProviders(
-            request = request,
-            providerCategories = providerCategories,
-            allProviders = providers,
-        )
+        val (rated, errors) = try {
+            fetchPoisFromProviders(
+                request = request,
+                providerCategories = providerCategories,
+                allProviders = providers,
+            )
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.w("SelectorPoiProvider", "Batch provider fetch failed; returning partial/empty", e)
+            emptyList<Poi>() to providerCategories.keys.map {
+                PoiProviderError(it.name, e.message ?: "Unknown error")
+            }
+        }
+
+        val failedNames = errors.map { it.providerName }.toSet()
+        val successfulProviders = providerCategories.keys.filter { it.name !in failedNames }.toSet()
+        val successfulCategories = providerCategories
+            .filterKeys { it in successfulProviders }
+            .values
+            .flatten()
+            .toSet()
 
         val mergedNow = System.currentTimeMillis()
         synchronized(cacheLock) {
@@ -876,19 +977,24 @@ class SelectorPoiProvider(
             cachedPois.values.forEach { p ->
                 if (poiSeenAtMs[p.id] == null) poiSeenAtMs[p.id] = mergedNow
             }
-            recordLoadedRegion(
-                centerLat = request.latitude,
-                centerLng = request.longitude,
-                requiredRadiusKm = requiredRadiusKm,
-                loadedAtMs = mergedNow,
-                fetchedProviders = providerCategories.keys,
-                fetchedCategories = providerCategories.values.flatten().toSet(),
-                maxRegions = maxRegions,
-            )
+            if (successfulProviders.isNotEmpty()) {
+                recordLoadedRegion(
+                    centerLat = request.latitude,
+                    centerLng = request.longitude,
+                    requiredRadiusKm = requiredRadiusKm,
+                    loadedAtMs = mergedNow,
+                    fetchedProviders = successfulProviders,
+                    fetchedCategories = successfulCategories,
+                    maxRegions = maxRegions,
+                )
+            }
             trimPoiCache(request.latitude, request.longitude, maxPoisInCache)
         }
 
-        // Persist to DB
+        val finalPois = synchronized(cacheLock) { cachedPois.values.toList() }
+        val result = finalizePois(finalPois, request, providers)
+
+        // Persist after OSM direction enrich so triangles survive disk cache hits.
         try {
             val entitiesToPersist = synchronized(cacheLock) { cachedPois.values.toList() }
             val entities = entitiesToPersist.map { p ->
@@ -907,13 +1013,11 @@ class SelectorPoiProvider(
             Log.e("SelectorPoiProvider", "Failed to persist POIs", e)
         }
 
-        val finalPois = synchronized(cacheLock) { cachedPois.values.toList() }
-        val result = applyPostFilters(finalPois, request, providers)
         traceProvider(
             phase = ProviderTracePhase.Complete,
             message = "searchResult done",
             effectiveProviders = providers.map { it.name }.sorted(),
-            fetchedProviders = providerCategories.keys.map { it.name }.sorted(),
+            fetchedProviders = successfulProviders.map { it.name }.sorted(),
             poiCount = result.size,
             errors = errors.map { "${it.providerName}: ${it.message}" },
         )

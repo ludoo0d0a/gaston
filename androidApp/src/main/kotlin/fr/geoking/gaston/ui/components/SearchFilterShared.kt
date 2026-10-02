@@ -20,12 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.AppSettings
-import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.effectiveEnergyFilterMode
 import fr.geoking.gaston.effectiveIrvePowerLevels
+import fr.geoking.gaston.isOtherModeActive
 import fr.geoking.gaston.poi.EnergyFilterMode
-import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.ui.*
 import fr.geoking.gaston.ui.map.AmenityIconCatalog
 
@@ -45,11 +44,8 @@ data class SearchRow(
 @Composable
 fun rememberSearchMode(settings: AppSettings): SearchMode {
     return remember(settings) {
-        val isOtherSelected = settings.poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
-                settings.selectedPoiProviders == setOf(PoiProviderType.Overpass)
-
         when {
-            isOtherSelected -> SearchMode.Other
+            settings.isOtherModeActive() -> SearchMode.Other
             settings.useVehicleFilter -> SearchMode.MyVehicle
             settings.effectiveEnergyFilterMode() == EnergyFilterMode.Electric -> SearchMode.EV
             else -> SearchMode.Fuel

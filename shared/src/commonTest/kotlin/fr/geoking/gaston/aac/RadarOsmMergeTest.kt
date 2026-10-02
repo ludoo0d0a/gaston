@@ -139,6 +139,77 @@ class RadarOsmEnricherTest {
     }
 
     @Test
+    fun enrichPoisLufopForwardGivesDrawableBearing() = runBlocking {
+        val camera = OverpassElement(
+            200,
+            48.8566,
+            2.3522,
+            mapOf("highway" to "speed_camera", "direction" to "forward", "maxspeed" to "90"),
+        )
+        val way = fr.geoking.gaston.api.overpass.OverpassWayGeom(
+            id = 1,
+            tags = mapOf("highway" to "primary"),
+            // northbound way (≈ 0°), center near the camera so nearestWayBearing matches
+            points = listOf(48.8560 to 2.3522, 48.8572 to 2.3522),
+        )
+        val bundle = SpeedCameraOverpassBundle(
+            cameras = listOf(camera),
+            nodesById = mapOf(200L to camera),
+            ways = listOf(way),
+        )
+        val enricher = RadarOsmEnricher(FakeSpeedCameraOverpassClient(bundle))
+        val lufop = Poi(
+            id = "osc_radar_42",
+            name = "Zone 90 km/h",
+            address = "Lufop",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            poiCategory = PoiCategory.Radar,
+            source = "LufopOpenSpeedCam",
+            rawSourceData = mapOf("vma" to "90", "type" to "FIXE", "id" to "42", "aac_zone" to "true"),
+        )
+        val out = enricher.enrichPois(listOf(lufop))
+        assertEquals(1, out.size)
+        assertTrue(RadarOsmEnricher.alreadyHasDirection(out[0]))
+        val bearing = DangerZoneTriangle.monitoredBearingDegrees(out[0])
+        assertNotNull(bearing)
+        assertEquals(0.0, bearing!!, 5.0)
+        assertNotNull(DangerZoneTriangle.latLngRingForRadarPoi(out[0]))
+        Unit
+    }
+
+    @Test
+    fun enrichPoisSkipsWhenDirectionAlreadyPresent() = runBlocking {
+        val camera = OverpassElement(
+            200,
+            48.8566,
+            2.3522,
+            mapOf("highway" to "speed_camera", "direction" to "forward"),
+        )
+        val enricher = RadarOsmEnricher(
+            FakeSpeedCameraOverpassClient(
+                SpeedCameraOverpassBundle(cameras = listOf(camera), nodesById = mapOf(200L to camera)),
+            )
+        )
+        val lufop = Poi(
+            id = "osc_radar_1",
+            name = "Zone",
+            address = "",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            poiCategory = PoiCategory.Radar,
+            source = "LufopOpenSpeedCam",
+            rawSourceData = mapOf(
+                DangerZoneTriangle.RAW_MONITORED_BEARING to "90.0",
+                "vma" to "90",
+            ),
+        )
+        val out = enricher.enrichPois(listOf(lufop))
+        assertEquals("90.0", out[0].rawSourceData?.get(DangerZoneTriangle.RAW_MONITORED_BEARING))
+        Unit
+    }
+
+    @Test
     fun evaluatorDropsOppositeHighDirection() {
         val zone = DangerZoneFactory.fromSpeedControlPoint(
             id = "z",

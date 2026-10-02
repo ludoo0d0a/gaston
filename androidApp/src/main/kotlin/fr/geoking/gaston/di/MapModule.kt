@@ -440,6 +440,7 @@ val mapModule = module {
             networkService = get(),
             historyRepo = get(),
             useOsmRadarsFallback = BuildConfig.LUFOP_API_KEY.isBlank(),
+            radarOsmEnricher = get(),
         )
     }
     single { CommunityPoiStorage(androidContext()) }
