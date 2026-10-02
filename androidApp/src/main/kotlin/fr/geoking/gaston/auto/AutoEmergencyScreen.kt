@@ -147,6 +147,27 @@ class AutoEmergencyScreen(
                 .build()
         )
 
+        // Accident assist (terminal MessageTemplate — checklist/constat on phone)
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.accident_had_accident))
+                .addText(carContext.getString(R.string.accident_auto_continue_phone))
+                .setImage(carContext.dashboardEmergencyIcon())
+                .setBrowsable(true)
+                .setOnClickListener {
+                    screenManager.push(
+                        AutoAccidentAssistScreen(
+                            carContext = carContext,
+                            universalNumber = universalNumber,
+                            latitude = latitude,
+                            longitude = longitude,
+                            locationAddress = locationAddress,
+                        )
+                    )
+                }
+                .build()
+        )
+
         // Location Info
         val locationRow = Row.Builder()
             .setTitle(carContext.getString(R.string.screen_your_current_location))
@@ -198,8 +219,17 @@ class AutoEmergencyScreen(
             )
         }
 
+        val listLimit = try {
+            carContext.getCarService(androidx.car.app.constraints.ConstraintManager::class.java)
+                .getContentLimit(androidx.car.app.constraints.ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+        } catch (_: Exception) {
+            6
+        }
+        val limitedList = ItemList.Builder()
+        listBuilder.build().items.take(listLimit).forEach { limitedList.addItem(it) }
+
         ListTemplate.Builder()
-            .setSingleList(listBuilder.build())
+            .setSingleList(limitedList.build())
             .setHeader(
                 Header.Builder()
                     .setTitle(carContext.getString(R.string.dashboard_emergency))

@@ -103,6 +103,8 @@ fun CarContext.dashboardEmergencyIcon(): CarIcon = carIcon(R.drawable.ic_sos, Au
 
 fun CarContext.dashboardSettingsIcon(): CarIcon = carIcon(R.drawable.ic_settings, AutoCarIcons.primary)
 
+fun CarContext.dashboardMaintenanceIcon(): CarIcon = carIcon(R.drawable.ic_directions_car, AutoCarIcons.primary)
+
 fun CarContext.actionHomeIcon(): CarIcon = carIcon(R.drawable.ic_home, AutoCarIcons.primary)
 
 fun CarContext.actionSettingsIcon(): CarIcon = carIcon(R.drawable.ic_settings, AutoCarIcons.primary)

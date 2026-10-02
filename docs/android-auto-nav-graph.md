@@ -2,6 +2,8 @@
 
 This document describes the screen flow for Gaston on Android Auto.
 
+Root hub is a **6-tile GridTemplate** (Fuel, EV, Places, Emergency, My vehicle, More) so strict hosts with `CONTENT_LIMIT_TYPE_GRID` ≥ 6 show every entry.
+
 ```mermaid
 graph TD
     Root[CarAppSession] --> Dashboard[AutoDashboardScreen]
@@ -9,12 +11,10 @@ graph TD
     subgraph Dashboard Items
         Dashboard --> Fuel[AutoFuelDashboardScreen]
         Dashboard --> EV[AutoEvDashboardScreen]
-        Dashboard --> MyVehicle[AutoMyVehicleDashboardScreen]
-        Dashboard --> Other[Map Screen]
-        Dashboard --> Routes[AutoRoutePlanningScreen]
-        Dashboard --> Network[AutoNetworkLocationInfoScreen]
+        Dashboard --> Places[AutoOtherDashboardScreen]
         Dashboard --> Emergency[AutoEmergencyScreen]
-        Dashboard --> More[More Options Sub-menu]
+        Dashboard --> MyVehicle[AutoMyVehicleDashboardScreen]
+        Dashboard --> More[More Options List]
     end
 
     subgraph Fuel Selection
@@ -25,11 +25,31 @@ graph TD
         EV --> EVMap[Map Screen]
     end
 
+    subgraph Places Hub
+        Places --> AmenityMap[Map Screen]
+        Places -.->|speed_camera first| Radars[Danger zone]
+    end
+
+    subgraph Emergency Hub
+        Emergency --> Accident[AutoAccidentAssistScreen]
+        Emergency --> Contacts[AutoEmergencyContactsScreen]
+    end
+
     subgraph My Vehicle
         MyVehicle --> MVFuel[AutoFuelDashboardScreen]
         MyVehicle --> MVEV[AutoEvDashboardScreen]
         MyVehicle --> MVMap[Map Screen]
         MyVehicle --> MVSettings[AutoVehicleSettingsScreen]
+        MyVehicle --> MVLog[AutoMaintenanceLogScreen]
+    end
+
+    subgraph More Menu
+        More --> Favorites[AutoFavoritesScreen]
+        More --> Routes[AutoRoutePlanningScreen]
+        More --> Network[AutoNetworkLocationInfoScreen]
+        More --> FuelOutlook[AutoFuelForecastScreen]
+        More --> MapSettingsMenu[AutoMapSettingsScreen]
+        More --> About[AutoAboutScreen]
     end
 
     subgraph Route Planning
@@ -50,12 +70,6 @@ graph TD
         NativeMap --> PoiDetail[PoiDetailScreen]
         CustomMap --> PoiDetail
         MapLibre --> PoiDetail
-    end
-
-    subgraph More Menu
-        More --> FuelOutlook[AutoFuelForecastScreen]
-        More --> MapSettingsMenu[AutoMapSettingsScreen]
-        More --> About[AutoAboutScreen]
     end
 
     subgraph Settings
@@ -83,13 +97,20 @@ graph TD
 3. **Map Screen** -> View charging stations and select a POI
 4. **PoiDetailScreen** -> View details and start navigation
 
-### 3. My Vehicle (Hybrid)
-1. **Dashboard** -> Tap **My Vehicle**
-2. **AutoMyVehicleDashboardScreen** -> Tap **Fuel** or **Electric** (depending on what you need)
-3. Follow the respective search flow above.
+### 3. Places (amenities)
+1. **Dashboard** -> Tap **Places** (FR: Lieux)
+2. **AutoOtherDashboardScreen** -> Pick amenity (danger zone / radars listed first)
+3. **Map Screen** -> View POIs
 
-### 4. Route Planning
-1. **Dashboard** -> Tap **Routes**
-2. **AutoRoutePlanningScreen** -> Enter Destination (and optionally Origin)
-3. **Results List** -> View stations along the route
-4. **Map Screen** (via Action Strip) -> Preview the route and stations
+### 4. Emergency
+1. **Dashboard** -> Tap **Emergency**
+2. Dial universal number, view GPS, or open local contacts
+3. **I had an accident** -> `AutoAccidentAssistScreen` (MessageTemplate: location + dial). Full checklist / paper constat remain on the phone.
+
+### 5. My Vehicle
+1. **Dashboard** -> Tap **My vehicle**
+2. Search (fuel/EV/map), vehicle settings, or read-only **service log** (`AutoMaintenanceLogScreen` — last service + due reminders, terminal)
+
+### 6. More
+1. **Dashboard** -> Tap **More**
+2. Favorites, Routes, Network, Fuel outlook, Map settings, About

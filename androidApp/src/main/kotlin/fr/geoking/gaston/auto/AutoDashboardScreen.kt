@@ -17,6 +17,10 @@ import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.shared.location.ConnectivityManager
 import fr.geoking.gaston.shared.network.NetworkService
 
+/**
+ * Root Android Auto hub — ≤6 grid tiles so strict hosts (CONTENT_LIMIT_TYPE_GRID min 6) show all items.
+ * Primary search (Fuel / EV) stays one tap; secondary tools live under Places / Vehicle / More.
+ */
 class AutoDashboardScreen(
     carContext: CarContext,
     private val settingsManager: SettingsManager,
@@ -51,18 +55,7 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 3. My Vehicle
-        gridBuilder.addItem(
-            GridItem.Builder()
-                .setTitle(carContext.getString(R.string.search_mode_my_car))
-                .setImage(carContext.dashboardMyCarIcon())
-                .setOnClickListener {
-                    screenManager.push(AutoMyVehicleDashboardScreen(carContext, settingsManager, getMapDeps))
-                }
-                .build()
-        )
-
-        // 4. Other
+        // 3. Places (amenities + danger zones)
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.search_mode_other))
@@ -73,29 +66,7 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 5. Favorites
-        gridBuilder.addItem(
-            GridItem.Builder()
-                .setTitle(carContext.getString(R.string.screen_favorites))
-                .setImage(carContext.dashboardFavoritesIcon())
-                .setOnClickListener {
-                    screenManager.push(AutoFavoritesScreen(carContext, settingsManager, getMapDeps))
-                }
-                .build()
-        )
-
-        // 6. Connectivity
-        gridBuilder.addItem(
-            GridItem.Builder()
-                .setTitle(carContext.getString(R.string.dashboard_network))
-                .setImage(carContext.dashboardNetworkIcon())
-                .setOnClickListener {
-                    screenManager.push(AutoNetworkLocationInfoScreen(carContext, networkService, connectivityManager))
-                }
-                .build()
-        )
-
-        // 7. Emergency
+        // 4. Emergency
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.dashboard_emergency))
@@ -106,7 +77,18 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 8. More
+        // 5. My vehicle (search + settings + maintenance)
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.search_mode_my_car))
+                .setImage(carContext.dashboardMyCarIcon())
+                .setOnClickListener {
+                    screenManager.push(AutoMyVehicleDashboardScreen(carContext, settingsManager, getMapDeps))
+                }
+                .build()
+        )
+
+        // 6. More (favorites, routes, network, settings…)
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.screen_more))
@@ -144,6 +126,16 @@ class AutoDashboardScreen(
                     val moreList = ItemList.Builder()
                         .addItem(
                             Row.Builder()
+                                .setTitle(carContext.getString(R.string.screen_favorites))
+                                .setImage(carContext.dashboardFavoritesIcon())
+                                .setBrowsable(true)
+                                .setOnClickListener {
+                                    screenManager.push(AutoFavoritesScreen(carContext, settingsManager, getMapDeps))
+                                }
+                                .build()
+                        )
+                        .addItem(
+                            Row.Builder()
                                 .setTitle(carContext.getString(R.string.dashboard_routes))
                                 .setImage(carContext.dashboardRoutesIcon())
                                 .setBrowsable(true)
@@ -158,6 +150,18 @@ class AutoDashboardScreen(
                                             geocodingClient = mapDeps.geocodingClient,
                                             settingsManager = settingsManager
                                         )
+                                    )
+                                }
+                                .build()
+                        )
+                        .addItem(
+                            Row.Builder()
+                                .setTitle(carContext.getString(R.string.dashboard_network))
+                                .setImage(carContext.dashboardNetworkIcon())
+                                .setBrowsable(true)
+                                .setOnClickListener {
+                                    screenManager.push(
+                                        AutoNetworkLocationInfoScreen(carContext, networkService, connectivityManager)
                                     )
                                 }
                                 .build()

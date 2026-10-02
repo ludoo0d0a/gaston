@@ -11,6 +11,8 @@ import androidx.car.app.model.Template
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.di.MapDeps
+import fr.geoking.gaston.feature.maintenance.MaintenanceRepository
+import org.koin.core.context.GlobalContext
 
 class AutoMyVehicleDashboardScreen(
     carContext: CarContext,
@@ -29,7 +31,6 @@ class AutoMyVehicleDashboardScreen(
         }
 
         if (settings.vehicleEnergy == "hybrid") {
-            // Hybrid: separate Fuel and Electric search
             gridBuilder.addItem(
                 GridItem.Builder()
                     .setTitle(carContext.getString(R.string.search_mode_fuel))
@@ -55,7 +56,6 @@ class AutoMyVehicleDashboardScreen(
                     .build()
             )
         } else {
-            // Standard: single search action
             gridBuilder.addItem(
                 GridItem.Builder()
                     .setTitle(carContext.getString(R.string.action_search))
@@ -72,7 +72,6 @@ class AutoMyVehicleDashboardScreen(
             )
         }
 
-        // Action 2: Vehicle Settings
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.cd_settings))
@@ -80,6 +79,18 @@ class AutoMyVehicleDashboardScreen(
                 .setImage(carContext.dashboardSettingsIcon())
                 .setOnClickListener {
                     screenManager.push(AutoVehicleSettingsScreen(carContext, settingsManager))
+                }
+                .build()
+        )
+
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.maintenance_auto_title))
+                .setText(carContext.getString(R.string.maintenance_auto_last_service))
+                .setImage(carContext.dashboardMaintenanceIcon())
+                .setOnClickListener {
+                    val repo = GlobalContext.get().get<MaintenanceRepository>()
+                    screenManager.push(AutoMaintenanceLogScreen(carContext, settingsManager, repo))
                 }
                 .build()
         )

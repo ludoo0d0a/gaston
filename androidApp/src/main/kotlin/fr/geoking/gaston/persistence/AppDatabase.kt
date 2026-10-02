@@ -11,9 +11,11 @@ import androidx.room.RoomDatabase
         FuelPricePredictionEntity::class,
         FuelPricePredictionScoreEntity::class,
         PoiCacheEntity::class,
-        NationalFuelPriceEntity::class
+        NationalFuelPriceEntity::class,
+        MaintenanceEventEntity::class,
+        ServiceIntervalEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,4 +26,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun fuelPricePredictionScoreDao(): FuelPricePredictionScoreDao
     abstract fun poiCacheDao(): PoiCacheDao
     abstract fun nationalFuelPriceDao(): NationalFuelPriceDao
+    abstract fun maintenanceEventDao(): MaintenanceEventDao
+    abstract fun serviceIntervalDao(): ServiceIntervalDao
 }

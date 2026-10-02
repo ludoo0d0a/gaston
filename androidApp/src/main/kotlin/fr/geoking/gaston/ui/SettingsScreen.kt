@@ -26,6 +26,7 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.AnnotatedString
@@ -233,7 +234,8 @@ fun SettingsScreen(
     initialScreenStack: List<SettingsScreenPage>? = null,
     onInitialRouteConsumed: () -> Unit = {},
     onClearErrorLog: () -> Unit = {},
-    onOpenAutoDebug: () -> Unit = {}
+    onOpenAutoDebug: () -> Unit = {},
+    onOpenMaintenanceLog: () -> Unit = {},
 ) {
     val current by settingsManager.settings.collectAsState()
     var screenStack by remember { mutableStateOf(listOf(SettingsScreenPage.Main)) }
@@ -313,7 +315,8 @@ fun SettingsScreen(
                 )
                 SettingsScreenPage.VehicleConfig -> VehicleConfig(
                     settings = current,
-                    onUpdate = { save(settingsManager, it) }
+                    onUpdate = { save(settingsManager, it) },
+                    onOpenMaintenanceLog = onOpenMaintenanceLog,
                 )
                 SettingsScreenPage.TollData -> TollDataSection(
                     settings = current,
@@ -1935,7 +1938,8 @@ private fun SelectionItem(
 @Composable
 private fun VehicleConfig(
     settings: AppSettings,
-    onUpdate: (AppSettings) -> Unit
+    onUpdate: (AppSettings) -> Unit,
+    onOpenMaintenanceLog: () -> Unit = {},
 ) {
     var gasConsumptionText by remember(settings.activeVehicleId) {
         mutableStateOf(settings.gasConsumptionLper100km?.toString() ?: "")
@@ -1944,6 +1948,8 @@ private fun VehicleConfig(
         mutableStateOf(settings.evConsumptionKwhPer100km?.toString() ?: "")
     }
     val activeVehicle = settings.activeVehicle()
+    val maintenanceRepository = koinInject<fr.geoking.gaston.feature.maintenance.MaintenanceRepository>()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(settings.activeVehicleId, settings.gasConsumptionLper100km) {
         val next = settings.gasConsumptionLper100km?.toString() ?: ""
@@ -2049,7 +2055,13 @@ private fun VehicleConfig(
                     }
                     if (settings.vehicles.size > 1 && activeVehicle != null) {
                         OutlinedButton(
-                            onClick = { onUpdate(settings.removeVehicle(activeVehicle.id)) },
+                            onClick = {
+                                val id = activeVehicle.id
+                                onUpdate(settings.removeVehicle(id))
+                                scope.launch {
+                                    maintenanceRepository.deleteAllForVehicle(id)
+                                }
+                            },
                             modifier = Modifier.weight(1f),
                         ) {
                             Text(stringResource(R.string.vehicle_remove))
@@ -2057,6 +2069,13 @@ private fun VehicleConfig(
                     }
                 }
             }
+        }
+
+        OutlinedButton(
+            onClick = onOpenMaintenanceLog,
+            modifier = Modifier.fillMaxWidth().testTag("settings_open_maintenance"),
+        ) {
+            Text(stringResource(R.string.maintenance_open_from_settings))
         }
 
         // Identity Section

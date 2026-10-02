@@ -51,6 +51,9 @@ fun AccidentPhoneExchangeScreen(
     } else {
         stringResource(R.string.accident_share_phone_body_empty)
     }
+    val shareSubject = stringResource(R.string.accident_share_phone_subject)
+    val smsFollowupBody = stringResource(R.string.accident_sms_followup_body)
+    val otherDriverLabel = stringResource(R.string.accident_other_driver_phone)
 
     Scaffold(
         topBar = {
@@ -115,7 +118,7 @@ fun AccidentPhoneExchangeScreen(
                         onClick = {
                             shareText(
                                 context,
-                                context.getString(R.string.accident_share_phone_subject),
+                                shareSubject,
                                 shareBody,
                             )
                         },
@@ -172,13 +175,13 @@ fun AccidentPhoneExchangeScreen(
                             sendSms(
                                 context,
                                 otherPhone,
-                                context.getString(R.string.accident_sms_followup_body),
+                                smsFollowupBody,
                             )
                         },
                         onCopy = {
                             copyText(
                                 context,
-                                context.getString(R.string.accident_other_driver_phone),
+                                otherDriverLabel,
                                 otherPhone,
                             )
                         },

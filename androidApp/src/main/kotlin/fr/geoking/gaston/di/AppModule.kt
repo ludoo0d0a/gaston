@@ -17,8 +17,11 @@ import fr.geoking.gaston.shared.platform.PermissionManager
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.toll.VignetteService
 import fr.geoking.gaston.feature.accident.AccidentProfileStore
+import fr.geoking.gaston.feature.maintenance.MaintenanceReminderNotifier
+import fr.geoking.gaston.feature.maintenance.MaintenanceRepository
 import fr.geoking.gaston.ui.accident.AccidentViewModel
 import fr.geoking.gaston.ui.dashboard.PhoneDashboardViewModel
+import fr.geoking.gaston.ui.maintenance.MaintenanceViewModel
 import org.koin.core.module.dsl.viewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -281,10 +284,27 @@ val appModule = module {
 
     single { AccidentProfileStore(androidContext()) }
 
+    single {
+        MaintenanceRepository(
+            eventDao = get<AppDatabase>().maintenanceEventDao(),
+            intervalDao = get<AppDatabase>().serviceIntervalDao(),
+        )
+    }
+
+    single { MaintenanceReminderNotifier(androidContext()) }
+
     viewModel {
         AccidentViewModel(
             store = get(),
             settingsManager = get(),
+        )
+    }
+
+    viewModel {
+        MaintenanceViewModel(
+            repository = get(),
+            settingsManager = get(),
+            reminderNotifier = get(),
         )
     }
 

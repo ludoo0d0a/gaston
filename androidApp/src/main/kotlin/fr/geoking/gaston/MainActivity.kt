@@ -47,6 +47,7 @@ import fr.geoking.gaston.ui.EmergencyScreen
 import fr.geoking.gaston.ui.PhoneNetworkLocationScreen
 import fr.geoking.gaston.ui.PhoneDashboardScreen
 import fr.geoking.gaston.ui.accident.AccidentFeatureScreen
+import fr.geoking.gaston.ui.maintenance.MaintenanceFeatureScreen
 import fr.geoking.gaston.ui.AutoDebugScreen
 import fr.geoking.gaston.ui.components.NetworkStatusIcon
 import fr.geoking.gaston.ui.dashboard.GastonTheme
@@ -431,6 +432,7 @@ fun MainUI(
     var showAutoDebug by remember { mutableStateOf(false) }
     var showEmergency by remember { mutableStateOf(false) }
     var showAccident by remember { mutableStateOf(false) }
+    var showMaintenance by remember { mutableStateOf(false) }
     var showPlaystoreSettings by remember { mutableStateOf(false) }
     var playstoreSettingsInitialStack by remember { mutableStateOf<List<SettingsScreenPage>?>(null) }
     var showFavorites by remember { mutableStateOf(false) }
@@ -557,6 +559,12 @@ fun MainUI(
                         },
                     )
                 }
+                showMaintenance -> {
+                    BackHandler { showMaintenance = false }
+                    MaintenanceFeatureScreen(
+                        onBack = { showMaintenance = false },
+                    )
+                }
                 isPlaystoreDistribution && showPlaystoreSettings -> {
                     BackHandler { showPlaystoreSettings = false }
                     SettingsScreen(
@@ -567,7 +575,11 @@ fun MainUI(
                         initialScreenStack = playstoreSettingsInitialStack,
                         onInitialRouteConsumed = { playstoreSettingsInitialStack = null },
                         onClearErrorLog = { diagnostics.clearErrors() },
-                        onOpenAutoDebug = { showAutoDebug = true }
+                        onOpenAutoDebug = { showAutoDebug = true },
+                        onOpenMaintenanceLog = {
+                            showPlaystoreSettings = false
+                            showMaintenance = true
+                        },
                     )
                 }
                 isPlaystoreDistribution && showFuelForecast -> {
@@ -711,6 +723,7 @@ fun MainUI(
                         onOpenFuelForecast = { showFuelForecast = true },
                         onOpenEmergency = { showEmergency = true },
                         onOpenAccident = { showAccident = true },
+                        onOpenMaintenance = { showMaintenance = true },
                         onOpenSettings = { stack ->
                             playstoreSettingsInitialStack = stack
                             showPlaystoreSettings = true
@@ -729,7 +742,11 @@ fun MainUI(
                         initialScreenStack = settingsInitialStack,
                         onInitialRouteConsumed = { settingsInitialStack = null },
                         onClearErrorLog = { diagnostics.clearErrors() },
-                        onOpenAutoDebug = { showAutoDebug = true }
+                        onOpenAutoDebug = { showAutoDebug = true },
+                        onOpenMaintenanceLog = {
+                            showSettings = false
+                            showMaintenance = true
+                        },
                     )
                 }
                 showDirectionsMap && mapDeps != null -> {
@@ -874,6 +891,7 @@ fun MainUI(
                             onOpenFuelForecast = { showFuelForecast = true },
                             onOpenEmergency = { showEmergency = true },
                             onOpenAccident = { showAccident = true },
+                            onOpenMaintenance = { showMaintenance = true },
                             onOpenSettings = { stack ->
                                 settingsInitialStack = stack
                                 showSettings = true
