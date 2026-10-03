@@ -129,6 +129,9 @@ class MainActivity : ComponentActivity() {
                 routePlanner = get(),
                 routingClient = get(),
                 tollCalculator = get(),
+                tollEstimateService = get(),
+                tollRouteComparer = get(),
+                osrmRoutingClient = get(),
                 geocodingClient = get(),
                 dangerZoneRepository = get(),
             )
@@ -670,7 +673,9 @@ fun MainUI(
                     RoutePlanningScreen(
                         routePlanner = mapDeps!!.routePlanner,
                         routingClient = mapDeps!!.routingClient,
-                        tollCalculator = mapDeps!!.tollCalculator,
+                        tollEstimateService = mapDeps!!.tollEstimateService,
+                        tollRouteComparer = mapDeps!!.tollRouteComparer,
+                        osrmRoutingClient = mapDeps!!.osrmRoutingClient,
                         trafficProviderFactory = mapDeps!!.trafficProviderFactory,
                         poiProvider = mapDeps!!.poiProvider,
                         geocodingClient = mapDeps!!.geocodingClient,
@@ -830,7 +835,9 @@ fun MainUI(
                     RoutePlanningScreen(
                         routePlanner = mapDeps!!.routePlanner,
                         routingClient = mapDeps!!.routingClient,
-                        tollCalculator = mapDeps!!.tollCalculator,
+                        tollEstimateService = mapDeps!!.tollEstimateService,
+                        tollRouteComparer = mapDeps!!.tollRouteComparer,
+                        osrmRoutingClient = mapDeps!!.osrmRoutingClient,
                         trafficProviderFactory = mapDeps!!.trafficProviderFactory,
                         poiProvider = mapDeps!!.poiProvider,
                         geocodingClient = mapDeps!!.geocodingClient,

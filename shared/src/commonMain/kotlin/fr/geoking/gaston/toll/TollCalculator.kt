@@ -11,6 +11,9 @@ import kotlin.math.sqrt
 /**
  * Estimates French highway toll for a route using OpenTollData.
  * Uses a data source (e.g. file path resolved by platform) so shared code stays platform-agnostic.
+ *
+ * Closed networks: one matrix lookup entry→exit per consecutive run of booths on the same network
+ * (not a sum of consecutive hops). Open booths: flat fee when on route.
  */
 class TollCalculator(
     private val dataSource: () -> OpenTollDataModel?
@@ -68,28 +71,44 @@ class TollCalculator(
 
         var totalEur = 0.0
         val classKey = "class_$priceClass"
-
-        for (i in boothOrder.indices) {
+        var i = 0
+        while (i < boothOrder.size) {
             val name = boothOrder[i]
-            val descEntry = desc[name] ?: continue
-            when (descEntry.type) {
-                "open" -> {
-                    val openPrice = data.openTollPrice[name]?.price?.get(classKey)?.toDoubleOrNull()
-                    if (openPrice != null) totalEur += openPrice
-                }
-                else -> {
-                    if (i + 1 >= boothOrder.size) continue
-                    val nextName = boothOrder[i + 1]
-                    val net = tollToNetwork[name]
-                    val nextNet = tollToNetwork[nextName]
-                    if (net != null && net == nextNet) {
-                        val conn = data.networks.find { it.networkName == net }?.connection
-                        val fromConn = conn?.get(name) ?: continue
-                        val priceEntry = fromConn[nextName]?.price?.get(classKey)?.toDoubleOrNull()
-                        if (priceEntry != null) totalEur += priceEntry
-                    }
-                }
+            val descEntry = desc[name]
+            if (descEntry == null) {
+                i++
+                continue
             }
+            if (descEntry.type == "open") {
+                val openPrice = data.openTollPrice[name]?.price?.get(classKey)?.toDoubleOrNull()
+                if (openPrice != null) totalEur += openPrice
+                i++
+                continue
+            }
+
+            // Closed booth: collect consecutive close booths on the same network.
+            val net = tollToNetwork[name]
+            if (net == null) {
+                i++
+                continue
+            }
+            val runStart = i
+            var runEnd = i
+            while (runEnd + 1 < boothOrder.size) {
+                val nextName = boothOrder[runEnd + 1]
+                val nextDesc = desc[nextName] ?: break
+                if (nextDesc.type == "open") break
+                if (tollToNetwork[nextName] != net) break
+                runEnd++
+            }
+            val entry = boothOrder[runStart]
+            val exit = boothOrder[runEnd]
+            if (entry != exit) {
+                val conn = data.networks.find { it.networkName == net }?.connection
+                val price = conn?.get(entry)?.get(exit)?.price?.get(classKey)?.toDoubleOrNull()
+                if (price != null) totalEur += price
+            }
+            i = runEnd + 1
         }
 
         return if (totalEur > 0) TollEstimate(amountEur = totalEur) else null

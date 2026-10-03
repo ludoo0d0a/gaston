@@ -2,6 +2,9 @@ package fr.geoking.gaston.ui
 
 import android.content.Context
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.api.toll.OpenTollDataMerger
+import fr.geoking.gaston.api.toll.OpenTollDataModel
+import fr.geoking.gaston.api.toll.OpenTollDataParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -10,17 +13,30 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Default download URL for OpenTollData French highway toll JSON (AREA network).
+ * Known OpenTollData JSON filenames under TollPrice_DataBase/.
+ * AREA is published today; others are attempted and skipped on 404 until upstream adds them.
  * Data: https://github.com/louis2038/OpenTollData, license ODbL-1.0.
  */
-const val OPEN_TOLL_DATA_DOWNLOAD_URL = "https://raw.githubusercontent.com/louis2038/OpenTollData/main/TollPrice_DataBase/toll_price_AREA.json"
+val OPEN_TOLL_DATA_FILENAMES: List<String> = listOf(
+    "toll_price_AREA.json",
+    "toll_price_ASF.json",
+    "toll_price_APRR.json",
+    "toll_price_COFIROUTE.json",
+    "toll_price_SANEF.json",
+)
 
-/** Filename for the downloaded toll data JSON. */
+const val OPEN_TOLL_DATA_RAW_BASE =
+    "https://raw.githubusercontent.com/louis2038/OpenTollData/main/TollPrice_DataBase"
+
+/** @deprecated Prefer [OPEN_TOLL_DATA_FILENAMES]; kept for callers expecting a single URL. */
+const val OPEN_TOLL_DATA_DOWNLOAD_URL =
+    "$OPEN_TOLL_DATA_RAW_BASE/toll_price_AREA.json"
+
+/** Filename for the merged toll data JSON stored on device. */
 const val OPEN_TOLL_DATA_FILENAME = "toll_data.json"
 
 /**
- * Helper for OpenTollData: download French highway toll JSON to app files dir.
- * Same pattern as [fr.geoking.gaston.agents.LlamatikModelHelper] (on-device model download).
+ * Helper for OpenTollData: download French highway toll JSON(s), merge, save to app files dir.
  * Downloaded file is stored at [context.filesDir]/open_toll_data/[OPEN_TOLL_DATA_FILENAME].
  */
 class OpenTollDataHelper(private val context: Context) {
@@ -58,7 +74,8 @@ class OpenTollDataHelper(private val context: Context) {
     fun getDownloadDestinationPath(): String = fileForTollData().absolutePath
 
     /**
-     * Downloads the OpenTollData JSON to app files dir. Reports progress (bytes read, total if known).
+     * Downloads all available OpenTollData JSON files, merges them, and writes the result.
+     * Reports progress (bytes read across all files, total if known).
      * Returns the absolute path to use as [AppSettings.tollDataPath] on success.
      */
     suspend fun download(
@@ -66,34 +83,65 @@ class OpenTollDataHelper(private val context: Context) {
     ): Result<String> = withContext(Dispatchers.IO) {
         val destFile = fileForTollData()
         try {
-            val url = URL(OPEN_TOLL_DATA_DOWNLOAD_URL)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.connectTimeout = 15_000
-            connection.readTimeout = 120_000
-            connection.requestMethod = "GET"
-            connection.connect()
+            val models = mutableListOf<OpenTollDataModel>()
+            var bytesDownloaded = 0L
+            var totalKnown: Long? = null
 
-            if (connection.responseCode !in 200..299) {
-                return@withContext Result.failure(Exception("HTTP ${connection.responseCode}"))
+            for (filename in OPEN_TOLL_DATA_FILENAMES) {
+                val url = URL("$OPEN_TOLL_DATA_RAW_BASE/$filename")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.connectTimeout = 15_000
+                connection.readTimeout = 120_000
+                connection.requestMethod = "GET"
+                connection.connect()
+                val code = connection.responseCode
+                if (code == 404) {
+                    connection.disconnect()
+                    continue
+                }
+                if (code !in 200..299) {
+                    connection.disconnect()
+                    return@withContext Result.failure(Exception("HTTP $code for $filename"))
+                }
+                val contentLength = connection.contentLengthLong.takeIf { it > 0 }
+                if (contentLength != null) {
+                    totalKnown = (totalKnown ?: 0L) + contentLength
+                }
+                val text = connection.inputStream.bufferedReader().use { reader ->
+                    val sb = StringBuilder()
+                    val buf = CharArray(16 * 1024)
+                    var n: Int
+                    while (reader.read(buf).also { n = it } != -1) {
+                        sb.append(buf, 0, n)
+                        bytesDownloaded += n
+                        onProgress(bytesDownloaded, totalKnown)
+                    }
+                    sb.toString()
+                }
+                connection.disconnect()
+                val parsed = OpenTollDataParser.parse(text)
+                    ?: return@withContext Result.failure(Exception("Parse failed for $filename"))
+                models.add(parsed)
             }
 
-            val totalBytes = connection.contentLengthLong.takeIf { it > 0 }
+            if (models.isEmpty()) {
+                return@withContext Result.failure(Exception("No OpenTollData files available"))
+            }
+
+            val merged = OpenTollDataMerger.merge(models)
+            val json = kotlinx.serialization.json.Json {
+                prettyPrint = false
+                encodeDefaults = true
+            }
+            val mergedText = json.encodeToString(OpenTollDataModel.serializer(), merged)
+
             destFile.parentFile?.mkdirs() ?: run {
                 return@withContext Result.failure(Exception("Could not create open_toll_data directory"))
             }
-
-            connection.inputStream.use { input ->
-                FileOutputStream(destFile).use { output ->
-                    val buffer = ByteArray(64 * 1024)
-                    var bytesDownloaded = 0L
-                    var read: Int
-                    while (input.read(buffer).also { read = it } != -1) {
-                        output.write(buffer, 0, read)
-                        bytesDownloaded += read
-                        onProgress(bytesDownloaded, totalBytes)
-                    }
-                }
+            FileOutputStream(destFile).use { output ->
+                output.write(mergedText.toByteArray(Charsets.UTF_8))
             }
+            onProgress(bytesDownloaded, totalKnown)
 
             Result.success(destFile.absolutePath)
         } catch (e: Exception) {

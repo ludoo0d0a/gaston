@@ -96,6 +96,9 @@ class CarAppSession : Session(), KoinComponent {
                     routePlanner = get<RoutePlanner>(),
                     routingClient = get<RoutingClient>(),
                     tollCalculator = get<TollCalculator>(),
+                    tollEstimateService = get(),
+                    tollRouteComparer = get(),
+                    osrmRoutingClient = get(),
                     geocodingClient = get<GeocodingClient>(),
                     dangerZoneRepository = get(),
                 )

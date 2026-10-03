@@ -97,6 +97,10 @@ configure<ApplicationExtension> {
         val eiaKey = sanitizeBuildConfigString(prop("EIA_KEY"))
         val nrelAfdcKey = sanitizeBuildConfigString(prop("NREL_AFDC_KEY"))
         val maptilerKey = sanitizeBuildConfigString(prop("MAPTILER_KEY"))
+        val gastonApiKey = sanitizeBuildConfigString(prop("GASTON_API_KEY"))
+        val gastonApiBaseUrl = sanitizeBuildConfigString(
+            prop("GASTON_API_BASE_URL", "https://gaston-api.ludovic-valente.workers.dev")
+        )
         val mapsApiKey = prop("GOOGLE_MAPS_KEY")
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
 
@@ -136,6 +140,8 @@ configure<ApplicationExtension> {
         buildConfigField("String", "EIA_KEY", "\"$eiaKey\"")
         buildConfigField("String", "NREL_AFDC_KEY", "\"$nrelAfdcKey\"")
         buildConfigField("String", "MAPTILER_KEY", "\"$maptilerKey\"")
+        buildConfigField("String", "GASTON_API_KEY", "\"$gastonApiKey\"")
+        buildConfigField("String", "GASTON_API_BASE_URL", "\"$gastonApiBaseUrl\"")
         buildConfigField("String", "ADMOB_BANNER_ID", "\"$admobBannerAdUnitId\"")
 
         // Required for Google Play Services Maps (references legacy Apache HTTP classes removed from Android 9+)

@@ -21,6 +21,7 @@
     "ingest:belgium-nap": "node scripts/ingest/run.mjs --source=belgium-nap --local",
     "ingest:dotnl": "node scripts/ingest/run.mjs --source=dotnl --local",
     "ingest:fuel-history": "node scripts/ingest/run.mjs --source=fuel-history --local",
+    "ingest:open-toll-data": "node scripts/ingest/run.mjs --source=open-toll-data --local",
     "check": "tsc --noEmit",
     "test": "node --experimental-strip-types --test scripts/ingest/lib/*.test.mjs src/*.test.ts"
   },

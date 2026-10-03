@@ -15,6 +15,7 @@
 | Ingest Gireve, QualiCharge, merged-irve, Minetur, MIMIT, radars FR/LU | ✅ (remote : 1 gros source/jour) |
 | Belgium NAP + DOT-NL (stations) | ✅ remote |
 | `/v1/fuel/history` + `/v1/fuel/forecast` (FR + marché) | ✅ |
+| `POST /v1/toll/estimate` + ingest `open-toll-data` (R2) | ✅ code |
 | GHA schedule LU + fuel-history | ✅ code ; secrets GHA à vérifier |
 | Upsert + refuse remote > ~90k writes | ✅ |
 
@@ -38,6 +39,12 @@
 | **Tankerkönig** | `GET /v1/pois?source=tankerkoenig` nearby | Clé Worker ; DE only ; pas de dump national Free |
 
 Hors Free-friendly si volume élevé → garder **lazy** (pas d’ingest massif).
+
+### R1b — Toll (OpenTollData)
+
+1. Ingest remote `open-toll-data` (R2 `toll/open_toll_data.json`) — no D1 writes.
+2. Deploy Worker with `POST /v1/toll/estimate`.
+3. Client opt-in (feature flag) with local `TollCalculator` fallback.
 
 ### R2 — Fuel élargi (léger)
 

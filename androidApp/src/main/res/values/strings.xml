@@ -750,6 +750,15 @@
     <string name="route_use_current_location_origin">Use my current location</string>
     <string name="route_enter_address">Enter an address / city</string>
     <string name="route_estimated_toll">Estimated toll: €%1$.2f</string>
+    <string name="route_toll_variants_title">Route options (time vs toll)</string>
+    <string name="route_toll_variant_name">Option %1$s</string>
+    <string name="route_toll_variant_line">%1$s — %2$d min · %3$.0f km · %4$s</string>
+    <string name="route_toll_variant_price">€%1$.2f</string>
+    <string name="route_toll_variant_unknown">toll n/a</string>
+    <string name="toll_use_backend">Use Gaston API for toll estimate</string>
+    <string name="toll_use_backend_summary">When online, call the Worker (fallback: local OpenTollData file)</string>
+    <string name="toll_compare_variants">Compare route alternatives</string>
+    <string name="toll_compare_variants_summary">Fetch OSRM alternatives and rank by toll then duration</string>
     <string name="route_traffic_summary">Traffic (%1$s): %2$d events on %3$s</string>
     <string name="route_pois_along">POIs along route (%1$d)</string>
     <string name="route_stations_along">Stations along route (%1$d)</string>

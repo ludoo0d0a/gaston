@@ -115,6 +115,7 @@ import fr.geoking.gaston.api.weather.OpenMeteoGeocodingClient
 import fr.geoking.gaston.api.weather.OpenMeteoWeatherProvider
 import fr.geoking.gaston.api.weather.WeatherProvider
 import fr.geoking.gaston.api.weather.WeatherProviderFactory
+import fr.geoking.gaston.api.toll.GastonTollApiClient
 import fr.geoking.gaston.api.toll.OpenTollDataParser
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
@@ -130,6 +131,8 @@ import fr.geoking.gaston.transit.TransitAggregator
 import fr.geoking.gaston.transit.TransitApiSelector
 import fr.geoking.gaston.transit.TransitProvider
 import fr.geoking.gaston.toll.TollCalculator
+import fr.geoking.gaston.toll.TollEstimateService
+import fr.geoking.gaston.toll.TollRouteComparer
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.ui.OpenTollDataHelper
 import org.koin.android.ext.koin.androidContext
@@ -644,7 +647,8 @@ val mapModule = module {
         )
     }
 
-    single<RoutingClient> { OsrmRoutingClient(get()) }
+    single { OsrmRoutingClient(get()) }
+    single<RoutingClient> { get<OsrmRoutingClient>() }
     single<RoutePlanner> { RoutePlanner(get()) }
 
     // Transit (bus/tram): location-based provider selection (France, Luxembourg, Belgium).
@@ -673,6 +677,22 @@ val mapModule = module {
             OpenTollDataParser.parse(file.readText())
         })
     }
+    single {
+        GastonTollApiClient(
+            client = get(),
+            baseUrl = BuildConfig.GASTON_API_BASE_URL,
+            apiKey = BuildConfig.GASTON_API_KEY,
+        )
+    }
+    single {
+        val settingsManager = get<fr.geoking.gaston.SettingsManager>()
+        TollEstimateService(
+            localCalculator = get(),
+            backendClient = get(),
+            useBackend = { settingsManager.settings.value.useBackendTollEstimate },
+        )
+    }
+    single { TollRouteComparer(get()) }
 }
 
 /** All map/route dependencies resolved after [MapModuleLoader.ensureLoaded]. */
@@ -686,6 +706,9 @@ data class MapDeps(
     val routePlanner: RoutePlanner,
     val routingClient: RoutingClient,
     val tollCalculator: TollCalculator,
+    val tollEstimateService: TollEstimateService,
+    val tollRouteComparer: TollRouteComparer,
+    val osrmRoutingClient: OsrmRoutingClient,
     val geocodingClient: GeocodingClient,
     val dangerZoneRepository: fr.geoking.gaston.aac.DangerZoneRepository,
 )

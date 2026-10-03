@@ -72,6 +72,10 @@ curl -s -H "$AUTH" \
 
 curl -s -H "$AUTH" \
   "http://127.0.0.1:8787/v1/fuel/forecast?country=FR&fuel=gazole"
+
+curl -s -H "$AUTH" -H "Content-Type: application/json" \
+  -d '{"points":[[45.0,5.0],[45.01,5.01]],"vehicle_class":1}' \
+  "http://127.0.0.1:8787/v1/toll/estimate"
 ```
 
 | Route | Auth | Notes |
@@ -81,6 +85,7 @@ curl -s -H "$AUTH" \
 | `GET /v1/zones?...` | Bearer | GeoJSON radars |
 | `GET /v1/fuel/history?country&fuel&from` | Bearer | National daily averages |
 | `GET /v1/fuel/forecast?country&fuel` | Bearer | History + trend + market score |
+| `POST /v1/toll/estimate` | Bearer | OpenTollData entry→exit estimate (R2) |
 
 ## Ingest
 
@@ -89,8 +94,10 @@ npm run ingest:fuel-history      # FR national + Stooq (Yahoo fallback if blocke
 npm run ingest:belgium-nap
 npm run ingest:dotnl             # ~75k stations — 1/day on Free
 npm run ingest:lu
+npm run ingest:open-toll-data    # OpenTollData → R2 toll/open_toll_data.json (no D1)
 # Remote:
 npm run ingest -- --source=fuel-history --remote
+npm run ingest -- --source=open-toll-data --remote
 ```
 
 | Source | Table | Notes |
@@ -101,6 +108,7 @@ npm run ingest -- --source=fuel-history --remote
 | `gireve` / `qualicharge` / `merged-irve` | pois | FR IRVE |
 | `minetur` / `mimit` | pois | ES / IT fuel |
 | `france-radars` / `luxembourg-radars` | zones | AAC |
+| `open-toll-data` | R2 only | Merges `toll_price_*.json` → `toll/open_toll_data.json` |
 
 Prefer **one heavy dump per day** on Free (~100k D1 writes/day, resets **00:00 UTC**).
 Default ingest is **upsert** (no full DELETE). `--replace` costs ≈2× writes and can

@@ -22,6 +22,7 @@ on:
           - minetur
           - mimit
           - merged-irve
+          - open-toll-data
       target:
         description: "D1 target"
         required: true

@@ -752,6 +752,15 @@
     <string name="route_use_current_location_origin">Utiliser ma position actuelle</string>
     <string name="route_enter_address">Saisir une adresse / ville</string>
     <string name="route_estimated_toll">Péage estimé : %1$.2f €</string>
+    <string name="route_toll_variants_title">Options d\'itinéraire (temps vs péage)</string>
+    <string name="route_toll_variant_name">Option %1$s</string>
+    <string name="route_toll_variant_line">%1$s — %2$d min · %3$.0f km · %4$s</string>
+    <string name="route_toll_variant_price">%1$.2f €</string>
+    <string name="route_toll_variant_unknown">péage n/d</string>
+    <string name="toll_use_backend">Utiliser l\'API Gaston pour le péage</string>
+    <string name="toll_use_backend_summary">En ligne, appelle le Worker (sinon fichier OpenTollData local)</string>
+    <string name="toll_compare_variants">Comparer les variantes d\'itinéraire</string>
+    <string name="toll_compare_variants_summary">Récupère les alternatives OSRM et classe par péage puis durée</string>
     <string name="route_traffic_summary">Trafic (%1$s) : %2$d événements sur %3$s</string>
     <string name="route_pois_along">POI sur l\'itinéraire (%1$d)</string>
     <string name="route_stations_along">Stations sur l\'itinéraire (%1$d)</string>

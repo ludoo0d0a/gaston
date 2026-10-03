@@ -182,6 +182,10 @@ data class AppSettings(
     val googleUserName: String? = null,
     val isLoggedIn: Boolean = false,
     val tollDataPath: String? = null,
+    /** When true and GASTON_API_KEY is set, prefer Worker /v1/toll/estimate over local file. */
+    val useBackendTollEstimate: Boolean = false,
+    /** When true, fetch OSRM alternatives and compare toll vs duration. */
+    val compareTollRouteVariants: Boolean = true,
     val routeHistory: List<GeocodedPlace> = emptyList(),
     val favoriteLocations: List<GeocodedPlace> = emptyList(),
     /** Last parked pin per garage vehicle ("remember my car"). Local + synced when present remotely. */
@@ -413,6 +417,8 @@ open class SettingsManager(
             googleUserName = prefs.getString("google_user_name", null),
             isLoggedIn = prefs.getBoolean("is_logged_in", false),
             tollDataPath = prefs.getString("toll_data_path", null),
+            useBackendTollEstimate = prefs.getBoolean("use_backend_toll_estimate", false),
+            compareTollRouteVariants = prefs.getBoolean("compare_toll_route_variants", true),
             routeHistory = routeHistory,
             favoriteLocations = favoriteLocations,
             parkedPositions = parkedPositions,
@@ -513,6 +519,8 @@ open class SettingsManager(
             .putString("google_user_name", sanitized.googleUserName)
             .putBoolean("is_logged_in", sanitized.isLoggedIn)
             .putString("toll_data_path", sanitized.tollDataPath)
+            .putBoolean("use_backend_toll_estimate", sanitized.useBackendTollEstimate)
+            .putBoolean("compare_toll_route_variants", sanitized.compareTollRouteVariants)
             .putString("route_history", Json.encodeToString(sanitized.routeHistory))
             .putString("favorite_locations", Json.encodeToString(sanitized.favoriteLocations))
             .putString("parked_positions", Json.encodeToString(sanitized.parkedPositions))

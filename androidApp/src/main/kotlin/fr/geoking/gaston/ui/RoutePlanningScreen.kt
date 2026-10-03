@@ -90,10 +90,13 @@ import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.ui.components.EnergyTypeSelectorRows
+import fr.geoking.gaston.api.routing.OsrmRoutingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
-import fr.geoking.gaston.toll.TollCalculator
 import fr.geoking.gaston.toll.TollEstimate
+import fr.geoking.gaston.toll.TollEstimateService
+import fr.geoking.gaston.toll.TollRouteComparer
+import fr.geoking.gaston.toll.TollRouteVariant
 import fr.geoking.gaston.api.traffic.TrafficInfo
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.api.traffic.TrafficRequest
@@ -115,7 +118,9 @@ import kotlinx.coroutines.launch
 fun RoutePlanningScreen(
     routePlanner: RoutePlanner,
     routingClient: RoutingClient,
-    tollCalculator: TollCalculator,
+    tollEstimateService: TollEstimateService,
+    tollRouteComparer: TollRouteComparer,
+    osrmRoutingClient: OsrmRoutingClient? = null,
     trafficProviderFactory: TrafficProviderFactory? = null,
     poiProvider: PoiProvider,
     geocodingClient: GeocodingClient,
@@ -150,6 +155,7 @@ fun RoutePlanningScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var stations by remember { mutableStateOf<List<Poi>>(emptyList()) }
     var tollEstimate by remember { mutableStateOf<TollEstimate?>(null) }
+    var tollVariants by remember { mutableStateOf<List<TollRouteVariant>>(emptyList()) }
     var routeTraffic by remember { mutableStateOf<TrafficInfo?>(null) }
     var calculateTrigger by remember { mutableStateOf(0) }
 
@@ -624,7 +630,7 @@ fun RoutePlanningScreen(
                 }
             }
 
-            if (stations.isNotEmpty()) {
+            if (stations.isNotEmpty() || currentRoute != null) {
                 Spacer(modifier = Modifier.height(16.dp))
                 tollEstimate?.let { toll ->
                     Text(
@@ -632,6 +638,41 @@ fun RoutePlanningScreen(
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodyMedium
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                if (tollVariants.size > 1) {
+                    Text(
+                        stringResource(R.string.route_toll_variants_title),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    tollVariants.forEach { variant ->
+                        val mins = (variant.route.durationSeconds / 60.0).toInt()
+                        val km = variant.route.distanceMeters / 1000.0
+                        val tollStr = variant.toll?.let {
+                            stringResource(R.string.route_toll_variant_price, it.amountEur)
+                        } ?: stringResource(R.string.route_toll_variant_unknown)
+                        Text(
+                            stringResource(
+                                R.string.route_toll_variant_line,
+                                stringResource(R.string.route_toll_variant_name, variant.label),
+                                mins,
+                                km,
+                                tollStr,
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    currentRoute = variant.route
+                                    tollEstimate = variant.toll
+                                }
+                                .padding(vertical = 2.dp),
+                        )
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                 }
                 routeTraffic?.let { info ->
@@ -858,6 +899,7 @@ fun RoutePlanningScreen(
         error = null
         stations = emptyList()
         tollEstimate = null
+        tollVariants = emptyList()
         routeTraffic = null
         try {
             val origin = if (useCurrentLocationAsOrigin) {
@@ -908,17 +950,34 @@ fun RoutePlanningScreen(
             settingsManager.addRouteHistory(GeocodedPlace(destination.first, dLat, dLon))
 
             val settings = settingsManager.settings.value
-            val route = routingClient.getRoute(oLat, oLon, dLat, dLon)
+            val osrm = osrmRoutingClient ?: (routingClient as? OsrmRoutingClient)
+            val routes = if (settings.compareTollRouteVariants && osrm != null) {
+                osrm.getRoutes(oLat, oLon, dLat, dLon, alternatives = true)
+            } else {
+                listOfNotNull(routingClient.getRoute(oLat, oLon, dLat, dLon))
+            }
+            val route = routes.firstOrNull()
             currentRoute = route
             if (route != null) {
-                tollEstimate = tollCalculator.estimateToll(route.points, settings.vehicleType)
-                val trafficProviders = trafficProviderFactory?.getProvidersForRoute(route.points).orEmpty()
+                if (settings.compareTollRouteVariants && routes.size > 1) {
+                    val compared = tollRouteComparer.compare(routes, settings.vehicleType)
+                    tollVariants = compared
+                    val best = compared.firstOrNull()
+                    currentRoute = best?.route ?: route
+                    tollEstimate = best?.toll
+                        ?: tollEstimateService.estimateToll(route.points, settings.vehicleType)
+                } else {
+                    tollVariants = emptyList()
+                    tollEstimate = tollEstimateService.estimateToll(route.points, settings.vehicleType)
+                }
+                val activeRoute = currentRoute ?: route
+                val trafficProviders = trafficProviderFactory?.getProvidersForRoute(activeRoute.points).orEmpty()
                 routeTraffic = trafficProviders.firstOrNull()?.let { provider ->
-                    provider.getTraffic(TrafficRequest.Route(route.points))
+                    provider.getTraffic(TrafficRequest.Route(activeRoute.points))
                 }
 
                 routePlanner.getStationsAlongRouteFlow(
-                    route.points,
+                    activeRoute.points,
                     poiProvider,
                     radiusMeters = settings.routeStationSearchRadiusMeters
                 ).collect { incrementalStations ->
@@ -927,6 +986,7 @@ fun RoutePlanningScreen(
                 }
             } else {
                 tollEstimate = null
+                tollVariants = emptyList()
                 routeTraffic = null
                 loading = false
                 error = context.getString(R.string.route_no_route_found)

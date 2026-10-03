@@ -40,6 +40,7 @@ const SOURCES = {
   "belgium-nap": () => import("./sources/belgium-nap.mjs"),
   dotnl: () => import("./sources/dotnl.mjs"),
   "fuel-history": () => import("./sources/fuel-history.mjs"),
+  "open-toll-data": () => import("./sources/open-toll-data.mjs"),
 };
 
 function parseArgs(argv) {
@@ -101,7 +102,9 @@ async function runOne(sourceId, { local, replace, force }) {
   const rowCount =
     result.table === "fuel"
       ? (result.national?.length ?? 0) + (result.market?.length ?? 0)
-      : result.rows?.length ?? 0;
+      : result.table === "r2_only"
+        ? 0
+        : result.rows?.length ?? 0;
   console.log(
     JSON.stringify({
       event: "ingest_parsed",
@@ -112,7 +115,7 @@ async function runOne(sourceId, { local, replace, force }) {
   );
 
   const mode = replace ? "replace" : "upsert";
-  if (!local && result.table !== "fuel") {
+  if (!local && result.table !== "fuel" && result.table !== "r2_only") {
     assertRemoteBudget({ sourceId, rowCount, mode, force });
   }
 
@@ -125,6 +128,22 @@ async function runOne(sourceId, { local, replace, force }) {
     if (e && e.code !== "ENOENT") {
       console.warn(JSON.stringify({ event: "r2_skip", error: String(e.message || e) }));
     }
+  }
+
+  if (result.table === "r2_only") {
+    const { uploadCanonicalToll } = await import("./sources/open-toll-data.mjs");
+    const uploaded = uploadCanonicalToll(result.mergedPath, { local });
+    console.log(
+      JSON.stringify({
+        event: "ingest_done",
+        source: sourceId,
+        table: "r2_only",
+        files: result.files,
+        booths: result.booths,
+        ...uploaded,
+      }),
+    );
+    return;
   }
 
   if (result.table === "fuel") {
