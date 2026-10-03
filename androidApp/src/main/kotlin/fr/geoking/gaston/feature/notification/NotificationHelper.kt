@@ -15,7 +15,7 @@ import fr.geoking.gaston.R
 open class NotificationHelper(private val context: Context) {
 
     companion object {
-        private const val CHANNEL_ID = "gaston_alerts"
+        const val CHANNEL_ID = "gaston_alerts"
         private const val NOTIFICATION_ID_BORDER = 1001
         private const val NOTIFICATION_ID_UPDATE = 1002
         private const val NOTIFICATION_ID_DANGER_ZONE = 1003
@@ -89,7 +89,12 @@ open class NotificationHelper(private val context: Context) {
         CarNotificationManager.from(context).notify(NOTIFICATION_ID_BORDER, builder)
     }
 
-    fun showUpdateAvailableNotification() {
+    /**
+     * Android Auto HUN for an available update.
+     * Phone notification (tap → start update) is posted by
+     * `fr.geoking.tools.inappupdate.InAppUpdateHelper`.
+     */
+    fun showUpdateAvailableCarNotification() {
         if (!canPostNotifications()) return
 
         val title = context.getString(R.string.update_available_title)
@@ -104,13 +109,20 @@ open class NotificationHelper(private val context: Context) {
             .extend(
                 CarAppExtender.Builder()
                     .setImportance(NotificationManager.IMPORTANCE_HIGH)
+                    .setContentTitle(title)
+                    .setContentText(message)
+                    .setSmallIcon(R.drawable.ic_notifications)
                     .build()
             )
 
-        val notification = builder.build()
-        notificationManager.notify(NOTIFICATION_ID_UPDATE, notification)
         CarNotificationManager.from(context).notify(NOTIFICATION_ID_UPDATE, builder)
     }
+
+    @Deprecated(
+        message = "Phone update notification is handled by geoking-tools InAppUpdateHelper",
+        replaceWith = ReplaceWith("showUpdateAvailableCarNotification()"),
+    )
+    fun showUpdateAvailableNotification() = showUpdateAvailableCarNotification()
 
     open fun showDangerZoneNotification(speedLimitKmH: Int?) {
         if (!canPostNotifications()) return

@@ -62,8 +62,8 @@ import fr.geoking.gaston.poi.isUserSelectablePoiDataSource
 import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.premium.PremiumSubscriptionNotice
-import fr.geoking.gaston.update.CheckFeedback
 import fr.geoking.gaston.update.InAppUpdateHelper
+import fr.geoking.tools.inappupdate.CheckFeedback
 import org.koin.compose.koinInject
 import java.text.DateFormat
 import fr.geoking.gaston.BuildConfig

@@ -222,7 +222,22 @@ val appModule = module {
 
     single { InAppNotificationCenter() }
 
-    single { fr.geoking.gaston.update.InAppUpdateHelper(androidContext(), get<NotificationHelper>()) }
+    single {
+        val context = androidContext()
+        val notificationHelper = get<NotificationHelper>()
+        fr.geoking.tools.inappupdate.InAppUpdateHelper(
+            context = context,
+            notificationSpec = fr.geoking.tools.inappupdate.UpdateNotificationSpec(
+                channelId = NotificationHelper.CHANNEL_ID,
+                channelName = context.getString(R.string.dashboard_network),
+                smallIcon = R.drawable.ic_notifications,
+                title = context.getString(R.string.update_available_title),
+                message = context.getString(R.string.update_available_message),
+                launchActivityClass = fr.geoking.gaston.MainActivity::class.java,
+            ),
+            onUpdateAvailableExtra = { notificationHelper.showUpdateAvailableCarNotification() },
+        )
+    }
 
     single { fr.geoking.gaston.repository.StationPriceHistoryRepository(dao = get<AppDatabase>().stationPriceSampleDao(), nationalDao = get<AppDatabase>().nationalFuelPriceDao()) }
 

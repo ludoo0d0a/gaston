@@ -99,6 +99,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        inAppUpdateHelper.consumeLaunchIntent(intent)
         handleIntent(intent)
     }
 
@@ -164,6 +165,7 @@ class MainActivity : ComponentActivity() {
         }
 
         handleIntent(intent)
+        inAppUpdateHelper.consumeLaunchIntent(intent)
 
         // Check for updates once at startup.
         // Only meaningful for Play Store distribution.
@@ -264,6 +266,14 @@ private fun MainActivityComposeRoot(
 
     LaunchedEffect(Unit) {
         android.util.Log.d("MainActivity", "Compose first frame")
+    }
+
+    val updateAvailable by inAppUpdateHelper.updateAvailable.collectAsState()
+    val autoStartUpdate by inAppUpdateHelper.autoStartUpdate.collectAsState()
+    LaunchedEffect(updateAvailable, autoStartUpdate) {
+        if (autoStartUpdate && updateAvailable != null) {
+            inAppUpdateHelper.maybeAutoStartUpdate(updateResultLauncher)
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -506,10 +516,14 @@ fun MainUI(
     val paletteIndex by AnimationPalettes.index.collectAsState()
     val palette = remember(paletteIndex) { AnimationPalettes.paletteFor(paletteIndex) }
     val fallbackUpdateFlow = remember { MutableStateFlow<AppUpdateInfo?>(null) }
+    val fallbackAutoStartFlow = remember { MutableStateFlow(false) }
     val updateAvailable by (inAppUpdateHelper?.updateAvailable ?: fallbackUpdateFlow).collectAsState(initial = null)
+    val autoStartUpdate by (inAppUpdateHelper?.autoStartUpdate ?: fallbackAutoStartFlow)
+        .collectAsState(initial = false)
 
     GastonTheme(themeMode = settings.uiThemeMode) {
-        if (updateAvailable != null) {
+        // Notification tap auto-starts; skip the confirm dialog in that path.
+        if (updateAvailable != null && !autoStartUpdate) {
             UpdateAvailableDialog(
                 onCancel = { inAppUpdateHelper?.dismissUpdate() },
                 onUpdate = { updateAvailable?.let { onStartUpdate(it) } }

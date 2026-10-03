@@ -16,7 +16,7 @@ class NotificationHelperTest {
     fun testShowUpdateAvailableNotificationDoesNotCrash() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val helper = NotificationHelper(context)
-        helper.showUpdateAvailableNotification()
+        helper.showUpdateAvailableCarNotification()
         assertNotNull(helper)
     }
 }
