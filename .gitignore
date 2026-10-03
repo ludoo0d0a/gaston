@@ -38,6 +38,13 @@ gaston-*.json
 ## Temporary folders
 tmp/
 
+## Logs & Python bytecode
+*.log
+logs/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
 # Local symlink to shared tools (link-scripts.sh; CI checks out the repo here)
 /geoking-tools
 
