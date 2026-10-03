@@ -10,8 +10,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# Project-scoped Gradle keys (repo secrets → env). Kept here, not in geoking-ci.
+# Project-scoped secrets → env. Kept here, not in geoking-ci.
 env:
+  GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
   GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
   GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
   WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
@@ -59,14 +60,12 @@ jobs:
           path: geoking-tools
 
       - name: Setup Gradle
-        uses: ./geoking-ci/actions/setup-gradle
+        uses: ./geoking-ci/actions/gk-setup-gradle
         with:
           gradle-version: wrapper
           java-version: '21'
 
       - name: Write google-services.json (optional on fork PRs)
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
           if [ -z "$GOOGLE_SERVICES_JSON" ]; then
             echo "GOOGLE_SERVICES_JSON not set; assemble without Firebase."
@@ -108,8 +107,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Write google-services.json (optional on fork PRs)
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
           if [ -z "$GOOGLE_SERVICES_JSON" ]; then
             echo "GOOGLE_SERVICES_JSON not set; lint without Firebase."
