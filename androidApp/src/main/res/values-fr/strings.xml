@@ -901,6 +901,8 @@
     <string name="dev_test_aa_map_surface">tester la surface de carte AA</string>
     <string name="dev_test_danger_zone_notification">Tester notification zone de danger</string>
     <string name="dev_test_danger_zone_notification_subtitle">Envoie le HUN AA « Radar proche 100 km/h »</string>
+    <string name="dev_test_radar_notification_sent">HUN radar envoyé</string>
+    <string name="dev_test_radar_notification_permission">Permission notifications requise sur le téléphone</string>
 
     <!-- Station Details / Amenities -->
     <string name="poi_station_details">Détails de la station</string>

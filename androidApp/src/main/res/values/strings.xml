@@ -901,6 +901,8 @@
     <string name="dev_test_aa_map_surface">test AA map surface</string>
     <string name="dev_test_danger_zone_notification">Test danger zone notification</string>
     <string name="dev_test_danger_zone_notification_subtitle">Posts AA HUN « Radar proche 100 km/h »</string>
+    <string name="dev_test_radar_notification_sent">Radar HUN posted</string>
+    <string name="dev_test_radar_notification_permission">Notification permission required on phone</string>
 
     <!-- Station Details / Amenities -->
     <string name="poi_station_details">Station details</string>
