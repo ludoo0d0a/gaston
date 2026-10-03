@@ -167,7 +167,6 @@ object AutoMapOverlayHelper {
         visibleArea: Rect?,
         surfaceWidth: Int,
         surfaceHeight: Int,
-        bearing: Float,
         zoom: Float,
         latitude: Double,
         isDensityScaled: Boolean,
@@ -179,13 +178,8 @@ object AutoMapOverlayHelper {
         // Detect if content card/menu is on the right side of the screen
         val isMenuOnRight = (surfaceWidth - area.right) > area.left + (20 * density)
 
-        // 1. Draw Compass (Above Zoom + and - buttons)
-        drawCompass(canvas, area, bearing, density, isMenuOnRight)
-
-        // 2. Draw Scale (Bottom-Left if menu on left, Bottom-Right if menu on right)
+        // Compass lives in the ActionStrip; only draw scale + zoom chip on the map.
         drawScale(canvas, area, zoom, latitude, density, isDensityScaled, isMenuOnRight)
-
-        // 3. Always-on mode + zoom chip (top-left of visible map area)
         drawZoomDebug(canvas, area, zoom, density, modeLabel)
     }
 
@@ -223,144 +217,6 @@ object AutoMapOverlayHelper {
             canvas.drawText(line, left + pad, y, textPaint)
             y += lineHeight
         }
-    }
-
-    private fun drawCompass(canvas: Canvas, area: Rect, bearing: Float, density: Float, isMenuOnRight: Boolean) {
-        val compassRadius = 28f * density // 56dp diameter, matching Zoom (+) / (-) map action strip buttons
-        val bottomMargin = 16f * density
-        // Hug the side edge like the host mapActionStrip zoom buttons (closer than the old 16dp inset)
-        val edgeMargin = 4f * density
-        val buttonSpacing = 8f * density
-
-        // Position above the two mapActionStrip zoom buttons (+ and -)
-        val cy = area.bottom - bottomMargin - compassRadius - 2f * (compassRadius * 2f + buttonSpacing)
-        val cx = if (isMenuOnRight) {
-            area.left + edgeMargin + compassRadius
-        } else {
-            area.right - edgeMargin - compassRadius
-        }
-
-        val needleLength = compassRadius * 0.65f
-        val needleWidth = compassRadius * 0.38f
-
-        canvas.save()
-        canvas.rotate(-bearing, cx, cy)
-
-        // Draw background circle with glassmorphic dark background
-        val bgPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.argb(180, 20, 20, 20)
-            style = Paint.Style.FILL
-        }
-        canvas.drawCircle(cx, cy, compassRadius, bgPaint)
-
-        // Draw thin inner concentric circle dial
-        val dialPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.argb(50, 255, 255, 255)
-            style = Paint.Style.STROKE
-            strokeWidth = 0.8f * density
-        }
-        canvas.drawCircle(cx, cy, compassRadius * 0.88f, dialPaint)
-
-        // Draw stylish high-contrast outer border
-        val borderPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.argb(160, 255, 255, 255)
-            style = Paint.Style.STROKE
-            strokeWidth = 1.5f * density
-        }
-        canvas.drawCircle(cx, cy, compassRadius, borderPaint)
-
-        // Draw elegant bold "N" letter pointing north
-        val nPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.WHITE
-            textSize = 8.5f * density
-            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
-            textAlign = Paint.Align.CENTER
-        }
-        canvas.drawText("N", cx, cy - compassRadius + 11f * density, nPaint)
-
-        // Red triangle (North pointer - Left half, bright red)
-        val redLeftPath = Path().apply {
-            moveTo(cx, cy - needleLength)
-            lineTo(cx - needleWidth / 2, cy)
-            lineTo(cx, cy)
-            close()
-        }
-        val redLeftPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(255, 59, 48)
-            style = Paint.Style.FILL
-        }
-        canvas.drawPath(redLeftPath, redLeftPaint)
-
-        // Red triangle (North pointer - Right half, shaded red)
-        val redRightPath = Path().apply {
-            moveTo(cx, cy - needleLength)
-            lineTo(cx + needleWidth / 2, cy)
-            lineTo(cx, cy)
-            close()
-        }
-        val redRightPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(201, 31, 31)
-            style = Paint.Style.FILL
-        }
-        canvas.drawPath(redRightPath, redRightPaint)
-
-        // White triangle (South pointer - Left half, bright white)
-        val whiteLeftPath = Path().apply {
-            moveTo(cx, cy + needleLength)
-            lineTo(cx - needleWidth / 2, cy)
-            lineTo(cx, cy)
-            close()
-        }
-        val whiteLeftPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.WHITE
-            style = Paint.Style.FILL
-        }
-        canvas.drawPath(whiteLeftPath, whiteLeftPaint)
-
-        // White triangle (South pointer - Right half, shaded silver/grey)
-        val whiteRightPath = Path().apply {
-            moveTo(cx, cy + needleLength)
-            lineTo(cx + needleWidth / 2, cy)
-            lineTo(cx, cy)
-            close()
-        }
-        val whiteRightPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(211, 211, 211)
-            style = Paint.Style.FILL
-        }
-        canvas.drawPath(whiteRightPath, whiteRightPaint)
-
-        // Draw fine outline around needles for perfect contrast
-        val outlinePaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.argb(120, 0, 0, 0)
-            style = Paint.Style.STROKE
-            strokeWidth = 0.8f * density
-        }
-        canvas.drawPath(redLeftPath, outlinePaint)
-        canvas.drawPath(redRightPath, outlinePaint)
-        canvas.drawPath(whiteLeftPath, outlinePaint)
-        canvas.drawPath(whiteRightPath, outlinePaint)
-
-        // Draw stylish metallic center pivot cap
-        val pivotPaint = Paint().apply {
-            isAntiAlias = true
-            color = Color.rgb(180, 180, 180)
-            style = Paint.Style.FILL
-        }
-        canvas.drawCircle(cx, cy, 3.5f * density, pivotPaint)
-        pivotPaint.color = Color.WHITE
-        canvas.drawCircle(cx, cy, 1.5f * density, pivotPaint)
-
-        canvas.restore()
     }
 
     private fun drawScale(

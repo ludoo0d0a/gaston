@@ -301,7 +301,6 @@ class MapsforgeAaRenderer(
             visibleArea = visibleArea,
             surfaceWidth = surfaceWidth,
             surfaceHeight = surfaceHeight,
-            bearing = bearing,
             zoom = zoom.toFloat(),
             latitude = centerLat,
             isDensityScaled = true,

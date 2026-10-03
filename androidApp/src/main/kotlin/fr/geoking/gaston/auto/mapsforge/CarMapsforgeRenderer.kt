@@ -65,7 +65,7 @@ data class MapsforgeTileError(
  * Mapsforge vector & raster map renderer for Android Auto surface.
  * Supports offline vector rendering via downloaded Mapsforge `.map` files with fallbacks,
  * rotation (North-Up vs Heading-Up), POI markers with live availability, search radius,
- * compass, scale bar, and tile debug grid overlay.
+ * scale bar, and tile debug grid overlay.
  */
 class CarMapsforgeRenderer(
     private val context: Context,
@@ -514,7 +514,6 @@ class CarMapsforgeRenderer(
                     visibleArea = visibleArea,
                     surfaceWidth = width,
                     surfaceHeight = height,
-                    bearing = bearing,
                     zoom = zoom.toFloat(),
                     latitude = lat,
                     isDensityScaled = false,

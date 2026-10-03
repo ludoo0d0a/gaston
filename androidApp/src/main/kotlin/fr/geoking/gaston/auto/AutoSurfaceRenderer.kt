@@ -445,14 +445,13 @@ class AutoSurfaceRenderer(
                     canvas.restore()
                 }
 
-                // Draw map overlay widgets (scale, compass, debug zoom)
+                // Draw map overlay widgets (scale, debug zoom)
                 AutoMapOverlayHelper.drawCompassAndScale(
                     canvas = canvas,
                     context = context,
                     visibleArea = visibleArea,
                     surfaceWidth = width,
                     surfaceHeight = height,
-                    bearing = bearing,
                     zoom = zoom.toFloat(),
                     latitude = lat,
                     isDensityScaled = false,

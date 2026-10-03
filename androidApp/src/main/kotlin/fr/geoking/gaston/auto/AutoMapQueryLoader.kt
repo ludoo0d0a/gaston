@@ -41,30 +41,20 @@ object AutoMapQueryLoader {
         val area = visibleArea?.takeIf { it.width() > 0 && it.height() > 0 }
             ?: Rect(0, 0, surfaceWidth.coerceAtLeast(1), surfaceHeight.coerceAtLeast(1))
 
-        // Compass measurements (matching drawCompass in AutoMapOverlayHelper)
+        // Above mapActionStrip zoom buttons (+ / −), hugging the map edge (former compass slot).
         val isMenuOnRight = (surfaceWidth - area.right) > area.left + (20 * density)
-        val compassRadius = 28f * density
+        val slotRadius = 28f * density
         val bottomMargin = 16f * density
         val edgeMargin = 4f * density
         val buttonSpacing = 8f * density
-        val compassCenterY = area.bottom - bottomMargin - compassRadius - 2f * (compassRadius * 2f + buttonSpacing)
+        val loaderRadius = 14f * density // 28dp diameter on screen
 
-        // Reposition loader to be side-by-side with the compass at the same height
-        val spacing = 12f * density
-        val loaderRadius = 14f * density // 28dp diameter/size on screen
-
-        val compassCenterX = if (isMenuOnRight) {
-            area.left + edgeMargin + compassRadius
-        } else {
-            area.right - edgeMargin - compassRadius
-        }
-
+        val cy = area.bottom - bottomMargin - slotRadius - 2f * (slotRadius * 2f + buttonSpacing)
         val cx = if (isMenuOnRight) {
-            compassCenterX + compassRadius + spacing + loaderRadius
+            area.left + edgeMargin + slotRadius
         } else {
-            compassCenterX - compassRadius - spacing - loaderRadius
+            area.right - edgeMargin - slotRadius
         }
-        val cy = compassCenterY
 
         // Dynamic stroke scaling based on density
         val strokeWidth = 3.5f * density

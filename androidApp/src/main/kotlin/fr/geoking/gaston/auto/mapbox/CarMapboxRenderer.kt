@@ -277,14 +277,13 @@ class CarMapboxRenderer(
             )
         }
 
-        // HUD Overlays (Compass, Scale, Zoom/Mode Chip)
+        // HUD Overlays (Scale, Zoom/Mode Chip)
         AutoMapOverlayHelper.drawCompassAndScale(
             canvas = canvas,
             context = carContext,
             visibleArea = visibleArea,
             surfaceWidth = surfaceWidth,
             surfaceHeight = surfaceHeight,
-            bearing = bearing,
             zoom = zoom.toFloat(),
             latitude = centerLat,
             isDensityScaled = true,
