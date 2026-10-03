@@ -184,6 +184,8 @@ data class AppSettings(
     val tollDataPath: String? = null,
     val routeHistory: List<GeocodedPlace> = emptyList(),
     val favoriteLocations: List<GeocodedPlace> = emptyList(),
+    /** Last parked pin per garage vehicle ("remember my car"). Local + synced when present remotely. */
+    val parkedPositions: List<ParkedVehiclePosition> = emptyList(),
     val isPremium: Boolean = false,
     /** Dev/test override: unlock premium features without a subscription. */
     val devSimulatePremium: Boolean = false,
@@ -235,6 +237,16 @@ open class SettingsManager(
             if (routeHistoryJson.isNullOrBlank()) emptyList() else Json.decodeFromString<List<GeocodedPlace>>(routeHistoryJson)
         } catch (_: Exception) {
             emptyList()
+        }
+
+        val parkedPositions = run {
+            val json = prefs.getString("parked_positions", null)
+            try {
+                if (json.isNullOrBlank()) emptyList()
+                else Json.decodeFromString<List<ParkedVehiclePosition>>(json)
+            } catch (_: Exception) {
+                emptyList()
+            }
         }
 
         val favoriteLocations = run {
@@ -403,6 +415,7 @@ open class SettingsManager(
             tollDataPath = prefs.getString("toll_data_path", null),
             routeHistory = routeHistory,
             favoriteLocations = favoriteLocations,
+            parkedPositions = parkedPositions,
             isPremium = prefs.getBoolean("is_premium", false),
             devSimulatePremium = prefs.getBoolean("dev_simulate_premium", false),
             devRawDetail = prefs.getBoolean("dev_raw_detail", false),
@@ -502,6 +515,7 @@ open class SettingsManager(
             .putString("toll_data_path", sanitized.tollDataPath)
             .putString("route_history", Json.encodeToString(sanitized.routeHistory))
             .putString("favorite_locations", Json.encodeToString(sanitized.favoriteLocations))
+            .putString("parked_positions", Json.encodeToString(sanitized.parkedPositions))
             .putBoolean("is_premium", sanitized.isPremium)
             .putBoolean("dev_simulate_premium", sanitized.devSimulatePremium)
             .putBoolean("dev_raw_detail", sanitized.devRawDetail)
@@ -765,6 +779,38 @@ open class SettingsManager(
         if (_settings.value.lastKnownLat != lat || _settings.value.lastKnownLon != lon) {
             saveSettings(_settings.value.copy(lastKnownLat = lat, lastKnownLon = lon))
         }
+    }
+
+    /**
+     * Saves (or replaces) the parked pin for [vehicleId] at the given coordinates.
+     * Defaults to the active garage vehicle when [vehicleId] is blank.
+     */
+    open fun saveParkedPosition(
+        latitude: Double,
+        longitude: Double,
+        vehicleId: String = _settings.value.activeVehicleId,
+        savedAtEpochMs: Long = System.currentTimeMillis(),
+    ) {
+        val settings = _settings.value
+        val id = vehicleId.ifBlank { settings.activeVehicleId }
+            .ifBlank { settings.vehicles.firstOrNull()?.id.orEmpty() }
+            .ifBlank { "default" }
+        saveSettings(
+            settings.upsertParkedPosition(
+                ParkedVehiclePosition(
+                    vehicleId = id,
+                    latitude = latitude,
+                    longitude = longitude,
+                    savedAtEpochMs = savedAtEpochMs,
+                )
+            )
+        )
+    }
+
+    open fun clearParkedPosition(vehicleId: String) {
+        val id = vehicleId.ifBlank { _settings.value.activeVehicleId }
+        if (id.isBlank()) return
+        saveSettings(_settings.value.clearParkedPosition(id))
     }
 
     open fun setVehicleType(type: VehicleType) {

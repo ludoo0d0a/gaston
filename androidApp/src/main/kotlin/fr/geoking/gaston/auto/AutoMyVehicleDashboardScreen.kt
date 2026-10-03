@@ -12,6 +12,7 @@ import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.feature.maintenance.MaintenanceRepository
+import fr.geoking.gaston.latestParkedPosition
 import org.koin.core.context.GlobalContext
 
 class AutoMyVehicleDashboardScreen(
@@ -91,6 +92,20 @@ class AutoMyVehicleDashboardScreen(
                 .setOnClickListener {
                     val repo = GlobalContext.get().get<MaintenanceRepository>()
                     screenManager.push(AutoMaintenanceLogScreen(carContext, settingsManager, repo))
+                }
+                .build()
+        )
+
+        val parkedSubtitle = settings.latestParkedPosition()?.let { parked ->
+            carContext.getString(R.string.parked_car_parked_at, parked.formattedTimestamp())
+        } ?: carContext.getString(R.string.parked_car_remember_subtitle)
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.parked_car_title))
+                .setText(parkedSubtitle)
+                .setImage(carContext.dashboardParkedCarIcon())
+                .setOnClickListener {
+                    screenManager.push(AutoRememberParkedCarScreen(carContext, settingsManager))
                 }
                 .build()
         )

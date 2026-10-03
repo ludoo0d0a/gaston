@@ -46,6 +46,7 @@ import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.effectiveEnergyFilterMode
+import fr.geoking.gaston.latestParkedPosition
 import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.api.geocoding.GeocodingClient
@@ -93,6 +94,7 @@ fun PhoneDashboardMainContent(
     onOpenEmergency: () -> Unit,
     onOpenAccident: () -> Unit,
     onOpenMaintenance: () -> Unit,
+    onOpenParkedCar: () -> Unit,
     onOpenSettings: (List<SettingsScreenPage>?) -> Unit,
     onOpenNetworkDiagnostics: () -> Unit,
     onOpenAutoDebug: () -> Unit = {},
@@ -204,6 +206,13 @@ fun PhoneDashboardMainContent(
 
         item {
             PhoneDashboardMaintenanceCard(onOpenMaintenance = onOpenMaintenance)
+        }
+
+        item {
+            PhoneDashboardParkedCarCard(
+                settings = settings,
+                onOpenParkedCar = onOpenParkedCar,
+            )
         }
 
         item {
@@ -455,6 +464,61 @@ private fun PhoneDashboardMaintenanceCard(onOpenMaintenance: () -> Unit) {
                 )
                 Text(
                     text = stringResource(R.string.dashboard_maintenance_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onAccent.copy(alpha = 0.9f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PhoneDashboardParkedCarCard(
+    settings: AppSettings,
+    onOpenParkedCar: () -> Unit,
+) {
+    val accent = Color(0xFF2E7D32)
+    val onAccent = Color.White
+    val latest = remember(settings.parkedPositions) { settings.latestParkedPosition() }
+    val subtitle = if (latest != null) {
+        stringResource(
+            R.string.dashboard_parked_car_subtitle_with_time,
+            latest.formattedTimestamp(),
+        )
+    } else {
+        stringResource(R.string.dashboard_parked_car_subtitle)
+    }
+    Card(
+        onClick = onOpenParkedCar,
+        modifier = Modifier.fillMaxWidth().testTag("dashboard_parked_car_card"),
+        colors = CardDefaults.cardColors(containerColor = accent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_poi_parking),
+                contentDescription = null,
+                tint = onAccent,
+                modifier = Modifier.size(36.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.dashboard_parked_car),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = onAccent,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = onAccent.copy(alpha = 0.9f),
                     maxLines = 1,

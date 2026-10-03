@@ -1,0 +1,41 @@
+package fr.geoking.gaston
+
+import kotlinx.serialization.Serializable
+import java.text.DateFormat
+import java.util.Date
+
+/**
+ * Where a garage vehicle was last parked ("remember my car").
+ * One entry per [vehicleId]; latest save wins.
+ */
+@Serializable
+data class ParkedVehiclePosition(
+    val vehicleId: String,
+    val latitude: Double,
+    val longitude: Double,
+    /** Wall-clock time when the pin was saved (epoch ms). */
+    val savedAtEpochMs: Long,
+) {
+    /** Locale-aware date + time for UI (phone + Android Auto). */
+    fun formattedTimestamp(
+        dateStyle: Int = DateFormat.SHORT,
+        timeStyle: Int = DateFormat.SHORT,
+    ): String = DateFormat.getDateTimeInstance(dateStyle, timeStyle).format(Date(savedAtEpochMs))
+}
+
+object ParkedCarIntents {
+    const val ACTION_REMEMBER = "fr.geoking.gaston.action.REMEMBER_PARKED_CAR"
+}
+
+fun AppSettings.parkedPositionFor(vehicleId: String): ParkedVehiclePosition? =
+    parkedPositions.firstOrNull { it.vehicleId == vehicleId }
+
+/** Most recently saved parking pin across the garage (for dashboard teasers). */
+fun AppSettings.latestParkedPosition(): ParkedVehiclePosition? =
+    parkedPositions.maxByOrNull { it.savedAtEpochMs }
+
+fun AppSettings.upsertParkedPosition(position: ParkedVehiclePosition): AppSettings =
+    copy(parkedPositions = parkedPositions.filterNot { it.vehicleId == position.vehicleId } + position)
+
+fun AppSettings.clearParkedPosition(vehicleId: String): AppSettings =
+    copy(parkedPositions = parkedPositions.filterNot { it.vehicleId == vehicleId })

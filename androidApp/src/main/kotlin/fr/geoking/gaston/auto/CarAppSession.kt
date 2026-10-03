@@ -8,8 +8,10 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.ParkedCarIntents
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.activeVehicle
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
@@ -24,6 +26,7 @@ import fr.geoking.gaston.di.MapModuleLoader
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.feature.notification.NotificationHelper
 import fr.geoking.gaston.intent.IntentNavigationHelper
+import fr.geoking.gaston.parkedPositionFor
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.radar.AndroidRadarAudioNotifier
 import fr.geoking.gaston.radar.DangerZoneAlertManager
@@ -55,10 +58,14 @@ class CarAppSession : Session(), KoinComponent {
     private var dangerZoneAlertJob: Job? = null
     private var dangerZoneAlertManager: DangerZoneAlertManager? = null
     private var dangerZoneAudioNotifier: AndroidRadarAudioNotifier? = null
+    private var sessionStartedAtElapsedMs: Long = 0L
 
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
+                if (sessionStartedAtElapsedMs == 0L) {
+                    sessionStartedAtElapsedMs = android.os.SystemClock.elapsedRealtime()
+                }
                 startDangerZoneAlertLoop()
             }
 
@@ -67,6 +74,7 @@ class CarAppSession : Session(), KoinComponent {
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
+                suggestRememberParkedCarIfNeeded()
                 dangerZoneAudioNotifier?.shutdown()
                 dangerZoneAudioNotifier = null
                 dangerZoneAlertManager = null
@@ -144,7 +152,46 @@ class CarAppSession : Session(), KoinComponent {
         dangerZoneAlertManager?.clearAlerts()
     }
 
+    /**
+     * When Android Auto stops (park / disconnect), suggest remembering the car position
+     * if the session lasted long enough and a spot was not just saved.
+     */
+    private fun suggestRememberParkedCarIfNeeded() {
+        val started = sessionStartedAtElapsedMs
+        if (started == 0L) return
+        val elapsed = android.os.SystemClock.elapsedRealtime() - started
+        if (elapsed < MIN_SESSION_MS_BEFORE_PARK_SUGGEST) return
+
+        val settings = settingsManager.settings.value
+        if (settings.lastKnownLat == null || settings.lastKnownLon == null) return
+
+        val activeId = settings.activeVehicleId.ifBlank { settings.vehicles.firstOrNull()?.id.orEmpty() }
+        val existing = if (activeId.isNotBlank()) settings.parkedPositionFor(activeId) else null
+        if (existing != null &&
+            System.currentTimeMillis() - existing.savedAtEpochMs < RECENTLY_SAVED_PARK_MS
+        ) {
+            return
+        }
+
+        val label = settings.activeVehicle()?.displayLabel()?.ifBlank { null }
+            ?: listOf(settings.vehicleBrand, settings.vehicleModel)
+                .filter { it.isNotBlank() }
+                .joinToString(" ")
+                .ifBlank { null }
+        try {
+            notificationHelper.showRememberParkedCarSuggestion(label)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to show remember-parked suggestion", e)
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
+        if (intent.action == ParkedCarIntents.ACTION_REMEMBER) {
+            carContext.getCarService(androidx.car.app.ScreenManager::class.java).push(
+                AutoRememberParkedCarScreen(carContext, settingsManager)
+            )
+            return
+        }
         val nav = IntentNavigationHelper.parseNavIntent(intent)
         if (nav != null) {
             val mapDeps = getMapDeps()
@@ -173,6 +220,10 @@ class CarAppSession : Session(), KoinComponent {
             inAppUpdateHelper.checkForUpdate()
         } catch (e: Exception) {
             Log.w(TAG, "Failed to check for update in CarAppSession", e)
+        }
+
+        if (intent.action == ParkedCarIntents.ACTION_REMEMBER) {
+            return AutoRememberParkedCarScreen(carContext, settingsManager)
         }
 
         val nav = IntentNavigationHelper.parseNavIntent(intent)
@@ -220,5 +271,8 @@ class CarAppSession : Session(), KoinComponent {
 
     companion object {
         private const val TAG = "CarAppSession"
+        /** Skip suggestion for very short AA glances (settings check, etc.). */
+        private const val MIN_SESSION_MS_BEFORE_PARK_SUGGEST = 3 * 60 * 1000L
+        private const val RECENTLY_SAVED_PARK_MS = 15 * 60 * 1000L
     }
 }

@@ -3,14 +3,21 @@ package fr.geoking.gaston.feature.notification
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.car.app.notification.CarAppExtender
 import androidx.car.app.notification.CarNotificationManager
+import androidx.car.app.notification.CarPendingIntent
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import fr.geoking.gaston.MainActivity
+import fr.geoking.gaston.ParkedCarIntents
 import fr.geoking.gaston.R
+import fr.geoking.gaston.auto.VoiceAppService
 
 open class NotificationHelper(private val context: Context) {
 
@@ -20,8 +27,11 @@ open class NotificationHelper(private val context: Context) {
         private const val NOTIFICATION_ID_UPDATE = 1002
         private const val NOTIFICATION_ID_DANGER_ZONE = 1003
         private const val NOTIFICATION_ID_NEAR_RADAR = 1004
+        private const val NOTIFICATION_ID_REMEMBER_PARKED = 1005
         /** Suppress duplicate HUNs when phone + AA alert loops both fire. */
         private const val DEDUPE_WINDOW_MS = 8_000L
+        /** Avoid spamming the park suggestion when AA reconnects briefly. */
+        private const val REMEMBER_PARKED_DEDUPE_MS = 30 * 60 * 1000L
     }
 
     private val notificationManager =
@@ -34,10 +44,14 @@ open class NotificationHelper(private val context: Context) {
     }
 
     @Synchronized
-    private fun shouldSuppressDuplicate(kind: String, key: String): Boolean {
+    private fun shouldSuppressDuplicate(
+        kind: String,
+        key: String,
+        windowMs: Long = DEDUPE_WINDOW_MS,
+    ): Boolean {
         val now = android.os.SystemClock.elapsedRealtime()
         val prev = lastPostedAtByKind[kind]
-        if (prev != null && prev.first == key && now - prev.second < DEDUPE_WINDOW_MS) {
+        if (prev != null && prev.first == key && now - prev.second < windowMs) {
             return true
         }
         lastPostedAtByKind[kind] = key to now
@@ -166,6 +180,65 @@ open class NotificationHelper(private val context: Context) {
             message = message,
             smallIcon = R.drawable.ic_poi_radar,
         )
+    }
+
+    /**
+     * Phone + Android Auto HUN suggesting to remember the parking spot
+     * (typically when the AA session ends after driving).
+     */
+    open fun showRememberParkedCarSuggestion(vehicleLabel: String?) {
+        if (!canPostNotifications()) return
+        if (shouldSuppressDuplicate("remember_parked", "suggest", REMEMBER_PARKED_DEDUPE_MS)) return
+
+        val title = context.getString(R.string.notification_remember_parked_title)
+        val message = if (!vehicleLabel.isNullOrBlank()) {
+            context.getString(R.string.notification_remember_parked_message, vehicleLabel)
+        } else {
+            context.getString(R.string.notification_remember_parked_message_generic)
+        }
+
+        val phoneIntent = Intent(context, MainActivity::class.java).apply {
+            action = ParkedCarIntents.ACTION_REMEMBER
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val phonePending = PendingIntent.getActivity(
+            context,
+            NOTIFICATION_ID_REMEMBER_PARKED,
+            phoneIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val carIntent = Intent(ParkedCarIntents.ACTION_REMEMBER).apply {
+            component = ComponentName(context, VoiceAppService::class.java)
+        }
+        val carPending = CarPendingIntent.getCarApp(
+            context,
+            NOTIFICATION_ID_REMEMBER_PARKED,
+            carIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_poi_parking)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(phonePending)
+            .extend(
+                CarAppExtender.Builder()
+                    .setImportance(NotificationManager.IMPORTANCE_HIGH)
+                    .setContentTitle(title)
+                    .setContentText(message)
+                    .setSmallIcon(R.drawable.ic_poi_parking)
+                    .setContentIntent(carPending)
+                    .build()
+            )
+
+        val notification = builder.build()
+        notificationManager.notify(NOTIFICATION_ID_REMEMBER_PARKED, notification)
+        CarNotificationManager.from(context).notify(NOTIFICATION_ID_REMEMBER_PARKED, builder)
     }
 
     private fun postCarHeadsUp(

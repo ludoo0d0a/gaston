@@ -105,6 +105,8 @@ fun CarContext.dashboardSettingsIcon(): CarIcon = carIcon(R.drawable.ic_settings
 
 fun CarContext.dashboardMaintenanceIcon(): CarIcon = carIcon(R.drawable.ic_directions_car, AutoCarIcons.primary)
 
+fun CarContext.dashboardParkedCarIcon(): CarIcon = carIcon(R.drawable.ic_poi_parking, AutoCarIcons.primary)
+
 fun CarContext.actionHomeIcon(): CarIcon = carIcon(R.drawable.ic_home, AutoCarIcons.primary)
 
 fun CarContext.actionSettingsIcon(): CarIcon = carIcon(R.drawable.ic_settings, AutoCarIcons.primary)

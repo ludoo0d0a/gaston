@@ -48,6 +48,7 @@ import fr.geoking.gaston.ui.PhoneNetworkLocationScreen
 import fr.geoking.gaston.ui.PhoneDashboardScreen
 import fr.geoking.gaston.ui.accident.AccidentFeatureScreen
 import fr.geoking.gaston.ui.maintenance.MaintenanceFeatureScreen
+import fr.geoking.gaston.ui.parked.ParkedCarFeatureScreen
 import fr.geoking.gaston.ui.AutoDebugScreen
 import fr.geoking.gaston.ui.components.NetworkStatusIcon
 import fr.geoking.gaston.ui.dashboard.GastonTheme
@@ -95,6 +96,7 @@ class MainActivity : ComponentActivity() {
     private val inAppUpdateHelper by lazy { get<InAppUpdateHelper>() }
     private val mapDepsState = MutableStateFlow<MapDeps?>(null)
     private val pendingNavDestination = MutableStateFlow<NavDestination?>(null)
+    private val pendingRememberParked = MutableStateFlow(false)
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -107,6 +109,9 @@ class MainActivity : ComponentActivity() {
         val nav = IntentNavigationHelper.parseNavIntent(intent)
         if (nav != null) {
             pendingNavDestination.value = nav
+        }
+        if (intent.action == ParkedCarIntents.ACTION_REMEMBER) {
+            pendingRememberParked.value = true
         }
     }
 
@@ -227,6 +232,7 @@ class MainActivity : ComponentActivity() {
                     inAppUpdateHelper = inAppUpdateHelper,
                     updateResultLauncher = updateResultLauncher,
                     pendingNavDestination = pendingNavDestination,
+                    pendingRememberParked = pendingRememberParked,
                     isPlaystoreDistribution = isPlaystoreDistribution
                 )
             }
@@ -258,6 +264,7 @@ private fun MainActivityComposeRoot(
     inAppUpdateHelper: InAppUpdateHelper,
     updateResultLauncher: ActivityResultLauncher<IntentSenderRequest>,
     pendingNavDestination: MutableStateFlow<NavDestination?>,
+    pendingRememberParked: MutableStateFlow<Boolean>,
     isPlaystoreDistribution: Boolean
 ) {
     android.util.Log.d("MainActivity", "Compose setContent block running")
@@ -398,6 +405,7 @@ private fun MainActivityComposeRoot(
             onStartUpdate = { info -> inAppUpdateHelper.startUpdate(info, updateResultLauncher) },
             isUpdateInProgress = isUpdateInProgress,
             pendingNavDestinationFlow = pendingNavDestination,
+            pendingRememberParkedFlow = pendingRememberParked,
             isPlaystoreDistribution = isPlaystoreDistribution,
             hasLocationPermission = hasLocationPermission,
             onRequestLocationPermission = {
@@ -428,11 +436,13 @@ fun MainUI(
     onStartUpdate: (AppUpdateInfo) -> Unit = {},
     isUpdateInProgress: Boolean = false,
     pendingNavDestinationFlow: kotlinx.coroutines.flow.MutableStateFlow<NavDestination?>? = null,
+    pendingRememberParkedFlow: kotlinx.coroutines.flow.MutableStateFlow<Boolean>? = null,
     isPlaystoreDistribution: Boolean = false,
     hasLocationPermission: Boolean = false,
     onRequestLocationPermission: () -> Unit = {}
 ) {
     val pendingNavFlow = pendingNavDestinationFlow ?: remember { MutableStateFlow<NavDestination?>(null) }
+    val pendingRememberFlow = pendingRememberParkedFlow ?: remember { MutableStateFlow(false) }
     val mapDeps by mapDepsState.collectAsState()
     val errorLog by diagnostics.errorLog.collectAsState()
     var showSettings by remember { mutableStateOf(false) }
@@ -443,6 +453,7 @@ fun MainUI(
     var showEmergency by remember { mutableStateOf(false) }
     var showAccident by remember { mutableStateOf(false) }
     var showMaintenance by remember { mutableStateOf(false) }
+    var showParkedCar by remember { mutableStateOf(false) }
     var showPlaystoreSettings by remember { mutableStateOf(false) }
     var playstoreSettingsInitialStack by remember { mutableStateOf<List<SettingsScreenPage>?>(null) }
     var showFavorites by remember { mutableStateOf(false) }
@@ -475,6 +486,15 @@ fun MainUI(
                 showRoutePlanning = true
                 showMap = true
                 pendingNavFlow.value = null
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        pendingRememberFlow.collect { open ->
+            if (open) {
+                showParkedCar = true
+                pendingRememberFlow.value = false
             }
         }
     }
@@ -577,6 +597,13 @@ fun MainUI(
                     BackHandler { showMaintenance = false }
                     MaintenanceFeatureScreen(
                         onBack = { showMaintenance = false },
+                    )
+                }
+                showParkedCar -> {
+                    BackHandler { showParkedCar = false }
+                    ParkedCarFeatureScreen(
+                        settingsManager = settingsManager,
+                        onBack = { showParkedCar = false },
                     )
                 }
                 isPlaystoreDistribution && showPlaystoreSettings -> {
@@ -738,6 +765,7 @@ fun MainUI(
                         onOpenEmergency = { showEmergency = true },
                         onOpenAccident = { showAccident = true },
                         onOpenMaintenance = { showMaintenance = true },
+                        onOpenParkedCar = { showParkedCar = true },
                         onOpenSettings = { stack ->
                             playstoreSettingsInitialStack = stack
                             showPlaystoreSettings = true
@@ -906,6 +934,7 @@ fun MainUI(
                             onOpenEmergency = { showEmergency = true },
                             onOpenAccident = { showAccident = true },
                             onOpenMaintenance = { showMaintenance = true },
+                            onOpenParkedCar = { showParkedCar = true },
                             onOpenSettings = { stack ->
                                 settingsInitialStack = stack
                                 showSettings = true
