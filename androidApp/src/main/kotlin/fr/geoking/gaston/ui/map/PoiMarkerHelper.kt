@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.*
 import android.util.LruCache
 import kotlin.math.pow
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Construction
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import fr.geoking.gaston.R
@@ -22,6 +24,9 @@ object PoiMarkerHelper {
     /** Rasterized vector heads (rounded = circle + logo); keyed by id + bucketed pixel size. Do not recycle evicted entries (bitmaps may still be referenced by marker bitmaps in flight). */
     private val vectorRasterCache = LruCache<String, Bitmap>(40)
 
+    /** Sentinel label: draw a chantier glyph instead of text. */
+    internal const val LABEL_CHANTIER = "__chantier__"
+
     fun clearCache() {
         synchronized(cache) {
             cache.evictAll()
@@ -33,7 +38,7 @@ object PoiMarkerHelper {
     }
 
     /** Bump when marker layout changes so [cache] entries are not stale. */
-    private const val MARKER_LAYOUT_CACHE_TAG = "pinColumn13"
+    private const val MARKER_LAYOUT_CACHE_TAG = "pinColumn14"
 
     /**
      * Builds a column marker bitmap: optional label pill (top) → rounded head (circle + logo in asset) → triangle pin (bottom).
@@ -63,8 +68,8 @@ object PoiMarkerHelper {
         val headDrawableId = if (amenityStyle == null) headDrawableResId(poi, brandInfo) else 0
         val category = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
         val categoryColor = getPoiColor(poi, category, effectiveEnergyTypes, effectivePowerLevels)
-        // Radar: pin tip + icon stay red; only the speed label pill follows VMA color.
-        val labelFillColor = radarSpeedLabelColorArgb(poi) ?: categoryColor
+        // Radar: pin tip + icon stay red; label pill follows VMA / chantier color.
+        val labelFillColor = radarLabelFillColorArgb(poi) ?: categoryColor
 
         val availKey = availability?.let { "${it.availableCount}/${it.totalCount}" } ?: "na"
         val headKey = if (amenityStyle != null) {
@@ -116,10 +121,13 @@ object PoiMarkerHelper {
         var labelBaseline = 0f
         val hasLabel = !label.isNullOrEmpty()
         val isCrossLabel = label == "❌"
+        val isChantierLabel = label == LABEL_CHANTIER
 
         if (hasLabel || showAvailBars) {
-            val labelText = label
-            val textH = if (labelText != null) {
+            val labelText = if (isChantierLabel) null else label
+            val textH = if (isChantierLabel) {
+                (labelTextSize * 0.95f)
+            } else if (labelText != null) {
                 var ts = labelTextSize
                 for (i in 0 until 12) {
                     textPaint.textSize = ts
@@ -132,7 +140,11 @@ object PoiMarkerHelper {
 
             val padH = w * 0.08f
             val padV = if (hasLabel) (textH * 0.22f).coerceIn(w * 0.04f, w * 0.12f) else w * 0.04f
-            val tw = if (isCrossLabel) w * 0.25f else if (labelText != null) textPaint.measureText(labelText) else w * 0.40f
+            val tw = when {
+                isCrossLabel || isChantierLabel -> w * 0.28f
+                labelText != null -> textPaint.measureText(labelText)
+                else -> w * 0.40f
+            }
             val rw = (tw + padH * 2).coerceAtMost(w - w * 0.06f)
             val rh = textH + padV * 2 + (if (hasLabel && showAvailBars) barRowGap else 0f) + barRowH
             val rx = (w - rw) / 2f
@@ -210,21 +222,35 @@ object PoiMarkerHelper {
             canvas.drawRoundRect(labelRect, corner, corner, bgPaint)
             canvas.drawRoundRect(labelRect, corner, corner, labelStroke)
             if (label != null) {
-                if (isCrossLabel) {
-                    val cx = labelRect.centerX()
-                    val cy = labelRect.centerY()
-                    val size = (labelRect.height() * 0.52f).coerceAtLeast(8f)
-                    val half = size / 2f
-                    val crossPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                        color = Color.RED
-                        style = Paint.Style.STROKE
-                        strokeWidth = (size * 0.28f).coerceAtLeast(3f)
-                        strokeCap = Paint.Cap.ROUND
+                when {
+                    isCrossLabel -> {
+                        val cx = labelRect.centerX()
+                        val cy = labelRect.centerY()
+                        val size = (labelRect.height() * 0.52f).coerceAtLeast(8f)
+                        val half = size / 2f
+                        val crossPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                            color = Color.RED
+                            style = Paint.Style.STROKE
+                            strokeWidth = (size * 0.28f).coerceAtLeast(3f)
+                            strokeCap = Paint.Cap.ROUND
+                        }
+                        canvas.drawLine(cx - half, cy - half, cx + half, cy + half, crossPaint)
+                        canvas.drawLine(cx + half, cy - half, cx - half, cy + half, crossPaint)
                     }
-                    canvas.drawLine(cx - half, cy - half, cx + half, cy + half, crossPaint)
-                    canvas.drawLine(cx + half, cy - half, cx - half, cy + half, crossPaint)
-                } else {
-                    canvas.drawText(label, labelRect.centerX(), labelBaseline, textPaint)
+                    isChantierLabel -> {
+                        val glyphSize = (labelRect.height() * 0.72f).toInt().coerceAtLeast(10)
+                        val glyph = AmenityIconCatalog.glyphBitmap(
+                            Icons.Rounded.Construction,
+                            glyphSize,
+                            labelFg,
+                        )
+                        val left = labelRect.centerX() - glyph.width / 2f
+                        val top = labelRect.centerY() - glyph.height / 2f
+                        canvas.drawBitmap(glyph, left, top, null)
+                    }
+                    else -> {
+                        canvas.drawText(label, labelRect.centerX(), labelBaseline, textPaint)
+                    }
                 }
             }
             if (showAvailBars) {
@@ -374,22 +400,41 @@ object PoiMarkerHelper {
 
         return when (category) {
             PoiCategory.Radar -> {
-                val regex = Regex("""(\d+)""")
-                regex.find(poi.name)?.value?.let { "$it" }
+                val vma = radarSpeedLimitKmH(poi)
+                when {
+                    vma != null -> "$vma"
+                    isChantierRadar(poi) -> LABEL_CHANTIER
+                    else -> null
+                }
             }
             else -> null
         }
     }
 
-    /**
-     * Speed-limit color for radar label pills, or null when VMA is unknown
-     * (caller keeps category / pin color). Icon disc stays red via [AmenityIconCatalog].
-     */
-    fun radarSpeedLabelColorArgb(poi: Poi): Int? {
+    /** Lufop type 154 / name or type containing "chantier". */
+    fun isChantierRadar(poi: Poi): Boolean {
+        if (poi.poiCategory != PoiCategory.Radar) return false
+        val type = poi.rawSourceData?.get("type").orEmpty()
+        if (type == "154") return true
+        if (type.contains("chantier", ignoreCase = true)) return true
+        return poi.name.contains("chantier", ignoreCase = true)
+    }
+
+    fun radarSpeedLimitKmH(poi: Poi): Int? {
         if (poi.poiCategory != PoiCategory.Radar) return null
         val fromRaw = poi.rawSourceData?.get("vma")?.toIntOrNull()?.takeIf { it > 0 }
-        val fromName = Regex("""(\d+)""").find(poi.name)?.value?.toIntOrNull()?.takeIf { it > 0 }
-        val vma = fromRaw ?: fromName ?: return null
+        if (fromRaw != null) return fromRaw
+        return Regex("""(\d+)""").find(poi.name)?.value?.toIntOrNull()?.takeIf { it in 20..160 }
+    }
+
+    /**
+     * Label pill fill for radar markers: chantier yellow, else VMA color, or null when unknown
+     * (caller keeps category / pin color). Icon disc stays red via [AmenityIconCatalog].
+     */
+    fun radarLabelFillColorArgb(poi: Poi): Int? {
+        if (poi.poiCategory != PoiCategory.Radar) return null
+        if (isChantierRadar(poi)) return ColorHelper.ColorChantier.toArgb()
+        val vma = radarSpeedLimitKmH(poi) ?: return null
         return ColorHelper.getSpeedLimitColor(vma).toArgb()
     }
 

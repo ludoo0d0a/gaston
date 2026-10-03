@@ -1,10 +1,12 @@
 package fr.geoking.gaston.ui.map
 
+import androidx.compose.ui.graphics.toArgb
 import fr.geoking.gaston.poi.FuelPrice
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PoiMarkerHelperTest {
@@ -196,5 +198,44 @@ class PoiMarkerHelperTest {
         val color = PoiMarkerHelper.getPoiColor(evPoi, PoiCategory.Irve, setOf("electric"), emptySet())
         val expected = fr.geoking.gaston.ui.ColorHelper.getPowerColor(150.0)
         assertEquals(expected, androidx.compose.ui.graphics.Color(color))
+    }
+
+    @Test
+    fun `chantier radar without VMA uses chantier label and yellow fill`() {
+        val poi = Poi(
+            id = "c1",
+            name = "Zone de danger FR Chantier",
+            address = "",
+            latitude = 0.0,
+            longitude = 0.0,
+            poiCategory = PoiCategory.Radar,
+            source = "LufopOpenSpeedCam",
+            rawSourceData = mapOf("type" to "154", "vma" to "NA"),
+        )
+        assertTrue(PoiMarkerHelper.isChantierRadar(poi))
+        assertEquals(PoiMarkerHelper.LABEL_CHANTIER, PoiMarkerHelper.getPoiLabel(poi, emptySet(), emptySet()))
+        assertEquals(
+            fr.geoking.gaston.ui.ColorHelper.ColorChantier.toArgb(),
+            PoiMarkerHelper.radarLabelFillColorArgb(poi),
+        )
+    }
+
+    @Test
+    fun `chantier radar with VMA keeps speed label on chantier color`() {
+        val poi = Poi(
+            id = "c2",
+            name = "Zone de danger FR Chantier 70",
+            address = "",
+            latitude = 0.0,
+            longitude = 0.0,
+            poiCategory = PoiCategory.Radar,
+            source = "LufopOpenSpeedCam",
+            rawSourceData = mapOf("type" to "154", "vma" to "70"),
+        )
+        assertEquals("70", PoiMarkerHelper.getPoiLabel(poi, emptySet(), emptySet()))
+        assertEquals(
+            fr.geoking.gaston.ui.ColorHelper.ColorChantier.toArgb(),
+            PoiMarkerHelper.radarLabelFillColorArgb(poi),
+        )
     }
 }

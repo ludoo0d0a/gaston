@@ -68,4 +68,7 @@ object ColorHelper {
         speedKmH <= 110 -> ColorSpeed110
         else -> ColorSpeed130
     }
+
+    /** Roadworks / chantier radar label (French temporary-sign yellow). */
+    val ColorChantier = Color(0xFFFACC15)
 }

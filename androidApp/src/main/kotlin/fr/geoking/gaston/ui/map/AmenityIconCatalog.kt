@@ -132,6 +132,17 @@ object AmenityIconCatalog {
         return bitmap
     }
 
+    /**
+     * Solid-tint [imageVector] glyph on a transparent square (no disc), for label pills etc.
+     */
+    fun glyphBitmap(imageVector: ImageVector, sizePx: Int, fillArgb: Int): Bitmap {
+        val bucket = sizePx.coerceAtLeast(8)
+        val bitmap = Bitmap.createBitmap(bucket, bucket, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawImageVector(canvas, imageVector, bucket.toFloat(), fillArgb)
+        return bitmap
+    }
+
     fun clearCache() {
         synchronized(headBitmapCache) { headBitmapCache.evictAll() }
     }
