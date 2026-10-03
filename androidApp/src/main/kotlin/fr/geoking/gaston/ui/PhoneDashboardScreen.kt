@@ -137,9 +137,8 @@ fun PhoneDashboardScreen(
                     onOpenMap = onOpenMap,
                     onOpenRadars = {
                         scope.launch {
-                            // Drop stale empty radar coverage / Lufop memory cache so the map
-                            // always hits Lufop + Overpass after the dashboard shortcut.
-                            runCatching { poiProvider?.clearCache() }
+                            // Do not clear POI/Lufop caches here — Lufop uses a long-lived disk
+                            // cache (free-tier rate limit). Coverage refetch is driven by amenity mode.
                             settingsManager.setOtherMode("speed_camera")
                             onOpenMap(null, 12.5f)
                         }

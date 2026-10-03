@@ -1,7 +1,10 @@
 package fr.geoking.gaston.api.radars
 
+import fr.geoking.gaston.aac.CachedText
+import fr.geoking.gaston.aac.TextFileCache
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiSearchRequest
+import fr.geoking.gaston.shared.network.RateLimitTracker
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -9,12 +12,40 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.runBlocking
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class LufopOpenSpeedCamTest {
+
+    @BeforeTest
+    fun resetRateLimits() {
+        RateLimitTracker.reset()
+    }
+
+    private class InMemoryTextFileCache : TextFileCache {
+        private val store = mutableMapOf<String, CachedText>()
+
+        override fun read(key: String): CachedText? = store[key]
+
+        override fun write(key: String, value: String, version: String?) {
+            store[key] = CachedText(
+                body = value,
+                storedAtEpochMs = System.currentTimeMillis(),
+                version = version,
+            )
+        }
+
+        override fun clear(key: String) {
+            store.remove(key)
+        }
+
+        fun seed(key: String, body: String, version: String, storedAtEpochMs: Long = System.currentTimeMillis()) {
+            store[key] = CachedText(body = body, storedAtEpochMs = storedAtEpochMs, version = version)
+        }
+    }
 
     private val sampleJson = """
 [
@@ -152,11 +183,77 @@ class LufopOpenSpeedCamTest {
                 )
             }
         }
-        val client = LufopOpenSpeedCamClient(HttpClient(mockEngine), apiKey = "test-key")
+        val client = LufopOpenSpeedCamClient(
+            HttpClient(mockEngine),
+            apiKey = "test-key",
+            minNetworkIntervalMs = 0L,
+        )
         assertTrue(client.getRecordsNear(48.8566, 2.3522, radiusKm = 500.0).isEmpty())
         val second = client.getRecordsNear(48.8566, 2.3522, radiusKm = 500.0)
         assertEquals(2, calls)
         assertTrue(second.isNotEmpty())
+    }
+
+    @Test
+    fun panWithinPrefetchRadius_reusesMemoryCache() = runBlocking {
+        var calls = 0
+        val mockEngine = MockEngine {
+            calls++
+            respond(
+                content = sampleJson,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+        val client = LufopOpenSpeedCamClient(HttpClient(mockEngine), apiKey = "test-key")
+        // ~20 km north of Paris — still inside 40% of 100 km prefetch.
+        assertTrue(client.getRecordsNear(48.8566, 2.3522, radiusKm = 15.0).isNotEmpty())
+        assertTrue(client.getRecordsNear(49.03, 2.3522, radiusKm = 15.0).isNotEmpty())
+        assertEquals(1, calls)
+    }
+
+    @Test
+    fun diskCacheHit_skipsNetwork() = runBlocking {
+        val disk = InMemoryTextFileCache()
+        disk.seed(
+            LufopOpenSpeedCamClient.DISK_CACHE_KEY,
+            sampleJson,
+            version = "48.8566,2.3522,100.0",
+        )
+        val mockEngine = MockEngine {
+            error("network should not be called when disk cache is fresh")
+        }
+        val client = LufopOpenSpeedCamClient(
+            HttpClient(mockEngine),
+            apiKey = "test-key",
+            diskCache = disk,
+        )
+        val records = client.getRecordsNear(48.8566, 2.3522, radiusKm = 15.0)
+        assertTrue(records.isNotEmpty())
+        assertTrue(records.any { it.id == "osc_1" })
+    }
+
+    @Test
+    fun throttle_reusesStaleCacheWithinInterval() = runBlocking {
+        var calls = 0
+        val mockEngine = MockEngine {
+            calls++
+            respond(
+                content = sampleJson,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+        val client = LufopOpenSpeedCamClient(
+            HttpClient(mockEngine),
+            apiKey = "test-key",
+            minNetworkIntervalMs = 8_000L,
+        )
+        assertTrue(client.getRecordsNear(48.8566, 2.3522, radiusKm = 15.0).isNotEmpty())
+        // Far from Paris — geo miss, but throttle returns existing cache instead of a 2nd HTTP.
+        val far = client.getRecordsNear(0.0, 0.0, radiusKm = 15.0)
+        assertEquals(1, calls)
+        assertTrue(far.isEmpty()) // filtered to equator; cache blob still served internally
     }
 
     @Test

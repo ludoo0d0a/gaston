@@ -347,7 +347,13 @@ val mapModule = module {
             csvResolver = resolver,
         )
     }
-    single { LufopOpenSpeedCamClient(get(), apiKey = BuildConfig.LUFOP_API_KEY) }
+    single {
+        LufopOpenSpeedCamClient(
+            client = get(),
+            apiKey = BuildConfig.LUFOP_API_KEY,
+            diskCache = fr.geoking.gaston.aac.AndroidTextFileCache(androidContext()),
+        )
+    }
     single {
         val diskCache = fr.geoking.gaston.aac.AndroidTextFileCache(androidContext())
         LuxembourgRadarsClient(client = get(), diskCache = diskCache)
@@ -369,7 +375,7 @@ val mapModule = module {
         FranceRadarsProvider(get(), defaultRadiusKm = 25.0)
     }
     single<PoiProvider>(named("lufop_openspeedcam")) {
-        LufopOpenSpeedCamProvider(get(), defaultRadiusKm = 25.0)
+        LufopOpenSpeedCamProvider(get(), defaultRadiusKm = 100.0)
     }
     single<PoiProvider>(named("luxembourg_radars")) {
         LuxembourgRadarsProvider(get(), defaultRadiusKm = 25.0)

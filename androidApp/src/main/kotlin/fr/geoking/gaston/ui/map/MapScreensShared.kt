@@ -41,7 +41,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import fr.geoking.gaston.CacheManager
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
@@ -137,7 +136,9 @@ fun rememberMapDataState(
     actions.refresh = { clearCaches, atCenter ->
         scope.launch {
             if (clearCaches) {
-                CacheManager.clearAllCaches(context)
+                // Soft clear: markers + providers/Room. Lufop is preserved (30-day rate-limit cache);
+                // full wipe including Lufop is only via CacheManager (debug / settings).
+                PoiMarkerHelper.clearCache()
                 poiProvider.clearCache()
             }
             cachedPois = emptyList()

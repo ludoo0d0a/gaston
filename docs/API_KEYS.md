@@ -51,11 +51,13 @@ Without a key, the API may rate-limit or reject heavy use.
 | **Auth** | Query parameter `key=` on `https://api.lufop.net/api` |
 | **Docs** | [api.lufop.net](https://api.lufop.net/) |
 
-1. Create an account on [api.lufop.net](https://api.lufop.net/) and request an API key (Free plan exists with daily quotas).
+1. Create an account on [api.lufop.net](https://api.lufop.net/) and request an API key (Free plan exists with daily quotas and ~10 calls/minute).
 2. Set `LUFOP_API_KEY=…` in `local.properties` (or CI env).
 3. Without a key, the Lufop provider returns no POIs / zones.
 
 Gaston queries by GPS (`q` + `m`) in JSON. Attribution to Lufop is required (CC BY-SA).
+
+**Client cache:** prefetch ≥100 km, memory + disk TTL 30 days, min 8 s between network calls (free tier `nbr` max 200/call). Map refresh does not wipe Lufop; only debug/settings `CacheManager.clearAllCaches` does.
 
 ---
 

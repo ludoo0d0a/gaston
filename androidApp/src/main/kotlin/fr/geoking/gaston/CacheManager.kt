@@ -4,6 +4,7 @@ import android.content.Context
 import coil3.SingletonImageLoader
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.shared.logging.DebugLogStore
+import fr.geoking.gaston.api.radars.LufopOpenSpeedCamClient
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.tools.debugbar.model.CacheStatRow
 import fr.geoking.tools.debugbar.model.CacheStats
@@ -23,6 +24,13 @@ object CacheManager {
             poiProvider?.clearCache()
         } catch (e: Exception) {
             android.util.Log.e("CacheManager", "Error clearing PoiProvider cache", e)
+        }
+
+        // Lufop is excluded from SelectorPoiProvider.clearCache (30-day rate-limit cache).
+        try {
+            GlobalContext.get().getOrNull<LufopOpenSpeedCamClient>()?.clearCache()
+        } catch (e: Exception) {
+            android.util.Log.e("CacheManager", "Error clearing Lufop cache", e)
         }
 
         // 2. Network Debug Logs (Memory-only, fast)

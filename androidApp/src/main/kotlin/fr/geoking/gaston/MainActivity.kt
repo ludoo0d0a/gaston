@@ -370,7 +370,7 @@ private fun MainActivityComposeRoot(
                         val zones = zoneRepo.zonesNear(
                             latitude = loc.latitude,
                             longitude = loc.longitude,
-                            radiusKm = 25.0,
+                            radiusKm = 100.0,
                         )
                         dangerZoneAlertManager.evaluateAndAlert(loc, zones)
                     } catch (e: Exception) {

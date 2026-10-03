@@ -1103,7 +1103,7 @@ class SelectorPoiProvider(
         belgiumOfficial.clearCache()
         usaEia.clearCache()
         franceRadars.clearCache()
-        lufopOpenSpeedCam.clearCache()
+        // Lufop keeps a 30-day memory+disk cache (free-tier rate limit); wipe only via CacheManager.
         luxembourgRadars.clearCache()
         overpass.clearCache()
     }

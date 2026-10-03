@@ -124,7 +124,7 @@ class CarAppSession : Session(), KoinComponent {
                             val zones = zoneRepo.zonesNear(
                                 latitude = loc.latitude,
                                 longitude = loc.longitude,
-                                radiusKm = 25.0,
+                                radiusKm = 100.0,
                             )
                             manager.evaluateAndAlert(loc, zones)
                         } catch (e: Exception) {

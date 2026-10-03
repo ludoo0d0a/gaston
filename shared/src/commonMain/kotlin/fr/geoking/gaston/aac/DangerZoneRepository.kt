@@ -43,7 +43,7 @@ class DangerZoneRepository(
     suspend fun zonesNear(
         latitude: Double,
         longitude: Double,
-        radiusKm: Double = 25.0,
+        radiusKm: Double = 100.0,
     ): List<DangerZone> {
         val needRefresh = cachedZones.isEmpty() ||
             cacheCenterLat.isNaN() ||

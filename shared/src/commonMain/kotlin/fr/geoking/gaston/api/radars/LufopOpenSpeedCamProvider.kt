@@ -11,7 +11,7 @@ import fr.geoking.gaston.poi.radiusKmFromMapViewport
 
 class LufopOpenSpeedCamProvider(
     private val client: LufopOpenSpeedCamClient,
-    private val defaultRadiusKm: Double = 25.0
+    private val defaultRadiusKm: Double = 100.0
 ) : AbstractPoiProvider() {
 
     override fun supportedCategories(): Set<PoiCategory> = setOf(PoiCategory.Radar)

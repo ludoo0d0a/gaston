@@ -1,9 +1,11 @@
 package fr.geoking.gaston.api.radars
 
+import fr.geoking.gaston.aac.TextFileCache
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.network.NetworkException
+import fr.geoking.gaston.shared.network.RateLimitTracker
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -24,19 +26,34 @@ import kotlinx.serialization.json.jsonPrimitive
  *
  * Geo query: `GET /api?key=…&format=json&q=lat,lon&m=…&nbr=…`
  * [m] is ≈ 1/10 km (e.g. `m=100` ≈ 10 km). Blank [apiKey] → empty results.
+ *
+ * Aggressive cache: prefetch ≥ [MIN_FETCH_RADIUS_KM], TTL 30 days (memory + optional disk),
+ * and at most one network call every [minNetworkIntervalMs] (free tier ≈ 10 req/min).
  */
 class LufopOpenSpeedCamClient(
     private val client: HttpClient,
     private val apiKey: String = "",
     private val baseUrl: String = DEFAULT_API_URL,
     private val maxResults: Int = DEFAULT_MAX_RESULTS,
+    private val diskCache: TextFileCache? = null,
+    private val minNetworkIntervalMs: Long = MIN_NETWORK_INTERVAL_MS,
 ) {
     companion object {
         const val DEFAULT_API_URL = "https://api.lufop.net/api"
         /** Free-tier max results per call (Pro allows more). */
         const val DEFAULT_MAX_RESULTS = 200
-        private const val CACHE_TTL_MS = 30 * 60 * 1000L // 30 minutes
+        const val DISK_CACHE_KEY = "lufop_openspeedcam"
+        /** Always fetch at least this radius so pans stay inside the cached blob. */
+        const val MIN_FETCH_RADIUS_KM = 100.0
+        private const val CACHE_TTL_MS = 30L * 24 * 60 * 60 * 1000 // 30 days
+        /** Mid of 6–10 s — keeps free-tier under ~10 calls/minute. */
+        const val MIN_NETWORK_INTERVAL_MS = 8_000L
+        private const val RATE_LIMIT_HOST = "api.lufop.net"
         private val VMA_IN_NAME = Regex("""(?:^|\D)(\d{2,3})\s*(?:km/?h)?\s*$""", RegexOption.IGNORE_CASE)
+        private val QUOTA_HINT = Regex(
+            """limite|quota|appels?/minute|temporairement bloqu""",
+            RegexOption.IGNORE_CASE,
+        )
     }
 
     /** False when [apiKey] is blank — callers may fall back to OSM / official dumps. */
@@ -48,6 +65,7 @@ class LufopOpenSpeedCamClient(
     private var cacheLon: Double = Double.NaN
     private var cacheRadiusKm: Double = 0.0
     private var cacheTimestamp: Long = 0L
+    private var lastNetworkCallMs: Long = 0L
 
     suspend fun getRadarsNear(
         latitude: Double,
@@ -77,7 +95,9 @@ class LufopOpenSpeedCamClient(
             cacheLon = Double.NaN
             cacheRadiusKm = 0.0
             cacheTimestamp = 0L
+            lastNetworkCallMs = 0L
         }
+        diskCache?.clear(DISK_CACHE_KEY)
     }
 
     private suspend fun ensureCachedRadars(
@@ -85,18 +105,39 @@ class LufopOpenSpeedCamClient(
         longitude: Double,
         radiusKm: Double,
     ): List<LufopOpenSpeedCamRecord> {
+        val fetchRadiusKm = maxOf(radiusKm, MIN_FETCH_RADIUS_KM)
         val now = System.currentTimeMillis()
+
         mutex.withLock {
-            val existing = cachedRadars
-            val stillFresh = existing != null &&
-                (now - cacheTimestamp) < CACHE_TTL_MS &&
-                !cacheLat.isNaN() &&
-                haversineKm(latitude, longitude, cacheLat, cacheLon) <= cacheRadiusKm * 0.4 &&
-                radiusKm <= cacheRadiusKm * 1.05
-            if (stillFresh) return existing
+            memoryIfFresh(latitude, longitude, fetchRadiusKm, now)?.let { return it }
         }
 
-        val downloaded = fetchNear(latitude, longitude, radiusKm)
+        val fromDisk = loadDiskIfFresh(latitude, longitude, fetchRadiusKm, now)
+        if (fromDisk != null) return fromDisk
+
+        mutex.withLock {
+            // Another coroutine may have filled memory while we read disk.
+            memoryIfFresh(latitude, longitude, fetchRadiusKm, now)?.let { return it }
+
+            val throttled = lastNetworkCallMs > 0L &&
+                (now - lastNetworkCallMs) < minNetworkIntervalMs
+            if (throttled) {
+                cachedRadars?.let { return it }
+                throw NetworkException(
+                    429,
+                    "Lufop throttle: wait ${minNetworkIntervalMs / 1000}s between network calls",
+                )
+            }
+        }
+
+        if (RateLimitTracker.isRateLimited(RATE_LIMIT_HOST)) {
+            mutex.withLock { cachedRadars }?.let { return it }
+            val remainingSec =
+                (RateLimitTracker.getRemainingCooldownMs(RATE_LIMIT_HOST) / 1000).coerceAtLeast(1)
+            throw NetworkException(429, "Rate limit active for Lufop ($remainingSec s remaining)")
+        }
+
+        val downloaded = fetchNear(latitude, longitude, fetchRadiusKm)
         // Never cache empty payloads (HTML challenge, quota, transient miss) — that blocked
         // all later retries for [CACHE_TTL_MS] with zero network calls.
         if (downloaded.isNotEmpty()) {
@@ -104,12 +145,79 @@ class LufopOpenSpeedCamClient(
                 cachedRadars = downloaded
                 cacheLat = latitude
                 cacheLon = longitude
-                cacheRadiusKm = radiusKm
+                cacheRadiusKm = fetchRadiusKm
                 cacheTimestamp = now
             }
         }
         return downloaded
     }
+
+    private fun memoryIfFresh(
+        latitude: Double,
+        longitude: Double,
+        fetchRadiusKm: Double,
+        now: Long,
+    ): List<LufopOpenSpeedCamRecord>? {
+        val existing = cachedRadars ?: return null
+        if (!isGeoFresh(latitude, longitude, fetchRadiusKm, cacheLat, cacheLon, cacheRadiusKm) ||
+            (now - cacheTimestamp) >= CACHE_TTL_MS
+        ) {
+            return null
+        }
+        return existing
+    }
+
+    private suspend fun loadDiskIfFresh(
+        latitude: Double,
+        longitude: Double,
+        fetchRadiusKm: Double,
+        now: Long,
+    ): List<LufopOpenSpeedCamRecord>? {
+        val cached = diskCache?.read(DISK_CACHE_KEY) ?: return null
+        if ((now - cached.storedAtEpochMs) >= CACHE_TTL_MS) return null
+        val meta = parseDiskVersion(cached.version) ?: return null
+        if (!isGeoFresh(latitude, longitude, fetchRadiusKm, meta.lat, meta.lon, meta.radiusKm)) {
+            return null
+        }
+        val parsed = parseContent(cached.body)
+        if (parsed.isEmpty()) return null
+        mutex.withLock {
+            cachedRadars = parsed
+            cacheLat = meta.lat
+            cacheLon = meta.lon
+            cacheRadiusKm = meta.radiusKm
+            cacheTimestamp = cached.storedAtEpochMs
+        }
+        return parsed
+    }
+
+    private fun isGeoFresh(
+        latitude: Double,
+        longitude: Double,
+        fetchRadiusKm: Double,
+        cachedLat: Double,
+        cachedLon: Double,
+        cachedRadiusKm: Double,
+    ): Boolean {
+        if (cachedLat.isNaN() || cachedRadiusKm <= 0.0) return false
+        return haversineKm(latitude, longitude, cachedLat, cachedLon) <= cachedRadiusKm * 0.4 &&
+            fetchRadiusKm <= cachedRadiusKm * 1.05
+    }
+
+    private data class DiskMeta(val lat: Double, val lon: Double, val radiusKm: Double)
+
+    private fun parseDiskVersion(version: String?): DiskMeta? {
+        if (version.isNullOrBlank()) return null
+        val parts = version.split(',')
+        if (parts.size != 3) return null
+        val lat = parts[0].toDoubleOrNull() ?: return null
+        val lon = parts[1].toDoubleOrNull() ?: return null
+        val radius = parts[2].toDoubleOrNull() ?: return null
+        return DiskMeta(lat, lon, radius)
+    }
+
+    private fun diskVersion(lat: Double, lon: Double, radiusKm: Double): String =
+        "$lat,$lon,$radiusKm"
 
     private suspend fun fetchNear(
         latitude: Double,
@@ -118,19 +226,46 @@ class LufopOpenSpeedCamClient(
     ): List<LufopOpenSpeedCamRecord> {
         // Lufop `m` ≈ 1/10 km (docs: m=100 ≈ 10 km around q=…).
         val margin = (radiusKm * 10.0).toInt().coerceIn(1, 10_000)
-        val response = client.get(baseUrl) {
-            header(HttpHeaders.UserAgent, "Gaston/1.0 (contact@geoking.fr)")
-            parameter("key", apiKey)
-            parameter("format", "json")
-            parameter("q", "$latitude,$longitude")
-            parameter("m", margin)
-            parameter("nbr", maxResults.coerceIn(1, 10_000))
+        mutex.withLock {
+            lastNetworkCallMs = System.currentTimeMillis()
+        }
+        val response = try {
+            client.get(baseUrl) {
+                header(HttpHeaders.UserAgent, "Gaston/1.0 (contact@geoking.fr)")
+                parameter("key", apiKey)
+                parameter("format", "json")
+                parameter("q", "$latitude,$longitude")
+                parameter("m", margin)
+                parameter("nbr", maxResults.coerceIn(1, 10_000))
+            }
+        } catch (e: NetworkException) {
+            if (e.httpCode == 429) {
+                RateLimitTracker.recordRateLimit(RATE_LIMIT_HOST, "60")
+            }
+            throw e
         }
         val body = response.bodyAsText()
+        if (response.status.value == 429 || looksLikeQuotaBody(body)) {
+            RateLimitTracker.recordRateLimit(RATE_LIMIT_HOST, "60")
+            throw NetworkException(429, "Lufop rate limit: ${body.take(200)}")
+        }
         if (response.status.value !in 200..299) {
             throw NetworkException(response.status.value, "Lufop API fetch error: ${body.take(200)}")
         }
-        return parseContent(body)
+        val records = parseContent(body)
+        if (records.isNotEmpty()) {
+            diskCache?.write(DISK_CACHE_KEY, body, diskVersion(latitude, longitude, radiusKm))
+        }
+        return records
+    }
+
+    private fun looksLikeQuotaBody(body: String): Boolean {
+        val trimmed = body.trim()
+        if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+            // JSON payloads are never the French HTML/text quota page.
+            return false
+        }
+        return QUOTA_HINT.containsMatchIn(trimmed)
     }
 
     fun parseContent(text: String): List<LufopOpenSpeedCamRecord> {
