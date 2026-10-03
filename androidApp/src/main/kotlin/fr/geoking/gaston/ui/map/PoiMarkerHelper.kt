@@ -33,7 +33,7 @@ object PoiMarkerHelper {
     }
 
     /** Bump when marker layout changes so [cache] entries are not stale. */
-    private const val MARKER_LAYOUT_CACHE_TAG = "pinColumn12"
+    private const val MARKER_LAYOUT_CACHE_TAG = "pinColumn13"
 
     /**
      * Builds a column marker bitmap: optional label pill (top) → rounded head (circle + logo in asset) → triangle pin (bottom).
@@ -63,6 +63,8 @@ object PoiMarkerHelper {
         val headDrawableId = if (amenityStyle == null) headDrawableResId(poi, brandInfo) else 0
         val category = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
         val categoryColor = getPoiColor(poi, category, effectiveEnergyTypes, effectivePowerLevels)
+        // Radar: pin tip + icon stay red; only the speed label pill follows VMA color.
+        val labelFillColor = radarSpeedLabelColorArgb(poi) ?: categoryColor
 
         val availKey = availability?.let { "${it.availableCount}/${it.totalCount}" } ?: "na"
         val headKey = if (amenityStyle != null) {
@@ -70,15 +72,21 @@ object PoiMarkerHelper {
         } else {
             headDrawableId.toString()
         }
-        val cacheKey = "${poi.id}_${label}_${headKey}_${categoryColor}_${isSelected}_${cheapestRank}_${sizePx}_${availKey}_$MARKER_LAYOUT_CACHE_TAG"
+        val cacheKey = "${poi.id}_${label}_${headKey}_${categoryColor}_${labelFillColor}_${isSelected}_${cheapestRank}_${sizePx}_${availKey}_$MARKER_LAYOUT_CACHE_TAG"
         synchronized(cache) {
             cache.get(cacheKey)?.let { return it }
         }
 
         val w = sizePx.coerceIn(56, 512)
         val fillColor = categoryColor
-        val labelFg = contrastingForegroundArgb(fillColor)
+        val labelFg = contrastingForegroundArgb(labelFillColor)
         val edgeStrokeArgb = when (cheapestRank) {
+            1 -> ColorHelper.ColorRank1.toArgb()
+            2 -> ColorHelper.ColorRank2.toArgb()
+            3 -> ColorHelper.ColorRank3.toArgb()
+            else -> contrastingEdgeStrokeArgb(contrastingForegroundArgb(fillColor))
+        }
+        val labelEdgeStrokeArgb = when (cheapestRank) {
             1 -> ColorHelper.ColorRank1.toArgb()
             2 -> ColorHelper.ColorRank2.toArgb()
             3 -> ColorHelper.ColorRank3.toArgb()
@@ -187,16 +195,16 @@ object PoiMarkerHelper {
             canvas.drawBitmap(headBitmap, left, top, null)
         }
 
-        // 3) Label pill (optional, on top) — same fill as triangle; text/stroke contrast from [fillColor].
+        // 3) Label pill (optional, on top). Radar: VMA-colored pill; otherwise same fill as pin tip.
         if ((hasLabel || showAvailBars) && labelRect.width() > 0f) {
             val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.FILL
-                color = fillColor
+                color = labelFillColor
             }
             val labelStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
                 strokeWidth = strokeW * 0.75f
-                color = edgeStrokeArgb
+                color = labelEdgeStrokeArgb
             }
             val corner = w * 0.08f
             canvas.drawRoundRect(labelRect, corner, corner, bgPaint)
@@ -371,6 +379,18 @@ object PoiMarkerHelper {
             }
             else -> null
         }
+    }
+
+    /**
+     * Speed-limit color for radar label pills, or null when VMA is unknown
+     * (caller keeps category / pin color). Icon disc stays red via [AmenityIconCatalog].
+     */
+    fun radarSpeedLabelColorArgb(poi: Poi): Int? {
+        if (poi.poiCategory != PoiCategory.Radar) return null
+        val fromRaw = poi.rawSourceData?.get("vma")?.toIntOrNull()?.takeIf { it > 0 }
+        val fromName = Regex("""(\d+)""").find(poi.name)?.value?.toIntOrNull()?.takeIf { it > 0 }
+        val vma = fromRaw ?: fromName ?: return null
+        return ColorHelper.getSpeedLimitColor(vma).toArgb()
     }
 
     fun getPoiColor(

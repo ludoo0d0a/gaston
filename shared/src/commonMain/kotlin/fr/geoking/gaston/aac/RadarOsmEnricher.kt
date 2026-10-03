@@ -90,7 +90,7 @@ class RadarOsmEnricher(
 
     /**
      * Enrich Lufop / Luxembourg / FranceRadars map pins with OSM direction in [Poi.rawSourceData]
-     * so [DangerZoneTriangle] can draw approach corridors. Skips pins that already have direction.
+     * so [DangerZoneTriangle] can draw approach-corridor rectangles. Skips pins that already have direction.
      * Overpass failures leave POIs unchanged.
      */
     suspend fun enrichPois(pois: List<Poi>): List<Poi> {

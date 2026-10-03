@@ -623,7 +623,7 @@ fun MapScreen(
 
                         val poisToShow = filteredPois
 
-                        // Directional danger-zone triangles when a unidirectional bearing is known.
+                        // Directional danger-zone rectangles when a unidirectional bearing is known.
                         poisToShow.filter { it.poiCategory == PoiCategory.Radar }.forEach { poi ->
                             val ring = fr.geoking.gaston.aac.DangerZoneTriangle.latLngRingForRadarPoi(poi)
                                 ?: return@forEach

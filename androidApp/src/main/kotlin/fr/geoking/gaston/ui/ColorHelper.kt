@@ -50,4 +50,22 @@ object ColorHelper {
         300 -> ColorPower300Plus
         else -> ColorPower0_20
     }
+
+    // Speed-limit (VMA) label colors — distinct from the red radar icon.
+    val ColorSpeed30 = Color(0xFF14B8A6)
+    val ColorSpeed50 = Color(0xFF22C55E)
+    val ColorSpeed70 = Color(0xFFEAB308)
+    val ColorSpeed90 = Color(0xFFF97316)
+    val ColorSpeed110 = Color(0xFFA855F7)
+    val ColorSpeed130 = Color(0xFF6366F1)
+
+    /** Label pill color for a posted speed limit (km/h). */
+    fun getSpeedLimitColor(speedKmH: Int): Color = when {
+        speedKmH <= 30 -> ColorSpeed30
+        speedKmH <= 50 -> ColorSpeed50
+        speedKmH <= 70 -> ColorSpeed70
+        speedKmH <= 90 -> ColorSpeed90
+        speedKmH <= 110 -> ColorSpeed110
+        else -> ColorSpeed130
+    }
 }

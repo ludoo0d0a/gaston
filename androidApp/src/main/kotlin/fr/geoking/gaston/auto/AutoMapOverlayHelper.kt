@@ -14,9 +14,10 @@ import kotlin.math.cos
 object AutoMapOverlayHelper {
 
     /**
-     * Directional danger-zone triangles for radar amenity POIs (AFFTAC distances:
-     * ~4 km / ~2 km / ~300 m). Tip at the radar; base on the entry arc when a
-     * unidirectional bearing is known. Skips POIs with missing/bidirectional direction.
+     * Directional danger-zone rectangles for radar amenity POIs (AFFTAC distances:
+     * ~4 km / ~2 km / ~300 m). Near edge at the radar; far edge at the entry
+     * boundary when a unidirectional bearing is known. Skips POIs with
+     * missing/bidirectional direction.
      * [toScreenXy] maps each lat/lon to canvas coordinates.
      */
     fun drawRadarDangerZoneTriangles(
@@ -38,7 +39,7 @@ object AutoMapOverlayHelper {
         }
         for (poi in radarPois) {
             val ring = DangerZoneTriangle.latLngRingForRadarPoi(poi) ?: continue
-            if (ring.size < 3) continue
+            if (ring.size < 4) continue
             val path = Path()
             ring.forEachIndexed { index, (lat, lon) ->
                 val (x, y) = toScreenXy(lat, lon)

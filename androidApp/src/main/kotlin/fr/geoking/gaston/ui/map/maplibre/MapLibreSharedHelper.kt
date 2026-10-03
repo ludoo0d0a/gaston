@@ -124,7 +124,7 @@ object MapLibreSharedHelper {
     }
 
     /**
-     * Directional danger-zone triangles around radar amenity POIs (fill + stroke).
+     * Directional danger-zone rectangles around radar amenity POIs (fill + stroke).
      * Drawn only when a unidirectional monitored bearing is available.
      */
     fun syncRadarDangerZoneLayer(map: MapLibreMap, pois: List<Poi>) {
@@ -161,7 +161,7 @@ object MapLibreSharedHelper {
                 val ring = DangerZoneTriangle.latLngRingForRadarPoi(poi)?.map { (lat, lon) ->
                     Point.fromLngLat(lon, lat)
                 } ?: return@mapNotNull null
-                if (ring.size < 4) return@mapNotNull null
+                if (ring.size < 5) return@mapNotNull null
                 Feature.fromGeometry(Polygon.fromLngLats(listOf(ring)))
             }
             source.setGeoJson(FeatureCollection.fromFeatures(features))

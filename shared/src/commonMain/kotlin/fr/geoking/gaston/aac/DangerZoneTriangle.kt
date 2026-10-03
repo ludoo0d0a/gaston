@@ -9,19 +9,20 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Directional danger-zone triangle for map overlays.
+ * Directional danger-zone rectangle for map overlays.
  *
- * Tip sits on the radar / control pin; the base lies on the entry arc opposite the
- * monitored traffic bearing (approach corridor). No triangle when direction is missing
- * or bidirectional — only the POI marker should be shown.
+ * Near short edge sits on the radar / control pin; the far short edge lies on the
+ * entry boundary opposite the monitored traffic bearing (approach corridor).
+ * No shape when direction is missing or bidirectional — only the POI marker should
+ * be shown.
  */
 object DangerZoneTriangle {
     const val RAW_DIRECTION = "direction"
     const val RAW_MONITORED_BEARING = "monitored_bearing"
     const val RAW_BIDIRECTIONAL = "direction_bidirectional"
 
-    /** Half-aperture of the isosceles wedge (degrees) from tip to each base corner. */
-    const val HALF_APERTURE_DEGREES = 30.0
+    /** Half-width of the corridor rectangle (meters), independent of zone length. */
+    const val HALF_WIDTH_METERS = 50.0
 
     private const val EARTH_RADIUS_M = 6_371_000.0
 
@@ -42,8 +43,8 @@ object DangerZoneTriangle {
     }
 
     /**
-     * Closed ring tip → baseLeft → baseRight → tip (4 points) in (lat, lon), or null when
-     * the POI has no drawable unidirectional corridor.
+     * Closed ring nearLeft → farLeft → farRight → nearRight → nearLeft (5 points)
+     * in (lat, lon), or null when the POI has no drawable unidirectional corridor.
      */
     fun latLngRingForRadarPoi(poi: Poi): List<Pair<Double, Double>>? {
         val bearing = monitoredBearingDegrees(poi) ?: return null
@@ -58,24 +59,32 @@ object DangerZoneTriangle {
     }
 
     /**
-     * @param monitoredBearingDegrees travel direction of controlled traffic (tip points
-     *   "downstream"; base is upstream at the entry boundary).
+     * @param monitoredBearingDegrees travel direction of controlled traffic (near edge at
+     *   the radar; far edge is upstream at the entry boundary).
      */
     fun latLngRing(
         tipLat: Double,
         tipLon: Double,
         radiusMeters: Double,
         monitoredBearingDegrees: Double,
-        halfApertureDegrees: Double = HALF_APERTURE_DEGREES,
+        halfWidthMeters: Double = HALF_WIDTH_METERS,
     ): List<Pair<Double, Double>> {
         val approachFrom = OsmSpeedCameraDirection.normalizeBearing(monitoredBearingDegrees + 180.0)
-        val baseLeft = offsetMeters(tipLat, tipLon, approachFrom - halfApertureDegrees, radiusMeters)
-        val baseRight = offsetMeters(tipLat, tipLon, approachFrom + halfApertureDegrees, radiusMeters)
+        val leftBearing = OsmSpeedCameraDirection.normalizeBearing(approachFrom - 90.0)
+        val rightBearing = OsmSpeedCameraDirection.normalizeBearing(approachFrom + 90.0)
+
+        val entryCenter = offsetMeters(tipLat, tipLon, approachFrom, radiusMeters)
+        val nearLeft = offsetMeters(tipLat, tipLon, leftBearing, halfWidthMeters)
+        val nearRight = offsetMeters(tipLat, tipLon, rightBearing, halfWidthMeters)
+        val farLeft = offsetMeters(entryCenter.first, entryCenter.second, leftBearing, halfWidthMeters)
+        val farRight = offsetMeters(entryCenter.first, entryCenter.second, rightBearing, halfWidthMeters)
+
         return listOf(
-            tipLat to tipLon,
-            baseLeft,
-            baseRight,
-            tipLat to tipLon,
+            nearLeft,
+            farLeft,
+            farRight,
+            nearRight,
+            nearLeft,
         )
     }
 

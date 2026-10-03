@@ -12,14 +12,14 @@ import kotlin.test.assertTrue
 class DangerZoneTriangleTest {
 
     @Test
-    fun noTriangleWhenDirectionMissing() {
+    fun noRectangleWhenDirectionMissing() {
         val poi = radarPoi(raw = mapOf("vma" to "130"))
         assertNull(DangerZoneTriangle.monitoredBearingDegrees(poi))
         assertNull(DangerZoneTriangle.latLngRingForRadarPoi(poi))
     }
 
     @Test
-    fun noTriangleWhenBidirectional() {
+    fun noRectangleWhenBidirectional() {
         val poi = radarPoi(
             raw = mapOf(
                 "vma" to "90",
@@ -32,24 +32,34 @@ class DangerZoneTriangleTest {
     }
 
     @Test
-    fun triangleTipAtRadarAndBaseAtEntryRadius() {
+    fun rectangleNearEdgeAtRadarAndFarEdgeAtEntryRadius() {
         val tipLat = 48.8566
         val tipLon = 2.3522
         val bearing = 0.0 // northbound monitored → entry from south
         val radiusM = 2_000.0
+        val halfW = DangerZoneTriangle.HALF_WIDTH_METERS
         val ring = DangerZoneTriangle.latLngRing(tipLat, tipLon, radiusM, bearing)
-        assertEquals(4, ring.size)
-        assertEquals(tipLat, ring[0].first, 1e-9)
-        assertEquals(tipLon, ring[0].second, 1e-9)
-        assertEquals(tipLat, ring[3].first, 1e-9)
+        assertEquals(5, ring.size)
+        // Closed ring
+        assertEquals(ring[0].first, ring[4].first, 1e-9)
+        assertEquals(ring[0].second, ring[4].second, 1e-9)
 
-        val dLeft = haversineKm(tipLat, tipLon, ring[1].first, ring[1].second) * 1000.0
-        val dRight = haversineKm(tipLat, tipLon, ring[2].first, ring[2].second) * 1000.0
-        assertEquals(radiusM, dLeft, 5.0)
-        assertEquals(radiusM, dRight, 5.0)
-        // Base mid-point is south of tip (approach from 180°)
-        val midLat = (ring[1].first + ring[2].first) / 2.0
-        assertTrue(midLat < tipLat)
+        // Near corners are ~halfWidth from tip
+        val dNearLeft = haversineKm(tipLat, tipLon, ring[0].first, ring[0].second) * 1000.0
+        val dNearRight = haversineKm(tipLat, tipLon, ring[3].first, ring[3].second) * 1000.0
+        assertEquals(halfW, dNearLeft, 5.0)
+        assertEquals(halfW, dNearRight, 5.0)
+
+        // Far-edge mid-point is south of tip at ~radius
+        val midFarLat = (ring[1].first + ring[2].first) / 2.0
+        val midFarLon = (ring[1].second + ring[2].second) / 2.0
+        assertTrue(midFarLat < tipLat)
+        val dFar = haversineKm(tipLat, tipLon, midFarLat, midFarLon) * 1000.0
+        assertEquals(radiusM, dFar, 10.0)
+
+        // Length along corridor ≈ radius; width ≈ 2 * halfWidth
+        val widthNear = haversineKm(ring[0].first, ring[0].second, ring[3].first, ring[3].second) * 1000.0
+        assertEquals(2.0 * halfW, widthNear, 8.0)
     }
 
     @Test
