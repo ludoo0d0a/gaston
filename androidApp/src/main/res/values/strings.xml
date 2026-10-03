@@ -1103,6 +1103,9 @@
     <string name="parked_car_location_unavailable">Location unavailable. Try again outdoors.</string>
     <string name="dashboard_parked_car">Parked car</string>
     <string name="dashboard_parked_car_subtitle">Remember spot · find your vehicle</string>
+    <string name="dashboard_parked_car_active">Parked</string>
+    <!-- %1$s = clock time (SHORT) -->
+    <string name="dashboard_parked_car_active_time">since %1$s</string>
     <string name="notification_remember_parked_title">Remember parking?</string>
     <string name="notification_remember_parked_message">Save where you left %1$s</string>
     <string name="notification_remember_parked_message_generic">Save where you left your vehicle</string>

@@ -1103,6 +1103,9 @@
     <string name="parked_car_location_unavailable">Position indisponible. Réessayez à l’extérieur.</string>
     <string name="dashboard_parked_car">Voiture garée</string>
     <string name="dashboard_parked_car_subtitle">Retenir l’emplacement · retrouver le véhicule</string>
+    <string name="dashboard_parked_car_active">Stationné</string>
+    <!-- %1$s = heure (SHORT) -->
+    <string name="dashboard_parked_car_active_time">depuis %1$s</string>
     <string name="notification_remember_parked_title">Retenir le stationnement ?</string>
     <string name="notification_remember_parked_message">Enregistrer où vous avez laissé %1$s</string>
     <string name="notification_remember_parked_message_generic">Enregistrer où vous avez laissé votre véhicule</string>

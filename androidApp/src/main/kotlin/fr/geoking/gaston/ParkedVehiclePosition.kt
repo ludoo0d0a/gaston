@@ -21,6 +21,10 @@ data class ParkedVehiclePosition(
         dateStyle: Int = DateFormat.SHORT,
         timeStyle: Int = DateFormat.SHORT,
     ): String = DateFormat.getDateTimeInstance(dateStyle, timeStyle).format(Date(savedAtEpochMs))
+
+    /** Locale-aware clock time only (e.g. dashboard “Stationné” teaser). */
+    fun formattedTimeOnly(timeStyle: Int = DateFormat.SHORT): String =
+        DateFormat.getTimeInstance(timeStyle).format(Date(savedAtEpochMs))
 }
 
 object ParkedCarIntents {

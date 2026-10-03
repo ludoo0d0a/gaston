@@ -96,14 +96,31 @@ class AutoMyVehicleDashboardScreen(
                 .build()
         )
 
-        val parkedSubtitle = settings.latestParkedPosition()?.let { parked ->
-            carContext.getString(R.string.parked_car_parked_at, parked.formattedTimestamp())
-        } ?: carContext.getString(R.string.parked_car_remember_subtitle)
+        val latestParked = settings.latestParkedPosition()
+        val parkedTitle = if (latestParked != null) {
+            carContext.getString(R.string.dashboard_parked_car_active)
+        } else {
+            carContext.getString(R.string.parked_car_title)
+        }
+        val parkedSubtitle = if (latestParked != null) {
+            carContext.getString(
+                R.string.dashboard_parked_car_active_time,
+                latestParked.formattedTimeOnly(),
+            )
+        } else {
+            carContext.getString(R.string.parked_car_remember_subtitle)
+        }
         gridBuilder.addItem(
             GridItem.Builder()
-                .setTitle(carContext.getString(R.string.parked_car_title))
+                .setTitle(parkedTitle)
                 .setText(parkedSubtitle)
-                .setImage(carContext.dashboardParkedCarIcon())
+                .setImage(
+                    if (latestParked != null) {
+                        carContext.dashboardParkedCarActiveIcon()
+                    } else {
+                        carContext.dashboardParkedCarIcon()
+                    }
+                )
                 .setOnClickListener {
                     screenManager.push(AutoRememberParkedCarScreen(carContext, settingsManager))
                 }

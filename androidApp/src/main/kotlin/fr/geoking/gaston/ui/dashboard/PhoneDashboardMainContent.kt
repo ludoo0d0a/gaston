@@ -483,10 +483,16 @@ private fun PhoneDashboardParkedCarCard(
     val accent = Color(0xFF2E7D32)
     val onAccent = Color.White
     val latest = remember(settings.parkedPositions) { settings.latestParkedPosition() }
+    val isParked = latest != null
+    val title = if (isParked) {
+        stringResource(R.string.dashboard_parked_car_active)
+    } else {
+        stringResource(R.string.dashboard_parked_car)
+    }
     val subtitle = if (latest != null) {
         stringResource(
-            R.string.dashboard_parked_car_subtitle_with_time,
-            latest.formattedTimestamp(),
+            R.string.dashboard_parked_car_active_time,
+            latest.formattedTimeOnly(),
         )
     } else {
         stringResource(R.string.dashboard_parked_car_subtitle)
@@ -505,14 +511,16 @@ private fun PhoneDashboardParkedCarCard(
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_poi_parking),
+                painter = painterResource(
+                    if (isParked) R.drawable.ic_location_on else R.drawable.ic_poi_parking
+                ),
                 contentDescription = null,
                 tint = onAccent,
                 modifier = Modifier.size(36.dp)
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.dashboard_parked_car),
+                    text = title,
                     style = MaterialTheme.typography.titleMedium,
                     color = onAccent,
                     fontWeight = FontWeight.Bold

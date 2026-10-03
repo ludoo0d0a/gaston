@@ -107,6 +107,9 @@ fun CarContext.dashboardMaintenanceIcon(): CarIcon = carIcon(R.drawable.ic_direc
 
 fun CarContext.dashboardParkedCarIcon(): CarIcon = carIcon(R.drawable.ic_poi_parking, AutoCarIcons.primary)
 
+/** Pin when a garage vehicle already has a saved parked position. */
+fun CarContext.dashboardParkedCarActiveIcon(): CarIcon = carIcon(R.drawable.ic_location_on, AutoCarIcons.primary)
+
 fun CarContext.actionHomeIcon(): CarIcon = carIcon(R.drawable.ic_home, AutoCarIcons.primary)
 
 fun CarContext.actionSettingsIcon(): CarIcon = carIcon(R.drawable.ic_settings, AutoCarIcons.primary)
