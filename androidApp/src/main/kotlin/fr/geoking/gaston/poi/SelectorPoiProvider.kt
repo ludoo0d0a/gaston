@@ -174,8 +174,8 @@ class SelectorPoiProvider(
 
     /**
      * When the danger-zone / speed_camera amenity is requested, always query
-     * [PoiProviderType.LufopOpenSpeedCam] and [PoiProviderType.LuxembourgRadars].
-     * If [useOsmRadarsFallback] (no Lufop key), also query Overpass `highway=speed_camera`.
+     * [PoiProviderType.LufopOpenSpeedCam], [PoiProviderType.LuxembourgRadars], and
+     * Overpass `highway=speed_camera` (map pins). [radarOsmEnricher] still refines Lufop direction.
      */
     private fun withRadarProvidersForAmenity(
         providers: Set<PoiProviderType>,
@@ -188,25 +188,22 @@ class SelectorPoiProvider(
         val radarSources = buildSet {
             add(PoiProviderType.LufopOpenSpeedCam)
             add(PoiProviderType.LuxembourgRadars)
-            if (useOsmRadarsFallback) add(PoiProviderType.Overpass)
+            add(PoiProviderType.Overpass)
         }
         return applyBulkFileNetworkPolicy(providers + radarSources)
     }
 
     /**
-     * Categories each provider should fetch. When Lufop is the primary radar source,
-     * Overpass is not queried for [PoiCategory.Radar] (enrich-only via [radarOsmEnricher]).
+     * Categories each provider should fetch for this search.
+     * Radar amenity queries both Lufop and Overpass; [RadarPoiMerger] dedupes pins.
      */
     private fun buildProviderCategories(
         providersToFetch: Set<PoiProviderType>,
         categoriesToFetch: Set<PoiCategory>,
         coverage: PoiCoverageResult,
-        allEffectiveProviders: Set<PoiProviderType>,
     ): Map<PoiProviderType, Set<PoiCategory>> {
-        val lufopPrimary =
-            !useOsmRadarsFallback && PoiProviderType.LufopOpenSpeedCam in allEffectiveProviders
         return providersToFetch.associateWith { providerType ->
-            var cats = if (coverage.geoCovered) {
+            if (coverage.geoCovered) {
                 if (providerType in coverage.missingProviders) {
                     categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
                 } else {
@@ -215,10 +212,6 @@ class SelectorPoiProvider(
             } else {
                 categoriesToFetch.intersect(getProvider(providerType).supportedCategories())
             }
-            if (lufopPrimary && providerType == PoiProviderType.Overpass) {
-                cats = cats - PoiCategory.Radar
-            }
-            cats
         }.filterValues { it.isNotEmpty() }
     }
 
@@ -308,6 +301,21 @@ class SelectorPoiProvider(
             nowMs = nowMs,
         )
         if (coverage.fullyCovered) {
+            // Stale "covered" regions from empty Lufop/Overpass runs must not block radar refetch.
+            val needsRadar = PoiCategory.Radar in categoriesToFetch
+            val hasRadarPin = cachedPois.values.any { it.poiCategory == PoiCategory.Radar }
+            if (needsRadar && !hasRadarPin) {
+                val radarProviders = setOf(
+                    PoiProviderType.LufopOpenSpeedCam,
+                    PoiProviderType.Overpass,
+                    PoiProviderType.LuxembourgRadars,
+                ).intersect(providers)
+                return PoiCoverageResult(
+                    coveringRegion = coverage.coveringRegion,
+                    missingProviders = coverage.missingProviders + radarProviders,
+                    missingCategories = coverage.missingCategories + PoiCategory.Radar,
+                ) to null
+            }
             return coverage to cachedPois.values.toList()
         }
         return coverage to null
@@ -645,7 +653,6 @@ class SelectorPoiProvider(
             providersToFetch = providersToFetch,
             categoriesToFetch = categoriesToFetch,
             coverage = coverage,
-            allEffectiveProviders = providers,
         )
 
         traceProviderFetchPlanned(
@@ -861,7 +868,6 @@ class SelectorPoiProvider(
                     missingProviders = providers,
                     missingCategories = categoriesToFetch,
                 ),
-                allEffectiveProviders = providers,
             )
 
             val (rated, errors) = try {
@@ -928,7 +934,6 @@ class SelectorPoiProvider(
             providersToFetch = providersToFetch,
             categoriesToFetch = categoriesToFetch,
             coverage = coverage,
-            allEffectiveProviders = providers,
         )
 
         traceProviderFetchPlanned(

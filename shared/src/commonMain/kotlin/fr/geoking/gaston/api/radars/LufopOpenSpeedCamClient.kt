@@ -95,12 +95,16 @@ class LufopOpenSpeedCamClient(
         }
 
         val downloaded = fetchNear(latitude, longitude, radiusKm)
-        mutex.withLock {
-            cachedRadars = downloaded
-            cacheLat = latitude
-            cacheLon = longitude
-            cacheRadiusKm = radiusKm
-            cacheTimestamp = now
+        // Never cache empty payloads (HTML challenge, quota, transient miss) — that blocked
+        // all later retries for [CACHE_TTL_MS] with zero network calls.
+        if (downloaded.isNotEmpty()) {
+            mutex.withLock {
+                cachedRadars = downloaded
+                cacheLat = latitude
+                cacheLon = longitude
+                cacheRadiusKm = radiusKm
+                cacheTimestamp = now
+            }
         }
         return downloaded
     }

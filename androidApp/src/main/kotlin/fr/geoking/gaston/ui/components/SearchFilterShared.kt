@@ -301,7 +301,8 @@ fun SearchCategorySelector(
                                     tint = if (id == "speed_camera") Color(0xFFEF4444) else LocalContentColor.current,
                                     modifier = Modifier.size(18.dp)
                                 )
-                            }
+                            },
+                            modifier = Modifier.testTag("amenity_$id"),
                         )
                     }
                 }

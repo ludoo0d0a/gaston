@@ -124,6 +124,31 @@ class LufopOpenSpeedCamTest {
     }
 
     @Test
+    fun emptyResponseIsNotCached_retriesOnNextCall() = runBlocking {
+        var calls = 0
+        val mockEngine = MockEngine {
+            calls++
+            when (calls) {
+                1 -> respond(
+                    content = "[]",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+                else -> respond(
+                    content = sampleJson,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            }
+        }
+        val client = LufopOpenSpeedCamClient(HttpClient(mockEngine), apiKey = "test-key")
+        assertTrue(client.getRecordsNear(48.8566, 2.3522, radiusKm = 500.0).isEmpty())
+        val second = client.getRecordsNear(48.8566, 2.3522, radiusKm = 500.0)
+        assertEquals(2, calls)
+        assertTrue(second.isNotEmpty())
+    }
+
+    @Test
     fun testProviderSearch() = runBlocking {
         val mockEngine = MockEngine {
             respond(

@@ -137,6 +137,37 @@ class PoiFetchCacheTest {
     }
 
     @Test
+    fun providersForIncrementalFetch_includesLufopAndOverpassWhenRadarMissing() {
+        val providers = providersForIncrementalFetch(
+            allProviders = setOf(
+                PoiProviderType.LufopOpenSpeedCam,
+                PoiProviderType.Overpass,
+                PoiProviderType.LuxembourgRadars,
+            ),
+            missingProviders = emptySet(),
+            missingCategories = setOf(PoiCategory.Radar),
+        )
+        assertTrue(PoiProviderType.LufopOpenSpeedCam in providers)
+        assertTrue(PoiProviderType.Overpass in providers)
+        assertTrue(PoiProviderType.LuxembourgRadars in providers)
+    }
+
+    @Test
+    fun resolveCategoriesToFetch_speedCameraIsRadar() {
+        val settings = AppSettings(
+            poiProviderSelectionMode = fr.geoking.gaston.PoiProviderSelectionMode.Manual,
+            selectedPoiProviders = setOf(
+                PoiProviderType.LufopOpenSpeedCam,
+                PoiProviderType.Overpass,
+            ),
+            selectedOverpassAmenityTypes = setOf("speed_camera"),
+        )
+        val categories = resolveCategoriesToFetch(settings)
+        assertTrue(PoiCategory.Radar in categories)
+        assertFalse(PoiCategory.Gas in categories)
+    }
+
+    @Test
     fun providersForIncrementalFetch_fetchesElectricWhenIrveMissingAfterFuelLoad() {
         val all = setOf(PoiProviderType.Etalab, PoiProviderType.DataGouvElec, PoiProviderType.Overpass)
         val providers = providersForIncrementalFetch(

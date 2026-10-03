@@ -1,0 +1,17 @@
+appId: fr.geoking.gaston
+---
+# Dashboard Radars shortcut → Other mode + speed_camera amenity on the map.
+# Network (Lufop + Overpass) is covered by unit tests; this checks the UI scenario.
+- launchApp
+- assertVisible:
+    id: "dashboard_radars_btn"
+- tapOn:
+    id: "dashboard_radars_btn"
+- extendedWaitUntil:
+    visible:
+      id: "amenity_speed_camera"
+    timeout: 30000
+- assertVisible:
+    id: "mode_other"
+- assertVisible:
+    id: "amenity_speed_camera"

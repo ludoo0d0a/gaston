@@ -13,9 +13,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
@@ -64,6 +66,7 @@ fun PhoneDashboardScreen(
     viewModel: PhoneDashboardViewModel = org.koin.androidx.compose.koinViewModel()
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val settings by settingsManager.settings.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
 
@@ -132,6 +135,15 @@ fun PhoneDashboardScreen(
                     mapDepsReady = mapDepsReady,
                     fuelForecastRepository = fuelForecastRepository,
                     onOpenMap = onOpenMap,
+                    onOpenRadars = {
+                        scope.launch {
+                            // Drop stale empty radar coverage / Lufop memory cache so the map
+                            // always hits Lufop + Overpass after the dashboard shortcut.
+                            runCatching { poiProvider?.clearCache() }
+                            settingsManager.setOtherMode("speed_camera")
+                            onOpenMap(null, 12.5f)
+                        }
+                    },
                     onOpenRoutes = onOpenRoutes,
                     onOpenFuelForecast = onOpenFuelForecast,
                     onOpenEmergency = onOpenEmergency,

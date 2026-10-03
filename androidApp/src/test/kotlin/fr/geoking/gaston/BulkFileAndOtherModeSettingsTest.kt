@@ -42,6 +42,18 @@ class BulkFileAndOtherModeSettingsTest {
     }
 
     @Test
+    fun setOtherMode_speedCameraEnablesLufopAndOverpass() {
+        val manager = SettingsManager(RuntimeEnvironment.getApplication(), firestoreSync = null)
+        manager.setOtherMode("speed_camera")
+        val after = manager.settings.value
+        assertTrue(after.isOtherModeActive())
+        assertEquals(setOf("speed_camera"), after.selectedOverpassAmenityTypes)
+        assertTrue(PoiProviderType.LufopOpenSpeedCam in after.selectedPoiProviders)
+        assertTrue(PoiProviderType.Overpass in after.selectedPoiProviders)
+        assertTrue(PoiProviderType.LuxembourgRadars in after.selectedPoiProviders)
+    }
+
+    @Test
     fun isOtherModeActive_fuelProviderExitsOther() {
         val settings = AppSettings(
             poiProviderSelectionMode = PoiProviderSelectionMode.Manual,

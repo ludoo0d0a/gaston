@@ -87,6 +87,7 @@ fun PhoneDashboardMainContent(
     mapDepsReady: Boolean,
     fuelForecastRepository: FuelForecastRepository?,
     onOpenMap: (Poi?, Float?) -> Unit,
+    onOpenRadars: () -> Unit,
     onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
     onOpenFuelForecast: () -> Unit,
     onOpenEmergency: () -> Unit,
@@ -171,10 +172,7 @@ fun PhoneDashboardMainContent(
                     title = stringResource(R.string.dashboard_radars),
                     subtitle = stringResource(R.string.dashboard_radars_subtitle),
                     iconResId = R.drawable.ic_poi_radar,
-                    onClick = {
-                        settingsManager.setOtherMode("speed_camera")
-                        onOpenMap(null, 12.5f)
-                    },
+                    onClick = onOpenRadars,
                     testTag = "dashboard_radars_btn"
                 )
             )
