@@ -14,9 +14,8 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * AAC alert engine: evaluates local [DangerZone]s (no map POI search / network each tick).
  *
- * Posts AA heads-up notifications (via [NotificationHelper] + CarAppExtender) on:
- * - zone entry
- * - near control pin (≤ [NEAR_RADAR_METERS])
+ * On zone entry and near control pin (≤ [NEAR_RADAR_METERS]): HUN + beep + TTS
+ * (via [NotificationHelper] / [RadarAudioNotifier]).
  */
 class DangerZoneAlertManager(
     private val settingsManager: SettingsManager,
@@ -93,12 +92,7 @@ class DangerZoneAlertManager(
                 }
                 if (zone.id !in alertedZoneIds) {
                     alertedZoneIds.add(zone.id)
-                    if (eval.isOverspeed) {
-                        audioNotifier.playOverSpeedBeepsAndSpeak(eval.speedLimitKmH)
-                    } else {
-                        audioNotifier.playOkSpeedBeeps()
-                        audioNotifier.speakDangerZone(eval.speedLimitKmH)
-                    }
+                    playAlertAudio(eval.isOverspeed, eval.speedLimitKmH)
                     notificationHelper?.showDangerZoneNotification(eval.speedLimitKmH)
                     maybeSpeakSafetyTip(location.time)
                 }
@@ -107,6 +101,7 @@ class DangerZoneAlertManager(
                     zone.id !in nearAlertedZoneIds
                 ) {
                     nearAlertedZoneIds.add(zone.id)
+                    playAlertAudio(eval.isOverspeed, eval.speedLimitKmH)
                     notificationHelper?.showNearRadarNotification(eval.speedLimitKmH)
                 }
             } else {
@@ -125,6 +120,15 @@ class DangerZoneAlertManager(
             speedLimitKmH = activeHudLimit,
         )
         lastLocation = location
+    }
+
+    private fun playAlertAudio(isOverspeed: Boolean, speedLimitKmH: Int?) {
+        if (isOverspeed) {
+            audioNotifier.playOverSpeedBeepsAndSpeak(speedLimitKmH)
+        } else {
+            audioNotifier.playOkSpeedBeeps()
+            audioNotifier.speakDangerZone(speedLimitKmH)
+        }
     }
 
     private fun maybeSpeakSafetyTip(nowMs: Long) {

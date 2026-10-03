@@ -124,11 +124,51 @@ class DangerZoneAlertManagerTest {
         kotlin.test.assertEquals(1, mockNotification.nearNotificationCount)
         kotlin.test.assertEquals(100, mockNotification.lastNearSpeedLimit)
         assertTrue(manager.getNearAlertedZoneIds().contains("z3"))
+        // Entry + near each get beep + TTS on the same tick when already at the pin.
+        kotlin.test.assertEquals(2, audioNotifier.okBeepsCount)
+        kotlin.test.assertEquals(2, audioNotifier.spokenPhrases.size)
 
-        // Dedup: second tick must not re-fire
+        // Dedup: second tick must not re-fire HUN or audio
         manager.evaluateAndAlert(loc, listOf(zone))
         kotlin.test.assertEquals(1, mockNotification.entryNotificationCount)
         kotlin.test.assertEquals(1, mockNotification.nearNotificationCount)
+        kotlin.test.assertEquals(2, audioNotifier.okBeepsCount)
+        kotlin.test.assertEquals(2, audioNotifier.spokenPhrases.size)
+    }
+
+    @Test
+    fun nearRadarPlaysAudioAfterEntryAlreadyAlerted() {
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "z4",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            speedLimitKmH = 50,
+            source = "test",
+            roadClassOverride = RoadNetworkClass.Urban,
+        )
+        // Inside urban zone (~200 m) but outside near-radar (100 m)
+        val far = Location("test").apply {
+            latitude = 48.8566 + 0.0018
+            longitude = 2.3522
+            time = System.currentTimeMillis()
+        }
+        alertManager.evaluateAndAlert(far, listOf(zone))
+        kotlin.test.assertEquals(1, audioNotifier.okBeepsCount)
+        kotlin.test.assertEquals(1, audioNotifier.spokenPhrases.size)
+        assertTrue(alertManager.getAlertedZoneIds().contains("z4"))
+        assertFalse(alertManager.getNearAlertedZoneIds().contains("z4"))
+
+        // Move closer (~50 m), stopped so trajectory filter does not drop the pin.
+        val near = Location("test").apply {
+            latitude = 48.8566 + 0.00045
+            longitude = 2.3522
+            time = System.currentTimeMillis() + 1_000
+            speed = 0f
+        }
+        alertManager.evaluateAndAlert(near, listOf(zone))
+        assertTrue(alertManager.getNearAlertedZoneIds().contains("z4"))
+        kotlin.test.assertEquals(2, audioNotifier.okBeepsCount)
+        kotlin.test.assertEquals(2, audioNotifier.spokenPhrases.size)
     }
 
     @Test
