@@ -4,7 +4,9 @@ import fr.geoking.gaston.poi.AbstractPoiProvider
 import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
+import fr.geoking.gaston.poi.PoiProviderError
 import fr.geoking.gaston.poi.PoiSearchRequest
+import fr.geoking.gaston.poi.PoiSearchResult
 import fr.geoking.gaston.poi.radiusKmFromMapViewport
 
 class LufopOpenSpeedCamProvider(
@@ -14,7 +16,23 @@ class LufopOpenSpeedCamProvider(
 
     override fun supportedCategories(): Set<PoiCategory> = setOf(PoiCategory.Radar)
 
+    override suspend fun searchResult(request: PoiSearchRequest): PoiSearchResult {
+        if (!client.hasApiKey) {
+            // Visible in provider traces / map errors — blank key skips HTTP entirely.
+            return PoiSearchResult(
+                errors = listOf(
+                    PoiProviderError(
+                        providerName = "LufopOpenSpeedCam",
+                        message = "LUFOP_API_KEY missing (rebuild app with key in local.properties)",
+                    )
+                )
+            )
+        }
+        return super.searchResult(request)
+    }
+
     override suspend fun search(request: PoiSearchRequest): List<Poi> {
+        if (!client.hasApiKey) return emptyList()
         if (!shouldQuery(request.latitude, request.longitude, request.viewport)) {
             return emptyList()
         }

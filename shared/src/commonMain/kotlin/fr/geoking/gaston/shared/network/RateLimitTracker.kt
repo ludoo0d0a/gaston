@@ -1,5 +1,7 @@
 package fr.geoking.gaston.shared.network
 
+import fr.geoking.gaston.shared.logging.DebugLogStore
+import fr.geoking.gaston.shared.logging.NetworkLog
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.api.Send
 import io.ktor.http.HttpHeaders
@@ -127,10 +129,24 @@ val RateLimitPlugin = createClientPlugin("RateLimitPlugin") {
         if (RateLimitTracker.isRateLimited(host)) {
             val remainingMs = RateLimitTracker.getRemainingCooldownMs(host)
             val remainingSec = (remainingMs / 1000).coerceAtLeast(1)
-            throw NetworkException(
-                429,
-                "Rate limit active for $host (cooldown $remainingSec s remaining)"
+            val message = "Rate limit active for $host (cooldown $remainingSec s remaining)"
+            // Short-circuit never hits ResponseObserver — mirror it into the debug bar.
+            DebugLogStore.addLog(
+                NetworkLog(
+                    id = "ratelimit-${host}-${System.currentTimeMillis()}",
+                    url = request.url.toString(),
+                    host = host,
+                    method = request.method.value,
+                    requestHeaders = emptyMap(),
+                    requestBody = null,
+                    responseHeaders = null,
+                    responseBody = message,
+                    statusCode = 429,
+                    durationMs = 0L,
+                    timestamp = System.currentTimeMillis(),
+                )
             )
+            throw NetworkException(429, message)
         }
         val call = proceed(request)
         if (call.response.status == HttpStatusCode.TooManyRequests) {

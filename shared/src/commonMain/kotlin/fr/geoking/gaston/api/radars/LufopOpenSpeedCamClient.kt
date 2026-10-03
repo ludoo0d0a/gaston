@@ -6,8 +6,10 @@ import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
@@ -117,6 +119,7 @@ class LufopOpenSpeedCamClient(
         // Lufop `m` ≈ 1/10 km (docs: m=100 ≈ 10 km around q=…).
         val margin = (radiusKm * 10.0).toInt().coerceIn(1, 10_000)
         val response = client.get(baseUrl) {
+            header(HttpHeaders.UserAgent, "Gaston/1.0 (contact@geoking.fr)")
             parameter("key", apiKey)
             parameter("format", "json")
             parameter("q", "$latitude,$longitude")

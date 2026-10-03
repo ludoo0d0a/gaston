@@ -1,5 +1,6 @@
 package fr.geoking.gaston.shared.network
 
+import fr.geoking.gaston.shared.logging.DebugLogStore
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -20,6 +21,7 @@ class RateLimitTrackerTest {
     @BeforeTest
     fun setUp() {
         RateLimitTracker.reset()
+        DebugLogStore.clearAll()
     }
 
     @Test

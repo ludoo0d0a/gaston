@@ -98,6 +98,7 @@ fun GastonDebugLogOverlay(
             }
             add("disableCache=${settings.disableCache}")
             add("debugLogging=${settings.debugLoggingEnabled}")
+            add("lufopKey=${if (fr.geoking.gaston.BuildConfig.LUFOP_API_KEY.isNotBlank()) "set" else "MISSING"}")
             add("providers=${settings.selectedPoiProviders.sortedBy { it.name }.joinToString()}")
         }
     }

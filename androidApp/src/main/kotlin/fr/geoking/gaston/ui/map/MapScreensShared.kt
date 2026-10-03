@@ -61,15 +61,16 @@ import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.shared.network.NetworkException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 @Stable
 data class MapCameraSample(
@@ -77,6 +78,14 @@ data class MapCameraSample(
     val centerLon: Double,
     val zoom: Float
 )
+
+/** True when [next] is close enough that cancelling an in-flight POI search would be wasteful. */
+private fun isNearSameViewport(current: MapCameraSample, next: MapCameraSample): Boolean {
+    val latClose = abs(current.centerLat - next.centerLat) < 0.01
+    val lonClose = abs(current.centerLon - next.centerLon) < 0.01
+    val zoomClose = abs(current.zoom - next.zoom) < 0.35f
+    return latClose && lonClose && zoomClose
+}
 
 @Stable
 data class MapDataState(
@@ -199,100 +208,127 @@ fun rememberMapDataState(
         snapshotFlow { latestMapWidthPx to latestMapHeightPx }
             .first { (w, h) -> w > 0 && h > 0 }
 
-        merge(cameraFlow, refreshRequestFlow).collectLatest { sample ->
+        // Avoid collectLatest: cancelling mid-flight dropped slower Lufop once Overpass/camera
+        // re-emitted. Let nearby in-flight searches finish; only restart on a real move/refresh.
+        var searchJob: Job? = null
+        var searchingSample: MapCameraSample? = null
+
+        merge(cameraFlow, refreshRequestFlow).collect { sample ->
             lastCameraSample = sample
-            if (isErrorPaused) return@collectLatest
+            if (isErrorPaused) return@collect
 
-            val widthPx = latestMapWidthPx
-            val heightPx = latestMapHeightPx
-            if (widthPx <= 0 || heightPx <= 0) return@collectLatest
+            val inFlight = searchingSample
+            if (searchJob?.isActive == true && inFlight != null && isNearSameViewport(inFlight, sample)) {
+                return@collect
+            }
 
-            val centerLat = sample.centerLat
-            val centerLng = sample.centerLon
-            val zoom = sample.zoom
+            searchJob?.cancel()
+            searchingSample = sample
+            searchJob = launch {
+                val widthPx = latestMapWidthPx
+                val heightPx = latestMapHeightPx
+                if (widthPx <= 0 || heightPx <= 0) return@launch
 
-            val viewport = calculateBoundsFromMapViewport(
-                centerLat,
-                centerLng,
-                zoom,
-                widthPx,
-                heightPx
-            )
+                val centerLat = sample.centerLat
+                val centerLng = sample.centerLon
+                val zoom = sample.zoom
 
-            val requiredRadiusKm = radiusKmFromMapViewport(
-                centerLat,
-                centerLng,
-                viewport
-            ).coerceIn(1, 50)
+                val viewport = calculateBoundsFromMapViewport(
+                    centerLat,
+                    centerLng,
+                    zoom,
+                    widthPx,
+                    heightPx
+                )
 
-            mapErrorMessage = null
+                val requiredRadiusKm = radiusKmFromMapViewport(
+                    centerLat,
+                    centerLng,
+                    viewport
+                ).coerceIn(1, 50)
 
-            try {
-                isLoading = true
-                poiProvider.searchFlow(
-                    PoiSearchRequest(
-                        latitude = centerLat,
-                        longitude = centerLng,
-                        viewport = viewport,
-                        categories = emptySet(),
-                        skipFilters = true
-                    )
-                ).collect { result ->
-                    if (result.errors.isEmpty() || result.pois.isNotEmpty()) {
-                        cachedPois = trimMapPois(
-                            PoiMerger.mergeInto(cachedPois, result.pois),
-                            centerLat,
-                            centerLng,
+                mapErrorMessage = null
+
+                try {
+                    isLoading = true
+                    poiProvider.searchFlow(
+                        PoiSearchRequest(
+                            latitude = centerLat,
+                            longitude = centerLng,
+                            viewport = viewport,
+                            categories = emptySet(),
+                            skipFilters = true
                         )
-
-                        val availabilityProvider = availabilityProviderFactory?.getProvider(centerLat, centerLng)
-                        if (availabilityProvider != null) {
-                            val availabilityRadiusKm = requiredRadiusKm.coerceAtMost(20).coerceAtLeast(10)
-                            val availabilities = availabilityProvider.getAvailability(centerLat, centerLng, availabilityRadiusKm)
-                            val poisForAvailability = cachedPois.filter { poi ->
-                                approxDistanceKm(centerLat, centerLng, poi.latitude, poi.longitude) <= availabilityRadiusKm * 1.05
+                    ).collect { result ->
+                        if (result.errors.isEmpty() || result.pois.isNotEmpty()) {
+                            cachedPois = trimMapPois(
+                                PoiMerger.mergeInto(cachedPois, result.pois),
+                                centerLat,
+                                centerLng,
+                            )
+                            // Partial provider failures (e.g. Lufop) must not freeze later searches
+                            // once another source (Overpass) has returned pins.
+                            if (cachedPois.isNotEmpty()) {
+                                isErrorPaused = false
+                                mapErrorMessage = null
                             }
-                            val matched = matchAvailabilityToPois(availabilities, poisForAvailability)
-                            availabilityByPoiId = matched
+
+                            val availabilityProvider = availabilityProviderFactory?.getProvider(centerLat, centerLng)
+                            if (availabilityProvider != null) {
+                                val availabilityRadiusKm = requiredRadiusKm.coerceAtMost(20).coerceAtLeast(10)
+                                val availabilities = availabilityProvider.getAvailability(centerLat, centerLng, availabilityRadiusKm)
+                                val poisForAvailability = cachedPois.filter { poi ->
+                                    approxDistanceKm(centerLat, centerLng, poi.latitude, poi.longitude) <= availabilityRadiusKm * 1.05
+                                }
+                                val matched = matchAvailabilityToPois(availabilities, poisForAvailability)
+                                availabilityByPoiId = matched
+                            }
+                        }
+
+                        // Only pause when every provider failed and the map still has nothing to show.
+                        if (result.errors.isNotEmpty() && result.pois.isEmpty() && cachedPois.isEmpty()) {
+                            val firstError = result.errors.first()
+                            val msg = firstError.message
+                            val code = firstError.httpCode
+
+                            mapErrorMessage = msg
+                            isErrorPaused = true
+                            diagnostics.recordError(code, "Map ($effectiveProvidersLabel): $msg")
+                        } else if (result.errors.isNotEmpty()) {
+                            // Keep searching; surface first error without locking the map.
+                            result.errors.firstOrNull()?.let { err ->
+                                diagnostics.recordError(err.httpCode, "Map ($effectiveProvidersLabel): ${err.message}")
+                            }
                         }
                     }
 
-                    if (result.errors.isNotEmpty() && result.pois.isEmpty()) {
-                        val firstError = result.errors.first()
-                        val msg = firstError.message
-                        val code = firstError.httpCode
-
-                        mapErrorMessage = msg
-                        isErrorPaused = true
-                        diagnostics.recordError(code, "Map ($effectiveProvidersLabel): $msg")
-                    }
-                }
-
-                val trafficProvider = trafficProviderFactory?.getProvider(centerLat, centerLng)
-                trafficInfo = if (trafficProvider != null) {
-                    val halfSpan = 0.15
-                    trafficProvider.getTraffic(
-                        TrafficRequest.Bbox(
-                            centerLat - halfSpan,
-                            centerLng - halfSpan,
-                            centerLat + halfSpan,
-                            centerLng + halfSpan
+                    val trafficProvider = trafficProviderFactory?.getProvider(centerLat, centerLng)
+                    trafficInfo = if (trafficProvider != null) {
+                        val halfSpan = 0.15
+                        trafficProvider.getTraffic(
+                            TrafficRequest.Bbox(
+                                centerLat - halfSpan,
+                                centerLng - halfSpan,
+                                centerLat + halfSpan,
+                                centerLng + halfSpan
+                            )
                         )
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    val msg = e.message?.takeIf { it.isNotBlank() } ?: e.toString()
+                    mapErrorMessage = msg
+                    isErrorPaused = true
+                    diagnostics.recordError(
+                        (e as? NetworkException)?.httpCode,
+                        "Map ($effectiveProvidersLabel): $msg"
                     )
-                } else {
-                    null
+                } finally {
+                    isLoading = false
+                    if (searchingSample == sample) searchingSample = null
                 }
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                val msg = e.message?.takeIf { it.isNotBlank() } ?: e.toString()
-                mapErrorMessage = msg
-                isErrorPaused = true
-                diagnostics.recordError(
-                    (e as? NetworkException)?.httpCode,
-                    "Map ($effectiveProvidersLabel): $msg"
-                )
-            } finally {
-                isLoading = false
             }
         }
     }

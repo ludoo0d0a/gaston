@@ -20,6 +20,7 @@ class DebugLogStoreTest {
         assertEquals("DataGouv / Etalab", resolveProviderName("data.economie.gouv.fr"))
         assertEquals("Freshmile", resolveProviderName("prod-driver-api.freshmile.com"))
         assertEquals("Germany Tankerkoenig", resolveProviderName("api.tankerkoenig.de"))
+        assertEquals("Lufop", resolveProviderName("api.lufop.net"))
         assertNull(resolveProviderName("unknown-host.example.com"))
     }
 

@@ -29,6 +29,7 @@ fun resolveProviderName(host: String): String? {
         h.contains("tankerkoenig") -> "Germany Tankerkoenig"
         h.contains("mityc.es") -> "Spain Minetur"
         h.contains("overpass") -> "OpenStreetMap / Overpass"
+        h.contains("lufop") -> "Lufop"
         h.contains("nominatim") -> "Nominatim Geocoding"
         h.contains("tile.openstreetmap.org") -> "OSM Map Tiles"
         h.contains("mimit.gov.it") -> "Italy Mimit"

@@ -124,6 +124,17 @@ class LufopOpenSpeedCamTest {
     }
 
     @Test
+    fun blankApiKey_searchResultExposesError() = runBlocking {
+        val client = LufopOpenSpeedCamClient(HttpClient(MockEngine { respond("OK") }), apiKey = "")
+        val provider = LufopOpenSpeedCamProvider(client)
+        val result = provider.searchResult(
+            PoiSearchRequest(48.8566, 2.3522, categories = setOf(PoiCategory.Radar))
+        )
+        assertTrue(result.pois.isEmpty())
+        assertTrue(result.errors.any { it.providerName == "LufopOpenSpeedCam" && it.message.contains("LUFOP_API_KEY") })
+    }
+
+    @Test
     fun emptyResponseIsNotCached_retriesOnNextCall() = runBlocking {
         var calls = 0
         val mockEngine = MockEngine {
