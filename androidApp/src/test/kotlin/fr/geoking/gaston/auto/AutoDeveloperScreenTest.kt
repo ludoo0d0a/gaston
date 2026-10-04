@@ -61,6 +61,20 @@ class AutoDeveloperScreenTest {
     }
 
     @Test
+    fun mapSettingsScreenIncludesDeveloperEntryWhenDebugDev() {
+        assertTrue("DEBUG_DEV must be on for local/dev builds", BuildConfig.DEBUG_DEV)
+
+        val carContext = CarScreenTestHarness.newTestCarContext()
+        val screen = AutoMapSettingsScreen(carContext, settingsManager)
+        val template = screen.onGetTemplate() as ListTemplate
+        val titles = template.singleList!!.items.map { (it as Row).title.toString() }
+
+        assertTrue(
+            titles.contains(carContext.getString(R.string.screen_developer)),
+        )
+    }
+
+    @Test
     fun developerScreenExposesRadarNotificationTest() {
         val carContext = CarScreenTestHarness.newTestCarContext()
         val screen = AutoDeveloperScreen(carContext, settingsManager)

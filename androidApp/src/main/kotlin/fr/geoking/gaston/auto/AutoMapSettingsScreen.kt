@@ -1,5 +1,6 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
@@ -165,6 +166,21 @@ class AutoMapSettingsScreen(
                         } catch (_: Exception) {}
                         invalidate()
                     }
+                    .build()
+            )
+        }
+
+        if (BuildConfig.DEBUG_DEV) {
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.screen_developer))
+                    .addText(carContext.getString(R.string.dev_developer_settings))
+                    .setOnClickListener {
+                        // Replace this screen so Map → Developer stays within the 5-step quota.
+                        screenManager.pop()
+                        screenManager.push(AutoDeveloperScreen(carContext, settingsManager))
+                    }
+                    .setBrowsable(true)
                     .build()
             )
         }

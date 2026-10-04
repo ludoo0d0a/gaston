@@ -188,11 +188,11 @@ class AutoDashboardScreen(
                         )
                         .addItem(
                             Row.Builder()
-                                .setTitle(carContext.getString(R.string.screen_about))
+                                .setTitle(carContext.getString(R.string.cd_settings))
                                 .setImage(carContext.carIconUntinted(R.drawable.ic_launcher_foreground))
                                 .setBrowsable(true)
                                 .setOnClickListener {
-                                    screenManager.push(AutoAboutScreen(carContext))
+                                    screenManager.push(AutoSettingsScreen(carContext, settingsManager))
                                 }
                                 .build()
                         )
