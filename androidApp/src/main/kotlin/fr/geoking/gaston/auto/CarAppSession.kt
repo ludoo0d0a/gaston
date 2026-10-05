@@ -11,7 +11,6 @@ import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.ParkedCarIntents
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
-import fr.geoking.gaston.activeVehicle
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
@@ -24,9 +23,8 @@ import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.di.MapModuleLoader
 import fr.geoking.gaston.feature.location.LocationHelper
-import fr.geoking.gaston.feature.notification.NotificationHelper
 import fr.geoking.gaston.intent.IntentNavigationHelper
-import fr.geoking.gaston.parkedPositionFor
+import fr.geoking.gaston.parked.AaPostSessionParkSuggester
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.radar.AndroidRadarAudioNotifier
 import fr.geoking.gaston.radar.DangerZoneAlertManager
@@ -52,7 +50,8 @@ class CarAppSession : Session(), KoinComponent {
     private val fuelForecastRepository: FuelForecastRepository by inject()
     private val connectivityManager: ConnectivityManager by inject()
     private val inAppUpdateHelper: fr.geoking.gaston.update.InAppUpdateHelper by inject()
-    private val notificationHelper: NotificationHelper by inject()
+    private val notificationHelper: fr.geoking.gaston.feature.notification.NotificationHelper by inject()
+    private val parkSuggester: AaPostSessionParkSuggester by inject()
 
     private var cachedMapDeps: MapDeps? = null
     private var dangerZoneAlertJob: Job? = null
@@ -74,7 +73,7 @@ class CarAppSession : Session(), KoinComponent {
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
-                suggestRememberParkedCarIfNeeded()
+                parkSuggester.startIfEligible(sessionStartedAtElapsedMs = sessionStartedAtElapsedMs)
                 dangerZoneAudioNotifier?.shutdown()
                 dangerZoneAudioNotifier = null
                 dangerZoneAlertManager = null
@@ -153,39 +152,6 @@ class CarAppSession : Session(), KoinComponent {
         dangerZoneAlertJob?.cancel()
         dangerZoneAlertJob = null
         dangerZoneAlertManager?.clearAlerts()
-    }
-
-    /**
-     * When Android Auto stops (park / disconnect), suggest remembering the car position
-     * if the session lasted long enough and a spot was not just saved.
-     */
-    private fun suggestRememberParkedCarIfNeeded() {
-        val started = sessionStartedAtElapsedMs
-        if (started == 0L) return
-        val elapsed = android.os.SystemClock.elapsedRealtime() - started
-        if (elapsed < MIN_SESSION_MS_BEFORE_PARK_SUGGEST) return
-
-        val settings = settingsManager.settings.value
-        if (settings.lastKnownLat == null || settings.lastKnownLon == null) return
-
-        val activeId = settings.activeVehicleId.ifBlank { settings.vehicles.firstOrNull()?.id.orEmpty() }
-        val existing = if (activeId.isNotBlank()) settings.parkedPositionFor(activeId) else null
-        if (existing != null &&
-            System.currentTimeMillis() - existing.savedAtEpochMs < RECENTLY_SAVED_PARK_MS
-        ) {
-            return
-        }
-
-        val label = settings.activeVehicle()?.displayLabel()?.ifBlank { null }
-            ?: listOf(settings.vehicleBrand, settings.vehicleModel)
-                .filter { it.isNotBlank() }
-                .joinToString(" ")
-                .ifBlank { null }
-        try {
-            notificationHelper.showRememberParkedCarSuggestion(label)
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to show remember-parked suggestion", e)
-        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -274,8 +240,5 @@ class CarAppSession : Session(), KoinComponent {
 
     companion object {
         private const val TAG = "CarAppSession"
-        /** Skip suggestion for very short AA glances (settings check, etc.). */
-        private const val MIN_SESSION_MS_BEFORE_PARK_SUGGEST = 3 * 60 * 1000L
-        private const val RECENTLY_SAVED_PARK_MS = 15 * 60 * 1000L
     }
 }

@@ -1109,4 +1109,7 @@
     <string name="notification_remember_parked_title">Retenir le stationnement ?</string>
     <string name="notification_remember_parked_message">Enregistrer où vous avez laissé %1$s</string>
     <string name="notification_remember_parked_message_generic">Enregistrer où vous avez laissé votre véhicule</string>
+    <string name="notification_parked_confirmed_title">Stationnement enregistré</string>
+    <string name="notification_parked_confirmed_message">La position de %1$s a bien été retenue. Appuyez pour voir.</string>
+    <string name="notification_parked_confirmed_message_generic">La position de votre véhicule a bien été retenue. Appuyez pour voir.</string>
 </resources>

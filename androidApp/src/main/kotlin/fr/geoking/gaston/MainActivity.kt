@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
     private val inAppUpdateHelper by lazy { get<InAppUpdateHelper>() }
     private val mapDepsState = MutableStateFlow<MapDeps?>(null)
     private val pendingNavDestination = MutableStateFlow<NavDestination?>(null)
-    private val pendingRememberParked = MutableStateFlow(false)
+    private val pendingRememberParked = MutableStateFlow<RememberParkedRequest?>(null)
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -110,8 +110,19 @@ class MainActivity : ComponentActivity() {
         if (nav != null) {
             pendingNavDestination.value = nav
         }
-        if (intent.action == ParkedCarIntents.ACTION_REMEMBER) {
-            pendingRememberParked.value = true
+        when (intent.action) {
+            ParkedCarIntents.ACTION_REMEMBER,
+            ParkedCarIntents.ACTION_VIEW_PARKED,
+            -> {
+                val vehicleId = intent.getStringExtra(ParkedCarIntents.EXTRA_VEHICLE_ID)
+                val lat = intent.getDoubleExtra(ParkedCarIntents.EXTRA_LATITUDE, Double.NaN)
+                val lon = intent.getDoubleExtra(ParkedCarIntents.EXTRA_LONGITUDE, Double.NaN)
+                pendingRememberParked.value = RememberParkedRequest(
+                    vehicleId = vehicleId,
+                    latitude = lat.takeUnless { it.isNaN() },
+                    longitude = lon.takeUnless { it.isNaN() },
+                )
+            }
         }
     }
 
@@ -267,7 +278,7 @@ private fun MainActivityComposeRoot(
     inAppUpdateHelper: InAppUpdateHelper,
     updateResultLauncher: ActivityResultLauncher<IntentSenderRequest>,
     pendingNavDestination: MutableStateFlow<NavDestination?>,
-    pendingRememberParked: MutableStateFlow<Boolean>,
+    pendingRememberParked: MutableStateFlow<RememberParkedRequest?>,
     isPlaystoreDistribution: Boolean
 ) {
     android.util.Log.d("MainActivity", "Compose setContent block running")
@@ -439,13 +450,13 @@ fun MainUI(
     onStartUpdate: (AppUpdateInfo) -> Unit = {},
     isUpdateInProgress: Boolean = false,
     pendingNavDestinationFlow: kotlinx.coroutines.flow.MutableStateFlow<NavDestination?>? = null,
-    pendingRememberParkedFlow: kotlinx.coroutines.flow.MutableStateFlow<Boolean>? = null,
+    pendingRememberParkedFlow: kotlinx.coroutines.flow.MutableStateFlow<RememberParkedRequest?>? = null,
     isPlaystoreDistribution: Boolean = false,
     hasLocationPermission: Boolean = false,
     onRequestLocationPermission: () -> Unit = {}
 ) {
     val pendingNavFlow = pendingNavDestinationFlow ?: remember { MutableStateFlow<NavDestination?>(null) }
-    val pendingRememberFlow = pendingRememberParkedFlow ?: remember { MutableStateFlow(false) }
+    val pendingRememberFlow = pendingRememberParkedFlow ?: remember { MutableStateFlow<RememberParkedRequest?>(null) }
     val mapDeps by mapDepsState.collectAsState()
     val errorLog by diagnostics.errorLog.collectAsState()
     var showSettings by remember { mutableStateOf(false) }
@@ -457,6 +468,7 @@ fun MainUI(
     var showAccident by remember { mutableStateOf(false) }
     var showMaintenance by remember { mutableStateOf(false) }
     var showParkedCar by remember { mutableStateOf(false) }
+    var parkedRememberRequest by remember { mutableStateOf<RememberParkedRequest?>(null) }
     var showPlaystoreSettings by remember { mutableStateOf(false) }
     var playstoreSettingsInitialStack by remember { mutableStateOf<List<SettingsScreenPage>?>(null) }
     var showFavorites by remember { mutableStateOf(false) }
@@ -494,10 +506,11 @@ fun MainUI(
     }
 
     LaunchedEffect(Unit) {
-        pendingRememberFlow.collect { open ->
-            if (open) {
+        pendingRememberFlow.collect { request ->
+            if (request != null) {
+                parkedRememberRequest = request
                 showParkedCar = true
-                pendingRememberFlow.value = false
+                pendingRememberFlow.value = null
             }
         }
     }
@@ -603,10 +616,19 @@ fun MainUI(
                     )
                 }
                 showParkedCar -> {
-                    BackHandler { showParkedCar = false }
+                    BackHandler {
+                        showParkedCar = false
+                        parkedRememberRequest = null
+                    }
                     ParkedCarFeatureScreen(
                         settingsManager = settingsManager,
-                        onBack = { showParkedCar = false },
+                        onBack = {
+                            showParkedCar = false
+                            parkedRememberRequest = null
+                        },
+                        initialVehicleId = parkedRememberRequest?.vehicleId,
+                        candidateLatitude = parkedRememberRequest?.latitude,
+                        candidateLongitude = parkedRememberRequest?.longitude,
                     )
                 }
                 isPlaystoreDistribution && showPlaystoreSettings -> {

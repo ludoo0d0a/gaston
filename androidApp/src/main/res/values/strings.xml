@@ -1109,4 +1109,7 @@
     <string name="notification_remember_parked_title">Remember parking?</string>
     <string name="notification_remember_parked_message">Save where you left %1$s</string>
     <string name="notification_remember_parked_message_generic">Save where you left your vehicle</string>
+    <string name="notification_parked_confirmed_title">Parking spot saved</string>
+    <string name="notification_parked_confirmed_message">%1$s location was saved. Tap to view.</string>
+    <string name="notification_parked_confirmed_message_generic">Your vehicle location was saved. Tap to view.</string>
 </resources>

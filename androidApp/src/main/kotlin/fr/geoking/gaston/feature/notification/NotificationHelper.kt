@@ -28,6 +28,8 @@ open class NotificationHelper(private val context: Context) {
         private const val NOTIFICATION_ID_DANGER_ZONE = 1003
         private const val NOTIFICATION_ID_NEAR_RADAR = 1004
         private const val NOTIFICATION_ID_REMEMBER_PARKED = 1005
+        private const val NOTIFICATION_ID_PHONE_PARKED_CONFIRMED = 1006
+        private const val NOTIFICATION_ID_PHONE_REMEMBER_PARKED = 1007
         /** Suppress duplicate HUNs when phone + AA alert loops both fire. */
         private const val DEDUPE_WINDOW_MS = 8_000L
         /** Avoid spamming the park suggestion when AA reconnects briefly. */
@@ -259,6 +261,88 @@ open class NotificationHelper(private val context: Context) {
         val notification = builder.build()
         notificationManager.notify(NOTIFICATION_ID_REMEMBER_PARKED, notification)
         CarNotificationManager.from(context).notify(NOTIFICATION_ID_REMEMBER_PARKED, builder)
+    }
+
+    /**
+     * Phone-only: walk-away after the user already saved the pin on AA (case 1).
+     */
+    open fun showPhoneParkedPositionConfirmed(vehicleLabel: String?) {
+        if (!canPostNotifications()) return
+        if (shouldSuppressDuplicate("parked_confirmed", "confirm", REMEMBER_PARKED_DEDUPE_MS)) return
+
+        val title = context.getString(R.string.notification_parked_confirmed_title)
+        val message = if (!vehicleLabel.isNullOrBlank()) {
+            context.getString(R.string.notification_parked_confirmed_message, vehicleLabel)
+        } else {
+            context.getString(R.string.notification_parked_confirmed_message_generic)
+        }
+
+        val phoneIntent = Intent(context, MainActivity::class.java).apply {
+            action = ParkedCarIntents.ACTION_VIEW_PARKED
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val phonePending = PendingIntent.getActivity(
+            context,
+            NOTIFICATION_ID_PHONE_PARKED_CONFIRMED,
+            phoneIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_poi_parking)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(phonePending)
+
+        notificationManager.notify(NOTIFICATION_ID_PHONE_PARKED_CONFIRMED, builder.build())
+    }
+
+    /**
+     * Phone-only: walk-away without saving on AA (case 2). Opens remember UI with frozen candidate coords.
+     */
+    open fun showPhoneRememberParkedSuggestion(
+        vehicleLabel: String?,
+        vehicleId: String,
+        latitude: Double,
+        longitude: Double,
+    ) {
+        if (!canPostNotifications()) return
+        if (shouldSuppressDuplicate("phone_remember_parked", "suggest", REMEMBER_PARKED_DEDUPE_MS)) return
+
+        val title = context.getString(R.string.notification_remember_parked_title)
+        val message = if (!vehicleLabel.isNullOrBlank()) {
+            context.getString(R.string.notification_remember_parked_message, vehicleLabel)
+        } else {
+            context.getString(R.string.notification_remember_parked_message_generic)
+        }
+
+        val phoneIntent = Intent(context, MainActivity::class.java).apply {
+            action = ParkedCarIntents.ACTION_REMEMBER
+            putExtra(ParkedCarIntents.EXTRA_VEHICLE_ID, vehicleId)
+            putExtra(ParkedCarIntents.EXTRA_LATITUDE, latitude)
+            putExtra(ParkedCarIntents.EXTRA_LONGITUDE, longitude)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val phonePending = PendingIntent.getActivity(
+            context,
+            NOTIFICATION_ID_PHONE_REMEMBER_PARKED,
+            phoneIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_poi_parking)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(phonePending)
+
+        notificationManager.notify(NOTIFICATION_ID_PHONE_REMEMBER_PARKED, builder.build())
     }
 
     private fun postCarHeadsUp(

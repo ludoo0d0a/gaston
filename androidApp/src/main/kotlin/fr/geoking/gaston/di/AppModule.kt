@@ -220,6 +220,27 @@ val appModule = module {
 
     single { NotificationHelper(androidContext()) }
 
+    single { fr.geoking.gaston.parked.ParkCandidateStore(androidContext()) }
+
+    single {
+        fr.geoking.gaston.parked.ParkWalkAwayMonitor(
+            context = androidContext(),
+            settingsManager = get(),
+            notificationHelper = get(),
+            candidateStore = get(),
+        )
+    }
+
+    single {
+        fr.geoking.gaston.parked.AaPostSessionParkSuggester(
+            context = androidContext(),
+            settingsManager = get(),
+            notificationHelper = get(),
+            candidateStore = get(),
+            walkAwayMonitor = get(),
+        )
+    }
+
     single { InAppNotificationCenter() }
 
     single {

@@ -16,9 +16,13 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.activeVehicle
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.intent.IntentNavigationHelper
+import fr.geoking.gaston.parked.ParkCandidateSaveHelper
+import fr.geoking.gaston.parked.ParkCandidateStore
 import fr.geoking.gaston.parkedPositionFor
 import fr.geoking.gaston.vehicleById
 import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 /**
  * Remember / find parked car on Android Auto.
@@ -28,7 +32,9 @@ class AutoRememberParkedCarScreen(
     carContext: CarContext,
     private val settingsManager: SettingsManager,
     private var selectedVehicleId: String = settingsManager.settings.value.activeVehicleId,
-) : Screen(carContext) {
+) : Screen(carContext), KoinComponent {
+
+    private val candidateStore: ParkCandidateStore by inject()
 
     private var statusMessage: String? = null
     private var isSaving = false
@@ -137,14 +143,22 @@ class AutoRememberParkedCarScreen(
         invalidate()
         lifecycleScope.launch {
             try {
+                val candidate = candidateStore.get()
                 val loc = LocationHelper.getCurrentLocation(carContext)
-                val lat = loc?.latitude ?: settingsManager.settings.value.lastKnownLat
-                val lon = loc?.longitude ?: settingsManager.settings.value.lastKnownLon
-                if (lat == null || lon == null) {
+                val coords = ParkCandidateSaveHelper.resolveSaveCoords(
+                    candidate = candidate,
+                    vehicleId = vehicleId,
+                    fallbackLat = loc?.latitude ?: settingsManager.settings.value.lastKnownLat,
+                    fallbackLon = loc?.longitude ?: settingsManager.settings.value.lastKnownLon,
+                )
+                if (coords == null) {
                     statusMessage = carContext.getString(R.string.parked_car_location_unavailable)
                 } else {
+                    val (lat, lon) = coords
                     settingsManager.saveParkedPosition(lat, lon, vehicleId)
-                    if (loc != null) {
+                    if (candidate != null && candidate.vehicleId == vehicleId) {
+                        candidateStore.markSavedFromAa()
+                    } else if (loc != null) {
                         settingsManager.saveLastKnownLocation(lat, lon)
                     }
                     statusMessage = carContext.getString(R.string.parked_car_saved)

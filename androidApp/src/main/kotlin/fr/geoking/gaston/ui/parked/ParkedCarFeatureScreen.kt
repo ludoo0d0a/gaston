@@ -57,15 +57,22 @@ private val ParkedOnAccent = Color.White
 fun ParkedCarFeatureScreen(
     settingsManager: SettingsManager,
     onBack: () -> Unit,
+    initialVehicleId: String? = null,
+    candidateLatitude: Double? = null,
+    candidateLongitude: Double? = null,
 ) {
     val settings by settingsManager.settings.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val candidateStore = remember {
+        org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.parked.ParkCandidateStore>()
+    }
 
-    var selectedVehicleId by remember(settings.activeVehicleId, settings.vehicles) {
+    var selectedVehicleId by remember(settings.activeVehicleId, settings.vehicles, initialVehicleId) {
         mutableStateOf(
-            settings.activeVehicleId.ifBlank { settings.vehicles.firstOrNull()?.id.orEmpty() }
-                .ifBlank { "default" }
+            initialVehicleId?.takeIf { it.isNotBlank() }
+                ?: settings.activeVehicleId.ifBlank { settings.vehicles.firstOrNull()?.id.orEmpty() }
+                    .ifBlank { "default" }
         )
     }
     var statusMessage by remember { mutableStateOf<String?>(null) }
@@ -197,15 +204,32 @@ fun ParkedCarFeatureScreen(
                         statusMessage = null
                         scope.launch {
                             try {
+                                val candidate = candidateStore.get()
                                 val loc = LocationHelper.getCurrentLocation(context)
-                                val lat = loc?.latitude ?: settings.lastKnownLat
-                                val lon = loc?.longitude ?: settings.lastKnownLon
-                                if (lat == null || lon == null) {
+                                val coords = fr.geoking.gaston.parked.ParkCandidateSaveHelper.resolveSaveCoords(
+                                    candidate = when {
+                                        candidateLatitude != null && candidateLongitude != null ->
+                                            fr.geoking.gaston.parked.ParkCandidate(
+                                                vehicleId = selectedVehicleId,
+                                                latitude = candidateLatitude,
+                                                longitude = candidateLongitude,
+                                                createdAtEpochMs = System.currentTimeMillis(),
+                                            )
+                                        else -> candidate
+                                    },
+                                    vehicleId = selectedVehicleId,
+                                    fallbackLat = loc?.latitude ?: settings.lastKnownLat,
+                                    fallbackLon = loc?.longitude ?: settings.lastKnownLon,
+                                )
+                                if (coords == null) {
                                     statusMessage =
                                         context.getString(R.string.parked_car_location_unavailable)
                                 } else {
+                                    val (lat, lon) = coords
                                     settingsManager.saveParkedPosition(lat, lon, selectedVehicleId)
-                                    if (loc != null) {
+                                    if (candidate != null && candidate.vehicleId == selectedVehicleId) {
+                                        candidateStore.clear()
+                                    } else if (loc != null && candidateLatitude == null) {
                                         settingsManager.saveLastKnownLocation(lat, lon)
                                     }
                                     statusMessage = context.getString(R.string.parked_car_saved)

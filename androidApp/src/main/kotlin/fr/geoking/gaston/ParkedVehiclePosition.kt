@@ -29,7 +29,20 @@ data class ParkedVehiclePosition(
 
 object ParkedCarIntents {
     const val ACTION_REMEMBER = "fr.geoking.gaston.action.REMEMBER_PARKED_CAR"
+    /** Open parked-car UI to review an already-saved pin (phone walk-away case 1). */
+    const val ACTION_VIEW_PARKED = "fr.geoking.gaston.action.VIEW_PARKED_CAR"
+
+    const val EXTRA_VEHICLE_ID = "fr.geoking.gaston.extra.PARKED_VEHICLE_ID"
+    const val EXTRA_LATITUDE = "fr.geoking.gaston.extra.PARKED_LATITUDE"
+    const val EXTRA_LONGITUDE = "fr.geoking.gaston.extra.PARKED_LONGITUDE"
 }
+
+/** Deep-link payload to open the parked-car screen (optional frozen candidate coords). */
+data class RememberParkedRequest(
+    val vehicleId: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+)
 
 fun AppSettings.parkedPositionFor(vehicleId: String): ParkedVehiclePosition? =
     parkedPositions.firstOrNull { it.vehicleId == vehicleId }
