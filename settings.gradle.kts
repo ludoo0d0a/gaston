@@ -40,4 +40,7 @@ if (gkToolsRoot != null) {
             substitute(module("fr.geoking.tools:in-app-update")).using(project(":in-app-update"))
         }
     }
+} else {
+    include(":tools-stub:debug-bar")
+    include(":tools-stub:in-app-update")
 }

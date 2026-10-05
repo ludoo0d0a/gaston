@@ -82,6 +82,24 @@ open class NotificationHelper(private val context: Context) {
             context.getString(R.string.notification_border_crossing_message, countryName)
         }
 
+        val phoneIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val phonePending = PendingIntent.getActivity(
+            context,
+            NOTIFICATION_ID_BORDER,
+            phoneIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val carIntent = Intent(context, VoiceAppService::class.java)
+        val carPending = CarPendingIntent.getCarApp(
+            context,
+            NOTIFICATION_ID_BORDER,
+            carIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notifications)
             .setContentTitle(title)
@@ -89,12 +107,14 @@ open class NotificationHelper(private val context: Context) {
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setContentIntent(phonePending)
             .extend(
                 CarAppExtender.Builder()
                     .setImportance(NotificationManager.IMPORTANCE_HIGH)
                     .setContentTitle(title)
                     .setContentText(message)
                     .setSmallIcon(R.drawable.ic_notifications)
+                    .setContentIntent(carPending)
                     .build()
             )
 
@@ -247,21 +267,40 @@ open class NotificationHelper(private val context: Context) {
         message: String,
         smallIcon: Int,
     ) {
+        val phoneIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val phonePending = PendingIntent.getActivity(
+            context,
+            notificationId,
+            phoneIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val carIntent = Intent(context, VoiceAppService::class.java)
+        val carPending = CarPendingIntent.getCarApp(
+            context,
+            notificationId,
+            carIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(smallIcon)
             .setContentTitle(title)
             .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
             .setAutoCancel(true)
-            .setTimeoutAfter(6000L)
+            .setContentIntent(phonePending)
             .extend(
                 CarAppExtender.Builder()
                     .setImportance(NotificationManager.IMPORTANCE_HIGH)
                     .setContentTitle(title)
                     .setContentText(message)
                     .setSmallIcon(smallIcon)
+                    .setContentIntent(carPending)
                     .build()
             )
 

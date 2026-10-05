@@ -59,18 +59,6 @@ class AutoSettingsScreen(
                 .build()
         )
 
-        if (BuildConfig.DEBUG_DEV) {
-            listBuilder.addItem(
-                Row.Builder()
-                    .setTitle(carContext.getString(R.string.screen_developer))
-                    .addText(carContext.getString(R.string.dev_developer_settings))
-                    .setOnClickListener {
-                        screenManager.push(AutoDeveloperScreen(carContext, settingsManager))
-                    }
-                    .setBrowsable(true)
-                    .build()
-            )
-        }
 
         ListTemplate.Builder()
             .setSingleList(listBuilder.build())

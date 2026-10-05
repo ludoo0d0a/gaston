@@ -10,6 +10,7 @@ import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
+import fr.geoking.gaston.BuildConfig
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.di.MapDeps
@@ -123,7 +124,7 @@ class AutoDashboardScreen(
                     logTag = "AutoMoreOptionsScreen",
                     templateName = "ListTemplate",
                 ) {
-                    val moreList = ItemList.Builder()
+                    val moreListBuilder = ItemList.Builder()
                         .addItem(
                             Row.Builder()
                                 .setTitle(carContext.getString(R.string.screen_favorites))
@@ -178,16 +179,6 @@ class AutoDashboardScreen(
                         )
                         .addItem(
                             Row.Builder()
-                                .setTitle(carContext.getString(R.string.cd_map_settings))
-                                .setImage(carContext.dashboardSettingsIcon())
-                                .setBrowsable(true)
-                                .setOnClickListener {
-                                    screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
-                                }
-                                .build()
-                        )
-                        .addItem(
-                            Row.Builder()
                                 .setTitle(carContext.getString(R.string.cd_settings))
                                 .setImage(carContext.carIconUntinted(R.drawable.ic_launcher_foreground))
                                 .setBrowsable(true)
@@ -196,7 +187,29 @@ class AutoDashboardScreen(
                                 }
                                 .build()
                         )
-                        .build()
+                        .addItem(
+                            Row.Builder()
+                                .setTitle(carContext.getString(R.string.cd_map_settings))
+                                .setImage(carContext.dashboardSettingsIcon())
+                                .setBrowsable(true)
+                                .setOnClickListener {
+                                    screenManager.push(AutoMapSettingsScreen(carContext, settingsManager))
+                                }
+                                .build()
+                        )
+
+                    if (BuildConfig.DEBUG_DEV) {
+                        moreListBuilder.addItem(
+                            Row.Builder()
+                                .setTitle(carContext.getString(R.string.screen_developer))
+                                .setImage(carContext.dashboardSettingsIcon())
+                                .setBrowsable(true)
+                                .setOnClickListener {
+                                    screenManager.push(AutoDeveloperScreen(carContext, settingsManager))
+                                }
+                                .build()
+                        )
+                    }
 
                     ListTemplate.Builder()
                         .setHeader(
@@ -205,7 +218,7 @@ class AutoDashboardScreen(
                                 .setStartHeaderAction(Action.BACK)
                                 .build()
                         )
-                        .setSingleList(moreList)
+                        .setSingleList(moreListBuilder.build())
                         .build()
                 }
             }
