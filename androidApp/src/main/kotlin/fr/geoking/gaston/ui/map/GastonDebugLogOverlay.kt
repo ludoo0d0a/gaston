@@ -123,7 +123,7 @@ fun GastonDebugLogOverlay(
         cacheStats = cacheStats,
         onRefreshCacheStats = { cacheStatsTick++ },
         modifier = modifier,
-        detectedCountries = detectedCountries ?: countriesLabel,
+        detectedCountries = detectedCountries ?: countriesLabel.orEmpty(),
         customInfo = infoLines,
     )
 }

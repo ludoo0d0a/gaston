@@ -275,8 +275,17 @@ afterEvaluate {
 
 dependencies {
     implementation(project(":shared"))
-    implementation("fr.geoking.tools:debug-bar")
-    implementation("fr.geoking.tools:in-app-update")
+    val gkToolsPresent = System.getenv("GK_TOOLS") != null ||
+        listOf("geoking-tools", "../geoking-tools", "../../geoking-tools")
+            .map { rootProject.file(it) }
+            .any { it.resolve("android").isDirectory }
+    if (gkToolsPresent) {
+        implementation("fr.geoking.tools:debug-bar")
+        implementation("fr.geoking.tools:in-app-update")
+    } else {
+        implementation(project(":tools-stub:debug-bar"))
+        implementation(project(":tools-stub:in-app-update"))
+    }
 
     // Compose & Activity (lifecycle-runtime ensures LifecycleOwner is on classpath for ComponentActivity)
     implementation(libs.androidx.activity.compose)

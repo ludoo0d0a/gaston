@@ -1378,7 +1378,7 @@ private fun MainMenu(
                 onDismiss = { inAppUpdateHelper.resetCheckFeedback() },
             )
         }
-        CheckFeedback.None -> Unit
+        CheckFeedback.None, CheckFeedback.Silent -> Unit
     }
 
     Scaffold(
