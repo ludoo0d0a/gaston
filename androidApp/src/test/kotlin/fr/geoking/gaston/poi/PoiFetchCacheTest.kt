@@ -68,6 +68,36 @@ class PoiFetchCacheTest {
     }
 
     @Test
+    fun computePoiCoverage_radarFreshDoesNotRefetchMissingLufopWhenOverpassLoaded() {
+        val nowMs = System.currentTimeMillis()
+        val region = LoadedPoiRegion(
+            centerLat = 48.85,
+            centerLng = 2.35,
+            maxRadiusKmLoaded = 50,
+            loadedAtMs = nowMs,
+            loadedProviders = setOf(PoiProviderType.Overpass),
+            loadedCategories = setOf(PoiCategory.Radar),
+            categoryLoadedAtMs = mapOf(PoiCategory.Radar to nowMs),
+        )
+        val coverage = computePoiCoverage(
+            regions = listOf(region),
+            centerLat = 48.86,
+            centerLng = 2.36,
+            requiredRadiusKm = 25,
+            providers = setOf(
+                PoiProviderType.LufopOpenSpeedCam,
+                PoiProviderType.LuxembourgRadars,
+                PoiProviderType.Overpass,
+            ),
+            categoriesToFetch = setOf(PoiCategory.Radar),
+            nowMs = nowMs,
+        )
+        assertTrue(coverage.fullyCovered)
+        assertTrue(coverage.missingProviders.isEmpty())
+        assertTrue(coverage.missingCategories.isEmpty())
+    }
+
+    @Test
     fun computePoiCoverage_fullyCoveredWhenProvidersAndCategoriesLoaded() {
         val region = LoadedPoiRegion(
             centerLat = 48.85,

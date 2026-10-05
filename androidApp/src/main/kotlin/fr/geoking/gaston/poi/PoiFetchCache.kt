@@ -144,15 +144,48 @@ fun computePoiCoverage(
             missingCategories = categoriesToFetch,
         )
 
-    val missingProviders = providers - covering.loadedProviders
     val missingCategories = categoriesToFetch.filter { category ->
         !categoryCacheStillFresh(category, covering, nowMs)
     }.toSet()
+    val missingProviders = missingProvidersForCoverage(
+        allProviders = providers,
+        loadedProviders = covering.loadedProviders,
+        missingCategories = missingCategories,
+    )
     return PoiCoverageResult(
         coveringRegion = covering,
         missingProviders = missingProviders,
         missingCategories = missingCategories,
     )
+}
+
+/**
+ * Providers that still need a network call. When every requested category is fresh in the
+ * covering region (e.g. radars loaded via Overpass only), do not refetch sibling radar APIs
+ * (Lufop, LU) just because they are absent from [loadedProviders].
+ */
+fun missingProvidersForCoverage(
+    allProviders: Set<PoiProviderType>,
+    loadedProviders: Set<PoiProviderType>,
+    missingCategories: Set<PoiCategory>,
+): Set<PoiProviderType> {
+    if (missingCategories.isEmpty()) return emptySet()
+    return providersForIncrementalFetch(
+        allProviders = allProviders,
+        missingProviders = allProviders - loadedProviders,
+        missingCategories = missingCategories,
+    )
+}
+
+fun hasCategoryPinsInRadius(
+    pois: Collection<Poi>,
+    category: PoiCategory,
+    centerLat: Double,
+    centerLng: Double,
+    radiusKm: Int,
+): Boolean = pois.any { poi ->
+    poi.poiCategory == category &&
+        haversineKm(centerLat, centerLng, poi.latitude, poi.longitude) <= radiusKm.toDouble() + 0.5
 }
 
 /** Providers to call when geo is covered but categories/providers are incomplete. */

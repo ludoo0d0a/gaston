@@ -272,6 +272,7 @@ fun rememberMapDataState(
                             if (cachedPois.isNotEmpty()) {
                                 isErrorPaused = false
                                 mapErrorMessage = null
+                                isLoading = false
                             }
 
                             val availabilityProvider = availabilityProviderFactory?.getProvider(centerLat, centerLng)

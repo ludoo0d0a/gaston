@@ -303,7 +303,13 @@ class SelectorPoiProvider(
         if (coverage.fullyCovered) {
             // Stale "covered" regions from empty Lufop/Overpass runs must not block radar refetch.
             val needsRadar = PoiCategory.Radar in categoriesToFetch
-            val hasRadarPin = cachedPois.values.any { it.poiCategory == PoiCategory.Radar }
+            val hasRadarPin = hasCategoryPinsInRadius(
+                cachedPois.values,
+                PoiCategory.Radar,
+                request.latitude,
+                request.longitude,
+                requiredRadiusKm,
+            )
             if (needsRadar && !hasRadarPin) {
                 val radarProviders = setOf(
                     PoiProviderType.LufopOpenSpeedCam,
@@ -329,10 +335,23 @@ class SelectorPoiProvider(
         request: PoiSearchRequest,
         providers: Set<PoiProviderType>,
     ): List<Poi> {
-        val enriched = try {
-            radarOsmEnricher?.enrichPois(pois) ?: pois
+        val enrichRadiusKm = request.viewport?.let { v ->
+            radiusKmFromMapViewport(request.latitude, request.longitude, v).coerceIn(1, 50)
+        } ?: 10
+        val enrichScope = pois.filter { poi ->
+            approxDistanceKm(request.latitude, request.longitude, poi.latitude, poi.longitude) <=
+                enrichRadiusKm + 0.5
+        }
+        val enrichedScope = try {
+            radarOsmEnricher?.enrichPois(enrichScope) ?: enrichScope
         } catch (e: Exception) {
             Log.w("SelectorPoiProvider", "Radar OSM direction enrich failed", e)
+            enrichScope
+        }
+        val enriched = if (enrichedScope !== enrichScope) {
+            val byId = enrichedScope.associateBy { it.id }
+            pois.map { byId[it.id] ?: it }
+        } else {
             pois
         }
         // Persist direction onto in-memory cache so triangles survive without re-query.
@@ -627,10 +646,26 @@ class SelectorPoiProvider(
 
         if (currentAlreadyCoveredResult != null) {
             send(currentAlreadyCoveredResult)
-            if (isFromMemory) {
+            val skipNetwork = synchronized(cacheLock) {
+                if (isFromMemory) return@synchronized true
+                computePoiCoverage(
+                    regions = loadedRegions,
+                    centerLat = request.latitude,
+                    centerLng = request.longitude,
+                    requiredRadiusKm = requiredRadiusKm,
+                    providers = providers,
+                    categoriesToFetch = categoriesToFetch,
+                    nowMs = nowMs,
+                ).fullyCovered
+            }
+            if (skipNetwork) {
                 traceProvider(
-                    phase = ProviderTracePhase.CacheMemory,
-                    message = "searchFlow: region covered (memory)",
+                    phase = if (isFromMemory) ProviderTracePhase.CacheMemory else ProviderTracePhase.CacheDisk,
+                    message = if (isFromMemory) {
+                        "searchFlow: region covered (memory)"
+                    } else {
+                        "searchFlow: region covered (disk)"
+                    },
                     effectiveProviders = providers.map { it.name }.sorted(),
                     poiCount = currentAlreadyCoveredResult.pois.size,
                 )
