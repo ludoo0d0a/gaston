@@ -5,11 +5,10 @@ import com.google.android.play.core.appupdate.AppUpdateInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-sealed interface CheckFeedback {
-    data object Silent : CheckFeedback
-    data object UpToDate : CheckFeedback
-    data object None : CheckFeedback
-    data class Error(val message: String = "") : CheckFeedback
+sealed class CheckFeedback {
+    data object None : CheckFeedback()
+    data object UpToDate : CheckFeedback()
+    data class Error(val message: String) : CheckFeedback()
 }
 
 enum class InstallStatus {
@@ -40,7 +39,7 @@ class InAppUpdateHelper(
     val autoStartUpdate: StateFlow<Boolean> = MutableStateFlow(false)
     val updateInfo: StateFlow<AppUpdateInfo?> = MutableStateFlow(null)
 
-    fun checkForUpdate(feedback: CheckFeedback = CheckFeedback.Silent, manual: Boolean = false) {}
+    fun checkForUpdate(manual: Boolean = false) {}
     fun consumeLaunchIntent(intent: Any?) {}
     fun unregister() {}
     fun startUpdate(info: Any? = null, launcher: Any? = null) {}
