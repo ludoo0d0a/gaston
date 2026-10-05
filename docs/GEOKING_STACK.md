@@ -8,7 +8,7 @@ Gaston **uses geoking-ci** for Play release and debug CI. Shared scripts come fr
 | Workflow | Trigger | Backend |
 |---|---|---|
 | `release-play.yml` | push `main` / tags `v*` / dispatch | `ludoo0d0a/geoking-ci` → `bundlePlaystoreRelease` → Play internal |
-| `android-ci.yml` | push / PR `main` | geoking-ci assemble + local lint + `check-no-secrets` |
+| `android-ci.yml` | `workflow_dispatch` only (kept for manual debug APK / lint) | geoking-ci assemble + local lint + `check-no-secrets` |
 | `station-load-integration.yml` | Gaston-specific | keep |
 | `pages.yml` | website | keep |
 
