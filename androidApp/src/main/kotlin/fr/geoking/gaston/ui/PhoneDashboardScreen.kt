@@ -4,6 +4,8 @@ import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -50,6 +52,7 @@ fun PhoneDashboardScreen(
     geocodingClient: GeocodingClient? = null,
     isUpdateInProgress: Boolean = false,
     showAds: Boolean = false,
+    listState: LazyListState = rememberLazyListState(),
     onOpenMap: (Poi?, Float?) -> Unit,
     onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
     onOpenFavorites: () -> Unit,
@@ -119,6 +122,7 @@ fun PhoneDashboardScreen(
             ) {
                 PhoneDashboardMainContent(
                     modifier = Modifier.fillMaxSize(),
+                    listState = listState,
                     geocodingClient = geocodingClient,
                     hasLocationPermission = hasLocationPermission,
                     userLat = uiState.userLat,

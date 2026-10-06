@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -83,6 +85,7 @@ fun MaintenanceFeatureScreen(
     var dest by remember { mutableStateOf(MaintenanceDest.Hub) }
     var editingEvent by remember { mutableStateOf<MaintenanceEvent?>(null) }
     var editingInterval by remember { mutableStateOf<ServiceInterval?>(null) }
+    val hubListState = rememberLazyListState()
 
     val vehicles by viewModel.vehicles.collectAsState()
     val selectedVehicle by viewModel.selectedVehicle.collectAsState()
@@ -112,6 +115,7 @@ fun MaintenanceFeatureScreen(
                 selectedVehicle = selectedVehicle,
                 events = events,
                 dueReminders = dueReminders,
+                listState = hubListState,
                 onBack = onBack,
                 onSelectVehicle = viewModel::selectVehicle,
                 onOpenAdd = { dest = MaintenanceDest.AddType },
@@ -216,6 +220,7 @@ private fun MaintenanceHubScreen(
     selectedVehicle: UserVehicle?,
     events: List<MaintenanceEvent>,
     dueReminders: List<MaintenanceReminderEvaluator.DueReminder>,
+    listState: LazyListState,
     onBack: () -> Unit,
     onSelectVehicle: (String) -> Unit,
     onOpenAdd: () -> Unit,
@@ -268,6 +273,7 @@ private fun MaintenanceHubScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
                 .testTag("maintenance_hub"),
+            state = listState,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { Spacer(Modifier.height(4.dp)) }

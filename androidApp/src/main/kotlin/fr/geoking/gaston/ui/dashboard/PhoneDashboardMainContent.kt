@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Card
@@ -71,6 +73,7 @@ private fun cityLabelFromGeocodedPlace(place: GeocodedPlace): String {
 @Composable
 fun PhoneDashboardMainContent(
     modifier: Modifier = Modifier,
+    listState: LazyListState = rememberLazyListState(),
     geocodingClient: GeocodingClient?,
     hasLocationPermission: Boolean,
     userLat: Double?,
@@ -107,6 +110,7 @@ fun PhoneDashboardMainContent(
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+        state = listState,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item { Spacer(Modifier.height(8.dp)) }

@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,6 +68,7 @@ fun AccidentFeatureScreen(
     viewModel: AccidentViewModel = koinViewModel(),
 ) {
     var dest by remember { mutableStateOf(AccidentDest.Hub) }
+    val hubListState = rememberLazyListState()
     val profile by viewModel.profile.collectAsState()
     val selectedVehicle by viewModel.selectedVehicle.collectAsState()
 
@@ -82,6 +85,7 @@ fun AccidentFeatureScreen(
             AccidentDest.Hub -> AccidentHubScreen(
                 profile = profile,
                 vehicle = selectedVehicle,
+                listState = hubListState,
                 onBack = onBack,
                 onOpenProfile = { dest = AccidentDest.Profile },
                 onOpenWizard = { dest = AccidentDest.Wizard },
@@ -121,6 +125,7 @@ fun AccidentFeatureScreen(
 private fun AccidentHubScreen(
     profile: AccidentProfile,
     vehicle: fr.geoking.gaston.UserVehicle?,
+    listState: LazyListState,
     onBack: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenWizard: () -> Unit,
@@ -158,6 +163,7 @@ private fun AccidentHubScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
                 .testTag("accident_hub"),
+            state = listState,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { Spacer(Modifier.height(4.dp)) }

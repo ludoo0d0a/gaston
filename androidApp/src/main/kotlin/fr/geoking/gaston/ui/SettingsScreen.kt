@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -241,6 +242,8 @@ fun SettingsScreen(
     var screenStack by remember { mutableStateOf(listOf(SettingsScreenPage.Main)) }
     val currentScreen = screenStack.last()
     var showDisclaimer by remember { mutableStateOf(false) }
+    // Survives leave/return within Settings: Main is disposed when another page shows.
+    val mainMenuScrollState = rememberScrollState()
 
     if (showDisclaimer) {
         DisclaimerDialog(onAccept = { showDisclaimer = false })
@@ -311,6 +314,7 @@ fun SettingsScreen(
                 SettingsScreenPage.Main -> MainMenu(
                     settings = current,
                     authManager = authManager,
+                    scrollState = mainMenuScrollState,
                     onNavigate = { screenStack = screenStack + it }
                 )
                 SettingsScreenPage.VehicleConfig -> VehicleConfig(
@@ -1354,6 +1358,7 @@ private fun PremiumSubscriptionNoticeCard(notice: PremiumSubscriptionNotice) {
 private fun MainMenu(
     settings: AppSettings,
     authManager: GoogleAuthManager?,
+    scrollState: ScrollState,
     onNavigate: (SettingsScreenPage) -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -1389,7 +1394,7 @@ private fun MainMenu(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {

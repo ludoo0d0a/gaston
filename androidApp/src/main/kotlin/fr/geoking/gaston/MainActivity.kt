@@ -14,6 +14,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -501,6 +502,8 @@ fun MainUI(
     var pendingMapZoom by remember { mutableStateOf<Float?>(null) }
     var pendingMapLocation by remember { mutableStateOf<com.google.android.gms.maps.model.LatLng?>(null) }
     var dashboardSelectedLocation by remember { mutableStateOf<fr.geoking.gaston.api.geocoding.GeocodedPlace?>(null) }
+    // Survives leave/return: dashboard is disposed when another top-level screen shows.
+    val dashboardListState = rememberLazyListState()
 
     LaunchedEffect(dashboardSelectedLocation) {
         pendingMapLocation = dashboardSelectedLocation?.let {
@@ -794,6 +797,7 @@ fun MainUI(
                         geocodingClient = mapDeps?.geocodingClient,
                         isUpdateInProgress = isUpdateInProgress,
                         showAds = true,
+                        listState = dashboardListState,
                         onOpenMap = { poi, zoom ->
                             pendingMapPoi = poi
                             pendingMapZoom = zoom
@@ -965,6 +969,7 @@ fun MainUI(
                             geocodingClient = mapDeps?.geocodingClient,
                             isUpdateInProgress = isUpdateInProgress,
                             showAds = isPlaystoreDistribution,
+                            listState = dashboardListState,
                             onOpenMap = { poi, zoom ->
                                 pendingMapPoi = poi
                                 pendingMapZoom = zoom
