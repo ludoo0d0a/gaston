@@ -361,17 +361,39 @@ private fun MainActivityComposeRoot(
     }
 
     val audioNotifier = remember(context) { AndroidRadarAudioNotifier(context) }
-    val notificationHelper = remember {
-        org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.feature.notification.NotificationHelper>()
+    val dangerZoneHudStore = remember {
+        org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.radar.DangerZoneHudStore>()
     }
-    val dangerZoneAlertManager = remember(context, settingsManager, audioNotifier, notificationHelper) {
-        DangerZoneAlertManager(settingsManager, audioNotifier, notificationHelper)
+    // Phone surface: beep + TTS + HUD only (no HUN). AA posts HUN from CarAppSession.
+    val dangerZoneAlertManager = remember(context, settingsManager, audioNotifier, dangerZoneHudStore) {
+        DangerZoneAlertManager(
+            settingsManager = settingsManager,
+            audioNotifier = audioNotifier,
+            notificationHelper = null,
+            hudStore = dangerZoneHudStore,
+        )
+    }
+    val dangerZoneAlertTester = remember {
+        org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.radar.DangerZoneAlertTester>()
     }
 
     DisposableEffect(dangerZoneAlertManager, audioNotifier) {
         onDispose {
             dangerZoneAlertManager.clearAlerts()
             audioNotifier.shutdown()
+        }
+    }
+
+    LaunchedEffect(dangerZoneAlertManager, dangerZoneAlertTester) {
+        dangerZoneAlertTester.requests.collect { request ->
+            dangerZoneAlertManager.triggerTestAlert(request.speedLimitKmH)
+            launch {
+                delay(8_000)
+                // Clear test HUD when the GPS alert loop is not keeping it alive.
+                if (!settingsManager.settings.value.radarWarningEnabled) {
+                    dangerZoneAlertManager.dismissHud()
+                }
+            }
         }
     }
 

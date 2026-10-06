@@ -908,9 +908,10 @@
     <string name="dev_network_floating_bar">barre réseau flottante</string>
     <string name="dev_debug_grid">grille de débogage sur la carte</string>
     <string name="dev_test_aa_map_surface">tester la surface de carte AA</string>
-    <string name="dev_test_danger_zone_notification">Tester notification zone de danger</string>
-    <string name="dev_test_danger_zone_notification_subtitle">Envoie le HUN AA « Radar proche 100 km/h »</string>
-    <string name="dev_test_radar_notification_sent">HUN radar envoyé</string>
+    <string name="dev_test_danger_zone_notification">Tester alerte zone de danger</string>
+    <string name="dev_test_danger_zone_notification_subtitle">Bip + TTS + HUD (téléphone)</string>
+    <string name="dev_test_danger_zone_notification_subtitle_aa">Bip + TTS + HUN (Android Auto)</string>
+    <string name="dev_test_radar_notification_sent">Alerte test zone de danger envoyée</string>
     <string name="dev_test_radar_notification_permission">Permission notifications requise sur le téléphone</string>
 
     <!-- Station Details / Amenities -->

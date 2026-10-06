@@ -113,7 +113,7 @@ class AutoDeveloperScreenTest {
         }
         assertNotNull("Radar notification test row missing", radarRow)
         assertEquals(
-            carContext.getString(R.string.dev_test_danger_zone_notification_subtitle),
+            carContext.getString(R.string.dev_test_danger_zone_notification_subtitle_aa),
             radarRow!!.texts.firstOrNull()?.toString(),
         )
         // Action row (not a toggle): onClickListener is registered so the HUN can be posted.

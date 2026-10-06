@@ -220,6 +220,10 @@ val appModule = module {
 
     single { NotificationHelper(androidContext()) }
 
+    single { fr.geoking.gaston.radar.DangerZoneAlertTester() }
+
+    single { fr.geoking.gaston.radar.DangerZoneHudStore() }
+
     single { fr.geoking.gaston.parked.ParkCandidateStore(androidContext()) }
 
     single {

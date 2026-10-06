@@ -171,6 +171,7 @@ object AutoMapOverlayHelper {
         latitude: Double,
         isDensityScaled: Boolean,
         modeLabel: String,
+        dangerZoneHud: fr.geoking.gaston.radar.DangerZoneHudState? = null,
     ) {
         val density = context.resources.displayMetrics.density
         val area = visibleArea ?: Rect(0, 0, surfaceWidth, surfaceHeight)
@@ -181,6 +182,141 @@ object AutoMapOverlayHelper {
         // Compass lives in the ActionStrip; only draw scale + zoom chip on the map.
         drawScale(canvas, area, zoom, latitude, density, isDensityScaled, isMenuOnRight)
         drawZoomDebug(canvas, area, zoom, density, modeLabel)
+
+        val hud = dangerZoneHud ?: currentDangerZoneHud()
+        if (hud.active) {
+            drawDangerZonePresenceBadge(
+                canvas = canvas,
+                context = context,
+                area = area,
+                density = density,
+                speedLimitKmH = hud.speedLimitKmH,
+                isMenuOnRight = isMenuOnRight,
+            )
+        }
+    }
+
+    private fun currentDangerZoneHud(): fr.geoking.gaston.radar.DangerZoneHudState {
+        return try {
+            org.koin.core.context.GlobalContext.getOrNull()
+                ?.get<fr.geoking.gaston.radar.DangerZoneHudStore>()
+                ?.hudState
+                ?.value
+                ?: fr.geoking.gaston.radar.DangerZoneHudState()
+        } catch (_: Exception) {
+            fr.geoking.gaston.radar.DangerZoneHudState()
+        }
+    }
+
+    /**
+     * AAC-compatible on-map presence chip: "Zone de danger" + EU VMA disk.
+     * Drawn on the app map surface (MapWithContent) — allowed for POI apps;
+     * not [androidx.car.app.AppManager.showAlert].
+     */
+    fun drawDangerZonePresenceBadge(
+        canvas: Canvas,
+        context: Context,
+        area: Rect,
+        density: Float,
+        speedLimitKmH: Int?,
+        isMenuOnRight: Boolean,
+    ) {
+        val zoneLabel = context.getString(fr.geoking.gaston.R.string.aac_hud_zone_entry)
+        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 13f * density
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
+        val vmaPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(230, 255, 255, 255)
+            textSize = 11f * density
+        }
+        val vmaText = if (speedLimitKmH != null && speedLimitKmH > 0) {
+            context.getString(fr.geoking.gaston.R.string.aac_hud_vma, speedLimitKmH)
+        } else {
+            null
+        }
+
+        val diskRadius = 22f * density
+        val pad = 10f * density
+        val labelWidth = labelPaint.measureText(zoneLabel)
+        val vmaWidth = vmaText?.let { vmaPaint.measureText(it) } ?: 0f
+        val textBlockWidth = maxOf(labelWidth, vmaWidth)
+        val textBlockHeight = if (vmaText != null) 32f * density else 16f * density
+        val showDisk = speedLimitKmH != null && speedLimitKmH > 0
+        val contentWidth = textBlockWidth + (if (showDisk) pad + diskRadius * 2f else 0f)
+        val contentHeight = maxOf(textBlockHeight, if (showDisk) diskRadius * 2f else 0f)
+        val blockWidth = contentWidth + pad * 2
+        val blockHeight = contentHeight + pad * 2
+
+        val margin = 12f * density
+        // Top-end of the map content area, opposite the list when possible.
+        val left = if (isMenuOnRight) {
+            area.left + margin
+        } else {
+            area.right - margin - blockWidth
+        }
+        val top = area.top + margin
+
+        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(220, 120, 20, 20)
+            style = Paint.Style.FILL
+        }
+        canvas.drawRoundRect(
+            left,
+            top,
+            left + blockWidth,
+            top + blockHeight,
+            10f * density,
+            10f * density,
+            bgPaint,
+        )
+
+        var textX = left + pad
+        val textTop = top + pad
+        canvas.drawText(zoneLabel, textX, textTop + 13f * density, labelPaint)
+        if (vmaText != null) {
+            canvas.drawText(vmaText, textX, textTop + 28f * density, vmaPaint)
+        }
+
+        if (showDisk && speedLimitKmH != null) {
+            val cx = left + blockWidth - pad - diskRadius
+            val cy = top + blockHeight / 2f
+            drawEuSpeedLimitDisk(canvas, cx, cy, diskRadius, speedLimitKmH, density)
+        }
+    }
+
+    /** EU B14-style speed limit disk for canvas (AA map surface). */
+    fun drawEuSpeedLimitDisk(
+        canvas: Canvas,
+        cx: Float,
+        cy: Float,
+        radius: Float,
+        speedLimitKmH: Int,
+        density: Float,
+    ) {
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = Paint.Style.FILL
+        }
+        val rim = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#E30613")
+            style = Paint.Style.STROKE
+            strokeWidth = radius * 0.22f
+        }
+        canvas.drawCircle(cx, cy, radius, fill)
+        canvas.drawCircle(cx, cy, radius - rim.strokeWidth / 2f, rim)
+
+        val number = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textAlign = Paint.Align.CENTER
+            textSize = radius * 0.95f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+        }
+        val text = speedLimitKmH.toString()
+        val bounds = Rect()
+        number.getTextBounds(text, 0, text.length, bounds)
+        canvas.drawText(text, cx, cy - bounds.exactCenterY(), number)
     }
 
     /** Extra diagnostic lines under the zoom debug chip (MapLibre AA / tile debug). */

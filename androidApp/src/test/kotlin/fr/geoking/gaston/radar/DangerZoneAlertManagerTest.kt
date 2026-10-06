@@ -100,6 +100,47 @@ class DangerZoneAlertManagerTest {
     }
 
     @Test
+    fun phoneSurfaceDoesNotPostHunOnZoneEntry() {
+        // Phone wiring: notificationHelper = null → HUD + audio only.
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "z-phone",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            speedLimitKmH = 50,
+            source = "test",
+            roadClassOverride = RoadNetworkClass.Urban,
+        )
+        // Inside urban zone (~200 m) but outside near-radar (100 m) → entry audio only.
+        val loc = Location("test").apply {
+            latitude = 48.8566 + 0.0018
+            longitude = 2.3522
+            time = System.currentTimeMillis()
+        }
+        alertManager.evaluateAndAlert(loc, listOf(zone))
+        assertTrue(alertManager.hudState.value.active)
+        kotlin.test.assertEquals(50, alertManager.hudState.value.speedLimitKmH)
+        assertTrue(audioNotifier.spokenPhrases.isNotEmpty())
+        kotlin.test.assertEquals(1, audioNotifier.okBeepsCount)
+    }
+
+    @Test
+    fun triggerTestAlertPlaysAudioAndShowsHudWithoutHunOnPhone() {
+        val context = RuntimeEnvironment.getApplication()
+        val mockNotification = MockNotificationHelper(context)
+        val phoneManager = DangerZoneAlertManager(settingsManager, audioNotifier, notificationHelper = null)
+        phoneManager.triggerTestAlert(100)
+        assertTrue(phoneManager.hudState.value.active)
+        kotlin.test.assertEquals(100, phoneManager.hudState.value.speedLimitKmH)
+        kotlin.test.assertEquals(1, audioNotifier.okBeepsCount)
+        assertTrue(audioNotifier.spokenPhrases.isNotEmpty())
+
+        val aaManager = DangerZoneAlertManager(settingsManager, audioNotifier, mockNotification)
+        aaManager.triggerTestAlert(100)
+        kotlin.test.assertEquals(1, mockNotification.entryNotificationCount)
+        kotlin.test.assertEquals(100, mockNotification.lastEntrySpeedLimit)
+    }
+
+    @Test
     fun triggersNearRadarNotificationWithin100m() {
         val context = RuntimeEnvironment.getApplication()
         val mockNotification = MockNotificationHelper(context)

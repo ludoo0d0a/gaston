@@ -52,6 +52,7 @@ class CarAppSession : Session(), KoinComponent {
     private val inAppUpdateHelper: fr.geoking.gaston.update.InAppUpdateHelper by inject()
     private val notificationHelper: fr.geoking.gaston.feature.notification.NotificationHelper by inject()
     private val parkSuggester: AaPostSessionParkSuggester by inject()
+    private val dangerZoneHudStore: fr.geoking.gaston.radar.DangerZoneHudStore by inject()
 
     private var cachedMapDeps: MapDeps? = null
     private var dangerZoneAlertJob: Job? = null
@@ -118,7 +119,12 @@ class CarAppSession : Session(), KoinComponent {
                 dangerZoneAudioNotifier = it
             }
         val manager = dangerZoneAlertManager
-            ?: DangerZoneAlertManager(settingsManager, audio, notificationHelper).also {
+            ?: DangerZoneAlertManager(
+                settingsManager = settingsManager,
+                audioNotifier = audio,
+                notificationHelper = notificationHelper,
+                hudStore = dangerZoneHudStore,
+            ).also {
                 dangerZoneAlertManager = it
             }
 

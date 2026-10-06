@@ -2862,9 +2862,10 @@ private fun DeveloperSection(
                     label = stringResource(R.string.dev_test_danger_zone_notification),
                     value = stringResource(R.string.dev_test_danger_zone_notification_subtitle),
                     onClick = {
+                        // Phone: beep + TTS + HUD (MainActivity collects DangerZoneAlertTester).
                         org.koin.core.context.GlobalContext.get()
-                            .get<fr.geoking.gaston.feature.notification.NotificationHelper>()
-                            .showNearRadarNotification(100)
+                            .get<fr.geoking.gaston.radar.DangerZoneAlertTester>()
+                            .trigger()
                     }
                 )
                 SettingsItem(

@@ -908,9 +908,10 @@
     <string name="dev_network_floating_bar">network floating bar</string>
     <string name="dev_debug_grid">debug grid in map</string>
     <string name="dev_test_aa_map_surface">test AA map surface</string>
-    <string name="dev_test_danger_zone_notification">Test danger zone notification</string>
-    <string name="dev_test_danger_zone_notification_subtitle">Posts AA HUN « Radar proche 100 km/h »</string>
-    <string name="dev_test_radar_notification_sent">Radar HUN posted</string>
+    <string name="dev_test_danger_zone_notification">Test danger zone alert</string>
+    <string name="dev_test_danger_zone_notification_subtitle">Beep + TTS + HUD (phone)</string>
+    <string name="dev_test_danger_zone_notification_subtitle_aa">Beep + TTS + HUN (Android Auto)</string>
+    <string name="dev_test_radar_notification_sent">Danger zone test alert sent</string>
     <string name="dev_test_radar_notification_permission">Notification permission required on phone</string>
 
     <!-- Station Details / Amenities -->

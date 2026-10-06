@@ -7,24 +7,27 @@ import fr.geoking.gaston.aac.DangerZoneEvaluator
 import fr.geoking.gaston.aac.RoadSafetyMessages
 import fr.geoking.gaston.feature.notification.NotificationHelper
 import fr.geoking.gaston.shared.location.haversineKm
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * AAC alert engine: evaluates local [DangerZone]s (no map POI search / network each tick).
  *
- * On zone entry and near control pin (≤ [NEAR_RADAR_METERS]): HUN + beep + TTS
- * (via [NotificationHelper] / [RadarAudioNotifier]).
+ * Always: beep + TTS.
+ * Presence indicator ([hudStore] / [hudState]): zone de danger + VMA (phone Compose + AA map badge).
+ * Heads-up: only when [notificationHelper] is set (Android Auto).
+ *
+ * On zone entry and near control pin (≤ [NEAR_RADAR_METERS]): audio (+ HUN when helper set).
  */
 class DangerZoneAlertManager(
     private val settingsManager: SettingsManager,
     private val audioNotifier: RadarAudioNotifier,
     private val notificationHelper: NotificationHelper? = null,
+    private val hudStore: DangerZoneHudStore = DangerZoneHudStore(),
 ) {
     companion object {
-        /** Distance to zone center at which the "near radar" HUN fires. */
+        /** Distance to zone center at which the "near radar" HUN fires (AA). */
         const val NEAR_RADAR_METERS = 100.0
+        const val TEST_ALERT_SPEED_LIMIT_KMH = 100
     }
 
     private val alertedZoneIds = mutableSetOf<String>()
@@ -32,8 +35,7 @@ class DangerZoneAlertManager(
     private var lastLocation: Location? = null
     private var safetyTipSpokenAtMs: Long = 0L
 
-    private val _hudState = MutableStateFlow(DangerZoneHudState())
-    val hudState: StateFlow<DangerZoneHudState> = _hudState.asStateFlow()
+    val hudState: StateFlow<DangerZoneHudState> = hudStore.hudState
 
     fun evaluateAndAlert(location: Location, zones: List<DangerZone>) {
         val settings = settingsManager.settings.value
@@ -41,7 +43,7 @@ class DangerZoneAlertManager(
             alertedZoneIds.clear()
             nearAlertedZoneIds.clear()
             lastLocation = location
-            _hudState.value = DangerZoneHudState()
+            hudStore.clear()
             return
         }
 
@@ -115,11 +117,32 @@ class DangerZoneAlertManager(
             }
         }
 
-        _hudState.value = DangerZoneHudState(
-            active = anyActive,
-            speedLimitKmH = activeHudLimit,
+        hudStore.set(
+            DangerZoneHudState(
+                active = anyActive,
+                speedLimitKmH = activeHudLimit,
+            ),
         )
         lastLocation = location
+    }
+
+    /**
+     * Dev test: beep + TTS + presence HUD; HUN only when [notificationHelper] is set (AA).
+     */
+    fun triggerTestAlert(speedLimitKmH: Int? = TEST_ALERT_SPEED_LIMIT_KMH) {
+        playAlertAudio(isOverspeed = false, speedLimitKmH = speedLimitKmH)
+        hudStore.set(
+            DangerZoneHudState(
+                active = true,
+                speedLimitKmH = speedLimitKmH,
+            ),
+        )
+        notificationHelper?.showDangerZoneNotification(speedLimitKmH)
+    }
+
+    /** Clears HUD only (used after a phone test alert when the GPS loop is idle). */
+    fun dismissHud() {
+        hudStore.clear()
     }
 
     private fun playAlertAudio(isOverspeed: Boolean, speedLimitKmH: Int?) {
@@ -144,7 +167,7 @@ class DangerZoneAlertManager(
         alertedZoneIds.clear()
         nearAlertedZoneIds.clear()
         lastLocation = null
-        _hudState.value = DangerZoneHudState()
+        hudStore.clear()
     }
 
     fun getAlertedZoneIds(): Set<String> = alertedZoneIds.toSet()
