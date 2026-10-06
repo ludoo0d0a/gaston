@@ -66,8 +66,9 @@ configure<ApplicationExtension> {
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
 
-        val debugDev = (project.findProperty("debug_dev") ?: System.getenv("DEBUG_DEV") ?: System.getenv("debug_dev") ?: "false").toString().toBoolean()
-        buildConfigField("boolean", "DEBUG_DEV", "$debugDev")
+        // Developer UI: on for debug builds; off for release / Play Store by default.
+        // Debug can still opt via gradle.properties / local.properties / env DEBUG_DEV.
+        buildConfigField("boolean", "DEBUG_DEV", "false")
 
         // Optional: GitHub PAT for in-app GitHub features (user can also configure at runtime).
         val githubToken = sanitizeBuildConfigString(prop("GITHUB_TOKEN"))
@@ -190,11 +191,27 @@ configure<ApplicationExtension> {
             isShrinkResources = false
             // Android Auto: home lists every screen for DHU / car testing; release uses a shorter hub.
             buildConfigField("boolean", "AUTO_DASHBOARD_DEV_MODE", "true")
+            // local.properties / gradle.properties / CI: DEBUG_DEV=true (optional).
+            val localDebugDev = rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
+                Properties().apply { file.inputStream().use { load(it) } }
+            }?.let { it.getProperty("DEBUG_DEV") ?: it.getProperty("debug_dev") }
+            val debugDev = (
+                localDebugDev
+                    ?: project.findProperty("debug_dev")
+                    ?: project.findProperty("DEBUG_DEV")
+                    ?: System.getenv("DEBUG_DEV")
+                    ?: System.getenv("debug_dev")
+                    ?: "false"
+            ).toString().toBoolean()
+            buildConfigField("boolean", "DEBUG_DEV", "$debugDev")
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             buildConfigField("boolean", "AUTO_DASHBOARD_DEV_MODE", "false")
+            // Play Store AABs must not ship developer UI. Do not read DEBUG_DEV from
+            // gradle.properties / local.properties here — debug_dev=true would otherwise bake into release.
+            buildConfigField("boolean", "DEBUG_DEV", "false")
             if (keystorePath != null) {
                 signingConfig = signingConfigs.getByName("release")
             }

@@ -50,6 +50,7 @@ env:
   FUELPRICES_DK_KEY: ${{ secrets.FUELPRICES_DK_KEY }}
   NSW_FUELCHECK_KEY: ${{ secrets.NSW_FUELCHECK_KEY }}
   NSW_FUELCHECK_SECRET: ${{ secrets.NSW_FUELCHECK_SECRET }}
+  # DEBUG_DEV intentionally unset: release / Play Store builds keep developer UI off.
 
 jobs:
   release:
