@@ -107,11 +107,16 @@ fun invalidateRegionCoverageOnProviderSetChange(
 }
 
 fun resolveCategoriesToFetch(settings: AppSettings, extraCategories: Set<PoiCategory> = emptySet()): Set<PoiCategory> {
-    val categories = settings.cacheWarmAmenityTypes
-        .mapNotNull { categoryFromAmenityId(it) }
-        .toMutableSet()
+    val categories = mutableSetOf<PoiCategory>()
 
-    // Energy categories follow the selector (fuel / electric / hybrid / other).
+    // Warm previously loaded amenities only when browsing stations (fuel/EV). In Other mode
+    // the Overpass query must stay limited to the selected amenity — otherwise parking/toilets
+    // crowd the result limit and hide speed cameras (and chantier pins from Lufop look sparse).
+    if (!settings.isOtherModeActive()) {
+        categories += settings.cacheWarmAmenityTypes.mapNotNull { categoryFromAmenityId(it) }
+    }
+
+    // Energy / selected amenities follow the selector (fuel / electric / hybrid / other).
     categories += settings.effectiveAllowedCategories()
     categories += extraCategories
     return categories
@@ -151,6 +156,7 @@ fun computePoiCoverage(
         allProviders = providers,
         loadedProviders = covering.loadedProviders,
         missingCategories = missingCategories,
+        categoriesToFetch = categoriesToFetch,
     )
     return PoiCoverageResult(
         coveringRegion = covering,
@@ -160,21 +166,44 @@ fun computePoiCoverage(
 }
 
 /**
- * Providers that still need a network call. When every requested category is fresh in the
- * covering region (e.g. radars loaded via Overpass only), do not refetch sibling radar APIs
- * (Lufop, LU) just because they are absent from [loadedProviders].
+ * Primary radar APIs that carry types Overpass does not (e.g. Lufop chantier / travaux).
+ * Overpass `highway=speed_camera` alone must not mark Radar coverage complete while these
+ * are still selected but never successfully loaded.
+ */
+val PRIMARY_RADAR_POI_PROVIDERS: Set<PoiProviderType> = setOf(
+    PoiProviderType.LufopOpenSpeedCam,
+    PoiProviderType.LuxembourgRadars,
+    PoiProviderType.FranceRadars,
+)
+
+/**
+ * Providers that still need a network call.
+ *
+ * When Radar is requested, any selected primary radar API that has never loaded must still
+ * be fetched — even if Overpass already populated [PoiCategory.Radar] (OSM fixed cameras).
+ * Otherwise temporary / travaux radars (Lufop type 154, often without VMA) stay missing.
  */
 fun missingProvidersForCoverage(
     allProviders: Set<PoiProviderType>,
     loadedProviders: Set<PoiProviderType>,
     missingCategories: Set<PoiCategory>,
+    categoriesToFetch: Set<PoiCategory> = missingCategories,
 ): Set<PoiProviderType> {
-    if (missingCategories.isEmpty()) return emptySet()
-    return providersForIncrementalFetch(
-        allProviders = allProviders,
-        missingProviders = allProviders - loadedProviders,
-        missingCategories = missingCategories,
-    )
+    val incremental = if (missingCategories.isEmpty()) {
+        emptySet()
+    } else {
+        providersForIncrementalFetch(
+            allProviders = allProviders,
+            missingProviders = allProviders - loadedProviders,
+            missingCategories = missingCategories,
+        )
+    }
+    val pendingPrimaryRadar = if (PoiCategory.Radar in categoriesToFetch) {
+        (allProviders.intersect(PRIMARY_RADAR_POI_PROVIDERS)) - loadedProviders
+    } else {
+        emptySet()
+    }
+    return incremental + pendingPrimaryRadar
 }
 
 fun hasCategoryPinsInRadius(

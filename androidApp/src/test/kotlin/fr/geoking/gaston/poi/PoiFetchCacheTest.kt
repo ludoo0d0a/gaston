@@ -68,7 +68,22 @@ class PoiFetchCacheTest {
     }
 
     @Test
-    fun computePoiCoverage_radarFreshDoesNotRefetchMissingLufopWhenOverpassLoaded() {
+    fun resolveCategoriesToFetch_otherModeIgnoresWarmAmenities() {
+        val settings = AppSettings(
+            poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+            selectedPoiProviders = setOf(
+                PoiProviderType.LufopOpenSpeedCam,
+                PoiProviderType.Overpass,
+            ),
+            selectedOverpassAmenityTypes = setOf("speed_camera"),
+            cacheWarmAmenityTypes = setOf("parking", "toilets", "speed_camera"),
+        )
+        val categories = resolveCategoriesToFetch(settings)
+        assertEquals(setOf(PoiCategory.Radar), categories)
+    }
+
+    @Test
+    fun computePoiCoverage_radarFreshStillFetchesMissingLufopWhenNeverLoaded() {
         val nowMs = System.currentTimeMillis()
         val region = LoadedPoiRegion(
             centerLat = 48.85,
@@ -92,9 +107,44 @@ class PoiFetchCacheTest {
             categoriesToFetch = setOf(PoiCategory.Radar),
             nowMs = nowMs,
         )
+        assertFalse(coverage.fullyCovered)
+        assertTrue(coverage.missingCategories.isEmpty())
+        assertTrue(PoiProviderType.LufopOpenSpeedCam in coverage.missingProviders)
+        assertTrue(PoiProviderType.LuxembourgRadars in coverage.missingProviders)
+        assertFalse(PoiProviderType.Overpass in coverage.missingProviders)
+    }
+
+    @Test
+    fun computePoiCoverage_radarFullyCoveredWhenPrimaryRadarApisLoaded() {
+        val nowMs = System.currentTimeMillis()
+        val region = LoadedPoiRegion(
+            centerLat = 48.85,
+            centerLng = 2.35,
+            maxRadiusKmLoaded = 50,
+            loadedAtMs = nowMs,
+            loadedProviders = setOf(
+                PoiProviderType.LufopOpenSpeedCam,
+                PoiProviderType.LuxembourgRadars,
+                PoiProviderType.Overpass,
+            ),
+            loadedCategories = setOf(PoiCategory.Radar),
+            categoryLoadedAtMs = mapOf(PoiCategory.Radar to nowMs),
+        )
+        val coverage = computePoiCoverage(
+            regions = listOf(region),
+            centerLat = 48.86,
+            centerLng = 2.36,
+            requiredRadiusKm = 25,
+            providers = setOf(
+                PoiProviderType.LufopOpenSpeedCam,
+                PoiProviderType.LuxembourgRadars,
+                PoiProviderType.Overpass,
+            ),
+            categoriesToFetch = setOf(PoiCategory.Radar),
+            nowMs = nowMs,
+        )
         assertTrue(coverage.fullyCovered)
         assertTrue(coverage.missingProviders.isEmpty())
-        assertTrue(coverage.missingCategories.isEmpty())
     }
 
     @Test

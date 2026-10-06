@@ -91,8 +91,10 @@ Changing the **provider set** (including energy-driven drops) rebuilds `buildPoi
 `resolveCategoriesToFetch(settings, request.categories)`:
 
 - energy / amenities from `effectiveAllowedCategories()` (selector, “Other” mode, vehicle type)
-- plus **`cacheWarmAmenityTypes`**: amenities the user already loaded in “Other” mode, so parking (etc.) stays in the cache when switching back to fuel/EV
+- plus **`cacheWarmAmenityTypes`** when **not** in Other mode: amenities the user already loaded in “Other” mode, so parking (etc.) stays in the cache when switching back to fuel/EV. In Other mode only the **selected** amenity is fetched (e.g. radar alone — no parking/toilets mixed into Overpass)
 - plus any extra categories on the `PoiSearchRequest`
+
+When Radar is requested, primary APIs (Lufop / Luxembourg / FranceRadars) that are in the provider set but never successfully loaded are still fetched even if Overpass already marked Radar fresh — temporary / travaux radars live on Lufop, not OSM.
 
 Radius is derived from the map viewport, clamped to **1–50 km** (default 10 km without a viewport).
 
