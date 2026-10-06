@@ -41,7 +41,7 @@ object AutoMapQueryLoader {
         val area = visibleArea?.takeIf { it.width() > 0 && it.height() > 0 }
             ?: Rect(0, 0, surfaceWidth.coerceAtLeast(1), surfaceHeight.coerceAtLeast(1))
 
-        // Above mapActionStrip zoom buttons (+ / −), hugging the map edge (former compass slot).
+        // Above mapActionStrip zoom (+ / −): flip with menu, X on the screen-edge zoom column.
         val isMenuOnRight = (surfaceWidth - area.right) > area.left + (20 * density)
         val slotRadius = 28f * density
         val bottomMargin = 16f * density
@@ -50,10 +50,11 @@ object AutoMapQueryLoader {
         val loaderRadius = 14f * density // 28dp diameter on screen
 
         val cy = area.bottom - bottomMargin - slotRadius - 2f * (slotRadius * 2f + buttonSpacing)
+        // Host zoom strip hugs the screen border (not the inset visibleArea edge).
         val cx = if (isMenuOnRight) {
-            area.left + edgeMargin + slotRadius
+            edgeMargin + slotRadius
         } else {
-            area.right - edgeMargin - slotRadius
+            surfaceWidth - edgeMargin - slotRadius
         }
 
         // Dynamic stroke scaling based on density

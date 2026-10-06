@@ -13,28 +13,28 @@ import org.robolectric.RobolectricTestRunner
 class AutoMapQueryLoaderTest {
 
     @Test
-    fun draw_doesNotThrow_withVisibleArea() {
+    fun draw_onScreenRight_whenMenuIsOnLeft() {
         val bitmap = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(Color.BLACK)
         AutoMapQueryLoader.draw(
             canvas = canvas,
             density = 1f,
+            // Map on right; visibleArea.right inset from screen (host chrome).
             visibleArea = Rect(40, 20, 360, 280),
             surfaceWidth = 400,
             surfaceHeight = 300,
             nowMs = 450L,
         )
-        // Menu on left: loader at former compass slot above zoom buttons — density=1f, edgeMargin=4
-        // cx = 360 - 4 - 28 = 328, cy = 280 - 16 - 28 - 2*(56+8) = 108
-        val sampleX = 328
+        // Screen-right zoom column: cx = 400 - 4 - 28 = 368, cy = 108
+        val sampleX = 368
         val sampleY = 108
         val pixel = bitmap.getPixel(sampleX, sampleY)
         assertTrue(pixel != Color.BLACK)
     }
 
     @Test
-    fun draw_positionsCorrectly_whenMenuIsOnRight() {
+    fun draw_onScreenLeft_whenMenuIsOnRight() {
         val bitmap = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawColor(Color.BLACK)
@@ -46,7 +46,7 @@ class AutoMapQueryLoaderTest {
             surfaceHeight = 300,
             nowMs = 450L,
         )
-        // Menu on right: loader at bottom-left slot: cx = 0 + 4 + 28 = 32, cy = 108
+        // Screen-left zoom column: cx = 4 + 28 = 32, cy = 108
         val sampleX = 32
         val sampleY = 108
         val pixel = bitmap.getPixel(sampleX, sampleY)
