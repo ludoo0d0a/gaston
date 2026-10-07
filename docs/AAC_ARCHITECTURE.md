@@ -14,11 +14,15 @@ data.gouv CSV (resolved URL) + StaticNonRadarDangerZones
  DangerZoneRepository.zonesNear(vehicle)   ← local cache around vehicle
         │
         ▼
+ DangerZoneAlertCoordinator (process-wide, like ConnectivityManager / border HUN)
+        │
+        ▼
  DangerZoneAlertManager (GPS loop ~2 s)
         │
         ├── DangerZoneEvaluator (in-zone + ahead bearing)
         ├── RadarAudioNotifier (TTS: zone de danger + VMA)
-        └── DangerZoneHudBanner (VMA + entrée zone)
+        ├── NotificationHelper (phone + AA HUN)
+        └── DangerZoneHudBanner / AA map presence badge
 ```
 
 ## Key modules
@@ -28,7 +32,7 @@ data.gouv CSV (resolved URL) + StaticNonRadarDangerZones
 | Domain | `shared/.../aac/DangerZone.kt` |
 | FR CSV | `FranceRadarsClient` + `FranceRadarsCsvResolver` |
 | Mix | `DangerZoneRepository` + `StaticNonRadarDangerZones` |
-| Alerts | `DangerZoneAlertManager` |
+| Alerts | `DangerZoneAlertCoordinator` → `DangerZoneAlertManager` + HUN |
 | Map pins FR | Disabled (`FranceRadarsProvider` empty; Overpass radar filtered in FR) |
 | Kill / Play | `BuildConfig.AAC_ALERTS_AVAILABLE` + settings default OFF |
 

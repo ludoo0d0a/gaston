@@ -384,10 +384,14 @@ data class LufopOpenSpeedCamRecord(
             put("aac_zone", "true")
             flash?.takeIf { it.isNotBlank() }?.let { put("flash", it) }
             if (bidirectional) {
+                // Keep both keys: DangerZoneTriangle / RadarOsmEnricher use direction_bidirectional.
                 put("bidirectional", "true")
-                put("direction", "both")
+                put(fr.geoking.gaston.aac.DangerZoneTriangle.RAW_BIDIRECTIONAL, "true")
+                put(fr.geoking.gaston.aac.DangerZoneTriangle.RAW_DIRECTION, "both")
             } else {
-                azimut?.let { put("monitored_bearing", it.toString()) }
+                azimut?.let {
+                    put(fr.geoking.gaston.aac.DangerZoneTriangle.RAW_MONITORED_BEARING, it.toString())
+                }
             }
         }
         return Poi(

@@ -141,6 +141,7 @@ class LufopOpenSpeedCamTest {
             azimut = 45.0,
         ).toPoi()
         assertEquals("true", poi.rawSourceData?.get("bidirectional"))
+        assertEquals("true", poi.rawSourceData?.get("direction_bidirectional"))
         assertEquals("both", poi.rawSourceData?.get("direction"))
         assertEquals(null, poi.rawSourceData?.get("monitored_bearing"))
     }

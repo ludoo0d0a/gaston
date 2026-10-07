@@ -33,7 +33,13 @@ object DangerZoneTriangle {
     fun monitoredBearingDegrees(poi: Poi): Double? {
         if (poi.poiCategory != PoiCategory.Radar) return null
         val raw = poi.rawSourceData ?: return null
-        if (raw[RAW_BIDIRECTIONAL]?.equals("true", ignoreCase = true) == true) return null
+        // Canonical key + Lufop legacy "bidirectional".
+        if (
+            raw[RAW_BIDIRECTIONAL]?.equals("true", ignoreCase = true) == true ||
+            raw["bidirectional"]?.equals("true", ignoreCase = true) == true
+        ) {
+            return null
+        }
         raw[RAW_MONITORED_BEARING]?.toDoubleOrNull()?.let {
             return OsmSpeedCameraDirection.normalizeBearing(it)
         }

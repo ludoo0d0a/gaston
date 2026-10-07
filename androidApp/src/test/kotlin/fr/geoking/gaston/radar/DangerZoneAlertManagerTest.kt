@@ -100,8 +100,11 @@ class DangerZoneAlertManagerTest {
     }
 
     @Test
-    fun phoneSurfaceDoesNotPostHunOnZoneEntry() {
-        // Phone wiring: notificationHelper = null → HUD + audio only.
+    fun processWidePathPostsHunAndAudioOnZoneEntry() {
+        // Coordinator wiring: notificationHelper set → HUN + beep + TTS + HUD (like border HUN).
+        val context = RuntimeEnvironment.getApplication()
+        val mockNotification = MockNotificationHelper(context)
+        val manager = DangerZoneAlertManager(settingsManager, audioNotifier, mockNotification)
         val zone = DangerZoneFactory.fromSpeedControlPoint(
             id = "z-phone",
             latitude = 48.8566,
@@ -110,32 +113,31 @@ class DangerZoneAlertManagerTest {
             source = "test",
             roadClassOverride = RoadNetworkClass.Urban,
         )
-        // Inside urban zone (~200 m) but outside near-radar (100 m) → entry audio only.
+        // Inside urban zone (~200 m) but outside near-radar (100 m) → entry HUN + audio.
         val loc = Location("test").apply {
             latitude = 48.8566 + 0.0018
             longitude = 2.3522
             time = System.currentTimeMillis()
         }
-        alertManager.evaluateAndAlert(loc, listOf(zone))
-        assertTrue(alertManager.hudState.value.active)
-        kotlin.test.assertEquals(50, alertManager.hudState.value.speedLimitKmH)
+        manager.evaluateAndAlert(loc, listOf(zone))
+        assertTrue(manager.hudState.value.active)
+        kotlin.test.assertEquals(50, manager.hudState.value.speedLimitKmH)
         assertTrue(audioNotifier.spokenPhrases.isNotEmpty())
         kotlin.test.assertEquals(1, audioNotifier.okBeepsCount)
+        kotlin.test.assertEquals(1, mockNotification.entryNotificationCount)
+        kotlin.test.assertEquals(50, mockNotification.lastEntrySpeedLimit)
     }
 
     @Test
-    fun triggerTestAlertPlaysAudioAndShowsHudWithoutHunOnPhone() {
+    fun triggerTestAlertPlaysAudioShowsHudAndHun() {
         val context = RuntimeEnvironment.getApplication()
         val mockNotification = MockNotificationHelper(context)
-        val phoneManager = DangerZoneAlertManager(settingsManager, audioNotifier, notificationHelper = null)
-        phoneManager.triggerTestAlert(100)
-        assertTrue(phoneManager.hudState.value.active)
-        kotlin.test.assertEquals(100, phoneManager.hudState.value.speedLimitKmH)
+        val manager = DangerZoneAlertManager(settingsManager, audioNotifier, mockNotification)
+        manager.triggerTestAlert(100)
+        assertTrue(manager.hudState.value.active)
+        kotlin.test.assertEquals(100, manager.hudState.value.speedLimitKmH)
         kotlin.test.assertEquals(1, audioNotifier.okBeepsCount)
         assertTrue(audioNotifier.spokenPhrases.isNotEmpty())
-
-        val aaManager = DangerZoneAlertManager(settingsManager, audioNotifier, mockNotification)
-        aaManager.triggerTestAlert(100)
         kotlin.test.assertEquals(1, mockNotification.entryNotificationCount)
         kotlin.test.assertEquals(100, mockNotification.lastEntrySpeedLimit)
     }

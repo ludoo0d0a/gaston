@@ -6,7 +6,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Phone-side request bus for the developer "test danger zone alert" action.
- * [MainActivity] collects and runs [DangerZoneAlertManager.triggerTestAlert] (beep + TTS + HUD).
+ * [DangerZoneAlertCoordinator] collects and runs [DangerZoneAlertManager.triggerTestAlert]
+ * (beep + TTS + HUN + HUD).
  */
 class DangerZoneAlertTester {
     data class Request(val speedLimitKmH: Int? = DangerZoneAlertManager.TEST_ALERT_SPEED_LIMIT_KMH)

@@ -25,10 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.isActive
-import fr.geoking.gaston.feature.location.LocationHelper
-import fr.geoking.gaston.radar.AndroidRadarAudioNotifier
-import fr.geoking.gaston.radar.DangerZoneAlertManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,6 +36,7 @@ import fr.geoking.gaston.shared.network.NetworkService
 import fr.geoking.gaston.shared.network.NetworkStatus
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.di.MapModuleLoader
+import fr.geoking.gaston.radar.DangerZoneAlertCoordinator
 import fr.geoking.gaston.ui.map.maplibre.DirectionsMapScreen
 import androidx.compose.ui.zIndex
 import fr.geoking.gaston.ui.map.GastonDebugLogOverlay
@@ -361,73 +358,11 @@ private fun MainActivityComposeRoot(
                 installStatus == InstallStatus.INSTALLING
     }
 
-    val audioNotifier = remember(context) { AndroidRadarAudioNotifier(context) }
-    val dangerZoneHudStore = remember {
-        org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.radar.DangerZoneHudStore>()
+    // Process-wide HUN + TTS loop (DangerZoneAlertCoordinator, same pattern as border HUN).
+    val dangerZoneCoordinator = remember {
+        org.koin.core.context.GlobalContext.get().get<DangerZoneAlertCoordinator>()
     }
-    // Phone surface: beep + TTS + HUD only (no HUN). AA posts HUN from CarAppSession.
-    val dangerZoneAlertManager = remember(context, settingsManager, audioNotifier, dangerZoneHudStore) {
-        DangerZoneAlertManager(
-            settingsManager = settingsManager,
-            audioNotifier = audioNotifier,
-            notificationHelper = null,
-            hudStore = dangerZoneHudStore,
-        )
-    }
-    val dangerZoneAlertTester = remember {
-        org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.radar.DangerZoneAlertTester>()
-    }
-
-    DisposableEffect(dangerZoneAlertManager, audioNotifier) {
-        onDispose {
-            dangerZoneAlertManager.clearAlerts()
-            audioNotifier.shutdown()
-        }
-    }
-
-    LaunchedEffect(dangerZoneAlertManager, dangerZoneAlertTester) {
-        dangerZoneAlertTester.requests.collect { request ->
-            dangerZoneAlertManager.triggerTestAlert(request.speedLimitKmH)
-            launch {
-                delay(8_000)
-                // Clear test HUD when the GPS alert loop is not keeping it alive.
-                if (!settingsManager.settings.value.radarWarningEnabled) {
-                    dangerZoneAlertManager.dismissHud()
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(hasLocationPermission, settings.radarWarningEnabled) {
-        if (hasLocationPermission &&
-            BuildConfig.AAC_ALERTS_AVAILABLE &&
-            !BuildConfig.AAC_ALERTS_KILL_SWITCH &&
-            settings.radarWarningEnabled
-        ) {
-            onRequestMapDeps()
-            while (isActive) {
-                val loc = LocationHelper.getCurrentLocation(context)
-                val zoneRepo = mapDepsState.value?.dangerZoneRepository
-                if (loc != null && zoneRepo != null) {
-                    try {
-                        // Local zone cache — CSV fetch only on TTL / area refresh, not every tick.
-                        val zones = zoneRepo.zonesNear(
-                            latitude = loc.latitude,
-                            longitude = loc.longitude,
-                            radiusKm = 100.0,
-                        )
-                        dangerZoneAlertManager.evaluateAndAlert(loc, zones)
-                    } catch (e: Exception) {
-                        if (e is kotlinx.coroutines.CancellationException) throw e
-                        android.util.Log.w("MainActivity", "Danger zone alert check error", e)
-                    }
-                }
-                delay(2000)
-            }
-        }
-    }
-
-    val hudState by dangerZoneAlertManager.hudState.collectAsState()
+    val hudState by dangerZoneCoordinator.hudState.collectAsState()
 
     androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
         MainUI(

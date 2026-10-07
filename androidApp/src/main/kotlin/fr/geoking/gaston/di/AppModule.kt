@@ -224,6 +224,17 @@ val appModule = module {
 
     single { fr.geoking.gaston.radar.DangerZoneHudStore() }
 
+    // Process-wide AAC alerts (HUN + TTS), same start pattern as ConnectivityManager / border HUN.
+    single(createdAtStart = true) {
+        fr.geoking.gaston.radar.DangerZoneAlertCoordinator(
+            context = androidContext(),
+            settingsManager = get(),
+            notificationHelper = get(),
+            hudStore = get(),
+            alertTester = get(),
+        )
+    }
+
     single { fr.geoking.gaston.parked.ParkCandidateStore(androidContext()) }
 
     single {

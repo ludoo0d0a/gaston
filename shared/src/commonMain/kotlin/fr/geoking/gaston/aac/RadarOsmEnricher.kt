@@ -36,7 +36,8 @@ class RadarOsmEnricher(
             val raw = poi.rawSourceData ?: return false
             return !raw[DangerZoneTriangle.RAW_DIRECTION].isNullOrBlank() ||
                 !raw[DangerZoneTriangle.RAW_MONITORED_BEARING].isNullOrBlank() ||
-                raw[DangerZoneTriangle.RAW_BIDIRECTIONAL]?.equals("true", ignoreCase = true) == true
+                raw[DangerZoneTriangle.RAW_BIDIRECTIONAL]?.equals("true", ignoreCase = true) == true ||
+                raw["bidirectional"]?.equals("true", ignoreCase = true) == true
         }
 
         fun applyDirectionToPoi(poi: Poi, info: OsmDirectionInfo): Poi {

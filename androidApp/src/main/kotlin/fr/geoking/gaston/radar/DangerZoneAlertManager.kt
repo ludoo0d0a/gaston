@@ -14,9 +14,10 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * Always: beep + TTS.
  * Presence indicator ([hudStore] / [hudState]): zone de danger + VMA (phone Compose + AA map badge).
- * Heads-up: only when [notificationHelper] is set (Android Auto).
+ * Heads-up: when [notificationHelper] is set (phone + AA via [NotificationHelper], same as border HUN).
  *
- * On zone entry and near control pin (≤ [NEAR_RADAR_METERS]): audio (+ HUN when helper set).
+ * Owned by [DangerZoneAlertCoordinator] (process-wide). On zone entry and near control pin
+ * (≤ [NEAR_RADAR_METERS]): audio + HUN.
  */
 class DangerZoneAlertManager(
     private val settingsManager: SettingsManager,
@@ -127,7 +128,7 @@ class DangerZoneAlertManager(
     }
 
     /**
-     * Dev test: beep + TTS + presence HUD; HUN only when [notificationHelper] is set (AA).
+     * Dev test: beep + TTS + presence HUD; HUN when [notificationHelper] is set.
      */
     fun triggerTestAlert(speedLimitKmH: Int? = TEST_ALERT_SPEED_LIMIT_KMH) {
         playAlertAudio(isOverspeed = false, speedLimitKmH = speedLimitKmH)

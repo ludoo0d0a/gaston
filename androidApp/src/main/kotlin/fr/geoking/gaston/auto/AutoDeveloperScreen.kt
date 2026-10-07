@@ -13,15 +13,13 @@ import androidx.car.app.model.Toggle
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.feature.notification.NotificationHelper
-import fr.geoking.gaston.radar.AndroidRadarAudioNotifier
-import fr.geoking.gaston.radar.DangerZoneAlertManager
-import fr.geoking.gaston.radar.DangerZoneHudStore
+import fr.geoking.gaston.radar.DangerZoneAlertCoordinator
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 /**
  * Android Auto developer options (visible when [fr.geoking.gaston.BuildConfig.DEBUG_DEV]).
- * Danger-zone test: beep + TTS + HUN (no HUD on car).
+ * Danger-zone test: beep + TTS + HUN via [DangerZoneAlertCoordinator].
  */
 class AutoDeveloperScreen(
     carContext: CarContext,
@@ -29,7 +27,7 @@ class AutoDeveloperScreen(
 ) : Screen(carContext), KoinComponent {
 
     private val notificationHelper: NotificationHelper by inject()
-    private val dangerZoneHudStore: DangerZoneHudStore by inject()
+    private val dangerZoneCoordinator: DangerZoneAlertCoordinator by inject()
 
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoDeveloperScreen", "ListTemplate") {
         val settings = settingsManager.settings.value
@@ -74,21 +72,8 @@ class AutoDeveloperScreen(
                             )
                         return@setOnClickListener
                     }
-                    // AA: beep + TTS + HUN + map presence badge (shared HUD store).
-                    val audio = AndroidRadarAudioNotifier(carContext.applicationContext)
-                    val manager = DangerZoneAlertManager(
-                        settingsManager = settingsManager,
-                        audioNotifier = audio,
-                        notificationHelper = notificationHelper,
-                        hudStore = dangerZoneHudStore,
-                    )
-                    manager.triggerTestAlert()
-                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                        audio.shutdown()
-                        if (!settingsManager.settings.value.radarWarningEnabled) {
-                            manager.dismissHud()
-                        }
-                    }, 4_000L)
+                    // Same process-wide path as live alerts: beep + TTS + HUN + HUD.
+                    dangerZoneCoordinator.triggerTestAlert()
                     carContext.getCarService(androidx.car.app.AppManager::class.java)
                         .showToast(
                             carContext.getString(R.string.dev_test_radar_notification_sent),
