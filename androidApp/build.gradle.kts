@@ -66,8 +66,7 @@ configure<ApplicationExtension> {
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
 
-        // Developer UI: on for debug builds; off for release / Play Store by default.
-        // Debug can still opt via gradle.properties / local.properties / env DEBUG_DEV.
+        // Developer UI: baseline off; `full` flavor may opt in via props/env; `playstore` stays false.
         buildConfigField("boolean", "DEBUG_DEV", "false")
 
         // Optional: GitHub PAT for in-app GitHub features (user can also configure at runtime).
@@ -149,6 +148,21 @@ configure<ApplicationExtension> {
         useLibrary("org.apache.http.legacy")
     }
 
+    // local.properties / gradle.properties / CI: DEBUG_DEV=true (optional). Used by `full` only.
+    val debugDevEnabled = run {
+        val localDebugDev = rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
+            Properties().apply { file.inputStream().use { load(it) } }
+        }?.let { it.getProperty("DEBUG_DEV") ?: it.getProperty("debug_dev") }
+        (
+            localDebugDev
+                ?: project.findProperty("debug_dev")
+                ?: project.findProperty("DEBUG_DEV")
+                ?: System.getenv("DEBUG_DEV")
+                ?: System.getenv("debug_dev")
+                ?: "false"
+        ).toString().toBoolean()
+    }
+
     flavorDimensions += "distribution"
     productFlavors {
         create("full") {
@@ -158,6 +172,8 @@ configure<ApplicationExtension> {
             // Internal builds may exercise AAC alerts (still off by default in settings).
             buildConfigField("boolean", "AAC_ALERTS_AVAILABLE", "true")
             buildConfigField("boolean", "AAC_ALERTS_KILL_SWITCH", "false")
+            // Developer UI on fullDebug and fullRelease when debug_dev / DEBUG_DEV is true.
+            buildConfigField("boolean", "DEBUG_DEV", "$debugDevEnabled")
         }
         create("playstore") {
             dimension = "distribution"
@@ -167,6 +183,8 @@ configure<ApplicationExtension> {
             buildConfigField("boolean", "AAC_ALERTS_AVAILABLE", "true")
             // Emergency kill: set true in a hotfix build to disable AAC alerts without removing the APK.
             buildConfigField("boolean", "AAC_ALERTS_KILL_SWITCH", "false")
+            // Play Store AABs must not ship developer UI — ignore local debug_dev flags.
+            buildConfigField("boolean", "DEBUG_DEV", "false")
         }
     }
 
@@ -191,27 +209,11 @@ configure<ApplicationExtension> {
             isShrinkResources = false
             // Android Auto: home lists every screen for DHU / car testing; release uses a shorter hub.
             buildConfigField("boolean", "AUTO_DASHBOARD_DEV_MODE", "true")
-            // local.properties / gradle.properties / CI: DEBUG_DEV=true (optional).
-            val localDebugDev = rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
-                Properties().apply { file.inputStream().use { load(it) } }
-            }?.let { it.getProperty("DEBUG_DEV") ?: it.getProperty("debug_dev") }
-            val debugDev = (
-                localDebugDev
-                    ?: project.findProperty("debug_dev")
-                    ?: project.findProperty("DEBUG_DEV")
-                    ?: System.getenv("DEBUG_DEV")
-                    ?: System.getenv("debug_dev")
-                    ?: "false"
-            ).toString().toBoolean()
-            buildConfigField("boolean", "DEBUG_DEV", "$debugDev")
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             buildConfigField("boolean", "AUTO_DASHBOARD_DEV_MODE", "false")
-            // Play Store AABs must not ship developer UI. Do not read DEBUG_DEV from
-            // gradle.properties / local.properties here — debug_dev=true would otherwise bake into release.
-            buildConfigField("boolean", "DEBUG_DEV", "false")
             if (keystorePath != null) {
                 signingConfig = signingConfigs.getByName("release")
             }
