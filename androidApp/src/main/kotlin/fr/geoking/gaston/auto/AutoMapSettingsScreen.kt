@@ -23,15 +23,7 @@ class AutoMapSettingsScreen(
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
 
-        val mapModeLabel = when (settings.carMapMode) {
-            fr.geoking.gaston.CarMapMode.Native -> carContext.getString(R.string.map_mode_google)
-            fr.geoking.gaston.CarMapMode.Custom -> carContext.getString(R.string.map_mode_custom)
-            fr.geoking.gaston.CarMapMode.MapLibre -> carContext.getString(R.string.map_mode_maplibre)
-            fr.geoking.gaston.CarMapMode.MapTiler -> carContext.getString(R.string.map_mode_maptiler)
-            fr.geoking.gaston.CarMapMode.Protomaps -> carContext.getString(R.string.map_mode_protomaps)
-            fr.geoking.gaston.CarMapMode.Mapbox -> carContext.getString(R.string.map_mode_mapbox)
-            fr.geoking.gaston.CarMapMode.MapLibrePresentation -> carContext.getString(R.string.map_mode_maplibre) + " (Pres)"
-        }
+        val mapModeLabel = settings.carMapMode.displayLabel(carContext)
 
         listBuilder.addItem(
             Row.Builder()

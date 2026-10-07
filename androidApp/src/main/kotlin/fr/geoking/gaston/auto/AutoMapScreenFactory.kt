@@ -5,6 +5,7 @@ import androidx.car.app.Screen
 import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.auto.mapsforge.MapsforgePoiScreen
 import fr.geoking.gaston.di.MapDeps
 
 /** Creates the Android Auto map [Screen] for the current [CarMapMode]. */
@@ -119,6 +120,37 @@ object AutoMapScreenFactory {
             favoritesRepo = mapDeps.favoritesRepo,
             title = title,
             canvasMapModeConfig = CanvasMapModeConfig.mapLibrePresentation(carContext),
+            mapDeps = mapDeps,
+        )
+        CarMapMode.MapLibreEgl -> MapLibrePoiScreen(
+            carContext = carContext,
+            poiProvider = mapDeps.poiProvider,
+            availabilityProviderFactory = mapDeps.availabilityProviderFactory,
+            settingsManager = settingsManager,
+            routePlanner = mapDeps.routePlanner,
+            routingClient = mapDeps.routingClient,
+            tollCalculator = mapDeps.tollCalculator,
+            trafficProviderFactory = mapDeps.trafficProviderFactory,
+            geocodingClient = mapDeps.geocodingClient,
+            communityRepo = mapDeps.communityRepo,
+            favoritesRepo = mapDeps.favoritesRepo,
+            title = title,
+            canvasMapModeConfig = CanvasMapModeConfig.mapLibreEgl(carContext),
+            mapDeps = mapDeps,
+        )
+        CarMapMode.Mapsforge -> MapsforgePoiScreen(
+            carContext = carContext,
+            poiProvider = mapDeps.poiProvider,
+            availabilityProviderFactory = mapDeps.availabilityProviderFactory,
+            settingsManager = settingsManager,
+            routePlanner = mapDeps.routePlanner,
+            routingClient = mapDeps.routingClient,
+            tollCalculator = mapDeps.tollCalculator,
+            trafficProviderFactory = mapDeps.trafficProviderFactory,
+            geocodingClient = mapDeps.geocodingClient,
+            communityRepo = mapDeps.communityRepo,
+            favoritesRepo = mapDeps.favoritesRepo,
+            title = title,
             mapDeps = mapDeps,
         )
     }

@@ -37,8 +37,11 @@ import org.maplibre.android.snapshotter.MapSnapshot
 import org.maplibre.android.snapshotter.MapSnapshotter
 import java.util.Collections
 import kotlin.math.PI
+import kotlin.math.atan
 import kotlin.math.cos
 import kotlin.math.ln
+import kotlin.math.sinh
+import kotlin.math.sin
 import kotlin.math.tan
 
 /**
@@ -334,7 +337,21 @@ class CarMapLibreRenderer(
     }
 
     fun scrollBy(distanceX: Float, distanceY: Float) {
-        drawOnSurface()
+        // Finger drag: move map under the finger (invert deltas). Account for heading-up rotation.
+        val bearingRad = Math.toRadians(
+            AutoMapHeading.effectiveBearing(orientationMode, headingDegrees).toDouble(),
+        )
+        val cosB = cos(bearingRad)
+        val sinB = sin(bearingRad)
+        val worldDx = (-distanceX * cosB - distanceY * sinB)
+        val worldDy = (distanceX * sinB - distanceY * cosB)
+        val tileDeltaX = worldDx / AutoSurfaceRenderer.TILE_SIZE
+        val tileDeltaY = worldDy / AutoSurfaceRenderer.TILE_SIZE
+        val centerTileX = lonToTileX(centerLon, zoom) + tileDeltaX
+        val centerTileY = latToTileY(centerLat, zoom) + tileDeltaY
+        centerLon = tileXToLon(centerTileX, zoom)
+        centerLat = tileYToLat(centerTileY, zoom).coerceIn(-85.0511, 85.0511)
+        scheduleVectorSnapshot()
     }
 
     private fun scheduleVectorSnapshot(delayMs: Long = 50L) {
@@ -764,6 +781,14 @@ class CarMapLibreRenderer(
     private fun latToTileY(lat: Double, zoom: Int): Double {
         val latRad = Math.toRadians(lat)
         return (1.0 - ln(tan(latRad) + 1.0 / cos(latRad)) / PI) / 2.0 * (1 shl zoom)
+    }
+
+    private fun tileXToLon(tileX: Double, zoom: Int): Double =
+        tileX / (1 shl zoom) * 360.0 - 180.0
+
+    private fun tileYToLat(tileY: Double, zoom: Int): Double {
+        val n = PI - 2.0 * PI * tileY / (1 shl zoom)
+        return Math.toDegrees(atan(sinh(n)))
     }
 
     companion object {

@@ -12,12 +12,15 @@ import androidx.car.app.SurfaceContainer
 /**
  * Native EGL Surface Manager for Android Auto.
  * Provides helper functions for EGL context initialization when driving GPU surface rendering directly.
+ *
+ * Fields are nullable because Robolectric stubs [EGL14.EGL_NO_DISPLAY] / [EGL14.EGL_NO_CONTEXT] /
+ * [EGL14.EGL_NO_SURFACE] as null — assigning those constants into non-null fields NPEs in unit tests.
  */
 class CarEglSurfaceRenderer {
 
-    private var eglDisplay: EGLDisplay = EGL14.EGL_NO_DISPLAY
-    private var eglContext: EGLContext = EGL14.EGL_NO_CONTEXT
-    private var eglSurface: EGLSurface = EGL14.EGL_NO_SURFACE
+    private var eglDisplay: EGLDisplay? = null
+    private var eglContext: EGLContext? = null
+    private var eglSurface: EGLSurface? = null
     private var eglConfig: EGLConfig? = null
 
     @Volatile
@@ -34,14 +37,15 @@ class CarEglSurfaceRenderer {
         try {
             detachSurface()
 
-            eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
-            if (eglDisplay == EGL14.EGL_NO_DISPLAY) {
+            val display = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
+            if (display == null || display == EGL14.EGL_NO_DISPLAY) {
                 Log.e(TAG, "eglGetDisplay failed")
                 return false
             }
+            eglDisplay = display
 
             val version = IntArray(2)
-            if (!EGL14.eglInitialize(eglDisplay, version, 0, version, 1)) {
+            if (!EGL14.eglInitialize(display, version, 0, version, 1)) {
                 Log.e(TAG, "eglInitialize failed")
                 return false
             }
@@ -58,7 +62,7 @@ class CarEglSurfaceRenderer {
 
             val configs = arrayOfNulls<EGLConfig>(1)
             val numConfigs = IntArray(1)
-            if (!EGL14.eglChooseConfig(eglDisplay, configAttribs, 0, configs, 0, 1, numConfigs, 0) || numConfigs[0] <= 0) {
+            if (!EGL14.eglChooseConfig(display, configAttribs, 0, configs, 0, 1, numConfigs, 0) || numConfigs[0] <= 0) {
                 Log.e(TAG, "eglChooseConfig failed")
                 return false
             }
@@ -69,20 +73,22 @@ class CarEglSurfaceRenderer {
                 EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
                 EGL14.EGL_NONE
             )
-            eglContext = EGL14.eglCreateContext(eglDisplay, chosenConfig, EGL14.EGL_NO_CONTEXT, contextAttribs, 0)
-            if (eglContext == EGL14.EGL_NO_CONTEXT) {
+            val context = EGL14.eglCreateContext(display, chosenConfig, EGL14.EGL_NO_CONTEXT, contextAttribs, 0)
+            if (context == null || context == EGL14.EGL_NO_CONTEXT) {
                 Log.e(TAG, "eglCreateContext failed")
                 return false
             }
+            eglContext = context
 
             val surfaceAttribs = intArrayOf(EGL14.EGL_NONE)
-            eglSurface = EGL14.eglCreateWindowSurface(eglDisplay, chosenConfig, surface, surfaceAttribs, 0)
-            if (eglSurface == EGL14.EGL_NO_SURFACE) {
+            val winSurface = EGL14.eglCreateWindowSurface(display, chosenConfig, surface, surfaceAttribs, 0)
+            if (winSurface == null || winSurface == EGL14.EGL_NO_SURFACE) {
                 Log.e(TAG, "eglCreateWindowSurface failed")
                 return false
             }
+            eglSurface = winSurface
 
-            if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
+            if (!EGL14.eglMakeCurrent(display, winSurface, winSurface, context)) {
                 Log.e(TAG, "eglMakeCurrent failed")
                 return false
             }
@@ -99,33 +105,43 @@ class CarEglSurfaceRenderer {
     }
 
     fun makeCurrent(): Boolean {
-        if (!isInitialized || eglDisplay == EGL14.EGL_NO_DISPLAY || eglSurface == EGL14.EGL_NO_SURFACE) {
-            return false
-        }
-        return EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)
+        val display = eglDisplay ?: return false
+        val surface = eglSurface ?: return false
+        val context = eglContext ?: return false
+        if (!isInitialized) return false
+        return EGL14.eglMakeCurrent(display, surface, surface, context)
     }
 
     fun swapBuffers(): Boolean {
-        if (!isInitialized || eglDisplay == EGL14.EGL_NO_DISPLAY || eglSurface == EGL14.EGL_NO_SURFACE) {
-            return false
-        }
-        return EGL14.eglSwapBuffers(eglDisplay, eglSurface)
+        val display = eglDisplay ?: return false
+        val surface = eglSurface ?: return false
+        if (!isInitialized) return false
+        return EGL14.eglSwapBuffers(display, surface)
     }
 
     fun detachSurface() {
-        if (eglDisplay != EGL14.EGL_NO_DISPLAY) {
-            EGL14.eglMakeCurrent(eglDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT)
-            if (eglSurface != EGL14.EGL_NO_SURFACE) {
-                EGL14.eglDestroySurface(eglDisplay, eglSurface)
-                eglSurface = EGL14.EGL_NO_SURFACE
+        val display = eglDisplay
+        if (display != null && display != EGL14.EGL_NO_DISPLAY) {
+            EGL14.eglMakeCurrent(
+                display,
+                EGL14.EGL_NO_SURFACE,
+                EGL14.EGL_NO_SURFACE,
+                EGL14.EGL_NO_CONTEXT,
+            )
+            val surface = eglSurface
+            if (surface != null && surface != EGL14.EGL_NO_SURFACE) {
+                EGL14.eglDestroySurface(display, surface)
             }
-            if (eglContext != EGL14.EGL_NO_CONTEXT) {
-                EGL14.eglDestroyContext(eglDisplay, eglContext)
-                eglContext = EGL14.EGL_NO_CONTEXT
+            val context = eglContext
+            if (context != null && context != EGL14.EGL_NO_CONTEXT) {
+                EGL14.eglDestroyContext(display, context)
             }
-            EGL14.eglTerminate(eglDisplay)
-            eglDisplay = EGL14.EGL_NO_DISPLAY
+            EGL14.eglTerminate(display)
         }
+        eglSurface = null
+        eglContext = null
+        eglDisplay = null
+        eglConfig = null
         isInitialized = false
         Log.d(TAG, "EGL surface detached")
     }

@@ -96,6 +96,18 @@ class MapLibrePoiScreenAaTest {
     }
 
     @Test
+    fun mapLibreEglSurvivesSurfaceDetachReattach() {
+        val carContext = CarScreenTestHarness.newTestCarContext()
+        assertSurfaceSurvivesDetachReattach(CanvasMapModeConfig.mapLibreEgl(carContext))
+    }
+
+    @Test
+    fun mapLibrePresentationSurvivesSurfaceDetachReattach() {
+        val carContext = CarScreenTestHarness.newTestCarContext()
+        assertSurfaceSurvivesDetachReattach(CanvasMapModeConfig.mapLibrePresentation(carContext))
+    }
+
+    @Test
     fun actionStripsStayWithinMapTemplateLimits() {
         val carContext = CarScreenTestHarness.newTestCarContext()
         val screen = newScreen(carContext, CanvasMapModeConfig.mapLibre(carContext), newSettingsManager())

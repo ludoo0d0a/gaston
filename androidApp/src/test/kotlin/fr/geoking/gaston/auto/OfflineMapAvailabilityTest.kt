@@ -37,4 +37,20 @@ class OfflineMapAvailabilityTest {
         val settings = AppSettings(carMapMode = CarMapMode.MapLibre, offlinePmtilesPath = null)
         assertTrue(OfflineMapAvailability.isOfflineFileAvailable(settings))
     }
+
+    @Test
+    fun mapsforgeWithNullPathIsUnavailable() {
+        val settings = AppSettings(carMapMode = CarMapMode.Mapsforge, offlineMapsforgePath = null)
+        assertFalse(OfflineMapAvailability.isOfflineFileAvailable(settings))
+    }
+
+    @Test
+    fun mapsforgeWithRealFileIsAvailable() {
+        val file = File.createTempFile("test", ".map").apply {
+            writeBytes(byteArrayOf(1, 2, 3))
+            deleteOnExit()
+        }
+        val settings = AppSettings(carMapMode = CarMapMode.Mapsforge, offlineMapsforgePath = file.absolutePath)
+        assertTrue(OfflineMapAvailability.isOfflineFileAvailable(settings))
+    }
 }

@@ -1,18 +1,25 @@
 # Audit & Roadmap Technique : MapLibre sur Android Auto (Gaston)
 
-Ce document analyse la situation actuelle de **MapLibre sur Android Auto** dans l'application Gaston, confirme l'option actuellement implémentée, et définit la **roadmap technique** pour migrer vers l'Option 2 (Rendu Natif EGL Direct).
+Ce document analyse la situation de **MapLibre sur Android Auto** dans Gaston et la roadmap vers un rendu vectoriel fluide (OpenFreeMap PBF).
+
+**Mise à jour (état code actuel)** — l’Option 1 (`WindowManager` + `TextureView.bitmap`) a été **retirée**. En production AA aujourd’hui :
+
+| Chemin | Mode(s) | Implémentation |
+|--------|---------|----------------|
+| **Option 3** (snapshot) | `MapLibre`, `MapTiler`, `Protomaps` | `CarMapLibreRenderer` + `MapSnapshotter` → Canvas |
+| **GL via VirtualDisplay** (proche Option 2) | `MapLibreEgl`, `MapLibrePresentation` | `MapLibreAaGlHost` : `MapView` sur `SurfaceContainer.surface` + couches GeoJSON (`MapLibreSharedHelper`) |
+| **EGL helper** | utilisé par `CarMapLibreEglRenderer` (fallback / futur NativeMap) | `CarEglSurfaceRenderer` |
+| **Custom** | `Custom` | Raster Canvas — **ne pas modifier** |
+
+La suite Option 2 « NativeMapView + `eglSwapBuffers` pur » reste un objectif ; le mode `MapLibreEgl` est le véhicule d’expérimentation fluide OpenFreeMap en attendant.
+
+Voir aussi [`aa-map-modes-summary.md`](aa-map-modes-summary.md).
 
 ---
 
-## 1. État Actuel dans Gaston : Option 1 Implémentée
+## 1. État historique : Option 1 (retirée)
 
-Actuellement, Gaston implémente l'**Option 1 (Vue Hors-Écran via `WindowManager`)** dans le package `fr.geoking.gaston.auto.maplibre` :
-* **`CarMapContainer.kt`** : Crée un `MapView` Android hors-écran et tente de l'ajouter au Window Manager via `carWindowManager.addView()`.
-* **`CarMapLibreRenderer.kt`** : Écoute chaque frame, extrait `textureView.bitmap` et copie l'image bitmap sur le `Canvas` d'Android Auto.
-* **`MapLibrePoiScreen.kt`** : Écran principal rattaché au `CarMapLibreRenderer`.
-
-### Diagnostic de l'Implémentation Actuelle
-L'Option 1 **ne fonctionne pas sur Android Auto** pour les raisons suivantes :
+L’Option 1 (**Vue Hors-Écran via `WindowManager`**) n’est plus dans le code. Diagnostic d’époque :
 1. **Crash `BadTokenException`** : `CarContext` est un service et n'a pas de token de fenêtre pour `carWindowManager.addView()`.
 2. **Pression Mémoire Accablante** : L'extraction de `TextureView.bitmap` à 60 FPS génère entre **100 et 200 Mo/s d'allocations de mémoire poubelle**, saturant le Garbage Collector.
 3. **Moteur GL Non Mesuré** : La vue n'étant pas rattachée à un écran réel, l'EGLContext d'origine ne s'initialise pas.

@@ -43,12 +43,16 @@ enum class CarMapMode {
   /** Mapbox native Android Auto extension. */
     Mapbox,
   /** MapLibre vector via Presentation API (High Performance / 60 FPS). */
-    MapLibrePresentation;
+    MapLibrePresentation,
+  /** MapLibre GL on AA surface (OpenFreeMap PBF) — fluid vector experiment. */
+    MapLibreEgl,
+  /** Offline Mapsforge `.map` on AA surface. */
+    Mapsforge;
 
     fun next(): CarMapMode = entries[(ordinal + 1) % entries.size]
 
     val requiresOfflineMapFile: Boolean
-        get() = this == Protomaps
+        get() = this == Protomaps || this == Mapsforge
 }
 enum class MapEngine { Google, MapLibre, Custom, Mapsforge }
 enum class ThemeMode { System, Light, Dark }

@@ -7,6 +7,7 @@ import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.auto.maplibre.CarMapLibreEglRenderer
 import fr.geoking.gaston.auto.maplibre.CarMapLibreRenderer
 import fr.geoking.gaston.auto.maplibre.MapsforgeAaRenderer
 import fr.geoking.gaston.auto.maplibre.CarMapLibrePresentationRenderer
@@ -150,10 +151,38 @@ data class CanvasMapModeConfig(
 
         fun mapLibrePresentation(carContext: CarContext): CanvasMapModeConfig = CanvasMapModeConfig(
             logTag = "MapLibrePresPoiScreen",
-            hudLabel = carContext.getString(R.string.map_mode_maplibre) + " (Pres)",
+            hudLabel = carContext.getString(R.string.map_mode_maplibre_presentation),
             styleUrlResolver = { settings, ctx -> resolveAutoMapStyleUrl(settings, ctx) },
             createRenderer = { ctx, lifecycle, config ->
                 CarMapLibrePresentationRenderer(ctx, lifecycle).apply {
+                    hudModeLabel = config.hudLabel
+                }
+            },
+            createStationDetailScreen = { carContext, poi, availability, searchLat, searchLon, zoom, orientationMode, bearing, effectiveEnergies, effectivePowerLevels, settingsManager, favoritesRepo, onDisposed ->
+                MapLibreStationDetailScreen(
+                    carContext = carContext,
+                    poi = poi,
+                    availability = availability,
+                    searchLat = searchLat,
+                    searchLon = searchLon,
+                    zoom = zoom,
+                    orientationMode = orientationMode,
+                    bearing = bearing,
+                    effectiveEnergies = effectiveEnergies,
+                    effectivePowerLevels = effectivePowerLevels,
+                    settingsManager = settingsManager,
+                    favoritesRepo = favoritesRepo,
+                    onDisposed = onDisposed,
+                )
+            },
+        )
+
+        fun mapLibreEgl(carContext: CarContext): CanvasMapModeConfig = CanvasMapModeConfig(
+            logTag = "MapLibreEglPoiScreen",
+            hudLabel = carContext.getString(R.string.map_mode_maplibre_egl),
+            styleUrlResolver = { settings, ctx -> resolveAutoMapStyleUrl(settings, ctx) },
+            createRenderer = { ctx, lifecycle, config ->
+                CarMapLibreEglRenderer(ctx, lifecycle).apply {
                     hudModeLabel = config.hudLabel
                 }
             },

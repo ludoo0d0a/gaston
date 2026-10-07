@@ -312,7 +312,7 @@ class CarMapboxRenderer(
         val bearing = AutoMapHeading.effectiveBearing(orientationMode, headingDegrees)
         val markerWidthPx = AutoSurfaceRenderer.POI_MARKER_WIDTH_PX
         val mapCenterX = lonToTileX(centerLon, zoom)
-        val mapCenterY = latToTileY(centerLon, zoom) // Bug fix: should be centerLon, zoom
+        val mapCenterY = latToTileY(centerLat, zoom)
         val cx = centerPxXForHitTest().toFloat()
         val cy = centerPxYForHitTest().toFloat()
 

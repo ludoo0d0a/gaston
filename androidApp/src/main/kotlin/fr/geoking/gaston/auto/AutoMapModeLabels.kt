@@ -12,6 +12,8 @@ fun CarMapMode.displayLabel(carContext: CarContext): String = when (this) {
     CarMapMode.Protomaps -> carContext.getString(R.string.map_mode_protomaps)
     CarMapMode.Mapbox -> carContext.getString(R.string.map_mode_mapbox)
     CarMapMode.MapLibrePresentation -> carContext.getString(R.string.map_mode_maplibre_presentation)
+    CarMapMode.MapLibreEgl -> carContext.getString(R.string.map_mode_maplibre_egl)
+    CarMapMode.Mapsforge -> carContext.getString(R.string.map_mode_mapsforge)
 }
 
 fun CarMapMode.displayDescription(carContext: CarContext): String = when (this) {
@@ -22,4 +24,6 @@ fun CarMapMode.displayDescription(carContext: CarContext): String = when (this) 
     CarMapMode.Protomaps -> carContext.getString(R.string.map_mode_protomaps_desc)
     CarMapMode.Mapbox -> carContext.getString(R.string.map_mode_mapbox_desc)
     CarMapMode.MapLibrePresentation -> carContext.getString(R.string.map_mode_maplibre_presentation_desc)
+    CarMapMode.MapLibreEgl -> carContext.getString(R.string.map_mode_maplibre_egl_desc)
+    CarMapMode.Mapsforge -> carContext.getString(R.string.map_mode_mapsforge_desc)
 }

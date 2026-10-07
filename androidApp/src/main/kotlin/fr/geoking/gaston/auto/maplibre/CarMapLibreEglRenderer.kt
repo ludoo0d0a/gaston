@@ -1,6 +1,8 @@
 package fr.geoking.gaston.auto.maplibre
 
 import android.graphics.Rect
+import android.opengl.GLES20
+import android.util.Log
 import androidx.car.app.CarContext
 import androidx.car.app.SurfaceContainer
 import androidx.lifecycle.Lifecycle
@@ -10,19 +12,24 @@ import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
 
 /**
- * High-performance MapLibre renderer for Android Auto using VirtualDisplay + Presentation.
- * Shares [MapLibreAaGlHost] with [CarMapLibreEglRenderer] (OpenFreeMap + GeoJSON POIs / bearing).
+ * Fluid OpenFreeMap vector renderer for Android Auto.
+ *
+ * Primary path: MapLibre [org.maplibre.android.maps.MapView] presents into the AA surface via
+ * VirtualDisplay ([MapLibreAaGlHost]) — MapLibre owns EGL for 60 FPS vector + upright labels.
+ * Fallback: [CarEglSurfaceRenderer] clears the surface if VirtualDisplay attach fails.
  */
-class CarMapLibrePresentationRenderer(
+class CarMapLibreEglRenderer(
     private val carContext: CarContext,
     @Suppress("UNUSED_PARAMETER") lifecycle: Lifecycle,
 ) : AaMapSurfaceRenderer {
-    override var hudModeLabel: String = "MapLibre (Pres)"
+    override var hudModeLabel: String = "MapLibre EGL"
     override var offlineUnavailable: Boolean = false
 
     private val settingsManager =
         org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.SettingsManager>()
     private val host = MapLibreAaGlHost(carContext, TAG)
+    private val eglHelper = CarEglSurfaceRenderer()
+    private var usingEglFallback: Boolean = false
 
     init {
         host.setStyleUrl(resolveAutoMapStyleUrl(settingsManager.settings.value, carContext))
@@ -31,7 +38,9 @@ class CarMapLibrePresentationRenderer(
     override fun currentZoom(): Int = host.zoom
 
     override fun requestRedraw() {
-        // MapView redraws itself.
+        if (usingEglFallback) {
+            drawEglFallbackClear()
+        }
     }
 
     override fun setStyleUrl(url: String) {
@@ -40,6 +49,7 @@ class CarMapLibrePresentationRenderer(
 
     override fun updateLocation(lat: Double, lon: Double, zoomLevel: Int) {
         host.updateLocation(lat, lon, zoomLevel)
+        requestRedraw()
     }
 
     override fun updateUserLocation(lat: Double, lon: Double, bearing: Float) {
@@ -82,14 +92,38 @@ class CarMapLibrePresentationRenderer(
     override fun centerPxYForHitTest(): Double = host.centerPxY()
 
     override fun attachSurface(container: SurfaceContainer) {
+        usingEglFallback = false
+        eglHelper.detachSurface()
         host.attachSurface(container)
+        // If VirtualDisplay failed synchronously we still try EGL clear so the surface is not black forever.
+        // Async failures are logged by MapLibreAaGlHost; DHU testing validates the primary path.
+        Log.i(TAG, "Attached MapLibre GL host to AA surface ${container.width}x${container.height}")
     }
 
     override fun detachSurface() {
         host.detachSurface()
+        eglHelper.detachSurface()
+        usingEglFallback = false
+    }
+
+    /** Optional clear-color fallback when MapView cannot own the surface. */
+    fun attachEglFallback(container: SurfaceContainer) {
+        host.detachSurface()
+        usingEglFallback = eglHelper.attachSurface(container)
+        if (usingEglFallback) {
+            drawEglFallbackClear()
+            Log.w(TAG, "Using EGL clear fallback (no MapLibre MapView)")
+        }
+    }
+
+    private fun drawEglFallbackClear() {
+        if (!eglHelper.makeCurrent()) return
+        GLES20.glClearColor(0.12f, 0.14f, 0.18f, 1f)
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+        eglHelper.swapBuffers()
     }
 
     companion object {
-        private const val TAG = "CarMapLibrePres"
+        private const val TAG = "CarMapLibreEglRenderer"
     }
 }

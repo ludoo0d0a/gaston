@@ -113,6 +113,8 @@ private fun CarMapMode.displayLabel(): String = when (this) {
     CarMapMode.Protomaps -> stringResource(R.string.map_mode_protomaps)
     CarMapMode.Mapbox -> stringResource(R.string.map_mode_mapbox)
     CarMapMode.MapLibrePresentation -> stringResource(R.string.map_mode_maplibre_presentation)
+    CarMapMode.MapLibreEgl -> stringResource(R.string.map_mode_maplibre_egl)
+    CarMapMode.Mapsforge -> stringResource(R.string.map_mode_mapsforge)
 }
 
 @Composable
@@ -124,6 +126,8 @@ private fun CarMapMode.displayDescription(): String = when (this) {
     CarMapMode.Protomaps -> stringResource(R.string.map_mode_protomaps_desc)
     CarMapMode.Mapbox -> stringResource(R.string.map_mode_mapbox_desc)
     CarMapMode.MapLibrePresentation -> stringResource(R.string.map_mode_maplibre_presentation_desc)
+    CarMapMode.MapLibreEgl -> stringResource(R.string.map_mode_maplibre_egl_desc)
+    CarMapMode.Mapsforge -> stringResource(R.string.map_mode_mapsforge_desc)
 }
 
 @Composable
@@ -2867,7 +2871,7 @@ private fun DeveloperSection(
                     label = stringResource(R.string.dev_test_danger_zone_notification),
                     value = stringResource(R.string.dev_test_danger_zone_notification_subtitle),
                     onClick = {
-                        // Phone: beep + TTS + HUD (MainActivity collects DangerZoneAlertTester).
+                        // Process-wide: beep + TTS + HUN (DangerZoneAlertCoordinator).
                         org.koin.core.context.GlobalContext.get()
                             .get<fr.geoking.gaston.radar.DangerZoneAlertTester>()
                             .trigger()
