@@ -55,9 +55,15 @@ class CarAppSession : Session(), KoinComponent {
                     sessionStartedAtElapsedMs = android.os.SystemClock.elapsedRealtime()
                 }
                 // Danger-zone HUN + TTS run in DangerZoneAlertCoordinator (process-wide).
+                parkSuggester.startInSessionMonitoring()
+            }
+
+            override fun onStop(owner: LifecycleOwner) {
+                parkSuggester.stopInSessionMonitoring()
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
+                // Fallback if in-session stop did not retain a park suggestion.
                 parkSuggester.startIfEligible(sessionStartedAtElapsedMs = sessionStartedAtElapsedMs)
             }
         })

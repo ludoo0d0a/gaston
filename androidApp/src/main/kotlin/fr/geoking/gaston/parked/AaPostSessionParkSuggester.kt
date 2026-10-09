@@ -16,9 +16,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * After Android Auto session destroy: wait 30s without vehicle-like GPS speed,
- * then show the AA remember-parked suggestion and start walk-away monitoring.
- * Fully separate from the danger-zone / radar loop.
+ * Park suggestion triggers:
+ * 1. **In-session**: after vehicle-like speed then ~10s stop during Android Auto → propose Save.
+ * 2. **Post-session** (fallback): on AA destroy, if nothing was retained yet → same gate + propose.
  */
 class AaPostSessionParkSuggester(
     context: Context,
@@ -29,9 +29,58 @@ class AaPostSessionParkSuggester(
 ) {
     private val appContext = context.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var job: Job? = null
+    private var inSessionJob: Job? = null
+    private var postSessionJob: Job? = null
+
+    /** Start GPS polling for stop detection while the AA session is alive. */
+    fun startInSessionMonitoring() {
+        inSessionJob?.cancel()
+        postSessionJob?.cancel()
+        val tracker = InSessionStopTracker()
+        inSessionJob = scope.launch {
+            while (isActive) {
+                val now = android.os.SystemClock.elapsedRealtime()
+                val loc = try {
+                    LocationHelper.getCurrentLocation(appContext)
+                } catch (e: Exception) {
+                    Log.w(TAG, "In-session location failed", e)
+                    null
+                }
+                if (loc != null) {
+                    settingsManager.saveLastKnownLocation(loc.latitude, loc.longitude)
+                }
+                val speed = if (loc != null && loc.hasSpeed()) loc.speed else null
+                when (tracker.onSample(speed, now)) {
+                    InSessionStopTracker.Result.Continue -> Unit
+                    InSessionStopTracker.Result.Confirmed -> {
+                        val settings = settingsManager.settings.value
+                        val lat = loc?.latitude ?: settings.lastKnownLat
+                        val lon = loc?.longitude ?: settings.lastKnownLon
+                        if (lat != null && lon != null && !hasRetainedParkSuggestion()) {
+                            onParkConfirmed(
+                                ParkCandidate(
+                                    vehicleId = activeVehicleId(settings),
+                                    latitude = lat,
+                                    longitude = lon,
+                                    createdAtEpochMs = System.currentTimeMillis(),
+                                )
+                            )
+                        }
+                    }
+                }
+                delay(POLL_MS)
+            }
+        }
+    }
+
+    fun stopInSessionMonitoring() {
+        inSessionJob?.cancel()
+        inSessionJob = null
+    }
 
     /**
+     * Fallback after Android Auto session destroy when in-session did not retain a suggestion.
+     *
      * @param sessionStartedAtElapsedMs [android.os.SystemClock.elapsedRealtime] when the AA session started
      */
     fun startIfEligible(
@@ -39,22 +88,21 @@ class AaPostSessionParkSuggester(
         minSessionMs: Long = MIN_SESSION_MS_BEFORE_PARK_SUGGEST,
         recentlySavedParkMs: Long = RECENTLY_SAVED_PARK_MS,
     ) {
+        stopInSessionMonitoring()
+
         if (sessionStartedAtElapsedMs == 0L) return
         val sessionElapsed = android.os.SystemClock.elapsedRealtime() - sessionStartedAtElapsedMs
         if (sessionElapsed < minSessionMs) return
 
         val settings = settingsManager.settings.value
-        val lat = settings.lastKnownLat ?: return
-        val lon = settings.lastKnownLon ?: return
-
-        val activeId = settings.activeVehicleId.ifBlank { settings.vehicles.firstOrNull()?.id.orEmpty() }
-            .ifBlank { "default" }
-        val existing = settings.parkedPositionFor(activeId)
-        if (existing != null &&
-            System.currentTimeMillis() - existing.savedAtEpochMs < recentlySavedParkMs
-        ) {
+        val activeId = activeVehicleId(settings)
+        if (shouldSkipPostSessionFallback(activeId, recentlySavedParkMs)) {
+            Log.d(TAG, "Post-session skipped: park already retained/suggested/saved")
             return
         }
+
+        val lat = settings.lastKnownLat ?: return
+        val lon = settings.lastKnownLon ?: return
 
         val candidate = ParkCandidate(
             vehicleId = activeId,
@@ -63,12 +111,12 @@ class AaPostSessionParkSuggester(
             createdAtEpochMs = System.currentTimeMillis(),
         )
 
-        job?.cancel()
+        postSessionJob?.cancel()
         walkAwayMonitor.stop()
 
         val gateStart = android.os.SystemClock.elapsedRealtime()
         val tracker = PostDestroyDriveAbortTracker(startElapsedMs = gateStart)
-        job = scope.launch {
+        postSessionJob = scope.launch {
             while (isActive) {
                 val now = android.os.SystemClock.elapsedRealtime()
                 val loc = try {
@@ -85,13 +133,38 @@ class AaPostSessionParkSuggester(
                         return@launch
                     }
                     PostDestroyDriveAbortTracker.Result.Confirmed -> {
-                        onParkConfirmed(candidate)
+                        if (!hasRetainedParkSuggestion()) {
+                            onParkConfirmed(candidate)
+                        }
                         return@launch
                     }
                 }
             }
         }
     }
+
+    /** True when a suggestion is already frozen for this candidate. */
+    private fun hasRetainedParkSuggestion(): Boolean {
+        val candidate = candidateStore.get() ?: return false
+        return candidate.aaSuggestionShown || candidate.savedFromAa
+    }
+
+    /**
+     * Skip post-session if in-session already proposed, or the pin was saved recently
+     * (candidate may already be cleared after Save).
+     */
+    private fun shouldSkipPostSessionFallback(
+        vehicleId: String,
+        recentlySavedParkMs: Long,
+    ): Boolean {
+        if (hasRetainedParkSuggestion()) return true
+        val existing = settingsManager.settings.value.parkedPositionFor(vehicleId) ?: return false
+        return System.currentTimeMillis() - existing.savedAtEpochMs < recentlySavedParkMs
+    }
+
+    private fun activeVehicleId(settings: fr.geoking.gaston.AppSettings): String =
+        settings.activeVehicleId.ifBlank { settings.vehicles.firstOrNull()?.id.orEmpty() }
+            .ifBlank { "default" }
 
     private fun onParkConfirmed(candidate: ParkCandidate) {
         candidateStore.save(candidate.copy(aaSuggestionShown = true))

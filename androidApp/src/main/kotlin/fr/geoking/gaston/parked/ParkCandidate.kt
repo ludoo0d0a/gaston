@@ -1,8 +1,8 @@
 package fr.geoking.gaston.parked
 
 /**
- * Short-lived parking spot captured when an Android Auto session ends after driving.
- * Coords are frozen at session destroy so walking with the phone cannot overwrite them.
+ * Short-lived parking spot frozen when a stop is detected (in-session or post-AA).
+ * Coords stay fixed so walking with the phone cannot overwrite them.
  */
 data class ParkCandidate(
     val vehicleId: String,
