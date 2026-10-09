@@ -66,8 +66,8 @@ configure<ApplicationExtension> {
         val buildDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
 
-        // Developer UI: baseline off; `full` flavor may opt in via props/env; `playstore` stays false.
-        buildConfigField("boolean", "DEBUG_DEV", "false")
+        // TEMP: force developer UI on for all variants (including playstore). Revert before shipping.
+        buildConfigField("boolean", "DEBUG_DEV", "true")
 
         // Optional: GitHub PAT for in-app GitHub features (user can also configure at runtime).
         val githubToken = sanitizeBuildConfigString(prop("GITHUB_TOKEN"))
@@ -148,20 +148,8 @@ configure<ApplicationExtension> {
         useLibrary("org.apache.http.legacy")
     }
 
-    // local.properties / gradle.properties / CI: DEBUG_DEV=true (optional). Used by `full` only.
-    val debugDevEnabled = run {
-        val localDebugDev = rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
-            Properties().apply { file.inputStream().use { load(it) } }
-        }?.let { it.getProperty("DEBUG_DEV") ?: it.getProperty("debug_dev") }
-        (
-            localDebugDev
-                ?: project.findProperty("debug_dev")
-                ?: project.findProperty("DEBUG_DEV")
-                ?: System.getenv("DEBUG_DEV")
-                ?: System.getenv("debug_dev")
-                ?: "false"
-        ).toString().toBoolean()
-    }
+    // TEMP: debug_dev prop/env ignored while DEBUG_DEV is forced true for all flavors.
+    // Restore local.properties / gradle.properties / CI resolution when reverting the force.
 
     flavorDimensions += "distribution"
     productFlavors {
@@ -172,8 +160,8 @@ configure<ApplicationExtension> {
             // Internal builds may exercise AAC alerts (still off by default in settings).
             buildConfigField("boolean", "AAC_ALERTS_AVAILABLE", "true")
             buildConfigField("boolean", "AAC_ALERTS_KILL_SWITCH", "false")
-            // Developer UI on fullDebug and fullRelease when debug_dev / DEBUG_DEV is true.
-            buildConfigField("boolean", "DEBUG_DEV", "$debugDevEnabled")
+            // TEMP: forced true above in defaultConfig; keep flavor override in sync.
+            buildConfigField("boolean", "DEBUG_DEV", "true")
         }
         create("playstore") {
             dimension = "distribution"
@@ -183,8 +171,8 @@ configure<ApplicationExtension> {
             buildConfigField("boolean", "AAC_ALERTS_AVAILABLE", "true")
             // Emergency kill: set true in a hotfix build to disable AAC alerts without removing the APK.
             buildConfigField("boolean", "AAC_ALERTS_KILL_SWITCH", "false")
-            // Play Store AABs must not ship developer UI — ignore local debug_dev flags.
-            buildConfigField("boolean", "DEBUG_DEV", "false")
+            // TEMP: force developer UI on playstore too. Revert to false before shipping AABs.
+            buildConfigField("boolean", "DEBUG_DEV", "true")
         }
     }
 

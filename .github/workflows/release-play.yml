@@ -50,7 +50,7 @@ env:
   FUELPRICES_DK_KEY: ${{ secrets.FUELPRICES_DK_KEY }}
   NSW_FUELCHECK_KEY: ${{ secrets.NSW_FUELCHECK_KEY }}
   NSW_FUELCHECK_SECRET: ${{ secrets.NSW_FUELCHECK_SECRET }}
-  # DEBUG_DEV unused here: playstore flavor forces BuildConfig.DEBUG_DEV=false.
+  # TEMP: BuildConfig.DEBUG_DEV forced true in androidApp/build.gradle.kts (incl. playstore).
 
 jobs:
   release:
