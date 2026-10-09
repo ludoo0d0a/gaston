@@ -1115,4 +1115,7 @@
     <string name="notification_parked_confirmed_title">Parking spot saved</string>
     <string name="notification_parked_confirmed_message">%1$s location was saved. Tap to view.</string>
     <string name="notification_parked_confirmed_message_generic">Your vehicle location was saved. Tap to view.</string>
+    <string name="parked_car_candidate_detected">Stop detected — parking spot retained</string>
+    <string name="parked_car_candidate_ignored">Parking suggestion dismissed</string>
+    <string name="parked_car_map_section">Location on map</string>
 </resources>

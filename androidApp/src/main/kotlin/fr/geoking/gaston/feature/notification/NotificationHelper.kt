@@ -32,6 +32,12 @@ open class NotificationHelper(private val context: Context) {
         private const val NOTIFICATION_ID_REMEMBER_PARKED = 1005
         private const val NOTIFICATION_ID_PHONE_PARKED_CONFIRMED = 1006
         private const val NOTIFICATION_ID_PHONE_REMEMBER_PARKED = 1007
+        private const val REQ_PHONE_SAVE_AA = 1105
+        private const val REQ_PHONE_IGNORE_AA = 1106
+        private const val REQ_PHONE_SAVE_WALK = 1107
+        private const val REQ_PHONE_IGNORE_WALK = 1108
+        private const val REQ_CAR_SAVE = 1205
+        private const val REQ_CAR_IGNORE = 1206
         /** Suppress duplicate HUNs when phone + AA alert loops both fire. */
         private const val DEDUPE_WINDOW_MS = 8_000L
         /** Avoid spamming the park suggestion when AA reconnects briefly. */
@@ -214,9 +220,15 @@ open class NotificationHelper(private val context: Context) {
 
     /**
      * Phone + Android Auto HUN suggesting to remember the parking spot
-     * (typically when the AA session ends after driving).
+     * (typically when the AA session ends after a stop is confirmed).
+     * Actions: Save / Ignore.
      */
-    open fun showRememberParkedCarSuggestion(vehicleLabel: String?) {
+    open fun showRememberParkedCarSuggestion(
+        vehicleLabel: String?,
+        vehicleId: String,
+        latitude: Double,
+        longitude: Double,
+    ) {
         if (!canPostNotifications()) return
         if (shouldSuppressDuplicate("remember_parked", "suggest", REMEMBER_PARKED_DEDUPE_MS)) return
 
@@ -229,6 +241,9 @@ open class NotificationHelper(private val context: Context) {
 
         val phoneIntent = Intent(context, MainActivity::class.java).apply {
             action = ParkedCarIntents.ACTION_REMEMBER
+            putExtra(ParkedCarIntents.EXTRA_VEHICLE_ID, vehicleId)
+            putExtra(ParkedCarIntents.EXTRA_LATITUDE, latitude)
+            putExtra(ParkedCarIntents.EXTRA_LONGITUDE, longitude)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val phonePending = PendingIntent.getActivity(
@@ -238,15 +253,55 @@ open class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val carIntent = Intent(ParkedCarIntents.ACTION_REMEMBER).apply {
+        val phoneSave = parkActionPendingBroadcast(
+            requestCode = REQ_PHONE_SAVE_AA,
+            action = ParkedCarIntents.ACTION_SAVE_CANDIDATE,
+            vehicleId = vehicleId,
+            latitude = latitude,
+            longitude = longitude,
+        )
+        val phoneIgnore = parkActionPendingBroadcast(
+            requestCode = REQ_PHONE_IGNORE_AA,
+            action = ParkedCarIntents.ACTION_IGNORE_CANDIDATE,
+            vehicleId = vehicleId,
+            latitude = latitude,
+            longitude = longitude,
+        )
+
+        val carContentIntent = Intent(ParkedCarIntents.ACTION_REMEMBER).apply {
             component = ComponentName(context, VoiceAppService::class.java)
+            putExtra(ParkedCarIntents.EXTRA_VEHICLE_ID, vehicleId)
+            putExtra(ParkedCarIntents.EXTRA_LATITUDE, latitude)
+            putExtra(ParkedCarIntents.EXTRA_LONGITUDE, longitude)
         }
         val carPending = CarPendingIntent.getCarApp(
             context,
             NOTIFICATION_ID_REMEMBER_PARKED,
-            carIntent,
+            carContentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT,
         )
+        val carSave = CarPendingIntent.getCarApp(
+            context,
+            REQ_CAR_SAVE,
+            Intent(ParkedCarIntents.ACTION_SAVE_CANDIDATE).apply {
+                component = ComponentName(context, VoiceAppService::class.java)
+                putExtra(ParkedCarIntents.EXTRA_VEHICLE_ID, vehicleId)
+                putExtra(ParkedCarIntents.EXTRA_LATITUDE, latitude)
+                putExtra(ParkedCarIntents.EXTRA_LONGITUDE, longitude)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val carIgnore = CarPendingIntent.getCarApp(
+            context,
+            REQ_CAR_IGNORE,
+            Intent(ParkedCarIntents.ACTION_IGNORE_CANDIDATE).apply {
+                component = ComponentName(context, VoiceAppService::class.java)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
+        val saveLabel = context.getString(R.string.action_save)
+        val ignoreLabel = context.getString(R.string.action_ignore)
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_poi_parking)
@@ -256,6 +311,8 @@ open class NotificationHelper(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(phonePending)
+            .addAction(R.drawable.ic_poi_parking, saveLabel, phoneSave)
+            .addAction(R.drawable.ic_close, ignoreLabel, phoneIgnore)
             .extend(
                 CarAppExtender.Builder()
                     .setImportance(NotificationManager.IMPORTANCE_HIGH)
@@ -263,6 +320,8 @@ open class NotificationHelper(private val context: Context) {
                     .setContentText(message)
                     .setSmallIcon(R.drawable.ic_poi_parking)
                     .setContentIntent(carPending)
+                    .addAction(R.drawable.ic_poi_parking, saveLabel, carSave)
+                    .addAction(R.drawable.ic_close, ignoreLabel, carIgnore)
                     .build()
             )
 
@@ -309,7 +368,8 @@ open class NotificationHelper(private val context: Context) {
     }
 
     /**
-     * Phone-only: walk-away without saving on AA (case 2). Opens remember UI with frozen candidate coords.
+     * Phone-only: walk-away without saving on AA (case 2).
+     * Opens remember UI with frozen candidate coords; actions Save / Ignore.
      */
     open fun showPhoneRememberParkedSuggestion(
         vehicleLabel: String?,
@@ -341,6 +401,24 @@ open class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
+        val phoneSave = parkActionPendingBroadcast(
+            requestCode = REQ_PHONE_SAVE_WALK,
+            action = ParkedCarIntents.ACTION_SAVE_CANDIDATE,
+            vehicleId = vehicleId,
+            latitude = latitude,
+            longitude = longitude,
+        )
+        val phoneIgnore = parkActionPendingBroadcast(
+            requestCode = REQ_PHONE_IGNORE_WALK,
+            action = ParkedCarIntents.ACTION_IGNORE_CANDIDATE,
+            vehicleId = vehicleId,
+            latitude = latitude,
+            longitude = longitude,
+        )
+
+        val saveLabel = context.getString(R.string.action_save)
+        val ignoreLabel = context.getString(R.string.action_ignore)
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_poi_parking)
             .setContentTitle(title)
@@ -349,8 +427,41 @@ open class NotificationHelper(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(phonePending)
+            .addAction(R.drawable.ic_poi_parking, saveLabel, phoneSave)
+            .addAction(R.drawable.ic_close, ignoreLabel, phoneIgnore)
 
         notificationManager.notify(NOTIFICATION_ID_PHONE_REMEMBER_PARKED, builder.build())
+    }
+
+    open fun cancelRememberParkedNotifications() {
+        notificationManager.cancel(NOTIFICATION_ID_REMEMBER_PARKED)
+        notificationManager.cancel(NOTIFICATION_ID_PHONE_REMEMBER_PARKED)
+        try {
+            CarNotificationManager.from(context).cancel(NOTIFICATION_ID_REMEMBER_PARKED)
+        } catch (_: Exception) {
+            // Car host may be unavailable outside an AA session.
+        }
+    }
+
+    private fun parkActionPendingBroadcast(
+        requestCode: Int,
+        action: String,
+        vehicleId: String,
+        latitude: Double,
+        longitude: Double,
+    ): PendingIntent {
+        val intent = Intent(context, fr.geoking.gaston.parked.ParkedCarActionReceiver::class.java).apply {
+            this.action = action
+            putExtra(ParkedCarIntents.EXTRA_VEHICLE_ID, vehicleId)
+            putExtra(ParkedCarIntents.EXTRA_LATITUDE, latitude)
+            putExtra(ParkedCarIntents.EXTRA_LONGITUDE, longitude)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 
     /**

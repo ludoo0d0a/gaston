@@ -67,6 +67,15 @@
             </intent-filter>
         </service>
 
+        <receiver
+            android:name=".parked.ParkedCarActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="fr.geoking.gaston.action.SAVE_PARKED_CANDIDATE" />
+                <action android:name="fr.geoking.gaston.action.IGNORE_PARKED_CANDIDATE" />
+            </intent-filter>
+        </receiver>
+
         <meta-data
             android:name="androidx.car.app.minCarApiLevel"
             android:value="7" />

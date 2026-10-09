@@ -1115,4 +1115,7 @@
     <string name="notification_parked_confirmed_title">Stationnement enregistré</string>
     <string name="notification_parked_confirmed_message">La position de %1$s a bien été retenue. Appuyez pour voir.</string>
     <string name="notification_parked_confirmed_message_generic">La position de votre véhicule a bien été retenue. Appuyez pour voir.</string>
+    <string name="parked_car_candidate_detected">Arrêt détecté — position retenue</string>
+    <string name="parked_car_candidate_ignored">Suggestion de stationnement ignorée</string>
+    <string name="parked_car_map_section">Position sur la carte</string>
 </resources>

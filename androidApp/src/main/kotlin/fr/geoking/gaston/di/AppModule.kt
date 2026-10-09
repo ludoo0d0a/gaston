@@ -247,6 +247,15 @@ val appModule = module {
     }
 
     single {
+        fr.geoking.gaston.parked.ParkCandidateActions(
+            settingsManager = get(),
+            candidateStore = get(),
+            walkAwayMonitor = get(),
+            notificationHelper = get(),
+        )
+    }
+
+    single {
         fr.geoking.gaston.parked.AaPostSessionParkSuggester(
             context = androidContext(),
             settingsManager = get(),

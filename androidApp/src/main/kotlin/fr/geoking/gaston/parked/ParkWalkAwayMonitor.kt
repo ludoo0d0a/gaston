@@ -82,7 +82,9 @@ class ParkWalkAwayMonitor(
         try {
             if (alreadySaved) {
                 notificationHelper.showPhoneParkedPositionConfirmed(label)
+                candidateStore.clear()
             } else {
+                // Keep candidate so Save/Ignore actions and the parking screen map can use it.
                 notificationHelper.showPhoneRememberParkedSuggestion(
                     vehicleLabel = label,
                     vehicleId = current.vehicleId,
@@ -92,8 +94,7 @@ class ParkWalkAwayMonitor(
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to show walk-away parked notification", e)
-        } finally {
-            candidateStore.clear()
+            if (alreadySaved) candidateStore.clear()
         }
     }
 

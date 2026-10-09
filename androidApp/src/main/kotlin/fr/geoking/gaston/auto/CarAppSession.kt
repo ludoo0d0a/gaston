@@ -22,6 +22,7 @@ import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.di.MapModuleLoader
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.parked.AaPostSessionParkSuggester
+import fr.geoking.gaston.parked.ParkCandidateActions
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.shared.network.NetworkService
@@ -42,6 +43,7 @@ class CarAppSession : Session(), KoinComponent {
     private val connectivityManager: ConnectivityManager by inject()
     private val inAppUpdateHelper: fr.geoking.gaston.update.InAppUpdateHelper by inject()
     private val parkSuggester: AaPostSessionParkSuggester by inject()
+    private val parkCandidateActions: ParkCandidateActions by inject()
 
     private var cachedMapDeps: MapDeps? = null
     private var sessionStartedAtElapsedMs: Long = 0L
@@ -90,10 +92,8 @@ class CarAppSession : Session(), KoinComponent {
     }
 
     override fun onNewIntent(intent: Intent) {
-        if (intent.action == ParkedCarIntents.ACTION_REMEMBER) {
-            carContext.getCarService(androidx.car.app.ScreenManager::class.java).push(
-                AutoRememberParkedCarScreen(carContext, settingsManager)
-            )
+        screenForParkIntent(intent)?.let { screen ->
+            carContext.getCarService(androidx.car.app.ScreenManager::class.java).push(screen)
             return
         }
         val nav = IntentNavigationHelper.parseNavIntent(intent)
@@ -126,9 +126,7 @@ class CarAppSession : Session(), KoinComponent {
             Log.w(TAG, "Failed to check for update in CarAppSession", e)
         }
 
-        if (intent.action == ParkedCarIntents.ACTION_REMEMBER) {
-            return AutoRememberParkedCarScreen(carContext, settingsManager)
-        }
+        screenForParkIntent(intent)?.let { return it }
 
         val nav = IntentNavigationHelper.parseNavIntent(intent)
         if (nav != null) {
@@ -171,6 +169,34 @@ class CarAppSession : Session(), KoinComponent {
                 templateType = "Root screen"
             )
         }
+    }
+
+    private fun screenForParkIntent(intent: Intent): Screen? = when (intent.action) {
+        ParkedCarIntents.ACTION_REMEMBER -> AutoRememberParkedCarScreen(carContext, settingsManager)
+        ParkedCarIntents.ACTION_SAVE_CANDIDATE -> {
+            val vehicleId = intent.getStringExtra(ParkedCarIntents.EXTRA_VEHICLE_ID)
+            val lat = intent.getDoubleExtra(ParkedCarIntents.EXTRA_LATITUDE, Double.NaN)
+            val lon = intent.getDoubleExtra(ParkedCarIntents.EXTRA_LONGITUDE, Double.NaN)
+            val saved = parkCandidateActions.save(
+                vehicleId = vehicleId,
+                latitude = lat.takeUnless { it.isNaN() },
+                longitude = lon.takeUnless { it.isNaN() },
+            )
+            AutoParkCandidateResultScreen(
+                carContext,
+                message = carContext.getString(
+                    if (saved) R.string.parked_car_saved else R.string.parked_car_location_unavailable
+                ),
+            )
+        }
+        ParkedCarIntents.ACTION_IGNORE_CANDIDATE -> {
+            parkCandidateActions.ignore()
+            AutoParkCandidateResultScreen(
+                carContext,
+                message = carContext.getString(R.string.parked_car_candidate_ignored),
+            )
+        }
+        else -> null
     }
 
     companion object {

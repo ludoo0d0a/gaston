@@ -103,7 +103,12 @@ class AaPostSessionParkSuggester(
                 .joinToString(" ")
                 .ifBlank { null }
         try {
-            notificationHelper.showRememberParkedCarSuggestion(label)
+            notificationHelper.showRememberParkedCarSuggestion(
+                vehicleLabel = label,
+                vehicleId = candidate.vehicleId,
+                latitude = candidate.latitude,
+                longitude = candidate.longitude,
+            )
         } catch (e: Exception) {
             Log.w(TAG, "Failed to show remember-parked suggestion", e)
         }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,10 +44,15 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.activeVehicle
 import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.intent.IntentNavigationHelper
+import fr.geoking.gaston.parked.ParkCandidate
+import fr.geoking.gaston.parked.ParkCandidateActions
+import fr.geoking.gaston.parked.ParkCandidateSaveHelper
+import fr.geoking.gaston.parked.ParkCandidateStore
 import fr.geoking.gaston.parkedPositionFor
 import fr.geoking.gaston.ui.dashboard.GastonTheme
 import fr.geoking.gaston.vehicleById
 import kotlinx.coroutines.launch
+import org.koin.core.context.GlobalContext
 import java.text.DateFormat
 
 private val ParkedAccent = Color(0xFF2E7D32)
@@ -64,9 +70,9 @@ fun ParkedCarFeatureScreen(
     val settings by settingsManager.settings.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val candidateStore = remember {
-        org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.parked.ParkCandidateStore>()
-    }
+    val candidateStore = remember { GlobalContext.get().get<ParkCandidateStore>() }
+    val parkActions = remember { GlobalContext.get().get<ParkCandidateActions>() }
+    val storeCandidate by candidateStore.candidate.collectAsState()
 
     var selectedVehicleId by remember(settings.activeVehicleId, settings.vehicles, initialVehicleId) {
         mutableStateOf(
@@ -77,9 +83,25 @@ fun ParkedCarFeatureScreen(
     }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var isSaving by remember { mutableStateOf(false) }
+    var intentCandidateDismissed by remember { mutableStateOf(false) }
 
     val vehicle = settings.vehicleById(selectedVehicleId) ?: settings.activeVehicle()
     val parked = settings.parkedPositionFor(selectedVehicleId)
+
+    val pendingCandidate: ParkCandidate? = when {
+        !intentCandidateDismissed && candidateLatitude != null && candidateLongitude != null ->
+            ParkCandidate(
+                vehicleId = selectedVehicleId,
+                latitude = candidateLatitude,
+                longitude = candidateLongitude,
+                createdAtEpochMs = System.currentTimeMillis(),
+            )
+        storeCandidate != null && storeCandidate!!.vehicleId == selectedVehicleId -> storeCandidate
+        else -> null
+    }
+
+    val mapLat = parked?.latitude ?: pendingCandidate?.latitude
+    val mapLon = parked?.longitude ?: pendingCandidate?.longitude
 
     GastonTheme(themeMode = settings.uiThemeMode) {
         Scaffold(
@@ -163,6 +185,51 @@ fun ParkedCarFeatureScreen(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                if (pendingCandidate != null && parked == null) {
+                    Text(
+                        text = stringResource(R.string.parked_car_candidate_detected),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Button(
+                            onClick = {
+                                val ok = parkActions.save(
+                                    vehicleId = selectedVehicleId,
+                                    latitude = pendingCandidate.latitude,
+                                    longitude = pendingCandidate.longitude,
+                                )
+                                intentCandidateDismissed = true
+                                statusMessage = context.getString(
+                                    if (ok) R.string.parked_car_saved
+                                    else R.string.parked_car_location_unavailable
+                                )
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("parked_car_candidate_save_btn"),
+                        ) {
+                            Text(stringResource(R.string.action_save))
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                parkActions.ignore()
+                                intentCandidateDismissed = true
+                                statusMessage = context.getString(R.string.parked_car_candidate_ignored)
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("parked_car_candidate_ignore_btn"),
+                        ) {
+                            Text(stringResource(R.string.action_ignore))
+                        }
+                    }
+                }
+
                 if (parked != null) {
                     Text(
                         text = stringResource(
@@ -181,11 +248,23 @@ fun ParkedCarFeatureScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                } else {
+                } else if (pendingCandidate == null) {
                     Text(
                         text = stringResource(R.string.parked_car_none_yet),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                if (mapLat != null && mapLon != null) {
+                    Text(
+                        text = stringResource(R.string.parked_car_map_section),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    ParkedCarMapPreview(
+                        latitude = mapLat,
+                        longitude = mapLon,
                     )
                 }
 
@@ -206,10 +285,10 @@ fun ParkedCarFeatureScreen(
                             try {
                                 val candidate = candidateStore.get()
                                 val loc = LocationHelper.getCurrentLocation(context)
-                                val coords = fr.geoking.gaston.parked.ParkCandidateSaveHelper.resolveSaveCoords(
+                                val coords = ParkCandidateSaveHelper.resolveSaveCoords(
                                     candidate = when {
                                         candidateLatitude != null && candidateLongitude != null ->
-                                            fr.geoking.gaston.parked.ParkCandidate(
+                                            ParkCandidate(
                                                 vehicleId = selectedVehicleId,
                                                 latitude = candidateLatitude,
                                                 longitude = candidateLongitude,

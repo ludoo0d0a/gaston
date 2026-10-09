@@ -31,6 +31,10 @@ object ParkedCarIntents {
     const val ACTION_REMEMBER = "fr.geoking.gaston.action.REMEMBER_PARKED_CAR"
     /** Open parked-car UI to review an already-saved pin (phone walk-away case 1). */
     const val ACTION_VIEW_PARKED = "fr.geoking.gaston.action.VIEW_PARKED_CAR"
+    /** Notification / HUN action: persist the frozen park candidate. */
+    const val ACTION_SAVE_CANDIDATE = "fr.geoking.gaston.action.SAVE_PARKED_CANDIDATE"
+    /** Notification / HUN action: discard the frozen park candidate. */
+    const val ACTION_IGNORE_CANDIDATE = "fr.geoking.gaston.action.IGNORE_PARKED_CANDIDATE"
 
     const val EXTRA_VEHICLE_ID = "fr.geoking.gaston.extra.PARKED_VEHICLE_ID"
     const val EXTRA_LATITUDE = "fr.geoking.gaston.extra.PARKED_LATITUDE"
