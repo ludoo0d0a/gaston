@@ -40,8 +40,11 @@ import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.request
+import io.ktor.client.utils.EmptyContent
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
+import io.ktor.http.content.TextContent
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.AttributeKey
 import io.ktor.util.toMap
@@ -125,20 +128,6 @@ val appModule = module {
                 }
             }
 
-            install(createClientPlugin("NetworkDebugLog") {
-                on(io.ktor.client.plugins.api.Send) { request ->
-                    if (settingsManager.settings.value.debugLoggingEnabled || settingsManager.settings.value.debugBarEnabled) {
-                        val content = request.body
-                        if (content is io.ktor.http.content.TextContent) {
-                            request.attributes.put(requestBodyKey, content.text)
-                        } else if (content is io.ktor.client.utils.EmptyContent) {
-                            request.attributes.put(requestBodyKey, "")
-                        }
-                    }
-                    proceed(request)
-                }
-            })
-
             install(RateLimitPlugin)
 
             install(HttpRequestRetry) {
@@ -188,6 +177,17 @@ val appModule = module {
                     encodeDefaults = true
                 })
             }
+            // After ContentNegotiation so JSON setBody(…) is already TextContent / bytes.
+            install(createClientPlugin("NetworkDebugLog") {
+                on(io.ktor.client.plugins.api.Send) { request ->
+                    if (settingsManager.settings.value.debugLoggingEnabled || settingsManager.settings.value.debugBarEnabled) {
+                        debugRequestBodyText(request.body)?.let { text ->
+                            request.attributes.put(requestBodyKey, text)
+                        }
+                    }
+                    proceed(request)
+                }
+            })
         }
     }
 
@@ -395,6 +395,29 @@ val appModule = module {
 }
 
 private const val DEBUG_BODY_MAX_CHARS = 8_192
+
+/** Best-effort textual request body for the debug bar (null = nothing captured). */
+private fun debugRequestBodyText(body: Any?): String? {
+    return when (body) {
+        null, EmptyContent -> ""
+        is TextContent -> body.text
+        is String -> body
+        is OutgoingContent.ByteArrayContent -> {
+            val type = body.contentType
+            if (type != null) {
+                val textual =
+                    type.contentType.equals("text", ignoreCase = true) ||
+                        type.contentSubtype.contains("json", ignoreCase = true) ||
+                        type.contentSubtype.contains("xml", ignoreCase = true) ||
+                        type.contentSubtype.contains("javascript", ignoreCase = true) ||
+                        type.contentSubtype.contains("x-www-form-urlencoded", ignoreCase = true)
+                if (!textual) return null
+            }
+            runCatching { body.bytes().decodeToString() }.getOrNull()
+        }
+        else -> null
+    }
+}
 
 /** Cap debug request/response payloads so oversized bodies cannot OOM the log store. */
 private fun truncateDebugBody(body: String?, maxChars: Int = DEBUG_BODY_MAX_CHARS): String? {
