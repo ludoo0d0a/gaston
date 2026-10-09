@@ -132,9 +132,7 @@ class LufopOpenSpeedCamClient(
 
         if (RateLimitTracker.isRateLimited(RATE_LIMIT_HOST)) {
             mutex.withLock { cachedRadars }?.let { return it }
-            val remainingSec =
-                (RateLimitTracker.getRemainingCooldownMs(RATE_LIMIT_HOST) / 1000).coerceAtLeast(1)
-            throw NetworkException(429, "Rate limit active for Lufop ($remainingSec s remaining)")
+            throw NetworkException(429, RateLimitTracker.cooldownMessage(RATE_LIMIT_HOST))
         }
 
         val downloaded = fetchNear(latitude, longitude, fetchRadiusKm)
@@ -240,14 +238,24 @@ class LufopOpenSpeedCamClient(
             }
         } catch (e: NetworkException) {
             if (e.httpCode == 429) {
-                RateLimitTracker.recordRateLimit(RATE_LIMIT_HOST, "60")
+                val sec = RateLimitTracker.parseCooldownSecondsFromText(e.message) ?: 60L
+                RateLimitTracker.recordRateLimit(
+                    RATE_LIMIT_HOST,
+                    retryAfterHeader = sec.toString(),
+                    responseBody = e.message,
+                )
             }
             throw e
         }
         val body = response.bodyAsText()
         if (response.status.value == 429 || looksLikeQuotaBody(body)) {
-            RateLimitTracker.recordRateLimit(RATE_LIMIT_HOST, "60")
-            throw NetworkException(429, "Lufop rate limit: ${body.take(200)}")
+            val sec = RateLimitTracker.parseCooldownSecondsFromText(body) ?: 60L
+            RateLimitTracker.recordRateLimit(
+                RATE_LIMIT_HOST,
+                retryAfterHeader = sec.toString(),
+                responseBody = body,
+            )
+            throw NetworkException(429, "Lufop rate limit (cooldown $sec s remaining)")
         }
         if (response.status.value !in 200..299) {
             throw NetworkException(response.status.value, "Lufop API fetch error: ${body.take(200)}")

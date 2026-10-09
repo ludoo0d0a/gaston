@@ -1,5 +1,7 @@
 package fr.geoking.gaston.api.overpass
 
+import fr.geoking.gaston.shared.network.NetworkException
+import fr.geoking.gaston.shared.network.RateLimitTracker
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -8,10 +10,18 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.runBlocking
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class OverpassClientTest {
+
+    @BeforeTest
+    fun setUp() {
+        RateLimitTracker.reset()
+    }
 
     @Test
     fun queryNodes_sendsIdentifyingUserAgent_andWildcardAccept() = runBlocking {
@@ -24,7 +34,11 @@ class OverpassClientTest {
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             )
         }
-        val client = OverpassClient(HttpClient(engine), baseUrl = "https://overpass-api.de/api/interpreter")
+        val client = OverpassClient(
+            HttpClient(engine),
+            baseUrl = "https://overpass-api.de/api/interpreter",
+            minIntervalMs = 0L,
+        )
         val elements = client.queryNodes(
             latitude = 48.85,
             longitude = 2.35,
@@ -35,6 +49,52 @@ class OverpassClientTest {
         assertEquals(1, elements.size)
         assertEquals(1L, elements.first().id)
         assertEquals("Test Pump", elements.first().name())
+    }
+
+    @Test
+    fun executeQuery_on429_recordsCooldownFromBody_andBlocksNextCall() = runBlocking {
+        var callCount = 0
+        val engine = MockEngine {
+            callCount++
+            respond(
+                content = "Rate limited (cooldown 59 s remaining). Try again later.",
+                status = HttpStatusCode.TooManyRequests,
+                headers = headersOf(HttpHeaders.ContentType, "text/plain"),
+            )
+        }
+        val client = OverpassClient(
+            HttpClient(engine),
+            baseUrl = "https://overpass-api.de/api/interpreter",
+            minIntervalMs = 0L,
+        )
+
+        val first = assertFailsWith<NetworkException> {
+            client.queryNodes(
+                latitude = 48.85,
+                longitude = 2.35,
+                radiusKm = 1,
+                amenityValues = setOf("fuel"),
+                limit = 1,
+            )
+        }
+        assertEquals(429, first.httpCode)
+        assertTrue(first.message!!.contains("cooldown 59 s remaining"))
+        assertTrue(RateLimitTracker.isRateLimited("overpass-api.de"))
+        assertEquals(1, callCount)
+
+        val second = assertFailsWith<NetworkException> {
+            client.queryNodes(
+                latitude = 48.85,
+                longitude = 2.35,
+                radiusKm = 1,
+                amenityValues = setOf("fuel"),
+                limit = 1,
+            )
+        }
+        assertEquals(429, second.httpCode)
+        assertTrue(second.message!!.contains("cooldown"))
+        assertTrue(second.message!!.contains("s remaining"))
+        assertEquals(1, callCount) // no network flood while cooling down
     }
 
     @Test

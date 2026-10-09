@@ -1,17 +1,17 @@
 package fr.geoking.gaston.api.overpass
 
 import fr.geoking.gaston.shared.network.NetworkException
+import fr.geoking.gaston.shared.network.RateLimitTracker
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Parameters
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -24,14 +24,24 @@ internal const val OVERPASS_USER_AGENT = "gaston-App (contact@geoking.fr)"
 /**
  * Client for the [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API) (OpenStreetMap).
  * Queries nodes/ways by OSM tags (e.g. amenity=toilets, amenity=drinking_water).
- * No API key required. Use responsibly (rate limit ~2 req/s on public instances).
+ * No API key required. Use responsibly (public instances enforce slots + cool-down;
+ * this client serializes calls, spaces them, and honors HTTP 429 without flooding).
  */
 open class OverpassClient(
     private val client: HttpClient,
-    private val baseUrl: String = "https://overpass-api.de/api/interpreter"
+    private val baseUrl: String = "https://overpass-api.de/api/interpreter",
+    /** Minimum gap between Overpass network calls (anti-flood). 0 disables spacing. */
+    private val minIntervalMs: Long = DEFAULT_MIN_INTERVAL_MS,
 ) {
+    companion object {
+        /** Stay under ~1 req/s on shared public instances (fair-use). */
+        const val DEFAULT_MIN_INTERVAL_MS = 1_000L
+        private const val DEFAULT_429_COOLDOWN_SEC = 60L
+    }
+
     private val json = Json { ignoreUnknownKeys = true }
     private val mutex = Mutex()
+    private var lastRequestEndMs: Long = 0L
 
     /**
      * Fetch POI nodes matching the given OSM amenity tag values in the bounding box.
@@ -185,24 +195,84 @@ open class OverpassClient(
     /**
      * Public Overpass instances reject generic OkHttp/Ktor User-Agents with HTTP 406
      * (Apache "Not Acceptable"). Identify the app like Nominatim requests.
+     *
+     * Serializes requests, spaces them by [minIntervalMs], and on HTTP 429 records a
+     * host cooldown (from `cooldown N s remaining` / Retry-After / body / 60s default)
+     * so further calls fail fast without flooding the public instance.
      */
     protected suspend fun executeQuery(query: String): String {
-        val response = mutex.withLock {
-            client.submitForm(
-                url = baseUrl,
-                formParameters = Parameters.build {
-                    append("data", query)
+        throwIfRateLimited()
+        return mutex.withLock {
+            throwIfRateLimited()
+            maybeDelayForMinInterval()
+            val response = try {
+                client.submitForm(
+                    url = baseUrl,
+                    formParameters = Parameters.build {
+                        append("data", query)
+                    }
+                ) {
+                    header(HttpHeaders.UserAgent, OVERPASS_USER_AGENT)
+                    header(HttpHeaders.Accept, "*/*")
                 }
-            ) {
-                header(HttpHeaders.UserAgent, OVERPASS_USER_AGENT)
-                header(HttpHeaders.Accept, "*/*")
+            } catch (e: NetworkException) {
+                if (e.httpCode == 429) {
+                    recordCooldownFromText(e.message)
+                }
+                lastRequestEndMs = System.currentTimeMillis()
+                throw e
+            }
+            val body = response.bodyAsText()
+            lastRequestEndMs = System.currentTimeMillis()
+            when (response.status.value) {
+                200 -> body
+                429 -> {
+                    val sec = resolveCooldownSeconds(
+                        body = body,
+                        retryAfter = response.headers[HttpHeaders.RetryAfter],
+                    )
+                    RateLimitTracker.recordRateLimit(
+                        hostOrUrl = baseUrl,
+                        retryAfterHeader = sec.toString(),
+                        responseBody = body,
+                    )
+                    throw NetworkException(
+                        429,
+                        "Overpass API rate limit (cooldown $sec s remaining)",
+                    )
+                }
+                else -> throw NetworkException(
+                    response.status.value,
+                    "Overpass API error: ${body.take(500)}",
+                )
             }
         }
-        val body = response.bodyAsText()
-        if (response.status.value != 200) {
-            throw NetworkException(response.status.value, "Overpass API error: ${body.take(500)}")
-        }
-        return body
+    }
+
+    private fun throwIfRateLimited() {
+        if (!RateLimitTracker.isRateLimited(baseUrl)) return
+        throw NetworkException(429, RateLimitTracker.cooldownMessage(baseUrl))
+    }
+
+    private suspend fun maybeDelayForMinInterval() {
+        if (minIntervalMs <= 0L || lastRequestEndMs <= 0L) return
+        val waitMs = lastRequestEndMs + minIntervalMs - System.currentTimeMillis()
+        if (waitMs > 0L) delay(waitMs)
+    }
+
+    private fun recordCooldownFromText(text: String?) {
+        val sec = RateLimitTracker.parseCooldownSecondsFromText(text) ?: DEFAULT_429_COOLDOWN_SEC
+        RateLimitTracker.recordRateLimit(
+            hostOrUrl = baseUrl,
+            retryAfterHeader = sec.toString(),
+            responseBody = text,
+        )
+    }
+
+    private fun resolveCooldownSeconds(body: String, retryAfter: String?): Long {
+        retryAfter?.trim()?.toLongOrNull()?.takeIf { it > 0 }?.let { return it }
+        RateLimitTracker.parseCooldownSecondsFromText(body)?.let { return it }
+        return DEFAULT_429_COOLDOWN_SEC
     }
 
     private fun parseSpeedCameraBundle(body: String, limit: Int): SpeedCameraOverpassBundle {

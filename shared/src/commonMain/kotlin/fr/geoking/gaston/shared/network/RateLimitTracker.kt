@@ -6,35 +6,48 @@ import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.api.Send
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 /**
  * Thread-safe global tracker for HTTP 429 rate-limited hosts and endpoints.
  *
  * When an API server returns 429 Too Many Requests, [recordRateLimit] sets a cooldown
- * duration (60s default or parsed from Retry-After header) during which subsequent
- * HTTP requests to that host are short-circuited before network I/O.
+ * duration (60s default, [Retry-After] header, or parsed from response/error text such as
+ * `cooldown 59 s remaining`) during which subsequent HTTP requests to that host are
+ * short-circuited before network I/O.
  */
 object RateLimitTracker {
     private val lock = Any()
     private val rateLimitedHosts = mutableMapOf<String, Long>()
+
+    /** App / debug-bar format produced by [RateLimitPlugin] and API clients. */
+    private val cooldownRemainingRegex =
+        Regex("""cooldown\s+(\d+)\s*s\s+remaining""", RegexOption.IGNORE_CASE)
+
+    /** Overpass `/api/status` and some HTML 429 bodies: `… in 12 seconds`. */
+    private val inSecondsRegex =
+        Regex("""in\s+(\d+)\s+seconds?""", RegexOption.IGNORE_CASE)
 
     /**
      * Records an HTTP 429 rate limit for [hostOrUrl].
      *
      * @param hostOrUrl Hostname or URL returned 429.
      * @param retryAfterHeader Value of Retry-After HTTP header if present.
-     * @param defaultCooldownMs Cooldown duration in ms if Retry-After is absent/invalid.
+     * @param defaultCooldownMs Cooldown duration in ms if no other source is valid.
+     * @param responseBody Optional response or error text; parsed for `cooldown N s remaining`
+     *   (and Overpass-style `in N seconds`) when [retryAfterHeader] is absent.
      */
     fun recordRateLimit(
         hostOrUrl: String,
         retryAfterHeader: String? = null,
-        defaultCooldownMs: Long = 60_000L
+        defaultCooldownMs: Long = 60_000L,
+        responseBody: String? = null,
     ) {
         val host = extractHost(hostOrUrl)
         if (host.isBlank()) return
-        val cooldownMs = parseRetryAfterMs(retryAfterHeader) ?: defaultCooldownMs
+        val fromTextSec = parseCooldownSecondsFromText(responseBody)
+        val cooldownMs = parseRetryAfterMs(retryAfterHeader)
+            ?: fromTextSec?.times(1000L)
+            ?: defaultCooldownMs
         val untilMs = System.currentTimeMillis() + cooldownMs
         synchronized(lock) {
             val current = rateLimitedHosts[host] ?: 0L
@@ -115,6 +128,34 @@ object RateLimitTracker {
         }
         return null
     }
+
+    /**
+     * Extracts cooldown duration in seconds from error/response text.
+     *
+     * Prefers `cooldown 59 s remaining` (app + RateLimitPlugin wording), then
+     * Overpass-style `in N seconds`.
+     */
+    fun parseCooldownSecondsFromText(text: String?): Long? {
+        if (text.isNullOrBlank()) return null
+        cooldownRemainingRegex.find(text)?.groupValues?.getOrNull(1)
+            ?.toLongOrNull()
+            ?.takeIf { it > 0 }
+            ?.let { return it }
+        inSecondsRegex.find(text)?.groupValues?.getOrNull(1)
+            ?.toLongOrNull()
+            ?.takeIf { it > 0 }
+            ?.let { return it }
+        return null
+    }
+
+    /** Builds the canonical short-circuit message used across clients and the plugin. */
+    fun cooldownMessage(hostOrUrl: String, remainingSec: Long = remainingCooldownSec(hostOrUrl)): String {
+        val host = extractHost(hostOrUrl).ifBlank { hostOrUrl }
+        return "Rate limit active for $host (cooldown $remainingSec s remaining)"
+    }
+
+    fun remainingCooldownSec(hostOrUrl: String): Long =
+        (getRemainingCooldownMs(hostOrUrl) / 1000).coerceAtLeast(1)
 }
 
 /**
@@ -127,9 +168,7 @@ val RateLimitPlugin = createClientPlugin("RateLimitPlugin") {
     on(Send) { request ->
         val host = request.url.host
         if (RateLimitTracker.isRateLimited(host)) {
-            val remainingMs = RateLimitTracker.getRemainingCooldownMs(host)
-            val remainingSec = (remainingMs / 1000).coerceAtLeast(1)
-            val message = "Rate limit active for $host (cooldown $remainingSec s remaining)"
+            val message = RateLimitTracker.cooldownMessage(host)
             // Short-circuit never hits ResponseObserver — mirror it into the debug bar.
             DebugLogStore.addLog(
                 NetworkLog(

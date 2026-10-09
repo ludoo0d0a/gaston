@@ -48,8 +48,7 @@ class EcoMovementOcpiClient(
 
     private suspend inline fun <reified T> getOcpiAbsolute(url: String): T {
         if (RateLimitTracker.isRateLimited(url)) {
-            val remainingSec = (RateLimitTracker.getRemainingCooldownMs(url) / 1000).coerceAtLeast(1)
-            throw NetworkException(429, "Rate limit active for Eco-Movement ($remainingSec s remaining)")
+            throw NetworkException(429, RateLimitTracker.cooldownMessage(url))
         }
 
         val response = client.get(url) {
@@ -58,8 +57,12 @@ class EcoMovementOcpiClient(
         }
         if (response.status.value == 429) {
             val retryAfter = response.headers[HttpHeaders.RetryAfter]
-            RateLimitTracker.recordRateLimit(url, retryAfter)
-            throw NetworkException(429, "Eco-Movement OCPI rate limit (HTTP 429)")
+            val bodyPreview = runCatching { response.bodyAsText() }.getOrNull()
+            RateLimitTracker.recordRateLimit(url, retryAfter, responseBody = bodyPreview)
+            val sec = RateLimitTracker.parseCooldownSecondsFromText(bodyPreview)
+                ?: retryAfter?.trim()?.toLongOrNull()?.takeIf { it > 0 }
+                ?: RateLimitTracker.remainingCooldownSec(url)
+            throw NetworkException(429, "Eco-Movement OCPI rate limit (cooldown $sec s remaining)")
         }
         if (response.status.value != 200) {
             throw NetworkException(response.status.value, "Eco-Movement OCPI error: HTTP ${response.status.value}")

@@ -39,6 +39,35 @@ class RateLimitTrackerTest {
     }
 
     @Test
+    fun testParseCooldownSecondsFromText() {
+        assertEquals(
+            59L,
+            RateLimitTracker.parseCooldownSecondsFromText(
+                "Rate limit active for overpass-api.de (cooldown 59 s remaining)",
+            ),
+        )
+        assertEquals(
+            12L,
+            RateLimitTracker.parseCooldownSecondsFromText(
+                "Slot available after: 2026-01-01T00:00:00Z, in 12 seconds.",
+            ),
+        )
+        assertEquals(null, RateLimitTracker.parseCooldownSecondsFromText("no cooldown here"))
+        assertEquals(null, RateLimitTracker.parseCooldownSecondsFromText(null))
+    }
+
+    @Test
+    fun testRecordRateLimit_fromResponseBodyCooldownText() {
+        RateLimitTracker.recordRateLimit(
+            "https://overpass-api.de/api/interpreter",
+            responseBody = "Overpass API rate limit (cooldown 45 s remaining)",
+        )
+        assertTrue(RateLimitTracker.isRateLimited("overpass-api.de"))
+        val remaining = RateLimitTracker.getRemainingCooldownMs("overpass-api.de")
+        assertTrue(remaining in 40_000L..45_000L, "remaining=$remaining")
+    }
+
+    @Test
     fun testRecordAndCheckRateLimit() {
         val host = "https://open-chargepoints.com/api/ocpi/cpo/2.2.1/locations/?limit=50&offset=0"
         assertFalse(RateLimitTracker.isRateLimited(host))
