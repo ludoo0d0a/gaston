@@ -14,10 +14,11 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * Always: beep + TTS.
  * Presence indicator ([hudStore] / [hudState]): zone de danger + VMA (phone Compose + AA map badge).
- * Heads-up: when [notificationHelper] is set (phone + AA via [NotificationHelper], same as border HUN).
+ * Temporary heads-up: when [notificationHelper] is set (phone shade + AA HUN via [NotificationHelper]).
  *
- * Owned by [DangerZoneAlertCoordinator] (process-wide). On zone entry and near control pin
- * (≤ [NEAR_RADAR_METERS]): audio + HUN.
+ * Owned by [DangerZoneAlertCoordinator] (process-wide). Fires once per zone on:
+ * - zone entry (extended radius)
+ * - approach ≤ [NEAR_RADAR_METERS] of zone center
  */
 class DangerZoneAlertManager(
     private val settingsManager: SettingsManager,

@@ -711,7 +711,7 @@ private fun MapConfig(
             }
         }
 
-        // AAC / danger-zone alerts (gated by availability + emergency kill switch)
+        // AAC / danger-zone alerts (always on; emergency kill switch via BuildConfig only)
         if (BuildConfig.AAC_ALERTS_AVAILABLE && !BuildConfig.AAC_ALERTS_KILL_SWITCH) {
             Column {
                 Text(
@@ -720,40 +720,27 @@ private fun MapConfig(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.aac_settings_switch_title), style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            stringResource(R.string.aac_settings_switch_subtitle),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = settings.radarWarningEnabled,
-                        onCheckedChange = { onUpdate(settings.copy(radarWarningEnabled = it)) },
-                    )
-                }
-
-                if (settings.radarWarningEnabled) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        stringResource(R.string.aac_settings_distance_note),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        stringResource(R.string.aac_settings_safety_tip),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+                Text(
+                    stringResource(R.string.aac_settings_switch_title),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    stringResource(R.string.aac_settings_switch_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    stringResource(R.string.aac_settings_distance_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    stringResource(R.string.aac_settings_safety_tip),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
 

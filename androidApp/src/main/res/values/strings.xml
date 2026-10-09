@@ -484,8 +484,8 @@
     <!-- AAC / Level A driving assistant -->
     <string name="aac_settings_title">Driving assistant</string>
     <string name="aac_settings_switch_title">Danger zone alerts</string>
-    <string name="aac_settings_switch_subtitle">Audio and spoken alerts when entering a danger zone, with posted speed limit when known. Off by default.</string>
-    <string name="aac_settings_distance_note">Alert distance follows the road type (~4 km motorway, ~2 km rural, ~300 m urban).</string>
+    <string name="aac_settings_switch_subtitle">Always on. Temporary notification (phone + Android Auto HUN) on zone entry and again within 100 m, with posted speed limit when known.</string>
+    <string name="aac_settings_distance_note">Alert distance follows the road type (~4 km motorway, ~2 km rural, ~300 m urban). Second alert at ~100 m.</string>
     <string name="aac_settings_safety_tip">Road safety: keep a safe following distance and adapt your speed to conditions.</string>
     <string name="aac_hud_zone_entry">Danger zone</string>
     <string name="aac_hud_vma">Speed limit %1$d km/h</string>

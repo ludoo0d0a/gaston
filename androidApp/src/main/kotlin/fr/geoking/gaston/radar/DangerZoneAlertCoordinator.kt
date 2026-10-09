@@ -13,10 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.koin.core.context.GlobalContext
 
@@ -24,8 +22,9 @@ import org.koin.core.context.GlobalContext
  * Process-wide AAC danger-zone alert loop (same lifecycle pattern as
  * [fr.geoking.gaston.shared.location.ConnectivityManager] for border-crossing HUNs).
  *
- * Starts at app launch via Koin `createdAtStart`. When radar warnings are enabled:
- * GPS poll → local [DangerZoneRepository] → beep + TTS + phone/AA HUN + shared HUD.
+ * Starts at app launch via Koin `createdAtStart` when AAC alerts are available.
+ * GPS poll → local [DangerZoneRepository] → beep + TTS + temporary phone/AA HUN + shared HUD.
+ * Always on (no user toggle); emergency off is [BuildConfig.AAC_ALERTS_KILL_SWITCH] only.
  */
 class DangerZoneAlertCoordinator(
     context: Context,
@@ -49,25 +48,16 @@ class DangerZoneAlertCoordinator(
     val hudState: StateFlow<DangerZoneHudState> = manager.hudState
 
     init {
-        scope.launch {
-            settingsManager.settings
-                .map { it.radarWarningEnabled }
-                .distinctUntilChanged()
-                .collect { enabled ->
-                    if (enabled && alertsAvailable()) {
-                        startLoop()
-                    } else {
-                        stopLoop()
-                    }
-                }
+        if (alertsAvailable()) {
+            startLoop()
         }
         scope.launch {
             // Dev test from phone / AA settings → same HUN + TTS path as live alerts.
             alertTester.requests.collect { request ->
                 manager.triggerTestAlert(request.speedLimitKmH)
-                launch {
-                    delay(TEST_HUD_CLEAR_MS)
-                    if (!settingsManager.settings.value.radarWarningEnabled) {
+                if (loopJob?.isActive != true) {
+                    launch {
+                        delay(TEST_HUD_CLEAR_MS)
                         manager.dismissHud()
                     }
                 }
@@ -87,7 +77,7 @@ class DangerZoneAlertCoordinator(
         loopJob = scope.launch {
             Log.i(TAG, "Danger-zone alert loop started")
             while (isActive) {
-                if (!settingsManager.settings.value.radarWarningEnabled || !alertsAvailable()) {
+                if (!alertsAvailable()) {
                     break
                 }
                 try {
@@ -111,12 +101,6 @@ class DangerZoneAlertCoordinator(
             manager.clearAlerts()
             Log.i(TAG, "Danger-zone alert loop stopped")
         }
-    }
-
-    private fun stopLoop() {
-        loopJob?.cancel()
-        loopJob = null
-        manager.clearAlerts()
     }
 
     companion object {

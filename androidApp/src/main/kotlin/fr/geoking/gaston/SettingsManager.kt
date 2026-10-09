@@ -201,8 +201,11 @@ data class AppSettings(
     val debugBarEnabled: Boolean = false,
     val networkFloatingBarEnabled: Boolean = false,
     val testAaMapSurfaceEnabled: Boolean = false,
-    /** AAC danger-zone alerts. Default OFF (R. 413-15 / Level A — no radar-warner by default). */
-    val radarWarningEnabled: Boolean = false,
+    /**
+     * AAC danger-zone alerts. Always on for product builds (user cannot disable);
+     * emergency off is [BuildConfig.AAC_ALERTS_KILL_SWITCH] only.
+     */
+    val radarWarningEnabled: Boolean = true,
     val radarWarningDistanceMeters: Int = 1000,
     val routeStationSearchRadiusMeters: Int = 2000,
     val filterOnlyHighwayStations: Boolean = false,
@@ -432,7 +435,7 @@ open class SettingsManager(
             debugBarEnabled = prefs.getBoolean("debug_bar_enabled", false),
             networkFloatingBarEnabled = prefs.getBoolean("network_floating_bar_enabled", false),
             testAaMapSurfaceEnabled = prefs.getBoolean("test_aa_map_surface_enabled", false),
-            radarWarningEnabled = prefs.getBoolean("radar_warning_enabled", false),
+            radarWarningEnabled = true,
             radarWarningDistanceMeters = prefs.getInt("radar_warning_distance_m", 1000),
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
             filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false),
@@ -468,7 +471,7 @@ open class SettingsManager(
         }
         val active = sanitizedVehicles.firstOrNull { it.id == withGarage.activeVehicleId }
             ?: sanitizedVehicles.firstOrNull()
-        val sanitized = if (active != null) {
+        val sanitizedBase = if (active != null) {
             withGarage.copy(vehicles = sanitizedVehicles).withFlatFieldsFrom(active)
         } else {
             withGarage.copy(
@@ -477,6 +480,8 @@ open class SettingsManager(
                 gasConsumptionLper100km = sanitizeConsumption(withGarage.gasConsumptionLper100km),
             )
         }
+        // Danger-zone alerts are always active (no user opt-out).
+        val sanitized = sanitizedBase.copy(radarWarningEnabled = true)
         _settings.value = sanitized
         prefs.edit()
             .putString("ui_theme_mode", sanitized.uiThemeMode.name)
@@ -779,8 +784,9 @@ open class SettingsManager(
         saveSettings(_settings.value.copy(filterOnlyHighwayStations = enabled))
     }
 
+    /** No-op: danger-zone alerts stay enabled (kill switch via BuildConfig only). */
     open fun setRadarWarningEnabled(enabled: Boolean) {
-        saveSettings(_settings.value.copy(radarWarningEnabled = enabled))
+        saveSettings(_settings.value.copy(radarWarningEnabled = true))
     }
 
     open fun setRadarWarningDistanceMeters(distanceMeters: Int) {

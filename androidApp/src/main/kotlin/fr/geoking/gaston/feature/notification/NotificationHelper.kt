@@ -9,6 +9,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.car.app.notification.CarAppExtender
 import androidx.car.app.notification.CarNotificationManager
 import androidx.car.app.notification.CarPendingIntent
@@ -34,10 +36,15 @@ open class NotificationHelper(private val context: Context) {
         private const val DEDUPE_WINDOW_MS = 8_000L
         /** Avoid spamming the park suggestion when AA reconnects briefly. */
         private const val REMEMBER_PARKED_DEDUPE_MS = 30 * 60 * 1000L
+        /** Phone + AA temporary danger-zone HUNs auto-dismiss after this delay. */
+        private const val TEMPORARY_NOTIFICATION_MS = 6_000L
     }
 
     private val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val pendingCancelById = mutableMapOf<Int, Runnable>()
 
     private val lastPostedAtByKind = mutableMapOf<String, Pair<String, Long>>()
 
@@ -160,6 +167,7 @@ open class NotificationHelper(private val context: Context) {
     )
     fun showUpdateAvailableNotification() = showUpdateAvailableCarNotification()
 
+    /** Temporary phone notification + Android Auto HUN on danger-zone entry. */
     open fun showDangerZoneNotification(speedLimitKmH: Int?) {
         if (!canPostNotifications()) return
         val dedupeKey = "entry-${speedLimitKmH ?: 0}"
@@ -172,7 +180,7 @@ open class NotificationHelper(private val context: Context) {
             context.getString(R.string.notification_danger_zone_message)
         }
 
-        postCarHeadsUp(
+        postTemporaryCarHeadsUp(
             notificationId = NOTIFICATION_ID_DANGER_ZONE,
             title = title,
             message = message,
@@ -181,7 +189,7 @@ open class NotificationHelper(private val context: Context) {
     }
 
     /**
-     * HUN when within ~100 m of the control pin (after zone entry).
+     * Temporary HUN when within ~100 m of the zone center (after / with zone entry).
      * FR copy: "Radar proche %d km/h".
      */
     open fun showNearRadarNotification(speedLimitKmH: Int?) {
@@ -196,7 +204,7 @@ open class NotificationHelper(private val context: Context) {
             context.getString(R.string.notification_near_radar_message_generic)
         }
 
-        postCarHeadsUp(
+        postTemporaryCarHeadsUp(
             notificationId = NOTIFICATION_ID_NEAR_RADAR,
             title = title,
             message = message,
@@ -345,7 +353,10 @@ open class NotificationHelper(private val context: Context) {
         notificationManager.notify(NOTIFICATION_ID_PHONE_REMEMBER_PARKED, builder.build())
     }
 
-    private fun postCarHeadsUp(
+    /**
+     * Temporary phone heads-up + Android Auto HUN (auto-dismiss after [TEMPORARY_NOTIFICATION_MS]).
+     */
+    private fun postTemporaryCarHeadsUp(
         notificationId: Int,
         title: String,
         message: String,
@@ -377,6 +388,8 @@ open class NotificationHelper(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
+            .setTimeoutAfter(TEMPORARY_NOTIFICATION_MS)
+            .setOnlyAlertOnce(true)
             .setContentIntent(phonePending)
             .extend(
                 CarAppExtender.Builder()
@@ -391,6 +404,18 @@ open class NotificationHelper(private val context: Context) {
         val notification = builder.build()
         notificationManager.notify(notificationId, notification)
         CarNotificationManager.from(context).notify(notificationId, builder)
+        scheduleAutoCancel(notificationId, TEMPORARY_NOTIFICATION_MS)
+    }
+
+    private fun scheduleAutoCancel(notificationId: Int, delayMs: Long) {
+        pendingCancelById.remove(notificationId)?.let { mainHandler.removeCallbacks(it) }
+        val cancel = Runnable {
+            notificationManager.cancel(notificationId)
+            CarNotificationManager.from(context).cancel(notificationId)
+            pendingCancelById.remove(notificationId)
+        }
+        pendingCancelById[notificationId] = cancel
+        mainHandler.postDelayed(cancel, delayMs)
     }
 
     fun canPostNotifications(): Boolean {

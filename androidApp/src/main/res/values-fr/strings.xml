@@ -486,8 +486,8 @@
     <!-- AAC / niveau A -->
     <string name="aac_settings_title">Assistant d\'aide à la conduite</string>
     <string name="aac_settings_switch_title">Alertes zones de danger</string>
-    <string name="aac_settings_switch_subtitle">Alertes sonores et vocales à l\'entrée d\'une zone de danger, avec la limitation de vitesse si connue. Désactivé par défaut.</string>
-    <string name="aac_settings_distance_note">La distance d\'alerte dépend du type de voie (~4 km autoroute, ~2 km hors agglo, ~300 m en agglo).</string>
+    <string name="aac_settings_switch_subtitle">Toujours actives. Notification temporaire (téléphone + HUN Android Auto) à l\'entrée de zone, puis à nouveau à ~100 m, avec la limitation de vitesse si connue.</string>
+    <string name="aac_settings_distance_note">La distance d\'alerte dépend du type de voie (~4 km autoroute, ~2 km hors agglo, ~300 m en agglo). Seconde alerte à ~100 m.</string>
     <string name="aac_settings_safety_tip">Sécurité routière : respectez les distances de sécurité et adaptez votre vitesse aux conditions.</string>
     <string name="aac_hud_zone_entry">Zone de danger</string>
     <string name="aac_hud_vma">Limitation %1$d km/h</string>
