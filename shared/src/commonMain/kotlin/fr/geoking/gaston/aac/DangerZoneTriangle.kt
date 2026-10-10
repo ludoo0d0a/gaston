@@ -9,20 +9,24 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Directional danger-zone rectangle for map overlays.
+ * Directional danger-zone approach corridor (trapezoid) for map overlays and alert hit-testing.
  *
- * Near short edge sits on the radar / control pin; the far short edge lies on the
- * entry boundary opposite the monitored traffic bearing (approach corridor).
+ * Near short edge sits on the radar / control pin ([HALF_WIDTH_METERS]); the far short edge
+ * (entry boundary opposite the monitored traffic bearing) is wider ([FAR_HALF_WIDTH_METERS])
+ * so curved approaches still enter the detection zone.
  * No shape when direction is missing or bidirectional — only the POI marker should
- * be shown.
+ * be shown (alerts fall back to the AFFTAC circle).
  */
 object DangerZoneTriangle {
     const val RAW_DIRECTION = "direction"
     const val RAW_MONITORED_BEARING = "monitored_bearing"
     const val RAW_BIDIRECTIONAL = "direction_bidirectional"
 
-    /** Half-width of the corridor rectangle (meters), independent of zone length. */
+    /** Half-width at the radar / near edge (meters). */
     const val HALF_WIDTH_METERS = 50.0
+
+    /** Half-width at the entry / far edge (meters) — wider for curving roads. */
+    const val FAR_HALF_WIDTH_METERS = 150.0
 
     private const val EARTH_RADIUS_M = 6_371_000.0
 
@@ -73,17 +77,18 @@ object DangerZoneTriangle {
         tipLon: Double,
         radiusMeters: Double,
         monitoredBearingDegrees: Double,
-        halfWidthMeters: Double = HALF_WIDTH_METERS,
+        nearHalfWidthMeters: Double = HALF_WIDTH_METERS,
+        farHalfWidthMeters: Double = FAR_HALF_WIDTH_METERS,
     ): List<Pair<Double, Double>> {
         val approachFrom = OsmSpeedCameraDirection.normalizeBearing(monitoredBearingDegrees + 180.0)
         val leftBearing = OsmSpeedCameraDirection.normalizeBearing(approachFrom - 90.0)
         val rightBearing = OsmSpeedCameraDirection.normalizeBearing(approachFrom + 90.0)
 
         val entryCenter = offsetMeters(tipLat, tipLon, approachFrom, radiusMeters)
-        val nearLeft = offsetMeters(tipLat, tipLon, leftBearing, halfWidthMeters)
-        val nearRight = offsetMeters(tipLat, tipLon, rightBearing, halfWidthMeters)
-        val farLeft = offsetMeters(entryCenter.first, entryCenter.second, leftBearing, halfWidthMeters)
-        val farRight = offsetMeters(entryCenter.first, entryCenter.second, rightBearing, halfWidthMeters)
+        val nearLeft = offsetMeters(tipLat, tipLon, leftBearing, nearHalfWidthMeters)
+        val nearRight = offsetMeters(tipLat, tipLon, rightBearing, nearHalfWidthMeters)
+        val farLeft = offsetMeters(entryCenter.first, entryCenter.second, leftBearing, farHalfWidthMeters)
+        val farRight = offsetMeters(entryCenter.first, entryCenter.second, rightBearing, farHalfWidthMeters)
 
         return listOf(
             nearLeft,
@@ -92,6 +97,64 @@ object DangerZoneTriangle {
             nearRight,
             nearLeft,
         )
+    }
+
+    /**
+     * True when [lat]/[lon] lies inside the approach trapezoid for the given tip / radius /
+     * monitored bearing (same ring as [latLngRing]).
+     */
+    fun contains(
+        lat: Double,
+        lon: Double,
+        tipLat: Double,
+        tipLon: Double,
+        radiusMeters: Double,
+        monitoredBearingDegrees: Double,
+        nearHalfWidthMeters: Double = HALF_WIDTH_METERS,
+        farHalfWidthMeters: Double = FAR_HALF_WIDTH_METERS,
+    ): Boolean {
+        val ring = latLngRing(
+            tipLat = tipLat,
+            tipLon = tipLon,
+            radiusMeters = radiusMeters,
+            monitoredBearingDegrees = monitoredBearingDegrees,
+            nearHalfWidthMeters = nearHalfWidthMeters,
+            farHalfWidthMeters = farHalfWidthMeters,
+        )
+        return pointInRing(lat, lon, ring)
+    }
+
+    /**
+     * Ray-casting point-in-polygon on a closed (lat, lon) ring.
+     * Uses lon as x and lat as y (adequate for local corridor scales).
+     */
+    fun pointInRing(lat: Double, lon: Double, ring: List<Pair<Double, Double>>): Boolean {
+        if (ring.size < 4) return false
+        // Drop closing duplicate if present
+        val n = if (
+            ring.size >= 2 &&
+            ring.first().first == ring.last().first &&
+            ring.first().second == ring.last().second
+        ) {
+            ring.size - 1
+        } else {
+            ring.size
+        }
+        if (n < 3) return false
+
+        var inside = false
+        var j = n - 1
+        for (i in 0 until n) {
+            val yi = ring[i].first
+            val xi = ring[i].second
+            val yj = ring[j].first
+            val xj = ring[j].second
+            val intersect = ((yi > lat) != (yj > lat)) &&
+                (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)
+            if (intersect) inside = !inside
+            j = i
+        }
+        return inside
     }
 
     /** Destination point [distanceMeters] along [bearingDegrees] from [lat]/[lon]. */

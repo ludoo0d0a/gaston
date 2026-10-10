@@ -32,10 +32,15 @@ enum class DangerZoneKind {
 }
 
 /**
- * Extended danger zone (circle). Alert on entry / presence — never on distance-to-control-pin alone.
+ * Extended danger zone. Alert on entry / presence — never on distance-to-control-pin alone.
  *
- * [centerLatitude]/[centerLongitude] are the geometric center of the zone buffer, not an
- * exposed "exact control point" for alert UX. Callers must not present these as a radar pin.
+ * Geometry:
+ * - Unidirectional monitored bearing → approach trapezoid ahead of the radar
+ *   ([DangerZoneTriangle]; length = [radiusMeters]).
+ * - Missing / bidirectional direction → AFFTAC circle of [radiusMeters].
+ *
+ * [centerLatitude]/[centerLongitude] are the radar / control coordinates (circle center or
+ * trapezoid tip), not an exposed "exact control point" for alert UX.
  *
  * Optional OSM merge fields ([monitoredBearingDegrees], [directionConfidence], …) enrich
  * data.gouv anchors without requiring OSM for coverage.
@@ -55,7 +60,21 @@ data class DangerZone(
     val osmNodeId: Long? = null,
     val matchedDistanceMeters: Double? = null,
 ) {
+    /** True when alert hit-testing uses the approach trapezoid instead of the AFFTAC circle. */
+    val usesApproachTrapezoid: Boolean
+        get() = monitoredBearingDegrees != null && !monitoredBidirectional
+
     fun contains(latitude: Double, longitude: Double): Boolean {
+        if (usesApproachTrapezoid) {
+            return DangerZoneTriangle.contains(
+                lat = latitude,
+                lon = longitude,
+                tipLat = centerLatitude,
+                tipLon = centerLongitude,
+                radiusMeters = radiusMeters,
+                monitoredBearingDegrees = monitoredBearingDegrees!!,
+            )
+        }
         val distM = haversineKm(latitude, longitude, centerLatitude, centerLongitude) * 1000.0
         return distM <= radiusMeters
     }
@@ -126,8 +145,9 @@ object DangerZoneDistances {
 
 /**
  * Converts a fixed speed-control dataset point into an extended [DangerZone].
- * The resulting geometry is a buffer around the source coordinates; alert UX must not
- * treat the center as a precise control location marker.
+ * Without a monitored bearing the geometry is an AFFTAC circle; with a unidirectional
+ * bearing it becomes an approach trapezoid. Alert UX must not treat the center as a
+ * precise control location marker.
  */
 object DangerZoneFactory {
     fun fromSpeedControlPoint(
@@ -249,8 +269,6 @@ object DangerZoneEvaluator {
         toleranceAngleDegrees: Double = DEFAULT_TOLERANCE_ANGLE_DEGREES,
     ): DangerZoneEvaluation {
         val distanceMeters = zone.distanceMetersFrom(vehLat, vehLon)
-        val isInside = distanceMeters <= zone.radiusMeters
-
         val bearingToCenter = calculateBearing(vehLat, vehLon, zone.centerLatitude, zone.centerLongitude)
         val isAhead = if (vehBearing != null && vehSpeedKmH >= MIN_SPEED_KMH_FOR_BEARING) {
             angleDifference(vehBearing, bearingToCenter) <= toleranceAngleDegrees
@@ -258,12 +276,30 @@ object DangerZoneEvaluator {
             true
         }
 
-        // Alert on presence in zone; when moving, prefer zone ahead of trajectory
-        // (reduces opposite-carriageway noise without requiring full map-matching).
-        var alertActive = if (vehBearing != null && vehSpeedKmH >= MIN_SPEED_KMH_FOR_BEARING) {
-            isInside && isAhead
+        val geometricallyInside = if (zone.usesApproachTrapezoid) {
+            // Approach trapezoid already encodes "ahead of radar"; no extra ahead filter.
+            DangerZoneTriangle.contains(
+                lat = vehLat,
+                lon = vehLon,
+                tipLat = zone.centerLatitude,
+                tipLon = zone.centerLongitude,
+                radiusMeters = zone.radiusMeters,
+                monitoredBearingDegrees = zone.monitoredBearingDegrees!!,
+            )
         } else {
-            isInside
+            distanceMeters <= zone.radiusMeters
+        }
+
+        // Circle fallback: when moving, prefer zone ahead of trajectory
+        // (reduces opposite-carriageway noise without requiring full map-matching).
+        var alertActive = if (
+            !zone.usesApproachTrapezoid &&
+            vehBearing != null &&
+            vehSpeedKmH >= MIN_SPEED_KMH_FOR_BEARING
+        ) {
+            geometricallyInside && isAhead
+        } else {
+            geometricallyInside
         }
 
         // High-confidence OSM monitored direction: drop opposite-sense approaches.

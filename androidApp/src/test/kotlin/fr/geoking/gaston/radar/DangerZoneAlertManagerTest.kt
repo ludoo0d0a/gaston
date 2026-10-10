@@ -4,6 +4,7 @@ import android.location.Location
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.aac.DangerZoneAlertCopy
 import fr.geoking.gaston.aac.DangerZoneFactory
+import fr.geoking.gaston.aac.DangerZoneTriangle
 import fr.geoking.gaston.aac.RoadNetworkClass
 import fr.geoking.gaston.shared.logging.DebugLogStore
 import fr.geoking.gaston.shared.logging.RadarDetectionLog
@@ -326,5 +327,43 @@ class DangerZoneAlertManagerTest {
         }
         alertManager.evaluateAndAlert(loc, listOf(zone))
         assertTrue(DebugLogStore.logs.value.none { it.host == RadarDetectionLog.HOST })
+    }
+
+    @Test
+    fun trapezoidZoneAlertsOnApproachAndExitsImmediatelyOutside() {
+        val tipLat = 48.8566
+        val tipLon = 2.3522
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "z-trap",
+            latitude = tipLat,
+            longitude = tipLon,
+            speedLimitKmH = 90,
+            source = "test",
+        ).copy(monitoredBearingDegrees = 0.0)
+
+        val onApproach = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 500.0)
+        val inside = Location("test").apply {
+            latitude = onApproach.first
+            longitude = onApproach.second
+            bearing = 0f
+            speed = 22f // ~80 km/h
+            time = System.currentTimeMillis()
+        }
+        alertManager.evaluateAndAlert(inside, listOf(zone))
+        assertTrue(alertManager.getAlertedZoneIds().contains("z-trap"))
+        assertTrue(alertManager.hudState.value.active)
+
+        // Behind radar (north): outside trapezoid → immediate exit (no circle hysteresis)
+        val behind = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 0.0, 200.0)
+        val outside = Location("test").apply {
+            latitude = behind.first
+            longitude = behind.second
+            bearing = 0f
+            speed = 22f
+            time = System.currentTimeMillis() + 1_000
+        }
+        alertManager.evaluateAndAlert(outside, listOf(zone))
+        assertFalse(alertManager.getAlertedZoneIds().contains("z-trap"))
+        assertFalse(alertManager.hudState.value.active)
     }
 }

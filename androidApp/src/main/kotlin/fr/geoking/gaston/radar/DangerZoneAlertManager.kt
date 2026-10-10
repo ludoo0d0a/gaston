@@ -123,8 +123,14 @@ class DangerZoneAlertManager(
                 }
             } else {
                 if (zone.id in alertedZoneIds) {
-                    // Left the extended zone (or opposite carriageway filter)
-                    if (eval.distanceToCenterMeters > zone.radiusMeters * 1.2 || !eval.isAhead) {
+                    // Trapezoid: leave as soon as outside the corridor.
+                    // Circle fallback: hysteresis at 1.2× radius or no longer ahead.
+                    val leftZone = if (zone.usesApproachTrapezoid) {
+                        true
+                    } else {
+                        eval.distanceToCenterMeters > zone.radiusMeters * 1.2 || !eval.isAhead
+                    }
+                    if (leftZone) {
                         logDetection(RadarDetectionLog.Event.EXIT, zone, eval, debugLogs)
                         alertedZoneIds.remove(zone.id)
                         nearAlertedZoneIds.remove(zone.id)

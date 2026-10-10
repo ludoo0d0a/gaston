@@ -211,10 +211,12 @@ class RadarOsmEnricherTest {
 
     @Test
     fun evaluatorDropsOppositeHighDirection() {
+        val tipLat = 48.8566
+        val tipLon = 2.3522
         val zone = DangerZoneFactory.fromSpeedControlPoint(
             id = "z",
-            latitude = 48.8566,
-            longitude = 2.3522,
+            latitude = tipLat,
+            longitude = tipLon,
             speedLimitKmH = 90,
             source = "test",
         ).withOsmDirection(
@@ -223,20 +225,21 @@ class RadarOsmEnricherTest {
                 monitoredBearingDegrees = 0.0, // northbound traffic controlled
             )
         )
-        // Inside zone from the north, heading south into center — ahead, but opposite to monitored sense
+        // Inside trapezoid from the south but heading south — opposite to monitored sense → High drops
+        val onApproach = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 800.0)
         val evalOpposite = DangerZoneEvaluator.evaluate(
-            vehLat = 48.8620,
-            vehLon = 2.3522,
+            vehLat = onApproach.first,
+            vehLon = onApproach.second,
             vehSpeedKmH = 80.0,
             vehBearing = 180.0,
             zone = zone,
         )
         assertFalse(evalOpposite.isInside)
 
-        // From the south, heading north — ahead and compatible with monitored sense
+        // Same position, heading north — compatible with monitored sense
         val evalOk = DangerZoneEvaluator.evaluate(
-            vehLat = 48.8500,
-            vehLon = 2.3522,
+            vehLat = onApproach.first,
+            vehLon = onApproach.second,
             vehSpeedKmH = 80.0,
             vehBearing = 0.0,
             zone = zone,
@@ -246,10 +249,12 @@ class RadarOsmEnricherTest {
 
     @Test
     fun lowDirectionDoesNotDropAlert() {
+        val tipLat = 48.8566
+        val tipLon = 2.3522
         val zone = DangerZoneFactory.fromSpeedControlPoint(
             id = "z",
-            latitude = 48.8566,
-            longitude = 2.3522,
+            latitude = tipLat,
+            longitude = tipLon,
             speedLimitKmH = 90,
             source = "test",
         ).withOsmDirection(
@@ -258,10 +263,12 @@ class RadarOsmEnricherTest {
                 monitoredBearingDegrees = 0.0,
             )
         )
-        // Same opposite approach as High case — Low must NOT filter
+        // Inside approach trapezoid (south of tip) but heading opposite to monitored sense.
+        // Low confidence must NOT drop via OSM sense filter (geometry alone already encodes approach).
+        val onApproach = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 800.0)
         val eval = DangerZoneEvaluator.evaluate(
-            vehLat = 48.8620,
-            vehLon = 2.3522,
+            vehLat = onApproach.first,
+            vehLon = onApproach.second,
             vehSpeedKmH = 80.0,
             vehBearing = 180.0,
             zone = zone,

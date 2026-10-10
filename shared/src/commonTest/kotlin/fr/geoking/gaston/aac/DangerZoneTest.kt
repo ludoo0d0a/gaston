@@ -140,4 +140,78 @@ class DangerZoneTest {
         assertEquals(DangerZoneKind.SpeedControlArea, DangerZoneFactory.mapCsvTypeToKind("FIXE"))
         assertEquals(DangerZoneKind.SpeedControlArea, DangerZoneFactory.mapCsvTypeToKind("ETD"))
     }
+
+    @Test
+    fun withoutBearingUsesCircle() {
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "circle1",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            speedLimitKmH = 90,
+            source = "test",
+        )
+        assertFalse(zone.usesApproachTrapezoid)
+        // ~1 km north: inside ExtraUrban circle, no bearing → circle alert
+        val eval = DangerZoneEvaluator.evaluate(
+            vehLat = 48.8656,
+            vehLon = 2.3522,
+            vehSpeedKmH = 80.0,
+            vehBearing = null,
+            zone = zone,
+        )
+        assertTrue(eval.isInside)
+    }
+
+    @Test
+    fun withBearingUsesTrapezoidNotCircle() {
+        val tipLat = 48.8566
+        val tipLon = 2.3522
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "trap1",
+            latitude = tipLat,
+            longitude = tipLon,
+            speedLimitKmH = 90,
+            source = "test",
+        ).copy(monitoredBearingDegrees = 0.0) // northbound → corridor south
+        assertTrue(zone.usesApproachTrapezoid)
+
+        // On approach axis ~1 km south → inside trapezoid
+        val onAxis = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 1_000.0)
+        val evalApproach = DangerZoneEvaluator.evaluate(
+            vehLat = onAxis.first,
+            vehLon = onAxis.second,
+            vehSpeedKmH = 80.0,
+            vehBearing = 0.0,
+            zone = zone,
+        )
+        assertTrue(evalApproach.isInside)
+
+        // North of tip (behind radar): inside AFFTAC circle but outside trapezoid
+        val behind = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 0.0, 500.0)
+        assertTrue(behind.first.let { haversineFromTip(tipLat, tipLon, it, behind.second) } < zone.radiusMeters)
+        val evalBehind = DangerZoneEvaluator.evaluate(
+            vehLat = behind.first,
+            vehLon = behind.second,
+            vehSpeedKmH = 80.0,
+            vehBearing = 180.0,
+            zone = zone,
+        )
+        assertFalse(evalBehind.isInside)
+
+        // Far lateral at mid-approach: inside circle radius, outside trapezoid
+        val mid = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 1_000.0)
+        val side = DangerZoneTriangle.offsetMeters(mid.first, mid.second, 90.0, 400.0)
+        val evalSide = DangerZoneEvaluator.evaluate(
+            vehLat = side.first,
+            vehLon = side.second,
+            vehSpeedKmH = 80.0,
+            vehBearing = 0.0,
+            zone = zone,
+        )
+        assertFalse(evalSide.isInside)
+    }
+
+    private fun haversineFromTip(tipLat: Double, tipLon: Double, lat: Double, lon: Double): Double {
+        return fr.geoking.gaston.shared.location.haversineKm(tipLat, tipLon, lat, lon) * 1000.0
+    }
 }
