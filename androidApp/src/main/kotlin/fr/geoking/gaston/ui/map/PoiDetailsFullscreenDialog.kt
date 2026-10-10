@@ -263,7 +263,7 @@ fun PoiDetailsFullscreenDialog(
                                         }
                                         val start = fp.shortageStart
                                         if (fp.outOfStock && !start.isNullOrBlank()) {
-                                            val formattedStart = DateTimeUtils.formatRelativeTime(start)
+                                            val formattedStart = DateTimeUtils.formatDate(start)
                                             Text(
                                                 text = stringResource(R.string.poi_shortage_since, formattedStart),
                                                 color = Color(0xFFEF4444).copy(alpha = 0.8f),

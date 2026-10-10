@@ -89,7 +89,7 @@ object AutoPoiUiHelper {
         if (fp.outOfStock) {
             val since = fp.shortageStart
                 ?.takeIf { it.isNotBlank() }
-                ?.let { " (${carContext.getString(R.string.poi_shortage_since, DateTimeUtils.formatRelativeTime(it))})" }
+                ?.let { " (${carContext.getString(R.string.poi_shortage_since, DateTimeUtils.formatDate(it))})" }
                 ?: ""
             return "❌ ${shortageLabel(carContext, fp)}$since"
         }

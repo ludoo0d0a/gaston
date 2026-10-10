@@ -40,6 +40,23 @@ class DateTimeUtilsTest {
     }
 
     @Test
+    fun testFormatDate() {
+        fun expected(dateStr: String): String {
+            val local = DateTimeUtils.parseFlexible(dateStr)!!
+                .toLocalDateTime(TimeZone.currentSystemDefault())
+            return "${local.day.toString().padStart(2, '0')}/" +
+                "${local.month.number.toString().padStart(2, '0')}/" +
+                "${local.year}"
+        }
+        assertEquals(expected("2026-10-09T12:37:02+00:00"), DateTimeUtils.formatDate("2026-10-09T12:37:02+00:00"))
+        assertEquals(expected("2017-09-01 07:01:44"), DateTimeUtils.formatDate("2017-09-01 07:01:44"))
+        assertEquals(expected("2026-11-25"), DateTimeUtils.formatDate("2026-11-25"))
+        // Zero-padded dd/MM/yyyy (e.g. 25/11/2026)
+        assertTrue(Regex("""^\d{2}/\d{2}/\d{4}$""").matches(DateTimeUtils.formatDate("2026-11-25T12:00:00Z")))
+        assertEquals("not-a-date", DateTimeUtils.formatDate("not-a-date"))
+    }
+
+    @Test
     fun testFormatRelativeTime() {
         val now = Clock.System.now()
 
@@ -59,8 +76,6 @@ class DateTimeUtilsTest {
         assertEquals("2 weeks ago", DateTimeUtils.formatRelativeTime(twoWeeksAgo))
 
         val old = now - 60.days
-        val local = old.toLocalDateTime(TimeZone.currentSystemDefault())
-        val expected = "${local.day}/${local.month.number}/${local.year}"
-        assertEquals(expected, DateTimeUtils.formatRelativeTime(old.toString()))
+        assertEquals(DateTimeUtils.formatDate(old.toString()), DateTimeUtils.formatRelativeTime(old.toString()))
     }
 }

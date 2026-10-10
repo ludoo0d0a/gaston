@@ -66,6 +66,18 @@ object DateTimeUtils {
         return (now - instant).inWholeDays > days
     }
 
+    /**
+     * Format [dateStr] as a calendar date `dd/MM/yyyy` (e.g. `25/11/2026`).
+     * Unparseable / blank strings are returned trimmed (or as-is if empty after trim).
+     */
+    fun formatDate(dateStr: String): String {
+        val instant = parseFlexible(dateStr) ?: return dateStr.trim().ifEmpty { dateStr }
+        val local = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+        val day = local.day.toString().padStart(2, '0')
+        val month = local.month.number.toString().padStart(2, '0')
+        return "$day/$month/${local.year}"
+    }
+
     fun formatRelativeTime(dateStr: String): String {
         val instant = parseFlexible(dateStr) ?: return dateStr.trim().ifEmpty { dateStr }
         val now = Clock.System.now()
@@ -113,10 +125,7 @@ object DateTimeUtils {
                     if (weeks == 1L) "1 week ago" else "$weeks weeks ago"
                 }
             }
-            else -> {
-                val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-                "${localDateTime.day}/${localDateTime.month.number}/${localDateTime.year}"
-            }
+            else -> formatDate(dateStr)
         }
     }
 }
