@@ -20,7 +20,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.google.maps.android.compose.rememberMarkerState
+import com.google.maps.android.compose.rememberUpdatedMarkerState
 
 /**
  * Compact Google Map showing the retained / parked vehicle pin.
@@ -39,10 +39,9 @@ fun ParkedCarMapPreview(
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(target, MAP_ZOOM)
     }
-    val markerState = rememberMarkerState(position = target)
+    val markerState = rememberUpdatedMarkerState(position = target)
     LaunchedEffect(latitude, longitude) {
         cameraPositionState.position = CameraPosition.fromLatLngZoom(target, MAP_ZOOM)
-        markerState.position = target
     }
     LaunchedEffect(cameraPositionState.isMoving) {
         if (!cameraPositionState.isMoving) {
