@@ -19,9 +19,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Park suggestion while Android Auto / car mode keeps [ParkStopMonitorService] alive:
- * 1. **While projected (FGS)**: vehicle speed then ~10s stop → HUN + TTS + Save.
- * 2. **Projection ends / Gaston session destroy** (fallback): if nothing retained → 10s gate + propose.
+ * Park suggestion after Android Auto / projection ends (and as Gaston session-destroy fallback).
+ *
+ * In-projection stop detection via location FGS is deferred — see docs/park-stop-fgs.md.
  */
 class AaPostSessionParkSuggester(
     context: Context,
@@ -33,7 +33,6 @@ class AaPostSessionParkSuggester(
     private val appContext = context.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val audio = ParkSuggestionAudio(appContext)
-    private var projectionJob: Job? = null
     private var postSessionJob: Job? = null
     private var projectionStartedAtElapsedMs: Long = 0L
     private var wasProjected: Boolean = false
@@ -49,7 +48,6 @@ class AaPostSessionParkSuggester(
     }
 
     init {
-        // Process-wide: FGS keeps us alive when another AA app is foreground.
         carConnection.type.observeForever(connectionObserver)
     }
 
@@ -58,86 +56,15 @@ class AaPostSessionParkSuggester(
             projectionStartedAtElapsedMs = android.os.SystemClock.elapsedRealtime()
         }
         wasProjected = true
-        ParkStopMonitorService.start(appContext)
     }
 
     private fun onProjectionEnded() {
-        if (!wasProjected) {
-            ParkStopMonitorService.stop(appContext)
-            return
-        }
+        if (!wasProjected) return
         wasProjected = false
         val started = projectionStartedAtElapsedMs
         projectionStartedAtElapsedMs = 0L
-        ParkStopMonitorService.stop(appContext)
-        // Fallback when AA disconnects (Gaston may never have been opened this trip).
+        // When AA disconnects (Gaston may never have been opened this trip).
         startIfEligible(sessionStartedAtElapsedMs = started)
-    }
-
-    /** Called from [ParkStopMonitorService] after startForeground. */
-    fun attachFromService() {
-        startProjectionMonitoring()
-    }
-
-    /** Called from [ParkStopMonitorService] onDestroy. */
-    fun detachFromService() {
-        stopProjectionMonitoring()
-    }
-
-    /** GPS polling for stop detection while the FGS is running. */
-    fun startProjectionMonitoring() {
-        if (projectionJob?.isActive == true) return
-        postSessionJob?.cancel()
-        val tracker = InSessionStopTracker()
-        projectionJob = scope.launch {
-            Log.i(TAG, "Projection park-stop monitor started")
-            while (isActive) {
-                val now = android.os.SystemClock.elapsedRealtime()
-                val loc = try {
-                    LocationHelper.getCurrentLocation(appContext)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Projection location failed", e)
-                    null
-                }
-                if (loc != null) {
-                    settingsManager.saveLastKnownLocation(loc.latitude, loc.longitude)
-                }
-                val speed = if (loc != null && loc.hasSpeed()) loc.speed else null
-                when (tracker.onSample(speed, now)) {
-                    InSessionStopTracker.Result.Continue -> Unit
-                    InSessionStopTracker.Result.Confirmed -> {
-                        val settings = settingsManager.settings.value
-                        val lat = loc?.latitude ?: settings.lastKnownLat
-                        val lon = loc?.longitude ?: settings.lastKnownLon
-                        if (lat != null && lon != null && !shouldSkipSuggestion(activeVehicleId(settings))) {
-                            onParkConfirmed(
-                                ParkCandidate(
-                                    vehicleId = activeVehicleId(settings),
-                                    latitude = lat,
-                                    longitude = lon,
-                                    createdAtEpochMs = System.currentTimeMillis(),
-                                )
-                            )
-                        }
-                    }
-                }
-                delay(POLL_MS)
-            }
-            Log.i(TAG, "Projection park-stop monitor stopped")
-        }
-    }
-
-    fun stopProjectionMonitoring() {
-        projectionJob?.cancel()
-        projectionJob = null
-    }
-
-    fun startInSessionMonitoring() {
-        ParkStopMonitorService.start(appContext)
-    }
-
-    fun stopInSessionMonitoring() {
-        ParkStopMonitorService.stop(appContext)
     }
 
     /**

@@ -1113,10 +1113,6 @@
     <string name="notification_remember_parked_message">Save where you left %1$s</string>
     <string name="notification_remember_parked_message_generic">Save where you left your vehicle</string>
     <string name="notification_remember_parked_tts">Save your car\'s parking location?</string>
-    <string name="park_stop_monitor_channel">Parking monitor</string>
-    <string name="park_stop_monitor_channel_desc">Keeps Gaston running briefly while Android Auto is connected to detect parking.</string>
-    <string name="park_stop_monitor_title">Gaston parking monitor</string>
-    <string name="park_stop_monitor_text">Watching for a stop to offer saving your car location</string>
     <string name="notification_parked_confirmed_title">Parking spot saved</string>
     <string name="notification_parked_confirmed_message">%1$s location was saved. Tap to view.</string>
     <string name="notification_parked_confirmed_message_generic">Your vehicle location was saved. Tap to view.</string>

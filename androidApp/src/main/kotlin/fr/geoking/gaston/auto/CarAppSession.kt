@@ -54,12 +54,11 @@ class CarAppSession : Session(), KoinComponent {
                 if (sessionStartedAtElapsedMs == 0L) {
                     sessionStartedAtElapsedMs = android.os.SystemClock.elapsedRealtime()
                 }
-                // Park stop HUN + TTS: process-wide via CarConnection in AaPostSessionParkSuggester
-                // (works on any AA screen and when another car app is foreground).
+                // Park suggestion: CarConnection disconnect + this destroy fallback
+                // (in-projection FGS deferred — docs/park-stop-fgs.md).
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
-                // Fallback if projection monitor did not retain a park suggestion this session.
                 parkSuggester.startIfEligible(sessionStartedAtElapsedMs = sessionStartedAtElapsedMs)
             }
         })
