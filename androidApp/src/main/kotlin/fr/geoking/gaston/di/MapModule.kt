@@ -108,7 +108,10 @@ import fr.geoking.gaston.api.traffic.BisonFuteTrafficClient
 import fr.geoking.gaston.api.traffic.BisonFuteTrafficProvider
 import fr.geoking.gaston.api.traffic.CitaGeoJsonTrafficClient
 import fr.geoking.gaston.api.traffic.CitaTrafficProvider
+import fr.geoking.gaston.api.traffic.FranceTrafficProvider
 import fr.geoking.gaston.api.traffic.GeographicRegion
+import fr.geoking.gaston.api.traffic.TipiActionTrafficProvider
+import fr.geoking.gaston.api.traffic.TipiRestrictedTrafficClient
 import fr.geoking.gaston.api.traffic.TomTomTrafficClient
 import fr.geoking.gaston.api.traffic.TomTomTrafficProvider
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
@@ -608,9 +611,44 @@ val mapModule = module {
         )
     }
 
-    // Traffic: Bison Futé (FR open DATEX) when in France; CITA LU / TomTom registered but currently disabled.
+    // Traffic: Lux CITA first (inside FR bbox), then France composite (open ± TIPI B/C), TomTom elsewhere.
     single { BisonFuteTrafficClient(get()) }
     single { BisonFuteTrafficProvider(get()) }
+    single(named("tipi_action_c")) {
+        TipiRestrictedTrafficClient(
+            client = get(),
+            contentUrl = TipiRestrictedTrafficClient.ACTION_C_URL,
+            username = BuildConfig.TIPI_USER,
+            password = BuildConfig.TIPI_PASSWORD
+        )
+    }
+    single(named("tipi_action_b")) {
+        TipiRestrictedTrafficClient(
+            client = get(),
+            contentUrl = TipiRestrictedTrafficClient.ACTION_B_URL,
+            username = BuildConfig.TIPI_USER,
+            password = BuildConfig.TIPI_PASSWORD
+        )
+    }
+    single(named("tipi_action_c_provider")) {
+        TipiActionTrafficProvider(
+            client = get(named("tipi_action_c")),
+            providerId = TipiActionTrafficProvider.ACTION_C_ID
+        )
+    }
+    single(named("tipi_action_b_provider")) {
+        TipiActionTrafficProvider(
+            client = get(named("tipi_action_b")),
+            providerId = TipiActionTrafficProvider.ACTION_B_ID
+        )
+    }
+    single {
+        FranceTrafficProvider(
+            openProvider = get(),
+            actionB = get(named("tipi_action_b_provider")),
+            actionC = get(named("tipi_action_c_provider"))
+        )
+    }
     single { CitaGeoJsonTrafficClient(get()) }
     single { CitaTrafficProvider(get()) }
     single { TomTomTrafficClient(get()) }
@@ -618,13 +656,13 @@ val mapModule = module {
     single<TrafficProviderFactory> {
         TrafficProviderFactory(
             listOf(
+                GeographicRegion.Bbox(49.4, 5.7, 50.2, 6.6) to get<CitaTrafficProvider>(),
                 GeographicRegion.Bbox(
                     BisonFuteTrafficProvider.FRANCE_LAT_MIN,
                     BisonFuteTrafficProvider.FRANCE_LON_MIN,
                     BisonFuteTrafficProvider.FRANCE_LAT_MAX,
                     BisonFuteTrafficProvider.FRANCE_LON_MAX
-                ) to get<BisonFuteTrafficProvider>(),
-                GeographicRegion.Bbox(49.4, 5.7, 50.2, 6.6) to get<CitaTrafficProvider>(),
+                ) to get<FranceTrafficProvider>(),
                 GeographicRegion.Everywhere to get<TomTomTrafficProvider>()
             )
         )

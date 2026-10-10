@@ -16,7 +16,7 @@ class CitaTrafficProvider(
         lonMax = 6.6
     )
 
-    override val enabled: Boolean = false
+    override val enabled: Boolean = true
 
     override suspend fun getTraffic(request: TrafficRequest): TrafficInfo? {
         when (request) {

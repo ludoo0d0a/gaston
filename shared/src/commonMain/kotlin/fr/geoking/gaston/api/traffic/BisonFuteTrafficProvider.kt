@@ -33,7 +33,7 @@ class BisonFuteTrafficProvider(
             }
         }
         val body = client.fetchDatexXml() ?: return null
-        val all = BisonFuteDatexParser.parse(body, nowMs = nowMs())
+        val all = DatexSituationParser.parse(body, nowMs = nowMs(), defaultRoadRef = "FR")
         if (all.isEmpty()) return null
         val q = queryBbox(request) ?: return null
         val filtered = all.filter { e ->
@@ -43,30 +43,6 @@ class BisonFuteTrafficProvider(
         if (filtered.isEmpty()) return null
         return TrafficInfo(events = filtered, providerId = PROVIDER_ID)
     }
-
-    private fun queryBbox(request: TrafficRequest): Bbox? = when (request) {
-        is TrafficRequest.Bbox -> Bbox(
-            latMin = request.latMin.coerceAtMost(request.latMax),
-            lonMin = request.lonMin.coerceAtMost(request.lonMax),
-            latMax = request.latMax.coerceAtLeast(request.latMin),
-            lonMax = request.lonMax.coerceAtLeast(request.lonMin)
-        )
-        is TrafficRequest.Route -> {
-            val pts = request.points
-            if (pts.isEmpty()) return null
-            val lats = pts.map { it.first }
-            val lons = pts.map { it.second }
-            Bbox(
-                latMin = lats.minOrNull()!!,
-                lonMin = lons.minOrNull()!!,
-                latMax = lats.maxOrNull()!!,
-                lonMax = lons.maxOrNull()!!
-            )
-        }
-    }
-
-    private fun Bbox.intersects(o: Bbox): Boolean =
-        latMin <= o.latMax && latMax >= o.latMin && lonMin <= o.lonMax && lonMax >= o.lonMin
 
     companion object {
         const val PROVIDER_ID = "bison_fute"

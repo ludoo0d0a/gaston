@@ -17,10 +17,10 @@ class TomTomTrafficProvider(
     private val apiKey: String
 ) : TrafficProvider {
 
-    override val enabled: Boolean = false
+    override val enabled: Boolean = apiKey.isNotBlank()
 
     override suspend fun getTraffic(request: TrafficRequest): TrafficInfo? {
-        if (apiKey.isBlank()) return null
+        if (!enabled) return null
         val (la0, lo0, la1, lo1) = bboxFromRequest(request) ?: return null
         val body = client.fetchIncidents(apiKey, la0, lo0, la1, lo1) ?: return null
         val events = TomTomIncidentParser.parse(body)

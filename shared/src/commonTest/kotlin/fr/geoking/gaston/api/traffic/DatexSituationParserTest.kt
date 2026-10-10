@@ -6,13 +6,13 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class BisonFuteDatexParserTest {
+class DatexSituationParserTest {
 
-    private val nowMs = 1_760_000_000_000L // ~2025-10-09 UTC — after expired, before active ends
+    private val nowMs = 1_760_000_000_000L // ~2025-10-09 UTC
 
     @Test
-    fun parse_extractsAccidentAndBrokenDownVehicle_skipsExpired() {
-        val events = BisonFuteDatexParser.parse(FIXTURE_XML, nowMs = nowMs)
+    fun parse_ns2_extractsAccidentAndBrokenDownVehicle_skipsExpired() {
+        val events = DatexSituationParser.parse(FIXTURE_NS2_XML, nowMs = nowMs)
         assertEquals(2, events.size)
 
         val accident = events.first { it.sourceId == "acc-1" }
@@ -31,8 +31,17 @@ class BisonFuteDatexParserTest {
     }
 
     @Test
+    fun parse_bare_tags_without_ns2_prefix() {
+        val events = DatexSituationParser.parse(FIXTURE_BARE_XML, nowMs = nowMs)
+        assertEquals(1, events.size)
+        assertEquals("bare-1", events[0].sourceId)
+        assertEquals(TrafficSeverity.Accident, events[0].severity)
+        assertEquals("A10", events[0].roadRef)
+    }
+
+    @Test
     fun parse_mapsRoadClosedToClosure_andRoadworks() {
-        val events = BisonFuteDatexParser.parse(FIXTURE_MANAGEMENT_XML, nowMs = nowMs)
+        val events = DatexSituationParser.parse(FIXTURE_MANAGEMENT_XML, nowMs = nowMs)
         assertEquals(2, events.size)
         assertEquals(TrafficSeverity.Closure, events.first { it.sourceId == "close-1" }.severity)
         assertEquals(TrafficSeverity.Roadworks, events.first { it.sourceId == "works-1" }.severity)
@@ -40,25 +49,31 @@ class BisonFuteDatexParserTest {
 
     @Test
     fun parse_ignoresNonClosureLaneManagement() {
-        val events = BisonFuteDatexParser.parse(FIXTURE_NARROW_LANES_XML, nowMs = nowMs)
+        val events = DatexSituationParser.parse(FIXTURE_NARROW_LANES_XML, nowMs = nowMs)
         assertTrue(events.isEmpty())
     }
 
     @Test
     fun parseDatexTime_handlesOffsetAndZ() {
-        val withOffset = BisonFuteDatexParser.parseDatexTime("2026-10-04T00:00:13.685+02:00")
+        val withOffset = DatexSituationParser.parseDatexTime("2026-10-04T00:00:13.685+02:00")
         assertNotNull(withOffset)
-        val zulu = BisonFuteDatexParser.parseDatexTime("2026-10-03T22:00:13.685Z")
+        val zulu = DatexSituationParser.parseDatexTime("2026-10-03T22:00:13.685Z")
         assertNotNull(zulu)
-        // Same instant: 2026-10-03 22:00:13 UTC
         assertEquals(zulu, withOffset)
-        assertNull(BisonFuteDatexParser.parseDatexTime(null))
-        assertNull(BisonFuteDatexParser.parseDatexTime("not-a-date"))
+        assertNull(DatexSituationParser.parseDatexTime(null))
+        assertNull(DatexSituationParser.parseDatexTime("not-a-date"))
+    }
+
+    @Test
+    fun bisonWrapper_delegates() {
+        val viaWrapper = BisonFuteDatexParser.parse(FIXTURE_NS2_XML, nowMs = nowMs)
+        val viaGeneric = DatexSituationParser.parse(FIXTURE_NS2_XML, nowMs = nowMs)
+        assertEquals(viaGeneric.size, viaWrapper.size)
+        assertEquals(viaGeneric.map { it.sourceId }, viaWrapper.map { it.sourceId })
     }
 
     companion object {
-        // Active until 2026-12-01; expired until 2024-01-01 — nowMs is mid-2025-ish.
-        private val FIXTURE_XML = """
+        private val FIXTURE_NS2_XML = """
             <?xml version="1.0" encoding="UTF-8"?>
             <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
             <soap:Body>
@@ -144,6 +159,31 @@ class BisonFuteDatexParserTest {
             </d2LogicalModel>
             </soap:Body>
             </soap:Envelope>
+        """.trimIndent()
+
+        private val FIXTURE_BARE_XML = """
+            <situationRecord xsi:type="Accident" id="bare-1" version="1">
+              <validity>
+                <validityTimeSpecification>
+                  <overallEndTime>2026-12-01T00:00:00.000+01:00</overallEndTime>
+                </validityTimeSpecification>
+              </validity>
+              <groupOfLocations>
+                <tpegPointLocation>
+                  <point>
+                    <pointCoordinates>
+                      <latitude>48.7</latitude>
+                      <longitude>2.1</longitude>
+                    </pointCoordinates>
+                    <name>
+                      <descriptor><values><value>A10</value></values></descriptor>
+                      <tpegOtherPointDescriptorType>linkName</tpegOtherPointDescriptorType>
+                    </name>
+                  </point>
+                </tpegPointLocation>
+              </groupOfLocations>
+              <accidentType>accident</accidentType>
+            </situationRecord>
         """.trimIndent()
 
         private val FIXTURE_MANAGEMENT_XML = """

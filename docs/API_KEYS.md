@@ -23,6 +23,7 @@ Some keys can also be entered in the app under **Settings → App config** (stor
 | `ROMANIA_PECO_APPLICATION_ID` + `ROMANIA_PECO_CLIENT_KEY` | — | Peco Online (Romania) |
 | `MOBILITEIT_LUXEMBOURG_KEY` | Yes (prefs) | Luxembourg transit (HAFAS) |
 | `TOMTOM_KEY` | — | TomTom Traffic (global fallback) |
+| `TIPI_USER` + `TIPI_PASSWORD` | — | TIPI Action B/C restricted traffic (optional) |
 
 ---
 
@@ -252,11 +253,19 @@ Base API: `https://cdt.hafas.de/opendata/apiserver/`
 
 1. Create a [TomTom Developer](https://developer.tomtom.com/) account.
 2. Create an API key with access to the **Traffic** APIs.
-3. Set `TOMTOM_KEY`. If blank, regional feeds still apply where registered (e.g. **Bison Futé** for France — no key). TomTom is only used where no regional provider is registered / enabled.
+3. Set `TOMTOM_KEY`. If blank, TomTom stays disabled; regional feeds still apply (CITA Luxembourg, France open Bison Futé ± TIPI when credentials are set).
 
-### Bison Futé / TIPI (France traffic — no key)
+### Bison Futé / TIPI (France traffic)
 
-Open DATEX II dump for the **national non-concessioned** network (accidents, broken-down vehicles, obstacles, roadworks, closures). No credentials. Wired as `BisonFuteTrafficProvider` for mainland France + Corsica. Dataset: [transport.data.gouv.fr — évènements routiers](https://transport.data.gouv.fr/datasets/evenements-routiers-sur-le-reseau-routier-national-non-concede). Concessioned motorways (SCA) and Action B/C restricted feeds are out of scope.
+| Feed | Auth | Coverage |
+|------|------|----------|
+| **Open** (`content.xml` DIR) | None | National **non-concessioned** network |
+| **Action C** | Basic (`TIPI_USER` / `TIPI_PASSWORD`) | Safety-related traffic info (SRTI), **includes concessioned motorways (SCA)** |
+| **Action B** | Same Basic credentials | Dynamic events / congestion on the national network |
+
+- Open dump: [transport.data.gouv.fr — évènements routiers](https://transport.data.gouv.fr/datasets/evenements-routiers-sur-le-reseau-routier-national-non-concede)
+- Request Action B/C access by email to **diffusion-numerique@info-routiere.gouv.fr** (accept the published reuse licence). See [Action B](https://www.bison-fute.gouv.fr/action-b.html) / [Action C](https://www.bison-fute.gouv.fr/action-c.html).
+- When credentials are blank, `FranceTrafficProvider` uses the open feed only. When set, Action B then Action C are merged (same `sourceId` → Action C wins).
 
 ---
 

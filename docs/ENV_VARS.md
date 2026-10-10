@@ -37,6 +37,8 @@ Use these names in `local.properties` or set the same name as an env var (e.g. f
 | `NSW_FUELCHECK_SECRET` | NSW FuelCheck consumer secret. Also overridable in Settings. |
 | `MOBILITEIT_LUXEMBOURG_KEY` | Luxembourg mobiliteit.lu / HAFAS OpenData API key (transit). |
 | `TOMTOM_KEY` | TomTom Traffic API key (global traffic fallback). |
+| `TIPI_USER` | Bison Futé / TIPI Basic-auth username for Action B/C restricted feeds (optional). |
+| `TIPI_PASSWORD` | Bison Futé / TIPI Basic-auth password for Action B/C (optional). |
 | `CHARGY_API_KEY` | Chargy Luxembourg KML feed API key. |
 | `GERMANY_TANKERKOENIG_KEY` | Tankerkönig API key (demo: `00000000-0000-0000-0000-000000000002`). |
 | `EIA_KEY` | EIA Open Data API key (US petroleum/pri state retail prices). Optional — OSM stations still load without it. |
