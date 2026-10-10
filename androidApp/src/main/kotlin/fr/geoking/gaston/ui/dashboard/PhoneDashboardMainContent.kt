@@ -92,6 +92,7 @@ fun PhoneDashboardMainContent(
     fuelForecastRepository: FuelForecastRepository?,
     onOpenMap: (Poi?, Float?) -> Unit,
     onOpenRadars: () -> Unit,
+    onOpenWeather: () -> Unit,
     onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
     onOpenFuelForecast: () -> Unit,
     onOpenEmergency: () -> Unit,
@@ -180,7 +181,14 @@ fun PhoneDashboardMainContent(
                     iconResId = R.drawable.ic_poi_radar,
                     onClick = onOpenRadars,
                     testTag = "dashboard_radars_btn"
-                )
+                ),
+                DashboardRow(
+                    title = stringResource(R.string.dashboard_weather),
+                    subtitle = stringResource(R.string.dashboard_weather_subtitle),
+                    iconResId = R.drawable.ic_poi_weather,
+                    onClick = onOpenWeather,
+                    testTag = "dashboard_weather_btn"
+                ),
             )
 
             val energyMode = settings.effectiveEnergyFilterMode()

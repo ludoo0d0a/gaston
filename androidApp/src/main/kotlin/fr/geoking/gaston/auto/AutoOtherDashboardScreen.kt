@@ -23,11 +23,16 @@ class AutoOtherDashboardScreen(
         val gridBuilder = ItemList.Builder()
 
         OVERPASS_AMENITY_OPTIONS.forEach { (id, resId) ->
-            val label = carContext.getString(resId)
+            // Match phone dashboard labels for radar / weather shortcuts.
+            val label = when (id) {
+                "speed_camera" -> carContext.getString(R.string.dashboard_radars)
+                "weather" -> carContext.getString(R.string.dashboard_weather)
+                else -> carContext.getString(resId)
+            }
             val iconResId = getAmenityIcon(id)
             val iconTint = when (id) {
                 "speed_camera" -> AutoCarIcons.emergency
-                "weather" -> AutoCarIcons.primary
+                "weather" -> AutoCarIcons.fuel
                 else -> AutoCarIcons.primary
             }
 

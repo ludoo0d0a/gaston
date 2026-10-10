@@ -146,6 +146,12 @@ fun PhoneDashboardScreen(
                             onOpenMap(null, 12.5f)
                         }
                     },
+                    onOpenWeather = {
+                        scope.launch {
+                            settingsManager.setOtherMode("weather")
+                            onOpenMap(null, 12.5f)
+                        }
+                    },
                     onOpenRoutes = onOpenRoutes,
                     onOpenFuelForecast = onOpenFuelForecast,
                     onOpenEmergency = onOpenEmergency,

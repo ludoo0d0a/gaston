@@ -179,6 +179,22 @@ class AutoDashboardScreen(
                         )
                         .addItem(
                             Row.Builder()
+                                .setTitle(carContext.getString(R.string.dashboard_weather))
+                                .setImage(carContext.carIcon(R.drawable.ic_poi_weather, AutoCarIcons.fuel))
+                                .setBrowsable(true)
+                                .setOnClickListener {
+                                    val mapDeps = getMapDeps() ?: return@setOnClickListener
+                                    settingsManager.setOtherMode("weather")
+                                    pushMapScreen(
+                                        settingsManager,
+                                        mapDeps,
+                                        carContext.getString(R.string.dashboard_weather),
+                                    )
+                                }
+                                .build()
+                        )
+                        .addItem(
+                            Row.Builder()
                                 .setTitle(carContext.getString(R.string.cd_settings))
                                 .setImage(carContext.carIconUntinted(R.drawable.ic_launcher_foreground))
                                 .setBrowsable(true)

@@ -115,6 +115,8 @@
     <string name="dashboard_network">Réseau</string>
     <string name="dashboard_radars">Radars</string>
     <string name="dashboard_radars_subtitle">Zones de danger sur la carte</string>
+    <string name="dashboard_weather">Météo</string>
+    <string name="dashboard_weather_subtitle">Conditions sur la carte</string>
     <string name="dashboard_price_estimation">Estimation des prix</string>
     <string name="dashboard_price_estimation_subtitle">Estimation locale à partir du marché et des stations proches</string>
     <string name="dashboard_routes">Itinéraire</string>
