@@ -58,6 +58,9 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **Belib’ availability** | Paris (FR, secondary) | EV availability | `https://parisdata.opendatasoft.com/.../belib-...` | No — complements QualiCharge; see [`BELIB_AVAILABILITY_API.md`](BELIB_AVAILABILITY_API.md) |
 | **QualiCharge IRVE dynamique** | Mainland France | EV availability | `https://proxy.transport.data.gouv.fr/resource/qualicharge-irve-dynamique` (+ statique join) | No — see [`IRVE_DYNAMIQUE.md`](IRVE_DYNAMIQUE.md) |
 | **OpenStreetMap (Overpass)** | Global | POIs (many), Battery Swap | `https://overpass-api.de/api/interpreter` | No |
+| **Bison Futé / TIPI (ouvert)** | France (réseau national non concédé) | Traffic incidents | `https://tipi.bison-fute.gouv.fr/bison-fute-ouvert/publicationsDIR/Evenementiel-DIR/grt/RRN/content.xml` | No — DATEX II; see [transport.data.gouv.fr](https://transport.data.gouv.fr/datasets/evenements-routiers-sur-le-reseau-routier-national-non-concede) |
+| **CITA** | Luxembourg | Traffic | `https://cita.lu/geojson/niveau_service_geojson.json` | No |
+| **TomTom Traffic Incidents** | Global fallback | Traffic incidents | TomTom Traffic API v5 | Yes — `TOMTOM_KEY` |
 
 ## Notes
 

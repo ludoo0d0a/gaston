@@ -252,7 +252,11 @@ Base API: `https://cdt.hafas.de/opendata/apiserver/`
 
 1. Create a [TomTom Developer](https://developer.tomtom.com/) account.
 2. Create an API key with access to the **Traffic** APIs.
-3. Set `TOMTOM_KEY`. If blank, regional feeds (e.g. CITA for Luxembourg) still work; TomTom is only used where no regional provider is registered.
+3. Set `TOMTOM_KEY`. If blank, regional feeds still apply where registered (e.g. **Bison Futé** for France — no key). TomTom is only used where no regional provider is registered / enabled.
+
+### Bison Futé / TIPI (France traffic — no key)
+
+Open DATEX II dump for the **national non-concessioned** network (accidents, broken-down vehicles, obstacles, roadworks, closures). No credentials. Wired as `BisonFuteTrafficProvider` for mainland France + Corsica. Dataset: [transport.data.gouv.fr — évènements routiers](https://transport.data.gouv.fr/datasets/evenements-routiers-sur-le-reseau-routier-national-non-concede). Concessioned motorways (SCA) and Action B/C restricted feeds are out of scope.
 
 ---
 
@@ -268,7 +272,7 @@ Not a POI source, but required for the map UI.
 
 These providers work without credentials (open data, public APIs, or scraping where allowed):
 
-DataGouv (fuel + IRVE), Gas API, UK CMA feeds, Spain Minetur, Austria E-Control, Italy MIMIT, goriva.si, DrivstoffAppen, DGEG, ANWB, Fuelo, MZOE, polttoaine.net, FuelGR, Pick A Pump, ANRE, CRE, Argentina energy data, Belgium official prices, OpenVan.camp, Routex/Wigeogis, Belib availability (Paris open data), QualiCharge IRVE dynamique, Belgium NAP Road EV availability (transportdata.be), Overpass/OSM, OSRM, Open-Meteo, CITA traffic, RATP, STIB, and most other entries in [`sources.md`](sources.md).
+DataGouv (fuel + IRVE), Gas API, UK CMA feeds, Spain Minetur, Austria E-Control, Italy MIMIT, goriva.si, DrivstoffAppen, DGEG, ANWB, Fuelo, MZOE, polttoaine.net, FuelGR, Pick A Pump, ANRE, CRE, Argentina energy data, Belgium official prices, OpenVan.camp, Routex/Wigeogis, Belib availability (Paris open data), QualiCharge IRVE dynamique, Belgium NAP Road EV availability (transportdata.be), Overpass/OSM, OSRM, Open-Meteo, Bison Futé / TIPI traffic (France open DATEX), CITA traffic, RATP, STIB, and most other entries in [`sources.md`](sources.md).
 
 ---
 

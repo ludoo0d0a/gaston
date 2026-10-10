@@ -104,6 +104,8 @@ import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.api.transit.BelgiumTransitProvider
 import fr.geoking.gaston.api.transit.FranceTransitProvider
 import fr.geoking.gaston.api.transit.LuxembourgTransitProvider
+import fr.geoking.gaston.api.traffic.BisonFuteTrafficClient
+import fr.geoking.gaston.api.traffic.BisonFuteTrafficProvider
 import fr.geoking.gaston.api.traffic.CitaGeoJsonTrafficClient
 import fr.geoking.gaston.api.traffic.CitaTrafficProvider
 import fr.geoking.gaston.api.traffic.GeographicRegion
@@ -606,7 +608,9 @@ val mapModule = module {
         )
     }
 
-    // Traffic: Luxembourg CITA GeoJSON first; TomTom incidents as global fallback (needs TOMTOM_KEY).
+    // Traffic: Bison Futé (FR open DATEX) when in France; CITA LU / TomTom registered but currently disabled.
+    single { BisonFuteTrafficClient(get()) }
+    single { BisonFuteTrafficProvider(get()) }
     single { CitaGeoJsonTrafficClient(get()) }
     single { CitaTrafficProvider(get()) }
     single { TomTomTrafficClient(get()) }
@@ -614,6 +618,12 @@ val mapModule = module {
     single<TrafficProviderFactory> {
         TrafficProviderFactory(
             listOf(
+                GeographicRegion.Bbox(
+                    BisonFuteTrafficProvider.FRANCE_LAT_MIN,
+                    BisonFuteTrafficProvider.FRANCE_LON_MIN,
+                    BisonFuteTrafficProvider.FRANCE_LAT_MAX,
+                    BisonFuteTrafficProvider.FRANCE_LON_MAX
+                ) to get<BisonFuteTrafficProvider>(),
                 GeographicRegion.Bbox(49.4, 5.7, 50.2, 6.6) to get<CitaTrafficProvider>(),
                 GeographicRegion.Everywhere to get<TomTomTrafficProvider>()
             )
