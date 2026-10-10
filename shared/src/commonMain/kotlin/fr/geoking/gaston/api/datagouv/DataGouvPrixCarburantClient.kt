@@ -125,6 +125,13 @@ class DataGouvPrixCarburantClient(
         val start: String? = null
     )
 
+    /** Matches API values `definitive` / `définitive` (accented). */
+    private fun isDefinitiveShortage(type: String?): Boolean {
+        if (type.isNullOrBlank()) return false
+        val n = type.lowercase()
+        return n.contains("def") || n.contains("déf")
+    }
+
     private fun parseRuptures(record: JsonObject): Map<String, RuptureInfo> {
         val ruptures = mutableMapOf<String, RuptureInfo>()
 
@@ -330,7 +337,9 @@ class DataGouvPrixCarburantClient(
             }
         }
 
-        // Ensure fuels reported as in rupture (even if missing from price lists) are included
+        // Synthesize temporary shortages even when the feed has no price row.
+        // Skip definitive ruptures without a price: those are permanently discontinued
+        // fuels (often years old, e.g. SP95 since 2022) and should not appear as OOS.
         val knownFuelNames = mapOf(
             "gazole" to "Gazole",
             "sp95" to "SP95",
@@ -341,6 +350,7 @@ class DataGouvPrixCarburantClient(
             "gpl" to "GPLc"
         )
         for ((key, ruptureInfo) in ruptures) {
+            if (isDefinitiveShortage(ruptureInfo.type)) continue
             val displayName = knownFuelNames[key] ?: key.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
             if (list.none { it.name.equals(displayName, ignoreCase = true) || it.name.trim().lowercase() == key }) {
                 list.add(

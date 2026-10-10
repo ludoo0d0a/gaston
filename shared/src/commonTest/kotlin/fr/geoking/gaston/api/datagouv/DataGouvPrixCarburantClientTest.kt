@@ -7,6 +7,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class DataGouvPrixCarburantClientTest {
 
@@ -289,9 +291,49 @@ class DataGouvPrixCarburantClientTest {
         assertNotNull(sp95)
         assertEquals(false, sp95.outOfStock)
 
-        val e85 = fuels.find { it.name == "E85" }
-        assertNotNull(e85)
-        assertEquals(true, e85.outOfStock)
-        assertEquals("définitive", e85.shortageType)
+        // Definitive ruptures without a price are discontinued fuels — do not invent OOS rows.
+        assertNull(fuels.find { it.name == "E85" })
+        assertNull(fuels.find { it.name == "GPLc" })
+    }
+
+    @Test
+    fun parseFuels_skipsDefinitiveRuptureWithoutPrice_keepsTemporary() {
+        // TotalEnergies Route de Metz, Rombas (57120001): SP95 definitive since 2022,
+        // E10 temporary shortage, no current prices in the flux.
+        val body = """
+            {
+                "results": [
+                    {
+                        "id": "57120001",
+                        "adresse": "ROUTE DE METZ",
+                        "ville": "Rombas",
+                        "cp": "57120",
+                        "latitude": 49.236,
+                        "longitude": 6.109,
+                        "carburants_rupture_temporaire": "E10",
+                        "rupture": "[{\"@nom\": \"E85\", \"@id\": \"3\", \"@debut\": \"2017-09-01 07:01:44\", \"@fin\": \"\", \"@type\": \"definitive\"}, {\"@nom\": \"GPLc\", \"@id\": \"4\", \"@debut\": \"2017-09-01 07:01:44\", \"@fin\": \"\", \"@type\": \"definitive\"}, {\"@nom\": \"SP95\", \"@id\": \"2\", \"@debut\": \"2022-10-21 06:43:59\", \"@fin\": \"\", \"@type\": \"definitive\"}, {\"@nom\": \"E10\", \"@id\": \"5\", \"@debut\": \"2026-10-09 12:37:02\", \"@fin\": \"\", \"@type\": \"temporaire\"}]",
+                        "sp95_rupture_type": "definitive",
+                        "sp95_rupture_debut": "2022-10-21T06:43:59+00:00",
+                        "e10_rupture_type": "temporaire",
+                        "e10_rupture_debut": "2026-10-09T12:37:02+00:00",
+                        "e85_rupture_type": "definitive",
+                        "e85_rupture_debut": "2017-09-01T07:01:44+00:00",
+                        "gplc_rupture_type": "definitive",
+                        "gplc_rupture_debut": "2017-09-01T07:01:44+00:00"
+                    }
+                ]
+            }
+        """.trimIndent()
+
+        val fuels = client.parseRecords(body).single().fuels
+        assertNull(fuels.find { it.name.equals("SP95", ignoreCase = true) })
+        assertNull(fuels.find { it.name.equals("E85", ignoreCase = true) })
+        assertNull(fuels.find { it.name.equals("GPLc", ignoreCase = true) })
+
+        val e10 = fuels.find { it.name.equals("E10", ignoreCase = true) }
+        assertNotNull(e10)
+        assertTrue(e10.outOfStock)
+        assertTrue(e10.shortageType?.contains("temp", ignoreCase = true) == true)
+        assertEquals("2026-10-09T12:37:02+00:00", e10.shortageStart)
     }
 }
