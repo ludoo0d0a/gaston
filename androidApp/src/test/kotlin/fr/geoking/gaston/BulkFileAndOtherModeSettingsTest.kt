@@ -1,6 +1,7 @@
 package fr.geoking.gaston
 
 import fr.geoking.gaston.feature.network.BulkFileNetworkAccess
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.shared.network.NetworkType
 import org.junit.Assert.assertEquals
@@ -51,6 +52,17 @@ class BulkFileAndOtherModeSettingsTest {
         assertTrue(PoiProviderType.LufopOpenSpeedCam in after.selectedPoiProviders)
         assertTrue(PoiProviderType.Overpass in after.selectedPoiProviders)
         assertTrue(PoiProviderType.LuxembourgRadars in after.selectedPoiProviders)
+    }
+
+    @Test
+    fun setOtherMode_weatherEnablesOpenMeteoWeatherOnly() {
+        val manager = SettingsManager(RuntimeEnvironment.getApplication(), firestoreSync = null)
+        manager.setOtherMode("weather")
+        val after = manager.settings.value
+        assertTrue(after.isOtherModeActive())
+        assertEquals(setOf("weather"), after.selectedOverpassAmenityTypes)
+        assertEquals(setOf(PoiProviderType.OpenMeteoWeather), after.selectedPoiProviders)
+        assertEquals(PoiCategory.Weather, categoryFromAmenityId("weather"))
     }
 
     @Test

@@ -33,6 +33,7 @@ val AMENITY_ONLY_POI_PROVIDERS: Set<PoiProviderType> = setOf(
     PoiProviderType.LufopOpenSpeedCam,
     PoiProviderType.LuxembourgRadars,
     PoiProviderType.FranceRadars,
+    PoiProviderType.OpenMeteoWeather,
 )
 
 /** True when the user explicitly selected "Other" (amenities) mode. */
@@ -52,6 +53,7 @@ fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
     "restaurant" -> PoiCategory.Restaurant
     "fast_food" -> PoiCategory.FastFood
     "speed_camera" -> PoiCategory.Radar
+    "weather" -> PoiCategory.Weather
     "parking" -> PoiCategory.Parking
     "viewpoint" -> PoiCategory.Viewpoint
     "post_box" -> PoiCategory.PostBox

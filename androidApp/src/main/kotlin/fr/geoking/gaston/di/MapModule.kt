@@ -117,7 +117,10 @@ import fr.geoking.gaston.api.traffic.TomTomTrafficProvider
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.api.weather.MetNorwayWeatherProvider
 import fr.geoking.gaston.api.weather.OpenMeteoGeocodingClient
+import fr.geoking.gaston.api.weather.OpenMeteoWeatherGridClient
 import fr.geoking.gaston.api.weather.OpenMeteoWeatherProvider
+import fr.geoking.gaston.api.weather.RainViewerMapsClient
+import fr.geoking.gaston.api.weather.WeatherPoiProvider
 import fr.geoking.gaston.api.weather.WeatherProvider
 import fr.geoking.gaston.api.weather.WeatherProviderFactory
 import fr.geoking.gaston.api.toll.GastonTollApiClient
@@ -388,6 +391,11 @@ val mapModule = module {
     single<PoiProvider>(named("luxembourg_radars")) {
         LuxembourgRadarsProvider(get(), defaultRadiusKm = 25.0)
     }
+    single { OpenMeteoWeatherGridClient(get()) }
+    single { RainViewerMapsClient(get()) }
+    single<PoiProvider>(named("open_meteo_weather")) {
+        WeatherPoiProvider(get())
+    }
     single { DataGouvCampingClient(get()) }
     single<PoiProvider>(named("datagouvcamping")) {
         val base = DataGouvCampingProvider(get(), radiusKm = 15, limit = 50)
@@ -446,6 +454,7 @@ val mapModule = module {
             franceRadars = get(named("franceradars")),
             lufopOpenSpeedCam = get(named("lufop_openspeedcam")),
             luxembourgRadars = get(named("luxembourg_radars")),
+            openMeteoWeather = get(named("open_meteo_weather")),
             openVanCampClient = get(),
             overpass = get(named("overpass")),
             dataGouvCamping = get(named("datagouvcamping")),

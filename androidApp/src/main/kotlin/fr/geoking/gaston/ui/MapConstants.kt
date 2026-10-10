@@ -5,6 +5,7 @@ import fr.geoking.gaston.VehicleType
 
 val OVERPASS_AMENITY_OPTIONS = listOf(
     "speed_camera" to R.string.amenity_speed_camera,
+    "weather" to R.string.amenity_weather,
     "parking" to R.string.amenity_parking,
     "toilets" to R.string.amenity_toilets,
     "drinking_water" to R.string.amenity_drinking_water,

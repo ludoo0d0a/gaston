@@ -298,7 +298,11 @@ fun SearchCategorySelector(
                                 Icon(
                                     imageVector = AmenityIconCatalog.iconForOsmId(id),
                                     contentDescription = null,
-                                    tint = if (id == "speed_camera") Color(0xFFEF4444) else LocalContentColor.current,
+                                    tint = when (id) {
+                                        "speed_camera" -> Color(0xFFEF4444)
+                                        "weather" -> Color(0xFF3B82F6)
+                                        else -> LocalContentColor.current
+                                    },
                                     modifier = Modifier.size(18.dp)
                                 )
                             },

@@ -15,8 +15,11 @@ import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.layers.RasterLayer
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.android.style.sources.RasterSource
+import org.maplibre.android.style.sources.TileSet
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
@@ -40,6 +43,8 @@ object MapLibreSharedHelper {
     const val USER_LOCATION_LAYER_ID = "user-location-layer"
     const val USER_LOCATION_ICON_ID = "user-location-arrow-icon"
     const val HEADING_PROPERTY = "user-heading"
+    const val RAINVIEWER_SOURCE_ID = "rainviewer-radar-source"
+    const val RAINVIEWER_LAYER_ID = "rainviewer-radar-layer"
 
     /**
      * Initializes the POI source and symbol layer.
@@ -213,6 +218,46 @@ object MapLibreSharedHelper {
                     Feature.fromGeometry(LineString.fromLngLats(ring))
                 )
             )
+        }
+    }
+
+    private val rainViewerTemplateByMap = java.util.concurrent.ConcurrentHashMap<Int, String>()
+
+    /**
+     * RainViewer radar raster tiles (as-is). Pass null [tileUrlTemplate] to hide the layer.
+     * Template must use `{z}/{x}/{y}` placeholders.
+     */
+    fun syncRainViewerLayer(map: MapLibreMap, tileUrlTemplate: String?) {
+        val mapKey = System.identityHashCode(map)
+        map.getStyle { style ->
+            if (tileUrlTemplate.isNullOrBlank()) {
+                style.getLayer(RAINVIEWER_LAYER_ID)?.let { style.removeLayer(it) }
+                style.getSource(RAINVIEWER_SOURCE_ID)?.let { style.removeSource(it) }
+                rainViewerTemplateByMap.remove(mapKey)
+                return@getStyle
+            }
+            if (rainViewerTemplateByMap[mapKey] == tileUrlTemplate &&
+                style.getSource(RAINVIEWER_SOURCE_ID) != null &&
+                style.getLayer(RAINVIEWER_LAYER_ID) != null
+            ) {
+                return@getStyle
+            }
+            style.getLayer(RAINVIEWER_LAYER_ID)?.let { style.removeLayer(it) }
+            style.getSource(RAINVIEWER_SOURCE_ID)?.let { style.removeSource(it) }
+            val tileSet = TileSet("2.1.0", tileUrlTemplate).apply {
+                minZoom = 1f
+                maxZoom = 7f
+            }
+            style.addSource(RasterSource(RAINVIEWER_SOURCE_ID, tileSet, 256))
+            val layer = RasterLayer(RAINVIEWER_LAYER_ID, RAINVIEWER_SOURCE_ID).withProperties(
+                PropertyFactory.rasterOpacity(0.55f),
+            )
+            if (style.getLayer(POI_LAYER_ID) != null) {
+                style.addLayerBelow(layer, POI_LAYER_ID)
+            } else {
+                style.addLayer(layer)
+            }
+            rainViewerTemplateByMap[mapKey] = tileUrlTemplate
         }
     }
 

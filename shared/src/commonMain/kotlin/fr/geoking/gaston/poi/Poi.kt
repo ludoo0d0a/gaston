@@ -59,7 +59,9 @@ enum class PoiCategory {
     /** Cafe (OSM amenity=cafe). */
     Cafe,
     /** Supermarket / convenience store (OSM shop=supermarket / shop=convenience). */
-    Supermarket;
+    Supermarket,
+    /** Weather grid sample (Open-Meteo WMO weather_code). */
+    Weather;
     companion object {
         /** OSM amenity tag value for this category, when applicable. */
         fun fromOsmAmenity(amenity: String): PoiCategory? = when (amenity) {
@@ -212,6 +214,8 @@ enum class PoiProviderType(
     LufopOpenSpeedCam,
     /** Luxembourg fixed radars (PCH / data.public.lu GeoJSON, CC0). */
     LuxembourgRadars(fetchKind = PoiProviderFetchKind.File),
+    /** Open-Meteo weather_code grid for the weather map amenity. */
+    OpenMeteoWeather,
     Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }
@@ -224,6 +228,7 @@ private val POI_DATA_SOURCES_DISABLED_FOR_USER_SELECTION: Set<PoiProviderType> =
     PoiProviderType.DataGouvPrixQuotidien,
     PoiProviderType.Overpass, // OSM enrich remains available via RadarOsmEnricher; map amenity source hidden for now
     PoiProviderType.FranceRadars, // kept wired for AAC fallback; hidden from user selection for now
+    PoiProviderType.OpenMeteoWeather, // amenity-only via setOtherMode("weather")
 )
 
 /** True if this source is shown in map / Auto POI data source pickers. */

@@ -683,6 +683,7 @@ open class SettingsManager(
                 PoiProviderType.LuxembourgRadars,
                 PoiProviderType.Overpass,
             )
+            "weather" -> setOf(PoiProviderType.OpenMeteoWeather)
             else -> setOf(PoiProviderType.Overpass)
         }
         saveSettings(
@@ -849,17 +850,23 @@ open class SettingsManager(
 
     open fun setOverpassAmenityTypes(types: Set<String>) {
         val current = _settings.value
-        // Keep radar API sources in sync when toggling speed_camera in Other mode
+        // Keep radar / weather API sources in sync when toggling amenities in Other mode
         // (phone chips only call this; Auto uses setOtherMode(amenityId)).
         val providers = if (current.isOtherModeActive()) {
-            if ("speed_camera" in types) {
-                setOf(
-                    PoiProviderType.LufopOpenSpeedCam,
-                    PoiProviderType.LuxembourgRadars,
-                    PoiProviderType.Overpass,
-                )
-            } else {
-                setOf(PoiProviderType.Overpass)
+            buildSet {
+                if ("speed_camera" in types) {
+                    add(PoiProviderType.LufopOpenSpeedCam)
+                    add(PoiProviderType.LuxembourgRadars)
+                    add(PoiProviderType.Overpass)
+                }
+                if ("weather" in types) {
+                    add(PoiProviderType.OpenMeteoWeather)
+                }
+                val osmAmenities = types - "weather"
+                if (osmAmenities.isNotEmpty()) {
+                    add(PoiProviderType.Overpass)
+                }
+                if (isEmpty()) add(PoiProviderType.Overpass)
             }
         } else {
             current.selectedPoiProviders

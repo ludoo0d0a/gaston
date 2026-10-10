@@ -64,7 +64,12 @@ object PoiMarkerHelper {
         }
         val label = getPoiLabel(poi, effectiveEnergyTypes, effectivePowerLevels)
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
-        val amenityStyle = if (brandInfo == null) AmenityIconCatalog.styleForCategory(poi.poiCategory) else null
+        val amenityStyle = if (brandInfo == null) {
+            AmenityIconCatalog.styleForWeatherPoi(poi)
+                ?: AmenityIconCatalog.styleForCategory(poi.poiCategory)
+        } else {
+            null
+        }
         val headDrawableId = if (amenityStyle == null) headDrawableResId(poi, brandInfo) else 0
         val category = poi.poiCategory ?: if (poi.isElectric) PoiCategory.Irve else PoiCategory.Gas
         val categoryColor = getPoiColor(poi, category, effectiveEnergyTypes, effectivePowerLevels)
@@ -494,6 +499,8 @@ object PoiMarkerHelper {
             PoiCategory.WaterBody -> 0xFF0284C7.toInt()
             PoiCategory.Cafe -> 0xFF78350F.toInt()
             PoiCategory.Supermarket -> 0xFF8B5CF6.toInt()
+            PoiCategory.Weather -> AmenityIconCatalog.styleForWeatherPoi(poi)?.discFillArgb
+                ?: 0xFFFBBF24.toInt()
             else -> 0xFF17A2B8.toInt()
         }
     }

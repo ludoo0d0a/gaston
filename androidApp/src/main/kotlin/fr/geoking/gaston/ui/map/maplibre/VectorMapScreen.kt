@@ -534,7 +534,8 @@ fun VectorMapScreen(
                         effectivePowerLevels = settings.effectiveIrvePowerLevels(),
                         userLat = userLat,
                         userLon = userLon,
-                        userHeading = userHeading
+                        userHeading = userHeading,
+                        weatherRadarEnabled = "weather" in settings.selectedOverpassAmenityTypes,
                     )
 
                     MapLoadingOverlay(

@@ -302,5 +302,6 @@ class OverpassProvider(
         PoiCategory.WaterBody -> OverpassTranslator.translate("Water body", lang) ?: "Water body"
         PoiCategory.Cafe -> OverpassTranslator.translate("Cafe", lang) ?: "Cafe"
         PoiCategory.Supermarket -> OverpassTranslator.translate("Supermarket", lang) ?: "Supermarket"
+        PoiCategory.Weather -> OverpassTranslator.translate("Weather", lang) ?: "Weather"
     }
 }

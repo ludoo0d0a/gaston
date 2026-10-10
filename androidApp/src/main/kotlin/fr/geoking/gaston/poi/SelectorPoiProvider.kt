@@ -89,6 +89,7 @@ class SelectorPoiProvider(
     private val franceRadars: PoiProvider,
     private val lufopOpenSpeedCam: PoiProvider,
     private val luxembourgRadars: PoiProvider,
+    private val openMeteoWeather: PoiProvider,
     private val openVanCampClient: OpenVanCampClient,
     private val overpass: PoiProvider,
     private val dataGouvCamping: PoiProvider?,
@@ -193,6 +194,15 @@ class SelectorPoiProvider(
         return applyBulkFileNetworkPolicy(providers + radarSources)
     }
 
+    /** When the weather amenity is requested, always query Open-Meteo weather grid. */
+    private fun withWeatherProvidersForAmenity(
+        providers: Set<PoiProviderType>,
+        categories: Set<PoiCategory>,
+    ): Set<PoiProviderType> {
+        if (PoiCategory.Weather !in categories) return providers
+        return applyBulkFileNetworkPolicy(providers + PoiProviderType.OpenMeteoWeather)
+    }
+
     /**
      * Categories each provider should fetch for this search.
      * Radar amenity queries both Lufop and Overpass; [RadarPoiMerger] dedupes pins.
@@ -262,6 +272,7 @@ class SelectorPoiProvider(
         PoiProviderType.FranceRadars -> franceRadars
         PoiProviderType.LufopOpenSpeedCam -> lufopOpenSpeedCam
         PoiProviderType.LuxembourgRadars -> luxembourgRadars
+        PoiProviderType.OpenMeteoWeather -> openMeteoWeather
         PoiProviderType.Overpass -> overpass
         PoiProviderType.Hybrid -> hybridProvider
     }
@@ -547,12 +558,15 @@ class SelectorPoiProvider(
         )
 
         val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
-        val providers = withRadarProvidersForAmenity(
-            providers = resolveEffectiveProviders(settings, isoCountries),
+        val providers = withWeatherProvidersForAmenity(
+            providers = withRadarProvidersForAmenity(
+                providers = resolveEffectiveProviders(settings, isoCountries),
+                categories = categoriesToFetch,
+                isoCountries = isoCountries,
+                latitude = request.latitude,
+                longitude = request.longitude,
+            ),
             categories = categoriesToFetch,
-            isoCountries = isoCountries,
-            latitude = request.latitude,
-            longitude = request.longitude,
         )
 
         if (providers.isEmpty()) {
@@ -839,12 +853,15 @@ class SelectorPoiProvider(
         )
 
         val categoriesToFetch = resolveCategoriesToFetch(settings, request.categories)
-        val providers = withRadarProvidersForAmenity(
-            providers = resolveEffectiveProviders(settings, isoCountries),
+        val providers = withWeatherProvidersForAmenity(
+            providers = withRadarProvidersForAmenity(
+                providers = resolveEffectiveProviders(settings, isoCountries),
+                categories = categoriesToFetch,
+                isoCountries = isoCountries,
+                latitude = request.latitude,
+                longitude = request.longitude,
+            ),
             categories = categoriesToFetch,
-            isoCountries = isoCountries,
-            latitude = request.latitude,
-            longitude = request.longitude,
         )
 
         if (providers.isEmpty()) {

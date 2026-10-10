@@ -97,6 +97,7 @@ val UsedApisList: List<UsedApi> = listOf(
     // Weather
     UsedApi("Open-Meteo", "https://open-meteo.com", null),
     UsedApi("MET Norway", "https://api.met.no", null),
+    UsedApi("RainViewer", "https://www.rainviewer.com", null),
 
     // Traffic, toll & forecasts
     UsedApi("CITA (trafic Luxembourg)", "https://www.cita.lu", "https://www.cita.lu/favicon.ico"),

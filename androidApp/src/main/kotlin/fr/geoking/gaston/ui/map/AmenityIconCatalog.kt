@@ -5,8 +5,11 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.util.LruCache
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AcUnit
+import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Fastfood
 import androidx.compose.material.icons.rounded.Forest
+import androidx.compose.material.icons.rounded.Grain
 import androidx.compose.material.icons.rounded.Landscape
 import androidx.compose.material.icons.rounded.LocalCafe
 import androidx.compose.material.icons.rounded.LocalGroceryStore
@@ -18,9 +21,11 @@ import androidx.compose.material.icons.rounded.OutdoorGrill
 import androidx.compose.material.icons.rounded.Restaurant
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.Thunderstorm
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.Water
 import androidx.compose.material.icons.rounded.WaterDrop
+import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.material.icons.rounded.Wc
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -28,6 +33,10 @@ import androidx.compose.ui.graphics.vector.VectorGroup
 import androidx.compose.ui.graphics.vector.VectorNode
 import androidx.compose.ui.graphics.vector.VectorPath
 import androidx.compose.ui.graphics.vector.toPath
+import fr.geoking.gaston.api.weather.WeatherPoiRawKeys
+import fr.geoking.gaston.api.weather.WmoWeatherFamily
+import fr.geoking.gaston.api.weather.wmoWeatherStyle
+import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 
 /**
@@ -68,6 +77,7 @@ object AmenityIconCatalog {
         "water" -> Icons.Rounded.Water
         "cafe" -> Icons.Rounded.LocalCafe
         "supermarket" -> Icons.Rounded.LocalGroceryStore
+        "weather" -> Icons.Rounded.WbSunny
         else -> Icons.Rounded.LocationOn
     }
 
@@ -99,7 +109,55 @@ object AmenityIconCatalog {
         PoiCategory.WaterBody -> Style(Icons.Rounded.Water, 0xFF0284C7.toInt())
         PoiCategory.Cafe -> Style(Icons.Rounded.LocalCafe, 0xFF78350F.toInt())
         PoiCategory.Supermarket -> Style(Icons.Rounded.LocalGroceryStore, 0xFF8B5CF6.toInt())
+        PoiCategory.Weather -> Style(
+            icon = Icons.Rounded.WbSunny,
+            glyphArgb = 0xFF1E293B.toInt(),
+            discFillArgb = 0xFFFBBF24.toInt(),
+            discStrokeArgb = 0xFFD97706.toInt(),
+        )
         else -> null
+    }
+
+    /**
+     * Marker style for a weather grid POI: WMO code drives disc color; family drives the glyph.
+     */
+    fun styleForWeatherPoi(poi: Poi): Style? {
+        if (poi.poiCategory != PoiCategory.Weather) return null
+        val code = poi.rawSourceData?.get(WeatherPoiRawKeys.WEATHER_CODE)?.toIntOrNull() ?: 0
+        val wmo = wmoWeatherStyle(code)
+        val icon = iconForWmoFamily(wmo.family)
+        val glyphArgb = when (wmo.family) {
+            WmoWeatherFamily.Clear,
+            WmoWeatherFamily.Snow -> 0xFF1E293B.toInt()
+            else -> 0xFFFFFFFF.toInt()
+        }
+        return Style(
+            icon = icon,
+            glyphArgb = glyphArgb,
+            discFillArgb = wmo.discArgb,
+            discStrokeArgb = darkenArgb(wmo.discArgb),
+        )
+    }
+
+    fun iconForWmoFamily(family: WmoWeatherFamily): ImageVector = when (family) {
+        WmoWeatherFamily.Clear -> Icons.Rounded.WbSunny
+        WmoWeatherFamily.Cloudy -> Icons.Rounded.Cloud
+        WmoWeatherFamily.Fog -> Icons.Rounded.Visibility
+        WmoWeatherFamily.Drizzle -> Icons.Rounded.Grain
+        WmoWeatherFamily.Rain -> Icons.Rounded.WaterDrop
+        WmoWeatherFamily.Showers -> Icons.Rounded.WaterDrop
+        WmoWeatherFamily.Snow -> Icons.Rounded.AcUnit
+        WmoWeatherFamily.Freezing -> Icons.Rounded.AcUnit
+        WmoWeatherFamily.Storm -> Icons.Rounded.Thunderstorm
+        WmoWeatherFamily.Unknown -> Icons.Rounded.Cloud
+    }
+
+    private fun darkenArgb(argb: Int): Int {
+        val a = argb ushr 24
+        val r = ((argb shr 16) and 0xFF) * 3 / 4
+        val g = ((argb shr 8) and 0xFF) * 3 / 4
+        val b = (argb and 0xFF) * 3 / 4
+        return (a shl 24) or (r shl 16) or (g shl 8) or b
     }
 
     /** Marker head bitmap cache (white circle + tinted glyph), keyed by icon identity + bucketed size + color. */

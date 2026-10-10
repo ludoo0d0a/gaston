@@ -16,6 +16,7 @@ import android.widget.FrameLayout
 import androidx.car.app.CarContext
 import androidx.car.app.SurfaceContainer
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.api.weather.RainViewerMapsClient
 import fr.geoking.gaston.auto.AutoMapCamera
 import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
 import fr.geoking.gaston.auto.AutoMapHeading
@@ -23,8 +24,14 @@ import fr.geoking.gaston.auto.AutoMapPoiHitTest
 import fr.geoking.gaston.auto.AutoSurfaceRenderer
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.radar.DangerZoneHudStore
 import fr.geoking.gaston.ui.map.maplibre.MapLibreSharedHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import org.koin.core.context.GlobalContext
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -78,6 +85,8 @@ internal class MapLibreAaGlHost(
     private var searchRadiusCenterLon: Double? = null
     private var searchRadiusKm: Double? = null
     private var styleReady: Boolean = false
+    private var rainViewerTileUrl: String? = null
+    private val hostScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun setStyleUrl(url: String) {
         if (styleUrl == url) return
@@ -262,6 +271,22 @@ internal class MapLibreAaGlHost(
     private fun syncPois() {
         val map = mapLibreMap ?: return
         if (!styleReady) return
+        val weatherActive = lastPois.any { it.poiCategory == PoiCategory.Weather }
+        if (weatherActive && rainViewerTileUrl == null) {
+            hostScope.launch {
+                val url = runCatching {
+                    GlobalContext.getOrNull()?.get<RainViewerMapsClient>()?.latestRadarFrame()?.tileUrlTemplate
+                }.getOrNull()
+                if (url != null) {
+                    rainViewerTileUrl = url
+                    uiHandler.post { syncPois() }
+                }
+            }
+        }
+        MapLibreSharedHelper.syncRainViewerLayer(
+            map = map,
+            tileUrlTemplate = if (weatherActive) rainViewerTileUrl else null,
+        )
         MapLibreSharedHelper.syncPoiLayer(
             context = carContext,
             map = map,

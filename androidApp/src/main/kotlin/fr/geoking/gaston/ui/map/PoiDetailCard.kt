@@ -171,6 +171,7 @@ fun PoiDetailCard(
                         PoiCategory.CaravanSite -> R.drawable.ic_poi_caravan
                         PoiCategory.PicnicSite -> R.drawable.ic_poi_picnic
                         PoiCategory.Radar -> R.drawable.ic_poi_radar
+                        PoiCategory.Weather -> R.drawable.ic_poi_weather
                         PoiCategory.Viewpoint -> R.drawable.ic_poi_viewpoint
                         PoiCategory.PostBox -> R.drawable.ic_poi_post_box
                         PoiCategory.WaterBody -> R.drawable.ic_poi_water_body

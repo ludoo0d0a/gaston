@@ -1,6 +1,7 @@
 package fr.geoking.gaston.ui.map.maplibre
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -10,8 +11,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.api.weather.RainViewerMapsClient
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.map.PhoneMapPoiHitTest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.koin.compose.koinInject
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -33,14 +38,28 @@ fun LibreMap(
     effectivePowerLevels: Set<Int>,
     userLat: Double? = null,
     userLon: Double? = null,
-    userHeading: Float = 0f
+    userHeading: Float = 0f,
+    /** When true, fetch RainViewer radar tiles and show as a raster under POIs. */
+    weatherRadarEnabled: Boolean = false,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val paddingBottomPx = with(density) { contentPaddingBottom.roundToPx() }
+    val rainViewerClient = koinInject<RainViewerMapsClient>()
 
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
     val lastPaddingBottomPx = remember { intArrayOf(-1) }
+    var rainViewerTileUrl by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(weatherRadarEnabled) {
+        if (!weatherRadarEnabled) {
+            rainViewerTileUrl = null
+            return@LaunchedEffect
+        }
+        rainViewerTileUrl = withContext(Dispatchers.IO) {
+            runCatching { rainViewerClient.latestRadarFrame()?.tileUrlTemplate }.getOrNull()
+        }
+    }
 
     val syncToken = remember(
         poisInView,
@@ -50,9 +69,22 @@ fun LibreMap(
         effectivePowerLevels,
         userLat,
         userLon,
-        userHeading
+        userHeading,
+        rainViewerTileUrl,
+        weatherRadarEnabled,
     ) {
-        arrayOf(poisInView, selectedPoiId, availabilityByPoiId, effectiveEnergyTypes, effectivePowerLevels, userLat, userLon, userHeading)
+        arrayOf(
+            poisInView,
+            selectedPoiId,
+            availabilityByPoiId,
+            effectiveEnergyTypes,
+            effectivePowerLevels,
+            userLat,
+            userLon,
+            userHeading,
+            rainViewerTileUrl,
+            weatherRadarEnabled,
+        )
     }
 
     MapLibreView(
@@ -90,6 +122,10 @@ fun LibreMap(
                 map.moveCamera(CameraUpdateFactory.paddingTo(0.0, 0.0, 0.0, paddingBottomPx.toDouble()))
                 lastPaddingBottomPx[0] = paddingBottomPx
             }
+            MapLibreSharedHelper.syncRainViewerLayer(
+                map = map,
+                tileUrlTemplate = if (weatherRadarEnabled) rainViewerTileUrl else null,
+            )
             MapLibreSharedHelper.syncPoiLayer(
                 context = context,
                 map = map,

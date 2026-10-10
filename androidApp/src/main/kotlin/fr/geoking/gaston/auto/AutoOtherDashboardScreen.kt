@@ -25,7 +25,11 @@ class AutoOtherDashboardScreen(
         OVERPASS_AMENITY_OPTIONS.forEach { (id, resId) ->
             val label = carContext.getString(resId)
             val iconResId = getAmenityIcon(id)
-            val iconTint = if (id == "speed_camera") AutoCarIcons.emergency else AutoCarIcons.primary
+            val iconTint = when (id) {
+                "speed_camera" -> AutoCarIcons.emergency
+                "weather" -> AutoCarIcons.primary
+                else -> AutoCarIcons.primary
+            }
 
             gridBuilder.addItem(
                 GridItem.Builder()
@@ -65,6 +69,7 @@ class AutoOtherDashboardScreen(
         "restaurant" -> R.drawable.ic_poi_restaurant
         "fast_food" -> R.drawable.ic_poi_fast_food
         "speed_camera" -> R.drawable.ic_poi_radar
+        "weather" -> R.drawable.ic_poi_weather
         "parking" -> R.drawable.ic_poi_parking
         "viewpoint" -> R.drawable.ic_poi_viewpoint
         "post_box" -> R.drawable.ic_poi_post_box
