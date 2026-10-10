@@ -23,6 +23,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -97,6 +98,7 @@ class MainActivity : ComponentActivity() {
     private val mapDepsState = MutableStateFlow<MapDeps?>(null)
     private val pendingNavDestination = MutableStateFlow<NavDestination?>(null)
     private val pendingRememberParked = MutableStateFlow<RememberParkedRequest?>(null)
+    private val pendingOpenRadarMap = MutableStateFlow<OpenRadarMapRequest?>(null)
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -119,6 +121,14 @@ class MainActivity : ComponentActivity() {
                 val lon = intent.getDoubleExtra(ParkedCarIntents.EXTRA_LONGITUDE, Double.NaN)
                 pendingRememberParked.value = RememberParkedRequest(
                     vehicleId = vehicleId,
+                    latitude = lat.takeUnless { it.isNaN() },
+                    longitude = lon.takeUnless { it.isNaN() },
+                )
+            }
+            RadarMapIntents.ACTION_OPEN_RADAR_MAP -> {
+                val lat = intent.getDoubleExtra(RadarMapIntents.EXTRA_LATITUDE, Double.NaN)
+                val lon = intent.getDoubleExtra(RadarMapIntents.EXTRA_LONGITUDE, Double.NaN)
+                pendingOpenRadarMap.value = OpenRadarMapRequest(
                     latitude = lat.takeUnless { it.isNaN() },
                     longitude = lon.takeUnless { it.isNaN() },
                 )
@@ -247,6 +257,7 @@ class MainActivity : ComponentActivity() {
                     updateResultLauncher = updateResultLauncher,
                     pendingNavDestination = pendingNavDestination,
                     pendingRememberParked = pendingRememberParked,
+                    pendingOpenRadarMap = pendingOpenRadarMap,
                     isPlaystoreDistribution = isPlaystoreDistribution
                 )
             }
@@ -279,6 +290,7 @@ private fun MainActivityComposeRoot(
     updateResultLauncher: ActivityResultLauncher<IntentSenderRequest>,
     pendingNavDestination: MutableStateFlow<NavDestination?>,
     pendingRememberParked: MutableStateFlow<RememberParkedRequest?>,
+    pendingOpenRadarMap: MutableStateFlow<OpenRadarMapRequest?>,
     isPlaystoreDistribution: Boolean
 ) {
     android.util.Log.d("MainActivity", "Compose setContent block running")
@@ -380,6 +392,7 @@ private fun MainActivityComposeRoot(
             isUpdateInProgress = isUpdateInProgress,
             pendingNavDestinationFlow = pendingNavDestination,
             pendingRememberParkedFlow = pendingRememberParked,
+            pendingOpenRadarMapFlow = pendingOpenRadarMap,
             isPlaystoreDistribution = isPlaystoreDistribution,
             hasLocationPermission = hasLocationPermission,
             onRequestLocationPermission = {
@@ -411,12 +424,14 @@ fun MainUI(
     isUpdateInProgress: Boolean = false,
     pendingNavDestinationFlow: kotlinx.coroutines.flow.MutableStateFlow<NavDestination?>? = null,
     pendingRememberParkedFlow: kotlinx.coroutines.flow.MutableStateFlow<RememberParkedRequest?>? = null,
+    pendingOpenRadarMapFlow: kotlinx.coroutines.flow.MutableStateFlow<OpenRadarMapRequest?>? = null,
     isPlaystoreDistribution: Boolean = false,
     hasLocationPermission: Boolean = false,
     onRequestLocationPermission: () -> Unit = {}
 ) {
     val pendingNavFlow = pendingNavDestinationFlow ?: remember { MutableStateFlow<NavDestination?>(null) }
     val pendingRememberFlow = pendingRememberParkedFlow ?: remember { MutableStateFlow<RememberParkedRequest?>(null) }
+    val pendingOpenRadarFlow = pendingOpenRadarMapFlow ?: remember { MutableStateFlow<OpenRadarMapRequest?>(null) }
     val mapDeps by mapDepsState.collectAsState()
     val errorLog by diagnostics.errorLog.collectAsState()
     var showSettings by remember { mutableStateOf(false) }
@@ -438,6 +453,8 @@ fun MainUI(
     var pendingMapPoi by remember { mutableStateOf<Poi?>(null) }
     var pendingMapZoom by remember { mutableStateOf<Float?>(null) }
     var pendingMapLocation by remember { mutableStateOf<com.google.android.gms.maps.model.LatLng?>(null) }
+    /** Bumped when a deep link must remount the map (e.g. radar notif → center). */
+    var mapRemountKey by remember { mutableStateOf(0) }
     var dashboardSelectedLocation by remember { mutableStateOf<fr.geoking.gaston.api.geocoding.GeocodedPlace?>(null) }
     // Survives leave/return: dashboard is disposed when another top-level screen shows.
     val dashboardListState = rememberLazyListState()
@@ -473,6 +490,35 @@ fun MainUI(
                 parkedRememberRequest = request
                 showParkedCar = true
                 pendingRememberFlow.value = null
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        pendingOpenRadarFlow.collect { request ->
+            if (request != null) {
+                settingsManager.setOtherMode("speed_camera")
+                val lat = request.latitude
+                val lon = request.longitude
+                if (lat != null && lon != null) {
+                    pendingMapLocation = com.google.android.gms.maps.model.LatLng(lat, lon)
+                }
+                pendingMapZoom = 12.5f
+                mapRemountKey++
+                // Clear overlays that take precedence over showMap in the when{} below.
+                showNetworkDiagnostics = false
+                showAutoDebug = false
+                showEmergency = false
+                showAccident = false
+                showMaintenance = false
+                showParkedCar = false
+                showSettings = false
+                showPlaystoreSettings = false
+                showFavorites = false
+                showRoutePlanning = false
+                showFuelForecast = false
+                showMap = true
+                pendingOpenRadarFlow.value = null
             }
         }
     }
@@ -703,29 +749,31 @@ fun MainUI(
                         pendingMapZoom = null
                         pendingMapLocation = null
                     }
-                    MapFactory(
-                        poiProvider = mapDeps!!.poiProvider,
-                        availabilityProviderFactory = mapDeps!!.availabilityProviderFactory,
-                        trafficProviderFactory = mapDeps!!.trafficProviderFactory,
-                        settingsManager = settingsManager,
-                        authManager = authManager,
-                        diagnostics = diagnostics,
-                        palette = palette,
-                        onBack = {
-                            showMap = false
-                            pendingMapPoi = null
-                            pendingMapZoom = null
-                            pendingMapLocation = null
-                        },
-                        onPlanRoute = { showRoutePlanning = true },
-                        geocodingClient = mapDeps!!.geocodingClient,
-                        communityRepo = mapDeps!!.communityRepo,
-                        favoritesRepo = mapDeps!!.favoritesRepo,
-                        initialSelectedPoi = pendingMapPoi,
-                        initialCenter = pendingMapLocation,
-                        initialZoom = pendingMapZoom,
-                        showAds = isPlaystoreDistribution
-                    )
+                    key(mapRemountKey) {
+                        MapFactory(
+                            poiProvider = mapDeps!!.poiProvider,
+                            availabilityProviderFactory = mapDeps!!.availabilityProviderFactory,
+                            trafficProviderFactory = mapDeps!!.trafficProviderFactory,
+                            settingsManager = settingsManager,
+                            authManager = authManager,
+                            diagnostics = diagnostics,
+                            palette = palette,
+                            onBack = {
+                                showMap = false
+                                pendingMapPoi = null
+                                pendingMapZoom = null
+                                pendingMapLocation = null
+                            },
+                            onPlanRoute = { showRoutePlanning = true },
+                            geocodingClient = mapDeps!!.geocodingClient,
+                            communityRepo = mapDeps!!.communityRepo,
+                            favoritesRepo = mapDeps!!.favoritesRepo,
+                            initialSelectedPoi = pendingMapPoi,
+                            initialCenter = pendingMapLocation,
+                            initialZoom = pendingMapZoom,
+                            showAds = isPlaystoreDistribution
+                        )
+                    }
                 }
                 isPlaystoreDistribution && !showMap -> {
                     PhoneDashboardScreen(
@@ -861,29 +909,31 @@ fun MainUI(
                         pendingMapLocation = null
                     }
                     if (mapDeps != null) {
-                        MapFactory(
-                            poiProvider = mapDeps!!.poiProvider,
-                            availabilityProviderFactory = mapDeps!!.availabilityProviderFactory,
-                            trafficProviderFactory = mapDeps!!.trafficProviderFactory,
-                            settingsManager = settingsManager,
-                            authManager = authManager,
-                            diagnostics = diagnostics,
-                            palette = palette,
-                            onBack = {
-                                showMap = false
-                                pendingMapPoi = null
-                                pendingMapZoom = null
-                                pendingMapLocation = null
-                            },
-                            onPlanRoute = { showRoutePlanning = true },
-                            geocodingClient = mapDeps!!.geocodingClient,
-                            communityRepo = mapDeps!!.communityRepo,
-                            favoritesRepo = mapDeps!!.favoritesRepo,
-                            initialSelectedPoi = pendingMapPoi,
-                            initialCenter = pendingMapLocation,
-                            initialZoom = pendingMapZoom,
-                            showAds = isPlaystoreDistribution
-                        )
+                        key(mapRemountKey) {
+                            MapFactory(
+                                poiProvider = mapDeps!!.poiProvider,
+                                availabilityProviderFactory = mapDeps!!.availabilityProviderFactory,
+                                trafficProviderFactory = mapDeps!!.trafficProviderFactory,
+                                settingsManager = settingsManager,
+                                authManager = authManager,
+                                diagnostics = diagnostics,
+                                palette = palette,
+                                onBack = {
+                                    showMap = false
+                                    pendingMapPoi = null
+                                    pendingMapZoom = null
+                                    pendingMapLocation = null
+                                },
+                                onPlanRoute = { showRoutePlanning = true },
+                                geocodingClient = mapDeps!!.geocodingClient,
+                                communityRepo = mapDeps!!.communityRepo,
+                                favoritesRepo = mapDeps!!.favoritesRepo,
+                                initialSelectedPoi = pendingMapPoi,
+                                initialCenter = pendingMapLocation,
+                                initialZoom = pendingMapZoom,
+                                showAds = isPlaystoreDistribution
+                            )
+                        }
                     } else {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()

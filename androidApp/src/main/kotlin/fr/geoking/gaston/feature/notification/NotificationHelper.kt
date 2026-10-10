@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat
 import fr.geoking.gaston.MainActivity
 import fr.geoking.gaston.ParkedCarIntents
 import fr.geoking.gaston.R
+import fr.geoking.gaston.RadarMapIntents
 import fr.geoking.gaston.auto.VoiceAppService
 
 open class NotificationHelper(private val context: Context) {
@@ -150,7 +151,11 @@ open class NotificationHelper(private val context: Context) {
     fun showUpdateAvailableNotification() = showUpdateAvailableCarNotification()
 
     /** Temporary phone notification + Android Auto HUN on danger-zone entry. */
-    open fun showDangerZoneNotification(speedLimitKmH: Int?) {
+    open fun showDangerZoneNotification(
+        speedLimitKmH: Int?,
+        latitude: Double? = null,
+        longitude: Double? = null,
+    ) {
         if (!canPostNotifications()) return
         val dedupeKey = "entry-${speedLimitKmH ?: 0}"
         if (shouldSuppressDuplicate("danger_zone", dedupeKey)) return
@@ -167,14 +172,21 @@ open class NotificationHelper(private val context: Context) {
             title = title,
             message = message,
             smallIcon = R.drawable.ic_poi_radar,
+            openRadarLatitude = latitude,
+            openRadarLongitude = longitude,
         )
     }
 
     /**
      * Temporary HUN when within ~100 m of the zone center (after / with zone entry).
      * FR copy: "Radar proche %d km/h".
+     * Phone tap opens the radar map centered on [latitude]/[longitude] when set.
      */
-    open fun showNearRadarNotification(speedLimitKmH: Int?) {
+    open fun showNearRadarNotification(
+        speedLimitKmH: Int?,
+        latitude: Double? = null,
+        longitude: Double? = null,
+    ) {
         if (!canPostNotifications()) return
         val dedupeKey = "near-${speedLimitKmH ?: 0}"
         if (shouldSuppressDuplicate("near_radar", dedupeKey)) return
@@ -191,6 +203,8 @@ open class NotificationHelper(private val context: Context) {
             title = title,
             message = message,
             smallIcon = R.drawable.ic_poi_radar,
+            openRadarLatitude = latitude,
+            openRadarLongitude = longitude,
         )
     }
 
@@ -424,14 +438,22 @@ open class NotificationHelper(private val context: Context) {
 
     /**
      * Temporary phone heads-up + Android Auto HUN (auto-dismiss after [TEMPORARY_NOTIFICATION_MS]).
+     * When [openRadarLatitude]/[openRadarLongitude] are set, phone tap opens the radar map at that point.
      */
     private fun postTemporaryCarHeadsUp(
         notificationId: Int,
         title: String,
         message: String,
         smallIcon: Int,
+        openRadarLatitude: Double? = null,
+        openRadarLongitude: Double? = null,
     ) {
         val phoneIntent = Intent(context, MainActivity::class.java).apply {
+            action = RadarMapIntents.ACTION_OPEN_RADAR_MAP
+            if (openRadarLatitude != null && openRadarLongitude != null) {
+                putExtra(RadarMapIntents.EXTRA_LATITUDE, openRadarLatitude)
+                putExtra(RadarMapIntents.EXTRA_LONGITUDE, openRadarLongitude)
+            }
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val phonePending = PendingIntent.getActivity(

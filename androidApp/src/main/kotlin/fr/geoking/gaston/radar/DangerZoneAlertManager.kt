@@ -97,7 +97,11 @@ class DangerZoneAlertManager(
                 if (zone.id !in alertedZoneIds) {
                     alertedZoneIds.add(zone.id)
                     playAlertAudio(eval.isOverspeed, eval.speedLimitKmH)
-                    notificationHelper?.showDangerZoneNotification(eval.speedLimitKmH)
+                    notificationHelper?.showDangerZoneNotification(
+                        eval.speedLimitKmH,
+                        latitude = zone.centerLatitude,
+                        longitude = zone.centerLongitude,
+                    )
                     maybeSpeakSafetyTip(location.time)
                 }
                 if (
@@ -106,7 +110,11 @@ class DangerZoneAlertManager(
                 ) {
                     nearAlertedZoneIds.add(zone.id)
                     playAlertAudio(eval.isOverspeed, eval.speedLimitKmH)
-                    notificationHelper?.showNearRadarNotification(eval.speedLimitKmH)
+                    notificationHelper?.showNearRadarNotification(
+                        eval.speedLimitKmH,
+                        latitude = zone.centerLatitude,
+                        longitude = zone.centerLongitude,
+                    )
                 }
             } else {
                 if (zone.id in alertedZoneIds) {

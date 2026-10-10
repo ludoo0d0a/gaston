@@ -60,15 +60,31 @@ class DangerZoneAlertManagerTest {
         var nearNotificationCount = 0
         var lastEntrySpeedLimit: Int? = null
         var lastNearSpeedLimit: Int? = null
+        var lastEntryLat: Double? = null
+        var lastEntryLon: Double? = null
+        var lastNearLat: Double? = null
+        var lastNearLon: Double? = null
 
-        override fun showDangerZoneNotification(speedLimitKmH: Int?) {
+        override fun showDangerZoneNotification(
+            speedLimitKmH: Int?,
+            latitude: Double?,
+            longitude: Double?,
+        ) {
             entryNotificationCount++
             lastEntrySpeedLimit = speedLimitKmH
+            lastEntryLat = latitude
+            lastEntryLon = longitude
         }
 
-        override fun showNearRadarNotification(speedLimitKmH: Int?) {
+        override fun showNearRadarNotification(
+            speedLimitKmH: Int?,
+            latitude: Double?,
+            longitude: Double?,
+        ) {
             nearNotificationCount++
             lastNearSpeedLimit = speedLimitKmH
+            lastNearLat = latitude
+            lastNearLon = longitude
         }
     }
 
@@ -96,6 +112,8 @@ class DangerZoneAlertManagerTest {
 
         kotlin.test.assertEquals(1, mockNotification.entryNotificationCount)
         kotlin.test.assertEquals(80, mockNotification.lastEntrySpeedLimit)
+        kotlin.test.assertEquals(48.8566, mockNotification.lastEntryLat)
+        kotlin.test.assertEquals(2.3522, mockNotification.lastEntryLon)
         kotlin.test.assertEquals(0, mockNotification.nearNotificationCount)
     }
 
@@ -166,6 +184,8 @@ class DangerZoneAlertManagerTest {
         kotlin.test.assertEquals(1, mockNotification.entryNotificationCount)
         kotlin.test.assertEquals(1, mockNotification.nearNotificationCount)
         kotlin.test.assertEquals(100, mockNotification.lastNearSpeedLimit)
+        kotlin.test.assertEquals(48.8566, mockNotification.lastNearLat)
+        kotlin.test.assertEquals(2.3522, mockNotification.lastNearLon)
         assertTrue(manager.getNearAlertedZoneIds().contains("z3"))
         // Entry + near each get beep + TTS on the same tick when already at the pin.
         kotlin.test.assertEquals(2, audioNotifier.okBeepsCount)

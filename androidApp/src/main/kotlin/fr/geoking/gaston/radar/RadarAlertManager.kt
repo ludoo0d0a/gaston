@@ -89,7 +89,11 @@ class RadarAlertManager(
                         audioNotifier.playOkSpeedBeeps()
                         audioNotifier.speakDangerZone(eval.speedLimitKmH)
                     }
-                    notificationHelper?.showDangerZoneNotification(eval.speedLimitKmH)
+                    notificationHelper?.showDangerZoneNotification(
+                        eval.speedLimitKmH,
+                        latitude = radar.latitude,
+                        longitude = radar.longitude,
+                    )
                 }
             } else {
                 if (radar.id in alertedRadarIds) {
