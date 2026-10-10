@@ -152,6 +152,12 @@ fun PhoneDashboardScreen(
                             onOpenMap(null, 12.5f)
                         }
                     },
+                    onOpenTraffic = {
+                        scope.launch {
+                            settingsManager.setMapTrafficEnabled(true)
+                            onOpenMap(null, 12.5f)
+                        }
+                    },
                     onOpenRoutes = onOpenRoutes,
                     onOpenFuelForecast = onOpenFuelForecast,
                     onOpenEmergency = onOpenEmergency,

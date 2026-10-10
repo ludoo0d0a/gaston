@@ -652,10 +652,11 @@ val mapModule = module {
         )
     }
     single {
+        // Concrete types: Koin does not bind interface TrafficProvider for these singles.
         FranceTrafficProvider(
-            openProvider = get(),
-            actionB = get(named("tipi_action_b_provider")),
-            actionC = get(named("tipi_action_c_provider"))
+            openProvider = get<BisonFuteTrafficProvider>(),
+            actionB = get<TipiActionTrafficProvider>(named("tipi_action_b_provider")),
+            actionC = get<TipiActionTrafficProvider>(named("tipi_action_c_provider")),
         )
     }
     single { CitaGeoJsonTrafficClient(get()) }

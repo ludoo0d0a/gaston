@@ -22,6 +22,26 @@ class AutoOtherDashboardScreen(
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoOtherDashboardScreen") {
         val gridBuilder = ItemList.Builder()
 
+        // Traffic is a map overlay (not an Overpass amenity), next to radar / weather.
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.dashboard_traffic))
+                .setImage(carContext.carIcon(R.drawable.ic_poi_traffic, AutoCarIcons.emergency))
+                .setOnClickListener {
+                    settingsManager.setMapTrafficEnabled(true)
+                    val mapDeps = getMapDeps()
+                    if (mapDeps != null) {
+                        screenManager.pop()
+                        pushMapScreen(
+                            settingsManager,
+                            mapDeps,
+                            carContext.getString(R.string.dashboard_traffic),
+                        )
+                    }
+                }
+                .build()
+        )
+
         OVERPASS_AMENITY_OPTIONS.forEach { (id, resId) ->
             // Match phone dashboard labels for radar / weather shortcuts.
             val label = when (id) {
