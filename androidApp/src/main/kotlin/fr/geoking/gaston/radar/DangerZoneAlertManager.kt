@@ -3,10 +3,12 @@ package fr.geoking.gaston.radar
 import android.location.Location
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.aac.DangerZone
+import fr.geoking.gaston.aac.DangerZoneEvaluation
 import fr.geoking.gaston.aac.DangerZoneEvaluator
 import fr.geoking.gaston.aac.RoadSafetyMessages
 import fr.geoking.gaston.feature.notification.NotificationHelper
 import fr.geoking.gaston.shared.location.haversineKm
+import fr.geoking.gaston.shared.logging.RadarDetectionLog
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -48,6 +50,7 @@ class DangerZoneAlertManager(
             hudStore.clear()
             return
         }
+        val debugLogs = settings.debugLoggingEnabled || settings.debugBarEnabled
 
         val curLat = location.latitude
         val curLon = location.longitude
@@ -96,6 +99,7 @@ class DangerZoneAlertManager(
                 }
                 if (zone.id !in alertedZoneIds) {
                     alertedZoneIds.add(zone.id)
+                    logDetection(RadarDetectionLog.Event.ENTRY, zone, eval, debugLogs)
                     playAlertAudio(eval.isOverspeed, eval.speedLimitKmH)
                     notificationHelper?.showDangerZoneNotification(
                         eval.speedLimitKmH,
@@ -109,6 +113,7 @@ class DangerZoneAlertManager(
                     zone.id !in nearAlertedZoneIds
                 ) {
                     nearAlertedZoneIds.add(zone.id)
+                    logDetection(RadarDetectionLog.Event.NEAR, zone, eval, debugLogs)
                     playAlertAudio(eval.isOverspeed, eval.speedLimitKmH)
                     notificationHelper?.showNearRadarNotification(
                         eval.speedLimitKmH,
@@ -120,6 +125,7 @@ class DangerZoneAlertManager(
                 if (zone.id in alertedZoneIds) {
                     // Left the extended zone (or opposite carriageway filter)
                     if (eval.distanceToCenterMeters > zone.radiusMeters * 1.2 || !eval.isAhead) {
+                        logDetection(RadarDetectionLog.Event.EXIT, zone, eval, debugLogs)
                         alertedZoneIds.remove(zone.id)
                         nearAlertedZoneIds.remove(zone.id)
                     }
@@ -140,6 +146,22 @@ class DangerZoneAlertManager(
      * Dev test: beep + TTS + presence HUD; HUN when [notificationHelper] is set.
      */
     fun triggerTestAlert(speedLimitKmH: Int? = TEST_ALERT_SPEED_LIMIT_KMH) {
+        val settings = settingsManager.settings.value
+        val debugLogs = settings.debugLoggingEnabled || settings.debugBarEnabled
+        RadarDetectionLog.log(
+            event = RadarDetectionLog.Event.TEST,
+            zoneId = "test",
+            kind = "TEST",
+            roadClass = "-",
+            radiusMeters = 0.0,
+            distanceMeters = 0.0,
+            vmaKmH = speedLimitKmH,
+            speedKmH = 0.0,
+            isAhead = true,
+            isOverspeed = false,
+            source = "dev",
+            enabled = debugLogs,
+        )
         playAlertAudio(isOverspeed = false, speedLimitKmH = speedLimitKmH)
         hudStore.set(
             DangerZoneHudState(
@@ -148,6 +170,28 @@ class DangerZoneAlertManager(
             ),
         )
         notificationHelper?.showDangerZoneNotification(speedLimitKmH)
+    }
+
+    private fun logDetection(
+        event: RadarDetectionLog.Event,
+        zone: DangerZone,
+        eval: DangerZoneEvaluation,
+        enabled: Boolean,
+    ) {
+        RadarDetectionLog.log(
+            event = event,
+            zoneId = zone.id,
+            kind = zone.kind.name,
+            roadClass = zone.roadClass.name,
+            radiusMeters = zone.radiusMeters,
+            distanceMeters = eval.distanceToCenterMeters,
+            vmaKmH = eval.speedLimitKmH,
+            speedKmH = eval.currentSpeedKmH,
+            isAhead = eval.isAhead,
+            isOverspeed = eval.isOverspeed,
+            source = zone.source,
+            enabled = enabled,
+        )
     }
 
     /** Clears HUD only (used after a phone test alert when the GPS loop is idle). */

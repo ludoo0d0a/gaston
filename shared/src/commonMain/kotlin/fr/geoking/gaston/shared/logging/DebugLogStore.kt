@@ -43,6 +43,7 @@ fun resolveProviderName(host: String): String? {
         h.contains("comparis") || h.contains("gas-api.ch") -> "Switzerland Comparis"
         h.contains("weatherapi") || h.contains("open-meteo") -> "Weather API"
         h.contains("mapbox") -> "Mapbox"
+        h == "radar" -> "Radar detection"
         else -> null
     }
 }

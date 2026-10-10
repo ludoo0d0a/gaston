@@ -5,12 +5,15 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.aac.DangerZoneAlertCopy
 import fr.geoking.gaston.aac.DangerZoneFactory
 import fr.geoking.gaston.aac.RoadNetworkClass
+import fr.geoking.gaston.shared.logging.DebugLogStore
+import fr.geoking.gaston.shared.logging.RadarDetectionLog
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -48,6 +51,7 @@ class DangerZoneAlertManagerTest {
 
     @Before
     fun setUp() {
+        DebugLogStore.clearAll()
         val context = RuntimeEnvironment.getApplication()
         settingsManager = SettingsManager(context)
         settingsManager.setRadarWarningEnabled(true)
@@ -267,5 +271,60 @@ class DangerZoneAlertManagerTest {
             assertFalse(banned.containsMatchIn(phrase), "Banned pattern in: $phrase")
             assertFalse(phrase.contains("Attention, radar", ignoreCase = true))
         }
+    }
+
+    @Test
+    fun logsDetectionConditionsWhenDebugBarEnabled() {
+        settingsManager.saveSettings(
+            settingsManager.settings.value.copy(debugBarEnabled = true),
+        )
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "z-log",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            speedLimitKmH = 50,
+            source = "test",
+            roadClassOverride = RoadNetworkClass.Urban,
+        )
+        val loc = Location("test").apply {
+            latitude = 48.8566 + 0.0018
+            longitude = 2.3522
+            time = System.currentTimeMillis()
+        }
+        alertManager.evaluateAndAlert(loc, listOf(zone))
+
+        val radarLogs = DebugLogStore.logs.value.filter { it.host == RadarDetectionLog.HOST }
+        assertTrue(radarLogs.isNotEmpty())
+        val entry = radarLogs.first { it.method == "ENTRY" }
+        assertEquals("ENTRY", entry.method)
+        assertTrue(entry.url.contains("vma=50"))
+        assertTrue(entry.url.contains("radius=300m"))
+        assertTrue(entry.url.contains("road=Urban"))
+        assertTrue(entry.url.contains("dist="))
+    }
+
+    @Test
+    fun doesNotLogDetectionWhenDebugDisabled() {
+        settingsManager.saveSettings(
+            settingsManager.settings.value.copy(
+                debugBarEnabled = false,
+                debugLoggingEnabled = false,
+            ),
+        )
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "z-silent",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            speedLimitKmH = 50,
+            source = "test",
+            roadClassOverride = RoadNetworkClass.Urban,
+        )
+        val loc = Location("test").apply {
+            latitude = 48.8566
+            longitude = 2.3522
+            time = System.currentTimeMillis()
+        }
+        alertManager.evaluateAndAlert(loc, listOf(zone))
+        assertTrue(DebugLogStore.logs.value.none { it.host == RadarDetectionLog.HOST })
     }
 }

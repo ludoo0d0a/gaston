@@ -21,6 +21,7 @@ class DebugLogStoreTest {
         assertEquals("Freshmile", resolveProviderName("prod-driver-api.freshmile.com"))
         assertEquals("Germany Tankerkoenig", resolveProviderName("api.tankerkoenig.de"))
         assertEquals("Lufop", resolveProviderName("api.lufop.net"))
+        assertEquals("Radar detection", resolveProviderName("radar"))
         assertNull(resolveProviderName("unknown-host.example.com"))
     }
 
