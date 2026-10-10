@@ -84,6 +84,7 @@ fun ParkedCarFeatureScreen(
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var isSaving by remember { mutableStateOf(false) }
     var intentCandidateDismissed by remember { mutableStateOf(false) }
+    var columnScrollEnabled by remember { mutableStateOf(true) }
 
     val vehicle = settings.vehicleById(selectedVehicleId) ?: settings.activeVehicle()
     val parked = settings.parkedPositionFor(selectedVehicleId)
@@ -134,7 +135,7 @@ fun ParkedCarFeatureScreen(
                     .fillMaxSize()
                     .padding(padding)
                     .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState(), enabled = columnScrollEnabled),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
@@ -265,6 +266,9 @@ fun ParkedCarFeatureScreen(
                     ParkedCarMapPreview(
                         latitude = mapLat,
                         longitude = mapLon,
+                        onMapInteractionChanged = { interacting ->
+                            columnScrollEnabled = !interacting
+                        },
                     )
                 }
 
