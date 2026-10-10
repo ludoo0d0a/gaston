@@ -50,7 +50,6 @@ fun PhoneDashboardScreen(
     mapDepsReady: Boolean,
     fuelForecastRepository: FuelForecastRepository? = null,
     geocodingClient: GeocodingClient? = null,
-    isUpdateInProgress: Boolean = false,
     showAds: Boolean = false,
     listState: LazyListState = rememberLazyListState(),
     onOpenMap: (Poi?, Float?) -> Unit,
@@ -99,7 +98,6 @@ fun PhoneDashboardScreen(
         Scaffold(
             topBar = {
                 PhoneDashboardTopBar(
-                    isUpdateInProgress = isUpdateInProgress,
                     onOpenFavorites = onOpenFavorites,
                     onOpenSettings = { onOpenSettings(null) }
                 )

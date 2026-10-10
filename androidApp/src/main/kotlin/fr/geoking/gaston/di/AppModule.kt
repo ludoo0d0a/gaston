@@ -1,6 +1,9 @@
 package fr.geoking.gaston.di
 
+import android.app.NotificationManager
 import android.content.Context
+import androidx.car.app.notification.CarAppExtender
+import androidx.core.app.NotificationCompat
 import fr.geoking.gaston.feature.network.AndroidNetworkService
 import fr.geoking.gaston.feature.notification.NotificationHelper
 import fr.geoking.gaston.feature.notification.InAppNotificationCenter
@@ -270,18 +273,31 @@ val appModule = module {
 
     single {
         val context = androidContext()
-        val notificationHelper = get<NotificationHelper>()
+        val title = context.getString(R.string.update_available_title)
+        val message = context.getString(R.string.update_available_message)
         fr.geoking.tools.inappupdate.InAppUpdateHelper(
             context = context,
             notificationSpec = fr.geoking.tools.inappupdate.UpdateNotificationSpec(
                 channelId = NotificationHelper.CHANNEL_ID,
-                channelName = context.getString(R.string.dashboard_network),
+                channelName = title,
                 smallIcon = R.drawable.ic_notifications,
-                title = context.getString(R.string.update_available_title),
-                message = context.getString(R.string.update_available_message),
+                title = title,
+                message = message,
                 launchActivityClass = fr.geoking.gaston.MainActivity::class.java,
+                // One notification for phone + AA (tap → start update). Do not post a second car-only notif.
+                configureBuilder = { builder ->
+                    builder
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .extend(
+                            CarAppExtender.Builder()
+                                .setImportance(NotificationManager.IMPORTANCE_HIGH)
+                                .setContentTitle(title)
+                                .setContentText(message)
+                                .setSmallIcon(R.drawable.ic_notifications)
+                                .build()
+                        )
+                },
             ),
-            onUpdateAvailableExtra = { notificationHelper.showUpdateAvailableCarNotification() },
         )
     }
 

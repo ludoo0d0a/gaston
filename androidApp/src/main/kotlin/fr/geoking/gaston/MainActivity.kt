@@ -14,6 +14,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -60,6 +61,7 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.ui.UpdateAvailableDialog
+import fr.geoking.gaston.ui.UpdateInProgressBanner
 import fr.geoking.gaston.ui.anim.AnimationPalettes
 import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.install.model.InstallStatus
@@ -526,8 +528,12 @@ fun MainUI(
             )
         }
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                when {
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (isUpdateInProgress) {
+                    UpdateInProgressBanner(modifier = Modifier.fillMaxWidth())
+                }
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    when {
                     showNetworkDiagnostics -> {
                         BackHandler { showNetworkDiagnostics = false }
                         PhoneNetworkLocationScreen(
@@ -730,7 +736,6 @@ fun MainUI(
                         mapDepsReady = mapDeps != null,
                         fuelForecastRepository = fuelForecastRepository,
                         geocodingClient = mapDeps?.geocodingClient,
-                        isUpdateInProgress = isUpdateInProgress,
                         showAds = true,
                         listState = dashboardListState,
                         onOpenMap = { poi, zoom ->
@@ -902,7 +907,6 @@ fun MainUI(
                             mapDepsReady = mapDeps != null,
                             fuelForecastRepository = fuelForecastRepository,
                             geocodingClient = mapDeps?.geocodingClient,
-                            isUpdateInProgress = isUpdateInProgress,
                             showAds = isPlaystoreDistribution,
                             listState = dashboardListState,
                             onOpenMap = { poi, zoom ->
@@ -963,6 +967,7 @@ fun MainUI(
                             onClick = { showNetworkDiagnostics = true }
                         )
                     }
+                }
                 }
             }
         }

@@ -17,4 +17,5 @@ android {
 dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.play.app.update)
+    implementation(libs.androidx.core.ktx)
 }

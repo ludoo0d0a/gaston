@@ -26,6 +26,7 @@ data class UpdateNotificationSpec(
     val title: String = "",
     val message: String = "",
     val launchActivityClass: Class<*>? = null,
+    val configureBuilder: (androidx.core.app.NotificationCompat.Builder) -> Unit = {},
 )
 
 class InAppUpdateHelper(
