@@ -2,6 +2,9 @@ package fr.geoking.gaston.parked
 
 import android.content.Context
 import android.util.Log
+import androidx.car.app.connection.CarConnection
+import androidx.lifecycle.Observer
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.activeVehicle
 import fr.geoking.gaston.feature.location.LocationHelper
@@ -16,9 +19,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Park suggestion triggers:
- * 1. **In-session**: after vehicle-like speed then ~10s stop during Android Auto → propose Save.
- * 2. **Post-session** (fallback): on AA destroy, if nothing was retained yet → same gate + propose.
+ * Park suggestion while Android Auto / car mode keeps [ParkStopMonitorService] alive:
+ * 1. **While projected (FGS)**: vehicle speed then ~10s stop → HUN + TTS + Save.
+ * 2. **Projection ends / Gaston session destroy** (fallback): if nothing retained → 10s gate + propose.
  */
 class AaPostSessionParkSuggester(
     context: Context,
@@ -29,21 +32,71 @@ class AaPostSessionParkSuggester(
 ) {
     private val appContext = context.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var inSessionJob: Job? = null
+    private val audio = ParkSuggestionAudio(appContext)
+    private var projectionJob: Job? = null
     private var postSessionJob: Job? = null
+    private var projectionStartedAtElapsedMs: Long = 0L
+    private var wasProjected: Boolean = false
 
-    /** Start GPS polling for stop detection while the AA session is alive. */
-    fun startInSessionMonitoring() {
-        inSessionJob?.cancel()
+    private val carConnection = CarConnection(appContext)
+    private val connectionObserver = Observer<Int> { type ->
+        when (type) {
+            CarConnection.CONNECTION_TYPE_PROJECTION,
+            CarConnection.CONNECTION_TYPE_NATIVE,
+            -> onProjected()
+            else -> onProjectionEnded()
+        }
+    }
+
+    init {
+        // Process-wide: FGS keeps us alive when another AA app is foreground.
+        carConnection.type.observeForever(connectionObserver)
+    }
+
+    private fun onProjected() {
+        if (projectionStartedAtElapsedMs == 0L) {
+            projectionStartedAtElapsedMs = android.os.SystemClock.elapsedRealtime()
+        }
+        wasProjected = true
+        ParkStopMonitorService.start(appContext)
+    }
+
+    private fun onProjectionEnded() {
+        if (!wasProjected) {
+            ParkStopMonitorService.stop(appContext)
+            return
+        }
+        wasProjected = false
+        val started = projectionStartedAtElapsedMs
+        projectionStartedAtElapsedMs = 0L
+        ParkStopMonitorService.stop(appContext)
+        // Fallback when AA disconnects (Gaston may never have been opened this trip).
+        startIfEligible(sessionStartedAtElapsedMs = started)
+    }
+
+    /** Called from [ParkStopMonitorService] after startForeground. */
+    fun attachFromService() {
+        startProjectionMonitoring()
+    }
+
+    /** Called from [ParkStopMonitorService] onDestroy. */
+    fun detachFromService() {
+        stopProjectionMonitoring()
+    }
+
+    /** GPS polling for stop detection while the FGS is running. */
+    fun startProjectionMonitoring() {
+        if (projectionJob?.isActive == true) return
         postSessionJob?.cancel()
         val tracker = InSessionStopTracker()
-        inSessionJob = scope.launch {
+        projectionJob = scope.launch {
+            Log.i(TAG, "Projection park-stop monitor started")
             while (isActive) {
                 val now = android.os.SystemClock.elapsedRealtime()
                 val loc = try {
                     LocationHelper.getCurrentLocation(appContext)
                 } catch (e: Exception) {
-                    Log.w(TAG, "In-session location failed", e)
+                    Log.w(TAG, "Projection location failed", e)
                     null
                 }
                 if (loc != null) {
@@ -56,7 +109,7 @@ class AaPostSessionParkSuggester(
                         val settings = settingsManager.settings.value
                         val lat = loc?.latitude ?: settings.lastKnownLat
                         val lon = loc?.longitude ?: settings.lastKnownLon
-                        if (lat != null && lon != null && !hasRetainedParkSuggestion()) {
+                        if (lat != null && lon != null && !shouldSkipSuggestion(activeVehicleId(settings))) {
                             onParkConfirmed(
                                 ParkCandidate(
                                     vehicleId = activeVehicleId(settings),
@@ -70,33 +123,40 @@ class AaPostSessionParkSuggester(
                 }
                 delay(POLL_MS)
             }
+            Log.i(TAG, "Projection park-stop monitor stopped")
         }
     }
 
+    fun stopProjectionMonitoring() {
+        projectionJob?.cancel()
+        projectionJob = null
+    }
+
+    fun startInSessionMonitoring() {
+        ParkStopMonitorService.start(appContext)
+    }
+
     fun stopInSessionMonitoring() {
-        inSessionJob?.cancel()
-        inSessionJob = null
+        ParkStopMonitorService.stop(appContext)
     }
 
     /**
-     * Fallback after Android Auto session destroy when in-session did not retain a suggestion.
+     * Fallback after AA disconnect or Gaston session destroy when a stop was not retained yet.
      *
-     * @param sessionStartedAtElapsedMs [android.os.SystemClock.elapsedRealtime] when the AA session started
+     * @param sessionStartedAtElapsedMs [android.os.SystemClock.elapsedRealtime] when projection/session started
      */
     fun startIfEligible(
         sessionStartedAtElapsedMs: Long,
         minSessionMs: Long = MIN_SESSION_MS_BEFORE_PARK_SUGGEST,
         recentlySavedParkMs: Long = RECENTLY_SAVED_PARK_MS,
     ) {
-        stopInSessionMonitoring()
-
         if (sessionStartedAtElapsedMs == 0L) return
         val sessionElapsed = android.os.SystemClock.elapsedRealtime() - sessionStartedAtElapsedMs
         if (sessionElapsed < minSessionMs) return
 
         val settings = settingsManager.settings.value
         val activeId = activeVehicleId(settings)
-        if (shouldSkipPostSessionFallback(activeId, recentlySavedParkMs)) {
+        if (shouldSkipSuggestion(activeId, recentlySavedParkMs)) {
             Log.d(TAG, "Post-session skipped: park already retained/suggested/saved")
             return
         }
@@ -133,7 +193,7 @@ class AaPostSessionParkSuggester(
                         return@launch
                     }
                     PostDestroyDriveAbortTracker.Result.Confirmed -> {
-                        if (!hasRetainedParkSuggestion()) {
+                        if (!shouldSkipSuggestion(activeId, recentlySavedParkMs)) {
                             onParkConfirmed(candidate)
                         }
                         return@launch
@@ -143,21 +203,12 @@ class AaPostSessionParkSuggester(
         }
     }
 
-    /** True when a suggestion is already frozen for this candidate. */
-    private fun hasRetainedParkSuggestion(): Boolean {
-        val candidate = candidateStore.get() ?: return false
-        return candidate.aaSuggestionShown || candidate.savedFromAa
-    }
-
-    /**
-     * Skip post-session if in-session already proposed, or the pin was saved recently
-     * (candidate may already be cleared after Save).
-     */
-    private fun shouldSkipPostSessionFallback(
+    private fun shouldSkipSuggestion(
         vehicleId: String,
-        recentlySavedParkMs: Long,
+        recentlySavedParkMs: Long = RECENTLY_SAVED_PARK_MS,
     ): Boolean {
-        if (hasRetainedParkSuggestion()) return true
+        val candidate = candidateStore.get()
+        if (candidate != null && (candidate.aaSuggestionShown || candidate.savedFromAa)) return true
         val existing = settingsManager.settings.value.parkedPositionFor(vehicleId) ?: return false
         return System.currentTimeMillis() - existing.savedAtEpochMs < recentlySavedParkMs
     }
@@ -184,6 +235,11 @@ class AaPostSessionParkSuggester(
             )
         } catch (e: Exception) {
             Log.w(TAG, "Failed to show remember-parked suggestion", e)
+        }
+        try {
+            audio.speak(appContext.getString(R.string.notification_remember_parked_tts))
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to speak park suggestion", e)
         }
         walkAwayMonitor.start(candidate)
     }

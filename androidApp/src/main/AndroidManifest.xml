@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -73,6 +75,22 @@
             <intent-filter>
                 <action android:name="fr.geoking.gaston.action.SAVE_PARKED_CANDIDATE" />
                 <action android:name="fr.geoking.gaston.action.IGNORE_PARKED_CANDIDATE" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Keeps process alive for park-stop HUN while AA / another car app is foreground. -->
+        <service
+            android:name=".parked.ParkStopMonitorService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+        <!-- Cold-start when the phone enters car mode (Android Auto / dock). -->
+        <receiver
+            android:name=".parked.CarModeParkReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.app.action.ENTER_CAR_MODE" />
+                <action android:name="android.app.action.EXIT_CAR_MODE" />
             </intent-filter>
         </receiver>
 

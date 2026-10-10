@@ -54,16 +54,12 @@ class CarAppSession : Session(), KoinComponent {
                 if (sessionStartedAtElapsedMs == 0L) {
                     sessionStartedAtElapsedMs = android.os.SystemClock.elapsedRealtime()
                 }
-                // Danger-zone HUN + TTS run in DangerZoneAlertCoordinator (process-wide).
-                parkSuggester.startInSessionMonitoring()
-            }
-
-            override fun onStop(owner: LifecycleOwner) {
-                parkSuggester.stopInSessionMonitoring()
+                // Park stop HUN + TTS: process-wide via CarConnection in AaPostSessionParkSuggester
+                // (works on any AA screen and when another car app is foreground).
             }
 
             override fun onDestroy(owner: LifecycleOwner) {
-                // Fallback if in-session stop did not retain a park suggestion.
+                // Fallback if projection monitor did not retain a park suggestion this session.
                 parkSuggester.startIfEligible(sessionStartedAtElapsedMs = sessionStartedAtElapsedMs)
             }
         })

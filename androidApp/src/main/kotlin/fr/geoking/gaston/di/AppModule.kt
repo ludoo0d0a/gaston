@@ -255,7 +255,8 @@ val appModule = module {
         )
     }
 
-    single {
+    // Process-wide park-stop HUN while AA is projected (even if Gaston is not the active car app).
+    single(createdAtStart = true) {
         fr.geoking.gaston.parked.AaPostSessionParkSuggester(
             context = androidContext(),
             settingsManager = get(),

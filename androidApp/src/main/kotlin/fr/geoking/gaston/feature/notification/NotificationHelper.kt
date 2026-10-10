@@ -37,7 +37,6 @@ open class NotificationHelper(private val context: Context) {
         private const val REQ_PHONE_SAVE_WALK = 1107
         private const val REQ_PHONE_IGNORE_WALK = 1108
         private const val REQ_CAR_SAVE = 1205
-        private const val REQ_CAR_IGNORE = 1206
         /** Suppress duplicate HUNs when phone + AA alert loops both fire. */
         private const val DEDUPE_WINDOW_MS = 8_000L
         /** Avoid spamming the park suggestion when AA reconnects briefly. */
@@ -268,18 +267,7 @@ open class NotificationHelper(private val context: Context) {
             longitude = longitude,
         )
 
-        val carContentIntent = Intent(ParkedCarIntents.ACTION_REMEMBER).apply {
-            component = ComponentName(context, VoiceAppService::class.java)
-            putExtra(ParkedCarIntents.EXTRA_VEHICLE_ID, vehicleId)
-            putExtra(ParkedCarIntents.EXTRA_LATITUDE, latitude)
-            putExtra(ParkedCarIntents.EXTRA_LONGITUDE, longitude)
-        }
-        val carPending = CarPendingIntent.getCarApp(
-            context,
-            NOTIFICATION_ID_REMEMBER_PARKED,
-            carContentIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT,
-        )
+        // AA HUN: single primary action "Save" (phone keeps Save + Ignore).
         val carSave = CarPendingIntent.getCarApp(
             context,
             REQ_CAR_SAVE,
@@ -288,14 +276,6 @@ open class NotificationHelper(private val context: Context) {
                 putExtra(ParkedCarIntents.EXTRA_VEHICLE_ID, vehicleId)
                 putExtra(ParkedCarIntents.EXTRA_LATITUDE, latitude)
                 putExtra(ParkedCarIntents.EXTRA_LONGITUDE, longitude)
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-        val carIgnore = CarPendingIntent.getCarApp(
-            context,
-            REQ_CAR_IGNORE,
-            Intent(ParkedCarIntents.ACTION_IGNORE_CANDIDATE).apply {
-                component = ComponentName(context, VoiceAppService::class.java)
             },
             PendingIntent.FLAG_UPDATE_CURRENT,
         )
@@ -309,6 +289,8 @@ open class NotificationHelper(private val context: Context) {
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .setContentIntent(phonePending)
             .addAction(R.drawable.ic_poi_parking, saveLabel, phoneSave)
@@ -319,9 +301,8 @@ open class NotificationHelper(private val context: Context) {
                     .setContentTitle(title)
                     .setContentText(message)
                     .setSmallIcon(R.drawable.ic_poi_parking)
-                    .setContentIntent(carPending)
+                    .setContentIntent(carSave)
                     .addAction(R.drawable.ic_poi_parking, saveLabel, carSave)
-                    .addAction(R.drawable.ic_close, ignoreLabel, carIgnore)
                     .build()
             )
 
