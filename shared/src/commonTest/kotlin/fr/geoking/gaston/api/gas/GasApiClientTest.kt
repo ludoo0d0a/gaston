@@ -5,7 +5,10 @@ import fr.geoking.gaston.poi.PoiMerger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 
 class GasApiClientTest {
 
@@ -85,5 +88,56 @@ class GasApiClientTest {
         assertNotNull(mergedRawMap)
         assertTrue("GasAPI" in mergedRawMap)
         assertTrue("Overpass" in mergedRawMap)
+    }
+
+    @Test
+    fun parseStations_normalizesUpdatedAtAndDropsStalePrices() {
+        val now = Clock.System.now()
+        val recent = (now - 3.days).toString().substring(0, 19).replace('T', ' ')
+        val stale = (now - 45.days).toString().substring(0, 19).replace('T', ' ')
+
+        val body = """
+            [{
+              "id": "station-1",
+              "name": "Test Station",
+              "latitude": "48.8566",
+              "longitude": "2.3522",
+              "address": "1 Rue de Rivoli",
+              "city": "PARIS",
+              "postCode": "75001",
+              "brand": { "name": "Total" },
+              "prices": [
+                {
+                  "gas": { "name": "E10" },
+                  "price": "1.99",
+                  "outOfStock": false,
+                  "updatedAt": "$recent"
+                },
+                {
+                  "gas": { "name": "Gazole" },
+                  "price": "2.25",
+                  "outOfStock": false,
+                  "updatedAt": "$stale"
+                },
+                {
+                  "gas": { "name": "SP98" },
+                  "price": "2.05",
+                  "outOfStock": false,
+                  "updatedAt": null
+                }
+              ]
+            }]
+        """.trimIndent()
+
+        val client = GasApiClient(io.ktor.client.HttpClient())
+        val station = client.parseStationsResponse(body).single()
+
+        assertEquals(2, station.prices.size, "Stale Gazole should be dropped; null updatedAt kept")
+        val e10UpdatedAt = station.prices.first { it.fuelName == "E10" }.updatedAt
+        assertNotNull(e10UpdatedAt)
+        assertTrue(e10UpdatedAt.contains('T'), "GasAPI space date should be normalized to ISO")
+        assertTrue(e10UpdatedAt.endsWith("Z"))
+        assertNull(station.prices.find { it.fuelName == "Gazole" })
+        assertNotNull(station.prices.find { it.fuelName == "SP98" })
     }
 }

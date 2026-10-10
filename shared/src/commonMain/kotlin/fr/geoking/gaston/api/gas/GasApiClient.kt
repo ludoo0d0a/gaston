@@ -1,6 +1,7 @@
 package fr.geoking.gaston.api.gas
 
 import fr.geoking.gaston.api.datagouv.DataGouvPrice
+import fr.geoking.gaston.shared.datetime.DateTimeUtils
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
@@ -24,12 +25,20 @@ import kotlinx.serialization.json.jsonPrimitive
  * from [prix-carburants.gouv.fr](https://www.prix-carburants.gouv.fr/) / [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/prix-des-carburants-en-france-flux-instantane-v2-amelioree/).
  *
  * No authentication required. Base URL: https://gas-api.ovh
+ *
+ * Prices whose last update is older than [MAX_PRICE_AGE_DAYS] are dropped (GasAPI often
+ * keeps stale fuels for months). [updatedAt] is normalized to ISO-8601 UTC.
  */
 class GasApiClient(
     private val client: HttpClient,
     private val baseUrl: String = "https://gas-api.ovh"
 ) {
     private val json = Json { ignoreUnknownKeys = true }
+
+    companion object {
+        /** Drop fuel prices not updated within this many days. */
+        const val MAX_PRICE_AGE_DAYS = 30
+    }
 
     /**
      * Request body for POST /api/station-search.
@@ -134,7 +143,14 @@ class GasApiClient(
             val gasName = gas?.get("name")?.jsonPrimitive?.content ?: "Fuel"
             val price = priceObj["price"]?.jsonPrimitive?.content?.toDoubleOrNull()
             val outOfStock = priceObj["outOfStock"]?.jsonPrimitive?.content?.toBooleanStrictOrNull() ?: false
-            val updatedAt = priceObj["updatedAt"]?.jsonPrimitive?.content
+            val rawUpdatedAt = (priceObj["updatedAt"] as? JsonPrimitive)
+                ?.contentOrNull
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() && it != "null" }
+            if (rawUpdatedAt != null && DateTimeUtils.isOlderThanDays(rawUpdatedAt, MAX_PRICE_AGE_DAYS)) {
+                return@forEach
+            }
+            val updatedAt = rawUpdatedAt?.let { DateTimeUtils.normalizeToIso(it) ?: it }
             if (price != null && !outOfStock) {
                 prices.add(DataGouvPrice(gasName, price, updatedAt, outOfStock))
             }

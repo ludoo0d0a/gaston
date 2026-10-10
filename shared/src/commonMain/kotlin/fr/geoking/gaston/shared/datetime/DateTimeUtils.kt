@@ -1,37 +1,44 @@
 package fr.geoking.gaston.shared.datetime
 
 import fr.geoking.gaston.shared.platform.getSystemLanguage
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 
 object DateTimeUtils {
 
     fun parseFlexible(dateStr: String): Instant? {
+        val trimmed = dateStr.trim()
+        if (trimmed.isEmpty()) return null
+
         // Attempt ISO format first: 2024-05-20T10:20:30Z
         try {
-            return Instant.parse(dateStr)
+            return Instant.parse(trimmed)
         } catch (_: Exception) {
         }
 
         // Attempt ODS format (DataGouv): 2024-05-20T10:20:30+02:00
         // (Instant.parse handles ISO-8601 with offset in recent kotlinx-datetime versions)
 
-        // Attempt "YYYY-MM-DD HH:MM:SS" (Mimit)
+        // Attempt "YYYY-MM-DD HH:MM:SS" (GasAPI / Mimit) — optional fractional seconds
         try {
-            val space = dateStr.indexOf(' ')
-            if (space == 10) {
-                val iso = dateStr.replace(' ', 'T') + "Z" // Assume UTC if no zone
-                return Instant.parse(iso)
+            val space = trimmed.indexOf(' ')
+            if (space == 10 && trimmed.length >= 19) {
+                val datePart = trimmed.substring(0, 10)
+                val timePart = trimmed.substring(11).take(8) // HH:MM:SS
+                if (timePart.length == 8 && timePart[2] == ':' && timePart[5] == ':') {
+                    return Instant.parse("${datePart}T${timePart}Z")
+                }
             }
         } catch (_: Exception) {
         }
 
         // Attempt YYYY-MM-DD
         try {
-            if (dateStr.length == 10 && dateStr[4] == '-' && dateStr[7] == '-') {
-                return (dateStr + "T00:00:00Z").let { Instant.parse(it) }
+            if (trimmed.length == 10 && trimmed[4] == '-' && trimmed[7] == '-') {
+                return Instant.parse("${trimmed}T00:00:00Z")
             }
         } catch (_: Exception) {
         }
@@ -39,9 +46,29 @@ object DateTimeUtils {
         return null
     }
 
+    /**
+     * Parse [dateStr] and return a canonical ISO-8601 UTC string (e.g. `2026-10-06T00:01:00Z`),
+     * or null if unparseable.
+     */
+    fun normalizeToIso(dateStr: String): String? =
+        parseFlexible(dateStr)?.toString()
+
+    /**
+     * True when [dateStr] parses and is strictly older than [days] full days before [now].
+     * Unparseable / blank strings are not considered old.
+     */
+    fun isOlderThanDays(
+        dateStr: String,
+        days: Int,
+        now: Instant = Clock.System.now()
+    ): Boolean {
+        val instant = parseFlexible(dateStr) ?: return false
+        return (now - instant).inWholeDays > days
+    }
+
     fun formatRelativeTime(dateStr: String): String {
-        val instant = parseFlexible(dateStr) ?: return dateStr
-        val now = kotlin.time.Clock.System.now()
+        val instant = parseFlexible(dateStr) ?: return dateStr.trim().ifEmpty { dateStr }
+        val now = Clock.System.now()
         val duration = now - instant
 
         val seconds = duration.inWholeSeconds
@@ -78,9 +105,17 @@ object DateTimeUtils {
                 if (isFr) "il y a $days $dStr"
                 else "$days $dStr ago"
             }
+            days < 30 -> {
+                val weeks = days / 7
+                if (isFr) {
+                    if (weeks == 1L) "il y a 1 semaine" else "il y a $weeks semaines"
+                } else {
+                    if (weeks == 1L) "1 week ago" else "$weeks weeks ago"
+                }
+            }
             else -> {
                 val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-                "${localDateTime.day}/${localDateTime.month}/${localDateTime.year}"
+                "${localDateTime.day}/${localDateTime.month.number}/${localDateTime.year}"
             }
         }
     }
