@@ -291,6 +291,8 @@ fun Poi.matchesAnyCategory(allowed: Set<PoiCategory>): Boolean {
  */
 object StationMapFilters {
 
+    private const val MAX_POIS_PER_MAP_SCREEN = 500 // Hard cap: never render more than this many markers
+
     fun apply(
         settings: AppSettings,
         pois: List<Poi>,
@@ -406,6 +408,12 @@ object StationMapFilters {
                     b == null || // Don't filter out unknown brands (e.g. from OpenVanCamp / OSM)
                     brandIds.any { id -> b.lowercase().contains(id) }
             }
+        }
+
+        // Hard cap: prevent rendering too many markers and crashing the app.
+        if (result.size > MAX_POIS_PER_MAP_SCREEN) {
+            val cutoffIndex = result.size - MAX_POIS_PER_MAP_SCREEN
+            result = result.take(cutoffIndex).toMutableList()
         }
 
         return result

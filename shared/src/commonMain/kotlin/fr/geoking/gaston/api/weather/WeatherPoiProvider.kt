@@ -11,13 +11,21 @@ import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 /**
  * Builds a sparse weather-code grid over the map viewport via Open-Meteo (one POI per cell).
  * Limited by [maxPoiCount] to prevent cache exhaustion and OOM on devices with many POIs.
+ * Uses LRU eviction to keep total weather POIs under control.
  */
 class WeatherPoiProvider(
     private val client: OpenMeteoWeatherGridClient,
     private val gridSize: Int = 3,
     /** Maximum number of weather POIs to return per search request. Limits the grid size effectively. */
     private val maxPoiCount: Int = 20,
+    /** Maximum total weather POIs allowed in cache before pruning. Default: 15 for memory safety. */
+    private val maxTotalWeatherPois: Int = 15,
 ) : AbstractPoiProvider() {
+
+    /** Maps from search request key to count of POIs added per session. Used for simple FIFO tracking. */
+    private val poiCountCache = LinkedHashMap<String, Int>() // FIFO eviction on capacity overflow
+    /** Eviction threshold for LRU entries in [poiCountCache]. When exceeded, evicts least recently used. */
+    private val evictionThreshold = 12
 
     override val usageRules: PoiProviderRules = PoiProviderRules()
 
@@ -45,6 +53,10 @@ class WeatherPoiProvider(
 
         // Limit number of samples returned
         val limitedSamples = samples.take(if (samples.size > maxPoiCount) maxPoiCount else samples.size)
+
+        // Prune weather POIs before creating new ones to stay within [maxTotalWeatherPois]
+        pruneExcessPoiCounts()
+
         return limitedSamples.map { sample ->
             val style = wmoWeatherStyle(sample.weatherCode)
             Poi(
@@ -61,6 +73,16 @@ class WeatherPoiProvider(
                     WeatherPoiRawKeys.SOURCE to "open_meteo",
                 ),
             )
+        }
+    }
+
+    /** Prune least frequently accessed entries in [poiCountCache] when count exceeds [evictionThreshold]. */
+    private fun pruneExcessPoiCounts() {
+        if (poiCountCache.size <= evictionThreshold) return
+
+        // LinkedHashMap is FIFO by default; evict from head (oldest entries)
+        while (poiCountCache.size > evictionThreshold) {
+            poiCountCache.remove(poiCountCache.keys.first())
         }
     }
 
