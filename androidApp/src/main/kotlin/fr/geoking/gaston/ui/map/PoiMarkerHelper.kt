@@ -19,10 +19,14 @@ import fr.geoking.gaston.ui.ColorHelper
 
 object PoiMarkerHelper {
 
-    private val cache = LruCache<String, Bitmap>(40)
+    private val cache = LruCache<String, Bitmap>(128)
 
-    /** Rasterized vector heads (rounded = circle + logo); keyed by id + bucketed pixel size. Do not recycle evicted entries (bitmaps may still be referenced by marker bitmaps in flight). */
-    private val vectorRasterCache = LruCache<String, Bitmap>(40)
+    /**
+     * Rasterized vector heads (rounded = circle + logo); keyed by id + bucketed pixel size.
+     * Shared across all marker sizes for a given head. Do not recycle evicted entries.
+     * Limited to 64 entries to avoid heap pressure (40 → 64 accounts for more brand icons).
+     */
+    private val vectorRasterCache = LruCache<String, Bitmap>(64)
 
     /** Sentinel label: draw a chantier glyph instead of text. */
     internal const val LABEL_CHANTIER = "__chantier__"

@@ -494,6 +494,7 @@ data class PoiProviderError(
 object MapPoiFilter {
     /** Phone cheapest-filter size; ties at the cutoff are kept. */
     const val CHEAPEST_COUNT = 5
+    const val MAX_POIS_PER_REQUEST = 50
 
     /** Android Auto cheapest-filter size; equal prices broken by distance. */
     const val CAR_CHEAPEST_COUNT = 3

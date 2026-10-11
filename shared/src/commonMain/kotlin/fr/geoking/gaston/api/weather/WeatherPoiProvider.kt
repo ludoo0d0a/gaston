@@ -10,10 +10,13 @@ import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 
 /**
  * Builds a sparse weather-code grid over the map viewport via Open-Meteo (one POI per cell).
+ * Limited by [maxPoiCount] to prevent cache exhaustion and OOM on devices with many POIs.
  */
 class WeatherPoiProvider(
     private val client: OpenMeteoWeatherGridClient,
-    private val gridSize: Int = 5,
+    private val gridSize: Int = 3,
+    /** Maximum number of weather POIs to return per search request. Limits the grid size effectively. */
+    private val maxPoiCount: Int = 20,
 ) : AbstractPoiProvider() {
 
     override val usageRules: PoiProviderRules = PoiProviderRules()
@@ -31,14 +34,18 @@ class WeatherPoiProvider(
         val minLng = viewport.minLng ?: return emptyList()
         val maxLng = viewport.maxLng ?: return emptyList()
 
-        val n = gridSize.coerceIn(2, 6)
+        // Limit grid size to maxPoiCount to avoid too many POIs
+        val targetN = (maxPoiCount / gridSize).coerceIn(2, 6)
+        val n = gridSize.coerceIn(2, targetN)
         val points = buildGrid(minLat, maxLat, minLng, maxLng, n)
         val models = modelsForCenter(request.latitude, request.longitude)
         val samples = runCatching {
             client.fetchCurrentWeatherCodes(points, models = models)
         }.getOrElse { emptyList() }
 
-        return samples.map { sample ->
+        // Limit number of samples returned
+        val limitedSamples = samples.take(if (samples.size > maxPoiCount) maxPoiCount else samples.size)
+        return limitedSamples.map { sample ->
             val style = wmoWeatherStyle(sample.weatherCode)
             Poi(
                 id = "weather_${sample.latitude}_${sample.longitude}_${sample.weatherCode}",
