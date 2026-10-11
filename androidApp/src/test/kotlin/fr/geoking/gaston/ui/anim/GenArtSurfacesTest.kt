@@ -17,7 +17,7 @@ class GenArtSurfacesTest {
     @Test
     fun catalogContainsAllPortedShaders() {
         val effects = GenArtCatalog.allEffects
-        assertEquals(8, effects.size)
+        assertEquals(14, effects.size)
 
         val expectedIds = listOf(
             "lwp_plasma",
@@ -27,7 +27,13 @@ class GenArtSurfacesTest {
             "shaderlay_vortex_tunnel",
             "ppsspp_crt_scanlines",
             "ppsspp_cel_shader",
-            "ppsspp_bloom_vignette"
+            "ppsspp_bloom_vignette",
+            "paper_simplex_noise",
+            "paper_neuro_noise",
+            "paper_grain_gradient",
+            "shady_noodle_zoom",
+            "shady_warp_speed",
+            "shady_marbled_paper"
         )
 
         expectedIds.forEach { id ->

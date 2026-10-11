@@ -20,11 +20,17 @@ import fr.geoking.gaston.ui.anim.AnimationPalettes
 import fr.geoking.gaston.ui.anim.genart.lwp.LwpPlasmaEffectSurface
 import fr.geoking.gaston.ui.anim.genart.lwp.LwpStarfieldEffectSurface
 import fr.geoking.gaston.ui.anim.genart.lwp.LwpVoronoiEffectSurface
+import fr.geoking.gaston.ui.anim.genart.papershaders.PaperGrainGradientEffectSurface
+import fr.geoking.gaston.ui.anim.genart.papershaders.PaperNeuroNoiseEffectSurface
+import fr.geoking.gaston.ui.anim.genart.papershaders.PaperSimplexNoiseEffectSurface
 import fr.geoking.gaston.ui.anim.genart.ppsspp.PpssppBloomVignetteEffectSurface
 import fr.geoking.gaston.ui.anim.genart.ppsspp.PpssppCelShaderEffectSurface
 import fr.geoking.gaston.ui.anim.genart.ppsspp.PpssppCrtScanlinesEffectSurface
 import fr.geoking.gaston.ui.anim.genart.shaderlay.ShaderlayNeonGridEffectSurface
 import fr.geoking.gaston.ui.anim.genart.shaderlay.ShaderlayVortexTunnelEffectSurface
+import fr.geoking.gaston.ui.anim.genart.shady.ShadyMarbledPaperEffectSurface
+import fr.geoking.gaston.ui.anim.genart.shady.ShadyNoodleZoomEffectSurface
+import fr.geoking.gaston.ui.anim.genart.shady.ShadyWarpSpeedEffectSurface
 
 /**
  * Representation of a ported generative art shader effect.
@@ -47,7 +53,8 @@ data class GenArtEffect(
 )
 
 /**
- * Unified registry of generative art shader ports from cipold/lwp-shaders, mattakins/Shaderlay, and jdgleaver/ppsspp_shaders.
+ * Unified registry of generative art shader ports from cipold/lwp-shaders, mattakins/Shaderlay,
+ * jdgleaver/ppsspp_shaders, AndreFrelicot/paper-shaders-android, and drinkthestars/shady.
  */
 object GenArtCatalog {
     private val starfieldInstance by lazy { LwpStarfieldEffectSurface() }
@@ -115,6 +122,54 @@ object GenArtCatalog {
             sourceRepo = "jdgleaver/ppsspp_shaders",
             draw = { canvas, w, h, cx, cy, active, sec, pulse, pal ->
                 PpssppBloomVignetteEffectSurface.draw(canvas, w, h, cx, cy, active, sec, pulse, pal)
+            }
+        ),
+        GenArtEffect(
+            id = "paper_simplex_noise",
+            title = "Paper Simplex Noise Flow",
+            sourceRepo = "AndreFrelicot/paper-shaders-android",
+            draw = { canvas, w, h, cx, cy, active, sec, pulse, pal ->
+                PaperSimplexNoiseEffectSurface.draw(canvas, w, h, cx, cy, active, sec, pulse, pal)
+            }
+        ),
+        GenArtEffect(
+            id = "paper_neuro_noise",
+            title = "Paper Neuro-Noise Waves",
+            sourceRepo = "AndreFrelicot/paper-shaders-android",
+            draw = { canvas, w, h, cx, cy, active, sec, pulse, pal ->
+                PaperNeuroNoiseEffectSurface.draw(canvas, w, h, cx, cy, active, sec, pulse, pal)
+            }
+        ),
+        GenArtEffect(
+            id = "paper_grain_gradient",
+            title = "Paper Grain Gradient",
+            sourceRepo = "AndreFrelicot/paper-shaders-android",
+            draw = { canvas, w, h, cx, cy, active, sec, pulse, pal ->
+                PaperGrainGradientEffectSurface.draw(canvas, w, h, cx, cy, active, sec, pulse, pal)
+            }
+        ),
+        GenArtEffect(
+            id = "shady_noodle_zoom",
+            title = "Shady Noodle Zoom Tunnel",
+            sourceRepo = "drinkthestars/shady",
+            draw = { canvas, w, h, cx, cy, active, sec, pulse, pal ->
+                ShadyNoodleZoomEffectSurface.draw(canvas, w, h, cx, cy, active, sec, pulse, pal)
+            }
+        ),
+        GenArtEffect(
+            id = "shady_warp_speed",
+            title = "Shady Warp Speed 2",
+            sourceRepo = "drinkthestars/shady",
+            draw = { canvas, w, h, cx, cy, active, sec, pulse, pal ->
+                ShadyWarpSpeedEffectSurface.draw(canvas, w, h, cx, cy, active, sec, pulse, pal)
+            }
+        ),
+        GenArtEffect(
+            id = "shady_marbled_paper",
+            title = "Shady Marbled Paper Texture",
+            sourceRepo = "drinkthestars/shady",
+            draw = { canvas, w, h, cx, cy, active, sec, pulse, pal ->
+                ShadyMarbledPaperEffectSurface.draw(canvas, w, h, cx, cy, active, sec, pulse, pal)
             }
         )
     )
