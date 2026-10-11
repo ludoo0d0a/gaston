@@ -123,10 +123,16 @@ class NativeMapPoiScreen(
         }
     }
 
-    private fun loadPois(showLoading: Boolean = true, overrideLat: Double? = null, overrideLon: Double? = null) {
+    private fun loadPois(showLoading: Boolean = true, overrideLat: Double? = null, overrideLon: Double? = null, clearCache: Boolean = false) {
         loadPoisJob?.cancel()
         val gen = ++loadPoisGeneration
         loadPoisJob = lifecycleScope.launch {
+            if (clearCache) {
+                try {
+                    poiProvider.clearCache()
+                } catch (_: Exception) {}
+                pois = emptyList()
+            }
             if (showLoading) {
                 isLoading = true
                 invalidate()

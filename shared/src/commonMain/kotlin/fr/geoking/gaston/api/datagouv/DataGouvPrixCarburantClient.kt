@@ -48,6 +48,21 @@ class DataGouvPrixCarburantClient(
      * Fetches gas stations (points de vente) within [radiusKm] of (latitude, longitude).
      * Uses the Explore API records endpoint with a distance filter.
      */
+    /**
+     * Fetches a single gas station by its ID (point de vente ID).
+     */
+    suspend fun getStationById(id: String): DataGouvPrixCarburantStation? {
+        val where = "id=${id.encodeURLParameter()}"
+        val url = "$baseUrl/records?where=$where&limit=1"
+
+        val response = client.get(url)
+        val body = response.bodyAsText()
+        if (response.status.value != 200) {
+            throw NetworkException(response.status.value, "Prix carburants API error: $body")
+        }
+        return parseRecords(body).firstOrNull()
+    }
+
     suspend fun getStations(
         latitude: Double,
         longitude: Double,

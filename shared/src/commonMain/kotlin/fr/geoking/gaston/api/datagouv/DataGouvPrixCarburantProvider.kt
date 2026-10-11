@@ -78,4 +78,35 @@ class DataGouvPrixCarburantProvider(
             )
         }
     }
+
+    override suspend fun refreshPoi(poi: Poi): Poi? {
+        val targetId = poi.refId ?: poi.id
+        val station = prixCarburantClient.getStationById(targetId) ?: return null
+        val fuelPrices = station.fuels.map { p ->
+            FuelPrice(
+                fuelName = p.name,
+                price = p.priceEur,
+                updatedAt = p.updatedAt,
+                outOfStock = p.outOfStock,
+                shortageType = p.shortageType,
+                shortageStart = p.shortageStart
+            )
+        }.ifEmpty { null }
+
+        val latestUpdate = fuelPrices?.mapNotNull { it.updatedAt }?.maxOrNull()
+
+        return poi.copy(
+            id = station.id,
+            refId = station.id,
+            name = station.name.ifBlank { poi.name },
+            address = station.address.ifBlank { poi.address },
+            latitude = station.latitude,
+            longitude = station.longitude,
+            brand = station.brand ?: poi.brand,
+            isOnHighway = station.isOnHighway,
+            fuelPrices = fuelPrices,
+            source = poi.source ?: "DataGouvPrixCarburant",
+            sourceUpdates = (poi.sourceUpdates.orEmpty()) + (latestUpdate?.let { mapOf("DataGouvPrixCarburant" to it) } ?: emptyMap())
+        )
+    }
 }

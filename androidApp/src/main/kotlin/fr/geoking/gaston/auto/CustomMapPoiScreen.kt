@@ -513,11 +513,17 @@ class CustomMapPoiScreen(
 
     private var loadPoisJob: Job? = null
 
-    private fun loadPois(preserveZoom: Boolean = false, showLoading: Boolean = true) {
+    private fun loadPois(preserveZoom: Boolean = false, showLoading: Boolean = true, clearCache: Boolean = false) {
         if (mapSelectedPoi != null) return
         loadPoisJob?.cancel()
         val gen = ++queryGeneration
         loadPoisJob = lifecycleScope.launch {
+            if (clearCache) {
+                try {
+                    poiProvider.clearCache()
+                } catch (_: Exception) {}
+                pois = emptyList()
+            }
             isQueryPending = true
             syncRendererWithMapState()
             if (showLoading) {
@@ -741,7 +747,7 @@ class CustomMapPoiScreen(
                 surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
                 applyMapOrientationToRenderer()
             }
-            loadPois(preserveZoom = true)
+            loadPois(preserveZoom = true, clearCache = true)
         }
     }
 

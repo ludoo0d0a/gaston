@@ -15,6 +15,36 @@ class DataGouvPrixCarburantClientTest {
     private val client = DataGouvPrixCarburantClient(HttpClient())
 
     @Test
+    fun getStationById_parsesSingleStationRecord() {
+        val body = """
+            {
+                "total_count": 1,
+                "results": [
+                    {
+                        "id": "89100001",
+                        "adresse": "84 ROUTE DE MAILLOT",
+                        "ville": "Sens",
+                        "cp": "89100",
+                        "latitude": "4818300",
+                        "longitude": "330900",
+                        "prix": "[{\"@nom\": \"Gazole\", \"@valeur\": \"2.399\"}]"
+                    }
+                ]
+            }
+        """.trimIndent()
+
+        val station = client.parseRecords(body).firstOrNull()
+        assertNotNull(station)
+        assertEquals("89100001", station.id)
+        assertEquals("Sens", station.address.substringAfterLast(", "))
+        assertEquals(48.183, station.latitude, 1e-3)
+        assertEquals(3.309, station.longitude, 1e-3)
+        assertEquals(1, station.fuels.size)
+        assertEquals("Gazole", station.fuels[0].name)
+        assertEquals(2.399, station.fuels[0].priceEur, 1e-3)
+    }
+
+    @Test
     fun parseRecords_parsesStation() {
         val body = """
             {

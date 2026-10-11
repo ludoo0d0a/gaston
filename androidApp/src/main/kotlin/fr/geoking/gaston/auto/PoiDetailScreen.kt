@@ -17,9 +17,11 @@ import androidx.car.app.model.Template
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.community.FavoritesRepository
 import kotlinx.coroutines.launch
+import org.koin.core.context.GlobalContext
 
 /**
  * Android Auto screen showing full POI details and a "Navigate" action that starts navigation
@@ -44,8 +46,10 @@ class PoiDetailScreen(
     private val availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap(),
     private val onPoiSelected: ((Poi) -> Unit)? = null,
     private val favoritesRepo: FavoritesRepository? = null,
+    poiProvider: PoiProvider? = null,
 ) : Screen(carContext) {
 
+    private val provider: PoiProvider? = poiProvider ?: GlobalContext.getOrNull()?.getOrNull<PoiProvider>()
     private var currentIndex = initialPoiIndex
     private var isFavorite: Boolean = false
 
@@ -120,6 +124,25 @@ class PoiDetailScreen(
                     )
                     .setImage(carContext.actionFavoriteIcon(isFavorite))
                     .setOnClickListener { toggleFavorite() }
+                    .build()
+            )
+        }
+
+        if (provider != null) {
+            itemListBuilder.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.action_refresh))
+                    .setImage(carContext.actionRefreshIcon())
+                    .setOnClickListener {
+                        lifecycleScope.launch {
+                            val refreshed = provider.refreshPoi(poi)
+                            if (refreshed != null) {
+                                poi = refreshed
+                                onPoiSelected?.invoke(refreshed)
+                                invalidate()
+                            }
+                        }
+                    }
                     .build()
             )
         }
