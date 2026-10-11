@@ -39,6 +39,7 @@ import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
@@ -78,6 +79,7 @@ fun PoiOverlayHost(
 ) {
     val scope = rememberCoroutineScope()
     val billingManager: BillingManager = koinInject()
+    val poiProvider: PoiProvider = koinInject()
 
     var showPaywallForFavorite by remember { mutableStateOf(false) }
     var frozenPoisForSheet by remember { mutableStateOf<List<Poi>>(emptyList()) }
@@ -254,6 +256,14 @@ fun PoiOverlayHost(
                     isSelected = poi.id == selectedPoi.id,
                     isLoggedIn = settings.isLoggedIn,
                     isFavorite = isFav,
+                    onRefreshPoi = {
+                        scope.launch {
+                            val refreshed = poiProvider.refreshPoi(poi)
+                            if (refreshed != null) {
+                                onInvalidate()
+                            }
+                        }
+                    },
                     onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
                         {
                             if (settings.hasPremiumFeatures) {
@@ -316,6 +326,13 @@ fun PoiOverlayHost(
             onNavigate = {
                 val uri = IntentNavigationHelper.getNavigationUri(poi)
                 context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+            },
+            onRefreshPoi = { p ->
+                val refreshed = poiProvider.refreshPoi(p)
+                if (refreshed != null) {
+                    onInvalidate()
+                }
+                refreshed
             },
             onEdit = if (settings.isLoggedIn && isCommunityPoiId(poi.id) && communityRepo != null) {
                 {

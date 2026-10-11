@@ -799,6 +799,12 @@ interface PoiProvider {
 
     /** Clears any internal cache this provider may have. */
     suspend fun clearCache() {}
+
+    /**
+     * Refreshes a single POI using an ID-based API endpoint or location query.
+     * Returns the updated POI or null if unable to refresh.
+     */
+    suspend fun refreshPoi(poi: Poi): Poi? = null
 }
 
 /**

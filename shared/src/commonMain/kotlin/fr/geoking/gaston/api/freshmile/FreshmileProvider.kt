@@ -109,6 +109,41 @@ class FreshmileProvider(
             .take(limit)
     }
 
+    override suspend fun refreshPoi(poi: Poi): Poi? {
+        val locId = poi.id.removePrefix("freshmile_").toLongOrNull()
+            ?: poi.refId?.toLongOrNull()
+            ?: return null
+        val detail = client.getLocationDetail(locId) ?: return null
+        val lat = detail.coordinates?.latitude ?: poi.latitude
+        val lon = detail.coordinates?.longitude ?: poi.longitude
+        val addressStr = listOfNotNull(detail.address?.fullname, detail.address?.postalCode, detail.address?.city)
+            .filter { it.isNotBlank() }
+            .joinToString(", ").ifBlank { poi.address }
+        val evses = detail.evses.orEmpty()
+        val totalEvses = evses.size.takeIf { it > 0 } ?: poi.chargePointCount
+        val availableEvses = if (evses.isNotEmpty()) evses.count { it.isAvailable == true } else null
+        val connectorTypes = detail.connectors?.types?.mapNotNull { mapFreshmileStandard(it) }?.toSet()
+            ?.ifEmpty { poi.irveDetails?.connectorTypes.orEmpty() }
+            ?: poi.irveDetails?.connectorTypes.orEmpty()
+        val powerKw = detail.connectors?.bestPower?.kw ?: poi.powerKw
+
+        return poi.copy(
+            name = detail.name?.ifBlank { null } ?: poi.name,
+            address = addressStr,
+            latitude = lat,
+            longitude = lon,
+            powerKw = powerKw,
+            chargePointCount = totalEvses,
+            irveDetails = IrveDetails(
+                connectorTypes = connectorTypes,
+                availableConnectors = availableEvses ?: poi.irveDetails?.availableConnectors,
+                totalConnectors = totalEvses ?: poi.irveDetails?.totalConnectors,
+                gratuit = detail.hasFreeTariff
+            ),
+            source = poi.source ?: "Freshmile"
+        )
+    }
+
     override suspend fun clearCache() {
         client.clearCache()
     }

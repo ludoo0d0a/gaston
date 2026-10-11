@@ -1100,6 +1100,88 @@ class SelectorPoiProvider(
         return searchResult(request).pois
     }
 
+    override suspend fun refreshPoi(poi: Poi): Poi? {
+        val nowMs = System.currentTimeMillis()
+        val cat = poiPrimaryCategory(poi)
+
+        // 1. Try single POI refresh on providers matching source or category
+        val sourceStr = poi.source.orEmpty()
+        var refreshedPoi: Poi? = null
+
+        try {
+            if (sourceStr.contains("DataGouvPrixCarburant", ignoreCase = true) || sourceStr.contains("Etalab", ignoreCase = true)) {
+                refreshedPoi = dataGouvPrixCarburant.refreshPoi(poi)
+            } else if (sourceStr.contains("Freshmile", ignoreCase = true)) {
+                refreshedPoi = freshmile.refreshPoi(poi)
+            } else if (sourceStr.contains("OpenChargeMap", ignoreCase = true)) {
+                refreshedPoi = openChargeMap.refreshPoi(poi)
+            }
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.w("SelectorPoiProvider", "Single POI endpoint refresh failed for source $sourceStr, falling back to geo fetch", e)
+        }
+
+        // If specific provider didn't return or isn't a single-id provider, query geo area around the station
+        if (refreshedPoi == null) {
+            val settings = settingsManager.settings.value
+            val isoCountries = getCountryCodes(poi.latitude, poi.longitude, radiusKm = 1, hasViewport = false)
+            val effectiveProviders = resolveEffectiveProviders(settings, isoCountries)
+
+            val req = PoiSearchRequest(
+                latitude = poi.latitude,
+                longitude = poi.longitude,
+                categories = setOf(cat),
+                skipFilters = true
+            )
+
+            val (freshPois, _) = fetchPoisFromProviders(
+                request = req,
+                providerCategories = buildProviderCategories(
+                    providersToFetch = effectiveProviders,
+                    categoriesToFetch = setOf(cat),
+                    coverage = PoiCoverageResult(null, effectiveProviders, setOf(cat))
+                ),
+                allProviders = effectiveProviders
+            )
+
+            refreshedPoi = freshPois.firstOrNull { it.id == poi.id || (it.refId != null && it.refId == poi.refId) }
+                ?: freshPois.minByOrNull { approxDistanceKm(poi.latitude, poi.longitude, it.latitude, it.longitude) }
+        }
+
+        if (refreshedPoi == null) return null
+
+        // Merge updated POI with original to preserve any merged fields (ratings, amenities, etc.)
+        val finalPoi = PoiMerger.mergePois(listOf(poi, refreshedPoi)).firstOrNull() ?: refreshedPoi
+
+        // Update in-memory cache and DB DAO
+        synchronized(cacheLock) {
+            cachedPois[finalPoi.id] = finalPoi
+            poiSeenAtMs[finalPoi.id] = nowMs
+        }
+
+        this@SelectorPoiProvider.launch {
+            try {
+                poiCacheDao.insertPois(
+                    listOf(
+                        PoiCacheEntity(
+                            id = finalPoi.id,
+                            latitude = finalPoi.latitude,
+                            longitude = finalPoi.longitude,
+                            name = finalPoi.name,
+                            address = finalPoi.address,
+                            poiJson = json.encodeToString(finalPoi),
+                            updatedAtMs = nowMs
+                        )
+                    )
+                )
+            } catch (e: Exception) {
+                Log.e("SelectorPoiProvider", "Failed to persist refreshed POI", e)
+            }
+        }
+
+        return finalPoi
+    }
+
     override suspend fun clearCache() {
         synchronized(cacheLock) {
             loadedRegions.clear()

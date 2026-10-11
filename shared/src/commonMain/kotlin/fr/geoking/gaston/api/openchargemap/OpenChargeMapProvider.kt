@@ -66,4 +66,25 @@ class OpenChargeMapProvider(
                 )
             }
     }
+
+    override suspend fun refreshPoi(poi: Poi): Poi? {
+        val s = client.getPoiById(poi.id) ?: return null
+        return poi.copy(
+            id = s.id,
+            name = s.name,
+            address = s.address,
+            latitude = s.latitude,
+            longitude = s.longitude,
+            isElectric = true,
+            powerKw = s.powerKw ?: poi.powerKw,
+            operator = s.operator ?: poi.operator,
+            isClosed = s.isClosed,
+            irveDetails = IrveDetails(
+                connectorTypes = s.connectorTypes.ifEmpty { poi.irveDetails?.connectorTypes.orEmpty() },
+                availableConnectors = poi.irveDetails?.availableConnectors,
+                totalConnectors = poi.irveDetails?.totalConnectors
+            ),
+            source = poi.source ?: "OpenChargeMap"
+        )
+    }
 }

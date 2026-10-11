@@ -27,6 +27,24 @@ class OpenChargeMapClient(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
+    suspend fun getPoiById(chargePointId: String): OpenChargeMapPoi? {
+        val cleanId = chargePointId.removePrefix("ocm-")
+        val url = URLBuilder(baseUrl).apply {
+            parameters.append("chargepointid", cleanId)
+            parameters.append("compact", "false")
+            parameters.append("verbose", "false")
+            apiKey?.takeIf { it.isNotBlank() }?.let { parameters.append("key", it) }
+        }.buildString()
+        val response = client.get(url)
+        val body = response.bodyAsText()
+        if (response.status.value != 200) {
+            throw NetworkException(response.status.value, "OpenChargeMap API error: $body")
+        }
+        val element = json.parseToJsonElement(body)
+        val array = element as? JsonArray ?: return null
+        return array.mapNotNull { parsePoi(it as? JsonObject) }.firstOrNull()
+    }
+
     suspend fun getStations(
         latitude: Double,
         longitude: Double,

@@ -6,12 +6,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,15 +60,20 @@ fun PoiDetailsFullscreenDialog(
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
     onNavigate: (() -> Unit)? = null,
+    onRefreshPoi: (suspend (Poi) -> Poi?)? = null,
     onDismiss: () -> Unit,
     showRawDetail: Boolean = false,
     /** When true, renders as full-screen content (for marketing captures) instead of a [Dialog]. */
     embedded: Boolean = false,
 ) {
-    val resolvedAvailability = poi.resolveAvailabilitySummary(availabilitySummary)
-    val brandInfo = BrandHelper.getBrandInfo(poi.brand)
-    val sources = remember(poi.source) {
-        poi.source
+    var currentPoi by remember(poi) { mutableStateOf(poi) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    val resolvedAvailability = currentPoi.resolveAvailabilitySummary(availabilitySummary)
+    val brandInfo = BrandHelper.getBrandInfo(currentPoi.brand)
+    val sources = remember(currentPoi.source) {
+        currentPoi.source
             ?.split("+")
             ?.map { it.trim() }
             ?.filter { it.isNotBlank() }
@@ -105,6 +116,37 @@ fun PoiDetailsFullscreenDialog(
                                     contentDescription = if (isFavorite) stringResource(R.string.route_remove_favorite) else stringResource(R.string.route_add_favorite),
                                     tint = if (isFavorite) Color(0xFFFACC15) else MaterialTheme.colorScheme.onSurface
                                 )
+                            }
+                        }
+                        onRefreshPoi?.let { refresh ->
+                            IconButton(
+                                onClick = {
+                                    scope.launch {
+                                        isRefreshing = true
+                                        try {
+                                            val updated = refresh(currentPoi)
+                                            if (updated != null) {
+                                                currentPoi = updated
+                                            }
+                                        } finally {
+                                            isRefreshing = false
+                                        }
+                                    }
+                                },
+                                enabled = !isRefreshing
+                            ) {
+                                if (isRefreshing) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = stringResource(R.string.action_refresh)
+                                    )
+                                }
                             }
                         }
                         onNavigate?.let { navigate ->
