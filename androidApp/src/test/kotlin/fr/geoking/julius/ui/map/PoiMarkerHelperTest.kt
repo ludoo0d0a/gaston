@@ -40,6 +40,20 @@ class PoiMarkerHelperTest {
     }
 
     @Test
+    fun `getPoiLabel returns price for SP95 E10 when sp95_e10 filter is selected`() {
+        val poi = Poi(
+            id = "1",
+            name = "Station 1",
+            address = "Address 1",
+            latitude = 0.0,
+            longitude = 0.0,
+            fuelPrices = listOf(FuelPrice("E10", 1.65))
+        )
+        val label = PoiMarkerHelper.getPoiLabel(poi, setOf("sp95_e10"), emptySet())
+        assertEquals("€1.650", label)
+    }
+
+    @Test
     fun `getPoiLabel returns the lowest price among matching fuel filters`() {
         val poi = Poi(
             id = "1",

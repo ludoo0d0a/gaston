@@ -738,8 +738,9 @@
     <string name="forecast_last_scored_miss">Last scored prediction: direction miss</string>
     <string name="forecast_legend_brent">Brent</string>
     <string name="fuel_gazole">Gazole</string>
-    <string name="fuel_sp95">SP95/E10</string>
-    <string name="fuel_sp95_slash">SP95 / E10</string>
+    <string name="fuel_sp95">SP95(E5)</string>
+    <string name="fuel_sp95_e10">SP95(E10)</string>
+    <string name="fuel_sp95_slash">SP95(E10)</string>
     <string name="fuel_sp98">SP98</string>
     <string name="fuel_gplc">GPLc</string>
     <string name="fuel_e85">E85</string>

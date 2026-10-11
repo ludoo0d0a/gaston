@@ -68,7 +68,7 @@ object AutoCarIcons {
 
     fun fuelCarColor(fuelId: String?): CarColor = when (fuelId) {
         "gazole" -> gazole
-        "sp95" -> sp95
+        "sp95", "sp95_e10" -> sp95
         "sp98" -> sp98
         "e85" -> e85
         "gplc" -> gpl

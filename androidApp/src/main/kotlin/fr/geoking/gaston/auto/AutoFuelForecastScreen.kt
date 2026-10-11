@@ -231,7 +231,8 @@ class AutoFuelForecastScreen(
 
     private fun fuelTitle(fuelId: String): String = when (fuelId) {
         "gazole" -> carContext.getString(R.string.fuel_gazole)
-        "sp95" -> carContext.getString(R.string.fuel_sp95_slash)
+        "sp95" -> carContext.getString(R.string.fuel_sp95)
+        "sp95_e10" -> carContext.getString(R.string.fuel_sp95_e10)
         "sp98" -> carContext.getString(R.string.fuel_sp98)
         "gplc" -> carContext.getString(R.string.fuel_gplc)
         "e85" -> carContext.getString(R.string.fuel_e85)
