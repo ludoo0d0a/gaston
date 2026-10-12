@@ -104,12 +104,13 @@ class DangerZoneTest {
             speedLimitKmH = 90,
             source = "test",
         )
-        // Vehicle well inside ExtraUrban 2 km zone but > user-style 300 m from center
+        // Vehicle well inside ExtraUrban 2 km zone but > user-style 300 m from center,
+        // heading south toward the tip.
         val evalInside = DangerZoneEvaluator.evaluate(
             vehLat = 48.8650,
             vehLon = 2.3522,
             vehSpeedKmH = 80.0,
-            vehBearing = null,
+            vehBearing = 180.0,
             zone = zone,
         )
         assertTrue(evalInside.isInside)
@@ -119,7 +120,7 @@ class DangerZoneTest {
             vehLat = 48.9000,
             vehLon = 2.3522,
             vehSpeedKmH = 80.0,
-            vehBearing = null,
+            vehBearing = 180.0,
             zone = zone,
         )
         assertFalse(evalOutside.isInside)
@@ -142,7 +143,7 @@ class DangerZoneTest {
     }
 
     @Test
-    fun withoutBearingUsesCircle() {
+    fun withoutBearingOrSpeedDoesNotAlertOnProximityAlone() {
         val zone = DangerZoneFactory.fromSpeedControlPoint(
             id = "circle1",
             latitude = 48.8566,
@@ -151,15 +152,45 @@ class DangerZoneTest {
             source = "test",
         )
         assertFalse(zone.usesApproachTrapezoid)
-        // ~1 km north: inside ExtraUrban circle, no bearing → circle alert
-        val eval = DangerZoneEvaluator.evaluate(
+        // ~1 km north: inside ExtraUrban circle but no heading → no alert (startup / idle GPS)
+        val noBearing = DangerZoneEvaluator.evaluate(
             vehLat = 48.8656,
             vehLon = 2.3522,
             vehSpeedKmH = 80.0,
             vehBearing = null,
             zone = zone,
         )
-        assertTrue(eval.isInside)
+        assertFalse(noBearing.isInside)
+
+        // Same spot, stationary with a heading → still no alert
+        val stopped = DangerZoneEvaluator.evaluate(
+            vehLat = 48.8656,
+            vehLon = 2.3522,
+            vehSpeedKmH = 0.0,
+            vehBearing = 180.0,
+            zone = zone,
+        )
+        assertFalse(stopped.isInside)
+
+        // Wrong direction (heading away) while inside circle → no alert
+        val wrongWay = DangerZoneEvaluator.evaluate(
+            vehLat = 48.8656,
+            vehLon = 2.3522,
+            vehSpeedKmH = 80.0,
+            vehBearing = 0.0,
+            zone = zone,
+        )
+        assertFalse(wrongWay.isInside)
+
+        // Moving toward tip → alert
+        val toward = DangerZoneEvaluator.evaluate(
+            vehLat = 48.8656,
+            vehLon = 2.3522,
+            vehSpeedKmH = 80.0,
+            vehBearing = 180.0,
+            zone = zone,
+        )
+        assertTrue(toward.isInside)
     }
 
     @Test

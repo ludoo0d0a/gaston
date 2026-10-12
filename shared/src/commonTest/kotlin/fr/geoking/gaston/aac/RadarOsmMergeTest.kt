@@ -263,14 +263,14 @@ class RadarOsmEnricherTest {
                 monitoredBearingDegrees = 0.0,
             )
         )
-        // Inside approach trapezoid (south of tip) but heading opposite to monitored sense.
-        // Low confidence must NOT drop via OSM sense filter (geometry alone already encodes approach).
+        // Inside approach trapezoid (south of tip), heading toward tip.
+        // Low confidence must NOT drop via OSM sense filter (trajectory ahead still applies).
         val onApproach = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 800.0)
         val eval = DangerZoneEvaluator.evaluate(
             vehLat = onApproach.first,
             vehLon = onApproach.second,
             vehSpeedKmH = 80.0,
-            vehBearing = 180.0,
+            vehBearing = 0.0,
             zone = zone,
         )
         assertTrue(eval.isInside)

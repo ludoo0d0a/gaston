@@ -23,7 +23,6 @@ data class RadarEvaluationResult(
 object RadarTrajectoryHelper {
 
     const val DEFAULT_TOLERANCE_ANGLE_DEGREES = 40.0
-    const val MIN_SPEED_KMH_FOR_BEARING = 5.0
 
     /**
      * Calculates the initial bearing (heading) in degrees [0, 360) from (lat1, lon1) to (lat2, lon2).
@@ -88,13 +87,12 @@ object RadarTrajectoryHelper {
 
         val bearingToRadar = calculateBearing(vehLat, vehLon, radar.latitude, radar.longitude)
 
-        // Check if radar is ahead based on bearing
-        val isAhead = if (vehBearing != null && vehSpeedKmH >= MIN_SPEED_KMH_FOR_BEARING) {
+        // Require motion + heading toward the radar. Proximity alone (startup / idle GPS) must not alert.
+        val isAhead = if (vehBearing != null && vehSpeedKmH > 0.0) {
             val angleDiff = angleDifference(vehBearing, bearingToRadar)
             angleDiff <= toleranceAngleDegrees
         } else {
-            // Low speed or missing bearing: assume ahead if within range
-            true
+            false
         }
 
         val isWithinWarningDistance = isAhead && distanceMeters <= warningDistanceMeters

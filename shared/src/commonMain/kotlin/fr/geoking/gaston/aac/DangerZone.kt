@@ -239,7 +239,6 @@ data class DangerZoneEvaluation(
 
 object DangerZoneEvaluator {
     const val DEFAULT_TOLERANCE_ANGLE_DEGREES = 40.0
-    const val MIN_SPEED_KMH_FOR_BEARING = 5.0
     const val MONITOR_DIRECTION_TOLERANCE_DEGREES = OsmSpeedCameraDirection.MONITOR_TOLERANCE_DEGREES
 
     private fun toRadians(degrees: Double): Double = degrees * PI / 180.0
@@ -270,14 +269,16 @@ object DangerZoneEvaluator {
     ): DangerZoneEvaluation {
         val distanceMeters = zone.distanceMetersFrom(vehLat, vehLon)
         val bearingToCenter = calculateBearing(vehLat, vehLon, zone.centerLatitude, zone.centerLongitude)
-        val isAhead = if (vehBearing != null && vehSpeedKmH >= MIN_SPEED_KMH_FOR_BEARING) {
+        // Alert only while moving with a known heading toward the zone.
+        // Missing bearing / speed≤0 (startup, GPS idle) must not fire on proximity alone.
+        val isMoving = vehSpeedKmH > 0.0
+        val isAhead = if (vehBearing != null && isMoving) {
             angleDifference(vehBearing, bearingToCenter) <= toleranceAngleDegrees
         } else {
-            true
+            false
         }
 
         val geometricallyInside = if (zone.usesApproachTrapezoid) {
-            // Approach trapezoid already encodes "ahead of radar"; no extra ahead filter.
             DangerZoneTriangle.contains(
                 lat = vehLat,
                 lon = vehLon,
@@ -290,17 +291,8 @@ object DangerZoneEvaluator {
             distanceMeters <= zone.radiusMeters
         }
 
-        // Circle fallback: when moving, prefer zone ahead of trajectory
-        // (reduces opposite-carriageway noise without requiring full map-matching).
-        var alertActive = if (
-            !zone.usesApproachTrapezoid &&
-            vehBearing != null &&
-            vehSpeedKmH >= MIN_SPEED_KMH_FOR_BEARING
-        ) {
-            geometricallyInside && isAhead
-        } else {
-            geometricallyInside
-        }
+        // Proximity alone is never enough — require motion + heading toward the zone.
+        var alertActive = geometricallyInside && isAhead
 
         // High-confidence OSM monitored direction: drop opposite-sense approaches.
         if (alertActive &&

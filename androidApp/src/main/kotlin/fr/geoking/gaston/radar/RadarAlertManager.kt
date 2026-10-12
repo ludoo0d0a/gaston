@@ -50,7 +50,8 @@ class RadarAlertManager(
         }
 
         val bearing: Double? = when {
-            location.hasBearing() && location.bearing != 0.0f -> location.bearing.toDouble()
+            // Trust hasBearing(); 0° (north) is a valid course.
+            location.hasBearing() -> location.bearing.toDouble()
             lastLocation != null -> {
                 val prev = lastLocation!!
                 val distKm = haversineKm(prev.latitude, prev.longitude, curLat, curLon)

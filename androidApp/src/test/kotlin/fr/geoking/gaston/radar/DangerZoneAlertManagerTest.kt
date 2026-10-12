@@ -107,10 +107,12 @@ class DangerZoneAlertManagerTest {
             source = "test",
             roadClassOverride = RoadNetworkClass.Urban,
         )
-        // ~200 m from center: inside urban zone (300 m) but outside near-radar (100 m)
+        // ~200 m north of center: inside urban zone (300 m) but outside near-radar (100 m)
         val loc = Location("test").apply {
             latitude = 48.8566 + 0.0018
             longitude = 2.3522
+            bearing = 180f // toward tip
+            speed = 10f // ~36 km/h
             time = System.currentTimeMillis()
         }
         manager.evaluateAndAlert(loc, listOf(zone))
@@ -120,6 +122,44 @@ class DangerZoneAlertManagerTest {
         kotlin.test.assertEquals(48.8566, mockNotification.lastEntryLat)
         kotlin.test.assertEquals(2.3522, mockNotification.lastEntryLon)
         kotlin.test.assertEquals(0, mockNotification.nearNotificationCount)
+    }
+
+    @Test
+    fun doesNotAlertWhenInsideZoneButWrongDirectionOrStopped() {
+        val context = RuntimeEnvironment.getApplication()
+        val mockNotification = MockNotificationHelper(context)
+        val manager = DangerZoneAlertManager(settingsManager, audioNotifier, mockNotification)
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "z-wrong",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            speedLimitKmH = 90,
+            source = "test",
+            roadClassOverride = RoadNetworkClass.ExtraUrban,
+        )
+        // ~1 km north, inside 2 km circle, heading away (north) → no alert
+        val wrongWay = Location("test").apply {
+            latitude = 48.8566 + 0.009
+            longitude = 2.3522
+            bearing = 0f
+            speed = 22f
+            time = System.currentTimeMillis()
+        }
+        manager.evaluateAndAlert(wrongWay, listOf(zone))
+        assertTrue(manager.getAlertedZoneIds().isEmpty())
+        kotlin.test.assertEquals(0, mockNotification.entryNotificationCount)
+
+        // Same spot, stopped with a heading → no alert
+        val stopped = Location("test").apply {
+            latitude = 48.8566 + 0.009
+            longitude = 2.3522
+            bearing = 180f
+            speed = 0f
+            time = System.currentTimeMillis() + 1_000
+        }
+        manager.evaluateAndAlert(stopped, listOf(zone))
+        assertTrue(manager.getAlertedZoneIds().isEmpty())
+        kotlin.test.assertEquals(0, mockNotification.entryNotificationCount)
     }
 
     @Test
@@ -140,6 +180,8 @@ class DangerZoneAlertManagerTest {
         val loc = Location("test").apply {
             latitude = 48.8566 + 0.0018
             longitude = 2.3522
+            bearing = 180f
+            speed = 10f // ~36 km/h — under VMA 50
             time = System.currentTimeMillis()
         }
         manager.evaluateAndAlert(loc, listOf(zone))
@@ -179,9 +221,12 @@ class DangerZoneAlertManagerTest {
             source = "test",
             roadClassOverride = RoadNetworkClass.Urban,
         )
+        // Slightly south of tip, moving north toward it (~50 m).
         val loc = Location("test").apply {
-            latitude = 48.8566
+            latitude = 48.8566 - 0.00045
             longitude = 2.3522
+            bearing = 0f
+            speed = 10f
             time = System.currentTimeMillis()
         }
         manager.evaluateAndAlert(loc, listOf(zone))
@@ -218,6 +263,8 @@ class DangerZoneAlertManagerTest {
         val far = Location("test").apply {
             latitude = 48.8566 + 0.0018
             longitude = 2.3522
+            bearing = 180f
+            speed = 10f // ~36 km/h — under VMA 50
             time = System.currentTimeMillis()
         }
         alertManager.evaluateAndAlert(far, listOf(zone))
@@ -226,12 +273,13 @@ class DangerZoneAlertManagerTest {
         assertTrue(alertManager.getAlertedZoneIds().contains("z4"))
         assertFalse(alertManager.getNearAlertedZoneIds().contains("z4"))
 
-        // Move closer (~50 m), stopped so trajectory filter does not drop the pin.
+        // Move closer (~50 m), still moving toward the tip.
         val near = Location("test").apply {
             latitude = 48.8566 + 0.00045
             longitude = 2.3522
+            bearing = 180f
+            speed = 10f
             time = System.currentTimeMillis() + 1_000
-            speed = 0f
         }
         alertManager.evaluateAndAlert(near, listOf(zone))
         assertTrue(alertManager.getNearAlertedZoneIds().contains("z4"))
@@ -250,8 +298,10 @@ class DangerZoneAlertManagerTest {
             roadClassOverride = RoadNetworkClass.Urban,
         )
         val loc = Location("test").apply {
-            latitude = 48.8566
+            latitude = 48.8566 - 0.00045
             longitude = 2.3522
+            bearing = 0f
+            speed = 10f
             time = System.currentTimeMillis()
         }
         alertManager.evaluateAndAlert(loc, listOf(zone))
@@ -290,6 +340,8 @@ class DangerZoneAlertManagerTest {
         val loc = Location("test").apply {
             latitude = 48.8566 + 0.0018
             longitude = 2.3522
+            bearing = 180f
+            speed = 10f
             time = System.currentTimeMillis()
         }
         alertManager.evaluateAndAlert(loc, listOf(zone))
@@ -321,8 +373,10 @@ class DangerZoneAlertManagerTest {
             roadClassOverride = RoadNetworkClass.Urban,
         )
         val loc = Location("test").apply {
-            latitude = 48.8566
+            latitude = 48.8566 - 0.00045
             longitude = 2.3522
+            bearing = 0f
+            speed = 10f
             time = System.currentTimeMillis()
         }
         alertManager.evaluateAndAlert(loc, listOf(zone))

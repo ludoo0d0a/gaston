@@ -138,6 +138,8 @@ object OsmSpeedCameraDirection {
     /**
      * True when vehicle heading is compatible with monitored traffic direction.
      * Bidirectional or missing High bearing → always compatible.
+     * Missing vehicle bearing with a unidirectional High filter → not compatible
+     * (do not alert on proximity alone at startup).
      */
     fun isVehicleCompatible(
         vehBearing: Double?,
@@ -147,7 +149,7 @@ object OsmSpeedCameraDirection {
         if (info.confidence != DirectionConfidence.High) return true
         if (info.bidirectional) return true
         val monitored = info.monitoredBearingDegrees ?: return true
-        if (vehBearing == null) return true
+        if (vehBearing == null) return false
         return DangerZoneEvaluator.angleDifference(vehBearing, monitored) <= toleranceDegrees
     }
 
