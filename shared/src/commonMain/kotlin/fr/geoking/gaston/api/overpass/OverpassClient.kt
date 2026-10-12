@@ -1,7 +1,6 @@
 package fr.geoking.gaston.api.overpass
 
 import fr.geoking.gaston.shared.network.NetworkException
-import fr.geoking.gaston.shared.network.RateLimitTracker
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.header
@@ -201,9 +200,7 @@ open class OverpassClient(
      * so further calls fail fast without flooding the public instance.
      */
     protected suspend fun executeQuery(query: String): String {
-        throwIfRateLimited()
         return mutex.withLock {
-            throwIfRateLimited()
             maybeDelayForMinInterval()
             val response = try {
                 client.submitForm(
@@ -215,33 +212,14 @@ open class OverpassClient(
                     header(HttpHeaders.UserAgent, OVERPASS_USER_AGENT)
                     header(HttpHeaders.Accept, "*/*")
                 }
-            } catch (e: NetworkException) {
-                if (e.httpCode == 429) {
-                    recordCooldownFromText(e.message)
-                }
+            } finally {
                 lastRequestEndMs = System.currentTimeMillis()
-                throw e
             }
             val body = response.bodyAsText()
-            lastRequestEndMs = System.currentTimeMillis()
-            when (response.status.value) {
-                200 -> body
-                429 -> {
-                    val sec = resolveCooldownSeconds(
-                        body = body,
-                        retryAfter = response.headers[HttpHeaders.RetryAfter],
-                    )
-                    RateLimitTracker.recordRateLimit(
-                        hostOrUrl = baseUrl,
-                        retryAfterHeader = sec.toString(),
-                        responseBody = body,
-                    )
-                    throw NetworkException(
-                        429,
-                        "Overpass API rate limit (cooldown $sec s remaining)",
-                    )
-                }
-                else -> throw NetworkException(
+            if (response.status.value == 200) {
+                body
+            } else {
+                throw NetworkException(
                     response.status.value,
                     "Overpass API error: ${body.take(500)}",
                 )
@@ -249,30 +227,10 @@ open class OverpassClient(
         }
     }
 
-    private fun throwIfRateLimited() {
-        if (!RateLimitTracker.isRateLimited(baseUrl)) return
-        throw NetworkException(429, RateLimitTracker.cooldownMessage(baseUrl))
-    }
-
     private suspend fun maybeDelayForMinInterval() {
         if (minIntervalMs <= 0L || lastRequestEndMs <= 0L) return
         val waitMs = lastRequestEndMs + minIntervalMs - System.currentTimeMillis()
         if (waitMs > 0L) delay(waitMs)
-    }
-
-    private fun recordCooldownFromText(text: String?) {
-        val sec = RateLimitTracker.parseCooldownSecondsFromText(text) ?: DEFAULT_429_COOLDOWN_SEC
-        RateLimitTracker.recordRateLimit(
-            hostOrUrl = baseUrl,
-            retryAfterHeader = sec.toString(),
-            responseBody = text,
-        )
-    }
-
-    private fun resolveCooldownSeconds(body: String, retryAfter: String?): Long {
-        retryAfter?.trim()?.toLongOrNull()?.takeIf { it > 0 }?.let { return it }
-        RateLimitTracker.parseCooldownSecondsFromText(body)?.let { return it }
-        return DEFAULT_429_COOLDOWN_SEC
     }
 
     private fun parseSpeedCameraBundle(body: String, limit: Int): SpeedCameraOverpassBundle {

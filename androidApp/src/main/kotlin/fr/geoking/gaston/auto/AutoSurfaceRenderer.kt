@@ -16,8 +16,13 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
-import java.net.HttpURLConnection
-import java.net.URL
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.runBlocking
+import org.koin.core.context.GlobalContext
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -56,8 +61,11 @@ class AutoSurfaceRenderer(
     initialLat: Double = 48.8566,
     initialLon: Double = 2.3522,
     /** XYZ raster tile URL template with {z}, {x}, {y} placeholders. */
-    private var tileUrlTemplate: String = "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
+    private var tileUrlTemplate: String = "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+    private val httpClient: HttpClient? = null,
 ) {
+    private val client: HttpClient?
+        get() = httpClient ?: runCatching { GlobalContext.get().get<HttpClient>() }.getOrNull()
     var hudModeLabel: String = "Custom"
 
     @Volatile
@@ -1167,34 +1175,40 @@ class AutoSurfaceRenderer(
                     .replace("{x}", wrappedX.toString())
                     .replace("{y}", y.toString())
                 try {
-                    val url = URL(urlString)
-                    val connection = url.openConnection() as HttpURLConnection
-                    connection.setRequestProperty("User-Agent", "gaston-Android-Auto/1.0")
-                    connection.connectTimeout = 5000
-                    connection.readTimeout = 5000
-                    connection.connect()
-                    if (connection.responseCode == 200) {
-                        val bitmap = BitmapFactory.decodeStream(connection.inputStream)
-                        if (bitmap != null) {
-                            synchronized(sharedTileCache) {
-                                sharedTileCache.put(key, bitmap)
+                    val http = client
+                    if (http != null) {
+                        runBlocking {
+                            val response = http.get(urlString) {
+                                header(HttpHeaders.UserAgent, "gaston-Android-Auto/1.0")
                             }
-                            failedTiles.remove(key)
-                            tileRetries.remove(key)
-                            patchTileIntoBasemap(x, y, z, bitmap)
-                            scheduleTileRedraw()
-                        } else {
-                            failedTiles[key] = System.currentTimeMillis()
-                            val count = (tileRetries[key] ?: 0) + 1
-                            tileRetries[key] = count
-                            logTileError(urlString, 200, "Failed to decode Bitmap stream")
-                            scheduleTileRedraw()
+                            if (response.status.value == 200) {
+                                val bytes = response.body<ByteArray>()
+                                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                if (bitmap != null) {
+                                    synchronized(sharedTileCache) {
+                                        sharedTileCache.put(key, bitmap)
+                                    }
+                                    failedTiles.remove(key)
+                                    tileRetries.remove(key)
+                                    patchTileIntoBasemap(x, y, z, bitmap)
+                                    scheduleTileRedraw()
+                                } else {
+                                    failedTiles[key] = System.currentTimeMillis()
+                                    val count = (tileRetries[key] ?: 0) + 1
+                                    tileRetries[key] = count
+                                    logTileError(urlString, 200, "Failed to decode Bitmap bytes")
+                                    scheduleTileRedraw()
+                                }
+                            } else {
+                                failedTiles[key] = System.currentTimeMillis()
+                                val count = (tileRetries[key] ?: 0) + 1
+                                tileRetries[key] = count
+                                logTileError(urlString, response.status.value, response.status.description)
+                                scheduleTileRedraw()
+                            }
                         }
                     } else {
                         failedTiles[key] = System.currentTimeMillis()
-                        val count = (tileRetries[key] ?: 0) + 1
-                        tileRetries[key] = count
-                        logTileError(urlString, connection.responseCode, connection.responseMessage ?: "HTTP Error")
                         scheduleTileRedraw()
                     }
                 } catch (e: Exception) {

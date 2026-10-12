@@ -725,7 +725,7 @@ val mapModule = module {
     single<ParkingProviderFactory> { ParkingProviderFactory(get(), get()) }
     single<ParkingAggregator> { get<ParkingProviderFactory>().createAggregator() }
 
-    single { OpenTollDataHelper(androidContext()) }
+    single { OpenTollDataHelper(androidContext(), get()) }
     single<TollCalculator> {
         val settingsManager = get<fr.geoking.gaston.SettingsManager>()
         TollCalculator(dataSource = {

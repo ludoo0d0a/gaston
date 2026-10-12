@@ -36,8 +36,13 @@ import org.mapsforge.map.layer.renderer.RendererJob
 import org.mapsforge.map.model.DisplayModel
 import org.mapsforge.map.rendertheme.XmlRenderTheme
 import org.mapsforge.map.rendertheme.rule.RenderThemeFuture
-import java.net.HttpURLConnection
-import java.net.URL
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.runBlocking
+import org.koin.core.context.GlobalContext
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -75,8 +80,11 @@ class CarMapsforgeRenderer(
     private val mapManager: MapsforgeMapManager,
     initialLat: Double = 48.8566,
     initialLon: Double = 2.3522,
-    private var tileUrlTemplate: String = "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
+    private var tileUrlTemplate: String = "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+    private val httpClient: HttpClient? = null,
 ) {
+    private val client: HttpClient?
+        get() = httpClient ?: runCatching { GlobalContext.get().get<HttpClient>() }.getOrNull()
     var hudModeLabel: String = "Mapsforge"
 
     @Volatile
@@ -1119,30 +1127,33 @@ class CarMapsforgeRenderer(
                             .replace("{z}", z.toString())
                             .replace("{x}", wrappedX.toString())
                             .replace("{y}", y.toString())
-                        val url = URL(urlString)
-                        val connection = url.openConnection() as HttpURLConnection
-                        connection.setRequestProperty("User-Agent", "gaston-Android-Auto/1.0")
-                        connection.connectTimeout = 5000
-                        connection.readTimeout = 5000
-                        connection.connect()
-                        if (connection.responseCode == 200) {
-                            connection.inputStream.use { input ->
-                                val bitmap = BitmapFactory.decodeStream(input)
-                                if (bitmap != null) {
-                                    synchronized(sharedTileCache) {
-                                        sharedTileCache.put(key, bitmap)
+                        val http = client
+                        if (http != null) {
+                            runBlocking {
+                                val response = http.get(urlString) {
+                                    header(HttpHeaders.UserAgent, "gaston-Android-Auto/1.0")
+                                }
+                                if (response.status.value == 200) {
+                                    val bytes = response.body<ByteArray>()
+                                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                    if (bitmap != null) {
+                                        synchronized(sharedTileCache) {
+                                            sharedTileCache.put(key, bitmap)
+                                        }
+                                        failedTiles.remove(key)
+                                        tileRetries.remove(key)
+                                        patchTileIntoBasemap(x, y, z, bitmap)
+                                        scheduleTileRedraw()
+                                    } else {
+                                        failedTiles[key] = System.currentTimeMillis()
+                                        scheduleTileRedraw()
                                     }
-                                    failedTiles.remove(key)
-                                    tileRetries.remove(key)
-                                    patchTileIntoBasemap(x, y, z, bitmap)
-                                    scheduleTileRedraw()
                                 } else {
                                     failedTiles[key] = System.currentTimeMillis()
                                     scheduleTileRedraw()
                                 }
                             }
                         } else {
-                            connection.disconnect()
                             failedTiles[key] = System.currentTimeMillis()
                             scheduleTileRedraw()
                         }
