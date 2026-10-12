@@ -42,23 +42,32 @@ class WeatherPoiProvider(
         val minLng = viewport.minLng ?: return emptyList()
         val maxLng = viewport.maxLng ?: return emptyList()
 
-        // Limit grid size to maxPoiCount to avoid too many POIs
-        val targetN = (maxPoiCount / gridSize).coerceIn(2, 6)
-        val n = gridSize.coerceIn(2, targetN)
-        val points = buildGrid(minLat, maxLat, minLng, maxLng, n)
+        val effectiveMaxPoints = maxPoiCount.coerceIn(1, 20)
+        val points = buildGrid(minLat, maxLat, minLng, maxLng, gridSize = gridSize, maxPoints = effectiveMaxPoints)
         val models = modelsForCenter(request.latitude, request.longitude)
         val samples = runCatching {
             client.fetchCurrentWeatherCodes(points, models = models)
         }.getOrElse { emptyList() }
 
-        // Limit number of samples returned
-        val limitedSamples = samples.take(if (samples.size > maxPoiCount) maxPoiCount else samples.size)
+        // Limit number of samples returned to effectiveMaxPoints
+        val limitedSamples = samples.take(effectiveMaxPoints)
 
         // Prune weather POIs before creating new ones to stay within [maxTotalWeatherPois]
         pruneExcessPoiCounts()
 
         return limitedSamples.map { sample ->
             val style = wmoWeatherStyle(sample.weatherCode)
+            val rawMap = mutableMapOf(
+                WeatherPoiRawKeys.WEATHER_CODE to sample.weatherCode.toString(),
+                WeatherPoiRawKeys.WMO_FAMILY to style.family.name,
+                WeatherPoiRawKeys.SOURCE to "open_meteo",
+            )
+            sample.precipitationProbability?.let { rawMap[WeatherPoiRawKeys.PRECIPITATION_PROBABILITY] = it.toString() }
+            sample.precipitation?.let { rawMap[WeatherPoiRawKeys.PRECIPITATION] = it.toString() }
+            sample.rain?.let { rawMap[WeatherPoiRawKeys.RAIN] = it.toString() }
+            sample.showers?.let { rawMap[WeatherPoiRawKeys.SHOWERS] = it.toString() }
+            sample.snow?.let { rawMap[WeatherPoiRawKeys.SNOW] = it.toString() }
+
             Poi(
                 id = "weather_${sample.latitude}_${sample.longitude}_${sample.weatherCode}",
                 name = style.label,
@@ -67,11 +76,7 @@ class WeatherPoiProvider(
                 longitude = sample.longitude,
                 poiCategory = PoiCategory.Weather,
                 source = "Open-Meteo",
-                rawSourceData = mapOf(
-                    WeatherPoiRawKeys.WEATHER_CODE to sample.weatherCode.toString(),
-                    WeatherPoiRawKeys.WMO_FAMILY to style.family.name,
-                    WeatherPoiRawKeys.SOURCE to "open_meteo",
-                ),
+                rawSourceData = rawMap,
             )
         }
     }
@@ -117,18 +122,21 @@ class WeatherPoiProvider(
             maxLat: Double,
             minLng: Double,
             maxLng: Double,
-            n: Int,
+            gridSize: Int,
+            maxPoints: Int = 20,
         ): List<Pair<Double, Double>> {
-            if (n <= 1) return listOf((minLat + maxLat) / 2.0 to (minLng + maxLng) / 2.0)
-            val points = ArrayList<Pair<Double, Double>>(n * n)
-            for (i in 0 until n) {
-                val lat = minLat + (maxLat - minLat) * (i + 0.5) / n
-                for (j in 0 until n) {
-                    val lng = minLng + (maxLng - minLng) * (j + 0.5) / n
+            val cap = maxPoints.coerceIn(1, 20)
+            val nLat = if (cap >= 20 && gridSize >= 4) 4 else if (gridSize >= 3) 3 else 2
+            val nLng = if (cap >= 20 && gridSize >= 4) 5 else if (gridSize >= 3) 3 else 2
+            val points = ArrayList<Pair<Double, Double>>(nLat * nLng)
+            for (i in 0 until nLat) {
+                val lat = minLat + (maxLat - minLat) * (i + 0.5) / nLat
+                for (j in 0 until nLng) {
+                    val lng = minLng + (maxLng - minLng) * (j + 0.5) / nLng
                     points.add(lat to lng)
                 }
             }
-            return points
+            return points.take(cap)
         }
     }
 }

@@ -20,10 +20,15 @@ data class WeatherGridSample(
     val latitude: Double,
     val longitude: Double,
     val weatherCode: Int,
+    val precipitationProbability: Double? = null,
+    val precipitation: Double? = null,
+    val rain: Double? = null,
+    val showers: Double? = null,
+    val snow: Double? = null,
 )
 
 /**
- * Fetches current [weather_code] for many coordinates in one Open-Meteo request (no API key).
+ * Fetches current [weather_code] and precipitation for coordinates in one Open-Meteo request (no API key).
  */
 class OpenMeteoWeatherGridClient(
     private val client: HttpClient,
@@ -44,7 +49,8 @@ class OpenMeteoWeatherGridClient(
             append(BASE)
             append("?latitude=").append(lats)
             append("&longitude=").append(lons)
-            append("&current=weather_code")
+            append("&forecast_days=1")
+            append("&current=weather_code,precipitation,precipitation_probability,rain,showers,snowfall")
             append("&timezone=auto")
             if (models != null) {
                 append("&models=").append(models)
@@ -60,11 +66,11 @@ class OpenMeteoWeatherGridClient(
 
     companion object {
         private const val BASE = "https://api.open-meteo.com/v1/forecast"
-        const val MAX_POINTS = 36
+        const val MAX_POINTS = 20
 
         private val json = Json { ignoreUnknownKeys = true }
 
-        /** Parses Open-Meteo multi-location `current=weather_code` JSON (array of forecast objects). */
+        /** Parses Open-Meteo multi-location JSON (array of forecast objects). */
         fun parseMultiPointWeatherResponse(
             body: String,
             requested: List<Pair<Double, Double>>,
@@ -88,10 +94,25 @@ class OpenMeteoWeatherGridClient(
                 val fallback = requested.getOrNull(index) ?: return@mapIndexedNotNull null
                 val lat = obj["latitude"]?.jsonPrimitive?.doubleOrNull ?: fallback.first
                 val lon = obj["longitude"]?.jsonPrimitive?.doubleOrNull ?: fallback.second
-                val code = obj["current"]?.jsonObject
-                    ?.get("weather_code")?.jsonPrimitive?.intOrNull
-                    ?: return@mapIndexedNotNull null
-                WeatherGridSample(lat, lon, code)
+                val currentObj = obj["current"]?.jsonObject ?: return@mapIndexedNotNull null
+                val code = currentObj["weather_code"]?.jsonPrimitive?.intOrNull ?: return@mapIndexedNotNull null
+
+                val precipProb = currentObj["precipitation_probability"]?.jsonPrimitive?.doubleOrNull
+                val precip = currentObj["precipitation"]?.jsonPrimitive?.doubleOrNull
+                val rain = currentObj["rain"]?.jsonPrimitive?.doubleOrNull
+                val showers = currentObj["showers"]?.jsonPrimitive?.doubleOrNull
+                val snow = (currentObj["snowfall"] ?: currentObj["snow"])?.jsonPrimitive?.doubleOrNull
+
+                WeatherGridSample(
+                    latitude = lat,
+                    longitude = lon,
+                    weatherCode = code,
+                    precipitationProbability = precipProb,
+                    precipitation = precip,
+                    rain = rain,
+                    showers = showers,
+                    snow = snow,
+                )
             }
         }
 
@@ -102,6 +123,23 @@ class OpenMeteoWeatherGridClient(
             val lats = root["latitude"]?.jsonArray ?: return emptyList()
             val lons = root["longitude"]?.jsonArray ?: return emptyList()
             val current = root["current"]
+
+            val extractField: (String) -> List<Double?> = { fieldName ->
+                when (current) {
+                    is JsonArray -> current.map { el ->
+                        (el as? JsonObject)?.get(fieldName)?.jsonPrimitive?.doubleOrNull
+                    }
+                    is JsonObject -> {
+                        val el = current[fieldName]
+                        when (el) {
+                            is JsonArray -> el.map { it.jsonPrimitive.doubleOrNull }
+                            else -> listOf(el?.jsonPrimitive?.doubleOrNull)
+                        }
+                    }
+                    else -> emptyList()
+                }
+            }
+
             val codes: List<Int?> = when (current) {
                 is JsonArray -> current.map { el ->
                     (el as? JsonObject)?.get("weather_code")?.jsonPrimitive?.intOrNull
@@ -115,12 +153,28 @@ class OpenMeteoWeatherGridClient(
                 }
                 else -> emptyList()
             }
+
+            val precipProbs = extractField("precipitation_probability")
+            val precips = extractField("precipitation")
+            val rains = extractField("rain")
+            val showersList = extractField("showers")
+            val snowList = extractField("snowfall").ifEmpty { extractField("snow") }
+
             val n = minOf(lats.size, lons.size, codes.size, requested.size)
             return (0 until n).mapNotNull { i ->
                 val code = codes[i] ?: return@mapNotNull null
                 val lat = lats[i].jsonPrimitive.doubleOrNull ?: requested[i].first
                 val lon = lons[i].jsonPrimitive.doubleOrNull ?: requested[i].second
-                WeatherGridSample(lat, lon, code)
+                WeatherGridSample(
+                    latitude = lat,
+                    longitude = lon,
+                    weatherCode = code,
+                    precipitationProbability = precipProbs.getOrNull(i),
+                    precipitation = precips.getOrNull(i),
+                    rain = rains.getOrNull(i),
+                    showers = showersList.getOrNull(i),
+                    snow = snowList.getOrNull(i),
+                )
             }
         }
     }

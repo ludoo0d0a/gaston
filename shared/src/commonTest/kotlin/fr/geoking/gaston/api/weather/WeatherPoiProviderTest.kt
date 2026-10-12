@@ -16,12 +16,13 @@ import kotlin.test.assertTrue
 
 class WeatherPoiProviderTest {
 
-    private fun mockGridClient(): OpenMeteoWeatherGridClient {
+    private fun mockGridClient(onQuery: ((String) -> Unit)? = null): OpenMeteoWeatherGridClient {
         val engine = MockEngine { request ->
+            onQuery?.invoke(request.url.toString())
             val lats = request.url.parameters["latitude"]?.split(",") ?: emptyList()
             val lons = request.url.parameters["longitude"]?.split(",") ?: emptyList()
             val body = lats.zip(lons).joinToString(separator = ",", prefix = "[", postfix = "]") { (lat, lon) ->
-                """{"latitude":$lat,"longitude":$lon,"current":{"weather_code":3}}"""
+                """{"latitude":$lat,"longitude":$lon,"current":{"weather_code":3,"precipitation_probability":20.0,"precipitation":1.2,"rain":1.0,"showers":0.2,"snowfall":0.0}}"""
             }
             respond(
                 content = body,
@@ -63,5 +64,27 @@ class WeatherPoiProviderTest {
         val provider = WeatherPoiProvider(client = mockGridClient(), gridSize = 2, maxPoiCount = 3)
         val result = provider.search(weatherRequest())
         assertTrue(result.size <= 3)
+    }
+
+    @Test
+    fun searchIncludesForecastDaysAndPrecipitationInRequestAndRawData() = runBlocking {
+        var queriedUrl = ""
+        val provider = WeatherPoiProvider(
+            client = mockGridClient { queriedUrl = it },
+            gridSize = 3,
+            maxPoiCount = 20,
+        )
+        val result = provider.search(weatherRequest())
+
+        assertTrue(queriedUrl.contains("forecast_days=1"))
+        assertTrue(queriedUrl.contains("current=weather_code%2Cprecipitation%2Cprecipitation_probability%2Crain%2Cshowers%2Csnowfall") || queriedUrl.contains("current=weather_code,precipitation,precipitation_probability,rain,showers,snowfall"))
+
+        assertTrue(result.isNotEmpty())
+        val firstPoi = result.first()
+        assertEquals("20.0", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.PRECIPITATION_PROBABILITY))
+        assertEquals("1.2", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.PRECIPITATION))
+        assertEquals("1.0", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.RAIN))
+        assertEquals("0.2", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.SHOWERS))
+        assertEquals("0.0", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.SNOW))
     }
 }
