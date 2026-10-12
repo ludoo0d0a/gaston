@@ -4,11 +4,17 @@ import androidx.compose.ui.graphics.toArgb
 import fr.geoking.gaston.poi.FuelPrice
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class PoiMarkerHelperTest {
 
     @Test
@@ -237,5 +243,30 @@ class PoiMarkerHelperTest {
             fr.geoking.gaston.ui.ColorHelper.ColorChantier.toArgb(),
             PoiMarkerHelper.radarLabelFillColorArgb(poi),
         )
+    }
+
+    @Test
+    fun `getMarkerBitmap generates bitmap with correct width`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val poi = Poi(
+            id = "test_bitmap_1",
+            name = "Test Gas Station",
+            address = "123 Street",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            fuelPrices = listOf(FuelPrice("sp95", 1.85))
+        )
+
+        val bitmap = PoiMarkerHelper.getMarkerBitmap(
+            context = context,
+            poi = poi,
+            effectiveEnergyTypes = setOf("sp95"),
+            effectivePowerLevels = emptySet(),
+            sizePx = 120
+        )
+
+        assertNotNull(bitmap)
+        assertEquals(120, bitmap.width)
+        assertTrue(bitmap.height >= 120)
     }
 }

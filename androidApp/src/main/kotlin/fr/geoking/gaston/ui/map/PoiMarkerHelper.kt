@@ -42,7 +42,7 @@ object PoiMarkerHelper {
     }
 
     /** Bump when marker layout changes so [cache] entries are not stale. */
-    private const val MARKER_LAYOUT_CACHE_TAG = "pinColumn14"
+    private const val MARKER_LAYOUT_CACHE_TAG = "pinColumn15"
 
     /**
      * Builds a column marker bitmap: optional label pill (top) → rounded head (circle + logo in asset) → triangle pin (bottom).
@@ -171,11 +171,11 @@ object PoiMarkerHelper {
         val circleCy = labelBlockH + circleR
         val triH = w * 0.30f
         val overlap = circleR * 0.14f
-        val triTopY = circleCy + circleR - overlap
-        // Triangle top width ~ circle diameter so the pin reads aligned with the head.
-        val triHalfW = circleR * 0.92f
+        val triTopY = circleCy
+        // Triangle base width bounded by circle diameter so the pin tapers smoothly like a location icon.
+        val triHalfW = circleR * 0.85f
 
-        val h = (triTopY + triH + 2f).toInt().coerceAtLeast(w)
+        val h = (circleCy + circleR - overlap + triH + 2f).toInt().coerceAtLeast(w)
         val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
