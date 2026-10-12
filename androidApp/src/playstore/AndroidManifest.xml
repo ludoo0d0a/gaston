@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- POI category for Android Auto. NAVIGATION_TEMPLATES removed: Play Console rejects non–navigation-category apps that declare it. -->
+<!-- Play flavor: POI only — do not declare NAVIGATION_TEMPLATES (Play rejects it for non-nav apps). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
-    <uses-permission
-        android:name="androidx.car.app.NAVIGATION_TEMPLATES"
-        tools:node="remove" />
 
     <application>
         <service
