@@ -1,6 +1,7 @@
 package fr.geoking.gaston.api.overpass
 
 import fr.geoking.gaston.shared.network.NetworkException
+import fr.geoking.gaston.shared.network.RateLimitPlugin
 import fr.geoking.gaston.shared.network.RateLimitTracker
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -62,8 +63,12 @@ class OverpassClientTest {
                 headers = headersOf(HttpHeaders.ContentType, "text/plain"),
             )
         }
+        // Production uses the shared HttpClient with RateLimitPlugin; mirror that here.
+        val httpClient = HttpClient(engine) {
+            install(RateLimitPlugin)
+        }
         val client = OverpassClient(
-            HttpClient(engine),
+            httpClient,
             baseUrl = "https://overpass-api.de/api/interpreter",
             minIntervalMs = 0L,
         )
