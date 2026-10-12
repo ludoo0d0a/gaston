@@ -691,23 +691,25 @@ fun MapScreen(
                                 }
                             )
                         }
-                        mapData.trafficInfo?.events?.forEach { event ->
-                            val bbox = event.bbox ?: return@forEach
-                            val lat = (bbox.latMin + bbox.latMax) / 2
-                            val lon = (bbox.lonMin + bbox.lonMax) / 2
-                            val hue = when (event.severity) {
-                                TrafficSeverity.Normal -> 120f
-                                TrafficSeverity.Congestion -> 30f
-                                TrafficSeverity.Closure, TrafficSeverity.Accident, TrafficSeverity.Roadworks -> 0f
-                                TrafficSeverity.Unknown -> 60f
+                        if (settings.mapTrafficEnabled) {
+                            mapData.trafficInfo?.events?.forEach { event ->
+                                val bbox = event.bbox ?: return@forEach
+                                val lat = (bbox.latMin + bbox.latMax) / 2
+                                val lon = (bbox.lonMin + bbox.lonMax) / 2
+                                val hue = when (event.severity) {
+                                    TrafficSeverity.Normal -> 120f
+                                    TrafficSeverity.Congestion -> 30f
+                                    TrafficSeverity.Closure, TrafficSeverity.Accident, TrafficSeverity.Roadworks -> 0f
+                                    TrafficSeverity.Unknown -> 60f
+                                }
+                                Marker(
+                                    state = rememberUpdatedMarkerState(position = LatLng(lat, lon)),
+                                    title = "${event.roadRef}${event.direction?.let { " ($it)" } ?: ""}",
+                                    snippet = event.message,
+                                    icon = BitmapDescriptorFactory.defaultMarker(hue),
+                                    onClick = { true }
+                                )
                             }
-                            Marker(
-                                state = rememberUpdatedMarkerState(position = LatLng(lat, lon)),
-                                title = "${event.roadRef}${event.direction?.let { " ($it)" } ?: ""}",
-                                snippet = event.message,
-                                icon = BitmapDescriptorFactory.defaultMarker(hue),
-                                onClick = { true }
-                            )
                         }
                     }
 

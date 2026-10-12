@@ -7,6 +7,7 @@ import io.ktor.client.statement.bodyAsText
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -28,98 +29,123 @@ data class WeatherGridSample(
 )
 
 /**
- * Fetches current [weather_code] and precipitation for coordinates in one Open-Meteo request (no API key).
+ * Fetches current [weather_code] and precipitation for the map viewport via Open-Meteo
+ * `&bounding_box=latMin,lonMin,latMax,lonMax` (no API key).
+ *
+ * Bounding-box queries require a concrete model (not `*_seamless` / `best_match`) and
+ * do not support `timezone=auto`.
  */
 class OpenMeteoWeatherGridClient(
     private val client: HttpClient,
 ) {
     /**
-     * @param points lat/lon pairs (max [MAX_POINTS] used)
-     * @param models optional Open-Meteo model blend, e.g. `meteofrance_seamless`
+     * @param latMin south edge (must be &lt; [latMax])
+     * @param lonMin west edge (must be &lt; [lonMax])
+     * @param models concrete Open-Meteo model, e.g. `ecmwf_ifs025` or `meteofrance_arpege_world`
      */
     suspend fun fetchCurrentWeatherCodes(
-        points: List<Pair<Double, Double>>,
-        models: String? = null,
+        latMin: Double,
+        lonMin: Double,
+        latMax: Double,
+        lonMax: Double,
+        models: String = DEFAULT_MODEL,
     ): List<WeatherGridSample> {
-        if (points.isEmpty()) return emptyList()
-        val limited = points.take(MAX_POINTS)
-        val lats = limited.joinToString(",") { it.first.toString() }
-        val lons = limited.joinToString(",") { it.second.toString() }
+        require(latMin < latMax && lonMin < lonMax) {
+            "bounding_box requires latMin<latMax and lonMin<lonMax"
+        }
         val url = buildString {
             append(BASE)
-            append("?latitude=").append(lats)
-            append("&longitude=").append(lons)
+            append("?bounding_box=")
+            append(latMin).append(',').append(lonMin).append(',').append(latMax).append(',').append(lonMax)
             append("&forecast_days=1")
             append("&current=weather_code,precipitation,precipitation_probability,rain,showers,snowfall")
-            append("&timezone=auto")
-            if (models != null) {
-                append("&models=").append(models)
-            }
+            append("&timezone=GMT")
+            append("&models=").append(models)
         }
         val response = client.get(url)
         val body = response.bodyAsText()
         if (response.status.value != 200) {
             throw NetworkException(response.status.value, "Open-Meteo error: ${body.take(500)}")
         }
-        return parseMultiPointWeatherResponse(body, limited)
+        return parseBoundingBoxWeatherResponse(body)
     }
 
     companion object {
         private const val BASE = "https://api.open-meteo.com/v1/forecast"
+        const val DEFAULT_MODEL = "ecmwf_ifs025"
+        /** Soft UI cap for weather POIs (API may return more grid cells). */
         const val MAX_POINTS = 20
 
         private val json = Json { ignoreUnknownKeys = true }
 
-        /** Parses Open-Meteo multi-location JSON (array of forecast objects). */
+        /** Parses Open-Meteo bounding-box JSON (array of cells, or a single object). */
+        fun parseBoundingBoxWeatherResponse(body: String): List<WeatherGridSample> {
+            val element = runCatching { json.parseToJsonElement(body) }.getOrNull() ?: return emptyList()
+            val objects: List<JsonObject> = when (element) {
+                is JsonArray -> element.mapNotNull { it as? JsonObject }
+                is JsonObject -> {
+                    if (element["error"]?.jsonPrimitive?.booleanOrNull == true) {
+                        return emptyList()
+                    }
+                    if (element["latitude"] is JsonArray) {
+                        return parseParallelArrays(element)
+                    }
+                    listOf(element)
+                }
+                else -> emptyList()
+            }
+            return objects.mapNotNull { obj -> parseCell(obj) }
+        }
+
+        /** @deprecated Prefer [parseBoundingBoxWeatherResponse]; kept for older multi-point fixtures. */
         fun parseMultiPointWeatherResponse(
             body: String,
             requested: List<Pair<Double, Double>>,
         ): List<WeatherGridSample> {
+            val parsed = parseBoundingBoxWeatherResponse(body)
+            if (parsed.isNotEmpty()) return parsed
+            // Fallback: zip by index when response omitted lat/lon (legacy multi-point)
             val element = runCatching { json.parseToJsonElement(body) }.getOrNull() ?: return emptyList()
             val objects: List<JsonObject> = when (element) {
                 is JsonArray -> element.mapNotNull { it as? JsonObject }
                 is JsonObject -> listOf(element)
                 else -> emptyList()
             }
-            if (objects.isEmpty()) return emptyList()
-
-            if (objects.size == 1) {
-                val root = objects[0]
-                if (root["latitude"] is JsonArray) {
-                    return parseParallelArrays(root, requested)
-                }
-            }
-
             return objects.mapIndexedNotNull { index, obj ->
                 val fallback = requested.getOrNull(index) ?: return@mapIndexedNotNull null
-                val lat = obj["latitude"]?.jsonPrimitive?.doubleOrNull ?: fallback.first
-                val lon = obj["longitude"]?.jsonPrimitive?.doubleOrNull ?: fallback.second
-                val currentObj = obj["current"]?.jsonObject ?: return@mapIndexedNotNull null
-                val code = currentObj["weather_code"]?.jsonPrimitive?.intOrNull ?: return@mapIndexedNotNull null
-
-                val precipProb = currentObj["precipitation_probability"]?.jsonPrimitive?.doubleOrNull
-                val precip = currentObj["precipitation"]?.jsonPrimitive?.doubleOrNull
-                val rain = currentObj["rain"]?.jsonPrimitive?.doubleOrNull
-                val showers = currentObj["showers"]?.jsonPrimitive?.doubleOrNull
-                val snow = (currentObj["snowfall"] ?: currentObj["snow"])?.jsonPrimitive?.doubleOrNull
-
-                WeatherGridSample(
-                    latitude = lat,
-                    longitude = lon,
-                    weatherCode = code,
-                    precipitationProbability = precipProb,
-                    precipitation = precip,
-                    rain = rain,
-                    showers = showers,
-                    snow = snow,
-                )
+                parseCell(obj, fallbackLat = fallback.first, fallbackLon = fallback.second)
             }
         }
 
-        private fun parseParallelArrays(
-            root: JsonObject,
-            requested: List<Pair<Double, Double>>,
-        ): List<WeatherGridSample> {
+        private fun parseCell(
+            obj: JsonObject,
+            fallbackLat: Double? = null,
+            fallbackLon: Double? = null,
+        ): WeatherGridSample? {
+            val lat = obj["latitude"]?.jsonPrimitive?.doubleOrNull ?: fallbackLat ?: return null
+            val lon = obj["longitude"]?.jsonPrimitive?.doubleOrNull ?: fallbackLon ?: return null
+            val currentObj = obj["current"]?.jsonObject ?: return null
+            val code = currentObj["weather_code"]?.jsonPrimitive?.intOrNull ?: return null
+
+            val precipProb = currentObj["precipitation_probability"]?.jsonPrimitive?.doubleOrNull
+            val precip = currentObj["precipitation"]?.jsonPrimitive?.doubleOrNull
+            val rain = currentObj["rain"]?.jsonPrimitive?.doubleOrNull
+            val showers = currentObj["showers"]?.jsonPrimitive?.doubleOrNull
+            val snow = (currentObj["snowfall"] ?: currentObj["snow"])?.jsonPrimitive?.doubleOrNull
+
+            return WeatherGridSample(
+                latitude = lat,
+                longitude = lon,
+                weatherCode = code,
+                precipitationProbability = precipProb,
+                precipitation = precip,
+                rain = rain,
+                showers = showers,
+                snow = snow,
+            )
+        }
+
+        private fun parseParallelArrays(root: JsonObject): List<WeatherGridSample> {
             val lats = root["latitude"]?.jsonArray ?: return emptyList()
             val lons = root["longitude"]?.jsonArray ?: return emptyList()
             val current = root["current"]
@@ -160,11 +186,11 @@ class OpenMeteoWeatherGridClient(
             val showersList = extractField("showers")
             val snowList = extractField("snowfall").ifEmpty { extractField("snow") }
 
-            val n = minOf(lats.size, lons.size, codes.size, requested.size)
+            val n = minOf(lats.size, lons.size, codes.size)
             return (0 until n).mapNotNull { i ->
                 val code = codes[i] ?: return@mapNotNull null
-                val lat = lats[i].jsonPrimitive.doubleOrNull ?: requested[i].first
-                val lon = lons[i].jsonPrimitive.doubleOrNull ?: requested[i].second
+                val lat = lats[i].jsonPrimitive.doubleOrNull ?: return@mapNotNull null
+                val lon = lons[i].jsonPrimitive.doubleOrNull ?: return@mapNotNull null
                 WeatherGridSample(
                     latitude = lat,
                     longitude = lon,

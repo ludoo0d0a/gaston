@@ -189,6 +189,7 @@ fun rememberMapDataState(
                     s.useVehicleFilter.toString(),
                     s.disableCache.toString(),
                     s.bulkFileDownloadPolicy.name,
+                    s.mapTrafficEnabled.toString(),
                 ).joinToString("|")
             }
             .distinctUntilChanged()
@@ -304,15 +305,20 @@ fun rememberMapDataState(
                         }
                     }
 
-                    val trafficProvider = trafficProviderFactory?.getProvider(centerLat, centerLng)
-                    trafficInfo = if (trafficProvider != null) {
-                        val halfSpan = 0.15
-                        trafficProvider.getTraffic(
+                    // Traffic uses the visible map bbox (latMin,lonMin,latMax,lonMax), not a fixed span.
+                    val trafficEnabled = settingsManager.settings.value.mapTrafficEnabled
+                    trafficInfo = if (trafficEnabled && trafficProviderFactory != null) {
+                        val trafficProvider = trafficProviderFactory.getProvider(centerLat, centerLng)
+                        val latMin = viewport.minLat ?: (centerLat - 0.15)
+                        val latMax = viewport.maxLat ?: (centerLat + 0.15)
+                        val lonMin = viewport.minLng ?: (centerLng - 0.15)
+                        val lonMax = viewport.maxLng ?: (centerLng + 0.15)
+                        trafficProvider?.getTraffic(
                             TrafficRequest.Bbox(
-                                centerLat - halfSpan,
-                                centerLng - halfSpan,
-                                centerLat + halfSpan,
-                                centerLng + halfSpan
+                                latMin = latMin,
+                                lonMin = lonMin,
+                                latMax = latMax,
+                                lonMax = lonMax,
                             )
                         )
                     } else {

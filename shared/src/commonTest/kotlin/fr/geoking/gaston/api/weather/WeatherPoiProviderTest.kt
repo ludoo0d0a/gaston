@@ -19,10 +19,23 @@ class WeatherPoiProviderTest {
     private fun mockGridClient(onQuery: ((String) -> Unit)? = null): OpenMeteoWeatherGridClient {
         val engine = MockEngine { request ->
             onQuery?.invoke(request.url.toString())
-            val lats = request.url.parameters["latitude"]?.split(",") ?: emptyList()
-            val lons = request.url.parameters["longitude"]?.split(",") ?: emptyList()
-            val body = lats.zip(lons).joinToString(separator = ",", prefix = "[", postfix = "]") { (lat, lon) ->
-                """{"latitude":$lat,"longitude":$lon,"current":{"weather_code":3,"precipitation_probability":20.0,"precipitation":1.2,"rain":1.0,"showers":0.2,"snowfall":0.0}}"""
+            val bbox = request.url.parameters["bounding_box"]?.split(",") ?: emptyList()
+            val body = if (bbox.size == 4) {
+                val latMin = bbox[0].toDouble()
+                val lonMin = bbox[1].toDouble()
+                val latMax = bbox[2].toDouble()
+                val lonMax = bbox[3].toDouble()
+                val cells = listOf(
+                    (latMin + latMax) / 2 to (lonMin + lonMax) / 2,
+                    latMin to lonMin,
+                    latMax to lonMax,
+                    latMin to lonMax,
+                )
+                cells.joinToString(separator = ",", prefix = "[", postfix = "]") { (lat, lon) ->
+                    """{"latitude":$lat,"longitude":$lon,"current":{"weather_code":3,"precipitation_probability":20.0,"precipitation":1.2,"rain":1.0,"showers":0.2,"snowfall":0.0}}"""
+                }
+            } else {
+                "[]"
             }
             respond(
                 content = body,
@@ -46,14 +59,14 @@ class WeatherPoiProviderTest {
 
     @Test
     fun searchReturnsEmptyWhenWeatherNotRequested() = runBlocking {
-        val provider = WeatherPoiProvider(client = mockGridClient(), gridSize = 2, maxPoiCount = 10)
+        val provider = WeatherPoiProvider(client = mockGridClient(), maxPoiCount = 10)
         val result = provider.search(weatherRequest(categories = setOf(PoiCategory.Gas)))
         assertEquals(emptyList(), result)
     }
 
     @Test
     fun searchReturnsWeatherPoisWhenRequested() = runBlocking {
-        val provider = WeatherPoiProvider(client = mockGridClient(), gridSize = 2, maxPoiCount = 10)
+        val provider = WeatherPoiProvider(client = mockGridClient(), maxPoiCount = 10)
         val result = provider.search(weatherRequest())
         assertTrue(result.isNotEmpty())
         assertTrue(result.all { it.poiCategory == PoiCategory.Weather })
@@ -61,23 +74,28 @@ class WeatherPoiProviderTest {
 
     @Test
     fun searchRespectsMaxPoiCount() = runBlocking {
-        val provider = WeatherPoiProvider(client = mockGridClient(), gridSize = 2, maxPoiCount = 3)
+        val provider = WeatherPoiProvider(client = mockGridClient(), maxPoiCount = 3)
         val result = provider.search(weatherRequest())
         assertTrue(result.size <= 3)
     }
 
     @Test
-    fun searchIncludesForecastDaysAndPrecipitationInRequestAndRawData() = runBlocking {
+    fun searchUsesBoundingBoxAndIncludesPrecipitationInRequestAndRawData() = runBlocking {
         var queriedUrl = ""
         val provider = WeatherPoiProvider(
             client = mockGridClient { queriedUrl = it },
-            gridSize = 3,
             maxPoiCount = 20,
         )
         val result = provider.search(weatherRequest())
 
+        assertTrue(queriedUrl.contains("bounding_box="), queriedUrl)
         assertTrue(queriedUrl.contains("forecast_days=1"))
-        assertTrue(queriedUrl.contains("current=weather_code%2Cprecipitation%2Cprecipitation_probability%2Crain%2Cshowers%2Csnowfall") || queriedUrl.contains("current=weather_code,precipitation,precipitation_probability,rain,showers,snowfall"))
+        assertTrue(queriedUrl.contains("timezone=GMT"))
+        assertTrue(queriedUrl.contains("models="))
+        assertTrue(
+            queriedUrl.contains("current=weather_code%2Cprecipitation%2Cprecipitation_probability%2Crain%2Cshowers%2Csnowfall") ||
+                queriedUrl.contains("current=weather_code,precipitation,precipitation_probability,rain,showers,snowfall"),
+        )
 
         assertTrue(result.isNotEmpty())
         val firstPoi = result.first()

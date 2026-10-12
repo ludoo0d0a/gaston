@@ -80,10 +80,20 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("Atlante Live Stations", "https://map.atlante.energy/geodata.json", null),
     UsedApi("Freshmile Charge", "https://charge.freshmile.com", null),
     UsedApi("Belgium NAP EV (Road / transportdata.be)", "https://transportdata.be", null),
+    UsedApi("DOT-NL / NDW (EV availability)", "https://opendata.ndw.nu", null),
+    UsedApi("ich-tanke-strom (BFE Switzerland)", "https://www.ich-tanke-strom.ch", null),
+    UsedApi("Digitraffic AFIR (Finland)", "https://afir.digitraffic.fi", null),
+    UsedApi("E-Control charge (Austria EV)", "https://www.e-control.at", null),
+    UsedApi("EIPA (Poland EV)", "https://eipa.udt.gov.pl", null),
+    UsedApi("NOBIL (Norway / Sweden EV)", "https://nobil.no", null),
+    UsedApi("Italy PUN EV (ArcGIS)", "https://www.pun.anac.gov.it", null),
+    UsedApi("AFDC / NREL (US + Canada EV)", "https://developer.nrel.gov/docs/transportation/alt-fuel-stations-v1/", null),
+    UsedApi("Gireve IRVE (dispo)", "https://www.gireve.com", null),
 
     // POIs & amenities
     UsedApi("Overpass API (OpenStreetMap)", "https://wiki.openstreetmap.org/wiki/Overpass_API", "https://www.openstreetmap.org/favicon.ico"),
     UsedApi("Hérault Data (camping-car)", "https://www.herault-data.fr", null),
+    UsedApi("Lufop OpenSpeedCam (radars)", "https://www.lufop.net", null),
 
     // Parking
     UsedApi("LiveParking", "https://liveparking.eu", null),
@@ -95,11 +105,16 @@ val UsedApisList: List<UsedApi> = listOf(
     UsedApi("mobiliteit.lu / HAFAS", "https://www.mobiliteit.lu", null),
 
     // Weather
-    UsedApi("Open-Meteo", "https://open-meteo.com", null),
-    UsedApi("MET Norway", "https://api.met.no", null),
+    UsedApi("Open-Meteo Forecast", "https://open-meteo.com/en/docs", null),
+    UsedApi("ECMWF IFS (via Open-Meteo)", "https://www.ecmwf.int", null),
+    UsedApi("Météo-France ARPEGE (via Open-Meteo)", "https://meteofrance.com", null),
+    UsedApi("MET Norway Locationforecast", "https://api.met.no", null),
     UsedApi("RainViewer", "https://www.rainviewer.com", null),
 
     // Traffic, toll & forecasts
+    UsedApi("Bison Futé / TIPI (ouvert)", "https://transport.data.gouv.fr/datasets/evenements-routiers-sur-le-reseau-routier-national-non-concede", null),
+    UsedApi("TIPI Action B (restreint)", "https://transport.data.gouv.fr", null),
+    UsedApi("TIPI Action C (restreint / SRTI)", "https://transport.data.gouv.fr", null),
     UsedApi("CITA (trafic Luxembourg)", "https://www.cita.lu", "https://www.cita.lu/favicon.ico"),
     UsedApi("TomTom Traffic", "https://developer.tomtom.com/traffic-api", null),
     UsedApi("OpenTollData", "https://github.com/louis2038/OpenTollData", null),
