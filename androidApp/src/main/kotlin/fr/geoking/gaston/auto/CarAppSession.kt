@@ -6,6 +6,7 @@ import androidx.car.app.Screen
 import androidx.car.app.Session
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import fr.geoking.gaston.NetworkLocationIntents
 import fr.geoking.gaston.ParkedCarIntents
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
@@ -93,6 +94,12 @@ class CarAppSession : Session(), KoinComponent {
     }
 
     override fun onNewIntent(intent: Intent) {
+        if (intent.action == NetworkLocationIntents.ACTION_OPEN_NETWORK_INFO) {
+            carContext.getCarService(androidx.car.app.ScreenManager::class.java).push(
+                AutoNetworkLocationInfoScreen(carContext, networkService, connectivityManager)
+            )
+            return
+        }
         screenForParkIntent(intent)?.let { screen ->
             carContext.getCarService(androidx.car.app.ScreenManager::class.java).push(screen)
             return
@@ -125,6 +132,10 @@ class CarAppSession : Session(), KoinComponent {
             inAppUpdateHelper.checkForUpdate()
         } catch (e: Exception) {
             Log.w(TAG, "Failed to check for update in CarAppSession", e)
+        }
+
+        if (intent.action == NetworkLocationIntents.ACTION_OPEN_NETWORK_INFO) {
+            return AutoNetworkLocationInfoScreen(carContext, networkService, connectivityManager)
         }
 
         screenForParkIntent(intent)?.let { return it }

@@ -1569,7 +1569,7 @@ private fun TollDataSection(
     onUpdate: (AppSettings) -> Unit
 ) {
     val context = LocalContext.current
-    val helper = remember(context) { OpenTollDataHelper(context) }
+    val helper = koinInject<OpenTollDataHelper>()
     val scope = rememberCoroutineScope()
     var downloadProgress by remember { mutableStateOf<Pair<Long, Long?>?>(null) }
     var downloadError by remember { mutableStateOf<String?>(null) }

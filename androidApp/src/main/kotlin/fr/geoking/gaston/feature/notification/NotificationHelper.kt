@@ -17,6 +17,7 @@ import androidx.car.app.notification.CarPendingIntent
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import fr.geoking.gaston.MainActivity
+import fr.geoking.gaston.NetworkLocationIntents
 import fr.geoking.gaston.ParkedCarIntents
 import fr.geoking.gaston.R
 import fr.geoking.gaston.RadarMapIntents
@@ -97,6 +98,7 @@ open class NotificationHelper(private val context: Context) {
         }
 
         val phoneIntent = Intent(context, MainActivity::class.java).apply {
+            action = NetworkLocationIntents.ACTION_OPEN_NETWORK_INFO
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val phonePending = PendingIntent.getActivity(
@@ -106,7 +108,9 @@ open class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val carIntent = Intent(context, VoiceAppService::class.java)
+        val carIntent = Intent(context, VoiceAppService::class.java).apply {
+            action = NetworkLocationIntents.ACTION_OPEN_NETWORK_INFO
+        }
         val carPending = CarPendingIntent.getCarApp(
             context,
             NOTIFICATION_ID_BORDER,

@@ -38,23 +38,32 @@ class ConnectivityManager(
     private fun handleStatusChange(status: NetworkStatus) {
         val last = lastStatus ?: return
 
-        // Border crossing detection: countryCode changed from a valid value to another valid value
-        if (status.countryCode != null && last.countryCode != null && status.countryCode != last.countryCode) {
-            // Avoid using a country name that is identical to the previous one if the code changed,
-            // as it likely indicates stale data from geocoding or cache.
-            val countryName = if (status.countryName != null && status.countryName != last.countryName) {
-                status.countryName
-            } else {
-                status.countryCode
-            }
+        val newCountryCode = status.countryCode
+        val previousCountryCode = last.countryCode
 
-            scope.launch {
-                _borderCrossingEvents.emit(
-                    BorderCrossingEvent(
-                        countryCode = status.countryCode,
-                        countryName = countryName,
+        // Border crossing detection: countryCode changed from a valid value to another valid value
+        if (newCountryCode != null && previousCountryCode != null && newCountryCode != previousCountryCode) {
+            // Do not emit border crossing if location country still matches the previous country
+            // (e.g. cellular tower spillover across border).
+            val isSpillover = status.locationCountryCode != null && status.locationCountryCode == previousCountryCode
+
+            if (!isSpillover) {
+                // Avoid using a country name that is identical to the previous one if the code changed,
+                // as it likely indicates stale data from geocoding or cache.
+                val countryName = if (status.countryName != null && status.countryName != last.countryName) {
+                    status.countryName
+                } else {
+                    status.countryCode
+                }
+
+                scope.launch {
+                    _borderCrossingEvents.emit(
+                        BorderCrossingEvent(
+                            countryCode = newCountryCode,
+                            countryName = countryName,
+                        )
                     )
-                )
+                }
             }
         }
 
