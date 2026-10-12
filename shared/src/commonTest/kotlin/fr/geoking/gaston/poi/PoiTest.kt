@@ -36,6 +36,17 @@ class PoiTest {
     }
 
     @Test
+    fun fuelNameToId_differentiatesSp95AndSp95E10() {
+        assertEquals("sp95", MapPoiFilter.fuelNameToId("SP95"))
+        assertEquals("sp95", MapPoiFilter.fuelNameToId("SP95 E5"))
+        assertEquals("sp95", MapPoiFilter.fuelNameToId("E5"))
+        assertEquals("sp95_e10", MapPoiFilter.fuelNameToId("E10"))
+        assertEquals("sp95_e10", MapPoiFilter.fuelNameToId("SP95-E10"))
+        assertEquals("sp95_e10", MapPoiFilter.fuelNameToId("SP95 E10"))
+        assertEquals("sp95_e10", MapPoiFilter.fuelNameToId("sp95_e10"))
+    }
+
+    @Test
     fun powerMatchesAnyLevel_requiresMinimumSelectedPower() {
         // Selection 100+ (level 100): should NOT match 20 kW or 50 kW, SHOULD match 100 kW, 150 kW, 300 kW
         val levels100 = setOf(100)

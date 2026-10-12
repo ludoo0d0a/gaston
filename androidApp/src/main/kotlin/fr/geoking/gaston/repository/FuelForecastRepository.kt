@@ -30,7 +30,7 @@ import kotlinx.serialization.json.Json
 
 private val PARIS: ZoneId = ZoneId.of("Europe/Paris")
 
-private val FUEL_PRIORITY = listOf("gazole", "sp95", "sp98", "gplc", "e85")
+private val FUEL_PRIORITY = listOf("gazole", "sp95", "sp95_e10", "sp98", "gplc", "e85")
 
 /**
  * Local pump averages, Stooq-based market series, rule forecasts, and scoring against realized daily averages.
@@ -324,7 +324,7 @@ class FuelForecastRepository(
         fromDay: String,
         toDay: String
     ): Map<String, List<NationalFuelDailyAverage>> {
-        val fuels = listOf("gazole", "sp95", "sp98", "gplc", "e85")
+        val fuels = listOf("gazole", "sp95", "sp95_e10", "sp98", "gplc", "e85")
         return fuels.associateWith { fuelId ->
             nationalDao.getPricesSince("FR", fuelId, fromDay)
                 .filter { it.day <= toDay }

@@ -505,7 +505,8 @@ object MapPoiFilter {
         return when {
             n.contains("gazole") || n == "gasoil" || n == "diesel" -> "gazole"
             n.contains("sp98") || n == "sp 98" -> "sp98"
-            n.contains("e10") || n.contains("sp95-e10") || n == "sp95 e10" || n.contains("sp95") || n == "sp 95" -> "sp95"
+            n.contains("e10") || n.contains("sp95-e10") || n.contains("sp95_e10") -> "sp95_e10"
+            n.contains("sp95") || n == "sp 95" || n == "e5" || n == "sp95 e5" -> "sp95"
             n.contains("gpl") || n == "gplc" || n == "lpg" -> "gplc"
             n.contains("e85") || n == "superéthanol" -> "e85"
             else -> null

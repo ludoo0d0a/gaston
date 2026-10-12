@@ -65,6 +65,7 @@ private val X_AXIS_HEIGHT = 24.dp
 private fun fuelTypeLabel(fuelId: String): String = when (fuelId) {
     "gazole" -> stringResource(R.string.fuel_gazole)
     "sp95" -> stringResource(R.string.fuel_sp95)
+    "sp95_e10" -> stringResource(R.string.fuel_sp95_e10)
     "sp98" -> stringResource(R.string.fuel_sp98)
     "gplc" -> stringResource(R.string.fuel_gplc)
     "e85" -> stringResource(R.string.fuel_e85)

@@ -25,7 +25,7 @@ object ColorHelper {
 
     fun getFuelColor(fuelId: String?): Color? = when (fuelId) {
         "gazole" -> ColorGazole
-        "sp95" -> ColorSP95
+        "sp95", "sp95_e10" -> ColorSP95
         "sp98" -> ColorSP98
         "e85" -> ColorE85
         "gplc" -> ColorGPLC
