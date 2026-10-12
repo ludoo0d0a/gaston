@@ -32,4 +32,38 @@ class OpenMeteoWeatherGridClientTest {
         assertEquals(1, samples.size)
         assertEquals(45, samples[0].weatherCode)
     }
+
+    @Test
+    fun parsePrecipitationData() {
+        val body = """
+            [
+              {
+                "latitude": 48.85,
+                "longitude": 2.35,
+                "current": {
+                  "weather_code": 61,
+                  "precipitation_probability": 85.0,
+                  "precipitation": 2.4,
+                  "rain": 1.5,
+                  "showers": 0.9,
+                  "snowfall": 0.0
+                }
+              }
+            ]
+        """.trimIndent()
+        val requested = listOf(48.85 to 2.35)
+        val samples = OpenMeteoWeatherGridClient.parseMultiPointWeatherResponse(body, requested)
+        assertEquals(1, samples.size)
+        assertEquals(61, samples[0].weatherCode)
+        assertEquals(85.0, samples[0].precipitationProbability)
+        assertEquals(2.4, samples[0].precipitation)
+        assertEquals(1.5, samples[0].rain)
+        assertEquals(0.9, samples[0].showers)
+        assertEquals(0.0, samples[0].snow)
+    }
+
+    @Test
+    fun maxPointsIsLimitedTo20() {
+        assertEquals(20, OpenMeteoWeatherGridClient.MAX_POINTS)
+    }
 }

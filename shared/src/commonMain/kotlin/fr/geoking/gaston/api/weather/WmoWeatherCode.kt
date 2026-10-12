@@ -69,4 +69,9 @@ object WeatherPoiRawKeys {
     const val WEATHER_CODE = "weather_code"
     const val WMO_FAMILY = "wmo_family"
     const val SOURCE = "open_meteo"
+    const val PRECIPITATION_PROBABILITY = "precipitation_probability"
+    const val PRECIPITATION = "precipitation"
+    const val RAIN = "rain"
+    const val SHOWERS = "showers"
+    const val SNOW = "snow"
 }
