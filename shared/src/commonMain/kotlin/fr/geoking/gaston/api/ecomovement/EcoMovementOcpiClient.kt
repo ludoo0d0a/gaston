@@ -1,7 +1,6 @@
 package fr.geoking.gaston.api.ecomovement
 
 import fr.geoking.gaston.shared.network.NetworkException
-import fr.geoking.gaston.shared.network.RateLimitTracker
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -47,22 +46,9 @@ class EcoMovementOcpiClient(
     }
 
     private suspend inline fun <reified T> getOcpiAbsolute(url: String): T {
-        if (RateLimitTracker.isRateLimited(url)) {
-            throw NetworkException(429, RateLimitTracker.cooldownMessage(url))
-        }
-
         val response = client.get(url) {
             header(HttpHeaders.Authorization, "Token $apiKey")
             header(HttpHeaders.Accept, "application/json")
-        }
-        if (response.status.value == 429) {
-            val retryAfter = response.headers[HttpHeaders.RetryAfter]
-            val bodyPreview = runCatching { response.bodyAsText() }.getOrNull()
-            RateLimitTracker.recordRateLimit(url, retryAfter, responseBody = bodyPreview)
-            val sec = RateLimitTracker.parseCooldownSecondsFromText(bodyPreview)
-                ?: retryAfter?.trim()?.toLongOrNull()?.takeIf { it > 0 }
-                ?: RateLimitTracker.remainingCooldownSec(url)
-            throw NetworkException(429, "Eco-Movement OCPI rate limit (cooldown $sec s remaining)")
         }
         if (response.status.value != 200) {
             throw NetworkException(response.status.value, "Eco-Movement OCPI error: HTTP ${response.status.value}")

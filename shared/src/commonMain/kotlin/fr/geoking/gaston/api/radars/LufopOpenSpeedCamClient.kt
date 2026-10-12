@@ -5,7 +5,6 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.network.NetworkException
-import fr.geoking.gaston.shared.network.RateLimitTracker
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -130,11 +129,6 @@ class LufopOpenSpeedCamClient(
             }
         }
 
-        if (RateLimitTracker.isRateLimited(RATE_LIMIT_HOST)) {
-            mutex.withLock { cachedRadars }?.let { return it }
-            throw NetworkException(429, RateLimitTracker.cooldownMessage(RATE_LIMIT_HOST))
-        }
-
         val downloaded = fetchNear(latitude, longitude, fetchRadiusKm)
         // Never cache empty payloads (HTML challenge, quota, transient miss) — that blocked
         // all later retries for [CACHE_TTL_MS] with zero network calls.
@@ -227,36 +221,15 @@ class LufopOpenSpeedCamClient(
         mutex.withLock {
             lastNetworkCallMs = System.currentTimeMillis()
         }
-        val response = try {
-            client.get(baseUrl) {
-                header(HttpHeaders.UserAgent, "Gaston/1.0 (contact@geoking.fr)")
-                parameter("key", apiKey)
-                parameter("format", "json")
-                parameter("q", "$latitude,$longitude")
-                parameter("m", margin)
-                parameter("nbr", maxResults.coerceIn(1, 10_000))
-            }
-        } catch (e: NetworkException) {
-            if (e.httpCode == 429) {
-                val sec = RateLimitTracker.parseCooldownSecondsFromText(e.message) ?: 60L
-                RateLimitTracker.recordRateLimit(
-                    RATE_LIMIT_HOST,
-                    retryAfterHeader = sec.toString(),
-                    responseBody = e.message,
-                )
-            }
-            throw e
+        val response = client.get(baseUrl) {
+            header(HttpHeaders.UserAgent, "Gaston/1.0 (contact@geoking.fr)")
+            parameter("key", apiKey)
+            parameter("format", "json")
+            parameter("q", "$latitude,$longitude")
+            parameter("m", margin)
+            parameter("nbr", maxResults.coerceIn(1, 10_000))
         }
         val body = response.bodyAsText()
-        if (response.status.value == 429 || looksLikeQuotaBody(body)) {
-            val sec = RateLimitTracker.parseCooldownSecondsFromText(body) ?: 60L
-            RateLimitTracker.recordRateLimit(
-                RATE_LIMIT_HOST,
-                retryAfterHeader = sec.toString(),
-                responseBody = body,
-            )
-            throw NetworkException(429, "Lufop rate limit (cooldown $sec s remaining)")
-        }
         if (response.status.value !in 200..299) {
             throw NetworkException(response.status.value, "Lufop API fetch error: ${body.take(200)}")
         }

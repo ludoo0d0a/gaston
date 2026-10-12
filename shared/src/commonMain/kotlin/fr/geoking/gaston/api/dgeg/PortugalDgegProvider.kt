@@ -6,7 +6,6 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.poi.radiusKmFromMapViewport
-import fr.geoking.gaston.shared.logging.DebugLogStore
 import fr.geoking.gaston.shared.logging.log
 import kotlin.math.PI
 import kotlin.math.cos

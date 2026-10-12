@@ -10,11 +10,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import org.mapsforge.map.datastore.MapDataStore
 import org.mapsforge.map.reader.MapFile
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.contentLength
+import io.ktor.utils.io.readAvailable
+import org.koin.core.context.GlobalContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.URL
 
 data class DownloadProgress(
     val fileName: String,
@@ -156,7 +160,12 @@ object MapsforgePresetServers {
     }
 }
 
-class MapsforgeMapManager(private val context: Context) {
+class MapsforgeMapManager(
+    private val context: Context,
+    private val httpClient: HttpClient? = null,
+) {
+    private val client: HttpClient
+        get() = httpClient ?: GlobalContext.get().get()
 
     private val prefs = context.getSharedPreferences("mapsforge_map_prefs", Context.MODE_PRIVATE)
     private val mapsDir: File
@@ -249,35 +258,30 @@ class MapsforgeMapManager(private val context: Context) {
             Log.d("MapsforgeMapManager", "Starting download from $urlString to ${tempFile.absolutePath}")
             _downloadProgress.value = DownloadProgress(fileName, 0, -1)
 
-            val url = URL(urlString)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.connectTimeout = 15000
-            connection.readTimeout = 30000
-            connection.requestMethod = "GET"
-            connection.connect()
-
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                val err = "HTTP Error ${connection.responseCode}: ${connection.responseMessage}"
+            val response = client.get(urlString)
+            val code = response.status.value
+            if (code !in 200..299) {
+                val err = "HTTP Error $code: ${response.status.description}"
                 _downloadProgress.value = DownloadProgress(fileName, 0, -1, error = err)
                 return@withContext Result.failure(Exception(err))
             }
 
-            val totalBytes = connection.contentLengthLong
+            val totalBytes = response.contentLength() ?: -1L
             var bytesDownloaded = 0L
+            val channel = response.bodyAsChannel()
 
-            connection.inputStream.use { input ->
-                FileOutputStream(tempFile).use { output ->
-                    val buffer = ByteArray(8192)
-                    var read: Int
-                    while (input.read(buffer).also { read = it } != -1) {
-                        output.write(buffer, 0, read)
-                        bytesDownloaded += read
-                        _downloadProgress.value = DownloadProgress(
-                            fileName = fileName,
-                            bytesDownloaded = bytesDownloaded,
-                            totalBytes = totalBytes
-                        )
-                    }
+            FileOutputStream(tempFile).use { output ->
+                val buffer = ByteArray(64 * 1024)
+                while (!channel.isClosedForRead) {
+                    val read = channel.readAvailable(buffer, 0, buffer.size)
+                    if (read <= 0) break
+                    output.write(buffer, 0, read)
+                    bytesDownloaded += read
+                    _downloadProgress.value = DownloadProgress(
+                        fileName = fileName,
+                        bytesDownloaded = bytesDownloaded,
+                        totalBytes = totalBytes
+                    )
                 }
             }
 

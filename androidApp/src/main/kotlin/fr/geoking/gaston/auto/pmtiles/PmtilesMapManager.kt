@@ -10,12 +10,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentLength
+import io.ktor.utils.io.readAvailable
+import org.koin.core.context.GlobalContext
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.zip.ZipInputStream
 
 data class PmtilesServerMap(
@@ -148,8 +154,11 @@ object PmtilesPresetServers {
 
 class PmtilesMapManager(
     private val context: Context,
-    private val settingsManager: SettingsManager? = null
+    private val settingsManager: SettingsManager? = null,
+    private val httpClient: HttpClient? = null,
 ) {
+    private val client: HttpClient
+        get() = httpClient ?: GlobalContext.get().get()
     private val prefs = context.getSharedPreferences("pmtiles_map_prefs", Context.MODE_PRIVATE)
     private val pmtilesDir: File
         get() {
@@ -249,38 +258,32 @@ class PmtilesMapManager(
             Log.d("PmtilesMapManager", "Starting download from $urlString to ${tempDownload.absolutePath}")
             _downloadProgress.value = DownloadProgress(fileName, 0, -1)
 
-            val url = URL(urlString)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.instanceFollowRedirects = true
-            connection.connectTimeout = 30_000
-            connection.readTimeout = 120_000
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("User-Agent", "GastonAndroid/1.0 (pmtiles-download)")
-            connection.connect()
-
-            val code = connection.responseCode
+            val response = client.get(urlString) {
+                header(HttpHeaders.UserAgent, "GastonAndroid/1.0 (pmtiles-download)")
+            }
+            val code = response.status.value
             if (code !in 200..299) {
-                val err = "HTTP Error $code: ${connection.responseMessage}"
+                val err = "HTTP Error $code: ${response.status.description}"
                 _downloadProgress.value = DownloadProgress(fileName, 0, -1, error = err)
                 return@withContext Result.failure(Exception(err))
             }
 
-            val totalBytes = connection.contentLengthLong
+            val totalBytes = response.contentLength() ?: -1L
             var bytesDownloaded = 0L
+            val channel = response.bodyAsChannel()
 
-            connection.inputStream.use { input ->
-                FileOutputStream(tempDownload).use { output ->
-                    val buffer = ByteArray(64 * 1024)
-                    var read: Int
-                    while (input.read(buffer).also { read = it } != -1) {
-                        output.write(buffer, 0, read)
-                        bytesDownloaded += read
-                        _downloadProgress.value = DownloadProgress(
-                            fileName = fileName,
-                            bytesDownloaded = bytesDownloaded,
-                            totalBytes = totalBytes
-                        )
-                    }
+            FileOutputStream(tempDownload).use { output ->
+                val buffer = ByteArray(64 * 1024)
+                while (!channel.isClosedForRead) {
+                    val read = channel.readAvailable(buffer, 0, buffer.size)
+                    if (read <= 0) break
+                    output.write(buffer, 0, read)
+                    bytesDownloaded += read
+                    _downloadProgress.value = DownloadProgress(
+                        fileName = fileName,
+                        bytesDownloaded = bytesDownloaded,
+                        totalBytes = totalBytes
+                    )
                 }
             }
 

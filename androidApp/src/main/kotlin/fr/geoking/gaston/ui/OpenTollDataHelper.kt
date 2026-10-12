@@ -7,10 +7,13 @@ import fr.geoking.gaston.api.toll.OpenTollDataModel
 import fr.geoking.gaston.api.toll.OpenTollDataParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.contentLength
+import io.ktor.utils.io.readAvailable
 import java.io.File
 import java.io.FileOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
 
 /**
  * Known OpenTollData JSON filenames under TollPrice_DataBase/.
@@ -39,7 +42,10 @@ const val OPEN_TOLL_DATA_FILENAME = "toll_data.json"
  * Helper for OpenTollData: download French highway toll JSON(s), merge, save to app files dir.
  * Downloaded file is stored at [context.filesDir]/open_toll_data/[OPEN_TOLL_DATA_FILENAME].
  */
-class OpenTollDataHelper(private val context: Context) {
+class OpenTollDataHelper(
+    private val context: Context,
+    private val client: HttpClient,
+) {
 
     private fun tollDataDir(): File = File(context.filesDir, "open_toll_data")
 
@@ -88,37 +94,34 @@ class OpenTollDataHelper(private val context: Context) {
             var totalKnown: Long? = null
 
             for (filename in OPEN_TOLL_DATA_FILENAMES) {
-                val url = URL("$OPEN_TOLL_DATA_RAW_BASE/$filename")
-                val connection = url.openConnection() as HttpURLConnection
-                connection.connectTimeout = 15_000
-                connection.readTimeout = 120_000
-                connection.requestMethod = "GET"
-                connection.connect()
-                val code = connection.responseCode
+                val url = "$OPEN_TOLL_DATA_RAW_BASE/$filename"
+                val response = try {
+                    client.get(url)
+                } catch (e: Exception) {
+                    return@withContext Result.failure(e)
+                }
+                val code = response.status.value
                 if (code == 404) {
-                    connection.disconnect()
                     continue
                 }
                 if (code !in 200..299) {
-                    connection.disconnect()
                     return@withContext Result.failure(Exception("HTTP $code for $filename"))
                 }
-                val contentLength = connection.contentLengthLong.takeIf { it > 0 }
-                if (contentLength != null) {
+                val contentLength = response.contentLength()
+                if (contentLength != null && contentLength > 0) {
                     totalKnown = (totalKnown ?: 0L) + contentLength
                 }
-                val text = connection.inputStream.bufferedReader().use { reader ->
-                    val sb = StringBuilder()
-                    val buf = CharArray(16 * 1024)
-                    var n: Int
-                    while (reader.read(buf).also { n = it } != -1) {
-                        sb.append(buf, 0, n)
-                        bytesDownloaded += n
-                        onProgress(bytesDownloaded, totalKnown)
-                    }
-                    sb.toString()
+                val channel = response.bodyAsChannel()
+                val baos = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(16 * 1024)
+                while (!channel.isClosedForRead) {
+                    val read = channel.readAvailable(buffer, 0, buffer.size)
+                    if (read <= 0) break
+                    baos.write(buffer, 0, read)
+                    bytesDownloaded += read
+                    onProgress(bytesDownloaded, totalKnown)
                 }
-                connection.disconnect()
+                val text = baos.toString("UTF-8")
                 val parsed = OpenTollDataParser.parse(text)
                     ?: return@withContext Result.failure(Exception("Parse failed for $filename"))
                 models.add(parsed)
