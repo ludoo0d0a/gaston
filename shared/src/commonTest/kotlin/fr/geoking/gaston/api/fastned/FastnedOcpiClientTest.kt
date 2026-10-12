@@ -50,9 +50,9 @@ class FastnedOcpiClientTest {
         assertEquals("FN-UK-001", loc.id)
         assertEquals("Fastned Services M1 J1", loc.name)
         assertEquals("GB", loc.countryCode)
-        assertNotNull(loc.coordinates)
-        assertEquals("51.4985", loc.coordinates?.latitude)
-        assertEquals("-0.1234", loc.coordinates?.longitude)
+        val coordinates = assertNotNull(loc.coordinates)
+        assertEquals("51.4985", coordinates.latitude)
+        assertEquals("-0.1234", coordinates.longitude)
         assertEquals("Fastned", loc.operator?.name)
         assertEquals(2, loc.evses?.size)
     }
@@ -68,10 +68,9 @@ class FastnedOcpiClientTest {
         assertEquals("EVSE-1", firstEvse.uid)
         assertEquals("AVAILABLE", firstEvse.status)
 
-        val connector = firstEvse.connectors?.first()
-        assertNotNull(connector)
-        assertEquals("IEC_62196_T2_COMBO", connector?.standard)
-        assertEquals(150000, connector?.maxElectricPower)
+        val connector = assertNotNull(firstEvse.connectors?.first())
+        assertEquals("IEC_62196_T2_COMBO", connector.standard)
+        assertEquals(150000, connector.maxElectricPower)
     }
 
     @Test
@@ -82,10 +81,9 @@ class FastnedOcpiClientTest {
         val tariff = tariffs.first()
         assertEquals("FASTNED-T1", tariff.id)
         assertEquals("GBP", tariff.currency)
-        val priceComponent = tariff.elements?.firstOrNull()?.priceComponents?.firstOrNull()
-        assertNotNull(priceComponent)
-        assertEquals("ENERGY", priceComponent?.type)
-        assertEquals(0.49, priceComponent?.price)
+        val priceComponent = assertNotNull(tariff.elements?.firstOrNull()?.priceComponents?.firstOrNull())
+        assertEquals("ENERGY", priceComponent.type)
+        assertEquals(0.49, priceComponent.price)
     }
 
     @Test

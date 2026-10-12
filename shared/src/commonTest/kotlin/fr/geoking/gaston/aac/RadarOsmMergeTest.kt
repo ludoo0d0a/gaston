@@ -171,9 +171,8 @@ class RadarOsmEnricherTest {
         val out = enricher.enrichPois(listOf(lufop))
         assertEquals(1, out.size)
         assertTrue(RadarOsmEnricher.alreadyHasDirection(out[0]))
-        val bearing = DangerZoneTriangle.monitoredBearingDegrees(out[0])
-        assertNotNull(bearing)
-        assertEquals(0.0, bearing!!, 5.0)
+        val bearing = assertNotNull(DangerZoneTriangle.monitoredBearingDegrees(out[0]))
+        assertEquals(0.0, bearing, 5.0)
         assertNotNull(DangerZoneTriangle.latLngRingForRadarPoi(out[0]))
         Unit
     }

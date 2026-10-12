@@ -102,10 +102,10 @@ class GireveTest {
         assertEquals(22.0, poi.powerKw)
         assertEquals(2, poi.chargePointCount)
 
-        assertNotNull(poi.irveDetails)
-        assertEquals(1, poi.irveDetails?.availableConnectors)
-        assertEquals(2, poi.irveDetails?.totalConnectors)
-        assertEquals(setOf("FRFREE0001", "FRFREE0002"), poi.irveDetails?.pdcIds)
+        val irveDetails = assertNotNull(poi.irveDetails)
+        assertEquals(1, irveDetails.availableConnectors)
+        assertEquals(2, irveDetails.totalConnectors)
+        assertEquals(setOf("FRFREE0001", "FRFREE0002"), irveDetails.pdcIds)
         assertEquals("Gireve", poi.source)
     }
 

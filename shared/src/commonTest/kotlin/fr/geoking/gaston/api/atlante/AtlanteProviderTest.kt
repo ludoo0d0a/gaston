@@ -111,8 +111,8 @@ class AtlanteProviderTest {
         assertEquals(150.0, poi.powerKw) // 150000 W -> 150 kW
         assertEquals(2, poi.chargePointCount)
 
-        assertNotNull(poi.irveDetails)
-        assertEquals(setOf("combo_ccs", "type_2"), poi.irveDetails?.connectorTypes)
+        val irveDetails = assertNotNull(poi.irveDetails)
+        assertEquals(setOf("combo_ccs", "type_2"), irveDetails.connectorTypes)
     }
 
     @Test

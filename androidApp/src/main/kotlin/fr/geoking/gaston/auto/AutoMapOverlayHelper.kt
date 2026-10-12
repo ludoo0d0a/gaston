@@ -243,7 +243,8 @@ object AutoMapOverlayHelper {
         val vmaWidth = vmaText?.let { vmaPaint.measureText(it) } ?: 0f
         val textBlockWidth = maxOf(labelWidth, vmaWidth)
         val textBlockHeight = if (vmaText != null) 32f * density else 16f * density
-        val showDisk = speedLimitKmH != null && speedLimitKmH > 0
+        val speedLimitForDisk = speedLimitKmH?.takeIf { it > 0 }
+        val showDisk = speedLimitForDisk != null
         val contentWidth = textBlockWidth + (if (showDisk) pad + diskRadius * 2f else 0f)
         val contentHeight = maxOf(textBlockHeight, if (showDisk) diskRadius * 2f else 0f)
         val blockWidth = contentWidth + pad * 2
@@ -279,10 +280,10 @@ object AutoMapOverlayHelper {
             canvas.drawText(vmaText, textX, textTop + 28f * density, vmaPaint)
         }
 
-        if (showDisk && speedLimitKmH != null) {
+        if (speedLimitForDisk != null) {
             val cx = left + blockWidth - pad - diskRadius
             val cy = top + blockHeight / 2f
-            drawEuSpeedLimitDisk(canvas, cx, cy, diskRadius, speedLimitKmH, density)
+            drawEuSpeedLimitDisk(canvas, cx, cy, diskRadius, speedLimitForDisk, density)
         }
     }
 

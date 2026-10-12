@@ -190,8 +190,8 @@ class SemecourtSupermarketBrandMergeRealApiTests {
                 lastError = e
             }
         }
-        if (lastError != null) {
-            fail("Live fetch failed after $maxAttempts attempts: ${lastError!!.message}")
+        lastError?.let { error ->
+            fail("Live fetch failed after $maxAttempts attempts: ${error.message}")
         }
         return emptyList()
     }

@@ -12,6 +12,7 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class EcoMovementOcpiProviderTest {
@@ -60,9 +61,10 @@ class EcoMovementOcpiProviderTest {
         assertEquals("Close Location", poi.name)
         assertEquals(PoiCategory.Irve, poi.poiCategory)
         assertEquals(50.0, poi.powerKw)
-        assertTrue(poi.irveDetails?.connectorTypes?.contains("combo_ccs") == true)
-        assertEquals(1, poi.irveDetails?.availableConnectors)
-        assertEquals(2, poi.irveDetails?.totalConnectors)
+        val irveDetails = assertNotNull(poi.irveDetails)
+        assertTrue(irveDetails.connectorTypes.contains("combo_ccs"))
+        assertEquals(1, irveDetails.availableConnectors)
+        assertEquals(2, irveDetails.totalConnectors)
     }
 
     @Test

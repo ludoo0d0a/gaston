@@ -126,10 +126,13 @@ class AfdcAvailabilityClient(
     ): List<AfdcStation> = mutex.withLock {
         val cached = cache
         val now = nowMs()
-        val sameQuery = cached != null &&
+        if (cached != null &&
             haversineKm(cached.lat, cached.lon, latitude, longitude) < 0.5 &&
-            cached.radiusKm == radiusKm
-        if (sameQuery && now - cached!!.atMs < cacheTtlMs) return@withLock cached.stations
+            cached.radiusKm == radiusKm &&
+            now - cached.atMs < cacheTtlMs
+        ) {
+            return@withLock cached.stations
+        }
 
         val radiusMiles = (radiusKm.coerceIn(1, 500) / MILES_TO_KM).coerceAtLeast(1.0)
         val response = client.get(baseUrl) {

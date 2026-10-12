@@ -2,6 +2,7 @@ package fr.geoking.gaston.poi
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class PoiMergerTest {
@@ -279,9 +280,9 @@ class PoiMergerTest {
 
         val merged = PoiMerger.mergePois(listOf(p1, p2))
         assertEquals(1, merged.size)
-        val amenities = merged[0].amenities
-        assertTrue(amenities?.shop == true)
-        assertTrue(amenities?.toilets == true) // p2's true should win over p1's false as it's merged after or just because of ?: logic (wait, ?: keeps first non-null)
+        val amenities = assertNotNull(merged[0].amenities)
+        assertTrue(amenities.shop == true)
+        assertTrue(amenities.toilets == true) // p2's true should win over p1's false as it's merged after or just because of ?: logic (wait, ?: keeps first non-null)
         // Actually, PoiMerger.mergeAmenities uses: toilets = a.toilets ?: b.toilets
         // If a.toilets is false (not null), it keeps false.
         // Let's check my logic in mergeAmenities again.
@@ -652,9 +653,10 @@ class PoiMergerTest {
         assertEquals("57120005", result.refId)
         assertEquals(49.2458398, result.latitude, 1e-6, "Should prefer OSM latitude")
         assertEquals(6.1028324, result.longitude, 1e-6, "Should prefer OSM longitude")
-        assertTrue(result.source?.contains("DataGouv") == true, "Source should include DataGouv")
-        assertTrue(result.source?.contains("GasAPI") == true, "Source should include GasAPI")
-        assertTrue(result.source?.contains("OpenStreetMap") == true, "Source should include OpenStreetMap")
+        val source = assertNotNull(result.source)
+        assertTrue(source.contains("DataGouv"), "Source should include DataGouv")
+        assertTrue(source.contains("GasAPI"), "Source should include GasAPI")
+        assertTrue(source.contains("OpenStreetMap"), "Source should include OpenStreetMap")
         assertEquals(listOf("Gazole"), result.fuelPrices?.map { it.fuelName }, "Fuel prices should be preserved")
     }
 }

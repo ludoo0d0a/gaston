@@ -40,9 +40,9 @@ class CharGyUkClientTest {
         assertEquals("CHARGY-UK-001", loc.id)
         assertEquals("High Street Lamp Post #12", loc.name)
         assertEquals("London", loc.city)
-        assertNotNull(loc.coordinates)
-        assertEquals("51.5074", loc.coordinates?.latitude)
-        assertEquals("-0.1278", loc.coordinates?.longitude)
+        val coordinates = assertNotNull(loc.coordinates)
+        assertEquals("51.5074", coordinates.latitude)
+        assertEquals("-0.1278", coordinates.longitude)
         assertEquals(1, loc.evses?.size)
 
         val evse = loc.evses?.first()

@@ -78,7 +78,7 @@ object CacheManager {
             if (memory != null) {
                 byType += CacheStatRow(
                     label = "Images (memory)",
-                    sizeBytes = memory.size.toLong(),
+                    sizeBytes = memory.size,
                     itemCount = memory.keys.size,
                 )
             }
