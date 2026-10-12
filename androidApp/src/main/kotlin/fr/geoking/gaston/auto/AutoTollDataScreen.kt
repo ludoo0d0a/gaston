@@ -20,12 +20,15 @@ import kotlinx.coroutines.withContext
 /**
  * Android Auto screen to download OpenTollData (French highway toll) JSON. Shown from Settings.
  */
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+
 class AutoTollDataScreen(
     carContext: CarContext,
     private val settingsManager: SettingsManager
-) : Screen(carContext) {
+) : Screen(carContext), KoinComponent {
 
-    private val helper = OpenTollDataHelper(carContext.applicationContext)
+    private val helper: OpenTollDataHelper by inject()
 
     private var isDownloading: Boolean = false
     private var downloadBytes: Long = 0L

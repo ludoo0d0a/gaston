@@ -149,4 +149,45 @@ class ConnectivityManagerTest {
 
         job.cancel()
     }
+
+    @Test
+    fun testCountryChange_spilloverCellularTower_suppressesBorderCrossing() = runBlocking {
+        val settings = MockNetworkSettings()
+        settings.lastCountryCode = "FR"
+        settings.lastCountryName = "France"
+
+        val service = MockNetworkService()
+        service.updateStatus(NetworkStatus(countryCode = "FR", countryName = "France", locationCountryCode = "FR"))
+
+        val manager = ConnectivityManager(testScope, service, settings)
+
+        delay(100)
+
+        val crossingEvents = mutableListOf<BorderCrossingEvent>()
+        val subscribed = CompletableDeferred<Unit>()
+        val job = launch {
+            manager.borderCrossingEvents
+                .onSubscription { subscribed.complete(Unit) }
+                .collect {
+                    crossingEvents.add(it)
+                }
+        }
+        subscribed.await()
+
+        // Cellular network picked up Belgian tower ("BE"), but GPS location confirms device is still in "FR"
+        service.updateStatus(
+            NetworkStatus(
+                countryCode = "BE",
+                countryName = "Belgium",
+                telephonyCountryCode = "BE",
+                locationCountryCode = "FR"
+            )
+        )
+
+        delay(500)
+
+        assertEquals(0, crossingEvents.size, "Expected no crossing event during spillover, got ${crossingEvents.size}")
+
+        job.cancel()
+    }
 }

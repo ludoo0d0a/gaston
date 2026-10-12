@@ -99,6 +99,7 @@ class MainActivity : ComponentActivity() {
     private val pendingNavDestination = MutableStateFlow<NavDestination?>(null)
     private val pendingRememberParked = MutableStateFlow<RememberParkedRequest?>(null)
     private val pendingOpenRadarMap = MutableStateFlow<OpenRadarMapRequest?>(null)
+    private val pendingOpenNetworkInfo = MutableStateFlow(false)
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -124,6 +125,9 @@ class MainActivity : ComponentActivity() {
                     latitude = lat.takeUnless { it.isNaN() },
                     longitude = lon.takeUnless { it.isNaN() },
                 )
+            }
+            NetworkLocationIntents.ACTION_OPEN_NETWORK_INFO -> {
+                pendingOpenNetworkInfo.value = true
             }
             RadarMapIntents.ACTION_OPEN_RADAR_MAP -> {
                 val lat = intent.getDoubleExtra(RadarMapIntents.EXTRA_LATITUDE, Double.NaN)
@@ -258,6 +262,7 @@ class MainActivity : ComponentActivity() {
                     pendingNavDestination = pendingNavDestination,
                     pendingRememberParked = pendingRememberParked,
                     pendingOpenRadarMap = pendingOpenRadarMap,
+                    pendingOpenNetworkInfo = pendingOpenNetworkInfo,
                     isPlaystoreDistribution = isPlaystoreDistribution
                 )
             }
@@ -291,6 +296,7 @@ private fun MainActivityComposeRoot(
     pendingNavDestination: MutableStateFlow<NavDestination?>,
     pendingRememberParked: MutableStateFlow<RememberParkedRequest?>,
     pendingOpenRadarMap: MutableStateFlow<OpenRadarMapRequest?>,
+    pendingOpenNetworkInfo: MutableStateFlow<Boolean>,
     isPlaystoreDistribution: Boolean
 ) {
     android.util.Log.d("MainActivity", "Compose setContent block running")
@@ -393,6 +399,7 @@ private fun MainActivityComposeRoot(
             pendingNavDestinationFlow = pendingNavDestination,
             pendingRememberParkedFlow = pendingRememberParked,
             pendingOpenRadarMapFlow = pendingOpenRadarMap,
+            pendingOpenNetworkInfoFlow = pendingOpenNetworkInfo,
             isPlaystoreDistribution = isPlaystoreDistribution,
             hasLocationPermission = hasLocationPermission,
             onRequestLocationPermission = {
@@ -425,6 +432,7 @@ fun MainUI(
     pendingNavDestinationFlow: kotlinx.coroutines.flow.MutableStateFlow<NavDestination?>? = null,
     pendingRememberParkedFlow: kotlinx.coroutines.flow.MutableStateFlow<RememberParkedRequest?>? = null,
     pendingOpenRadarMapFlow: kotlinx.coroutines.flow.MutableStateFlow<OpenRadarMapRequest?>? = null,
+    pendingOpenNetworkInfoFlow: kotlinx.coroutines.flow.MutableStateFlow<Boolean>? = null,
     isPlaystoreDistribution: Boolean = false,
     hasLocationPermission: Boolean = false,
     onRequestLocationPermission: () -> Unit = {}
@@ -432,6 +440,7 @@ fun MainUI(
     val pendingNavFlow = pendingNavDestinationFlow ?: remember { MutableStateFlow<NavDestination?>(null) }
     val pendingRememberFlow = pendingRememberParkedFlow ?: remember { MutableStateFlow<RememberParkedRequest?>(null) }
     val pendingOpenRadarFlow = pendingOpenRadarMapFlow ?: remember { MutableStateFlow<OpenRadarMapRequest?>(null) }
+    val pendingOpenNetworkFlow = pendingOpenNetworkInfoFlow ?: remember { MutableStateFlow(false) }
     val mapDeps by mapDepsState.collectAsState()
     val errorLog by diagnostics.errorLog.collectAsState()
     var showSettings by remember { mutableStateOf(false) }
@@ -519,6 +528,15 @@ fun MainUI(
                 showFuelForecast = false
                 showMap = true
                 pendingOpenRadarFlow.value = null
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        pendingOpenNetworkFlow.collect { open ->
+            if (open) {
+                showNetworkDiagnostics = true
+                pendingOpenNetworkFlow.value = false
             }
         }
     }
