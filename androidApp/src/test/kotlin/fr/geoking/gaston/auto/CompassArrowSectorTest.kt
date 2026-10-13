@@ -1,8 +1,14 @@
 package fr.geoking.gaston.auto
 
+import fr.geoking.gaston.R
+import fr.geoking.gaston.auto.testutil.CarScreenTestHarness
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class CompassArrowSectorTest {
 
     @Test
@@ -34,8 +40,18 @@ class CompassArrowSectorTest {
 
     @Test
     fun drawableRes_mapsSector0And15() {
-        assertEquals(fr.geoking.gaston.R.drawable.ic_compass_arrow_00, compassArrowDrawableRes(0f))
-        assertEquals(fr.geoking.gaston.R.drawable.ic_compass_arrow_15, compassArrowDrawableRes(337.5f))
-        assertEquals(fr.geoking.gaston.R.drawable.ic_compass_arrow_04, compassArrowDrawableRes(90f))
+        assertEquals(R.drawable.ic_compass_arrow_00, compassArrowDrawableRes(0f))
+        assertEquals(R.drawable.ic_compass_arrow_15, compassArrowDrawableRes(337.5f))
+        assertEquals(R.drawable.ic_compass_arrow_04, compassArrowDrawableRes(90f))
+    }
+
+    @Test
+    fun actionCompassIcon_returnsNorthUpIconWhenIsNorthUp() {
+        val carContext = CarScreenTestHarness.newTestCarContext()
+        val northUpIcon = carContext.actionCompassIcon(bearingDegrees = 45f, isNorthUp = true)
+        assertNotNull(northUpIcon)
+
+        val rotatedIcon = carContext.actionCompassIcon(bearingDegrees = 45f, isNorthUp = false)
+        assertNotNull(rotatedIcon)
     }
 }

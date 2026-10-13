@@ -975,7 +975,12 @@ class CustomMapPoiScreen(
 
         actionStripBuilder.addAction(
             Action.Builder()
-                .setIcon(carContext.actionCompassIcon(mapCompassBearing()))
+                .setIcon(
+                    carContext.actionCompassIcon(
+                        bearingDegrees = mapCompassBearing(),
+                        isNorthUp = orientationMode == MapOrientationMode.NorthUp,
+                    )
+                )
                 .setOnClickListener { toggleMapOrientation() }
                 .build()
         )

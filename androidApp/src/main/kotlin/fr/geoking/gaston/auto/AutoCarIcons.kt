@@ -151,8 +151,12 @@ fun compassArrowDrawableRes(bearingDegrees: Float): Int = when (compassArrowSect
     else -> R.drawable.ic_compass_arrow_15
 }
 
-fun CarContext.actionCompassIcon(bearingDegrees: Float = 0f): CarIcon =
-    carIconUntinted(compassArrowDrawableRes(bearingDegrees))
+fun CarContext.actionCompassIcon(
+    bearingDegrees: Float = 0f,
+    isNorthUp: Boolean = false,
+): CarIcon = carIconUntinted(
+    if (isNorthUp) R.drawable.ic_compass_north_up else compassArrowDrawableRes(bearingDegrees)
+)
 
 fun CarContext.actionNavigateToIcon(): CarIcon = carIcon(R.drawable.ic_navigate_to, AutoCarIcons.primary)
 
