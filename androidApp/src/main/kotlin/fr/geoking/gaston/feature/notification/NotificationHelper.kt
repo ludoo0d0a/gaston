@@ -44,6 +44,8 @@ open class NotificationHelper(private val context: Context) {
         private const val REMEMBER_PARKED_DEDUPE_MS = 30 * 60 * 1000L
         /** Phone + AA temporary danger-zone HUNs auto-dismiss after this delay. */
         private const val TEMPORARY_NOTIFICATION_MS = 6_000L
+        /** Phone + AA border crossing HUNs auto-dismiss after this delay. */
+        private const val BORDER_CROSSING_TIMEOUT_MS = 10_000L
     }
 
     private val notificationManager =
@@ -125,6 +127,7 @@ open class NotificationHelper(private val context: Context) {
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setTimeoutAfter(BORDER_CROSSING_TIMEOUT_MS)
             .setContentIntent(phonePending)
             .extend(
                 CarAppExtender.Builder()
@@ -139,6 +142,7 @@ open class NotificationHelper(private val context: Context) {
         val notification = builder.build()
         notificationManager.notify(NOTIFICATION_ID_BORDER, notification)
         CarNotificationManager.from(context).notify(NOTIFICATION_ID_BORDER, builder)
+        scheduleAutoCancel(NOTIFICATION_ID_BORDER, BORDER_CROSSING_TIMEOUT_MS)
     }
 
     /**
