@@ -19,4 +19,13 @@ class NotificationHelperTest {
         helper.showUpdateAvailableCarNotification()
         assertNotNull(helper)
     }
+
+    @Test
+    fun testShowBorderCrossingNotificationDoesNotCrash() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val helper = NotificationHelper(context)
+        helper.showBorderCrossingNotification("Luxembourg", requiresVignette = false)
+        helper.showBorderCrossingNotification("Switzerland", requiresVignette = true)
+        assertNotNull(helper)
+    }
 }
