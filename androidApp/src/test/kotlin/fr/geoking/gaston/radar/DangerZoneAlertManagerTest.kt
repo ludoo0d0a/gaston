@@ -32,15 +32,17 @@ class DangerZoneAlertManagerTest {
             okBeepsCount++
         }
 
-        override fun playOverSpeedBeepsAndSpeak(speedLimitKmH: Int?) {
+        override fun playOverSpeedBeepsAndSpeak(speedLimitKmH: Int?, isDevMode: Boolean) {
             overSpeedCount++
             lastSpokenSpeedLimit = speedLimitKmH
-            spokenPhrases.add(DangerZoneAlertCopy.frZoneEntry(speedLimitKmH))
+            val base = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH)
+            spokenPhrases.add(if (isDevMode) "[Gaston] $base" else base)
         }
 
-        override fun speakDangerZone(speedLimitKmH: Int?) {
+        override fun speakDangerZone(speedLimitKmH: Int?, isDevMode: Boolean) {
             lastSpokenSpeedLimit = speedLimitKmH
-            spokenPhrases.add(DangerZoneAlertCopy.frZoneEntry(speedLimitKmH))
+            val base = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH)
+            spokenPhrases.add(if (isDevMode) "[Gaston] $base" else base)
         }
 
         override fun shutdown() {}
@@ -69,27 +71,33 @@ class DangerZoneAlertManagerTest {
         var lastEntryLon: Double? = null
         var lastNearLat: Double? = null
         var lastNearLon: Double? = null
+        var lastEntryIsDevMode: Boolean? = null
+        var lastNearIsDevMode: Boolean? = null
 
         override fun showDangerZoneNotification(
             speedLimitKmH: Int?,
             latitude: Double?,
             longitude: Double?,
+            isDevMode: Boolean,
         ) {
             entryNotificationCount++
             lastEntrySpeedLimit = speedLimitKmH
             lastEntryLat = latitude
             lastEntryLon = longitude
+            lastEntryIsDevMode = isDevMode
         }
 
         override fun showNearRadarNotification(
             speedLimitKmH: Int?,
             latitude: Double?,
             longitude: Double?,
+            isDevMode: Boolean,
         ) {
             nearNotificationCount++
             lastNearSpeedLimit = speedLimitKmH
             lastNearLat = latitude
             lastNearLon = longitude
+            lastNearIsDevMode = isDevMode
         }
     }
 
@@ -122,6 +130,64 @@ class DangerZoneAlertManagerTest {
         kotlin.test.assertEquals(48.8566, mockNotification.lastEntryLat)
         kotlin.test.assertEquals(2.3522, mockNotification.lastEntryLon)
         kotlin.test.assertEquals(0, mockNotification.nearNotificationCount)
+    }
+
+    @Test
+    fun prefixesAlertsWithGastonWhenDeveloperModeIsOn() {
+        settingsManager.saveSettings(settingsManager.settings.value.copy(devModeOverride = true))
+        val context = RuntimeEnvironment.getApplication()
+        val mockNotification = MockNotificationHelper(context)
+        val manager = DangerZoneAlertManager(settingsManager, audioNotifier, mockNotification)
+
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "z-dev",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            speedLimitKmH = 110,
+            source = "test",
+            roadClassOverride = RoadNetworkClass.Urban,
+        )
+        val loc = Location("test").apply {
+            latitude = 48.8566 + 0.0018
+            longitude = 2.3522
+            bearing = 180f
+            speed = 10f
+            time = System.currentTimeMillis()
+        }
+        manager.evaluateAndAlert(loc, listOf(zone))
+
+        assertTrue(audioNotifier.spokenPhrases.isNotEmpty())
+        assertTrue(audioNotifier.spokenPhrases.first().startsWith("[Gaston] "))
+        assertEquals(true, mockNotification.lastEntryIsDevMode)
+    }
+
+    @Test
+    fun doesNotPrefixAlertsWithGastonWhenDeveloperModeIsOff() {
+        settingsManager.saveSettings(settingsManager.settings.value.copy(devModeOverride = false))
+        val context = RuntimeEnvironment.getApplication()
+        val mockNotification = MockNotificationHelper(context)
+        val manager = DangerZoneAlertManager(settingsManager, audioNotifier, mockNotification)
+
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "z-nodev",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            speedLimitKmH = 110,
+            source = "test",
+            roadClassOverride = RoadNetworkClass.Urban,
+        )
+        val loc = Location("test").apply {
+            latitude = 48.8566 + 0.0018
+            longitude = 2.3522
+            bearing = 180f
+            speed = 10f
+            time = System.currentTimeMillis()
+        }
+        manager.evaluateAndAlert(loc, listOf(zone))
+
+        assertTrue(audioNotifier.spokenPhrases.isNotEmpty())
+        assertFalse(audioNotifier.spokenPhrases.first().startsWith("[Gaston] "))
+        assertEquals(false, mockNotification.lastEntryIsDevMode)
     }
 
     @Test
