@@ -88,6 +88,7 @@ import fr.geoking.gaston.ui.components.*
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import fr.geoking.gaston.ui.ColorHelper
 import fr.geoking.gaston.ui.map.AddPoiSheet
+import fr.geoking.gaston.ui.map.InspectableGoogleMap
 import fr.geoking.gaston.ui.map.PoiDetailCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
@@ -555,7 +556,7 @@ fun MapScreen(
                         MapBaseView.Terrain -> MapType.TERRAIN
                     }
 
-                    GoogleMap(
+                    InspectableGoogleMap(
                         modifier = Modifier.fillMaxSize(),
                         cameraPositionState = cameraPositionState,
                         properties = MapProperties(
@@ -573,7 +574,7 @@ fun MapScreen(
                             val projection = cameraPositionState.projection
                             if (projection == null) {
                                 selectedPoi = null
-                                return@GoogleMap
+                                return@InspectableGoogleMap
                             }
                             val screenPoint = projection.toScreenLocation(latLng)
                             val nearestPoi = PhoneMapPoiHitTest.findNearestPoiAtScreenPoint(

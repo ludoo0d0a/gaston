@@ -68,7 +68,10 @@ Or in Android Studio: **Gradle** → **androidApp** → **Tasks** → **android*
 | App package name | `fr.geoking.gaston` |
 | Google Cloud Console | https://console.cloud.google.com/ |
 | Enable Maps SDK for Android | https://console.cloud.google.com/apis/library/maps-android-backend.googleapis.com |
+| Enable Maps Static API (screenshots / Preview) | https://console.cloud.google.com/apis/library/static-maps-backend.googleapis.com |
 | Create API Key | https://console.cloud.google.com/apis/credentials |
+
+Store / website map screenshots use the **Maps Static API** (same `GOOGLE_MAPS_KEY`) under Robolectric. If Static API is disabled or the machine is offline, regeneration falls back to `androidApp/src/main/assets/marketing/map-paris-static.png` (`GASTON_STATIC_MAP_OFFLINE=1` forces the asset).
 
 ---
 

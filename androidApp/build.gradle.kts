@@ -103,8 +103,10 @@ configure<ApplicationExtension> {
         val gastonApiBaseUrl = sanitizeBuildConfigString(
             prop("GASTON_API_BASE_URL", "https://gaston-api.ludovic-valente.workers.dev")
         )
-        val mapsApiKey = prop("GOOGLE_MAPS_KEY")
+        val mapsApiKey = sanitizeBuildConfigString(prop("GOOGLE_MAPS_KEY"))
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
+        // Exposed for Maps Static API placeholders (Preview / Robolectric screenshots).
+        buildConfigField("String", "GOOGLE_MAPS_KEY", "\"$mapsApiKey\"")
 
         // AdMob (Play Store): defaults to Google-provided test IDs when not configured.
         // Keep these out of git by putting them in local.properties or CI env.

@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -47,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.core.content.ContextCompat
@@ -63,11 +66,17 @@ import fr.geoking.gaston.ui.MAP_IRVE_POWER_OPTIONS
 import fr.geoking.gaston.ui.components.FuelFilterChip
 import fr.geoking.gaston.ui.components.PowerFilterChip
 import fr.geoking.gaston.ui.dashboard.GastonTheme
+import fr.geoking.gaston.ui.map.InspectableGoogleMap
 import fr.geoking.gaston.ui.map.PoiDetailCard
 import fr.geoking.gaston.ui.map.PoiDetailsFullscreenDialog
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
+import fr.geoking.gaston.ui.map.STATION_OVERLAY_CARD_HEIGHT
+import fr.geoking.gaston.ui.map.StaticGoogleMapImage
 import fr.geoking.gaston.ui.map.preview.MapMarkerPreviewCanvas
 import fr.geoking.gaston.ui.map.preview.PreviewPoiSamples
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.rememberCameraPositionState
 
 private val AutoListBackground = Color(0xFF0F0F10)
 private val AutoListSurface = Color(0xFF1C1C1E)
@@ -75,7 +84,10 @@ private val AutoListText = Color(0xFFF2F2F7)
 private val AutoListMuted = Color(0xFF8E8E93)
 
 @Composable
-fun MarketingMapScreen() {
+fun MarketingMapScreen(
+    /** Preloaded Maps Static image (Robolectric); null → Coil / bundled asset. */
+    staticMapBitmap: android.graphics.Bitmap? = null,
+) {
     GastonTheme(themeMode = ThemeMode.Light) {
         Scaffold(
             topBar = {
@@ -109,13 +121,43 @@ fun MarketingMapScreen() {
                     .padding(padding)
                     .fillMaxSize(),
             ) {
-                MapMarkerPreviewCanvas(
-                    markerSpecs = PreviewPoiSamples.marketingMapMarkerSpecs(),
+                // Matches PreviewPoiSamples marketing pin cluster (not République card coords).
+                val mapCenter = LatLng(48.86735, 2.35300)
+                val mapZoom = 16f
+                val cameraPositionState = rememberCameraPositionState {
+                    position = CameraPosition.fromLatLngZoom(mapCenter, mapZoom)
+                }
+                // Inspection mode: Static Maps tiles + Gaston pins; device: GoogleMap.
+                InspectableGoogleMap(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
+                    cameraPositionState = cameraPositionState,
+                    staticMapBitmap = staticMapBitmap,
+                    placeholder = { mapModifier ->
+                        Box(modifier = mapModifier.fillMaxSize()) {
+                            StaticGoogleMapImage(
+                                center = mapCenter,
+                                zoom = mapZoom,
+                                modifier = Modifier.fillMaxSize(),
+                                preloadedBitmap = staticMapBitmap,
+                            )
+                            MapMarkerPreviewCanvas(
+                                markerSpecs = PreviewPoiSamples.marketingMapMarkerSpecs(),
+                                modifier = Modifier.fillMaxSize(),
+                                drawBackground = false,
+                                viewportCenter = mapCenter,
+                                viewportZoom = mapZoom,
+                            )
+                        }
+                    },
                 )
                 val cards = PreviewPoiSamples.marketingMapCarouselPois()
+                // Same fixed height as PoiOverlayHost — without it, cards expand to the
+                // Column's max height and starve MapMarkerPreviewCanvas (weight 1f → 0).
+                // Width is tighter than production (−32) so the card fits inside
+                // MarketingScreenshotFrame's ~86% chassis without clipping prices.
+                val cardWidth = (LocalConfiguration.current.screenWidthDp - 72).dp
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -129,6 +171,9 @@ fun MarketingMapScreen() {
                         val highlightFuels = if (poi.isElectric) emptySet() else setOf("gazole")
                         val highlightPower = if (poi.isElectric) setOf(200, 300) else emptySet()
                         PoiDetailCard(
+                            modifier = Modifier
+                                .width(cardWidth)
+                                .height(STATION_OVERLAY_CARD_HEIGHT),
                             poi = poi,
                             highlightedFuelIds = highlightFuels,
                             highlightedPowerLevels = highlightPower,

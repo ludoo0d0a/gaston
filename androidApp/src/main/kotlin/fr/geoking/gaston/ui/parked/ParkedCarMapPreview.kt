@@ -16,11 +16,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
+import fr.geoking.gaston.ui.map.InspectableGoogleMap
 
 /**
  * Compact Google Map showing the retained / parked vehicle pin.
@@ -66,7 +66,7 @@ fun ParkedCarMapPreview(
             }
             .testTag("parked_car_map"),
     ) {
-        GoogleMap(
+        InspectableGoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             uiSettings = MapUiSettings(

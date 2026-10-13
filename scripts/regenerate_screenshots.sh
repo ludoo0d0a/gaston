@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Regenerate Play Store / website phone screenshots from real Compose UI (Paparazzi).
+# Regenerate Play Store / website phone screenshots from real Compose UI (Robolectric).
+# Map shot uses Maps Static API when GOOGLE_MAPS_KEY is set (network); otherwise the
+# bundled asset androidApp/src/main/assets/marketing/map-paris-static.png.
+# Force offline: GASTON_STATIC_MAP_OFFLINE=1 ./scripts/regenerate_screenshots.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

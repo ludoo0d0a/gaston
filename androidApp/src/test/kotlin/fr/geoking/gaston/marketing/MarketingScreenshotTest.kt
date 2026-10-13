@@ -4,8 +4,12 @@ import android.graphics.Bitmap
 import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.core.view.drawToBitmap
+import com.google.android.gms.maps.model.LatLng
+import fr.geoking.gaston.ui.map.loadStaticGoogleMapBitmap
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,6 +21,9 @@ import java.io.FileOutputStream
 
 /**
  * Exports 1080×1920 PNGs (brand backdrop + rounded phone chassis) into playstore-assets/ and website/.
+ *
+ * Forces [LocalInspectionMode] so [fr.geoking.gaston.ui.map.InspectableGoogleMap] skips the Maps SDK.
+ * Map screenshot preloads a Maps Static API image (network) with bundled asset fallback.
  *
  * Run: ./scripts/regenerate_screenshots.sh
  */
@@ -41,7 +48,9 @@ class MarketingScreenshotTest {
     private fun export(name: String, content: @Composable () -> Unit) {
         composeRule.mainClock.autoAdvance = true
         composeRule.setContent {
-            MarketingScreenshotFrame { content() }
+            CompositionLocalProvider(LocalInspectionMode provides true) {
+                MarketingScreenshotFrame { content() }
+            }
         }
         composeRule.waitForIdle()
         Thread.sleep(1200)
@@ -67,7 +76,14 @@ class MarketingScreenshotTest {
 
     @Test
     fun screenshot_1_map() {
-        export("screenshot-1-map.png") { MarketingMapScreen() }
+        // Prefer live Static Maps tiles; falls back to assets/marketing/map-paris-static.png.
+        val staticMap = loadStaticGoogleMapBitmap(
+            context = composeRule.activity,
+            center = LatLng(48.86735, 2.35300),
+            zoom = 16f,
+            allowNetwork = System.getenv("GASTON_STATIC_MAP_OFFLINE") != "1",
+        )
+        export("screenshot-1-map.png") { MarketingMapScreen(staticMapBitmap = staticMap) }
     }
 
     @Test
