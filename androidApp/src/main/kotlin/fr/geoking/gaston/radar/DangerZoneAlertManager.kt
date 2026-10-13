@@ -51,6 +51,7 @@ class DangerZoneAlertManager(
             return
         }
         val debugLogs = settings.debugLoggingEnabled || settings.debugBarEnabled
+        val isDevMode = settings.isDevMode
 
         val curLat = location.latitude
         val curLon = location.longitude
@@ -101,11 +102,12 @@ class DangerZoneAlertManager(
                 if (zone.id !in alertedZoneIds) {
                     alertedZoneIds.add(zone.id)
                     logDetection(RadarDetectionLog.Event.ENTRY, zone, eval, debugLogs)
-                    playAlertAudio(eval.isOverspeed, eval.speedLimitKmH)
+                    playAlertAudio(eval.isOverspeed, eval.speedLimitKmH, isDevMode)
                     notificationHelper?.showDangerZoneNotification(
                         eval.speedLimitKmH,
                         latitude = zone.centerLatitude,
                         longitude = zone.centerLongitude,
+                        isDevMode = isDevMode,
                     )
                     maybeSpeakSafetyTip(location.time)
                 }
@@ -115,11 +117,12 @@ class DangerZoneAlertManager(
                 ) {
                     nearAlertedZoneIds.add(zone.id)
                     logDetection(RadarDetectionLog.Event.NEAR, zone, eval, debugLogs)
-                    playAlertAudio(eval.isOverspeed, eval.speedLimitKmH)
+                    playAlertAudio(eval.isOverspeed, eval.speedLimitKmH, isDevMode)
                     notificationHelper?.showNearRadarNotification(
                         eval.speedLimitKmH,
                         latitude = zone.centerLatitude,
                         longitude = zone.centerLongitude,
+                        isDevMode = isDevMode,
                     )
                 }
             } else {
@@ -155,6 +158,7 @@ class DangerZoneAlertManager(
     fun triggerTestAlert(speedLimitKmH: Int? = TEST_ALERT_SPEED_LIMIT_KMH) {
         val settings = settingsManager.settings.value
         val debugLogs = settings.debugLoggingEnabled || settings.debugBarEnabled
+        val isDevMode = settings.isDevMode
         RadarDetectionLog.log(
             event = RadarDetectionLog.Event.TEST,
             zoneId = "test",
@@ -169,14 +173,14 @@ class DangerZoneAlertManager(
             source = "dev",
             enabled = debugLogs,
         )
-        playAlertAudio(isOverspeed = false, speedLimitKmH = speedLimitKmH)
+        playAlertAudio(isOverspeed = false, speedLimitKmH = speedLimitKmH, isDevMode = isDevMode)
         hudStore.set(
             DangerZoneHudState(
                 active = true,
                 speedLimitKmH = speedLimitKmH,
             ),
         )
-        notificationHelper?.showDangerZoneNotification(speedLimitKmH)
+        notificationHelper?.showDangerZoneNotification(speedLimitKmH, isDevMode = isDevMode)
     }
 
     private fun logDetection(
@@ -206,12 +210,12 @@ class DangerZoneAlertManager(
         hudStore.clear()
     }
 
-    private fun playAlertAudio(isOverspeed: Boolean, speedLimitKmH: Int?) {
+    private fun playAlertAudio(isOverspeed: Boolean, speedLimitKmH: Int?, isDevMode: Boolean) {
         if (isOverspeed) {
-            audioNotifier.playOverSpeedBeepsAndSpeak(speedLimitKmH)
+            audioNotifier.playOverSpeedBeepsAndSpeak(speedLimitKmH, isDevMode)
         } else {
             audioNotifier.playOkSpeedBeeps()
-            audioNotifier.speakDangerZone(speedLimitKmH)
+            audioNotifier.speakDangerZone(speedLimitKmH, isDevMode)
         }
     }
 

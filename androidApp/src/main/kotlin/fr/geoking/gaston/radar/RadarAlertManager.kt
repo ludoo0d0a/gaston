@@ -32,6 +32,7 @@ class RadarAlertManager(
             _hudState.value = DangerZoneHudState()
             return
         }
+        val isDevMode = settings.isDevMode
 
         val curLat = location.latitude
         val curLon = location.longitude
@@ -85,15 +86,16 @@ class RadarAlertManager(
                 if (radar.id !in alertedRadarIds) {
                     alertedRadarIds.add(radar.id)
                     if (eval.isOverspeed) {
-                        audioNotifier.playOverSpeedBeepsAndSpeak(eval.speedLimitKmH)
+                        audioNotifier.playOverSpeedBeepsAndSpeak(eval.speedLimitKmH, isDevMode)
                     } else {
                         audioNotifier.playOkSpeedBeeps()
-                        audioNotifier.speakDangerZone(eval.speedLimitKmH)
+                        audioNotifier.speakDangerZone(eval.speedLimitKmH, isDevMode)
                     }
                     notificationHelper?.showDangerZoneNotification(
                         eval.speedLimitKmH,
                         latitude = radar.latitude,
                         longitude = radar.longitude,
+                        isDevMode = isDevMode,
                     )
                 }
             } else {

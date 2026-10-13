@@ -217,9 +217,10 @@ data class AppSettings(
     val lastOperatorName: String? = null,
     val lastIsConnected: Boolean = false,
     val lastIsRoaming: Boolean = false,
+    val devModeOverride: Boolean? = null,
 ) {
     val hasPremiumFeatures: Boolean get() = isPremium || devSimulatePremium
-    val isDevMode: Boolean get() = BuildConfig.DEBUG_DEV || devSimulatePremium || devRawDetail || debugBarEnabled
+    val isDevMode: Boolean get() = devModeOverride ?: (BuildConfig.DEBUG_DEV || devSimulatePremium || devRawDetail || debugBarEnabled)
 }
 
 open class SettingsManager(

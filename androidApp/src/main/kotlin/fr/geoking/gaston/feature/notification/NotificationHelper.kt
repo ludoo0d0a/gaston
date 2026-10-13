@@ -159,12 +159,14 @@ open class NotificationHelper(private val context: Context) {
         speedLimitKmH: Int?,
         latitude: Double? = null,
         longitude: Double? = null,
+        isDevMode: Boolean = false,
     ) {
         if (!canPostNotifications()) return
         val dedupeKey = "entry-${speedLimitKmH ?: 0}"
         if (shouldSuppressDuplicate("danger_zone", dedupeKey)) return
 
-        val title = context.getString(R.string.notification_danger_zone_title)
+        val baseTitle = context.getString(R.string.notification_danger_zone_title)
+        val title = if (isDevMode) "[Gaston] $baseTitle" else baseTitle
         val message = if (speedLimitKmH != null && speedLimitKmH > 0) {
             context.getString(R.string.notification_danger_zone_message_speed, speedLimitKmH)
         } else {
@@ -190,12 +192,14 @@ open class NotificationHelper(private val context: Context) {
         speedLimitKmH: Int?,
         latitude: Double? = null,
         longitude: Double? = null,
+        isDevMode: Boolean = false,
     ) {
         if (!canPostNotifications()) return
         val dedupeKey = "near-${speedLimitKmH ?: 0}"
         if (shouldSuppressDuplicate("near_radar", dedupeKey)) return
 
-        val title = context.getString(R.string.notification_near_radar_title)
+        val baseTitle = context.getString(R.string.notification_near_radar_title)
+        val title = if (isDevMode) "[Gaston] $baseTitle" else baseTitle
         val message = if (speedLimitKmH != null && speedLimitKmH > 0) {
             context.getString(R.string.notification_near_radar_message, speedLimitKmH)
         } else {
