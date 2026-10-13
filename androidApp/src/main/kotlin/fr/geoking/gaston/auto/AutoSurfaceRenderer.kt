@@ -769,6 +769,11 @@ class AutoSurfaceRenderer(
             isFailed -> context.getString(fr.geoking.gaston.R.string.tile_status_failed)
             else -> context.getString(fr.geoking.gaston.R.string.tile_status_not_requested)
         }
+        val bearing = mapBearingDegrees
+        if (bearing != 0f) {
+            canvas.save()
+            canvas.rotate(bearing, drawX + 10f, drawY + 25f)
+        }
         canvas.drawText("Z:$z X:$x Y:$y", drawX + 10f, drawY + 25f, textPaint)
         canvas.drawText(
             context.getString(fr.geoking.gaston.R.string.tile_status_label, statusText),
@@ -776,6 +781,9 @@ class AutoSurfaceRenderer(
             drawY + 45f,
             textPaint
         )
+        if (bearing != 0f) {
+            canvas.restore()
+        }
     }
 
     private fun drawTilesInto(
@@ -835,12 +843,22 @@ class AutoSurfaceRenderer(
 
                     if (retries > 0) {
                         canvas.drawRect(drawX, drawY, drawX + TILE_SIZE, drawY + TILE_SIZE, backgroundPaint)
+                        val textX = drawX + TILE_SIZE / 2f
+                        val textY = drawY + TILE_SIZE / 2f + debugTextPaint.textSize / 2f
+                        val bearing = mapBearingDegrees
+                        if (bearing != 0f) {
+                            canvas.save()
+                            canvas.rotate(bearing, textX, textY)
+                        }
                         canvas.drawText(
                             "loading $retries",
-                            drawX + TILE_SIZE / 2f,
-                            drawY + TILE_SIZE / 2f + debugTextPaint.textSize / 2f,
+                            textX,
+                            textY,
                             debugTextPaint
                         )
+                        if (bearing != 0f) {
+                            canvas.restore()
+                        }
 
                         if (mapTileDebugEnabled) {
                             drawTileDebugGrid(canvas, drawX, drawY, x, y, zoom, key, isLoaded = false)

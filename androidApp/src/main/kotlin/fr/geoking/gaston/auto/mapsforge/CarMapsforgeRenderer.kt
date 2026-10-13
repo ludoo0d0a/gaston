@@ -810,6 +810,11 @@ class CarMapsforgeRenderer(
             isFailed -> context.getString(R.string.tile_status_failed)
             else -> context.getString(R.string.tile_status_not_requested)
         }
+        val bearing = mapBearingDegrees
+        if (bearing != 0f) {
+            canvas.save()
+            canvas.rotate(bearing, drawX + 10f, drawY + 25f)
+        }
         canvas.drawText("MF Z:$z X:$x Y:$y", drawX + 10f, drawY + 25f, textPaint)
         canvas.drawText(
             context.getString(R.string.tile_status_label, statusText),
@@ -817,6 +822,9 @@ class CarMapsforgeRenderer(
             drawY + 45f,
             textPaint
         )
+        if (bearing != 0f) {
+            canvas.restore()
+        }
     }
 
     private fun drawTilesInto(
