@@ -28,12 +28,17 @@ import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.mapsforge.core.model.Tile
 import org.mapsforge.map.android.graphics.AndroidGraphicFactory
 import org.mapsforge.map.datastore.MapDataStore
-import org.mapsforge.map.android.rendertheme.AssetsRenderTheme
+import org.mapsforge.core.graphics.Filter
+import org.mapsforge.core.mapelements.MapElementContainer
+import org.mapsforge.core.mapelements.WayTextContainer
+import org.mapsforge.core.model.Point
 import org.mapsforge.map.layer.cache.InMemoryTileCache
+import org.mapsforge.map.layer.labels.TileBasedLabelStore
 import org.mapsforge.map.layer.cache.TileCache
 import org.mapsforge.map.layer.renderer.DatabaseRenderer
 import org.mapsforge.map.layer.renderer.RendererJob
 import org.mapsforge.map.model.DisplayModel
+import org.mapsforge.map.rendertheme.InternalRenderTheme
 import org.mapsforge.map.rendertheme.XmlRenderTheme
 import org.mapsforge.map.rendertheme.rule.RenderThemeFuture
 import io.ktor.client.HttpClient
@@ -148,14 +153,16 @@ class CarMapsforgeRenderer(
 
     private var activeMapDataStore: MapDataStore? = null
     private var databaseRenderer: DatabaseRenderer? = null
+    /** Labels are kept out of tile bitmaps so they can be drawn upright over the rotated basemap. */
+    @Volatile private var labelStore: TileBasedLabelStore? = null
+    private var labelCacheKey: String? = null
+    private var labelCacheVersion: Int = -1
+    private var labelCache: List<MapElementContainer> = emptyList()
+    private val identityMatrix by lazy { AndroidGraphicFactory.INSTANCE.createMatrix() }
     private var mapsforgeTileCache: TileCache? = null
-    private val renderTheme: XmlRenderTheme by lazy {
-        try {
-            AssetsRenderTheme(context.assets, "", "rendertheme/default.xml")
-        } catch (_: Exception) {
-            AssetsRenderTheme(context.assets, "rendertheme/", "default.xml")
-        }
-    }
+    private val renderTheme: XmlRenderTheme = InternalRenderTheme.DEFAULT
+    /** Parsed once per map data store; RenderThemeFuture is expensive to rebuild per tile. */
+    @Volatile private var themeFuture: RenderThemeFuture? = null
     private val displayModel = DisplayModel()
 
     /** Composed basemap framebuffer. */
@@ -218,6 +225,7 @@ class CarMapsforgeRenderer(
         private val NAVIGATION_BLUE = Color.parseColor("#4285F4")
         private const val MIN_DRAW_INTERVAL_MS = 33L
         const val TILE_SIZE = 512
+        private const val LABEL_STORE_TILES = 256
         const val POI_MARKER_WIDTH_PX = 96
         private const val TILE_CACHE_MAX_BYTES = 24 * 1024 * 1024
 
@@ -272,8 +280,17 @@ class CarMapsforgeRenderer(
         reloadMapsforgeDataStore()
     }
 
+    private fun obtainThemeFuture(graphicFactory: org.mapsforge.core.graphics.GraphicFactory): RenderThemeFuture =
+        synchronized(this) {
+            themeFuture ?: RenderThemeFuture(graphicFactory, renderTheme, displayModel).also {
+                it.run()
+                themeFuture = it
+            }
+        }
+
     fun reloadMapsforgeDataStore() {
         try {
+            themeFuture = null
             activeMapDataStore?.close()
             mapsforgeTileCache?.destroy()
             activeMapDataStore = mapManager.createMapDataStore()
@@ -282,12 +299,16 @@ class CarMapsforgeRenderer(
             if (ds != null && graphicFactory != null) {
                 val tileCache = InMemoryTileCache(64)
                 mapsforgeTileCache = tileCache
+                val store = TileBasedLabelStore(LABEL_STORE_TILES)
+                labelStore?.destroy()
+                labelStore = store
+                labelCacheKey = null
                 databaseRenderer = DatabaseRenderer(
                     ds,
                     graphicFactory,
                     tileCache,
-                    null,
-                    true,
+                    store,
+                    false,
                     false,
                     null
                 )
@@ -317,6 +338,8 @@ class CarMapsforgeRenderer(
         executor.shutdownNow()
         try { drawThread.join(500) } catch (_: Exception) {}
         try { activeMapDataStore?.close() } catch (_: Exception) {}
+        try { labelStore?.destroy() } catch (_: Exception) {}
+        labelStore = null
         try { mapsforgeTileCache?.destroy() } catch (_: Exception) {}
         recycleBasemap()
     }
@@ -515,6 +538,17 @@ class CarMapsforgeRenderer(
                 if (bearing != 0f) {
                     canvas.restore()
                 }
+                drawMapLabels(canvas, bearing)
+
+                if (databaseRenderer == null) {
+                    AutoMapOverlayHelper.drawOfflineUnavailableBanner(
+                        canvas = canvas,
+                        context = context,
+                        visibleArea = visibleArea,
+                        surfaceWidth = width,
+                        surfaceHeight = height,
+                    )
+                }
 
                 AutoMapOverlayHelper.drawCompassAndScale(
                     canvas = canvas,
@@ -556,6 +590,66 @@ class CarMapsforgeRenderer(
                     }
                     invalidate(force = true)
                 }
+            }
+        }
+    }
+
+    /**
+     * Draws Mapsforge labels outside the rotated block: point labels and symbols are re-anchored at
+     * their rotated screen position but drawn upright; street names follow their road (rotated).
+     */
+    private fun drawMapLabels(canvas: Canvas, bearing: Float) {
+        val store = labelStore ?: return
+        val z = zoom
+        val cx = centerPxX
+        val cy = centerPxY
+        val centerPxMapX = lonToTileX(lon, z) * TILE_SIZE
+        val centerPxMapY = latToTileY(lat, z) * TILE_SIZE
+        val radius = hypot(max(cx, width - cx), max(cy, height - cy))
+        val maxTile = (1 shl z) - 1
+        val minTx = floor((centerPxMapX - radius) / TILE_SIZE).toInt().coerceIn(0, maxTile)
+        val maxTx = floor((centerPxMapX + radius) / TILE_SIZE).toInt().coerceIn(0, maxTile)
+        val minTy = floor((centerPxMapY - radius) / TILE_SIZE).toInt().coerceIn(0, maxTile)
+        val maxTy = floor((centerPxMapY + radius) / TILE_SIZE).toInt().coerceIn(0, maxTile)
+
+        val key = "$z/$minTx/$minTy/$maxTx/$maxTy"
+        val version = store.version
+        if (key != labelCacheKey || version != labelCacheVersion) {
+            labelCache = try {
+                store.getVisibleItems(
+                    Tile(minTx, minTy, z.toByte(), TILE_SIZE),
+                    Tile(maxTx, maxTy, z.toByte(), TILE_SIZE),
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "Mapsforge label query failed", e)
+                emptyList()
+            }
+            labelCacheKey = key
+            labelCacheVersion = version
+        }
+        if (labelCache.isEmpty()) return
+
+        val gc = AndroidGraphicFactory.createGraphicContext(canvas)
+        val theta = Math.toRadians(-bearing.toDouble())
+        val cosT = kotlin.math.cos(theta)
+        val sinT = kotlin.math.sin(theta)
+        val margin = 160.0
+        for (item in labelCache.toList()) {
+            try {
+                if (item is WayTextContainer) {
+                    canvas.save()
+                    if (bearing != 0f) canvas.rotate(-bearing, cx.toFloat(), cy.toFloat())
+                    item.draw(gc, Point(centerPxMapX - cx, centerPxMapY - cy), identityMatrix, Filter.NONE)
+                    canvas.restore()
+                    continue
+                }
+                val dx = item.point.x - centerPxMapX
+                val dy = item.point.y - centerPxMapY
+                val sx = cx + dx * cosT - dy * sinT
+                val sy = cy + dx * sinT + dy * cosT
+                if (sx < -margin || sy < -margin || sx > width + margin || sy > height + margin) continue
+                item.draw(gc, Point(item.point.x - sx, item.point.y - sy), identityMatrix, Filter.NONE)
+            } catch (_: Exception) {
             }
         }
     }
@@ -1100,8 +1194,7 @@ class CarMapsforgeRenderer(
                     val mfTileBitmap = if (renderer != null && ds != null && graphicFactory != null) {
                         try {
                             val mfTile = Tile(wrappedX, y, z.toByte(), TILE_SIZE)
-                            val themeFuture = RenderThemeFuture(graphicFactory, renderTheme, displayModel)
-                            themeFuture.run()
+                            val themeFuture = obtainThemeFuture(graphicFactory)
                             val job = RendererJob(
                                 mfTile,
                                 ds,
