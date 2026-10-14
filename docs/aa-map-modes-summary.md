@@ -28,61 +28,40 @@ Phone (`MapEngine`) and AA (`CarMapMode`) settings remain separate.
 | `CarMapMode` | AA screen | Renderer / backend | Network | Notes |
 |-------------|-----------|-------------------|---------|-------|
 | **Native** (Google) | `NativeMapPoiScreen` | Host `PlaceListMapTemplate` | Online | Host zoom only |
-| **Custom** | `CustomMapPoiScreen` | Raster XYZ → Canvas | Online | **Frozen** reference |
-| **MapLibre** | `MapLibrePoiScreen` | `CarMapLibreRenderer` MapSnapshotter → Canvas | Online OpenFreeMap | Snapshot path (audit Option 3) |
-| **MapTiler** | `MapLibrePoiScreen` | Same snapshot renderer, MapTiler style | Online | Needs `MAPTILER_KEY` |
-| **Protomaps** | `MapLibrePoiScreen` | Same snapshot; **path gate only** | Online OpenFreeMap when path OK | Local `.pmtiles` not fed into MapLibre yet |
-| **Mapbox** | `MapLibrePoiScreen` | `CarMapboxRenderer` | — | Experimental stub (gray basemap) |
-| **MapLibrePresentation** | `MapLibrePoiScreen` | `CarMapLibrePresentationRenderer` → `MapLibreAaGlHost` | Online OpenFreeMap | VirtualDisplay + MapView + GeoJSON POIs |
-| **MapLibreEgl** | `MapLibrePoiScreen` | `CarMapLibreEglRenderer` → `MapLibreAaGlHost` | Online OpenFreeMap | Fluid GL experiment (primary vector bet) |
-| **Mapsforge** | `mapsforge.MapsforgePoiScreen` | `CarMapsforgeRenderer` | Offline `.map` | Restored in factory |
+| **Custom** | `CustomMapPoiScreen` | Raster XYZ → Canvas | Online | **Frozen** reference; also the automatic fallback |
+| **MapLibreMapSnapshotter** | `MapLibrePoiScreen` | `CarMapLibreRenderer`: `MapSnapshotter` → Canvas (never EGL) | Online OpenFreeMap | Safest MapLibre path |
+| **MapLibreVirtualDisplay** | `MapLibrePoiScreen` | `CarMapLibreVirtualDisplayRenderer` → `MapLibreAaGlHost` (VirtualDisplay + `MapView` + GeoJSON POIs) | Online OpenFreeMap | Fluid GL, upright labels; fragile on some hosts |
+| **MapLibreEglDirect** | — | Not implemented | — | Hidden from picker/cycle (`isSelectable=false`); maps to VirtualDisplay |
+| **Mapbox** | `MapLibrePoiScreen` | `CarMapboxRenderer` | — | Experimental stub, hidden |
+| **Mapsforge** | `mapsforge.MapsforgePoiScreen` | `CarMapsforgeRenderer` | Offline `.map` | Vector, offline |
 
+MapTiler, Protomaps, Presentation and EGL modes were removed/merged; stored preferences are migrated by `CarMapMode.fromStored`.
 Central dispatch: [`AutoMapScreenFactory.kt`](../androidApp/src/main/kotlin/fr/geoking/gaston/auto/AutoMapScreenFactory.kt).
 
-### Shared canvas / GL shell
+### Surface ownership and mode swap
 
-MapLibre-family modes (except Mapsforge/Native/Custom) use [`MapLibrePoiScreen`](../androidApp/src/main/kotlin/fr/geoking/gaston/auto/MapLibrePoiScreen.kt) + [`CanvasMapModeConfig`](../androidApp/src/main/kotlin/fr/geoking/gaston/auto/CanvasMapModeConfig.kt).
-
-GL modes share [`MapLibreAaGlHost`](../androidApp/src/main/kotlin/fr/geoking/gaston/auto/maplibre/MapLibreAaGlHost.kt) (VirtualDisplay + MapView + [`MapLibreSharedHelper`](../androidApp/src/main/kotlin/fr/geoking/gaston/ui/map/maplibre/MapLibreSharedHelper.kt) POI layers).
+A `Surface` accepts one producer (Canvas **or** EGL). `AaSurfaceSession` caches the last Surface/visible area; `swapMapMode` makes the current `MapSurfaceOwner` release it before the next screen re-attaches from the cache, so no zoom is needed to force the first frame. `MapLibrePoiScreen` releases on `onDestroy`. If a MapLibre renderer fails for good (5 snapshot errors, or VirtualDisplay attach failure) the screen falls back to **Custom**.
 
 ---
 
-## 3. Product posture until final tests
+## 3. Product posture
 
 | Use | Mode |
 |-----|------|
-| Daily driving | **Custom** (unchanged) |
-| Fluid OpenFreeMap vector experiment | **MapLibreEgl**, **MapLibrePresentation** |
-| Fallback vector-ish | Snapshot **MapLibre** |
-| Offline | **Mapsforge** |
+| Safe default MapLibre | **MapLibreMapSnapshotter** |
+| Fluid vector experiment | **MapLibreVirtualDisplay** |
+| Offline vector | **Mapsforge** |
+| Fallback | **Custom** |
 | Host | **Native** |
 
 ---
 
 ## 4. Known limitations
 
-### Snapshot MapLibre / MapTiler / Protomaps
-
-- Pan/zoom less fluid than Custom or GL modes.
-- Protomaps: presence of `offlinePmtilesPath` only unlocks the mode; basemap is still **online OpenFreeMap**, not local PMTiles bytes.
-
-### MapLibreEgl / Presentation (GL)
-
-- MapLibre `MapView` owns EGL via VirtualDisplay (cannot also `lockCanvas` HUD on the same surface).
-- `CarEglSurfaceRenderer` is scaffolding for a future direct NativeMap bind; primary path is VirtualDisplay.
-- VirtualDisplay may be fragile on some hosts — keep snapshot MapLibre as fallback.
-
-### Mapbox
-
-- Basemap stub; experimental only.
-
-### Mapsforge
-
-- Active under `auto/mapsforge/`. Dead `MapsforgeAaRenderer` in `maplibre/` left for later cleanup.
-
-### Custom
-
-- **Do not modify.** Parity baseline for rotation + POIs.
+- Snapshotter: pan/zoom less fluid than GL; labels rotate with the bitmap unless bearing is passed to the snapshotter (planned).
+- VirtualDisplay: `MapView` owns EGL, so no Canvas HUD on that Surface; may be fragile on some hosts.
+- EglDirect: not implemented (`CarEglSurfaceRenderer` is scaffolding only).
+- Offline MapLibre (local PMTiles) is not wired; `offlinePmtilesPath` is reserved for it.
 
 ---
 
@@ -96,7 +75,7 @@ For each mode × north-up / heading-up:
 - [ ] POI tap → station detail (stack ≤ 5)
 - [ ] Recenter / compass if exposed
 - [ ] Settings → mode picker → back
-- [ ] Offline banner when Protomaps/Mapsforge file missing
+- [ ] Offline banner when Mapsforge file missing
 
 ---
 
@@ -109,7 +88,7 @@ For each mode × north-up / heading-up:
 | `CanvasMapModeConfig.kt` | Renderer factories |
 | `MapLibrePoiScreen.kt` | Shared list + surface shell |
 | `CarMapLibreRenderer.kt` | Snapshot → Canvas |
-| `CarMapLibreEglRenderer.kt` / `CarMapLibrePresentationRenderer.kt` | GL host wrappers |
+| `CarMapLibreVirtualDisplayRenderer.kt` | GL host wrapper |
 | `MapLibreAaGlHost.kt` | VirtualDisplay + MapView + layers |
 | `CarEglSurfaceRenderer.kt` | EGL helper (fallback / future NativeMap) |
 | `CustomMapPoiScreen.kt` | **Frozen** |
@@ -122,6 +101,6 @@ For each mode × north-up / heading-up:
 | Choice | Why |
 |--------|-----|
 | Custom untouched | Only stable rotation+POI reference |
-| New `MapLibreEgl` vs replacing snapshot | Keep A/B until final tests |
+| Separate VirtualDisplay mode vs replacing snapshot | Keep A/B until final tests |
 | OpenFreeMap style URL | Same PBF/style as phone MapLibre |
 | No DIY Canvas Bezier roads | OpenFreeMap styling stays in MapLibre |

@@ -42,102 +42,15 @@ object AutoMapScreenFactory {
             title = title,
             mapDeps = mapDeps,
         )
-        CarMapMode.MapLibre -> MapLibrePoiScreen(
-            carContext = carContext,
-            poiProvider = mapDeps.poiProvider,
-            availabilityProviderFactory = mapDeps.availabilityProviderFactory,
-            settingsManager = settingsManager,
-            routePlanner = mapDeps.routePlanner,
-            routingClient = mapDeps.routingClient,
-            tollCalculator = mapDeps.tollCalculator,
-            trafficProviderFactory = mapDeps.trafficProviderFactory,
-            geocodingClient = mapDeps.geocodingClient,
-            communityRepo = mapDeps.communityRepo,
-            favoritesRepo = mapDeps.favoritesRepo,
-            title = title,
-            canvasMapModeConfig = CanvasMapModeConfig.mapLibre(carContext),
-            mapDeps = mapDeps,
-        )
-        CarMapMode.MapTiler -> MapLibrePoiScreen(
-            carContext = carContext,
-            poiProvider = mapDeps.poiProvider,
-            availabilityProviderFactory = mapDeps.availabilityProviderFactory,
-            settingsManager = settingsManager,
-            routePlanner = mapDeps.routePlanner,
-            routingClient = mapDeps.routingClient,
-            tollCalculator = mapDeps.tollCalculator,
-            trafficProviderFactory = mapDeps.trafficProviderFactory,
-            geocodingClient = mapDeps.geocodingClient,
-            communityRepo = mapDeps.communityRepo,
-            favoritesRepo = mapDeps.favoritesRepo,
-            title = title,
-            canvasMapModeConfig = CanvasMapModeConfig.mapTiler(carContext),
-            mapDeps = mapDeps,
-        )
-        CarMapMode.Protomaps -> MapLibrePoiScreen(
-            carContext = carContext,
-            poiProvider = mapDeps.poiProvider,
-            availabilityProviderFactory = mapDeps.availabilityProviderFactory,
-            settingsManager = settingsManager,
-            routePlanner = mapDeps.routePlanner,
-            routingClient = mapDeps.routingClient,
-            tollCalculator = mapDeps.tollCalculator,
-            trafficProviderFactory = mapDeps.trafficProviderFactory,
-            geocodingClient = mapDeps.geocodingClient,
-            communityRepo = mapDeps.communityRepo,
-            favoritesRepo = mapDeps.favoritesRepo,
-            title = title,
-            canvasMapModeConfig = CanvasMapModeConfig.protomaps(carContext),
-            mapDeps = mapDeps,
-        )
-        CarMapMode.Mapbox -> MapLibrePoiScreen(
-            carContext = carContext,
-            poiProvider = mapDeps.poiProvider,
-            availabilityProviderFactory = mapDeps.availabilityProviderFactory,
-            settingsManager = settingsManager,
-            routePlanner = mapDeps.routePlanner,
-            routingClient = mapDeps.routingClient,
-            tollCalculator = mapDeps.tollCalculator,
-            trafficProviderFactory = mapDeps.trafficProviderFactory,
-            geocodingClient = mapDeps.geocodingClient,
-            communityRepo = mapDeps.communityRepo,
-            favoritesRepo = mapDeps.favoritesRepo,
-            title = title,
-            canvasMapModeConfig = CanvasMapModeConfig.mapbox(carContext),
-            mapDeps = mapDeps,
-        )
-        CarMapMode.MapLibrePresentation -> MapLibrePoiScreen(
-            carContext = carContext,
-            poiProvider = mapDeps.poiProvider,
-            availabilityProviderFactory = mapDeps.availabilityProviderFactory,
-            settingsManager = settingsManager,
-            routePlanner = mapDeps.routePlanner,
-            routingClient = mapDeps.routingClient,
-            tollCalculator = mapDeps.tollCalculator,
-            trafficProviderFactory = mapDeps.trafficProviderFactory,
-            geocodingClient = mapDeps.geocodingClient,
-            communityRepo = mapDeps.communityRepo,
-            favoritesRepo = mapDeps.favoritesRepo,
-            title = title,
-            canvasMapModeConfig = CanvasMapModeConfig.mapLibrePresentation(carContext),
-            mapDeps = mapDeps,
-        )
-        CarMapMode.MapLibreEgl -> MapLibrePoiScreen(
-            carContext = carContext,
-            poiProvider = mapDeps.poiProvider,
-            availabilityProviderFactory = mapDeps.availabilityProviderFactory,
-            settingsManager = settingsManager,
-            routePlanner = mapDeps.routePlanner,
-            routingClient = mapDeps.routingClient,
-            tollCalculator = mapDeps.tollCalculator,
-            trafficProviderFactory = mapDeps.trafficProviderFactory,
-            geocodingClient = mapDeps.geocodingClient,
-            communityRepo = mapDeps.communityRepo,
-            favoritesRepo = mapDeps.favoritesRepo,
-            title = title,
-            canvasMapModeConfig = CanvasMapModeConfig.mapLibreEgl(carContext),
-            mapDeps = mapDeps,
-        )
+        CarMapMode.MapLibreMapSnapshotter ->
+            mapLibreScreen(carContext, mapDeps, settingsManager, title, CanvasMapModeConfig.mapLibreSnapshotter(carContext))
+        CarMapMode.MapLibreVirtualDisplay ->
+            mapLibreScreen(carContext, mapDeps, settingsManager, title, CanvasMapModeConfig.mapLibreVirtualDisplay(carContext))
+        // TODO(MapLibreEglDirect): native EGL pipeline not implemented; use the VirtualDisplay path meanwhile.
+        CarMapMode.MapLibreEglDirect ->
+            mapLibreScreen(carContext, mapDeps, settingsManager, title, CanvasMapModeConfig.mapLibreVirtualDisplay(carContext))
+        CarMapMode.Mapbox ->
+            mapLibreScreen(carContext, mapDeps, settingsManager, title, CanvasMapModeConfig.mapbox(carContext))
         CarMapMode.Mapsforge -> MapsforgePoiScreen(
             carContext = carContext,
             poiProvider = mapDeps.poiProvider,
@@ -154,4 +67,27 @@ object AutoMapScreenFactory {
             mapDeps = mapDeps,
         )
     }
+
+    private fun mapLibreScreen(
+        carContext: CarContext,
+        mapDeps: MapDeps,
+        settingsManager: SettingsManager,
+        title: String,
+        config: CanvasMapModeConfig,
+    ): Screen = MapLibrePoiScreen(
+        carContext = carContext,
+        poiProvider = mapDeps.poiProvider,
+        availabilityProviderFactory = mapDeps.availabilityProviderFactory,
+        settingsManager = settingsManager,
+        routePlanner = mapDeps.routePlanner,
+        routingClient = mapDeps.routingClient,
+        tollCalculator = mapDeps.tollCalculator,
+        trafficProviderFactory = mapDeps.trafficProviderFactory,
+        geocodingClient = mapDeps.geocodingClient,
+        communityRepo = mapDeps.communityRepo,
+        favoritesRepo = mapDeps.favoritesRepo,
+        title = title,
+        canvasMapModeConfig = config,
+        mapDeps = mapDeps,
+    )
 }

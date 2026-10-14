@@ -35,12 +35,12 @@ enum class DangerZoneKind {
  * Extended danger zone. Alert on entry / presence — never on distance-to-control-pin alone.
  *
  * Geometry:
- * - Unidirectional monitored bearing → approach trapezoid ahead of the radar
- *   ([DangerZoneTriangle]; length = [radiusMeters]).
+ * - Unidirectional monitored bearing → approach sector (part of a disk) ahead of the radar
+ *   ([DangerZoneTriangle]; radius = [radiusMeters], half-angle 45°).
  * - Missing / bidirectional direction → AFFTAC circle of [radiusMeters].
  *
- * [centerLatitude]/[centerLongitude] are the radar / control coordinates (circle center or
- * trapezoid tip), not an exposed "exact control point" for alert UX.
+ * [centerLatitude]/[centerLongitude] are the radar / control coordinates (circle / sector
+ * tip), not an exposed "exact control point" for alert UX.
  *
  * Optional OSM merge fields ([monitoredBearingDegrees], [directionConfidence], …) enrich
  * data.gouv anchors without requiring OSM for coverage.
@@ -60,23 +60,19 @@ data class DangerZone(
     val osmNodeId: Long? = null,
     val matchedDistanceMeters: Double? = null,
 ) {
-    /** True when alert hit-testing uses the approach trapezoid instead of the AFFTAC circle. */
+    /** True when alert hit-testing uses the approach sector instead of the AFFTAC circle. */
     val usesApproachTrapezoid: Boolean
         get() = monitoredBearingDegrees != null && !monitoredBidirectional
 
     fun contains(latitude: Double, longitude: Double): Boolean {
-        if (usesApproachTrapezoid) {
-            return DangerZoneTriangle.contains(
-                lat = latitude,
-                lon = longitude,
-                tipLat = centerLatitude,
-                tipLon = centerLongitude,
-                radiusMeters = radiusMeters,
-                monitoredBearingDegrees = monitoredBearingDegrees!!,
-            )
-        }
-        val distM = haversineKm(latitude, longitude, centerLatitude, centerLongitude) * 1000.0
-        return distM <= radiusMeters
+        return DangerZoneTriangle.containsSectorOrCircle(
+            lat = latitude,
+            lon = longitude,
+            tipLat = centerLatitude,
+            tipLon = centerLongitude,
+            radiusMeters = radiusMeters,
+            monitoredBearingDegrees = if (usesApproachTrapezoid) monitoredBearingDegrees else null,
+        )
     }
 
     fun distanceMetersFrom(latitude: Double, longitude: Double): Double {
@@ -146,7 +142,7 @@ object DangerZoneDistances {
 /**
  * Converts a fixed speed-control dataset point into an extended [DangerZone].
  * Without a monitored bearing the geometry is an AFFTAC circle; with a unidirectional
- * bearing it becomes an approach trapezoid. Alert UX must not treat the center as a
+ * bearing it becomes an approach sector. Alert UX must not treat the center as a
  * precise control location marker.
  */
 object DangerZoneFactory {
@@ -278,18 +274,7 @@ object DangerZoneEvaluator {
             false
         }
 
-        val geometricallyInside = if (zone.usesApproachTrapezoid) {
-            DangerZoneTriangle.contains(
-                lat = vehLat,
-                lon = vehLon,
-                tipLat = zone.centerLatitude,
-                tipLon = zone.centerLongitude,
-                radiusMeters = zone.radiusMeters,
-                monitoredBearingDegrees = zone.monitoredBearingDegrees!!,
-            )
-        } else {
-            distanceMeters <= zone.radiusMeters
-        }
+        val geometricallyInside = zone.contains(vehLat, vehLon)
 
         // Proximity alone is never enough — require motion + heading toward the zone.
         var alertActive = geometricallyInside && isAhead

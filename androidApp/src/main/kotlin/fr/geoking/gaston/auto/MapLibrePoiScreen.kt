@@ -90,9 +90,11 @@ open class MapLibrePoiScreen(
     private val favoritesRepo: FavoritesRepository? = null,
     private val title: String = carContext.getString(R.string.dashboard_nearby_stations),
     private val itineraryPoints: List<Pair<Double, Double>> = emptyList(),
-    private val canvasMapModeConfig: CanvasMapModeConfig = CanvasMapModeConfig.mapLibre(carContext),
+    private val canvasMapModeConfig: CanvasMapModeConfig = CanvasMapModeConfig.mapLibreSnapshotter(carContext),
     private val mapDeps: MapDeps? = null,
-) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver {
+) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver, MapSurfaceOwner {
+
+    private var surfaceAttached = false
 
     private var pois: List<Poi> = emptyList()
     private var errors: List<PoiProviderError> = emptyList()
@@ -737,7 +739,20 @@ open class MapLibrePoiScreen(
     protected open fun createMapRenderer(): AaMapSurfaceRenderer =
         canvasMapModeConfig.createRenderer(carContext, lifecycle, canvasMapModeConfig).also { renderer ->
             renderer.hudModeLabel = canvasMapModeConfig.hudLabel
+            renderer.onFatalError = { fallbackToCustomMap() }
         }
+
+    /** The renderer cannot show a map any more: switch to the Custom raster mode so a map is always visible. */
+    private fun fallbackToCustomMap() {
+        val deps = mapDeps ?: return
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) return
+        if (settingsManager.settings.value.carMapMode == fr.geoking.gaston.CarMapMode.Custom) return
+        Log.e("MapLibrePoiScreen", "Renderer failed; falling back to Custom map mode")
+        releaseSurface()
+        settingsManager.setCarMapMode(fr.geoking.gaston.CarMapMode.Custom)
+        screenManager.pop()
+        pushMapScreen(settingsManager, deps, title)
+    }
 
     private fun toggleMapOrientation() {
         orientationMode = when (orientationMode) {
@@ -836,7 +851,13 @@ open class MapLibrePoiScreen(
 
     override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
         Log.d("MapLibrePoiScreen", "onSurfaceAvailable")
+        AaSurfaceSession.container = surfaceContainer
+        attachToSurface(surfaceContainer)
+    }
+
+    private fun attachToSurface(surfaceContainer: SurfaceContainer) {
         mapRenderer?.detachSurface()
+        surfaceAttached = false
         startHeadingUpdates()
         val surface = surfaceContainer.surface
         if (surface == null) {
@@ -850,18 +871,34 @@ open class MapLibrePoiScreen(
         val settings = settingsManager.settings.value
         canvasMapModeConfig.styleUrlResolver(settings, carContext)?.let { renderer.setStyleUrl(it) }
         renderer.attachSurface(surfaceContainer)
-        currentVisibleArea?.let { renderer.updateVisibleArea(it) }
+        surfaceAttached = true
+        (currentVisibleArea ?: AaSurfaceSession.visibleArea)?.let {
+            currentVisibleArea = it
+            renderer.updateVisibleArea(it)
+        }
         renderer.updateLocation(searchLat, searchLon, zoom)
         lastSyncedPoiIds = emptyList()
         syncRendererWithMapState()
         registerSurfaceCallback()
         renderer.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
         syncRendererWithMapState()
+        renderer.requestRedraw()
+    }
+
+    override fun releaseSurface() {
+        visibleAreaCameraJob?.cancel()
+        mapRenderer?.detachSurface()
+        surfaceAttached = false
+    }
+
+    override fun onDestroy(owner: androidx.lifecycle.LifecycleOwner) {
+        releaseSurface()
     }
 
     override fun onVisibleAreaChanged(visibleArea: Rect) {
         Log.d("MapLibrePoiScreen", "onVisibleAreaChanged: $visibleArea")
         currentVisibleArea = visibleArea
+        AaSurfaceSession.visibleArea = visibleArea
         mapRenderer?.updateVisibleArea(visibleArea)
         visibleAreaCameraJob?.cancel()
         visibleAreaCameraJob = lifecycleScope.launch {
@@ -872,8 +909,10 @@ open class MapLibrePoiScreen(
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
         Log.d("MapLibrePoiScreen", "onSurfaceDestroyed")
-        visibleAreaCameraJob?.cancel()
-        mapRenderer?.detachSurface()
+        if (AaSurfaceSession.container === surfaceContainer) {
+            AaSurfaceSession.container = null
+        }
+        releaseSurface()
     }
 
     override fun onClick(x: Float, y: Float) {
@@ -910,6 +949,10 @@ open class MapLibrePoiScreen(
 
     override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
         registerSurfaceCallback()
+        // Mode swap: the host may not re-deliver the Surface, so attach from the cached one right away.
+        if (!surfaceAttached) {
+            AaSurfaceSession.usableContainer()?.let { attachToSurface(it) }
+        }
         // Returning from station detail: show all filtered pins and resume follow.
         loadPoisJob?.cancel()
         isQueryPending = false

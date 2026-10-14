@@ -188,7 +188,41 @@ open class NotificationHelper(private val context: Context) {
     }
 
     /**
-     * Temporary HUN when within ~100 m of the zone center (after / with zone entry).
+     * Temporary HUN for a kilometre reminder while approaching the zone center.
+     * Distinct dedupe key so it is not suppressed by the entry HUN.
+     */
+    open fun showDangerZoneKmReminderNotification(
+        speedLimitKmH: Int?,
+        distanceMeters: Double,
+        latitude: Double? = null,
+        longitude: Double? = null,
+        isDevMode: Boolean = false,
+    ) {
+        if (!canPostNotifications()) return
+        val km = (distanceMeters / 1000.0).toInt().coerceAtLeast(1)
+        val dedupeKey = "km-$km-${speedLimitKmH ?: 0}"
+        if (shouldSuppressDuplicate("danger_zone_km", dedupeKey)) return
+
+        val baseTitle = context.getString(R.string.notification_danger_zone_title)
+        val title = if (isDevMode) "[Gaston] $baseTitle" else baseTitle
+        val message = if (speedLimitKmH != null && speedLimitKmH > 0) {
+            context.getString(R.string.notification_danger_zone_km_message_speed, km, speedLimitKmH)
+        } else {
+            context.getString(R.string.notification_danger_zone_km_message, km)
+        }
+
+        postTemporaryCarHeadsUp(
+            notificationId = NOTIFICATION_ID_DANGER_ZONE,
+            title = title,
+            message = message,
+            smallIcon = R.drawable.ic_poi_radar,
+            openRadarLatitude = latitude,
+            openRadarLongitude = longitude,
+        )
+    }
+
+    /**
+     * Temporary HUN when within ~200 m of the zone center (after / with zone entry).
      * FR copy: "Radar proche %d km/h".
      * Phone tap opens the radar map centered on [latitude]/[longitude] when set.
      */

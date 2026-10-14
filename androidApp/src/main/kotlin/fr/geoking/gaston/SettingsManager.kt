@@ -34,25 +34,41 @@ enum class CarMapMode {
     Native,
   /** Raster OSM / OpenFreeMap tiles on AA surface — frozen reference implementation. */
     Custom,
-  /** MapLibre vector (OpenFreeMap) via snapshot → Canvas. */
-    MapLibre,
-  /** MapLibre vector with MapTiler styles (API key). */
-    MapTiler,
-  /** Offline Protomaps PMTiles (manual file in phone settings). */
-    Protomaps,
-  /** Mapbox native Android Auto extension. */
+  /** MapLibre vector (OpenFreeMap) rendered by MapSnapshotter, blitted with Canvas (never EGL). */
+    MapLibreMapSnapshotter,
+  /** MapLibre GL: a real MapView in a VirtualDisplay whose output is the AA Surface. */
+    MapLibreVirtualDisplay,
+  /** MapLibre native engine bound directly to the AA Surface via EGL. Not implemented yet. */
+    MapLibreEglDirect,
+  /** Mapbox native Android Auto extension (experimental stub). */
     Mapbox,
-  /** MapLibre vector via Presentation API (High Performance / 60 FPS). */
-    MapLibrePresentation,
-  /** MapLibre GL on AA surface (OpenFreeMap PBF) — fluid vector experiment. */
-    MapLibreEgl,
   /** Offline Mapsforge `.map` on AA surface. */
     Mapsforge;
 
-    fun next(): CarMapMode = entries[(ordinal + 1) % entries.size]
+    /** Modes that can be picked and cycled through; unfinished ones are hidden. */
+    val isSelectable: Boolean
+        get() = this != MapLibreEglDirect && this != Mapbox
+
+    fun next(): CarMapMode {
+        var candidate = entries[(ordinal + 1) % entries.size]
+        while (!candidate.isSelectable) {
+            candidate = entries[(candidate.ordinal + 1) % entries.size]
+        }
+        return candidate
+    }
 
     val requiresOfflineMapFile: Boolean
-        get() = this == Protomaps || this == Mapsforge
+        get() = this == Mapsforge
+
+    companion object {
+        /** Maps a persisted name (including removed/renamed modes) to a current mode. */
+        fun fromStored(name: String?): CarMapMode = when (name) {
+            null -> Native
+            "MapLibre", "MapTiler", "Protomaps" -> MapLibreMapSnapshotter
+            "MapLibrePresentation", "MapLibreEgl" -> MapLibreVirtualDisplay
+            else -> entries.firstOrNull { it.name == name } ?: Native
+        }
+    }
 }
 enum class MapEngine { Google, MapLibre, Custom, Mapsforge }
 enum class ThemeMode { System, Light, Dark }
@@ -180,7 +196,7 @@ data class AppSettings(
     val mapThemeMode: ThemeMode = ThemeMode.System,
     val vehicleType: VehicleType = VehicleType.Car,
     val carMapMode: CarMapMode = CarMapMode.Native,
-    /** Absolute path to a local `.pmtiles` file (Protomaps AA mode). Set manually on phone — never auto-downloaded. */
+    /** Absolute path to a local `.pmtiles` file (reserved for future offline MapLibre). Set manually on phone — never auto-downloaded. */
     val offlinePmtilesPath: String? = null,
     val offlineMapsforgePath: String? = null,
     val googleUserName: String? = null,
@@ -320,9 +336,7 @@ open class SettingsManager(
             MapBaseView.valueOf(prefs.getString("map_base_view", MapBaseView.Streets.name) ?: MapBaseView.Streets.name)
         } catch (_: Exception) { MapBaseView.Streets }
 
-        val carMapMode = try {
-            CarMapMode.valueOf(prefs.getString("car_map_mode", CarMapMode.Native.name) ?: CarMapMode.Native.name)
-        } catch (_: Exception) { CarMapMode.Native }
+        val carMapMode = CarMapMode.fromStored(prefs.getString("car_map_mode", CarMapMode.Native.name))
         val offlinePmtilesPath = prefs.getString("offline_pmtiles_path", null)?.takeIf { it.isNotBlank() }
         val offlineMapsforgePath = prefs.getString("offline_mapsforge_path", null)?.takeIf { it.isNotBlank() }
 

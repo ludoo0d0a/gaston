@@ -24,7 +24,7 @@ class AutoMapModePickerScreen(
     ) {
         val current = settingsManager.settings.value.carMapMode
         val listBuilder = ItemList.Builder()
-        CarMapMode.entries.forEach { mode ->
+        CarMapMode.entries.filter { it.isSelectable }.forEach { mode ->
             val selected = mode == current
             listBuilder.addItem(
                 Row.Builder()

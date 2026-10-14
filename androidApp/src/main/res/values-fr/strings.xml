@@ -491,8 +491,8 @@
     <!-- AAC / niveau A -->
     <string name="aac_settings_title">Assistant d\'aide à la conduite</string>
     <string name="aac_settings_switch_title">Alertes zones de danger</string>
-    <string name="aac_settings_switch_subtitle">Toujours actives. Notification temporaire (téléphone + HUN Android Auto) à l\'entrée de zone, puis à nouveau à ~100 m, avec la limitation de vitesse si connue.</string>
-    <string name="aac_settings_distance_note">La distance d\'alerte dépend du type de voie (~4 km autoroute, ~2 km hors agglo, ~300 m en agglo). Seconde alerte à ~100 m.</string>
+    <string name="aac_settings_switch_subtitle">Toujours actives. Notification temporaire (téléphone + HUN Android Auto) à l\'entrée de zone, tous les km en approche, puis à nouveau à ~200 m, avec la limitation de vitesse si connue.</string>
+    <string name="aac_settings_distance_note">La distance d\'alerte dépend du type de voie (~4 km autoroute, ~2 km hors agglo, ~300 m en agglo). Rappels chaque km, puis alerte finale à ~200 m.</string>
     <string name="aac_settings_safety_tip">Sécurité routière : respectez les distances de sécurité et adaptez votre vitesse aux conditions.</string>
     <string name="aac_hud_zone_entry">Zone de danger</string>
     <string name="aac_hud_vma">Limitation %1$d km/h</string>
@@ -980,21 +980,18 @@
     <string name="map_mode_google">Google</string>
     <string name="map_mode_custom">Personnalisé</string>
     <string name="map_mode_maplibre">MapLibre</string>
-    <string name="map_mode_maptiler">MapTiler</string>
-    <string name="map_mode_protomaps">Protomaps</string>
     <string name="map_mode_mapsforge">Mapsforge</string>
+    <string name="map_mode_maplibre_snapshotter">MapLibre (Snapshot)</string>
+    <string name="map_mode_maplibre_virtualdisplay">MapLibre (VirtualDisplay)</string>
+    <string name="map_mode_maplibre_egl_direct">MapLibre (EGL direct)</string>
+    <string name="map_mode_maplibre_snapshotter_desc">Vecteur OpenFreeMap rendu par snapshots MapLibre (le plus sûr)</string>
+    <string name="map_mode_maplibre_virtualdisplay_desc">MapLibre GL dans un VirtualDisplay : carte vectorielle fluide, labels droits</string>
+    <string name="map_mode_maplibre_egl_direct_desc">MapLibre GL branché directement sur la surface AA (pas encore disponible)</string>
     <string name="map_mode_mapbox">Mapbox</string>
-    <string name="map_mode_maplibre_presentation">MapLibre Presentation</string>
-    <string name="map_mode_maplibre_egl">MapLibre EGL</string>
     <string name="map_mode_google_desc">Carte Google hôte (zoom contrôlé par la voiture)</string>
     <string name="map_mode_custom_desc">Tuiles raster OSM / OpenFreeMap sur surface app</string>
-    <string name="map_mode_maplibre_desc">Vecteur OpenFreeMap via snapshot MapLibre</string>
-    <string name="map_mode_maptiler_desc">Styles MapTiler vectoriels (clé API requise)</string>
-    <string name="map_mode_protomaps_desc">Chemin PMTiles local requis (fond de carte encore OpenFreeMap en ligne tant que PMTiles n’est pas branché)</string>
     <string name="map_mode_mapsforge_desc">Fichier Mapsforge .map hors ligne (télécharger sur le téléphone)</string>
     <string name="map_mode_mapbox_desc">Rendu vectoriel Mapbox SDK (stub expérimental)</string>
-    <string name="map_mode_maplibre_presentation_desc">MapLibre VirtualDisplay expérimental (OpenFreeMap + POIs)</string>
-    <string name="map_mode_maplibre_egl_desc">Vecteur OpenFreeMap fluide via MapLibre GL sur surface AA</string>
     <string name="map_offline_unavailable">Aucune carte hors ligne — téléchargez dans Réglages du téléphone</string>
     <string name="settings_offline_maps">Cartes hors ligne</string>
     <string name="settings_offline_pmtiles_path">Chemin fichier PMTiles Protomaps</string>
@@ -1082,6 +1079,8 @@
     <string name="notification_danger_zone_title">Zone de danger</string>
     <string name="notification_danger_zone_message">Attention, zone de danger à proximité</string>
     <string name="notification_danger_zone_message_speed">Zone de danger — Vitesse limitée à %d km/h</string>
+    <string name="notification_danger_zone_km_message">Zone de danger — encore %d km</string>
+    <string name="notification_danger_zone_km_message_speed">Zone de danger — encore %1$d km — Vitesse limitée à %2$d km/h</string>
     <string name="notification_near_radar_title">Radar proche</string>
     <string name="notification_near_radar_message">Radar proche %d km/h</string>
     <string name="notification_near_radar_message_generic">Radar proche</string>

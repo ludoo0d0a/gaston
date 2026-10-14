@@ -11,30 +11,8 @@ import java.io.File
 class OfflineMapAvailabilityTest {
 
     @Test
-    fun protomapsWithNullPathIsUnavailable() {
-        val settings = AppSettings(carMapMode = CarMapMode.Protomaps, offlinePmtilesPath = null)
-        assertFalse(OfflineMapAvailability.isOfflineFileAvailable(settings))
-    }
-
-    @Test
-    fun protomapsWithNonexistentPathIsUnavailable() {
-        val settings = AppSettings(carMapMode = CarMapMode.Protomaps, offlinePmtilesPath = "/no/such/file.pmtiles")
-        assertFalse(OfflineMapAvailability.isOfflineFileAvailable(settings))
-    }
-
-    @Test
-    fun protomapsWithRealFileIsAvailable() {
-        val file = File.createTempFile("test", ".pmtiles").apply {
-            writeBytes(byteArrayOf(1, 2, 3))
-            deleteOnExit()
-        }
-        val settings = AppSettings(carMapMode = CarMapMode.Protomaps, offlinePmtilesPath = file.absolutePath)
-        assertTrue(OfflineMapAvailability.isOfflineFileAvailable(settings))
-    }
-
-    @Test
     fun nonOfflineModeIsAlwaysAvailable() {
-        val settings = AppSettings(carMapMode = CarMapMode.MapLibre, offlinePmtilesPath = null)
+        val settings = AppSettings(carMapMode = CarMapMode.MapLibreMapSnapshotter, offlinePmtilesPath = null)
         assertTrue(OfflineMapAvailability.isOfflineFileAvailable(settings))
     }
 
