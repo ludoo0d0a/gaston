@@ -56,7 +56,10 @@ class WeatherPoiProvider(
             )
         }.getOrElse { emptyList() }
 
-        val limitedSamples = thinEvenly(samples, effectiveMaxPoints)
+        // Keep only cells with active precipitation (dry / clear grid points stay off the map).
+        val activePrecipSamples = samples.filter { it.precipitation > 0.0 }
+
+        val limitedSamples = thinEvenly(activePrecipSamples, effectiveMaxPoints)
 
         // Prune weather POIs before creating new ones to stay within [maxTotalWeatherPois]
         pruneExcessPoiCounts()
