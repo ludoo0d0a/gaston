@@ -6,8 +6,8 @@ Ce document analyse la situation de **MapLibre sur Android Auto** dans Gaston et
 
 | Chemin | Mode(s) | Implémentation |
 |--------|---------|----------------|
-| **Option 3** (snapshot) | `MapLibre`, `MapTiler`, `Protomaps` | `CarMapLibreRenderer` + `MapSnapshotter` → Canvas |
-| **GL via VirtualDisplay** (proche Option 2) | `MapLibreEgl`, `MapLibrePresentation` | `MapLibreAaGlHost` : `MapView` sur `SurfaceContainer.surface` + couches GeoJSON (`MapLibreSharedHelper`) |
+| **Option 3** (snapshot) | `MapLibreMapSnapshotter` | `CarMapLibreRenderer` + `MapSnapshotter` → Canvas |
+| **GL via VirtualDisplay** (proche Option 2) | `MapLibreVirtualDisplay` | `MapLibreAaGlHost` : `MapView` sur `SurfaceContainer.surface` + couches GeoJSON (`MapLibreSharedHelper`) |
 | **EGL helper** | utilisé par `CarMapLibreEglRenderer` (fallback / futur NativeMap) | `CarEglSurfaceRenderer` |
 | **Custom** | `Custom` | Raster Canvas — **ne pas modifier** |
 

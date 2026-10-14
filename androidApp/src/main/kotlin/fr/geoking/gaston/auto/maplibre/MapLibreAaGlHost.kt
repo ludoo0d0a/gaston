@@ -56,6 +56,9 @@ internal class MapLibreAaGlHost(
     private var presenceBadge: DangerZonePresenceBadgeView? = null
     private var surfaceContainer: SurfaceContainer? = null
 
+    /** Invoked on the main thread when the VirtualDisplay MapView could not be attached. */
+    var onFatalError: (() -> Unit)? = null
+
     var styleUrl: String = ""
         private set
     var centerLat: Double = 48.8566
@@ -212,6 +215,7 @@ internal class MapLibreAaGlHost(
             } catch (e: Exception) {
                 Log.e(logTag, "Failed to attach VirtualDisplay MapView", e)
                 detachSurfaceInternal()
+                onFatalError?.invoke()
             }
         }
     }

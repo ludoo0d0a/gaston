@@ -13,6 +13,11 @@ interface AaMapSurfaceRenderer {
     var hudModeLabel: String
     var offlineUnavailable: Boolean
 
+    /** Called (on the main thread) when the renderer cannot produce a map any more; the screen falls back to another mode. */
+    var onFatalError: (() -> Unit)?
+        get() = null
+        set(_) {}
+
     fun attachSurface(container: SurfaceContainer)
     fun detachSurface()
     fun setStyleUrl(url: String)

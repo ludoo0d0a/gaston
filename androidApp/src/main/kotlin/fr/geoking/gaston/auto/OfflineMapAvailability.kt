@@ -7,7 +7,6 @@ import java.io.File
 object OfflineMapAvailability {
 
     fun offlineFilePath(settings: AppSettings): String? = when (settings.carMapMode) {
-        CarMapMode.Protomaps -> settings.offlinePmtilesPath
         CarMapMode.Mapsforge -> settings.offlineMapsforgePath
         else -> null
     }

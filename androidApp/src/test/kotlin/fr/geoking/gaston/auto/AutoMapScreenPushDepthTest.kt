@@ -116,12 +116,10 @@ class AutoMapScreenPushDepthTest {
                 settingsManager = settingsManager,
             )
 
-            CarMapMode.MapLibre,
-            CarMapMode.MapTiler,
-            CarMapMode.Protomaps,
+            CarMapMode.MapLibreMapSnapshotter,
             CarMapMode.Mapbox,
-            CarMapMode.MapLibrePresentation,
-            CarMapMode.MapLibreEgl,
+            CarMapMode.MapLibreVirtualDisplay,
+            CarMapMode.MapLibreEglDirect,
             -> MapLibreStationDetailScreen(
                 carContext = carContext,
                 poi = poi,

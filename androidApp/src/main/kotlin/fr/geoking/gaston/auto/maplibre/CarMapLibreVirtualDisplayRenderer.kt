@@ -11,14 +11,17 @@ import fr.geoking.gaston.poi.Poi
 
 /**
  * High-performance MapLibre renderer for Android Auto using VirtualDisplay + Presentation.
- * Shares [MapLibreAaGlHost] with [CarMapLibreEglRenderer] (OpenFreeMap + GeoJSON POIs / bearing).
+ * Shares [MapLibreAaGlHost] with the other GL wrappers (OpenFreeMap + GeoJSON POIs / bearing).
  */
-class CarMapLibrePresentationRenderer(
+class CarMapLibreVirtualDisplayRenderer(
     private val carContext: CarContext,
     @Suppress("UNUSED_PARAMETER") lifecycle: Lifecycle,
 ) : AaMapSurfaceRenderer {
-    override var hudModeLabel: String = "MapLibre (Pres)"
+    override var hudModeLabel: String = "MapLibre (VirtualDisplay)"
     override var offlineUnavailable: Boolean = false
+    override var onFatalError: (() -> Unit)?
+        get() = host.onFatalError
+        set(value) { host.onFatalError = value }
 
     private val settingsManager =
         org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.SettingsManager>()
@@ -90,6 +93,6 @@ class CarMapLibrePresentationRenderer(
     }
 
     companion object {
-        private const val TAG = "CarMapLibrePres"
+        private const val TAG = "CarMapLibreVD"
     }
 }

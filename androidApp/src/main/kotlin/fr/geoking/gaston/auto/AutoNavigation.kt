@@ -34,6 +34,8 @@ fun Screen.swapMapMode(
     title: String? = null
 ) {
     val newMode = settingsManager.settings.value.carMapMode.next()
+    // Give the Surface back first so the next screen never attaches while this one still renders on it.
+    (this as? MapSurfaceOwner)?.releaseSurface()
     settingsManager.setCarMapMode(newMode)
     carContext.getCarService(AppManager::class.java)
         .showToast(newMode.displayLabel(carContext), CarToast.LENGTH_SHORT)

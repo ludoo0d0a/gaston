@@ -30,9 +30,7 @@ class AutoMapSettingsScreen(
                 .setTitle(carContext.getString(R.string.settings_map_mode))
                 .addText(mapModeLabel)
                 .setOnClickListener {
-                    val entries = fr.geoking.gaston.CarMapMode.entries
-                    val nextMode = entries[(settings.carMapMode.ordinal + 1) % entries.size]
-                    settingsManager.setCarMapMode(nextMode)
+                    settingsManager.setCarMapMode(settings.carMapMode.next())
                     invalidate()
                 }
                 .build()

@@ -7,13 +7,10 @@ import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
-import fr.geoking.gaston.auto.maplibre.CarMapLibreEglRenderer
 import fr.geoking.gaston.auto.maplibre.CarMapLibreRenderer
-import fr.geoking.gaston.auto.maplibre.CarMapLibrePresentationRenderer
+import fr.geoking.gaston.auto.maplibre.CarMapLibreVirtualDisplayRenderer
 import fr.geoking.gaston.auto.mapbox.CarMapboxRenderer
 import fr.geoking.gaston.auto.maplibre.resolveAutoMapStyleUrl
-import fr.geoking.gaston.auto.maplibre.resolveMapTilerStyleUrl
-import fr.geoking.gaston.auto.maplibre.resolveProtomapsLocalPath
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.poi.Poi
 
@@ -44,9 +41,9 @@ data class CanvasMapModeConfig(
     ) -> Screen,
 ) {
     companion object {
-        fun mapLibre(carContext: CarContext): CanvasMapModeConfig = CanvasMapModeConfig(
+        fun mapLibreSnapshotter(carContext: CarContext): CanvasMapModeConfig = CanvasMapModeConfig(
             logTag = "MapLibrePoiScreen",
-            hudLabel = carContext.getString(R.string.map_mode_maplibre),
+            hudLabel = carContext.getString(R.string.map_mode_maplibre_snapshotter),
             styleUrlResolver = { settings, ctx -> resolveAutoMapStyleUrl(settings, ctx) },
             createRenderer = { ctx, lifecycle, config ->
                 CarMapLibreRenderer(ctx, lifecycle).apply {
@@ -69,25 +66,6 @@ data class CanvasMapModeConfig(
                     favoritesRepo = favoritesRepo,
                     onDisposed = onDisposed,
                 )
-            },
-        )
-
-        fun mapTiler(carContext: CarContext): CanvasMapModeConfig = mapLibre(carContext).copy(
-            logTag = "MapTilerPoiScreen",
-            hudLabel = carContext.getString(R.string.map_mode_maptiler),
-            styleUrlResolver = { settings, _ -> resolveMapTilerStyleUrl(settings) },
-        )
-
-        fun protomaps(carContext: CarContext): CanvasMapModeConfig = mapLibre(carContext).copy(
-            logTag = "ProtomapsPoiScreen",
-            hudLabel = carContext.getString(R.string.map_mode_protomaps),
-            requiresOfflineFile = true,
-            styleUrlResolver = { settings, ctx ->
-                if (resolveProtomapsLocalPath(settings) != null) {
-                    resolveAutoMapStyleUrl(settings, ctx)
-                } else {
-                    null
-                }
             },
         )
 
@@ -119,12 +97,12 @@ data class CanvasMapModeConfig(
             },
         )
 
-        fun mapLibrePresentation(carContext: CarContext): CanvasMapModeConfig = CanvasMapModeConfig(
+        fun mapLibreVirtualDisplay(carContext: CarContext): CanvasMapModeConfig = CanvasMapModeConfig(
             logTag = "MapLibrePresPoiScreen",
-            hudLabel = carContext.getString(R.string.map_mode_maplibre_presentation),
+            hudLabel = carContext.getString(R.string.map_mode_maplibre_virtualdisplay),
             styleUrlResolver = { settings, ctx -> resolveAutoMapStyleUrl(settings, ctx) },
             createRenderer = { ctx, lifecycle, config ->
-                CarMapLibrePresentationRenderer(ctx, lifecycle).apply {
+                CarMapLibreVirtualDisplayRenderer(ctx, lifecycle).apply {
                     hudModeLabel = config.hudLabel
                 }
             },
@@ -147,32 +125,5 @@ data class CanvasMapModeConfig(
             },
         )
 
-        fun mapLibreEgl(carContext: CarContext): CanvasMapModeConfig = CanvasMapModeConfig(
-            logTag = "MapLibreEglPoiScreen",
-            hudLabel = carContext.getString(R.string.map_mode_maplibre_egl),
-            styleUrlResolver = { settings, ctx -> resolveAutoMapStyleUrl(settings, ctx) },
-            createRenderer = { ctx, lifecycle, config ->
-                CarMapLibreEglRenderer(ctx, lifecycle).apply {
-                    hudModeLabel = config.hudLabel
-                }
-            },
-            createStationDetailScreen = { carContext, poi, availability, searchLat, searchLon, zoom, orientationMode, bearing, effectiveEnergies, effectivePowerLevels, settingsManager, favoritesRepo, onDisposed ->
-                MapLibreStationDetailScreen(
-                    carContext = carContext,
-                    poi = poi,
-                    availability = availability,
-                    searchLat = searchLat,
-                    searchLon = searchLon,
-                    zoom = zoom,
-                    orientationMode = orientationMode,
-                    bearing = bearing,
-                    effectiveEnergies = effectiveEnergies,
-                    effectivePowerLevels = effectivePowerLevels,
-                    settingsManager = settingsManager,
-                    favoritesRepo = favoritesRepo,
-                    onDisposed = onDisposed,
-                )
-            },
-        )
     }
 }

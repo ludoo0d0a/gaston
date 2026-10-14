@@ -39,6 +39,8 @@ class MapLibrePoiScreenAaTest {
     // screens to construct successfully.
     @Before
     fun startTestKoin() {
+        AaSurfaceSession.container = null
+        AaSurfaceSession.visibleArea = null
         startKoin {
             modules(module { single { SettingsManager(ApplicationProvider.getApplicationContext()) } })
         }
@@ -46,6 +48,8 @@ class MapLibrePoiScreenAaTest {
 
     @After
     fun stopTestKoin() {
+        AaSurfaceSession.container = null
+        AaSurfaceSession.visibleArea = null
         stopKoin()
     }
 
@@ -80,81 +84,23 @@ class MapLibrePoiScreenAaTest {
     @Test
     fun mapLibreSurvivesSurfaceDetachReattach() {
         val carContext = CarScreenTestHarness.newTestCarContext()
-        assertSurfaceSurvivesDetachReattach(CanvasMapModeConfig.mapLibre(carContext))
+        assertSurfaceSurvivesDetachReattach(CanvasMapModeConfig.mapLibreSnapshotter(carContext))
     }
 
     @Test
-    fun mapTilerSurvivesSurfaceDetachReattach() {
+    fun mapLibreVirtualDisplaySurvivesSurfaceDetachReattach() {
         val carContext = CarScreenTestHarness.newTestCarContext()
-        assertSurfaceSurvivesDetachReattach(CanvasMapModeConfig.mapTiler(carContext))
-    }
-
-    @Test
-    fun protomapsSurvivesSurfaceDetachReattach() {
-        val carContext = CarScreenTestHarness.newTestCarContext()
-        assertSurfaceSurvivesDetachReattach(CanvasMapModeConfig.protomaps(carContext))
-    }
-
-    @Test
-    fun mapLibreEglSurvivesSurfaceDetachReattach() {
-        val carContext = CarScreenTestHarness.newTestCarContext()
-        assertSurfaceSurvivesDetachReattach(CanvasMapModeConfig.mapLibreEgl(carContext))
-    }
-
-    @Test
-    fun mapLibrePresentationSurvivesSurfaceDetachReattach() {
-        val carContext = CarScreenTestHarness.newTestCarContext()
-        assertSurfaceSurvivesDetachReattach(CanvasMapModeConfig.mapLibrePresentation(carContext))
+        assertSurfaceSurvivesDetachReattach(CanvasMapModeConfig.mapLibreVirtualDisplay(carContext))
     }
 
     @Test
     fun actionStripsStayWithinMapTemplateLimits() {
         val carContext = CarScreenTestHarness.newTestCarContext()
-        val screen = newScreen(carContext, CanvasMapModeConfig.mapLibre(carContext), newSettingsManager())
+        val screen = newScreen(carContext, CanvasMapModeConfig.mapLibreSnapshotter(carContext), newSettingsManager())
         CarScreenTestHarness.createAndStart(screen)
 
         val template = screen.onGetTemplate() as MapWithContentTemplate
         ActionStripLimits.assertWithinMapTemplateLimits(template.actionStrip)
         ActionStripLimits.assertWithinMapTemplateLimits(template.mapController?.mapActionStrip)
-    }
-
-    @Test
-    fun protomapsWithMissingOfflineFileDoesNotCrashAndFlagsUnavailable() {
-        val carContext = CarScreenTestHarness.newTestCarContext()
-        val settingsManager = newSettingsManager()
-        settingsManager.setCarMapMode(fr.geoking.gaston.CarMapMode.Protomaps)
-        settingsManager.setOfflinePmtilesPath(null)
-
-        val screen = newScreen(carContext, CanvasMapModeConfig.protomaps(carContext), settingsManager)
-        CarScreenTestHarness.createAndStart(screen)
-        val surfaceCallback = CarScreenTestHarness.surfaceCallbackOf(carContext)
-        surfaceCallback!!.onSurfaceAvailable(CarScreenTestHarness.newFakeSurfaceContainer())
-
-        assertTrue(
-            "Protomaps with no pmtiles file should flag the renderer as offline-unavailable",
-            screen.mapRendererForTest?.offlineUnavailable == true,
-        )
-    }
-
-    @Test
-    fun protomapsWithOfflineFilePresentDoesNotFlagUnavailable() {
-        val carContext = CarScreenTestHarness.newTestCarContext()
-        val settingsManager = newSettingsManager()
-        val pmtilesFile = File.createTempFile("test", ".pmtiles").apply {
-            writeBytes(byteArrayOf(1, 2, 3, 4))
-            deleteOnExit()
-        }
-        settingsManager.setCarMapMode(fr.geoking.gaston.CarMapMode.Protomaps)
-        settingsManager.setOfflinePmtilesPath(pmtilesFile.absolutePath)
-
-        val screen = newScreen(carContext, CanvasMapModeConfig.protomaps(carContext), settingsManager)
-        CarScreenTestHarness.createAndStart(screen)
-        val surfaceCallback = CarScreenTestHarness.surfaceCallbackOf(carContext)
-        surfaceCallback!!.onSurfaceAvailable(CarScreenTestHarness.newFakeSurfaceContainer())
-
-        assertFalse(
-            "Protomaps with a real pmtiles file present should not flag offline-unavailable",
-            screen.mapRendererForTest?.offlineUnavailable == true,
-        )
     }
 }
