@@ -34,4 +34,21 @@ class WmoWeatherCodeTest {
     fun wmoCodeLabelMatchesStyleLabel() {
         assertEquals(wmoWeatherStyle(61).label, wmoCodeLabel(61))
     }
+
+    @Test
+    fun isIntemperieIdentifiesSevereWeatherFamilies() {
+        assertTrue(!wmoWeatherStyle(0).isIntemperie) // Clear
+        assertTrue(!wmoWeatherStyle(1).isIntemperie) // Mainly clear
+        assertTrue(!wmoWeatherStyle(2).isIntemperie) // Partly cloudy
+        assertTrue(!wmoWeatherStyle(3).isIntemperie) // Overcast
+
+        assertTrue(wmoWeatherStyle(45).isIntemperie) // Fog
+        assertTrue(wmoWeatherStyle(51).isIntemperie) // Drizzle
+        assertTrue(wmoWeatherStyle(56).isIntemperie) // Freezing drizzle
+        assertTrue(wmoWeatherStyle(61).isIntemperie) // Rain
+        assertTrue(wmoWeatherStyle(71).isIntemperie) // Snow
+        assertTrue(wmoWeatherStyle(80).isIntemperie) // Showers
+        assertTrue(wmoWeatherStyle(85).isIntemperie) // Snow showers
+        assertTrue(wmoWeatherStyle(95).isIntemperie) // Thunderstorm
+    }
 }

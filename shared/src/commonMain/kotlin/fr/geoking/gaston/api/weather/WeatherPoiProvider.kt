@@ -56,7 +56,12 @@ class WeatherPoiProvider(
             )
         }.getOrElse { emptyList() }
 
-        val limitedSamples = thinEvenly(samples, effectiveMaxPoints)
+        // Retain strictly active severe weather conditions (intempéries: rain, drizzle, snow, freezing rain, showers, storms, fog)
+        val severeWeatherSamples = samples.filter { sample ->
+            wmoWeatherStyle(sample.weatherCode).isIntemperie
+        }
+
+        val limitedSamples = thinEvenly(severeWeatherSamples, effectiveMaxPoints)
 
         // Prune weather POIs before creating new ones to stay within [maxTotalWeatherPois]
         pruneExcessPoiCounts()

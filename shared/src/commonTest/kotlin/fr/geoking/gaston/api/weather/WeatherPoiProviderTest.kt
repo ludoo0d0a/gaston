@@ -32,7 +32,7 @@ class WeatherPoiProviderTest {
                     latMin to lonMax,
                 )
                 cells.joinToString(separator = ",", prefix = "[", postfix = "]") { (lat, lon) ->
-                    """{"latitude":$lat,"longitude":$lon,"current":{"weather_code":3,"precipitation_probability":20.0,"precipitation":1.2,"rain":1.0,"showers":0.2,"snowfall":0.0}}"""
+                    """{"latitude":$lat,"longitude":$lon,"current":{"weather_code":63,"precipitation_probability":20.0,"precipitation":1.2,"rain":1.0,"showers":0.2,"snowfall":0.0}}"""
                 }
             } else {
                 "[]"
@@ -104,5 +104,31 @@ class WeatherPoiProviderTest {
         assertEquals("1.0", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.RAIN))
         assertEquals("0.2", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.SHOWERS))
         assertEquals("0.0", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.SNOW))
+    }
+
+    @Test
+    fun searchFiltersOutClearAndCloudyWeather() = runBlocking {
+        val engine = MockEngine { _ ->
+            val body = """[
+                {"latitude":48.8,"longitude":2.3,"current":{"weather_code":0}},
+                {"latitude":48.9,"longitude":2.4,"current":{"weather_code":3}},
+                {"latitude":49.0,"longitude":2.5,"current":{"weather_code":61}},
+                {"latitude":49.1,"longitude":2.6,"current":{"weather_code":95}}
+            ]"""
+            respond(
+                content = body,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+        val provider = WeatherPoiProvider(client = OpenMeteoWeatherGridClient(HttpClient(engine)), maxPoiCount = 10)
+        val result = provider.search(weatherRequest())
+
+        // Only WMO 61 (rain) and 95 (thunderstorm) should be returned
+        assertEquals(2, result.size)
+        assertTrue(result.all { poi ->
+            val code = poi.rawSourceData?.get(WeatherPoiRawKeys.WEATHER_CODE)?.toIntOrNull()
+            code == 61 || code == 95
+        })
     }
 }

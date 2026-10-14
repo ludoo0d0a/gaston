@@ -64,6 +64,25 @@ fun wmoWeatherStyle(code: Int): WmoWeatherStyle = when (code) {
     else -> WmoWeatherStyle(code, "Weather code $code", WmoWeatherFamily.Unknown, 0xFF9CA3AF.toInt())
 }
 
+/** True if this weather family represents active severe weather / weather hazards (intempéries: rain, snow, storm, fog, etc.). */
+val WmoWeatherFamily.isIntemperie: Boolean
+    get() = when (this) {
+        WmoWeatherFamily.Drizzle,
+        WmoWeatherFamily.Rain,
+        WmoWeatherFamily.Showers,
+        WmoWeatherFamily.Snow,
+        WmoWeatherFamily.Freezing,
+        WmoWeatherFamily.Storm,
+        WmoWeatherFamily.Fog -> true
+        WmoWeatherFamily.Clear,
+        WmoWeatherFamily.Cloudy,
+        WmoWeatherFamily.Unknown -> false
+    }
+
+/** True if this weather style represents active severe weather / weather hazards (intempéries). */
+val WmoWeatherStyle.isIntemperie: Boolean
+    get() = family.isIntemperie
+
 /** Raw keys stored on weather [fr.geoking.gaston.poi.Poi.rawSourceData]. */
 object WeatherPoiRawKeys {
     const val WEATHER_CODE = "weather_code"
