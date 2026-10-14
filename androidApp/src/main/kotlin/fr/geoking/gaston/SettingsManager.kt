@@ -694,6 +694,25 @@ open class SettingsManager(
                 selectedPoiProviders = providers,
                 selectedOverpassAmenityTypes = setOf(amenityType),
                 cacheWarmAmenityTypes = current.cacheWarmAmenityTypes + amenityType,
+                // Exclusive amenity view: hide traffic event markers.
+                mapTrafficEnabled = false,
+            )
+        )
+    }
+
+    /**
+     * Lieux → Trafic: show traffic event markers only (no fuel/EV/amenity POIs).
+     * Uses Other mode with an empty amenity set so [StationMapFilters] drops all POIs.
+     */
+    open fun setTrafficMode() {
+        val current = _settings.value
+        saveSettings(
+            current.copy(
+                useVehicleFilter = false,
+                poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+                selectedPoiProviders = setOf(PoiProviderType.Overpass),
+                selectedOverpassAmenityTypes = emptySet(),
+                mapTrafficEnabled = true,
             )
         )
     }

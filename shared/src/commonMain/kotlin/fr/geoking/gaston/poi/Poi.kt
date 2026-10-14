@@ -60,7 +60,7 @@ enum class PoiCategory {
     Cafe,
     /** Supermarket / convenience store (OSM shop=supermarket / shop=convenience). */
     Supermarket,
-    /** Weather grid sample (Open-Meteo WMO weather_code). */
+    /** Weather grid sample (Open-Meteo current precipitation). */
     Weather;
     companion object {
         /** OSM amenity tag value for this category, when applicable. */
@@ -214,7 +214,7 @@ enum class PoiProviderType(
     LufopOpenSpeedCam,
     /** Luxembourg fixed radars (PCH / data.public.lu GeoJSON, CC0). */
     LuxembourgRadars(fetchKind = PoiProviderFetchKind.File),
-    /** Open-Meteo weather_code grid for the weather map amenity. */
+    /** Open-Meteo precipitation grid for the weather map amenity. */
     OpenMeteoWeather,
     Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),

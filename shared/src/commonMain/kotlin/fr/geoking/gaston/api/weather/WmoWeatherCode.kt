@@ -64,14 +64,33 @@ fun wmoWeatherStyle(code: Int): WmoWeatherStyle = when (code) {
     else -> WmoWeatherStyle(code, "Weather code $code", WmoWeatherFamily.Unknown, 0xFF9CA3AF.toInt())
 }
 
+/**
+ * Display style for current precipitation (mm) from Open-Meteo bounding-box grid.
+ */
+data class PrecipitationStyle(
+    val label: String,
+    /** Fully opaque ARGB disc fill for map markers. */
+    val discArgb: Int,
+    val isDry: Boolean,
+)
+
+/** Marker label + color from precipitation intensity (mm in the preceding hour). */
+fun precipitationStyle(mm: Double): PrecipitationStyle {
+    val label = if (mm <= 0.0) "Dry" else {
+        val tenths = kotlin.math.round(mm * 10.0) / 10.0
+        "$tenths mm"
+    }
+    return when {
+        mm <= 0.0 -> PrecipitationStyle(label, 0xFFFBBF24.toInt(), isDry = true)
+        mm < 0.5 -> PrecipitationStyle(label, 0xFF7DD3FC.toInt(), isDry = false)
+        mm < 2.5 -> PrecipitationStyle(label, 0xFF3B82F6.toInt(), isDry = false)
+        mm < 7.5 -> PrecipitationStyle(label, 0xFF1D4ED8.toInt(), isDry = false)
+        else -> PrecipitationStyle(label, 0xFF1E3A8A.toInt(), isDry = false)
+    }
+}
+
 /** Raw keys stored on weather [fr.geoking.gaston.poi.Poi.rawSourceData]. */
 object WeatherPoiRawKeys {
-    const val WEATHER_CODE = "weather_code"
-    const val WMO_FAMILY = "wmo_family"
     const val SOURCE = "open_meteo"
-    const val PRECIPITATION_PROBABILITY = "precipitation_probability"
     const val PRECIPITATION = "precipitation"
-    const val RAIN = "rain"
-    const val SHOWERS = "showers"
-    const val SNOW = "snow"
 }

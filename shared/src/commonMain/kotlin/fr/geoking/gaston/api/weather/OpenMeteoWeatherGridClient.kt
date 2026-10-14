@@ -9,28 +9,22 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
- * One Open-Meteo sample at a grid coordinate (WMO [weatherCode] as returned by the API).
+ * One Open-Meteo sample at a grid coordinate ([precipitation] mm from `current`).
  */
 data class WeatherGridSample(
     val latitude: Double,
     val longitude: Double,
-    val weatherCode: Int,
-    val precipitationProbability: Double? = null,
-    val precipitation: Double? = null,
-    val rain: Double? = null,
-    val showers: Double? = null,
-    val snow: Double? = null,
+    val precipitation: Double,
 )
 
 /**
- * Fetches current [weather_code] and precipitation for the map viewport via Open-Meteo
- * `&bounding_box=latMin,lonMin,latMax,lonMax` (no API key).
+ * Fetches current precipitation for the map viewport via Open-Meteo
+ * `&bounding_box=south,west,north,east` (latMin,lonMin,latMax,lonMax; no API key).
  *
  * Bounding-box queries require a concrete model (not `*_seamless` / `best_match`) and
  * do not support `timezone=auto`.
@@ -43,7 +37,7 @@ class OpenMeteoWeatherGridClient(
      * @param lonMin west edge (must be &lt; [lonMax])
      * @param models concrete Open-Meteo model, e.g. `ecmwf_ifs025` or `meteofrance_arpege_world`
      */
-    suspend fun fetchCurrentWeatherCodes(
+    suspend fun fetchCurrentPrecipitation(
         latMin: Double,
         lonMin: Double,
         latMax: Double,
@@ -58,7 +52,7 @@ class OpenMeteoWeatherGridClient(
             append("?bounding_box=")
             append(latMin).append(',').append(lonMin).append(',').append(latMax).append(',').append(lonMax)
             append("&forecast_days=1")
-            append("&current=weather_code,precipitation,precipitation_probability,rain,showers,snowfall")
+            append("&current=precipitation")
             append("&timezone=GMT")
             append("&models=").append(models)
         }
@@ -125,23 +119,12 @@ class OpenMeteoWeatherGridClient(
             val lat = obj["latitude"]?.jsonPrimitive?.doubleOrNull ?: fallbackLat ?: return null
             val lon = obj["longitude"]?.jsonPrimitive?.doubleOrNull ?: fallbackLon ?: return null
             val currentObj = obj["current"]?.jsonObject ?: return null
-            val code = currentObj["weather_code"]?.jsonPrimitive?.intOrNull ?: return null
-
-            val precipProb = currentObj["precipitation_probability"]?.jsonPrimitive?.doubleOrNull
-            val precip = currentObj["precipitation"]?.jsonPrimitive?.doubleOrNull
-            val rain = currentObj["rain"]?.jsonPrimitive?.doubleOrNull
-            val showers = currentObj["showers"]?.jsonPrimitive?.doubleOrNull
-            val snow = (currentObj["snowfall"] ?: currentObj["snow"])?.jsonPrimitive?.doubleOrNull
+            val precip = currentObj["precipitation"]?.jsonPrimitive?.doubleOrNull ?: return null
 
             return WeatherGridSample(
                 latitude = lat,
                 longitude = lon,
-                weatherCode = code,
-                precipitationProbability = precipProb,
                 precipitation = precip,
-                rain = rain,
-                showers = showers,
-                snow = snow,
             )
         }
 
@@ -150,56 +133,29 @@ class OpenMeteoWeatherGridClient(
             val lons = root["longitude"]?.jsonArray ?: return emptyList()
             val current = root["current"]
 
-            val extractField: (String) -> List<Double?> = { fieldName ->
-                when (current) {
-                    is JsonArray -> current.map { el ->
-                        (el as? JsonObject)?.get(fieldName)?.jsonPrimitive?.doubleOrNull
-                    }
-                    is JsonObject -> {
-                        val el = current[fieldName]
-                        when (el) {
-                            is JsonArray -> el.map { it.jsonPrimitive.doubleOrNull }
-                            else -> listOf(el?.jsonPrimitive?.doubleOrNull)
-                        }
-                    }
-                    else -> emptyList()
-                }
-            }
-
-            val codes: List<Int?> = when (current) {
+            val precips: List<Double?> = when (current) {
                 is JsonArray -> current.map { el ->
-                    (el as? JsonObject)?.get("weather_code")?.jsonPrimitive?.intOrNull
+                    (el as? JsonObject)?.get("precipitation")?.jsonPrimitive?.doubleOrNull
                 }
                 is JsonObject -> {
-                    val codeEl = current["weather_code"]
-                    when (codeEl) {
-                        is JsonArray -> codeEl.map { it.jsonPrimitive.intOrNull }
-                        else -> listOf(codeEl?.jsonPrimitive?.intOrNull)
+                    val el = current["precipitation"]
+                    when (el) {
+                        is JsonArray -> el.map { it.jsonPrimitive.doubleOrNull }
+                        else -> listOf(el?.jsonPrimitive?.doubleOrNull)
                     }
                 }
                 else -> emptyList()
             }
 
-            val precipProbs = extractField("precipitation_probability")
-            val precips = extractField("precipitation")
-            val rains = extractField("rain")
-            val showersList = extractField("showers")
-            val snowList = extractField("snowfall").ifEmpty { extractField("snow") }
-
-            val n = minOf(lats.size, lons.size, codes.size)
+            val n = minOf(lats.size, lons.size, precips.size)
             return (0 until n).mapNotNull { i ->
-                val code = codes[i] ?: return@mapNotNull null
+                val precip = precips[i] ?: return@mapNotNull null
                 val lat = lats[i].jsonPrimitive.doubleOrNull ?: return@mapNotNull null
                 val lon = lons[i].jsonPrimitive.doubleOrNull ?: return@mapNotNull null
                 WeatherGridSample(
                     latitude = lat,
                     longitude = lon,
-                    weatherCode = code,
-                    precipitationProbability = precipProbs.getOrNull(i),
-                    precipitation = precips.getOrNull(i),
-                    rain = rains.getOrNull(i),
-                    showers = showersList.getOrNull(i),
-                    snow = snowList.getOrNull(i),
+                    precipitation = precip,
                 )
             }
         }

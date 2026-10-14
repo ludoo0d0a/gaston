@@ -154,7 +154,7 @@ fun PhoneDashboardScreen(
                     },
                     onOpenTraffic = {
                         scope.launch {
-                            settingsManager.setMapTrafficEnabled(true)
+                            settingsManager.setTrafficMode()
                             onOpenMap(null, 12.5f)
                         }
                     },

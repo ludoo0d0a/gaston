@@ -489,6 +489,8 @@ open class NotificationHelper(private val context: Context) {
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            // Navigation category: AA treats as driver-relevant HUN (same as park-save alert).
+            .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .setTimeoutAfter(TEMPORARY_NOTIFICATION_MS)
