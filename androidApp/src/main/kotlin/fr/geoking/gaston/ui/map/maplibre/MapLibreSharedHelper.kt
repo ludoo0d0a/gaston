@@ -39,6 +39,10 @@ object MapLibreSharedHelper {
     const val RADAR_ZONE_SOURCE_ID = "radar-danger-zone-source"
     const val RADAR_ZONE_FILL_LAYER_ID = "radar-danger-zone-fill"
     const val RADAR_ZONE_LINE_LAYER_ID = "radar-danger-zone-line"
+    private const val RADAR_ZONE_FILL_COLOR_PROPERTY = "fill-color"
+    private const val RADAR_ZONE_FILL_OPACITY_PROPERTY = "fill-opacity"
+    private const val RADAR_ZONE_STROKE_COLOR_PROPERTY = "stroke-color"
+    private const val RADAR_ZONE_KIND_PROPERTY = "kind"
     const val USER_LOCATION_SOURCE_ID = "user-location-source"
     const val USER_LOCATION_LAYER_ID = "user-location-layer"
     const val USER_LOCATION_ICON_ID = "user-location-arrow-icon"
@@ -129,8 +133,8 @@ object MapLibreSharedHelper {
     }
 
     /**
-     * Directional danger-zone rectangles around radar amenity POIs (fill + stroke).
-     * Drawn only when a unidirectional monitored bearing is available.
+     * Shared danger-zone sectors around radar amenity POIs (full + km + 200 m rings).
+     * Geometry and colours from [DangerZoneTriangle.overlayRingsForRadarPoi].
      */
     fun syncRadarDangerZoneLayer(map: MapLibreMap, pois: List<Poi>) {
         map.getStyle { style ->
@@ -139,8 +143,8 @@ object MapLibreSharedHelper {
             }
             if (style.getLayer(RADAR_ZONE_FILL_LAYER_ID) == null) {
                 val fill = FillLayer(RADAR_ZONE_FILL_LAYER_ID, RADAR_ZONE_SOURCE_ID).withProperties(
-                    PropertyFactory.fillColor("#EF4444"),
-                    PropertyFactory.fillOpacity(0.13f)
+                    PropertyFactory.fillColor(Expression.get(RADAR_ZONE_FILL_COLOR_PROPERTY)),
+                    PropertyFactory.fillOpacity(Expression.get(RADAR_ZONE_FILL_OPACITY_PROPERTY)),
                 )
                 if (style.getLayer(POI_LAYER_ID) != null) {
                     style.addLayerBelow(fill, POI_LAYER_ID)
@@ -150,9 +154,9 @@ object MapLibreSharedHelper {
             }
             if (style.getLayer(RADAR_ZONE_LINE_LAYER_ID) == null) {
                 val line = LineLayer(RADAR_ZONE_LINE_LAYER_ID, RADAR_ZONE_SOURCE_ID).withProperties(
-                    PropertyFactory.lineColor("#EF4444"),
+                    PropertyFactory.lineColor(Expression.get(RADAR_ZONE_STROKE_COLOR_PROPERTY)),
                     PropertyFactory.lineWidth(2.5f),
-                    PropertyFactory.lineOpacity(0.9f)
+                    PropertyFactory.lineOpacity(0.9f),
                 )
                 if (style.getLayer(POI_LAYER_ID) != null) {
                     style.addLayerBelow(line, POI_LAYER_ID)
@@ -162,16 +166,30 @@ object MapLibreSharedHelper {
             }
 
             val source = style.getSourceAs<GeoJsonSource>(RADAR_ZONE_SOURCE_ID) ?: return@getStyle
-            val features = pois.filter { it.poiCategory == PoiCategory.Radar }.mapNotNull { poi ->
-                val ring = DangerZoneTriangle.latLngRingForRadarPoi(poi)?.map { (lat, lon) ->
-                    Point.fromLngLat(lon, lat)
-                } ?: return@mapNotNull null
-                if (ring.size < 5) return@mapNotNull null
-                Feature.fromGeometry(Polygon.fromLngLats(listOf(ring)))
+            val features = pois.filter { it.poiCategory == PoiCategory.Radar }.flatMap { poi ->
+                DangerZoneTriangle.overlayRingsForRadarPoi(poi).mapNotNull { overlay ->
+                    if (overlay.points.size < 4) return@mapNotNull null
+                    val ring = overlay.points.map { (lat, lon) -> Point.fromLngLat(lon, lat) }
+                    Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).apply {
+                        addStringProperty(RADAR_ZONE_FILL_COLOR_PROPERTY, argbToRgbHex(overlay.fillArgb))
+                        addNumberProperty(RADAR_ZONE_FILL_OPACITY_PROPERTY, argbAlpha(overlay.fillArgb).toDouble())
+                        addStringProperty(RADAR_ZONE_STROKE_COLOR_PROPERTY, argbToRgbHex(overlay.strokeArgb))
+                        addStringProperty(RADAR_ZONE_KIND_PROPERTY, overlay.kind.name)
+                    }
+                }
             }
             source.setGeoJson(FeatureCollection.fromFeatures(features))
         }
     }
+
+    private fun argbToRgbHex(argb: Int): String {
+        val r = (argb shr 16) and 0xFF
+        val g = (argb shr 8) and 0xFF
+        val b = argb and 0xFF
+        return String.format("#%02X%02X%02X", r, g, b)
+    }
+
+    private fun argbAlpha(argb: Int): Float = ((argb ushr 24) and 0xFF) / 255f
 
     /**
      * Synchronizes the red circle search radius boundary.

@@ -13,14 +13,19 @@ import kotlin.test.assertTrue
 class DangerZoneTriangleTest {
 
     @Test
-    fun noRectangleWhenDirectionMissing() {
+    fun noBearingMeansFullCircleRing() {
         val poi = radarPoi(raw = mapOf("vma" to "130"))
         assertNull(DangerZoneTriangle.monitoredBearingDegrees(poi))
-        assertNull(DangerZoneTriangle.latLngRingForRadarPoi(poi))
+        val ring = assertNotNull(DangerZoneTriangle.latLngRingForRadarPoi(poi))
+        assertTrue(ring.size >= 4)
+        val overlays = DangerZoneTriangle.overlayRingsForRadarPoi(poi)
+        assertTrue(overlays.isNotEmpty())
+        assertEquals(DangerZoneOverlayKind.Full, overlays.first().kind)
+        assertEquals(DangerZoneOverlayKind.Near, overlays.last().kind)
     }
 
     @Test
-    fun noRectangleWhenBidirectional() {
+    fun bidirectionalMeansFullCircleRing() {
         val poi = radarPoi(
             raw = mapOf(
                 "vma" to "90",
@@ -29,51 +34,47 @@ class DangerZoneTriangleTest {
             )
         )
         assertNull(DangerZoneTriangle.monitoredBearingDegrees(poi))
-        assertNull(DangerZoneTriangle.latLngRingForRadarPoi(poi))
+        assertNotNull(DangerZoneTriangle.latLngRingForRadarPoi(poi))
     }
 
     @Test
-    fun trapezoidNearEdgeAtRadarAndWiderFarEdgeAtEntryRadius() {
+    fun alertRadiiForMotorway() {
+        val radii = DangerZoneTriangle.alertRadiiMeters(4_000.0)
+        assertEquals(listOf(4_000.0, 3_000.0, 2_000.0, 1_000.0, 200.0), radii)
+    }
+
+    @Test
+    fun alertRadiiForUrbanHasNoKmReminders() {
+        val radii = DangerZoneTriangle.alertRadiiMeters(300.0)
+        assertEquals(listOf(300.0, 200.0), radii)
+        assertTrue(DangerZoneTriangle.kmReminderRadiiMeters(300.0).isEmpty())
+    }
+
+    @Test
+    fun sectorRingOpensOnApproachSide() {
         val tipLat = 48.8566
         val tipLon = 2.3522
-        val bearing = 0.0 // northbound monitored → entry from south
+        val bearing = 0.0 // northbound → approach from south
         val radiusM = 2_000.0
-        val nearHalf = DangerZoneTriangle.HALF_WIDTH_METERS
-        val farHalf = DangerZoneTriangle.FAR_HALF_WIDTH_METERS
         val ring = DangerZoneTriangle.latLngRing(tipLat, tipLon, radiusM, bearing)
-        assertEquals(5, ring.size)
-        // Closed ring
-        assertEquals(ring[0].first, ring[4].first, 1e-9)
-        assertEquals(ring[0].second, ring[4].second, 1e-9)
-
-        // Near corners are ~nearHalf from tip
-        val dNearLeft = haversineKm(tipLat, tipLon, ring[0].first, ring[0].second) * 1000.0
-        val dNearRight = haversineKm(tipLat, tipLon, ring[3].first, ring[3].second) * 1000.0
-        assertEquals(nearHalf, dNearLeft, 5.0)
-        assertEquals(nearHalf, dNearRight, 5.0)
-
-        // Far-edge mid-point is south of tip at ~radius
-        val midFarLat = (ring[1].first + ring[2].first) / 2.0
-        val midFarLon = (ring[1].second + ring[2].second) / 2.0
-        assertTrue(midFarLat < tipLat)
-        val dFar = haversineKm(tipLat, tipLon, midFarLat, midFarLon) * 1000.0
-        assertEquals(radiusM, dFar, 10.0)
-
-        val widthNear = haversineKm(ring[0].first, ring[0].second, ring[3].first, ring[3].second) * 1000.0
-        val widthFar = haversineKm(ring[1].first, ring[1].second, ring[2].first, ring[2].second) * 1000.0
-        assertEquals(2.0 * nearHalf, widthNear, 8.0)
-        assertEquals(2.0 * farHalf, widthFar, 12.0)
-        assertTrue(widthFar > widthNear)
+        assertTrue(ring.size >= 4)
+        // Tip is first and last
+        assertEquals(tipLat, ring.first().first, 1e-9)
+        assertEquals(tipLon, ring.first().second, 1e-9)
+        // Mid-arc point should be roughly south of tip at ~radius
+        val mid = ring[ring.size / 2]
+        assertTrue(mid.first < tipLat)
+        val d = haversineKm(tipLat, tipLon, mid.first, mid.second) * 1000.0
+        assertEquals(radiusM, d, 30.0)
     }
 
     @Test
     fun containsOnApproachAxisAndRejectsSideAndBehind() {
         val tipLat = 48.8566
         val tipLon = 2.3522
-        val bearing = 0.0 // northbound → corridor extends south
+        val bearing = 0.0 // northbound → sector opens south
         val radiusM = 2_000.0
 
-        // Midway on approach axis (south of tip) → inside
         val onAxis = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 1_000.0)
         assertTrue(
             DangerZoneTriangle.contains(
@@ -81,9 +82,8 @@ class DangerZoneTriangleTest {
             ),
         )
 
-        // Far to the east at mid-approach (~400 m lateral > far half-width taper) → outside
-        val midApproach = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 1_000.0)
-        val farSide = DangerZoneTriangle.offsetMeters(midApproach.first, midApproach.second, 90.0, 400.0)
+        // 90° east of tip at mid distance → outside 45° half-angle
+        val farSide = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 90.0, 1_000.0)
         assertFalse(
             DangerZoneTriangle.contains(
                 farSide.first, farSide.second, tipLat, tipLon, radiusM, bearing,
@@ -98,14 +98,32 @@ class DangerZoneTriangleTest {
             ),
         )
 
-        // Just inside far base near corner of wide entry (~100 m lateral at entry) → inside
-        val entryCenter = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, radiusM - 50.0)
-        val nearFarCorner = DangerZoneTriangle.offsetMeters(entryCenter.first, entryCenter.second, 90.0, 100.0)
+        // Within half-angle near entry (~30° from approach axis) → inside
+        val angled = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0 - 30.0, 1_500.0)
         assertTrue(
             DangerZoneTriangle.contains(
-                nearFarCorner.first, nearFarCorner.second, tipLat, tipLon, radiusM, bearing,
+                angled.first, angled.second, tipLat, tipLon, radiusM, bearing,
             ),
         )
+    }
+
+    @Test
+    fun overlayRingsForMotorwayUnidirectional() {
+        val poi = radarPoi(
+            raw = mapOf(
+                "vma" to "130",
+                DangerZoneTriangle.RAW_MONITORED_BEARING to "0",
+            )
+        )
+        val rings = DangerZoneTriangle.overlayRingsForRadarPoi(poi)
+        assertEquals(5, rings.size)
+        assertEquals(DangerZoneOverlayKind.Full, rings[0].kind)
+        assertEquals(4_000.0, rings[0].radiusMeters)
+        assertEquals(DangerZoneOverlayKind.KmReminder, rings[1].kind)
+        assertEquals(DangerZoneOverlayKind.Near, rings.last().kind)
+        assertEquals(200.0, rings.last().radiusMeters)
+        // Largest first
+        assertTrue(rings.zipWithNext().all { (a, b) -> a.radiusMeters > b.radiusMeters })
     }
 
     @Test
