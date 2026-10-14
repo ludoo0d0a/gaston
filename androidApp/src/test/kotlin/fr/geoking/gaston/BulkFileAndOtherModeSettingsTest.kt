@@ -4,6 +4,7 @@ import fr.geoking.gaston.feature.network.BulkFileNetworkAccess
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.shared.network.NetworkType
+import fr.geoking.gaston.effectiveAllowedCategories
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -63,6 +64,30 @@ class BulkFileAndOtherModeSettingsTest {
         assertEquals(setOf("weather"), after.selectedOverpassAmenityTypes)
         assertEquals(setOf(PoiProviderType.OpenMeteoWeather), after.selectedPoiProviders)
         assertEquals(PoiCategory.Weather, categoryFromAmenityId("weather"))
+        assertEquals(setOf(PoiCategory.Weather), after.effectiveAllowedCategories())
+        assertFalse(after.mapTrafficEnabled)
+    }
+
+    @Test
+    fun setOtherMode_speedCameraAllowsOnlyRadarCategory() {
+        val manager = SettingsManager(RuntimeEnvironment.getApplication(), firestoreSync = null)
+        manager.setMapTrafficEnabled(true)
+        manager.setOtherMode("speed_camera")
+        val after = manager.settings.value
+        assertEquals(setOf(PoiCategory.Radar), after.effectiveAllowedCategories())
+        assertFalse(after.mapTrafficEnabled)
+    }
+
+    @Test
+    fun setTrafficMode_enablesTrafficAndHidesAmenityPois() {
+        val manager = SettingsManager(RuntimeEnvironment.getApplication(), firestoreSync = null)
+        manager.setOtherMode("speed_camera")
+        manager.setTrafficMode()
+        val after = manager.settings.value
+        assertTrue(after.isOtherModeActive())
+        assertTrue(after.mapTrafficEnabled)
+        assertTrue(after.selectedOverpassAmenityTypes.isEmpty())
+        assertTrue(after.effectiveAllowedCategories().isEmpty())
     }
 
     @Test

@@ -28,7 +28,7 @@ class AutoOtherDashboardScreen(
                 .setTitle(carContext.getString(R.string.dashboard_traffic))
                 .setImage(carContext.carIcon(R.drawable.ic_poi_traffic, AutoCarIcons.emergency))
                 .setOnClickListener {
-                    settingsManager.setMapTrafficEnabled(true)
+                    settingsManager.setTrafficMode()
                     val mapDeps = getMapDeps()
                     if (mapDeps != null) {
                         screenManager.pop()
