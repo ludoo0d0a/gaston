@@ -515,7 +515,7 @@ fun MapScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         if (communityRepo != null) {
-                            item {
+                            item(contentType = "add_poi_chip") {
                                 FilterChip(
                                     selected = false,
                                     onClick = {

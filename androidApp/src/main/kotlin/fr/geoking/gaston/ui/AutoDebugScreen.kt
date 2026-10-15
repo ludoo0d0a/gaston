@@ -498,7 +498,11 @@ fun AutoDebugScreen(
                             state = listState,
                             modifier = Modifier.weight(1f)
                         ) {
-                            items(sortedPois) { poi ->
+                            items(
+                                items = sortedPois,
+                                key = { it.id },
+                                contentType = { "debug_poi" },
+                            ) { poi ->
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()

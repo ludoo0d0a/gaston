@@ -125,7 +125,7 @@ fun FuelForecastScreen(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item {
+                item(contentType = "intro") {
                     Text(
                         stringResource(R.string.forecast_regional_estimations),
                         style = MaterialTheme.typography.bodySmall,
@@ -134,7 +134,7 @@ fun FuelForecastScreen(
                     )
                 }
 
-                item {
+                item(contentType = "fuel_chips") {
                     androidx.compose.foundation.layout.FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -165,7 +165,7 @@ fun FuelForecastScreen(
                     }
                 }
 
-                item {
+                item(contentType = "forecast_chart") {
                     UnifiedFuelForecastChartCard(
                         states = states,
                         selectedFuelIds = selectedFuelIds,
@@ -173,7 +173,7 @@ fun FuelForecastScreen(
                     )
                 }
 
-                item {
+                item(contentType = "algorithm_card") {
                     Card(
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -195,7 +195,7 @@ fun FuelForecastScreen(
                     }
                 }
 
-                item {
+                item(contentType = "spacer") {
                     Box(Modifier.size(16.dp))
                 }
             }

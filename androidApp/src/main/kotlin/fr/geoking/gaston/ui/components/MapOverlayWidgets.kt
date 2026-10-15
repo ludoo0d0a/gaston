@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -159,44 +160,41 @@ fun MapCompassWidget(
     bearing: Float,
     modifier: Modifier = Modifier
 ) {
-    Canvas(modifier = modifier) {
-        val cx = size.width / 2
-        val cy = size.height / 2
-        val needleLength = size.minDimension * 0.49f
-        val needleWidth = size.minDimension * 0.32f
+    Box(
+        modifier = modifier.drawWithCache {
+            val cx = size.width / 2
+            val cy = size.height / 2
+            val needleLength = size.minDimension * 0.49f
+            val needleWidth = size.minDimension * 0.32f
+            val strokeWidth = 1.dp.toPx()
+            val hubOuter = 2.5.dp.toPx()
+            val hubInner = 1.25.dp.toPx()
 
-        rotate(-bearing, pivot = Offset(cx, cy)) {
             val redPath = Path().apply {
                 moveTo(cx, cy - needleLength)
                 lineTo(cx - needleWidth / 2, cy)
                 lineTo(cx + needleWidth / 2, cy)
                 close()
             }
-            drawPath(redPath, color = Color(0xFFFF3B30))
-
             val whitePath = Path().apply {
                 moveTo(cx, cy + needleLength)
                 lineTo(cx - needleWidth / 2, cy)
                 lineTo(cx + needleWidth / 2, cy)
                 close()
             }
-            drawPath(whitePath, color = Color(0xFFB0B0B0))
 
-            drawPath(redPath, color = Color.Black.copy(alpha = 0.35f), style = Stroke(width = 1.dp.toPx()))
-            drawPath(whitePath, color = Color.Black.copy(alpha = 0.35f), style = Stroke(width = 1.dp.toPx()))
-
-            drawCircle(
-                color = Color.DarkGray,
-                radius = 2.5.dp.toPx(),
-                center = Offset(cx, cy)
-            )
-            drawCircle(
-                color = Color.White,
-                radius = 1.25.dp.toPx(),
-                center = Offset(cx, cy)
-            )
+            onDrawBehind {
+                rotate(-bearing, pivot = Offset(cx, cy)) {
+                    drawPath(redPath, color = Color(0xFFFF3B30))
+                    drawPath(whitePath, color = Color(0xFFB0B0B0))
+                    drawPath(redPath, color = Color.Black.copy(alpha = 0.35f), style = Stroke(width = strokeWidth))
+                    drawPath(whitePath, color = Color.Black.copy(alpha = 0.35f), style = Stroke(width = strokeWidth))
+                    drawCircle(color = Color.DarkGray, radius = hubOuter, center = Offset(cx, cy))
+                    drawCircle(color = Color.White, radius = hubInner, center = Offset(cx, cy))
+                }
+            }
         }
-    }
+    )
 }
 
 @Composable

@@ -150,7 +150,11 @@ fun PmtilesMapDownloadDialog(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(PmtilesPresetServers.PRESET_MAPS) { preset ->
+                    items(
+                        items = PmtilesPresetServers.PRESET_MAPS,
+                        key = { it.storageKey },
+                        contentType = { "pmtiles_preset" },
+                    ) { preset ->
                         PmtilesPresetDownloadRow(
                             preset = preset,
                             installedMaps = installedMaps,

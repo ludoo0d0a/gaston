@@ -385,7 +385,11 @@ fun RoutePlanningScreen(
                                 elevation = CardDefaults.cardElevation(8.dp)
                             ) {
                                 LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
-                                    items(originSuggestions) { suggestion ->
+                                    items(
+                                        items = originSuggestions,
+                                        key = { "${it.latitude},${it.longitude},${it.label}" },
+                                        contentType = { "place_suggestion" },
+                                    ) { suggestion ->
                                         val isHistory = settings.routeHistory.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
                                         val isFavorite = settings.favoriteLocations.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
                                         Row(
@@ -528,7 +532,11 @@ fun RoutePlanningScreen(
                             elevation = CardDefaults.cardElevation(8.dp)
                         ) {
                             LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
-                                items(destSuggestions) { suggestion ->
+                                items(
+                                    items = destSuggestions,
+                                    key = { "${it.latitude},${it.longitude},${it.label}" },
+                                    contentType = { "place_suggestion" },
+                                ) { suggestion ->
                                     val isHistory = settings.routeHistory.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
                                 val isFavorite = settings.favoriteLocations.any { it.label == suggestion.label && it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
                                     Row(
@@ -792,8 +800,11 @@ fun RoutePlanningScreen(
                     Text(stringResource(R.string.route_recommended_stops), color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.labelLarge)
                     Spacer(modifier = Modifier.height(4.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(recommendations) { poi ->
-                            val scope = rememberCoroutineScope()
+                        items(
+                            items = recommendations,
+                            key = { it.id },
+                            contentType = { "recommendation" },
+                        ) { poi ->
                             Card(
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
                                 modifier = Modifier.width(200.dp).clickable {
@@ -830,7 +841,11 @@ fun RoutePlanningScreen(
                     state = listState,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(filteredStations, key = { it.id }) { poi ->
+                    items(
+                        items = filteredStations,
+                        key = { it.id },
+                        contentType = { "station" },
+                    ) { poi ->
                         val isCheapest = CheapestStationHighlight.isCheapestFuelStation(
                             poi = poi,
                             minPrice = minPrice,

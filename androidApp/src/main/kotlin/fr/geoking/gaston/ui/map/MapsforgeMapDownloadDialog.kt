@@ -150,7 +150,11 @@ fun MapsforgeMapDownloadDialog(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    items(MapsforgePresetServers.FRANCE_REGION_MAPS) { preset ->
+                    items(
+                        items = MapsforgePresetServers.FRANCE_REGION_MAPS,
+                        key = { it.storageKey },
+                        contentType = { "mapsforge_preset" },
+                    ) { preset ->
                         MapsforgePresetDownloadRow(
                             preset = preset,
                             installedMaps = installedMaps,
@@ -168,7 +172,11 @@ fun MapsforgeMapDownloadDialog(
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
-                    items(MapsforgePresetServers.NEIGHBOR_MAPS) { preset ->
+                    items(
+                        items = MapsforgePresetServers.NEIGHBOR_MAPS,
+                        key = { it.storageKey },
+                        contentType = { "mapsforge_preset" },
+                    ) { preset ->
                         MapsforgePresetDownloadRow(
                             preset = preset,
                             installedMaps = installedMaps,

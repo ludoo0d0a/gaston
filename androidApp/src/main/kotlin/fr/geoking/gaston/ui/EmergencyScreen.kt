@@ -196,7 +196,11 @@ fun EmergencyScreen(
                             modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
                         )
                     }
-                    items(contacts) { contact ->
+                    items(
+                        items = contacts,
+                        key = { "${it.category}_${it.number}_${it.label}" },
+                        contentType = { "emergency_contact" },
+                    ) { contact ->
                         ContactRow(
                             contact = contact,
                             onCall = { dial(context, contact.number) }

@@ -227,6 +227,12 @@ fun PoiOverlayHost(
         }
 
         val configuration = LocalConfiguration.current
+        val highlightedFuelIds = settings.effectiveMapEnergyFilterIds()
+        val highlightedPowerLevels = settings.effectiveIrvePowerLevels()
+        val isLoggedIn = settings.isLoggedIn
+        val hasPremiumFeatures = settings.hasPremiumFeatures
+        val selectedPoiId = selectedPoi.id
+        val cardWidth = (configuration.screenWidthDp - 32).dp
         LazyRow(
             state = lazyListState,
             flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState),
@@ -237,25 +243,28 @@ fun PoiOverlayHost(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(listToShow, key = { it.id }) { poi ->
-                val isFav = poi.id in favoriteIds
+            items(
+                items = listToShow,
+                key = { it.id },
+                contentType = { "poi_card" },
+            ) { poi ->
                 PoiDetailCard(
                     modifier = Modifier
-                        .width((configuration.screenWidthDp - 32).dp)
+                        .width(cardWidth)
                         .height(STATION_OVERLAY_CARD_HEIGHT),
                     poi = poi,
                     availabilitySummary = availabilityByPoiId[poi.id],
-                    highlightedFuelIds = settings.effectiveMapEnergyFilterIds(),
-                    highlightedPowerLevels = settings.effectiveIrvePowerLevels(),
+                    highlightedFuelIds = highlightedFuelIds,
+                    highlightedPowerLevels = highlightedPowerLevels,
                     onNavigate = {
                         val uri = IntentNavigationHelper.getNavigationUri(poi)
                         context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                     },
                     onLocate = { onCenterMapOnPoi(poi) },
                     onShowDetails = { poiForDetailsDialog = poi },
-                    isSelected = poi.id == selectedPoi.id,
-                    isLoggedIn = settings.isLoggedIn,
-                    isFavorite = isFav,
+                    isSelected = { poi.id == selectedPoiId },
+                    isLoggedIn = isLoggedIn,
+                    isFavorite = { poi.id in favoriteIds },
                     onRefreshPoi = {
                         scope.launch {
                             val refreshed = poiProvider.refreshPoi(poi)
@@ -264,9 +273,9 @@ fun PoiOverlayHost(
                             }
                         }
                     },
-                    onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
+                    onToggleFavorite = if (isLoggedIn && favoritesRepo != null) {
                         {
-                            if (settings.hasPremiumFeatures) {
+                            if (hasPremiumFeatures) {
                                 scope.launch {
                                     favoritesRepo.toggleFavorite(poi)
                                     setFavoriteIds(favoritesRepo.getFavorites().map { it.id }.toSet())

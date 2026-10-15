@@ -115,9 +115,9 @@ fun PhoneDashboardMainContent(
         state = listState,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item { Spacer(Modifier.height(8.dp)) }
+        item(contentType = "spacer") { Spacer(Modifier.height(8.dp)) }
 
-        item {
+        item(contentType = "destination_search") {
             PhoneDashboardDestinationSearch(
                 geocodingClient = geocodingClient,
                 hasLocationPermission = hasLocationPermission,
@@ -131,14 +131,14 @@ fun PhoneDashboardMainContent(
             )
         }
 
-        item {
+        item(contentType = "search_mode") {
             SearchModeSelector(
                 currentMode = currentMode,
                 settingsManager = settingsManager
             )
         }
 
-        item {
+        item(contentType = "search_category") {
             SearchCategorySelector(
                 currentMode = currentMode,
                 settings = settings,
@@ -147,7 +147,7 @@ fun PhoneDashboardMainContent(
             )
         }
 
-        item {
+        item(contentType = "nearby_cheapest") {
             PhoneDashboardNearbyCheapestSection(
                 isLoadingPois = isLoadingPois,
                 showLoaderByDelay = showLoaderByDelay,
@@ -167,7 +167,7 @@ fun PhoneDashboardMainContent(
             )
         }
 
-        item {
+        item(contentType = "other_actions_grid") {
             val gridActions = mutableListOf(
                 DashboardRow(
                     title = stringResource(R.string.dashboard_network),
@@ -216,26 +216,26 @@ fun PhoneDashboardMainContent(
         }
 
 
-        item {
+        item(contentType = "emergency_card") {
             PhoneDashboardEmergencyCard(onOpenEmergency = onOpenEmergency)
         }
 
-        item {
+        item(contentType = "accident_card") {
             PhoneDashboardAccidentCard(onOpenAccident = onOpenAccident)
         }
 
-        item {
+        item(contentType = "maintenance_card") {
             PhoneDashboardMaintenanceCard(onOpenMaintenance = onOpenMaintenance)
         }
 
-        item {
+        item(contentType = "parked_car_card") {
             PhoneDashboardParkedCarCard(
                 settings = settings,
                 onOpenParkedCar = onOpenParkedCar,
             )
         }
 
-        item {
+        item(contentType = "version_footer") {
             Spacer(Modifier.height(16.dp))
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text(

@@ -306,7 +306,11 @@ fun PhoneDashboardDestinationSearch(
                         }
                     } else {
                     LazyColumn(modifier = Modifier.heightIn(max = 250.dp)) {
-                        items(destSuggestions) { suggestion ->
+                        items(
+                            items = destSuggestions,
+                            key = { "${it.latitude},${it.longitude},${it.label}" },
+                            contentType = { "place_suggestion" },
+                        ) { suggestion ->
                             val isFavorite = settings.favoriteLocations.any {
                                 it.latitude == suggestion.latitude &&
                                     it.longitude == suggestion.longitude
