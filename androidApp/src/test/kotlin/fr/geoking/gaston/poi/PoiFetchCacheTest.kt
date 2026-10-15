@@ -56,6 +56,36 @@ class PoiFetchCacheTest {
     }
 
     @Test
+    fun resolveCategoriesToFetch_weatherNotIncludedFromWarmCacheWhenUnselected() {
+        val settings = AppSettings(
+            mapEnergyMode = EnergyFilterMode.Fuel,
+            cacheWarmAmenityTypes = setOf("parking", "weather"),
+        )
+        val categories = resolveCategoriesToFetch(settings)
+        assertTrue(PoiCategory.Parking in categories)
+        assertFalse(PoiCategory.Weather in categories)
+    }
+
+    @Test
+    fun resolveCategoriesToFetch_weatherIncludedWhenSelectedInOverpassAmenityTypes() {
+        val settings = AppSettings(
+            mapEnergyMode = EnergyFilterMode.Fuel,
+            selectedOverpassAmenityTypes = setOf("weather"),
+        )
+        val categories = resolveCategoriesToFetch(settings)
+        assertTrue(PoiCategory.Gas in categories)
+        assertTrue(PoiCategory.Weather in categories)
+    }
+
+    @Test
+    fun resolveCategoriesToFetch_weatherIncludedWhenExtraCategoriesContainsWeather() {
+        val settings = AppSettings(mapEnergyMode = EnergyFilterMode.Fuel)
+        val categories = resolveCategoriesToFetch(settings, extraCategories = setOf(PoiCategory.Weather))
+        assertTrue(PoiCategory.Gas in categories)
+        assertTrue(PoiCategory.Weather in categories)
+    }
+
+    @Test
     fun resolveCategoriesToFetch_otherModeOnlySelectedAmenities() {
         val settings = AppSettings(
             poiProviderSelectionMode = PoiProviderSelectionMode.Manual,

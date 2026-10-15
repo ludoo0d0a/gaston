@@ -69,6 +69,15 @@ class BulkFileAndOtherModeSettingsTest {
     }
 
     @Test
+    fun leavingWeatherOtherMode_doesNotKeepWeatherInCacheWarmAmenityTypes() {
+        val manager = SettingsManager(RuntimeEnvironment.getApplication(), firestoreSync = null)
+        manager.setOtherMode("weather")
+        manager.setEnergyFilterMode(PoiCategory.Gas.let { fr.geoking.gaston.poi.EnergyFilterMode.Fuel })
+        val after = manager.settings.value
+        assertFalse("weather" in after.cacheWarmAmenityTypes)
+    }
+
+    @Test
     fun setOtherMode_speedCameraAllowsOnlyRadarCategory() {
         val manager = SettingsManager(RuntimeEnvironment.getApplication(), firestoreSync = null)
         manager.setMapTrafficEnabled(true)
