@@ -661,9 +661,9 @@ open class SettingsManager(
                 mapEnergyMode = mode,
                 selectedOverpassAmenityTypes = if (leavingOther) emptySet() else current.selectedOverpassAmenityTypes,
                 cacheWarmAmenityTypes = if (leavingOther) {
-                    current.cacheWarmAmenityTypes + current.selectedOverpassAmenityTypes
+                    (current.cacheWarmAmenityTypes + current.selectedOverpassAmenityTypes) - "weather"
                 } else {
-                    current.cacheWarmAmenityTypes
+                    current.cacheWarmAmenityTypes - "weather"
                 },
             )
         )
@@ -682,9 +682,9 @@ open class SettingsManager(
                 },
                 selectedOverpassAmenityTypes = if (leavingOther) emptySet() else current.selectedOverpassAmenityTypes,
                 cacheWarmAmenityTypes = if (leavingOther) {
-                    current.cacheWarmAmenityTypes + current.selectedOverpassAmenityTypes
+                    (current.cacheWarmAmenityTypes + current.selectedOverpassAmenityTypes) - "weather"
                 } else {
-                    current.cacheWarmAmenityTypes
+                    current.cacheWarmAmenityTypes - "weather"
                 },
             )
         )
@@ -707,7 +707,7 @@ open class SettingsManager(
                 poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
                 selectedPoiProviders = providers,
                 selectedOverpassAmenityTypes = setOf(amenityType),
-                cacheWarmAmenityTypes = current.cacheWarmAmenityTypes + amenityType,
+                cacheWarmAmenityTypes = (current.cacheWarmAmenityTypes + amenityType) - "weather",
                 // Exclusive amenity view: hide traffic event markers.
                 mapTrafficEnabled = false,
             )
@@ -908,7 +908,7 @@ open class SettingsManager(
         saveSettings(
             current.copy(
                 selectedOverpassAmenityTypes = types,
-                cacheWarmAmenityTypes = current.cacheWarmAmenityTypes + types,
+                cacheWarmAmenityTypes = (current.cacheWarmAmenityTypes + types) - "weather",
                 selectedPoiProviders = providers,
             )
         )

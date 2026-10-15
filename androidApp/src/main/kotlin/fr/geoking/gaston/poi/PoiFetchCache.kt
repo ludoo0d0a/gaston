@@ -112,8 +112,9 @@ fun resolveCategoriesToFetch(settings: AppSettings, extraCategories: Set<PoiCate
     // Warm previously loaded amenities only when browsing stations (fuel/EV). In Other mode
     // the Overpass query must stay limited to the selected amenity — otherwise parking/toilets
     // crowd the result limit and hide speed cameras (and chantier pins from Lufop look sparse).
+    // Weather is an online grid API call, not a cached Overpass amenity, so exclude "weather" from warm cache.
     if (!settings.isOtherModeActive()) {
-        categories += settings.cacheWarmAmenityTypes.mapNotNull { categoryFromAmenityId(it) }
+        categories += (settings.cacheWarmAmenityTypes - "weather").mapNotNull { categoryFromAmenityId(it) }
     }
 
     // Energy / selected amenities follow the selector (fuel / electric / hybrid / other).
