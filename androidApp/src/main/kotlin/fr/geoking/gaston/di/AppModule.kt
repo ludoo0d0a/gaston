@@ -447,7 +447,11 @@ private fun debugRequestBodyText(body: Any?): String? {
 
 /** Cap debug request/response payloads so oversized bodies cannot OOM the log store. */
 private fun truncateDebugBody(body: String?, maxChars: Int = DEBUG_BODY_MAX_CHARS): String? {
-    if (body == null) return null
+    if (body.isNullOrBlank()) return body
+    val limitedJson = fr.geoking.gaston.shared.logging.parseAndLimitJson(body, maxItems = 10)
+    if (limitedJson != null) {
+        return limitedJson.toString()
+    }
     if (body.length <= maxChars) return body
     return body.take(maxChars) + "…[truncated ${body.length - maxChars} chars]"
 }

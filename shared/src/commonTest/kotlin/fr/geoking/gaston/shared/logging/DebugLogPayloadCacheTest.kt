@@ -15,7 +15,7 @@ class DebugLogPayloadCacheTest {
     fun testLimitJsonArraysSmallArray() {
         val json = """[1, 2, 3]"""
         val element = Json.parseToJsonElement(json)
-        val limited = limitJsonArrays(element, maxItems = 20)
+        val limited = limitJsonArrays(element)
         assertTrue(limited is JsonArray)
         assertEquals(3, limited.size)
         assertEquals(JsonPrimitive(1), limited[0])
@@ -24,41 +24,65 @@ class DebugLogPayloadCacheTest {
     }
 
     @Test
-    fun testLimitJsonArraysHugeArray() {
+    fun testLimitJsonArraysHugeArrayDefaultsToTen() {
         val list = (1..30).joinToString(", ")
         val json = """[$list]"""
         val element = Json.parseToJsonElement(json)
-        val limited = limitJsonArrays(element, maxItems = 20)
+        val limited = limitJsonArrays(element)
         assertTrue(limited is JsonArray)
-        assertEquals(21, limited.size)
+        assertEquals(11, limited.size)
         assertEquals(JsonPrimitive(1), limited[0])
-        assertEquals(JsonPrimitive(20), limited[19])
-        assertEquals(JsonPrimitive("and-more"), limited[20])
+        assertEquals(JsonPrimitive(10), limited[9])
+        assertEquals(JsonPrimitive("and-more"), limited[10])
     }
 
     @Test
-    fun testLimitJsonArraysNestedStructure() {
+    fun testLimitJsonArraysNestedStructureDefaultsToTen() {
         val list = (1..25).map { """{"id": $it}""" }.joinToString(", ")
         val json = """{"status": "ok", "items": [$list]}"""
         val element = Json.parseToJsonElement(json)
-        val limited = limitJsonArrays(element, maxItems = 20)
+        val limited = limitJsonArrays(element)
         assertTrue(limited is JsonObject)
         val items = limited["items"]
         assertTrue(items is JsonArray)
-        assertEquals(21, items.size)
-        assertEquals(JsonPrimitive("and-more"), items[20])
+        assertEquals(11, items.size)
+        assertEquals(JsonPrimitive("and-more"), items[10])
     }
 
     @Test
-    fun testParseAndLimitJson() {
+    fun testParseAndLimitJsonDefaultsToTen() {
         val list = (1..22).joinToString(", ")
         val json = """{"data": [$list]}"""
-        val limited = parseAndLimitJson(json, maxItems = 20)
+        val limited = parseAndLimitJson(json)
         assertNotNull(limited)
         assertTrue(limited is JsonObject)
         val data = limited["data"] as JsonArray
-        assertEquals(21, data.size)
-        assertEquals(JsonPrimitive("and-more"), data[20])
+        assertEquals(11, data.size)
+        assertEquals(JsonPrimitive("and-more"), data[10])
+
+        // Verify it can be converted back to string and re-parsed as valid JSON
+        val limitedJsonString = limited.toString()
+        val reParsed = Json.parseToJsonElement(limitedJsonString)
+        assertNotNull(reParsed)
+    }
+
+    @Test
+    fun testDeeplyNestedArraysLimitedAnywhere() {
+        val innerList = (1..15).joinToString(", ")
+        val outerList = (1..12).map { """{"subArray": [$innerList]}""" }.joinToString(", ")
+        val json = """{"results": [$outerList]}"""
+
+        val limited = parseAndLimitJson(json)
+        assertNotNull(limited)
+        assertTrue(limited is JsonObject)
+        val results = limited["results"] as JsonArray
+        assertEquals(11, results.size)
+        assertEquals(JsonPrimitive("and-more"), results[10])
+
+        val firstSub = (results[0] as JsonObject)["subArray"] as JsonArray
+        assertEquals(11, firstSub.size)
+        assertEquals(JsonPrimitive(10), firstSub[9])
+        assertEquals(JsonPrimitive("and-more"), firstSub[10])
     }
 
     @Test
