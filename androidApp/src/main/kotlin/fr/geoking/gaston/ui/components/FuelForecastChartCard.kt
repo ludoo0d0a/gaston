@@ -203,7 +203,7 @@ fun UnifiedFuelForecastChartCard(
                 }
                 if (brentHistory.isNotEmpty()) {
                     LegendDashedItem(
-                        label = stringResource(R.string.forecast_legend_brent),
+                        label = "${stringResource(R.string.forecast_legend_brent)} ($/bbl)",
                         color = brentColor
                     )
                 }
@@ -272,6 +272,7 @@ private fun UnifiedForecastChart(
     val textMeasurer = rememberTextMeasurer()
     val onSurface = MaterialTheme.colorScheme.onSurface
     val labelStyle = TextStyle(fontSize = 10.sp, color = onSurface.copy(alpha = 0.6f))
+    val brentLabelStyle = TextStyle(fontSize = 10.sp, color = brentColor.copy(alpha = 0.85f))
     val bubbleBg = MaterialTheme.colorScheme.secondaryContainer
     val bubbleOnBg = MaterialTheme.colorScheme.onSecondaryContainer
     val gridColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
@@ -287,19 +288,23 @@ private fun UnifiedForecastChart(
         }
 
     val fuelPrices = allFuelPoints.map { it.priceEurPerL }
-    val fuelMin = (fuelPrices.minOrNull() ?: 1.5)
-    val fuelMax = (fuelPrices.maxOrNull() ?: 2.0)
-    val fuelRange = (fuelMax - fuelMin).coerceAtLeast(0.01)
-    val yMin = fuelMin - fuelRange * 0.1
-    val yMax = fuelMax + fuelRange * 0.1
+    val fuelMinRaw = (fuelPrices.minOrNull() ?: 1.5)
+    val fuelMaxRaw = (fuelPrices.maxOrNull() ?: 2.0)
+    val fuelRangeRaw = (fuelMaxRaw - fuelMinRaw).coerceAtLeast(0.01)
+    val yMin = fuelMinRaw - fuelRangeRaw * 0.1
+    val yMax = fuelMaxRaw + fuelRangeRaw * 0.1
     val yRange = (yMax - yMin).coerceAtLeast(0.01)
 
     val brentPrices = brentHistory.map { it.close }
-    val brentMin = brentPrices.minOrNull() ?: 0.0
-    val brentMax = brentPrices.maxOrNull() ?: 1.0
-    val brentRange = (brentMax - brentMin).coerceAtLeast(0.001)
+    val brentMinRaw = brentPrices.minOrNull() ?: 70.0
+    val brentMaxRaw = brentPrices.maxOrNull() ?: 90.0
+    val brentRangeRaw = (brentMaxRaw - brentMinRaw).coerceAtLeast(1.0)
+    val brentMin = brentMinRaw - brentRangeRaw * 0.1
+    val brentMax = brentMaxRaw + brentRangeRaw * 0.1
+    val brentRange = (brentMax - brentMin).coerceAtLeast(1.0)
 
-    val yAxisWidth = 40.dp
+    val yAxisLeftWidth = 38.dp
+    val yAxisRightWidth = 38.dp
 
     BoxWithConstraints(modifier = modifier) {
         val w = constraints.maxWidth.toFloat()
@@ -309,11 +314,11 @@ private fun UnifiedForecastChart(
             detectTapGestures { offset ->
                 val w = size.width
                 val h = size.height
-                val chartW = w - yAxisWidth.toPx()
+                val chartW = w - yAxisLeftWidth.toPx() - yAxisRightWidth.toPx()
                 val chartH = h - X_AXIS_HEIGHT.toPx()
                 val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
 
-                fun xFor(day: String): Float = yAxisWidth.toPx() + chartW * (allDays.indexOf(day) / denom.toFloat())
+                fun xFor(day: String): Float = yAxisLeftWidth.toPx() + chartW * (allDays.indexOf(day) / denom.toFloat())
                 fun yForFuel(p: Double): Float = chartH - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * chartH)
                 fun yForBrent(p: Double): Float = chartH - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * chartH)
 
@@ -333,27 +338,42 @@ private fun UnifiedForecastChart(
         }) {
             val w = size.width
             val h = size.height
-            val chartW = w - yAxisWidth.toPx()
+            val chartW = w - yAxisLeftWidth.toPx() - yAxisRightWidth.toPx()
             val chartH = h - X_AXIS_HEIGHT.toPx()
             val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
 
-            fun xFor(day: String): Float = yAxisWidth.toPx() + chartW * (allDays.indexOf(day) / denom.toFloat())
+            fun xFor(day: String): Float = yAxisLeftWidth.toPx() + chartW * (allDays.indexOf(day) / denom.toFloat())
             fun yForFuel(p: Double): Float = chartH - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * chartH)
             fun yForBrent(p: Double): Float = chartH - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * chartH)
 
-            // Grid & Y-axis labels
-            val steps = 5
+            // Grid & Y-axes labels
+            val steps = 4
             for (i in 0..steps) {
                 val ratio = i / steps.toFloat()
                 val y = chartH - ratio * chartH
-                val price = yMin + ratio * yRange
-                drawLine(gridColor, Offset(yAxisWidth.toPx(), y), Offset(w, y), strokeWidth = 1f)
+
+                // Horizontal grid line across chart area
+                drawLine(gridColor, Offset(yAxisLeftWidth.toPx(), y), Offset(w - yAxisRightWidth.toPx(), y), strokeWidth = 1f)
+
+                // Primary Y-Axis (Fuel €/L) on Left
+                val fuelVal = yMin + ratio * yRange
                 drawText(
                     textMeasurer,
-                    String.format(Locale.US, "%.2f", price),
-                    Offset(4f, y - 12f),
+                    String.format(Locale.US, "%.2f", fuelVal),
+                    Offset(2f, y - 12f),
                     style = labelStyle
                 )
+
+                // Secondary Y-Axis (Brent Crude $/bbl) on Right
+                if (brentHistory.isNotEmpty()) {
+                    val brentVal = brentMin + ratio * brentRange
+                    val text = String.format(Locale.US, "$%.0f", brentVal)
+                    val textLayout = textMeasurer.measure(text, brentLabelStyle)
+                    drawText(
+                        textLayout,
+                        topLeft = Offset(w - textLayout.size.width - 2f, y - 12f)
+                    )
+                }
             }
 
             // X-axis labels
@@ -376,7 +396,7 @@ private fun UnifiedForecastChart(
                 drawLine(gridColor, Offset(x, 0f), Offset(x, chartH), strokeWidth = 1f)
             }
 
-            // Brent
+            // Brent line (on secondary right axis)
             if (brentHistory.size >= 2) {
                 val path = Path()
                 brentHistory.sortedBy { it.day }.forEachIndexed { i, pt ->
@@ -384,10 +404,10 @@ private fun UnifiedForecastChart(
                     val y = yForBrent(pt.close)
                     if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
                 }
-                drawPath(path, brentColor, style = Stroke(width = 2f, cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))))
+                drawPath(path, brentColor, style = Stroke(width = 2.5f, cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))))
             }
 
-            // Fuels
+            // Fuel lines (on primary left axis)
             val allFids = (allFuelsHistory.keys + allFuelsForecast.keys).distinct()
             allFids.forEach { fid ->
                 val color = fuelColors[fid] ?: Color.Gray
@@ -429,8 +449,9 @@ private fun UnifiedForecastChart(
         // Detail Bubble
         selectedPoint?.let { pt ->
             val fuelName = pt.fuelId?.let { fuelTypeLabel(it) } ?: stringResource(R.string.forecast_legend_brent)
-            val priceStr = if (pt.fuelId != null) "€%.3f".format(pt.price) else "$%.2f".format(pt.price)
-            val text = "$fuelName\n$priceStr\n${pt.day}"
+            val priceStr = if (pt.fuelId != null) "€%.3f/L".format(pt.price) else "$%.2f/bbl".format(pt.price)
+            val tagStr = if (pt.isForecast) " (Projection)" else ""
+            val text = "$fuelName$tagStr\n$priceStr\n${pt.day}"
 
             val density = androidx.compose.ui.platform.LocalDensity.current
             val xDp = with(density) { pt.x.toDp() }
@@ -439,7 +460,7 @@ private fun UnifiedForecastChart(
             Box(
                 modifier = Modifier
                     .offset(
-                        x = if (pt.x > w * 0.7f) xDp - 120.dp else xDp,
+                        x = if (pt.x > w * 0.7f) xDp - 130.dp else xDp,
                         y = if (pt.y > h * 0.5f) yDp - 80.dp else yDp
                     )
                     .align(Alignment.TopStart)
