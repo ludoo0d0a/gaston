@@ -32,7 +32,7 @@ class WeatherPoiProviderTest {
                     latMin to lonMax,
                 )
                 cells.joinToString(separator = ",", prefix = "[", postfix = "]") { (lat, lon) ->
-                    """{"latitude":$lat,"longitude":$lon,"current":{"weather_code":3,"precipitation_probability":20.0,"precipitation":1.2,"rain":1.0,"showers":0.2,"snowfall":0.0}}"""
+                    """{"latitude":$lat,"longitude":$lon,"current":{"precipitation":1.2}}"""
                 }
             } else {
                 "[]"
@@ -80,7 +80,7 @@ class WeatherPoiProviderTest {
     }
 
     @Test
-    fun searchUsesBoundingBoxAndIncludesPrecipitationInRequestAndRawData() = runBlocking {
+    fun searchUsesBoundingBoxAndPrecipitationOnly() = runBlocking {
         var queriedUrl = ""
         val provider = WeatherPoiProvider(
             client = mockGridClient { queriedUrl = it },
@@ -93,16 +93,39 @@ class WeatherPoiProviderTest {
         assertTrue(queriedUrl.contains("timezone=GMT"))
         assertTrue(queriedUrl.contains("models="))
         assertTrue(
-            queriedUrl.contains("current=weather_code%2Cprecipitation%2Cprecipitation_probability%2Crain%2Cshowers%2Csnowfall") ||
-                queriedUrl.contains("current=weather_code,precipitation,precipitation_probability,rain,showers,snowfall"),
+            queriedUrl.contains("current=precipitation"),
+            queriedUrl,
         )
+        assertTrue(!queriedUrl.contains("weather_code"), queriedUrl)
 
         assertTrue(result.isNotEmpty())
         val firstPoi = result.first()
-        assertEquals("20.0", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.PRECIPITATION_PROBABILITY))
         assertEquals("1.2", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.PRECIPITATION))
-        assertEquals("1.0", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.RAIN))
-        assertEquals("0.2", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.SHOWERS))
-        assertEquals("0.0", firstPoi.rawSourceData?.get(WeatherPoiRawKeys.SNOW))
+        assertEquals("1.2 mm", firstPoi.name)
+    }
+
+    @Test
+    fun searchFiltersOutDryCells() = runBlocking {
+        val engine = MockEngine { _ ->
+            val body = """[
+                {"latitude":48.8,"longitude":2.3,"current":{"precipitation":0.0}},
+                {"latitude":48.9,"longitude":2.4,"current":{"precipitation":0.0}},
+                {"latitude":49.0,"longitude":2.5,"current":{"precipitation":1.2}},
+                {"latitude":49.1,"longitude":2.6,"current":{"precipitation":3.5}}
+            ]"""
+            respond(
+                content = body,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+        val provider = WeatherPoiProvider(client = OpenMeteoWeatherGridClient(HttpClient(engine)), maxPoiCount = 10)
+        val result = provider.search(weatherRequest())
+
+        assertEquals(2, result.size)
+        assertTrue(result.all { poi ->
+            val mm = poi.rawSourceData?.get(WeatherPoiRawKeys.PRECIPITATION)?.toDoubleOrNull()
+            mm != null && mm > 0.0
+        })
     }
 }

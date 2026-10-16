@@ -9,7 +9,7 @@ import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 
 /**
- * Weather-code grid over the map viewport via Open-Meteo bounding_box (one POI per model cell,
+ * Precipitation grid over the map viewport via Open-Meteo bounding_box (one POI per model cell,
  * then thinned to [maxPoiCount]).
  * Limited by [maxPoiCount] to prevent cache exhaustion and OOM on devices with many POIs.
  * Uses LRU eviction to keep total weather POIs under control.
@@ -47,7 +47,7 @@ class WeatherPoiProvider(
         val effectiveMaxPoints = maxPoiCount.coerceIn(1, OpenMeteoWeatherGridClient.MAX_POINTS)
         val models = modelsForCenter(request.latitude, request.longitude)
         val samples = runCatching {
-            client.fetchCurrentWeatherCodes(
+            client.fetchCurrentPrecipitation(
                 latMin = minLat,
                 lonMin = minLng,
                 latMax = maxLat,
@@ -56,33 +56,28 @@ class WeatherPoiProvider(
             )
         }.getOrElse { emptyList() }
 
-        val limitedSamples = thinEvenly(samples, effectiveMaxPoints)
+        // Keep only cells with active precipitation (dry / clear grid points stay off the map).
+        val activePrecipSamples = samples.filter { it.precipitation > 0.0 }
+
+        val limitedSamples = thinEvenly(activePrecipSamples, effectiveMaxPoints)
 
         // Prune weather POIs before creating new ones to stay within [maxTotalWeatherPois]
         pruneExcessPoiCounts()
 
         return limitedSamples.map { sample ->
-            val style = wmoWeatherStyle(sample.weatherCode)
-            val rawMap = mutableMapOf(
-                WeatherPoiRawKeys.WEATHER_CODE to sample.weatherCode.toString(),
-                WeatherPoiRawKeys.WMO_FAMILY to style.family.name,
-                WeatherPoiRawKeys.SOURCE to "open_meteo",
-            )
-            sample.precipitationProbability?.let { rawMap[WeatherPoiRawKeys.PRECIPITATION_PROBABILITY] = it.toString() }
-            sample.precipitation?.let { rawMap[WeatherPoiRawKeys.PRECIPITATION] = it.toString() }
-            sample.rain?.let { rawMap[WeatherPoiRawKeys.RAIN] = it.toString() }
-            sample.showers?.let { rawMap[WeatherPoiRawKeys.SHOWERS] = it.toString() }
-            sample.snow?.let { rawMap[WeatherPoiRawKeys.SNOW] = it.toString() }
-
+            val style = precipitationStyle(sample.precipitation)
             Poi(
-                id = "weather_${sample.latitude}_${sample.longitude}_${sample.weatherCode}",
+                id = "weather_${sample.latitude}_${sample.longitude}_${sample.precipitation}",
                 name = style.label,
                 address = "",
                 latitude = sample.latitude,
                 longitude = sample.longitude,
                 poiCategory = PoiCategory.Weather,
                 source = "Open-Meteo",
-                rawSourceData = rawMap,
+                rawSourceData = mapOf(
+                    WeatherPoiRawKeys.SOURCE to "open_meteo",
+                    WeatherPoiRawKeys.PRECIPITATION to sample.precipitation.toString(),
+                ),
             )
         }
     }

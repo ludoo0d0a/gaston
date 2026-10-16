@@ -1,8 +1,9 @@
 pluginManagement {
     repositories {
         google()
-        gradlePluginPortal()
+        maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }
         maven { url = uri("https://maven.aliyun.com/repository/public") }
+        gradlePluginPortal()
         mavenCentral()
     }
 }
@@ -10,6 +11,7 @@ pluginManagement {
 dependencyResolutionManagement {
     repositories {
         google()
+        maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
             content {

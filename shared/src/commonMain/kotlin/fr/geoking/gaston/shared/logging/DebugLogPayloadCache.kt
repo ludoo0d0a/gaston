@@ -37,9 +37,9 @@ object DebugLogPayloadCache {
 /**
  * Recursively traverses a [JsonElement] and limits any [JsonArray] to at most [maxItems] items.
  * If an array exceeds [maxItems], the array elements after [maxItems] are replaced with a single
- * 21st string element named `"and-more"`.
+ * additional string element named `"and-more"`.
  */
-fun limitJsonArrays(element: JsonElement, maxItems: Int = 20): JsonElement {
+fun limitJsonArrays(element: JsonElement, maxItems: Int = 10): JsonElement {
     return when (element) {
         is JsonObject -> {
             JsonObject(element.mapValues { limitJsonArrays(it.value, maxItems) })
@@ -61,7 +61,7 @@ fun limitJsonArrays(element: JsonElement, maxItems: Int = 20): JsonElement {
  * Parses [body] into a [JsonElement] and applies [limitJsonArrays].
  * Returns `null` if [body] is not valid JSON.
  */
-fun parseAndLimitJson(body: String, maxItems: Int = 20): JsonElement? {
+fun parseAndLimitJson(body: String, maxItems: Int = 10): JsonElement? {
     if (body.isBlank()) return null
     return try {
         val parsed = Json.parseToJsonElement(body)

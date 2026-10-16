@@ -515,7 +515,7 @@ fun MapScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         if (communityRepo != null) {
-                            item {
+                            item(contentType = "add_poi_chip") {
                                 FilterChip(
                                     selected = false,
                                     onClick = {
@@ -624,16 +624,18 @@ fun MapScreen(
 
                         val poisToShow = filteredPois
 
-                        // Directional danger-zone rectangles when a unidirectional bearing is known.
+                        // Shared danger-zone sectors (full + km + 200 m) — same API as AA / MapLibre.
                         poisToShow.filter { it.poiCategory == PoiCategory.Radar }.forEach { poi ->
-                            val ring = fr.geoking.gaston.aac.DangerZoneTriangle.latLngRingForRadarPoi(poi)
-                                ?: return@forEach
-                            Polygon(
-                                points = ring.map { (lat, lon) -> LatLng(lat, lon) },
-                                strokeColor = Color(0xFFEF4444),
-                                strokeWidth = 4f,
-                                fillColor = Color(0x22EF4444)
-                            )
+                            fr.geoking.gaston.aac.DangerZoneTriangle.overlayRingsForRadarPoi(poi)
+                                .forEach { overlay ->
+                                    if (overlay.points.size < 4) return@forEach
+                                    Polygon(
+                                        points = overlay.points.map { (lat, lon) -> LatLng(lat, lon) },
+                                        strokeColor = Color(overlay.strokeArgb.toLong() and 0xFFFFFFFFL),
+                                        strokeWidth = 3f,
+                                        fillColor = Color(overlay.fillArgb.toLong() and 0xFFFFFFFFL),
+                                    )
+                                }
                         }
 
                         val fuelIdsForCheapest = effectiveEnergies - "electric"

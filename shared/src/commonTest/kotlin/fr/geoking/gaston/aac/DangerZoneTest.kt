@@ -194,19 +194,19 @@ class DangerZoneTest {
     }
 
     @Test
-    fun withBearingUsesTrapezoidNotCircle() {
+    fun withBearingUsesSectorNotCircle() {
         val tipLat = 48.8566
         val tipLon = 2.3522
         val zone = DangerZoneFactory.fromSpeedControlPoint(
-            id = "trap1",
+            id = "sector1",
             latitude = tipLat,
             longitude = tipLon,
             speedLimitKmH = 90,
             source = "test",
-        ).copy(monitoredBearingDegrees = 0.0) // northbound → corridor south
+        ).copy(monitoredBearingDegrees = 0.0) // northbound → sector opens south
         assertTrue(zone.usesApproachTrapezoid)
 
-        // On approach axis ~1 km south → inside trapezoid
+        // On approach axis ~1 km south → inside sector
         val onAxis = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 1_000.0)
         val evalApproach = DangerZoneEvaluator.evaluate(
             vehLat = onAxis.first,
@@ -217,7 +217,7 @@ class DangerZoneTest {
         )
         assertTrue(evalApproach.isInside)
 
-        // North of tip (behind radar): inside AFFTAC circle but outside trapezoid
+        // North of tip (behind radar): inside AFFTAC circle but outside sector
         val behind = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 0.0, 500.0)
         assertTrue(behind.first.let { haversineFromTip(tipLat, tipLon, it, behind.second) } < zone.radiusMeters)
         val evalBehind = DangerZoneEvaluator.evaluate(
@@ -229,14 +229,13 @@ class DangerZoneTest {
         )
         assertFalse(evalBehind.isInside)
 
-        // Far lateral at mid-approach: inside circle radius, outside trapezoid
-        val mid = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 1_000.0)
-        val side = DangerZoneTriangle.offsetMeters(mid.first, mid.second, 90.0, 400.0)
+        // Due east at mid distance: inside circle radius, outside 45° sector
+        val side = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 90.0, 1_000.0)
         val evalSide = DangerZoneEvaluator.evaluate(
             vehLat = side.first,
             vehLon = side.second,
             vehSpeedKmH = 80.0,
-            vehBearing = 0.0,
+            vehBearing = 270.0,
             zone = zone,
         )
         assertFalse(evalSide.isInside)

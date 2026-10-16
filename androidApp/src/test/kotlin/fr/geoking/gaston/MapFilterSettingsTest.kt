@@ -1,9 +1,88 @@
 package fr.geoking.gaston
 
+import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
+import fr.geoking.gaston.poi.PoiProviderType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MapFilterSettingsTest {
+
+    private fun poi(id: String, category: PoiCategory) = Poi(
+        id = id,
+        name = id,
+        latitude = 48.85,
+        longitude = 2.35,
+        address = "",
+        poiCategory = category,
+    )
+
+    @Test
+    fun stationMapFilters_otherModeRadarShowsOnlyRadars() {
+        val settings = AppSettings(
+            poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+            selectedPoiProviders = setOf(
+                PoiProviderType.LufopOpenSpeedCam,
+                PoiProviderType.Overpass,
+            ),
+            selectedOverpassAmenityTypes = setOf("speed_camera"),
+        )
+        val filtered = StationMapFilters.apply(
+            settings = settings,
+            pois = listOf(
+                poi("gas", PoiCategory.Gas),
+                poi("radar", PoiCategory.Radar),
+                poi("weather", PoiCategory.Weather),
+                poi("parking", PoiCategory.Parking),
+            ),
+            providers = settings.selectedPoiProviders,
+            skipWhenOnlyOverpass = false,
+        )
+        assertEquals(listOf("radar"), filtered.map { it.id })
+    }
+
+    @Test
+    fun stationMapFilters_otherModeWeatherShowsOnlyWeather() {
+        val settings = AppSettings(
+            poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+            selectedPoiProviders = setOf(PoiProviderType.OpenMeteoWeather),
+            selectedOverpassAmenityTypes = setOf("weather"),
+        )
+        val filtered = StationMapFilters.apply(
+            settings = settings,
+            pois = listOf(
+                poi("gas", PoiCategory.Gas),
+                poi("radar", PoiCategory.Radar),
+                poi("weather", PoiCategory.Weather),
+            ),
+            providers = settings.selectedPoiProviders,
+            skipWhenOnlyOverpass = false,
+        )
+        assertEquals(listOf("weather"), filtered.map { it.id })
+    }
+
+    @Test
+    fun stationMapFilters_trafficModeHidesAllPois() {
+        val settings = AppSettings(
+            poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+            selectedPoiProviders = setOf(PoiProviderType.Overpass),
+            selectedOverpassAmenityTypes = emptySet(),
+            mapTrafficEnabled = true,
+        )
+        assertTrue(settings.isOtherModeActive())
+        val filtered = StationMapFilters.apply(
+            settings = settings,
+            pois = listOf(
+                poi("gas", PoiCategory.Gas),
+                poi("radar", PoiCategory.Radar),
+                poi("weather", PoiCategory.Weather),
+            ),
+            providers = settings.selectedPoiProviders,
+            skipWhenOnlyOverpass = false,
+        )
+        assertTrue(filtered.isEmpty())
+    }
 
     @Test
     fun testCountryCodesAtMapPosition_MaizieresLesMetz() {

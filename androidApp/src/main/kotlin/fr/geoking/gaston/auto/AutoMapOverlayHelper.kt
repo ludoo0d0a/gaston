@@ -14,10 +14,8 @@ import kotlin.math.cos
 object AutoMapOverlayHelper {
 
     /**
-     * Directional danger-zone rectangles for radar amenity POIs (AFFTAC distances:
-     * ~4 km / ~2 km / ~300 m). Near edge at the radar; far edge at the entry
-     * boundary when a unidirectional bearing is known. Skips POIs with
-     * missing/bidirectional direction.
+     * Shared danger-zone sectors for radar amenity POIs (AFFTAC R + km reminders + 200 m).
+     * Geometry and colours come from [DangerZoneTriangle.overlayRingsForRadarPoi] — no local math.
      * [toScreenXy] maps each lat/lon to canvas coordinates.
      */
     fun drawRadarDangerZoneTriangles(
@@ -28,26 +26,27 @@ object AutoMapOverlayHelper {
     ) {
         if (radarPois.isEmpty()) return
         val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#22EF4444")
             style = Paint.Style.FILL
         }
         val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#EF4444")
             style = Paint.Style.STROKE
-            strokeWidth = 3f * density
+            strokeWidth = 2.5f * density
             strokeJoin = Paint.Join.ROUND
         }
         for (poi in radarPois) {
-            val ring = DangerZoneTriangle.latLngRingForRadarPoi(poi) ?: continue
-            if (ring.size < 4) continue
-            val path = Path()
-            ring.forEachIndexed { index, (lat, lon) ->
-                val (x, y) = toScreenXy(lat, lon)
-                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            for (overlay in DangerZoneTriangle.overlayRingsForRadarPoi(poi)) {
+                if (overlay.points.size < 4) continue
+                fillPaint.color = overlay.fillArgb
+                strokePaint.color = overlay.strokeArgb
+                val path = Path()
+                overlay.points.forEachIndexed { index, (lat, lon) ->
+                    val (x, y) = toScreenXy(lat, lon)
+                    if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                path.close()
+                canvas.drawPath(path, fillPaint)
+                canvas.drawPath(path, strokePaint)
             }
-            path.close()
-            canvas.drawPath(path, fillPaint)
-            canvas.drawPath(path, strokePaint)
         }
     }
 

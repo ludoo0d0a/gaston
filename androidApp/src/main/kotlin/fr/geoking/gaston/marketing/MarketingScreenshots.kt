@@ -180,7 +180,7 @@ fun MarketingMapScreen(
                             onNavigate = {},
                             onLocate = {},
                             onShowDetails = {},
-                            isSelected = poi.id == cards.first().id,
+                            isSelected = { poi.id == cards.first().id },
                         )
                     }
                 }

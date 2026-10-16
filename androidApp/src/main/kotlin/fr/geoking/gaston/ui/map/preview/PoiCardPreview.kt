@@ -57,7 +57,11 @@ private fun PoiCardsPreviewDiverse() {
             contentPadding = PaddingValues(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            itemsIndexed(pois, key = { _, p -> p.id }) { index, poi ->
+            itemsIndexed(
+                items = pois,
+                key = { _, p -> p.id },
+                contentType = { _, _ -> "poi_card" },
+            ) { index, poi ->
                 val h = highlights.getOrElse(index) { PoiCardPreviewSample() }
                 PoiDetailCard(
                     poi = poi,
@@ -66,7 +70,7 @@ private fun PoiCardsPreviewDiverse() {
                     onNavigate = {},
                     onLocate = {},
                     onShowDetails = {},
-                    isSelected = h.selected
+                    isSelected = { h.selected },
                 )
             }
         }

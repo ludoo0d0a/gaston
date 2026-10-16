@@ -5,11 +5,8 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.util.LruCache
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AcUnit
-import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Fastfood
 import androidx.compose.material.icons.rounded.Forest
-import androidx.compose.material.icons.rounded.Grain
 import androidx.compose.material.icons.rounded.Landscape
 import androidx.compose.material.icons.rounded.LocalCafe
 import androidx.compose.material.icons.rounded.LocalGroceryStore
@@ -21,7 +18,6 @@ import androidx.compose.material.icons.rounded.OutdoorGrill
 import androidx.compose.material.icons.rounded.Restaurant
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
-import androidx.compose.material.icons.rounded.Thunderstorm
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.Water
 import androidx.compose.material.icons.rounded.WaterDrop
@@ -34,8 +30,7 @@ import androidx.compose.ui.graphics.vector.VectorNode
 import androidx.compose.ui.graphics.vector.VectorPath
 import androidx.compose.ui.graphics.vector.toPath
 import fr.geoking.gaston.api.weather.WeatherPoiRawKeys
-import fr.geoking.gaston.api.weather.WmoWeatherFamily
-import fr.geoking.gaston.api.weather.wmoWeatherStyle
+import fr.geoking.gaston.api.weather.precipitationStyle
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 
@@ -119,37 +114,18 @@ object AmenityIconCatalog {
     }
 
     /**
-     * Marker style for a weather grid POI: WMO code drives disc color; family drives the glyph.
+     * Marker style for a weather grid POI: precipitation (mm) drives disc color and glyph.
      */
     fun styleForWeatherPoi(poi: Poi): Style? {
         if (poi.poiCategory != PoiCategory.Weather) return null
-        val code = poi.rawSourceData?.get(WeatherPoiRawKeys.WEATHER_CODE)?.toIntOrNull() ?: 0
-        val wmo = wmoWeatherStyle(code)
-        val icon = iconForWmoFamily(wmo.family)
-        val glyphArgb = when (wmo.family) {
-            WmoWeatherFamily.Clear,
-            WmoWeatherFamily.Snow -> 0xFF1E293B.toInt()
-            else -> 0xFFFFFFFF.toInt()
-        }
+        val mm = poi.rawSourceData?.get(WeatherPoiRawKeys.PRECIPITATION)?.toDoubleOrNull() ?: 0.0
+        val style = precipitationStyle(mm)
         return Style(
-            icon = icon,
-            glyphArgb = glyphArgb,
-            discFillArgb = wmo.discArgb,
-            discStrokeArgb = darkenArgb(wmo.discArgb),
+            icon = if (style.isDry) Icons.Rounded.WbSunny else Icons.Rounded.WaterDrop,
+            glyphArgb = if (style.isDry) 0xFF1E293B.toInt() else 0xFFFFFFFF.toInt(),
+            discFillArgb = style.discArgb,
+            discStrokeArgb = darkenArgb(style.discArgb),
         )
-    }
-
-    fun iconForWmoFamily(family: WmoWeatherFamily): ImageVector = when (family) {
-        WmoWeatherFamily.Clear -> Icons.Rounded.WbSunny
-        WmoWeatherFamily.Cloudy -> Icons.Rounded.Cloud
-        WmoWeatherFamily.Fog -> Icons.Rounded.Visibility
-        WmoWeatherFamily.Drizzle -> Icons.Rounded.Grain
-        WmoWeatherFamily.Rain -> Icons.Rounded.WaterDrop
-        WmoWeatherFamily.Showers -> Icons.Rounded.WaterDrop
-        WmoWeatherFamily.Snow -> Icons.Rounded.AcUnit
-        WmoWeatherFamily.Freezing -> Icons.Rounded.AcUnit
-        WmoWeatherFamily.Storm -> Icons.Rounded.Thunderstorm
-        WmoWeatherFamily.Unknown -> Icons.Rounded.Cloud
     }
 
     private fun darkenArgb(argb: Int): Int {

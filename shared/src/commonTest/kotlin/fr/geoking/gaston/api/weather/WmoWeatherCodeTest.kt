@@ -34,4 +34,11 @@ class WmoWeatherCodeTest {
     fun wmoCodeLabelMatchesStyleLabel() {
         assertEquals(wmoWeatherStyle(61).label, wmoCodeLabel(61))
     }
+
+    @Test
+    fun precipitationStyleMarksDryVersusActive() {
+        assertTrue(precipitationStyle(0.0).isDry)
+        assertTrue(!precipitationStyle(0.1).isDry)
+        assertTrue(!precipitationStyle(2.4).isDry)
+    }
 }

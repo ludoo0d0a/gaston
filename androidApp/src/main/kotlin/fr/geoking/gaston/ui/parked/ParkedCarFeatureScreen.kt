@@ -73,6 +73,9 @@ fun ParkedCarFeatureScreen(
     val candidateStore = remember { GlobalContext.get().get<ParkCandidateStore>() }
     val parkActions = remember { GlobalContext.get().get<ParkCandidateActions>() }
     val storeCandidate by candidateStore.candidate.collectAsState()
+    val userLocation by remember(context) {
+        LocationHelper.getLocationUpdates(context)
+    }.collectAsState(initial = null)
 
     var selectedVehicleId by remember(settings.activeVehicleId, settings.vehicles, initialVehicleId) {
         mutableStateOf(
@@ -264,8 +267,10 @@ fun ParkedCarFeatureScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                     ParkedCarMapPreview(
-                        latitude = mapLat,
-                        longitude = mapLon,
+                        carLatitude = mapLat,
+                        carLongitude = mapLon,
+                        userLatitude = userLocation?.latitude,
+                        userLongitude = userLocation?.longitude,
                         onMapInteractionChanged = { interacting ->
                             columnScrollEnabled = !interacting
                         },

@@ -224,7 +224,7 @@ class RadarOsmEnricherTest {
                 monitoredBearingDegrees = 0.0, // northbound traffic controlled
             )
         )
-        // Inside trapezoid from the south but heading south — opposite to monitored sense → High drops
+        // Inside sector from the south but heading south — opposite to monitored sense → High drops
         val onApproach = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 800.0)
         val evalOpposite = DangerZoneEvaluator.evaluate(
             vehLat = onApproach.first,
@@ -262,7 +262,7 @@ class RadarOsmEnricherTest {
                 monitoredBearingDegrees = 0.0,
             )
         )
-        // Inside approach trapezoid (south of tip), heading toward tip.
+        // Inside approach sector (south of tip), heading toward tip.
         // Low confidence must NOT drop via OSM sense filter (trajectory ahead still applies).
         val onApproach = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 800.0)
         val eval = DangerZoneEvaluator.evaluate(

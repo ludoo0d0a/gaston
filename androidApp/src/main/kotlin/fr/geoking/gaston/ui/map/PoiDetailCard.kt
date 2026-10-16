@@ -49,14 +49,16 @@ fun PoiDetailCard(
     onNavigate: () -> Unit,
     onLocate: () -> Unit,
     onShowDetails: () -> Unit,
-    isSelected: Boolean = false,
+    isSelected: () -> Boolean = { false },
     isLoggedIn: Boolean = false,
-    isFavorite: Boolean = false,
+    isFavorite: () -> Boolean = { false },
     onToggleFavorite: (() -> Unit)? = null,
     onRefreshPoi: (() -> Unit)? = null,
     isRefreshing: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val selected = isSelected()
+    val favorite = isFavorite()
     val resolvedAvailability = poi.resolveAvailabilitySummary(availabilitySummary)
     val rawSiteName = poi.siteName?.takeIf { it.isNotBlank() } ?: poi.name
     val isGenericName = isGenericStationName(rawSiteName)
@@ -317,7 +319,7 @@ fun PoiDetailCard(
                     }
                 }
 
-                if (isSelected) {
+                if (selected) {
                     Spacer(modifier = Modifier.height(6.dp))
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(6.dp))
@@ -437,9 +439,9 @@ fun PoiDetailCard(
                 if (isLoggedIn && onToggleFavorite != null) {
                     IconButton(onClick = onToggleFavorite) {
                         Icon(
-                            imageVector = if (isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
-                            contentDescription = if (isFavorite) "Saved" else "Save",
-                            tint = if (isFavorite) Color(0xFFEAB308) else Color.White.copy(alpha = 0.7f),
+                            imageVector = if (favorite) Icons.Default.Star else Icons.Outlined.StarBorder,
+                            contentDescription = if (favorite) "Saved" else "Save",
+                            tint = if (favorite) Color(0xFFEAB308) else Color.White.copy(alpha = 0.7f),
                             modifier = Modifier.size(20.dp)
                         )
                     }

@@ -136,7 +136,11 @@ private fun FavoritePoisList(
         EmptyFavoritesHint("No favorite stations yet.")
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(pois, key = { it.id }) { poi ->
+            items(
+                items = pois,
+                key = { it.id },
+                contentType = { "favorite_poi" },
+            ) { poi ->
                 ListItem(
                     modifier = Modifier.clickable { onSelect(poi) },
                     headlineContent = { Text(poi.name) },
@@ -176,7 +180,11 @@ private fun FavoriteLocationsList(
         EmptyFavoritesHint("No favorite locations yet.")
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(locations, key = { "${it.latitude},${it.longitude}" }) { loc ->
+            items(
+                items = locations,
+                key = { "${it.latitude},${it.longitude}" },
+                contentType = { "favorite_location" },
+            ) { loc ->
                 ListItem(
                     modifier = Modifier.clickable { onSelect(loc) },
                     headlineContent = { Text(loc.label) },

@@ -254,19 +254,37 @@ fun SurfaceCustomMapScreen(
 
                     Box(modifier = Modifier.fillMaxSize()) {
                         var surfaceRendererRef by remember { mutableStateOf<AutoSurfaceRenderer?>(null) }
+                        val energyTypes = settings.effectiveMapEnergyFilterIds()
+                        val powerLevels = settings.effectiveIrvePowerLevels()
+                        val selectedPoiId = selectedPoi?.id
 
-                        LaunchedEffect(mapLat, mapLon, zoom, bearing, orientationMode, filteredPois, selectedPoi, userLat, userLon, userHeading) {
+                        // Split sync so camera/heading updates do not re-run updatePois (and vice versa).
+                        LaunchedEffect(surfaceRendererRef, mapLat, mapLon, zoom) {
+                            surfaceRendererRef?.updateLocation(mapLat, mapLon, zoom)
+                        }
+                        LaunchedEffect(surfaceRendererRef, bearing, orientationMode) {
+                            surfaceRendererRef?.setMapOrientation(orientationMode, bearing)
+                        }
+                        LaunchedEffect(surfaceRendererRef, userLat, userLon, userHeading) {
                             val r = surfaceRendererRef ?: return@LaunchedEffect
-                            r.updateLocation(mapLat, mapLon, zoom)
-                            r.setMapOrientation(orientationMode, bearing)
-                            if (userLat != null && userLon != null) {
-                                r.updateUserLocation(userLat!!, userLon!!, userHeading)
-                            }
-                            r.updatePois(
+                            val lat = userLat ?: return@LaunchedEffect
+                            val lon = userLon ?: return@LaunchedEffect
+                            r.updateUserLocation(lat, lon, userHeading)
+                        }
+                        LaunchedEffect(
+                            surfaceRendererRef,
+                            filteredPois,
+                            selectedPoiId,
+                            energyTypes,
+                            powerLevels,
+                            settings.isDevMode,
+                            settings.radarWarningDistanceMeters,
+                        ) {
+                            surfaceRendererRef?.updatePois(
                                 newPois = filteredPois,
-                                effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
-                                effectivePowerLevels = settings.effectiveIrvePowerLevels(),
-                                selectedId = selectedPoi?.id,
+                                effectiveEnergyTypes = energyTypes,
+                                effectivePowerLevels = powerLevels,
+                                selectedId = selectedPoiId,
                                 isDevMode = settings.isDevMode,
                                 radarWarningDistanceMeters = settings.radarWarningDistanceMeters,
                             )
@@ -598,18 +616,39 @@ fun SurfaceMapsforgeMapScreen(
                     }
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        LaunchedEffect(mapLat, mapLon, zoom, bearing, orientationMode, filteredPois, selectedPoi, userLat, userLon, userHeading) {
+                        val energyTypes = settings.effectiveMapEnergyFilterIds()
+                        val powerLevels = settings.effectiveIrvePowerLevels()
+                        val selectedPoiId = selectedPoi?.id
+
+                        // Split sync so camera/heading updates do not re-run updatePois (and vice versa).
+                        LaunchedEffect(surfaceRendererRef, mapLat, mapLon, zoom) {
+                            surfaceRendererRef?.updateLocation(mapLat, mapLon, zoom)
+                        }
+                        LaunchedEffect(surfaceRendererRef, bearing, orientationMode) {
+                            surfaceRendererRef?.setMapOrientation(orientationMode, bearing)
+                        }
+                        LaunchedEffect(surfaceRendererRef, userLat, userLon, userHeading) {
                             val r = surfaceRendererRef ?: return@LaunchedEffect
-                            r.updateLocation(mapLat, mapLon, zoom)
-                            r.setMapOrientation(orientationMode, bearing)
-                            if (userLat != null && userLon != null) {
-                                r.updateUserLocation(userLat!!, userLon!!, userHeading)
-                            }
-                            r.updatePois(
+                            val lat = userLat ?: return@LaunchedEffect
+                            val lon = userLon ?: return@LaunchedEffect
+                            r.updateUserLocation(lat, lon, userHeading)
+                        }
+                        LaunchedEffect(
+                            surfaceRendererRef,
+                            filteredPois,
+                            selectedPoiId,
+                            energyTypes,
+                            powerLevels,
+                            settings.isDevMode,
+                            settings.radarWarningDistanceMeters,
+                        ) {
+                            surfaceRendererRef?.updatePois(
                                 newPois = filteredPois,
-                                effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
-                                effectivePowerLevels = settings.effectiveIrvePowerLevels(),
-                                selectedId = selectedPoi?.id
+                                effectiveEnergyTypes = energyTypes,
+                                effectivePowerLevels = powerLevels,
+                                selectedId = selectedPoiId,
+                                isDevMode = settings.isDevMode,
+                                radarWarningDistanceMeters = settings.radarWarningDistanceMeters,
                             )
                         }
 

@@ -85,7 +85,11 @@ fun LazyListScope.energySelectorItems(
     providers: Set<PoiProviderType>
 ) {
     if (providers.anyProvidesFuel()) {
-        items(MAP_ENERGY_OPTIONS.filter { it.first != "electric" }) { (id, label) ->
+        items(
+            items = MAP_ENERGY_OPTIONS.filter { it.first != "electric" },
+            key = { it.first },
+            contentType = { "fuel_chip" },
+        ) { (id, label) ->
             FuelFilterChip(
                 id = id,
                 label = label,
@@ -101,7 +105,11 @@ fun LazyListScope.energySelectorItems(
     }
 
     if (providers.anyProvidesElectric()) {
-        items(MAP_IRVE_POWER_OPTIONS) { (kw, label) ->
+        items(
+            items = MAP_IRVE_POWER_OPTIONS,
+            key = { it.first },
+            contentType = { "power_chip" },
+        ) { (kw, label) ->
             PowerFilterChip(
                 kw = kw,
                 label = label,

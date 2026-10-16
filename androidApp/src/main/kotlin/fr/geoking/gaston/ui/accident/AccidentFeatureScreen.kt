@@ -166,9 +166,9 @@ private fun AccidentHubScreen(
             state = listState,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { Spacer(Modifier.height(4.dp)) }
+            item(contentType = "spacer") { Spacer(Modifier.height(4.dp)) }
 
-            item {
+            item(contentType = "intro") {
                 Text(
                     text = stringResource(R.string.accident_hub_intro),
                     style = MaterialTheme.typography.bodyLarge,
@@ -176,7 +176,7 @@ private fun AccidentHubScreen(
                 )
             }
 
-            item {
+            item(contentType = "wizard_cta") {
                 Card(
                     onClick = onOpenWizard,
                     modifier = Modifier
@@ -215,7 +215,7 @@ private fun AccidentHubScreen(
                 }
             }
 
-            item {
+            item(contentType = "prefill_card") {
                 HubActionCard(
                     title = stringResource(R.string.accident_prefill_title),
                     subtitle = if (prefillReady) {
@@ -229,7 +229,7 @@ private fun AccidentHubScreen(
                 )
             }
 
-            item {
+            item(contentType = "phone_card") {
                 HubActionCard(
                     title = stringResource(R.string.accident_phone_exchange_title),
                     subtitle = stringResource(R.string.accident_phone_exchange_subtitle),
@@ -239,7 +239,7 @@ private fun AccidentHubScreen(
                 )
             }
 
-            item {
+            item(contentType = "paper_card") {
                 HubActionCard(
                     title = stringResource(R.string.accident_paper_aide_title),
                     subtitle = stringResource(R.string.accident_paper_aide_subtitle),
@@ -249,7 +249,7 @@ private fun AccidentHubScreen(
                 )
             }
 
-            item {
+            item(contentType = "emergency_btn") {
                 OutlinedButton(
                     onClick = onOpenEmergency,
                     modifier = Modifier
@@ -261,7 +261,7 @@ private fun AccidentHubScreen(
                 }
             }
 
-            item { Spacer(Modifier.height(16.dp)) }
+            item(contentType = "spacer") { Spacer(Modifier.height(16.dp)) }
         }
     }
 }

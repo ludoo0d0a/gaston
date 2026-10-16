@@ -1,8 +1,9 @@
 package fr.geoking.gaston.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.*
@@ -162,13 +163,13 @@ fun SearchCategorySelector(
     Box(modifier = modifier) {
         when (currentMode) {
             SearchMode.Fuel -> {
-                LazyRow(
+                Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
                 ) {
-                    val fuels = MAP_ENERGY_OPTIONS.filter { it.first != "electric" }
-                    items(fuels.size) { index ->
-                        val (id, label) = fuels[index]
+                    MAP_ENERGY_OPTIONS.filter { it.first != "electric" }.forEach { (id, label) ->
                         FuelFilterChip(
                             id = id,
                             label = label,
@@ -179,37 +180,36 @@ fun SearchCategorySelector(
                 }
             }
             SearchMode.EV -> {
-                LazyRow(
+                val isSwapSelected = settings.selectedMapEnergyTypes.contains("swap")
+                Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
                 ) {
-                    val isSwapSelected = settings.selectedMapEnergyTypes.contains("swap")
-                    item {
-                        FilterChip(
-                            selected = isSwapSelected,
-                            onClick = {
-                                if (isSwapSelected) {
-                                    settingsManager.saveSettings(settings.copy(selectedMapEnergyTypes = emptySet()))
-                                } else {
-                                    settingsManager.saveSettings(settings.copy(
-                                        selectedMapEnergyTypes = setOf("swap"),
-                                        mapPowerLevels = emptySet()
-                                    ))
-                                }
-                            },
-                            label = { Text(stringResource(R.string.filter_battery_swap)) },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Rounded.SwapHoriz,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                    FilterChip(
+                        selected = isSwapSelected,
+                        onClick = {
+                            if (isSwapSelected) {
+                                settingsManager.saveSettings(settings.copy(selectedMapEnergyTypes = emptySet()))
+                            } else {
+                                settingsManager.saveSettings(settings.copy(
+                                    selectedMapEnergyTypes = setOf("swap"),
+                                    mapPowerLevels = emptySet()
+                                ))
                             }
-                        )
-                    }
+                        },
+                        label = { Text(stringResource(R.string.filter_battery_swap)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Rounded.SwapHoriz,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    )
                     if (!isSwapSelected) {
-                        items(MAP_IRVE_POWER_OPTIONS.size) { index ->
-                            val (kw, label) = MAP_IRVE_POWER_OPTIONS[index]
+                        MAP_IRVE_POWER_OPTIONS.forEach { (kw, label) ->
                             PowerFilterChip(
                                 kw = kw,
                                 label = label,
@@ -279,12 +279,13 @@ fun SearchCategorySelector(
                 }
             }
             SearchMode.Other -> {
-                LazyRow(
+                Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
                 ) {
-                    items(OVERPASS_AMENITY_OPTIONS.size) { index ->
-                        val (id, resId) = OVERPASS_AMENITY_OPTIONS[index]
+                    OVERPASS_AMENITY_OPTIONS.forEach { (id, resId) ->
                         val isSelected = settings.selectedOverpassAmenityTypes.contains(id)
                         FilterChip(
                             selected = isSelected,

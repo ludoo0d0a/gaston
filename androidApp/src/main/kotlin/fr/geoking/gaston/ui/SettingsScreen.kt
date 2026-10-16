@@ -108,12 +108,10 @@ enum class SettingsScreenPage {
 private fun CarMapMode.displayLabel(): String = when (this) {
     CarMapMode.Native -> stringResource(R.string.map_mode_google)
     CarMapMode.Custom -> stringResource(R.string.map_mode_custom)
-    CarMapMode.MapLibre -> stringResource(R.string.map_mode_maplibre)
-    CarMapMode.MapTiler -> stringResource(R.string.map_mode_maptiler)
-    CarMapMode.Protomaps -> stringResource(R.string.map_mode_protomaps)
+    CarMapMode.MapLibreMapSnapshotter -> stringResource(R.string.map_mode_maplibre_snapshotter)
     CarMapMode.Mapbox -> stringResource(R.string.map_mode_mapbox)
-    CarMapMode.MapLibrePresentation -> stringResource(R.string.map_mode_maplibre_presentation)
-    CarMapMode.MapLibreEgl -> stringResource(R.string.map_mode_maplibre_egl)
+    CarMapMode.MapLibreVirtualDisplay -> stringResource(R.string.map_mode_maplibre_virtualdisplay)
+    CarMapMode.MapLibreEglDirect -> stringResource(R.string.map_mode_maplibre_egl_direct)
     CarMapMode.Mapsforge -> stringResource(R.string.map_mode_mapsforge)
 }
 
@@ -121,12 +119,10 @@ private fun CarMapMode.displayLabel(): String = when (this) {
 private fun CarMapMode.displayDescription(): String = when (this) {
     CarMapMode.Native -> stringResource(R.string.map_mode_google_desc)
     CarMapMode.Custom -> stringResource(R.string.map_mode_custom_desc)
-    CarMapMode.MapLibre -> stringResource(R.string.map_mode_maplibre_desc)
-    CarMapMode.MapTiler -> stringResource(R.string.map_mode_maptiler_desc)
-    CarMapMode.Protomaps -> stringResource(R.string.map_mode_protomaps_desc)
+    CarMapMode.MapLibreMapSnapshotter -> stringResource(R.string.map_mode_maplibre_snapshotter_desc)
     CarMapMode.Mapbox -> stringResource(R.string.map_mode_mapbox_desc)
-    CarMapMode.MapLibrePresentation -> stringResource(R.string.map_mode_maplibre_presentation_desc)
-    CarMapMode.MapLibreEgl -> stringResource(R.string.map_mode_maplibre_egl_desc)
+    CarMapMode.MapLibreVirtualDisplay -> stringResource(R.string.map_mode_maplibre_virtualdisplay_desc)
+    CarMapMode.MapLibreEglDirect -> stringResource(R.string.map_mode_maplibre_egl_direct_desc)
     CarMapMode.Mapsforge -> stringResource(R.string.map_mode_mapsforge_desc)
 }
 
@@ -562,7 +558,7 @@ private fun MapConfig(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
-            CarMapMode.entries.forEach { mode ->
+            CarMapMode.entries.filter { it.isSelectable }.forEach { mode ->
                 val selected = settings.carMapMode == mode
                 OutlinedCard(
                     modifier = Modifier

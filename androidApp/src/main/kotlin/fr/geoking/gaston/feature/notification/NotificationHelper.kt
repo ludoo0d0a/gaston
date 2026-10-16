@@ -40,8 +40,10 @@ open class NotificationHelper(private val context: Context) {
         private const val REQ_CAR_SAVE = 1205
         /** Suppress duplicate HUNs when phone + AA alert loops both fire. */
         private const val DEDUPE_WINDOW_MS = 8_000L
-        /** Avoid spamming the park suggestion when AA reconnects briefly. */
-        private const val REMEMBER_PARKED_DEDUPE_MS = 30 * 60 * 1000L
+        /** Phone parking notifications auto-dismiss after 1 minute (60s). */
+        private const val PARKED_NOTIFICATION_TIMEOUT_MS = 60_000L
+        /** Avoid duplicate rapid double-firing for the exact same parking location. */
+        private const val REMEMBER_PARKED_DEDUPE_MS = 5_000L
         /** Phone + AA temporary danger-zone HUNs auto-dismiss after this delay. */
         private const val TEMPORARY_NOTIFICATION_MS = 6_000L
         /** Phone + AA border crossing HUNs auto-dismiss after this delay. */
@@ -188,7 +190,41 @@ open class NotificationHelper(private val context: Context) {
     }
 
     /**
-     * Temporary HUN when within ~100 m of the zone center (after / with zone entry).
+     * Temporary HUN for a kilometre reminder while approaching the zone center.
+     * Distinct dedupe key so it is not suppressed by the entry HUN.
+     */
+    open fun showDangerZoneKmReminderNotification(
+        speedLimitKmH: Int?,
+        distanceMeters: Double,
+        latitude: Double? = null,
+        longitude: Double? = null,
+        isDevMode: Boolean = false,
+    ) {
+        if (!canPostNotifications()) return
+        val km = (distanceMeters / 1000.0).toInt().coerceAtLeast(1)
+        val dedupeKey = "km-$km-${speedLimitKmH ?: 0}"
+        if (shouldSuppressDuplicate("danger_zone_km", dedupeKey)) return
+
+        val baseTitle = context.getString(R.string.notification_danger_zone_title)
+        val title = if (isDevMode) "[Gaston] $baseTitle" else baseTitle
+        val message = if (speedLimitKmH != null && speedLimitKmH > 0) {
+            context.getString(R.string.notification_danger_zone_km_message_speed, km, speedLimitKmH)
+        } else {
+            context.getString(R.string.notification_danger_zone_km_message, km)
+        }
+
+        postTemporaryCarHeadsUp(
+            notificationId = NOTIFICATION_ID_DANGER_ZONE,
+            title = title,
+            message = message,
+            smallIcon = R.drawable.ic_poi_radar,
+            openRadarLatitude = latitude,
+            openRadarLongitude = longitude,
+        )
+    }
+
+    /**
+     * Temporary HUN when within ~200 m of the zone center (after / with zone entry).
      * FR copy: "Radar proche %d km/h".
      * Phone tap opens the radar map centered on [latitude]/[longitude] when set.
      */
@@ -232,7 +268,8 @@ open class NotificationHelper(private val context: Context) {
         longitude: Double,
     ) {
         if (!canPostNotifications()) return
-        if (shouldSuppressDuplicate("remember_parked", "suggest", REMEMBER_PARKED_DEDUPE_MS)) return
+        val dedupeKey = "$vehicleId-$latitude-$longitude"
+        if (shouldSuppressDuplicate("remember_parked", dedupeKey, REMEMBER_PARKED_DEDUPE_MS)) return
 
         val title = context.getString(R.string.notification_remember_parked_title)
         val message = if (!vehicleLabel.isNullOrBlank()) {
@@ -295,6 +332,7 @@ open class NotificationHelper(private val context: Context) {
             .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
+            .setTimeoutAfter(PARKED_NOTIFICATION_TIMEOUT_MS)
             .setContentIntent(phonePending)
             .addAction(R.drawable.ic_poi_parking, saveLabel, phoneSave)
             .addAction(R.drawable.ic_close, ignoreLabel, phoneIgnore)
@@ -312,6 +350,7 @@ open class NotificationHelper(private val context: Context) {
         val notification = builder.build()
         notificationManager.notify(NOTIFICATION_ID_REMEMBER_PARKED, notification)
         CarNotificationManager.from(context).notify(NOTIFICATION_ID_REMEMBER_PARKED, builder)
+        scheduleAutoCancel(NOTIFICATION_ID_REMEMBER_PARKED, PARKED_NOTIFICATION_TIMEOUT_MS)
     }
 
     /**
@@ -346,9 +385,11 @@ open class NotificationHelper(private val context: Context) {
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+            .setTimeoutAfter(PARKED_NOTIFICATION_TIMEOUT_MS)
             .setContentIntent(phonePending)
 
         notificationManager.notify(NOTIFICATION_ID_PHONE_PARKED_CONFIRMED, builder.build())
+        scheduleAutoCancel(NOTIFICATION_ID_PHONE_PARKED_CONFIRMED, PARKED_NOTIFICATION_TIMEOUT_MS)
     }
 
     /**
@@ -362,7 +403,8 @@ open class NotificationHelper(private val context: Context) {
         longitude: Double,
     ) {
         if (!canPostNotifications()) return
-        if (shouldSuppressDuplicate("phone_remember_parked", "suggest", REMEMBER_PARKED_DEDUPE_MS)) return
+        val dedupeKey = "$vehicleId-$latitude-$longitude"
+        if (shouldSuppressDuplicate("phone_remember_parked", dedupeKey, REMEMBER_PARKED_DEDUPE_MS)) return
 
         val title = context.getString(R.string.notification_remember_parked_title)
         val message = if (!vehicleLabel.isNullOrBlank()) {
@@ -410,16 +452,22 @@ open class NotificationHelper(private val context: Context) {
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setTimeoutAfter(PARKED_NOTIFICATION_TIMEOUT_MS)
             .setContentIntent(phonePending)
             .addAction(R.drawable.ic_poi_parking, saveLabel, phoneSave)
             .addAction(R.drawable.ic_close, ignoreLabel, phoneIgnore)
 
         notificationManager.notify(NOTIFICATION_ID_PHONE_REMEMBER_PARKED, builder.build())
+        scheduleAutoCancel(NOTIFICATION_ID_PHONE_REMEMBER_PARKED, PARKED_NOTIFICATION_TIMEOUT_MS)
     }
 
     open fun cancelRememberParkedNotifications() {
         notificationManager.cancel(NOTIFICATION_ID_REMEMBER_PARKED)
         notificationManager.cancel(NOTIFICATION_ID_PHONE_REMEMBER_PARKED)
+        notificationManager.cancel(NOTIFICATION_ID_PHONE_PARKED_CONFIRMED)
+        pendingCancelById.remove(NOTIFICATION_ID_REMEMBER_PARKED)?.let { mainHandler.removeCallbacks(it) }
+        pendingCancelById.remove(NOTIFICATION_ID_PHONE_REMEMBER_PARKED)?.let { mainHandler.removeCallbacks(it) }
+        pendingCancelById.remove(NOTIFICATION_ID_PHONE_PARKED_CONFIRMED)?.let { mainHandler.removeCallbacks(it) }
         try {
             CarNotificationManager.from(context).cancel(NOTIFICATION_ID_REMEMBER_PARKED)
         } catch (_: Exception) {
@@ -489,6 +537,8 @@ open class NotificationHelper(private val context: Context) {
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            // Navigation category: AA treats as driver-relevant HUN (same as park-save alert).
+            .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .setTimeoutAfter(TEMPORARY_NOTIFICATION_MS)

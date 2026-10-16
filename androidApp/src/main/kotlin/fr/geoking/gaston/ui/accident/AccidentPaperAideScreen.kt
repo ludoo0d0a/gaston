@@ -97,7 +97,11 @@ fun AccidentPaperAideScreen(
                 }
             }
 
-            items(steps) { step ->
+            items(
+                items = steps,
+                key = { it.boxLabel },
+                contentType = { "paper_step" },
+            ) { step ->
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),

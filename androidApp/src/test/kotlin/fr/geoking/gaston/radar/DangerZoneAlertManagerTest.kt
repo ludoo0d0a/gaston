@@ -64,9 +64,11 @@ class DangerZoneAlertManagerTest {
 
     private class MockNotificationHelper(context: android.content.Context) : fr.geoking.gaston.feature.notification.NotificationHelper(context) {
         var entryNotificationCount = 0
+        var kmReminderCount = 0
         var nearNotificationCount = 0
         var lastEntrySpeedLimit: Int? = null
         var lastNearSpeedLimit: Int? = null
+        var lastKmDistanceMeters: Double? = null
         var lastEntryLat: Double? = null
         var lastEntryLon: Double? = null
         var lastNearLat: Double? = null
@@ -84,6 +86,19 @@ class DangerZoneAlertManagerTest {
             lastEntrySpeedLimit = speedLimitKmH
             lastEntryLat = latitude
             lastEntryLon = longitude
+            lastEntryIsDevMode = isDevMode
+        }
+
+        override fun showDangerZoneKmReminderNotification(
+            speedLimitKmH: Int?,
+            distanceMeters: Double,
+            latitude: Double?,
+            longitude: Double?,
+            isDevMode: Boolean,
+        ) {
+            kmReminderCount++
+            lastKmDistanceMeters = distanceMeters
+            lastEntrySpeedLimit = speedLimitKmH
             lastEntryIsDevMode = isDevMode
         }
 
@@ -115,9 +130,9 @@ class DangerZoneAlertManagerTest {
             source = "test",
             roadClassOverride = RoadNetworkClass.Urban,
         )
-        // ~200 m north of center: inside urban zone (300 m) but outside near-radar (100 m)
+        // ~250 m north of center: inside urban zone (300 m) but outside near-radar (200 m)
         val loc = Location("test").apply {
-            latitude = 48.8566 + 0.0018
+            latitude = 48.8566 + 0.00225
             longitude = 2.3522
             bearing = 180f // toward tip
             speed = 10f // ~36 km/h
@@ -130,6 +145,7 @@ class DangerZoneAlertManagerTest {
         kotlin.test.assertEquals(48.8566, mockNotification.lastEntryLat)
         kotlin.test.assertEquals(2.3522, mockNotification.lastEntryLon)
         kotlin.test.assertEquals(0, mockNotification.nearNotificationCount)
+        kotlin.test.assertEquals(0, mockNotification.kmReminderCount)
     }
 
     @Test
@@ -242,9 +258,9 @@ class DangerZoneAlertManagerTest {
             source = "test",
             roadClassOverride = RoadNetworkClass.Urban,
         )
-        // Inside urban zone (~200 m) but outside near-radar (100 m) → entry HUN + audio.
+        // Inside urban zone (~250 m) but outside near-radar (200 m) → entry HUN + audio.
         val loc = Location("test").apply {
-            latitude = 48.8566 + 0.0018
+            latitude = 48.8566 + 0.00225
             longitude = 2.3522
             bearing = 180f
             speed = 10f // ~36 km/h — under VMA 50
@@ -274,7 +290,7 @@ class DangerZoneAlertManagerTest {
     }
 
     @Test
-    fun triggersNearRadarNotificationWithin100m() {
+    fun triggersNearRadarNotificationWithin200m() {
         val context = RuntimeEnvironment.getApplication()
         val mockNotification = MockNotificationHelper(context)
         val manager = DangerZoneAlertManager(settingsManager, audioNotifier, mockNotification)
@@ -316,6 +332,65 @@ class DangerZoneAlertManagerTest {
     }
 
     @Test
+    fun firesKmReminderThenNearOnExtraUrbanApproach() {
+        val context = RuntimeEnvironment.getApplication()
+        val mockNotification = MockNotificationHelper(context)
+        val manager = DangerZoneAlertManager(settingsManager, audioNotifier, mockNotification)
+        val tipLat = 48.8566
+        val tipLon = 2.3522
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "z-km",
+            latitude = tipLat,
+            longitude = tipLon,
+            speedLimitKmH = 90,
+            source = "test",
+            roadClassOverride = RoadNetworkClass.ExtraUrban,
+        )
+
+        // ~1.5 km south — entry only (no km milestone yet; 1 km not crossed)
+        val far = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 1_500.0)
+        val locFar = Location("test").apply {
+            latitude = far.first
+            longitude = far.second
+            bearing = 0f
+            speed = 22f
+            time = System.currentTimeMillis()
+        }
+        manager.evaluateAndAlert(locFar, listOf(zone))
+        assertEquals(1, mockNotification.entryNotificationCount)
+        assertEquals(0, mockNotification.kmReminderCount)
+        assertEquals(0, mockNotification.nearNotificationCount)
+
+        // ~0.8 km — crosses 1 km reminder
+        val mid = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 800.0)
+        val locMid = Location("test").apply {
+            latitude = mid.first
+            longitude = mid.second
+            bearing = 0f
+            speed = 22f
+            time = System.currentTimeMillis() + 1_000
+        }
+        manager.evaluateAndAlert(locMid, listOf(zone))
+        assertEquals(1, mockNotification.kmReminderCount)
+        assertEquals(1_000.0, mockNotification.lastKmDistanceMeters)
+        assertEquals(0, mockNotification.nearNotificationCount)
+        assertTrue(manager.getFiredKmRadii("z-km").contains(1_000.0))
+
+        // ~150 m — final near alert
+        val near = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 150.0)
+        val locNear = Location("test").apply {
+            latitude = near.first
+            longitude = near.second
+            bearing = 0f
+            speed = 22f
+            time = System.currentTimeMillis() + 2_000
+        }
+        manager.evaluateAndAlert(locNear, listOf(zone))
+        assertEquals(1, mockNotification.nearNotificationCount)
+        assertEquals(1, mockNotification.kmReminderCount) // no re-fire
+    }
+
+    @Test
     fun nearRadarPlaysAudioAfterEntryAlreadyAlerted() {
         val zone = DangerZoneFactory.fromSpeedControlPoint(
             id = "z4",
@@ -325,9 +400,9 @@ class DangerZoneAlertManagerTest {
             source = "test",
             roadClassOverride = RoadNetworkClass.Urban,
         )
-        // Inside urban zone (~200 m) but outside near-radar (100 m)
+        // Inside urban zone (~250 m) but outside near-radar (200 m)
         val far = Location("test").apply {
-            latitude = 48.8566 + 0.0018
+            latitude = 48.8566 + 0.00225
             longitude = 2.3522
             bearing = 180f
             speed = 10f // ~36 km/h — under VMA 50
@@ -450,11 +525,11 @@ class DangerZoneAlertManagerTest {
     }
 
     @Test
-    fun trapezoidZoneAlertsOnApproachAndExitsImmediatelyOutside() {
+    fun sectorZoneAlertsOnApproachAndExitsImmediatelyOutside() {
         val tipLat = 48.8566
         val tipLon = 2.3522
         val zone = DangerZoneFactory.fromSpeedControlPoint(
-            id = "z-trap",
+            id = "z-sector",
             latitude = tipLat,
             longitude = tipLon,
             speedLimitKmH = 90,
@@ -470,10 +545,10 @@ class DangerZoneAlertManagerTest {
             time = System.currentTimeMillis()
         }
         alertManager.evaluateAndAlert(inside, listOf(zone))
-        assertTrue(alertManager.getAlertedZoneIds().contains("z-trap"))
+        assertTrue(alertManager.getAlertedZoneIds().contains("z-sector"))
         assertTrue(alertManager.hudState.value.active)
 
-        // Behind radar (north): outside trapezoid → immediate exit (no circle hysteresis)
+        // Behind radar (north): outside sector → immediate exit (no circle hysteresis)
         val behind = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 0.0, 200.0)
         val outside = Location("test").apply {
             latitude = behind.first
@@ -483,7 +558,7 @@ class DangerZoneAlertManagerTest {
             time = System.currentTimeMillis() + 1_000
         }
         alertManager.evaluateAndAlert(outside, listOf(zone))
-        assertFalse(alertManager.getAlertedZoneIds().contains("z-trap"))
+        assertFalse(alertManager.getAlertedZoneIds().contains("z-sector"))
         assertFalse(alertManager.hudState.value.active)
     }
 }

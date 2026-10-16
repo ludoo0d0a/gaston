@@ -58,6 +58,8 @@ class CarMapLibreRenderer(
 ) : AaMapSurfaceRenderer {
     override var hudModeLabel: String = "MapLibre"
     override var offlineUnavailable: Boolean = false
+    override var onFatalError: (() -> Unit)? = null
+    private var fatalNotified = false
     private val uiHandler = Handler(Looper.getMainLooper())
     private val settingsManager = org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.SettingsManager>()
 
@@ -283,6 +285,7 @@ class CarMapLibreRenderer(
         // Canvas lock calls throw ("Surface was already connected to another API"),
         // crashing every time this screen becomes visible on Android Auto.
         surfaceContainer = container
+        fatalNotified = false
         surfaceWidth = container.width.coerceAtLeast(100)
         surfaceHeight = container.height.coerceAtLeast(100)
         surfaceDpi = container.dpi.coerceAtLeast(1)
@@ -360,6 +363,12 @@ class CarMapLibreRenderer(
     }
 
     private fun scheduleBackoffSnapshot() {
+        if (consecutiveErrors >= FATAL_SNAPSHOT_ERRORS && !fatalNotified) {
+            fatalNotified = true
+            Log.e(TAG, "Giving up after $consecutiveErrors consecutive snapshot errors")
+            onFatalError?.invoke()
+            return
+        }
         val backoffMs = (INITIAL_BACKOFF_MS * (1 shl (consecutiveErrors - 1).coerceAtMost(5)))
             .coerceAtMost(MAX_BACKOFF_MS)
         Log.w(TAG, "Scheduling backoff snapshot retry in ${backoffMs}ms (consecutive errors: $consecutiveErrors)")
@@ -797,6 +806,7 @@ class CarMapLibreRenderer(
         private const val INITIAL_BACKOFF_MS = 2_000L
         private const val MAX_BACKOFF_MS = 30_000L
         private const val MAX_SNAPSHOT_ERRORS = 12
+        private const val FATAL_SNAPSHOT_ERRORS = 5
 
         private val recentSnapshotErrors =
             Collections.synchronizedList(mutableListOf<MapLibreSnapshotError>())

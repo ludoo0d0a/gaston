@@ -200,7 +200,7 @@ class AutoDashboardScreen(
                                 .setBrowsable(true)
                                 .setOnClickListener {
                                     val mapDeps = getMapDeps() ?: return@setOnClickListener
-                                    settingsManager.setMapTrafficEnabled(true)
+                                    settingsManager.setTrafficMode()
                                     pushMapScreen(
                                         settingsManager,
                                         mapDeps,

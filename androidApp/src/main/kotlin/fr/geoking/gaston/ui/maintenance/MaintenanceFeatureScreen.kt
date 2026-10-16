@@ -361,7 +361,11 @@ private fun MaintenanceHubScreen(
                     )
                 }
             } else {
-                items(events, key = { it.id }) { event ->
+                items(
+                    items = events,
+                    key = { it.id },
+                    contentType = { "maintenance_event" },
+                ) { event ->
                     EventRow(event = event, onClick = { onOpenEvent(event) })
                 }
             }
@@ -702,7 +706,11 @@ private fun IntervalsScreen(
                     Text(stringResource(R.string.maintenance_latest_odometer, it))
                 }
             }
-            items(intervals, key = { it.id }) { interval ->
+            items(
+                items = intervals,
+                key = { it.id },
+                contentType = { "maintenance_interval" },
+            ) { interval ->
                 val due = interval.id in dueIds
                 Card(
                     onClick = { onEdit(interval) },
