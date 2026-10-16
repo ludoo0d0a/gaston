@@ -31,11 +31,18 @@ import org.mapsforge.core.model.LatLong
 import org.mapsforge.map.android.graphics.AndroidGraphicFactory
 import org.mapsforge.map.android.util.AndroidUtil
 import org.mapsforge.map.android.view.MapView
+import fr.geoking.gaston.auto.mapsforge.CityLabel
+import org.mapsforge.core.model.Tile
+import org.mapsforge.map.datastore.MapDataStore
 import org.mapsforge.map.reader.MapFile
 import org.mapsforge.map.layer.renderer.TileRendererLayer
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.PI
+import kotlin.math.ceil
 import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.hypot
 import kotlin.math.ln
 import kotlin.math.tan
 
@@ -75,8 +82,23 @@ class MapsforgeAaRenderer(
 
     private var mapView: MapView? = null
     private var tileLayer: TileRendererLayer? = null
+    private var activeDataStore: MapDataStore? = null
     private var loadedMapPath: String? = null
     private var basemapBitmap: Bitmap? = null
+
+    private val tileCityLabelsCache = ConcurrentHashMap<String, List<CityLabel>>()
+
+    private val cityFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        color = Color.parseColor("#0F172A")
+    }
+    private val cityStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        color = Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 5f
+        strokeJoin = Paint.Join.ROUND
+    }
 
     private val waitingPaint = Paint().apply { color = Color.rgb(0xE8, 0xE8, 0xE8) }
     private val searchRadiusPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -218,6 +240,7 @@ class MapsforgeAaRenderer(
             mapViewLocal.layout(0, 0, surfaceWidth, surfaceHeight)
             mapView = mapViewLocal
             tileLayer = layer
+            activeDataStore = mapDataStore
             loadedMapPath = path
             offlineUnavailable = false
         } catch (e: Exception) {
@@ -230,6 +253,8 @@ class MapsforgeAaRenderer(
         tileLayer = null
         mapView?.destroy()
         mapView = null
+        try { activeDataStore?.close() } catch (_: Exception) {}
+        activeDataStore = null
         loadedMapPath = null
     }
 
@@ -273,6 +298,7 @@ class MapsforgeAaRenderer(
             canvas.rotate(-bearing, cx, cy)
         }
         drawSearchRadius(canvas)
+        drawCityLabels(canvas, bearing)
         drawPois(canvas, bearing)
         if (bearing != 0f) {
             canvas.restore()
@@ -306,6 +332,142 @@ class MapsforgeAaRenderer(
             isDensityScaled = true,
             modeLabel = hudModeLabel,
         )
+    }
+
+    private fun isPlaceVisibleAtZoom(placeType: String, zoom: Int): Boolean = when (placeType) {
+        "city" -> zoom >= 5
+        "town" -> zoom >= 8
+        "village", "suburb" -> zoom >= 11
+        "hamlet" -> zoom >= 13
+        else -> zoom >= 12
+    }
+
+    private fun configureCityPaint(placeType: String) {
+        val textSizeDp = when (placeType) {
+            "city" -> 20f
+            "town" -> 16f
+            "village", "suburb" -> 14f
+            else -> 12f
+        }
+        val density = carContext.resources.displayMetrics.density
+        val px = textSizeDp * density
+
+        cityFillPaint.textSize = px
+        cityStrokePaint.textSize = px
+
+        val isBold = placeType == "city" || placeType == "town"
+        cityFillPaint.isFakeBoldText = isBold
+        cityStrokePaint.isFakeBoldText = isBold
+
+        cityFillPaint.color = when (placeType) {
+            "city" -> Color.parseColor("#0F172A")
+            "town" -> Color.parseColor("#1E293B")
+            "village", "suburb" -> Color.parseColor("#334155")
+            else -> Color.parseColor("#475569")
+        }
+    }
+
+    private fun extractCityLabelsFromTile(ds: MapDataStore, x: Int, y: Int, z: Int) {
+        val key = "labels/$z/$x/$y"
+        if (tileCityLabelsCache.containsKey(key)) return
+        try {
+            val tile = Tile(x, y, z.toByte(), AutoSurfaceRenderer.TILE_SIZE)
+            val result = ds.readPoiData(tile)
+            val labels = mutableListOf<CityLabel>()
+            val pois = result?.pointOfInterests ?: emptyList()
+            for (poi in pois) {
+                var placeType: String? = null
+                var name: String? = null
+                for (tag in poi.tags) {
+                    if (tag.key == "place" && tag.value in VALID_PLACE_TYPES) {
+                        placeType = tag.value
+                    } else if (tag.key == "name" || tag.key == "name:fr") {
+                        if (name == null || tag.key == "name:fr") {
+                            name = tag.value
+                        }
+                    }
+                }
+                if (placeType != null && !name.isNullOrBlank()) {
+                    labels.add(
+                        CityLabel(
+                            name = name,
+                            lat = poi.position.latitude,
+                            lon = poi.position.longitude,
+                            placeType = placeType
+                        )
+                    )
+                }
+            }
+            tileCityLabelsCache[key] = labels
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to extract city labels for $key", e)
+            tileCityLabelsCache[key] = emptyList()
+        }
+    }
+
+    private fun drawCityLabels(canvas: Canvas, bearing: Float) {
+        val ds = activeDataStore ?: return
+        if (zoom < 5) return
+
+        val mapCenterX = lonToTileX(centerLon, zoom)
+        val mapCenterY = latToTileY(centerLat, zoom)
+        val cx = centerPxXForHitTest().toFloat()
+        val cy = centerPxYForHitTest().toFloat()
+        val tileSize = AutoSurfaceRenderer.TILE_SIZE
+
+        val startTileX = floor((0 - cx) / tileSize + mapCenterX).toInt() - 1
+        val endTileX = ceil((surfaceWidth - cx) / tileSize + mapCenterX).toInt() + 1
+        val startTileY = floor((0 - cy) / tileSize + mapCenterY).toInt() - 1
+        val endTileY = ceil((surfaceHeight - cy) / tileSize + mapCenterY).toInt() + 1
+
+        val maxTiles = 1 shl zoom
+        val visibleLabels = mutableListOf<CityLabel>()
+
+        for (x in startTileX..endTileX) {
+            for (y in startTileY..endTileY) {
+                val wrappedX = (x % maxTiles + maxTiles) % maxTiles
+                if (y < 0 || y >= maxTiles) continue
+                extractCityLabelsFromTile(ds, wrappedX, y, zoom)
+                val key = "labels/$zoom/$wrappedX/$y"
+                val labels = tileCityLabelsCache[key] ?: continue
+                visibleLabels.addAll(labels)
+            }
+        }
+
+        if (visibleLabels.isEmpty()) return
+
+        val drawnPositions = mutableListOf<Pair<Float, Float>>()
+
+        for (label in visibleLabels) {
+            if (!isPlaceVisibleAtZoom(label.placeType, zoom)) continue
+
+            val tileX = lonToTileX(label.lon, zoom)
+            val tileY = latToTileY(label.lat, zoom)
+            val drawX = ((tileX - mapCenterX) * tileSize + cx).toFloat()
+            val drawY = ((tileY - mapCenterY) * tileSize + cy).toFloat()
+
+            if (drawX < -100f || drawX > surfaceWidth + 100f || drawY < -100f || drawY > surfaceHeight + 100f) {
+                continue
+            }
+
+            if (drawnPositions.any { hypot(it.first - drawX, it.second - drawY) < 80f }) {
+                continue
+            }
+            drawnPositions.add(drawX to drawY)
+
+            configureCityPaint(label.placeType)
+
+            if (bearing != 0f) {
+                canvas.save()
+                canvas.rotate(bearing, drawX, drawY)
+                canvas.drawText(label.name, drawX, drawY, cityStrokePaint)
+                canvas.drawText(label.name, drawX, drawY, cityFillPaint)
+                canvas.restore()
+            } else {
+                canvas.drawText(label.name, drawX, drawY, cityStrokePaint)
+                canvas.drawText(label.name, drawX, drawY, cityFillPaint)
+            }
+        }
     }
 
     private fun drawSearchRadius(canvas: Canvas) {
@@ -389,5 +551,6 @@ class MapsforgeAaRenderer(
 
     companion object {
         private const val TAG = "MapsforgeAaRenderer"
+        private val VALID_PLACE_TYPES = setOf("city", "town", "village", "hamlet", "suburb")
     }
 }
