@@ -1,6 +1,5 @@
 package fr.geoking.gaston.ui.components
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import fr.geoking.gaston.R
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -233,15 +233,23 @@ private fun LegendItem(label: String, color: Color) {
 @Composable
 private fun LegendDashedItem(label: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Canvas(Modifier.size(width = 18.dp, height = 10.dp)) {
-            drawLine(
-                color = color,
-                start = Offset(0f, size.height / 2f),
-                end = Offset(size.width, size.height / 2f),
-                strokeWidth = 3f,
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
-            )
-        }
+        Box(
+            modifier = Modifier
+                .size(width = 18.dp, height = 10.dp)
+                .drawWithCache {
+                    val y = size.height / 2f
+                    val dash = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))
+                    onDrawBehind {
+                        drawLine(
+                            color = color,
+                            start = Offset(0f, y),
+                            end = Offset(size.width, y),
+                            strokeWidth = 3f,
+                            pathEffect = dash
+                        )
+                    }
+                }
+        )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
@@ -306,145 +314,209 @@ private fun UnifiedForecastChart(
     val yAxisLeftWidth = 38.dp
     val yAxisRightWidth = 38.dp
 
+    val dayIndex = remember(allDays) { allDays.withIndex().associate { it.value to it.index } }
+    val brentSorted = remember(brentHistory) { brentHistory.sortedBy { it.day } }
+    val allFids = remember(allFuelsHistory, allFuelsForecast) {
+        (allFuelsHistory.keys + allFuelsForecast.keys).distinct()
+    }
+    val histByFuel = remember(allFuelsHistory) {
+        allFuelsHistory.mapValues { (_, pts) -> pts.sortedBy { it.day } }
+    }
+    val foreByFuel = remember(allFuelsForecast) {
+        allFuelsForecast.mapValues { (_, pts) -> pts.sortedBy { it.day } }
+    }
+
     BoxWithConstraints(modifier = modifier) {
         val w = constraints.maxWidth.toFloat()
         val h = constraints.maxHeight.toFloat()
+        val showBrentAxis = brentHistory.isNotEmpty()
 
-        Canvas(modifier = Modifier.fillMaxSize().pointerInput(allDays, allFuelsHistory, allFuelsForecast, brentHistory) {
-            detectTapGestures { offset ->
-                val w = size.width
-                val h = size.height
-                val chartW = w - yAxisLeftWidth.toPx() - yAxisRightWidth.toPx()
-                val chartH = h - X_AXIS_HEIGHT.toPx()
-                val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(allDays, allFuelsHistory, allFuelsForecast, brentHistory, dayIndex) {
+                    detectTapGestures { offset ->
+                        val chartW = size.width - yAxisLeftWidth.toPx() - yAxisRightWidth.toPx()
+                        val chartH = size.height - X_AXIS_HEIGHT.toPx()
+                        val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
+                        val leftPx = yAxisLeftWidth.toPx()
 
-                fun xFor(day: String): Float = yAxisLeftWidth.toPx() + chartW * (allDays.indexOf(day) / denom.toFloat())
-                fun yForFuel(p: Double): Float = chartH - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * chartH)
-                fun yForBrent(p: Double): Float = chartH - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * chartH)
+                        fun xFor(day: String): Float {
+                            val idx = dayIndex[day] ?: return 0f
+                            return leftPx + chartW * (idx / denom.toFloat())
+                        }
+                        fun yForFuel(p: Double): Float =
+                            chartH - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * chartH)
+                        fun yForBrent(p: Double): Float =
+                            chartH - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * chartH)
 
-                val points = mutableListOf<ChartPoint>()
-                allFuelsHistory.forEach { (fid, pts) ->
-                    pts.forEach { points.add(ChartPoint(fid, it.day, it.priceEurPerL, false, xFor(it.day), yForFuel(it.priceEurPerL))) }
-                }
-                allFuelsForecast.forEach { (fid, pts) ->
-                    pts.forEach { points.add(ChartPoint(fid, it.day, it.priceEurPerL, true, xFor(it.day), yForFuel(it.priceEurPerL))) }
-                }
-                brentHistory.forEach { points.add(ChartPoint(null, it.day, it.close, false, xFor(it.day), yForBrent(it.close))) }
+                        val points = mutableListOf<ChartPoint>()
+                        allFuelsHistory.forEach { (fid, pts) ->
+                            pts.forEach {
+                                points.add(
+                                    ChartPoint(fid, it.day, it.priceEurPerL, false, xFor(it.day), yForFuel(it.priceEurPerL))
+                                )
+                            }
+                        }
+                        allFuelsForecast.forEach { (fid, pts) ->
+                            pts.forEach {
+                                points.add(
+                                    ChartPoint(fid, it.day, it.priceEurPerL, true, xFor(it.day), yForFuel(it.priceEurPerL))
+                                )
+                            }
+                        }
+                        brentHistory.forEach {
+                            points.add(ChartPoint(null, it.day, it.close, false, xFor(it.day), yForBrent(it.close)))
+                        }
 
-                selectedPoint = points.minByOrNull { abs(it.x - offset.x) + abs(it.y - offset.y) }?.let {
-                    if (abs(it.x - offset.x) < 100 && abs(it.y - offset.y) < 100) it else null
-                }
-            }
-        }) {
-            val w = size.width
-            val h = size.height
-            val chartW = w - yAxisLeftWidth.toPx() - yAxisRightWidth.toPx()
-            val chartH = h - X_AXIS_HEIGHT.toPx()
-            val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
-
-            fun xFor(day: String): Float = yAxisLeftWidth.toPx() + chartW * (allDays.indexOf(day) / denom.toFloat())
-            fun yForFuel(p: Double): Float = chartH - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * chartH)
-            fun yForBrent(p: Double): Float = chartH - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * chartH)
-
-            // Grid & Y-axes labels
-            val steps = 4
-            for (i in 0..steps) {
-                val ratio = i / steps.toFloat()
-                val y = chartH - ratio * chartH
-
-                // Horizontal grid line across chart area
-                drawLine(gridColor, Offset(yAxisLeftWidth.toPx(), y), Offset(w - yAxisRightWidth.toPx(), y), strokeWidth = 1f)
-
-                // Primary Y-Axis (Fuel €/L) on Left
-                val fuelVal = yMin + ratio * yRange
-                drawText(
-                    textMeasurer,
-                    String.format(Locale.US, "%.2f", fuelVal),
-                    Offset(2f, y - 12f),
-                    style = labelStyle
-                )
-
-                // Secondary Y-Axis (Brent Crude $/bbl) on Right
-                if (brentHistory.isNotEmpty()) {
-                    val brentVal = brentMin + ratio * brentRange
-                    val text = String.format(Locale.US, "$%.0f", brentVal)
-                    val textLayout = textMeasurer.measure(text, brentLabelStyle)
-                    drawText(
-                        textLayout,
-                        topLeft = Offset(w - textLayout.size.width - 2f, y - 12f)
-                    )
-                }
-            }
-
-            // X-axis labels
-            val xLabelsIndices = if (allDays.size >= 3) {
-                listOf(0, allDays.size / 2, allDays.size - 1)
-            } else {
-                allDays.indices.toList()
-            }
-
-            xLabelsIndices.forEach { idx ->
-                val day = allDays[idx]
-                val x = xFor(day)
-                val label = day.substring(5).replace("-", "/")
-                val textLayoutResult = textMeasurer.measure(label, labelStyle)
-                drawText(
-                    textLayoutResult,
-                    topLeft = Offset(x - textLayoutResult.size.width / 2f, chartH + 4.dp.toPx())
-                )
-                // Vertical grid line
-                drawLine(gridColor, Offset(x, 0f), Offset(x, chartH), strokeWidth = 1f)
-            }
-
-            // Brent line (on secondary right axis)
-            if (brentHistory.size >= 2) {
-                val path = Path()
-                brentHistory.sortedBy { it.day }.forEachIndexed { i, pt ->
-                    val x = xFor(pt.day)
-                    val y = yForBrent(pt.close)
-                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                }
-                drawPath(path, brentColor, style = Stroke(width = 2.5f, cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))))
-            }
-
-            // Fuel lines (on primary left axis)
-            val allFids = (allFuelsHistory.keys + allFuelsForecast.keys).distinct()
-            allFids.forEach { fid ->
-                val color = fuelColors[fid] ?: Color.Gray
-                val hist = allFuelsHistory[fid]?.sortedBy { it.day } ?: emptyList()
-                val fore = allFuelsForecast[fid]?.sortedBy { it.day } ?: emptyList()
-
-                if (hist.size >= 2) {
-                    val path = Path()
-                    hist.forEachIndexed { i, pt ->
-                        val x = xFor(pt.day)
-                        val y = yForFuel(pt.priceEurPerL)
-                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                        selectedPoint = points.minByOrNull { abs(it.x - offset.x) + abs(it.y - offset.y) }?.let {
+                            if (abs(it.x - offset.x) < 100 && abs(it.y - offset.y) < 100) it else null
+                        }
                     }
-                    drawPath(path, color, style = Stroke(width = 3f, cap = StrokeCap.Round))
                 }
+                .drawWithCache {
+                    val leftPx = yAxisLeftWidth.toPx()
+                    val rightPx = yAxisRightWidth.toPx()
+                    val chartW = size.width - leftPx - rightPx
+                    val chartH = size.height - X_AXIS_HEIGHT.toPx()
+                    val denom = (max(2, allDays.size) - 1).coerceAtLeast(1)
+                    val xLabelY = chartH + 4.dp.toPx()
+                    val dashEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))
+                    val chartRight = size.width - rightPx
 
-                if (fore.isNotEmpty()) {
-                    val path = Path()
-                    var started = false
-                    hist.lastOrNull()?.let {
-                        path.moveTo(xFor(it.day), yForFuel(it.priceEurPerL))
-                        started = true
+                    fun xFor(day: String): Float {
+                        val idx = dayIndex[day] ?: return 0f
+                        return leftPx + chartW * (idx / denom.toFloat())
                     }
-                    fore.sortedBy { it.day }.forEach { pt ->
-                        val x = xFor(pt.day)
-                        val y = yForFuel(pt.priceEurPerL)
-                        if (!started) { path.moveTo(x, y); started = true } else path.lineTo(x, y)
+                    fun yForFuel(p: Double): Float =
+                        chartH - (((p - yMin) / yRange).coerceIn(0.0, 1.0).toFloat() * chartH)
+                    fun yForBrent(p: Double): Float =
+                        chartH - (((p - brentMin) / brentRange).coerceIn(0.0, 1.0).toFloat() * chartH)
+
+                    val steps = 4
+                    val yGridYs = FloatArray(steps + 1)
+                    val yGridFuelPrices = DoubleArray(steps + 1)
+                    val yGridBrentPrices = DoubleArray(steps + 1)
+                    for (i in 0..steps) {
+                        val ratio = i / steps.toFloat()
+                        yGridYs[i] = chartH - ratio * chartH
+                        yGridFuelPrices[i] = yMin + ratio * yRange
+                        yGridBrentPrices[i] = brentMin + ratio * brentRange
                     }
-                    drawPath(path, color, style = Stroke(width = 3f, cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))))
+
+                    val brentLabelLayouts = if (showBrentAxis) {
+                        yGridBrentPrices.map { brentVal ->
+                            val text = String.format(Locale.US, "$%.0f", brentVal)
+                            textMeasurer.measure(text, brentLabelStyle)
+                        }
+                    } else {
+                        emptyList()
+                    }
+
+                    val xLabelsIndices = if (allDays.size >= 3) {
+                        listOf(0, allDays.size / 2, allDays.size - 1)
+                    } else {
+                        allDays.indices.toList()
+                    }
+                    val xLabelLayouts = xLabelsIndices.map { idx ->
+                        val day = allDays[idx]
+                        val label = day.substring(5).replace("-", "/")
+                        Triple(xFor(day), textMeasurer.measure(label, labelStyle), day)
+                    }
+
+                    val brentPath = if (brentSorted.size >= 2) {
+                        Path().also { path ->
+                            brentSorted.forEachIndexed { i, pt ->
+                                val x = xFor(pt.day)
+                                val y = yForBrent(pt.close)
+                                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                            }
+                        }
+                    } else null
+
+                    val fuelPaths = allFids.map { fid ->
+                        val color = fuelColors[fid] ?: Color.Gray
+                        val hist = histByFuel[fid].orEmpty()
+                        val fore = foreByFuel[fid].orEmpty()
+                        val histPath = if (hist.size >= 2) {
+                            Path().also { path ->
+                                hist.forEachIndexed { i, pt ->
+                                    val x = xFor(pt.day)
+                                    val y = yForFuel(pt.priceEurPerL)
+                                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                                }
+                            }
+                        } else null
+                        val forePath = if (fore.isNotEmpty()) {
+                            Path().also { path ->
+                                var started = false
+                                hist.lastOrNull()?.let {
+                                    path.moveTo(xFor(it.day), yForFuel(it.priceEurPerL))
+                                    started = true
+                                }
+                                fore.forEach { pt ->
+                                    val x = xFor(pt.day)
+                                    val y = yForFuel(pt.priceEurPerL)
+                                    if (!started) {
+                                        path.moveTo(x, y)
+                                        started = true
+                                    } else {
+                                        path.lineTo(x, y)
+                                    }
+                                }
+                            }
+                        } else null
+                        Triple(color, histPath, forePath)
+                    }
+
+                    val histStroke = Stroke(width = 3f, cap = StrokeCap.Round)
+                    val brentStroke = Stroke(width = 2.5f, cap = StrokeCap.Round, pathEffect = dashEffect)
+                    val foreStroke = Stroke(width = 3f, cap = StrokeCap.Round, pathEffect = dashEffect)
+
+                    onDrawBehind {
+                        for (i in 0..steps) {
+                            val y = yGridYs[i]
+                            drawLine(gridColor, Offset(leftPx, y), Offset(chartRight, y), strokeWidth = 1f)
+                            drawText(
+                                textMeasurer,
+                                String.format(Locale.US, "%.2f", yGridFuelPrices[i]),
+                                Offset(2f, y - 12f),
+                                style = labelStyle
+                            )
+                            if (showBrentAxis) {
+                                val layout = brentLabelLayouts[i]
+                                drawText(
+                                    layout,
+                                    topLeft = Offset(size.width - layout.size.width - 2f, y - 12f)
+                                )
+                            }
+                        }
+
+                        xLabelLayouts.forEach { (x, layout, _) ->
+                            drawText(
+                                layout,
+                                topLeft = Offset(x - layout.size.width / 2f, xLabelY)
+                            )
+                            drawLine(gridColor, Offset(x, 0f), Offset(x, chartH), strokeWidth = 1f)
+                        }
+
+                        brentPath?.let { drawPath(it, brentColor, style = brentStroke) }
+
+                        fuelPaths.forEach { (color, historyPath, forecastPath) ->
+                            historyPath?.let { drawPath(it, color, style = histStroke) }
+                            forecastPath?.let { drawPath(it, color, style = foreStroke) }
+                        }
+
+                        selectedPoint?.let { pt ->
+                            drawCircle(
+                                pt.fuelId?.let { fuelColors[it] } ?: brentColor,
+                                radius = 6f,
+                                center = Offset(pt.x, pt.y)
+                            )
+                        }
+                    }
                 }
-            }
-
-            // Selection marker
-            selectedPoint?.let { pt ->
-                drawCircle(pt.fuelId?.let { fuelColors[it] } ?: brentColor, radius = 6f, center = Offset(pt.x, pt.y))
-            }
-        }
+        )
 
         // Detail Bubble
         selectedPoint?.let { pt ->
@@ -618,84 +690,95 @@ private fun ForecastSparkline(
     val ymin = yMin - pad
     val ymax = yMax + pad
 
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val chartH = h - X_AXIS_HEIGHT.toPx()
-        val total = histSorted.size + foreSorted.size
-        val denom = (max(2, total) - 1).coerceAtLeast(1)
+    Box(
+        modifier = modifier.drawWithCache {
+            val w = size.width
+            val chartH = size.height - X_AXIS_HEIGHT.toPx()
+            val total = histSorted.size + foreSorted.size
+            val denom = (max(2, total) - 1).coerceAtLeast(1)
+            val xLabelY = chartH + 4.dp.toPx()
+            val stroke = Stroke(width = 3f, cap = StrokeCap.Round)
 
-        fun xFor(globalIndex: Int): Float {
-            if (total <= 1) return w / 2f
-            return w * (globalIndex / denom.toFloat()).coerceIn(0f, 1f)
-        }
-        fun yFor(p: Double): Float {
-            val t = ((p - ymin) / (ymax - ymin)).coerceIn(0.0, 1.0)
-            return chartH - t.toFloat() * chartH
-        }
-
-        drawLine(gridColor, Offset(0f, chartH * 0.5f), Offset(w, chartH * 0.5f), strokeWidth = 1f)
-
-        // X-axis labels
-        if (allDays.isNotEmpty()) {
-            val xLabelsIndices = if (allDays.size >= 3) {
-                listOf(0, allDays.size / 2, allDays.size - 1)
-            } else {
-                allDays.indices.toList()
+            fun xFor(globalIndex: Int): Float {
+                if (total <= 1) return w / 2f
+                return w * (globalIndex / denom.toFloat()).coerceIn(0f, 1f)
             }
-            xLabelsIndices.forEach { idx ->
+            fun yFor(p: Double): Float {
+                val t = ((p - ymin) / (ymax - ymin)).coerceIn(0.0, 1.0)
+                return chartH - t.toFloat() * chartH
+            }
+
+            val xLabelsIndices = if (allDays.isNotEmpty()) {
+                if (allDays.size >= 3) listOf(0, allDays.size / 2, allDays.size - 1)
+                else allDays.indices.toList()
+            } else emptyList()
+            val xLabelLayouts = xLabelsIndices.map { idx ->
                 val day = allDays[idx]
-                val x = xFor(idx)
                 val label = day.substring(5).replace("-", "/")
-                val textLayoutResult = textMeasurer.measure(label, labelStyle)
-                drawText(
-                    textLayoutResult,
-                    topLeft = Offset(x - textLayoutResult.size.width / 2f, chartH + 4.dp.toPx())
-                )
-                // Vertical grid line
-                drawLine(gridColor, Offset(x, 0f), Offset(x, chartH), strokeWidth = 1f)
+                xFor(idx) to textMeasurer.measure(label, labelStyle)
             }
-        }
 
-        if (histSorted.size >= 2) {
-            val path = Path()
-            histSorted.forEachIndexed { i, pt ->
-                val x = xFor(i)
-                val y = yFor(pt.priceEurPerL)
-                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-            }
-            drawPath(path, histColor, style = Stroke(width = 3f, cap = StrokeCap.Round))
-            histSorted.forEachIndexed { i, pt ->
-                drawCircle(histColor, radius = 4f, center = Offset(xFor(i), yFor(pt.priceEurPerL)))
-            }
-        } else if (histSorted.size == 1) {
-            drawCircle(histColor, radius = 5f, center = Offset(xFor(0), yFor(histSorted[0].priceEurPerL)))
-        }
+            val histPath = if (histSorted.size >= 2) {
+                Path().also { path ->
+                    histSorted.forEachIndexed { i, pt ->
+                        val x = xFor(i)
+                        val y = yFor(pt.priceEurPerL)
+                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    }
+                }
+            } else null
 
-        if (foreSorted.isNotEmpty()) {
-            val pathF = Path()
-            var started = false
-            val startG = max(0, histSorted.size - 1)
-            if (histSorted.isNotEmpty()) {
-                pathF.moveTo(xFor(startG), yFor(histSorted.last().priceEurPerL))
-                started = true
-            }
-            foreSorted.forEachIndexed { i, pt ->
+            val histDots = if (histSorted.size >= 2) {
+                histSorted.mapIndexed { i, pt -> Offset(xFor(i), yFor(pt.priceEurPerL)) }
+            } else if (histSorted.size == 1) {
+                listOf(Offset(xFor(0), yFor(histSorted[0].priceEurPerL)))
+            } else emptyList()
+
+            val forePath = if (foreSorted.isNotEmpty()) {
+                Path().also { pathF ->
+                    var started = false
+                    val startG = max(0, histSorted.size - 1)
+                    if (histSorted.isNotEmpty()) {
+                        pathF.moveTo(xFor(startG), yFor(histSorted.last().priceEurPerL))
+                        started = true
+                    }
+                    foreSorted.forEachIndexed { i, pt ->
+                        val g = histSorted.size + i
+                        val x = xFor(g)
+                        val y = yFor(pt.priceEurPerL)
+                        if (!started) {
+                            pathF.moveTo(x, y)
+                            started = true
+                        } else {
+                            pathF.lineTo(x, y)
+                        }
+                    }
+                }
+            } else null
+
+            val foreDots = foreSorted.mapIndexed { i, pt ->
                 val g = histSorted.size + i
-                val x = xFor(g)
-                val y = yFor(pt.priceEurPerL)
-                if (!started) {
-                    pathF.moveTo(x, y)
-                    started = true
-                } else {
-                    pathF.lineTo(x, y)
+                Offset(xFor(g), yFor(pt.priceEurPerL))
+            }
+
+            onDrawBehind {
+                drawLine(gridColor, Offset(0f, chartH * 0.5f), Offset(w, chartH * 0.5f), strokeWidth = 1f)
+
+                xLabelLayouts.forEach { (x, layout) ->
+                    drawText(layout, topLeft = Offset(x - layout.size.width / 2f, xLabelY))
+                    drawLine(gridColor, Offset(x, 0f), Offset(x, chartH), strokeWidth = 1f)
+                }
+
+                histPath?.let { drawPath(it, histColor, style = stroke) }
+                histDots.forEach { center ->
+                    drawCircle(histColor, radius = if (histSorted.size == 1) 5f else 4f, center = center)
+                }
+
+                forePath?.let { drawPath(it, foreColor, style = stroke) }
+                foreDots.forEach { center ->
+                    drawCircle(foreColor, radius = 5f, center = center)
                 }
             }
-            drawPath(pathF, foreColor, style = Stroke(width = 3f, cap = StrokeCap.Round))
-            foreSorted.forEachIndexed { i, pt ->
-                val g = histSorted.size + i
-                drawCircle(foreColor, radius = 5f, center = Offset(xFor(g), yFor(pt.priceEurPerL)))
-            }
         }
-    }
+    )
 }

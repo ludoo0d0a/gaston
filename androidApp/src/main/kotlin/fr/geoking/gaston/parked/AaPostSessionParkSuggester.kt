@@ -56,6 +56,9 @@ class AaPostSessionParkSuggester(
             projectionStartedAtElapsedMs = android.os.SystemClock.elapsedRealtime()
         }
         wasProjected = true
+        // Clear previous candidate when starting a new driving projection session
+        candidateStore.clear()
+        walkAwayMonitor.stop()
     }
 
     private fun onProjectionEnded() {
