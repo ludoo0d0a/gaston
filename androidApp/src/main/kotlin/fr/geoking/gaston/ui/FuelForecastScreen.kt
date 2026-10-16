@@ -82,8 +82,8 @@ fun FuelForecastScreen(
     var isLoading by remember { mutableStateOf(false) }
     var refreshTick by remember { mutableStateOf(0) }
 
-    val allFuelIds = setOf("gazole", "sp95", "sp95_e10", "sp98", "gplc", "e85")
-    var selectedFuelIds by remember { mutableStateOf(setOf("gazole", "sp95", "sp95_e10", "sp98")) }
+    val allFuelIds = setOf("gazole", "sp95", "sp98", "sp95_e10", "e85")
+    var selectedFuelIds by remember { mutableStateOf(setOf("gazole", "sp95", "sp98")) }
 
     LaunchedEffect(refreshTick, settings.hasPremiumFeatures) {
         if (!settings.hasPremiumFeatures) return@LaunchedEffect

@@ -10,7 +10,7 @@ import kotlinx.datetime.plus
  */
 class NationalFuelTrendPredictor(
     private val minHistoryDays: Int = 3,
-    private val projectionDays: Int = 5
+    private val projectionDays: Int = 3
 ) {
 
     fun project(
