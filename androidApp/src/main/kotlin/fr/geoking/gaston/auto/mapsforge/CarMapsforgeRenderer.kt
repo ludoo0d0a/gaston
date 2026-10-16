@@ -71,6 +71,13 @@ data class MapsforgeTileError(
     val timestamp: Long
 )
 
+data class CityLabel(
+    val name: String,
+    val lat: Double,
+    val lon: Double,
+    val placeType: String
+)
+
 /**
  * Mapsforge vector & raster map renderer for Android Auto surface.
  * Supports offline vector rendering via downloaded Mapsforge `.map` files with fallbacks,
@@ -149,6 +156,7 @@ class CarMapsforgeRenderer(
     private var queryPending: Boolean = false
 
     private val pendingRequests = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
+    private val tileCityLabelsCache = ConcurrentHashMap<String, List<CityLabel>>()
     private val executor = Executors.newFixedThreadPool(4)
 
     private var activeMapDataStore: MapDataStore? = null
@@ -213,6 +221,18 @@ class CarMapsforgeRenderer(
     private val reusablePath = Path()
     private val drawThread = Thread(::runDrawLoop, "CarMapsforgeRenderer")
 
+    private val cityFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        color = Color.parseColor("#0F172A")
+    }
+    private val cityStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        color = Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 5f
+        strokeJoin = Paint.Join.ROUND
+    }
+
     private val debugTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.DKGRAY
         textSize = 18f
@@ -228,6 +248,7 @@ class CarMapsforgeRenderer(
         private const val LABEL_STORE_TILES = 256
         const val POI_MARKER_WIDTH_PX = 96
         private const val TILE_CACHE_MAX_BYTES = 24 * 1024 * 1024
+        private val VALID_PLACE_TYPES = setOf("city", "town", "village", "hamlet", "suburb")
 
         private val sharedTileCache = object : LruCache<String, Bitmap>(TILE_CACHE_MAX_BYTES) {
             override fun sizeOf(key: String, value: Bitmap): Int =
@@ -533,6 +554,7 @@ class CarMapsforgeRenderer(
                 drawBasemap(canvas)
                 drawSearchRadius(canvas)
                 drawPaths(canvas)
+                drawCityLabels(canvas)
                 drawPois(canvas)
                 drawUserLocation(canvas)
                 if (bearing != 0f) {
@@ -1008,6 +1030,135 @@ class CarMapsforgeRenderer(
         }
     }
 
+    private fun isPlaceVisibleAtZoom(placeType: String, zoom: Int): Boolean = when (placeType) {
+        "city" -> zoom >= 5
+        "town" -> zoom >= 8
+        "village", "suburb" -> zoom >= 11
+        "hamlet" -> zoom >= 13
+        else -> zoom >= 12
+    }
+
+    private fun configureCityPaint(placeType: String) {
+        val textSizeDp = when (placeType) {
+            "city" -> 20f
+            "town" -> 16f
+            "village", "suburb" -> 14f
+            else -> 12f
+        }
+        val density = context.resources.displayMetrics.density
+        val px = textSizeDp * density
+
+        cityFillPaint.textSize = px
+        cityStrokePaint.textSize = px
+
+        val isBold = placeType == "city" || placeType == "town"
+        cityFillPaint.isFakeBoldText = isBold
+        cityStrokePaint.isFakeBoldText = isBold
+
+        cityFillPaint.color = when (placeType) {
+            "city" -> Color.parseColor("#0F172A")
+            "town" -> Color.parseColor("#1E293B")
+            "village", "suburb" -> Color.parseColor("#334155")
+            else -> Color.parseColor("#475569")
+        }
+    }
+
+    private fun extractCityLabelsFromTile(ds: MapDataStore, x: Int, y: Int, z: Int) {
+        val key = "labels/$z/$x/$y"
+        if (tileCityLabelsCache.containsKey(key)) return
+        try {
+            val tile = Tile(x, y, z.toByte(), TILE_SIZE)
+            val result = ds.readPoiData(tile)
+            val labels = mutableListOf<CityLabel>()
+            val pois = result?.pointOfInterests ?: emptyList()
+            for (poi in pois) {
+                var placeType: String? = null
+                var name: String? = null
+                for (tag in poi.tags) {
+                    if (tag.key == "place" && tag.value in VALID_PLACE_TYPES) {
+                        placeType = tag.value
+                    } else if (tag.key == "name" || tag.key == "name:fr") {
+                        if (name == null || tag.key == "name:fr") {
+                            name = tag.value
+                        }
+                    }
+                }
+                if (placeType != null && !name.isNullOrBlank()) {
+                    labels.add(
+                        CityLabel(
+                            name = name,
+                            lat = poi.position.latitude,
+                            lon = poi.position.longitude,
+                            placeType = placeType
+                        )
+                    )
+                }
+            }
+            tileCityLabelsCache[key] = labels
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to extract city labels for $key", e)
+            tileCityLabelsCache[key] = emptyList()
+        }
+    }
+
+    private fun drawCityLabels(canvas: Canvas) {
+        val centerX = lonToTileX(lon, zoom)
+        val centerY = latToTileY(lat, zoom)
+        val bearing = mapBearingDegrees
+        val currentZoom = zoom
+
+        val visibleLabels = mutableListOf<CityLabel>()
+        val startTileX = floor((0 - centerPxX) / TILE_SIZE + centerX).toInt() - 1
+        val endTileX = ceil((width - centerPxX) / TILE_SIZE + centerX).toInt() + 1
+        val startTileY = floor((0 - centerPxY) / TILE_SIZE + centerY).toInt() - 1
+        val endTileY = ceil((height - centerPxY) / TILE_SIZE + centerY).toInt() + 1
+
+        val maxTiles = 1 shl currentZoom
+        for (x in startTileX..endTileX) {
+            for (y in startTileY..endTileY) {
+                val wrappedX = (x % maxTiles + maxTiles) % maxTiles
+                val key = "labels/$currentZoom/$wrappedX/$y"
+                val labels = tileCityLabelsCache[key] ?: continue
+                visibleLabels.addAll(labels)
+            }
+        }
+
+        if (visibleLabels.isEmpty()) return
+
+        val drawnPositions = mutableListOf<Pair<Float, Float>>()
+
+        for (label in visibleLabels) {
+            if (!isPlaceVisibleAtZoom(label.placeType, currentZoom)) continue
+
+            val tileX = lonToTileX(label.lon, currentZoom)
+            val tileY = latToTileY(label.lat, currentZoom)
+            val drawX = ((tileX - centerX) * TILE_SIZE + centerPxX).toFloat()
+            val drawY = ((tileY - centerY) * TILE_SIZE + centerPxY).toFloat()
+
+            if (drawX < -100f || drawX > width + 100f || drawY < -100f || drawY > height + 100f) {
+                continue
+            }
+
+            if (drawnPositions.any { hypot(it.first - drawX, it.second - drawY) < 80f }) {
+                continue
+            }
+            drawnPositions.add(drawX to drawY)
+
+            configureCityPaint(label.placeType)
+
+            if (bearing != 0f) {
+                canvas.save()
+                canvas.rotate(bearing, drawX, drawY)
+                canvas.drawText(label.name, drawX, drawY, cityStrokePaint)
+                canvas.drawText(label.name, drawX, drawY, cityFillPaint)
+                canvas.restore()
+            } else {
+                canvas.drawText(label.name, drawX, drawY, cityStrokePaint)
+                canvas.drawText(label.name, drawX, drawY, cityFillPaint)
+            }
+        }
+    }
+
     private fun drawSearchRadius(canvas: Canvas) {
         val radiusKm = searchRadiusKm ?: return
         val cLat = searchRadiusCenterLat ?: return
@@ -1191,6 +1342,9 @@ class CarMapsforgeRenderer(
                     val renderer = databaseRenderer
                     val ds = activeMapDataStore
                     val graphicFactory = try { AndroidGraphicFactory.INSTANCE } catch (_: Exception) { null }
+                    if (ds != null && z >= 5) {
+                        extractCityLabelsFromTile(ds, wrappedX, y, z)
+                    }
                     val mfTileBitmap = if (renderer != null && ds != null && graphicFactory != null) {
                         try {
                             val mfTile = Tile(wrappedX, y, z.toByte(), TILE_SIZE)
