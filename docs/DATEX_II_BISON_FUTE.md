@@ -18,7 +18,7 @@ Bison Futé (Direction des Infrastructures de Transport) publishes RRN real-time
 
 Two product families:
 
-1. **Road events** (`SituationPublication`) — accidents, obstacles, closures, congestion, works, SRTI safety categories, …
+1. **Road events** (`SituationPublication` wrapped in SOAP `soap:Envelope` / `soap:Body` XML) — accidents, obstacles, closures, congestion, works, parking & roadside service area disruptions (`RoadsideServiceDisruption`), SRTI safety categories, …
 2. **Traffic measures** — average speed, flow (Q), occupancy (T), traffic state (normal / slow / saturated); travel times *planned later*
 
 Gaston today consumes **situation / event** feeds only (see [In Gaston](#in-gaston)).
@@ -92,7 +92,7 @@ Catalog / discovery: [transport.data.gouv.fr — évènements RRN non concédé]
 |-----------|------|
 | `BisonFuteTrafficClient` | Open DATEX dump + ETag / TTL cache |
 | `TipiRestrictedTrafficClient` | Action B / Action C + Basic auth + TTL cache |
-| `DatexSituationParser` / `BisonFuteDatexParser` | Streaming KtXML pull parse of `SituationPublication` → `TrafficEvent` |
+| `DatexSituationParser` / `BisonFuteDatexParser` | Streaming KtXML pull parse of SOAP DATEX II `SituationPublication` → `TrafficEvent` (includes `RoadsideServiceDisruption` for parking & service areas) |
 | `TipiActionTrafficProvider` | Restricted feed → `TrafficProvider` |
 | `BisonFuteTrafficProvider` | Open feed → `TrafficProvider` |
 | `FranceTrafficProvider` | Merge open → B → C (same `sourceId` → later wins, C preferred) |

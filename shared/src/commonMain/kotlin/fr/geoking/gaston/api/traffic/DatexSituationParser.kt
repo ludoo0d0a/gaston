@@ -75,6 +75,12 @@ object DatexSituationParser {
         var vehicleObstructionType: String? = null
         var obstructionType: String? = null
         var laneManagementType: String? = null
+        var roadsideServiceDisruptionType: String? = null
+        var reroutingManagementType: String? = null
+        var generalNetworkManagementType: String? = null
+        var speedManagementType: String? = null
+        var disturbanceActivityType: String? = null
+        var weatherRelatedRoadConditionType: String? = null
         var lastValue: String? = null
         var roadRef: String? = null
         var inPublicComment = false
@@ -116,6 +122,18 @@ object DatexSituationParser {
                             obstructionType = parser.nextText().trim().ifBlank { null }
                         "roadOrCarriagewayOrLaneManagementType" ->
                             laneManagementType = parser.nextText().trim().ifBlank { null }
+                        "roadsideServiceDisruptionType" ->
+                            roadsideServiceDisruptionType = parser.nextText().trim().ifBlank { null }
+                        "reroutingManagementType" ->
+                            reroutingManagementType = parser.nextText().trim().ifBlank { null }
+                        "generalNetworkManagementType" ->
+                            generalNetworkManagementType = parser.nextText().trim().ifBlank { null }
+                        "speedManagementType" ->
+                            speedManagementType = parser.nextText().trim().ifBlank { null }
+                        "disturbanceActivityType" ->
+                            disturbanceActivityType = parser.nextText().trim().ifBlank { null }
+                        "weatherRelatedRoadConditionType" ->
+                            weatherRelatedRoadConditionType = parser.nextText().trim().ifBlank { null }
                     }
                 }
                 EventType.END_TAG -> {
@@ -134,7 +152,7 @@ object DatexSituationParser {
             }
         }
 
-        val severity = severityFor(recordType, laneManagementType) ?: return null
+        val severity = severityFor(recordType, laneManagementType, roadsideServiceDisruptionType) ?: return null
         val endMs = parseDatexTime(overallEnd)
         if (endMs != null && endMs < nowMs) return null
         val bbox = bboxFromCoords(lats, lons) ?: return null
@@ -145,6 +163,12 @@ object DatexSituationParser {
             vehicleObstructionType = vehicleObstructionType,
             obstructionType = obstructionType,
             laneManagementType = laneManagementType,
+            roadsideServiceDisruptionType = roadsideServiceDisruptionType,
+            reroutingManagementType = reroutingManagementType,
+            generalNetworkManagementType = generalNetworkManagementType,
+            speedManagementType = speedManagementType,
+            disturbanceActivityType = disturbanceActivityType,
+            weatherRelatedRoadConditionType = weatherRelatedRoadConditionType,
             messageParts = messageParts,
         )
         val message = messageParts.take(4).joinToString(" — ").ifBlank { null }
@@ -161,7 +185,11 @@ object DatexSituationParser {
         )
     }
 
-    private fun severityFor(recordType: String, laneManagementType: String?): TrafficSeverity? =
+    private fun severityFor(
+        recordType: String,
+        laneManagementType: String?,
+        roadsideServiceDisruptionType: String?,
+    ): TrafficSeverity? =
         when (recordType) {
             "Accident" -> TrafficSeverity.Accident
             in obstructionRecordTypes -> TrafficSeverity.Accident
@@ -171,10 +199,24 @@ object DatexSituationParser {
                 if (laneManagementType != null && laneManagementType in closureManagementTypes) {
                     TrafficSeverity.Closure
                 } else {
-                    null
+                    TrafficSeverity.Roadworks
                 }
             }
-            else -> null
+            "RoadsideServiceDisruption" -> {
+                if (roadsideServiceDisruptionType?.contains("Closed", ignoreCase = true) == true) {
+                    TrafficSeverity.Closure
+                } else {
+                    TrafficSeverity.Unknown
+                }
+            }
+            "WeatherRelatedRoadConditions",
+            "ReroutingManagement",
+            "GeneralNetworkManagement",
+            "SpeedManagement",
+            "DisturbanceActivity",
+            "GeneralInstructionOrMessageToRoadUsers",
+            "OperatorAction" -> TrafficSeverity.Unknown
+            else -> TrafficSeverity.Unknown
         }
 
     private fun prependTypeMessage(
@@ -183,6 +225,12 @@ object DatexSituationParser {
         vehicleObstructionType: String?,
         obstructionType: String?,
         laneManagementType: String?,
+        roadsideServiceDisruptionType: String?,
+        reroutingManagementType: String?,
+        generalNetworkManagementType: String?,
+        speedManagementType: String?,
+        disturbanceActivityType: String?,
+        weatherRelatedRoadConditionType: String?,
         messageParts: MutableList<String>,
     ) {
         val head: String? = when (recordType) {
@@ -190,6 +238,12 @@ object DatexSituationParser {
             "VehicleObstruction" -> vehicleObstructionType ?: recordType
             in obstructionRecordTypes -> obstructionType ?: recordType
             "RoadOrCarriagewayOrLaneManagement" -> laneManagementType
+            "RoadsideServiceDisruption" -> roadsideServiceDisruptionType ?: recordType
+            "ReroutingManagement" -> reroutingManagementType ?: recordType
+            "GeneralNetworkManagement" -> generalNetworkManagementType ?: recordType
+            "SpeedManagement" -> speedManagementType ?: recordType
+            "DisturbanceActivity" -> disturbanceActivityType ?: recordType
+            "WeatherRelatedRoadConditions" -> weatherRelatedRoadConditionType ?: recordType
             else -> recordType
         }
         if (!head.isNullOrBlank()) {
