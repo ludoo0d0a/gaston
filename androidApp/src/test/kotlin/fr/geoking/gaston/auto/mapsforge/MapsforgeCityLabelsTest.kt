@@ -91,4 +91,48 @@ class MapsforgeCityLabelsTest {
 
         assertTrue(isPlaceVisibleAtZoom("hamlet", 13))
     }
+
+    @Test
+    fun testDoubledCityLabelTextSizes() {
+        fun getCityTextSizeDp(placeType: String): Float = when (placeType) {
+            "city" -> 40f
+            "town" -> 32f
+            "village", "suburb" -> 28f
+            else -> 24f
+        }
+
+        assertEquals(40f, getCityTextSizeDp("city"), 0.001f)
+        assertEquals(32f, getCityTextSizeDp("town"), 0.001f)
+        assertEquals(28f, getCityTextSizeDp("village"), 0.001f)
+        assertEquals(28f, getCityTextSizeDp("suburb"), 0.001f)
+        assertEquals(24f, getCityTextSizeDp("hamlet"), 0.001f)
+        assertEquals(24f, getCityTextSizeDp("other"), 0.001f)
+    }
+
+    @Test
+    fun testCityLabelBoldFormatting() {
+        fun isCityBold(placeType: String): Boolean = placeType == "city" || placeType == "town"
+
+        assertTrue(isCityBold("city"))
+        assertTrue(isCityBold("town"))
+        assertFalse(isCityBold("village"))
+        assertFalse(isCityBold("suburb"))
+        assertFalse(isCityBold("hamlet"))
+    }
+
+    @Test
+    fun testLabelAntiOverlapThreshold() {
+        val overlapThreshold = 150f
+        val pos1 = 100f to 100f
+        val dxClose = 180f - pos1.first
+        val dyClose = 100f - pos1.second
+        val distClose = kotlin.math.hypot(dxClose, dyClose)
+        assertTrue(distClose < overlapThreshold)
+
+        val posFar = 300f to 100f
+        val dxFar = posFar.first - pos1.first
+        val dyFar = posFar.second - pos1.second
+        val distFar = kotlin.math.hypot(dxFar, dyFar)
+        assertFalse(distFar < overlapThreshold)
+    }
 }

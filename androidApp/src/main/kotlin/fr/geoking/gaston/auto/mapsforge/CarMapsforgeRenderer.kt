@@ -229,7 +229,7 @@ class CarMapsforgeRenderer(
         textAlign = Paint.Align.CENTER
         color = Color.WHITE
         style = Paint.Style.STROKE
-        strokeWidth = 5f
+        strokeWidth = 10f
         strokeJoin = Paint.Join.ROUND
     }
 
@@ -1040,16 +1040,17 @@ class CarMapsforgeRenderer(
 
     private fun configureCityPaint(placeType: String) {
         val textSizeDp = when (placeType) {
-            "city" -> 20f
-            "town" -> 16f
-            "village", "suburb" -> 14f
-            else -> 12f
+            "city" -> 40f
+            "town" -> 32f
+            "village", "suburb" -> 28f
+            else -> 24f
         }
         val density = context.resources.displayMetrics.density
         val px = textSizeDp * density
 
         cityFillPaint.textSize = px
         cityStrokePaint.textSize = px
+        cityStrokePaint.strokeWidth = 10f * density
 
         val isBold = placeType == "city" || placeType == "town"
         cityFillPaint.isFakeBoldText = isBold
@@ -1139,7 +1140,7 @@ class CarMapsforgeRenderer(
                 continue
             }
 
-            if (drawnPositions.any { hypot(it.first - drawX, it.second - drawY) < 80f }) {
+            if (drawnPositions.any { hypot(it.first - drawX, it.second - drawY) < 150f }) {
                 continue
             }
             drawnPositions.add(drawX to drawY)
