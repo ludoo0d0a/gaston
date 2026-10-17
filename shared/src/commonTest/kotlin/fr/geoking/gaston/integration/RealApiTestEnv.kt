@@ -31,7 +31,7 @@ internal fun requireIntegrationEnvs(vararg required: Pair<String, String>): Map<
                 append(missing.joinToString(", "))
                 append(". Required keys: ")
                 append(catalog)
-                append(". Set in CI secrets or export before running with -PrunRealApiTests=true.")
+                append(". Set in local.properties, CI secrets, or export before running with -PrunRealApiTests=true.")
             },
         )
     }

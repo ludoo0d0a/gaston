@@ -257,6 +257,8 @@ Base API: `https://cdt.hafas.de/opendata/apiserver/`
 
 ### Bison Futé / TIPI (France traffic)
 
+Full DATEX II / RRN catalog (events vs QTV, URL migration, what Gaston wires): [`DATEX_II_BISON_FUTE.md`](DATEX_II_BISON_FUTE.md) · official [Données sur le RRN](https://www.bison-fute.gouv.fr/donnees-sur-le-rrn,langen.html).
+
 | Feed | Auth | Coverage |
 |------|------|----------|
 | **Open** (`content.xml` DIR) | None | National **non-concessioned** network |
@@ -287,7 +289,7 @@ DataGouv (fuel + IRVE), Gas API, UK CMA feeds, Spain Minetur, Austria E-Control,
 
 ## CI integration tests
 
-The [station-load-integration](../.github/workflows/station-load-integration.yml) workflow uses GitHub secrets for providers that need keys in CI:
+Locally, put keys in `local.properties` and run with `-PrunRealApiTests=true`. The [station-load-integration](../.github/workflows/station-load-integration.yml) workflow is **manual only** (`workflow_dispatch`) and uses GitHub secrets when run:
 
 | Secret | Country |
 |--------|---------|

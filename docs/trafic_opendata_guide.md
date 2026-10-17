@@ -27,12 +27,15 @@ Afin d'exploiter efficacement les données de trafic routier, il convient de com
 
 ## 2. Données Nationales, Autoroutes & Voies Rapides
 
-### A. Bison Futé (Ministère de la Transition Écologique)
-*   **Données fournies :** Événements de trafic en temps réel (accidents, pannes, obstacles, bouchons, chantiers), temps de parcours, états des routes, prévisions de trafic.
-*   **Type d'accès :** API publique gratuite sans authentification.
-*   **URL API / Flux :** Disponible sur le portail [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/flux-datex-bison-fute/).
-*   **Limitation / Quotas :** Pas de clé requise. Pas de limite stricte documentée, mais mise en cache recommandée (rafraîchissement toutes les 5 à 10 minutes).
-*   **Licence :** Licence Ouverte d'Etalab (LO 2.0).
+### A. Bison Futé / TIPI (DATEX II — RRN)
+*   **Données fournies :** Événements routiers (DATEX `SituationPublication`) + mesures de trafic (débit/vitesse/occupation, états Traficolor). Producteurs : DIR + SCA.
+*   **Type d'accès :**
+    *   **Ouvert (sans login) :** événements DIR sur RRN non concédé ; débit-vitesse / QTV DIR.
+    *   **Restreint (Basic) :** Action **b** (événements dynamiques + trafic RRN/SCA) et Action **c** (SRTI, y compris autoroutes concédées) — identifiants via `diffusion-numerique@info-routiere.gouv.fr`.
+*   **Portail officiel :** [Données sur le RRN](https://www.bison-fute.gouv.fr/donnees-sur-le-rrn,langen.html) · [Action b](https://www.bison-fute.gouv.fr/action-b.html) · [Action c](https://www.bison-fute.gouv.fr/action-c.html).
+*   **Doc Gaston (URLs TIPI, merge open→B→C, ce qui est câblé) :** [`DATEX_II_BISON_FUTE.md`](DATEX_II_BISON_FUTE.md).
+*   **Limitation / Quotas :** Dump national — cache TTL ~10 min recommandé (clients Gaston).
+*   **Licence :** Licence ouverte (DIR ouvert) ; licences de réutilisation Action b / Action c pour les flux restreints.
 
 ### B. Sytadin (Direction des Routes Île-de-France - DIR-IF)
 *   **Données fournies :** Trafic en temps réel en Île-de-France, vitesses moyennes par segment, temps de parcours calculés, fermetures de voies, événements de circulation.

@@ -1,20 +1,8 @@
 name: Station load integration tests
 
+# Manual only — real-API integration tests are for local runs (local.properties) / on-demand.
 on:
   workflow_dispatch:
-  schedule:
-    # Weekly on Monday at 06:00 UTC
-    - cron: "0 6 * * 1"
-  push:
-    branches:
-      - main
-    paths:
-      - "shared/src/commonMain/kotlin/fr/geoking/gaston/api/**"
-      - "shared/src/commonMain/kotlin/fr/geoking/gaston/poi/AutoPoiProviderResolver.kt"
-      - "shared/src/commonMain/kotlin/fr/geoking/gaston/poi/AutoModeCountryProbes.kt"
-      - "shared/src/commonTest/kotlin/fr/geoking/gaston/integration/**"
-      - "shared/src/commonTest/kotlin/fr/geoking/gaston/poi/AutoModeCountryProbesTest.kt"
-      - ".github/workflows/station-load-integration.yml"
 
 concurrency:
   group: station-load-integration-${{ github.ref }}
@@ -56,11 +44,14 @@ jobs:
           GERMANY_TANKERKOENIG_KEY: ${{ secrets.GERMANY_TANKERKOENIG_KEY }}
           ROMANIA_PECO_APPLICATION_ID: ${{ secrets.ROMANIA_PECO_APPLICATION_ID }}
           ROMANIA_PECO_CLIENT_KEY: ${{ secrets.ROMANIA_PECO_CLIENT_KEY }}
+          TIPI_USER: ${{ secrets.TIPI_USER }}
+          TIPI_PASSWORD: ${{ secrets.TIPI_PASSWORD }}
         run: |
           ./gradlew --no-daemon :shared:testAndroidHostTest \
             -PrunRealApiTests=true \
             --tests "fr.geoking.gaston.integration.CountryStationLoadRealApiTests" \
-            --tests "fr.geoking.gaston.integration.SemecourtSupermarketBrandMergeRealApiTests"
+            --tests "fr.geoking.gaston.integration.SemecourtSupermarketBrandMergeRealApiTests" \
+            --tests "fr.geoking.gaston.integration.TipiRestrictedTrafficClientRealApiTests"
 
       - name: Publish probe summary
         if: always()
@@ -69,6 +60,8 @@ jobs:
           GERMANY_TANKERKOENIG_KEY: ${{ secrets.GERMANY_TANKERKOENIG_KEY }}
           ROMANIA_PECO_APPLICATION_ID: ${{ secrets.ROMANIA_PECO_APPLICATION_ID }}
           ROMANIA_PECO_CLIENT_KEY: ${{ secrets.ROMANIA_PECO_CLIENT_KEY }}
+          TIPI_USER: ${{ secrets.TIPI_USER }}
+          TIPI_PASSWORD: ${{ secrets.TIPI_PASSWORD }}
           REPORT: ${{ github.workspace }}/shared/build/station-load-probe-report.json
           TEST_OUTCOME: ${{ steps.run_tests.outcome }}
         run: |
@@ -94,7 +87,7 @@ jobs:
           {
             echo "### Station load integration"
             echo ""
-            echo "Live HTTP checks for auto-mode fuel providers (see \`AutoModeCountryProbes\`)."
+            echo "Live HTTP checks for auto-mode fuel providers (see \`AutoModeCountryProbes\`) and TIPI Action B/C."
             echo ""
             echo "**Gradle test:** ${TEST_OUTCOME}"
             echo ""
@@ -105,6 +98,8 @@ jobs:
             echo "| \`GERMANY_TANKERKOENIG_KEY\` | $(secret_status GERMANY_TANKERKOENIG_KEY) | DE (Germany) |"
             echo "| \`ROMANIA_PECO_APPLICATION_ID\` | $(secret_status ROMANIA_PECO_APPLICATION_ID) | RO (Romania) |"
             echo "| \`ROMANIA_PECO_CLIENT_KEY\` | $(secret_status ROMANIA_PECO_CLIENT_KEY) | RO (Romania) |"
+            echo "| \`TIPI_USER\` | $(secret_status TIPI_USER) | TIPI Action B/C |"
+            echo "| \`TIPI_PASSWORD\` | $(secret_status TIPI_PASSWORD) | TIPI Action B/C |"
             echo ""
             echo "Probes marked \`skipIfEmpty\` (SE, IE, AR, ES) report **Skipped** when upstream APIs return no data."
             echo ""

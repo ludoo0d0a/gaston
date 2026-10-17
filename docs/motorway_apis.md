@@ -38,8 +38,8 @@ OpenStreetMap est la source ouverte la plus complète et la plus dynamique pour 
 
 ### B. APIs Officielles & Plateformes Nationales
 * **Bison Futé (Données publiques de l'État) :**
-  - **Description :** Bison Futé fournit des informations en temps réel sur l'état du réseau routier national (RRN) et les aires de services/repos via ses flux.
-  - **Accès :** [Bison Futé - Accès aux données](https://www.bison-fute.gouv.fr/acces-aux-donnees.html).
+  - **Description :** Bison Futé fournit des informations en temps réel sur l'état du réseau routier national (RRN) en DATEX II (événements DIR ouverts ; Action b/c restreintes pour SCA / SRTI).
+  - **Accès :** [Données sur le RRN](https://www.bison-fute.gouv.fr/donnees-sur-le-rrn,langen.html) · [Accès aux données](https://www.bison-fute.gouv.fr/acces-aux-donnees.html) · doc Gaston [`DATEX_II_BISON_FUTE.md`](DATEX_II_BISON_FUTE.md).
 * **Data.gouv.fr (Données Ouvertes de l'État Français) :**
   - **Bornes de recharge (IRVE) :** Le jeu de données officiel consolidé de toutes les bornes de recharge électrique en France (y compris sur autoroute) est disponible via l'API ODRE (Open Data Réseaux Énergies).
     - **URL API :** `https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/bornes-irve`

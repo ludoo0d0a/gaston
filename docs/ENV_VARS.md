@@ -50,6 +50,8 @@ Use these names in `local.properties` or set the same name as an env var (e.g. f
 
 Keys are read at **build time** in this order: `local.properties` then environment variables. In CI, set env vars on the step that runs Gradle (e.g. `env:` in the build job).
 
+For `:shared` integration / real-API tests, Gradle also injects root `local.properties` into the test JVM environment (process env wins). So locally you can keep keys only in `local.properties` and run with `-PrunRealApiTests=true` without exporting them.
+
 ## Example local.properties
 
 ```properties

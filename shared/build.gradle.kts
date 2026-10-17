@@ -1,8 +1,26 @@
+import java.util.Properties
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 /** When false (default), only the Android target is compiled — skips JVM desktop and all iOS targets for faster builds. */
 val kmpHostTargetsEnabled =
     findProperty("gaston.kmp.hostTargetsEnabled")?.toString()?.equals("true", ignoreCase = true) == true
+
+/**
+ * Keys from root `local.properties` injected into Test JVM env when not already set in the process.
+ * Lets integration tests (`getEnv` / `System.getenv`) read the same secrets as BuildConfig without exporting.
+ */
+val localPropertiesAsTestEnv: Map<String, String> =
+    rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
+        Properties().apply { file.inputStream().use { load(it) } }
+            .entries
+            .asSequence()
+            .mapNotNull { e ->
+                val key = e.key?.toString()?.trim().orEmpty()
+                val value = e.value?.toString()?.trim().orEmpty()
+                if (key.isEmpty() || value.isEmpty() || key == "sdk.dir") null else key to value
+            }
+            .toMap()
+    } ?: emptyMap()
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -143,6 +161,12 @@ val runRealApiTests: Boolean =
 
 // Configure Android test tasks and optional real-API exclusions for KMP host tests
 tasks.withType<Test>().configureEach {
+    // Process env wins (CI secrets); fill gaps from local.properties for local real-API runs.
+    localPropertiesAsTestEnv.forEach { (key, value) ->
+        if (System.getenv(key).isNullOrBlank()) {
+            environment(key, value)
+        }
+    }
     if (name.contains("UnitTest", ignoreCase = true)) {
         useJUnitPlatform()
         testLogging {
@@ -157,7 +181,16 @@ tasks.withType<Test>().configureEach {
                 (name.startsWith("ios") && name.endsWith("Test")) ||
                 (project.name == "shared" && name.contains("HostTest", ignoreCase = true))
         if (isSharedKmpHostTest) {
-            filter.excludeTestsMatching("*RealApiTests*")
+            // Full suite: keep RealApi out of default CI/local runs. If the user/IDE passes
+            // --tests matching *RealApiTests*, do not exclude (otherwise "No tests found").
+            val explicitRealApi =
+                gradle.startParameter.taskRequests
+                    .asSequence()
+                    .flatMap { it.args.asSequence() }
+                    .any { arg -> arg.contains("RealApiTests", ignoreCase = true) }
+            if (!explicitRealApi) {
+                filter.excludeTestsMatching("*RealApiTests*")
+            }
         }
     }
 }
