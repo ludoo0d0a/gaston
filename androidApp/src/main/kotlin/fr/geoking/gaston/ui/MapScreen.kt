@@ -696,9 +696,46 @@ fun MapScreen(
                         }
                         if (settings.mapTrafficEnabled) {
                             mapData.trafficInfo?.events?.forEach { event ->
-                                val bbox = event.bbox ?: return@forEach
-                                val lat = (bbox.latMin + bbox.latMax) / 2
-                                val lon = (bbox.lonMin + bbox.lonMax) / 2
+                                val poiLat = event.poiLatitude ?: return@forEach
+                                val poiLon = event.poiLongitude ?: return@forEach
+
+                                val zonePoints = event.zonePoints
+                                if (zonePoints != null && zonePoints.size >= 2) {
+                                    val polygonLatLngs = if (zonePoints.size == 2) {
+                                        val p1 = zonePoints[0]
+                                        val p2 = zonePoints[1]
+                                        val latMin = minOf(p1.first, p2.first)
+                                        var latMax = maxOf(p1.first, p2.first)
+                                        val lonMin = minOf(p1.second, p2.second)
+                                        var lonMax = maxOf(p1.second, p2.second)
+                                        if (latMax == latMin) latMax += 0.0001
+                                        if (lonMax == lonMin) lonMax += 0.0001
+                                        listOf(
+                                            LatLng(latMin, lonMin),
+                                            LatLng(latMax, lonMin),
+                                            LatLng(latMax, lonMax),
+                                            LatLng(latMin, lonMax)
+                                        )
+                                    } else {
+                                        zonePoints.map { LatLng(it.first, it.second) }
+                                    }
+
+                                    val strokeColor = when (event.severity) {
+                                        TrafficSeverity.Normal -> Color(0xFF4CAF50)
+                                        TrafficSeverity.Congestion -> Color(0xFFFF9800)
+                                        TrafficSeverity.Closure, TrafficSeverity.Accident, TrafficSeverity.Roadworks -> Color(0xFFE53935)
+                                        TrafficSeverity.Unknown -> Color(0xFFFFC107)
+                                    }
+                                    val fillColor = strokeColor.copy(alpha = 0.3f)
+
+                                    Polygon(
+                                        points = polygonLatLngs,
+                                        strokeColor = strokeColor,
+                                        strokeWidth = 4f,
+                                        fillColor = fillColor,
+                                    )
+                                }
+
                                 val hue = when (event.severity) {
                                     TrafficSeverity.Normal -> 120f
                                     TrafficSeverity.Congestion -> 30f
@@ -706,7 +743,7 @@ fun MapScreen(
                                     TrafficSeverity.Unknown -> 60f
                                 }
                                 Marker(
-                                    state = rememberUpdatedMarkerState(position = LatLng(lat, lon)),
+                                    state = rememberUpdatedMarkerState(position = LatLng(poiLat, poiLon)),
                                     title = "${event.roadRef}${event.direction?.let { " ($it)" } ?: ""}",
                                     snippet = event.message,
                                     icon = BitmapDescriptorFactory.defaultMarker(hue),

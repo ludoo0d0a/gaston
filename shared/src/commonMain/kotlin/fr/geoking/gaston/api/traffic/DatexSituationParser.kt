@@ -158,6 +158,19 @@ object DatexSituationParser {
         if (endMs != null && endMs < nowMs) return null
         val bbox = bboxFromCoords(lats, lons) ?: return null
 
+        val firstLat = lats.firstOrNull()
+        val firstLon = lons.firstOrNull()
+
+        val distinctPoints = ArrayList<Pair<Double, Double>>()
+        val count = minOf(lats.size, lons.size)
+        for (i in 0 until count) {
+            val pt = Pair(lats[i], lons[i])
+            if (distinctPoints.isEmpty() || distinctPoints.last() != pt) {
+                distinctPoints.add(pt)
+            }
+        }
+        val zonePoints = if (distinctPoints.size >= 2) distinctPoints else null
+
         prependTypeMessage(
             recordType = recordType,
             accidentType = accidentType,
@@ -183,6 +196,9 @@ object DatexSituationParser {
             bbox = bbox,
             sourceId = id,
             updatedAt = parseDatexTime(versionTime),
+            latitude = firstLat,
+            longitude = firstLon,
+            zonePoints = zonePoints,
         )
     }
 

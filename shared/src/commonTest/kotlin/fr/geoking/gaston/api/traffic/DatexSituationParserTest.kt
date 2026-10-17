@@ -108,6 +108,37 @@ class DatexSituationParserTest {
         assertEquals(viaGeneric.map { it.sourceId }, viaWrapper.map { it.sourceId })
     }
 
+    @Test
+    fun parse_zone_with_two_different_points_uses_first_point_for_poi_and_populates_zonePoints() {
+        val events = DatexSituationParser.parse(FIXTURE_ZONE_DIFF_POINTS_XML, nowMs = nowMs)
+        assertEquals(1, events.size)
+        val event = events[0]
+        assertEquals("zone-diff-1", event.sourceId)
+        assertEquals(48.85, event.latitude)
+        assertEquals(2.35, event.longitude)
+        assertEquals(48.85, event.poiLatitude)
+        assertEquals(2.35, event.poiLongitude)
+
+        val points = assertNotNull(event.zonePoints)
+        assertEquals(2, points.size)
+        assertEquals(Pair(48.85, 2.35), points[0])
+        assertEquals(Pair(48.88, 2.40), points[1])
+    }
+
+    @Test
+    fun parse_zone_with_two_identical_points_uses_first_point_for_poi_and_clears_zonePoints() {
+        val events = DatexSituationParser.parse(FIXTURE_ZONE_SAME_POINTS_XML, nowMs = nowMs)
+        assertEquals(1, events.size)
+        val event = events[0]
+        assertEquals("zone-same-1", event.sourceId)
+        assertEquals(48.85, event.latitude)
+        assertEquals(2.35, event.longitude)
+        assertEquals(48.85, event.poiLatitude)
+        assertEquals(2.35, event.poiLongitude)
+
+        assertNull(event.zonePoints)
+    }
+
     companion object {
         private val FIXTURE_NS2_XML = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -283,6 +314,56 @@ class DatexSituationParserTest {
               </ns2:groupOfLocations>
               <ns2:roadOrCarriagewayOrLaneManagementType>narrowLanes</ns2:roadOrCarriagewayOrLaneManagementType>
             </ns2:situationRecord>
+        """.trimIndent()
+
+        private val FIXTURE_ZONE_DIFF_POINTS_XML = """
+            <situationRecord xsi:type="Accident" id="zone-diff-1" version="1">
+              <validity>
+                <validityTimeSpecification>
+                  <overallEndTime>2026-12-01T00:00:00.000+01:00</overallEndTime>
+                </validityTimeSpecification>
+              </validity>
+              <groupOfLocations xsi:type="Linear">
+                <from>
+                  <pointCoordinates>
+                    <latitude>48.85</latitude>
+                    <longitude>2.35</longitude>
+                  </pointCoordinates>
+                </from>
+                <to>
+                  <pointCoordinates>
+                    <latitude>48.88</latitude>
+                    <longitude>2.40</longitude>
+                  </pointCoordinates>
+                </to>
+              </groupOfLocations>
+              <accidentType>accident</accidentType>
+            </situationRecord>
+        """.trimIndent()
+
+        private val FIXTURE_ZONE_SAME_POINTS_XML = """
+            <situationRecord xsi:type="Accident" id="zone-same-1" version="1">
+              <validity>
+                <validityTimeSpecification>
+                  <overallEndTime>2026-12-01T00:00:00.000+01:00</overallEndTime>
+                </validityTimeSpecification>
+              </validity>
+              <groupOfLocations xsi:type="Linear">
+                <from>
+                  <pointCoordinates>
+                    <latitude>48.85</latitude>
+                    <longitude>2.35</longitude>
+                  </pointCoordinates>
+                </from>
+                <to>
+                  <pointCoordinates>
+                    <latitude>48.85</latitude>
+                    <longitude>2.35</longitude>
+                  </pointCoordinates>
+                </to>
+              </groupOfLocations>
+              <accidentType>accident</accidentType>
+            </situationRecord>
         """.trimIndent()
 
         private val FIXTURE_PARKING_SERVICE_DISRUPTION_XML = """
