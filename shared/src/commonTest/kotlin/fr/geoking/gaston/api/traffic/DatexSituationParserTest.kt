@@ -48,9 +48,45 @@ class DatexSituationParserTest {
     }
 
     @Test
-    fun parse_ignoresNonClosureLaneManagement() {
+    fun parse_mapsNonClosureLaneManagementToRoadworks() {
         val events = DatexSituationParser.parse(FIXTURE_NARROW_LANES_XML, nowMs = nowMs)
-        assertTrue(events.isEmpty())
+        assertEquals(1, events.size)
+        assertEquals(TrafficSeverity.Roadworks, events[0].severity)
+        assertTrue(events[0].message?.contains("narrowLanes") == true)
+    }
+
+    @Test
+    fun parse_roadsideServiceDisruption_parkingClosure() {
+        val events = DatexSituationParser.parse(FIXTURE_PARKING_SERVICE_DISRUPTION_XML, nowMs = nowMs)
+        assertEquals(1, events.size)
+        val event = events[0]
+        assertEquals("p-closed-1", event.sourceId)
+        assertEquals(TrafficSeverity.Closure, event.severity)
+        assertNotNull(event.bbox)
+        val bbox = event.bbox!!
+        assertEquals(48.47, bbox.latMin, 0.01)
+        assertEquals(-2.58, bbox.lonMin, 0.01)
+        assertNotNull(event.message)
+        val message = event.message!!
+        assertTrue(message.contains("serviceAreaClosed"))
+        assertTrue(message.contains("Station TOTAL de Bel Air fermée"))
+    }
+
+    @Test
+    fun parse_and_bbox_filtering() {
+        val events = DatexSituationParser.parse(FIXTURE_NS2_XML, nowMs = nowMs)
+        assertEquals(2, events.size)
+
+        // Bbox covering Marseille area (lat ~43.37, lon ~5.32)
+        val queryMarseille = Bbox(latMin = 43.0, lonMin = 5.0, latMax = 44.0, lonMax = 6.0)
+        val filteredMarseille = events.filter { e -> e.bbox?.let { it.intersects(queryMarseille) } == true }
+        assertEquals(1, filteredMarseille.size)
+        assertEquals("acc-1", filteredMarseille[0].sourceId)
+
+        // Bbox around Paris (lat ~48.8, lon ~2.3) where acc-1 and veh-1 are not present
+        val queryParis = Bbox(latMin = 48.0, lonMin = 2.0, latMax = 49.0, lonMax = 3.0)
+        val filteredParis = events.filter { e -> e.bbox?.let { it.intersects(queryParis) } == true }
+        assertTrue(filteredParis.isEmpty())
     }
 
     @Test
@@ -247,6 +283,46 @@ class DatexSituationParserTest {
               </ns2:groupOfLocations>
               <ns2:roadOrCarriagewayOrLaneManagementType>narrowLanes</ns2:roadOrCarriagewayOrLaneManagementType>
             </ns2:situationRecord>
+        """.trimIndent()
+
+        private val FIXTURE_PARKING_SERVICE_DISRUPTION_XML = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
+            <soap:Body>
+            <d2LogicalModel xmlns:ns2="http://datex2.eu/schema/2/2_0" modelBaseVersion="2">
+            <ns2:payloadPublication xsi:type="ns2:SituationPublication" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" lang="fr">
+            <ns2:situation id="s-parking" version="1">
+              <ns2:situationRecord xsi:type="ns2:RoadsideServiceDisruption" id="p-closed-1" version="1">
+                <ns2:validity>
+                  <ns2:validityTimeSpecification>
+                    <ns2:overallEndTime>2026-12-01T00:00:00.000+01:00</ns2:overallEndTime>
+                  </ns2:validityTimeSpecification>
+                </ns2:validity>
+                <ns2:generalPublicComment>
+                  <ns2:comment><ns2:values><ns2:value lang="fr">Station TOTAL de Bel Air fermée</ns2:value></ns2:values></ns2:comment>
+                  <ns2:commentType>description</ns2:commentType>
+                </ns2:generalPublicComment>
+                <ns2:groupOfLocations xsi:type="ns2:Point">
+                  <ns2:tpegPointLocation xsi:type="ns2:TpegSimplePoint">
+                    <ns2:point xsi:type="ns2:TpegNonJunctionPoint">
+                      <ns2:pointCoordinates>
+                        <ns2:latitude>48.476738</ns2:latitude>
+                        <ns2:longitude>-2.5898418</ns2:longitude>
+                      </ns2:pointCoordinates>
+                      <ns2:name>
+                        <ns2:descriptor><ns2:values><ns2:value lang="fr">N12</ns2:value></ns2:values></ns2:descriptor>
+                        <ns2:tpegOtherPointDescriptorType>linkName</ns2:tpegOtherPointDescriptorType>
+                      </ns2:name>
+                    </ns2:point>
+                  </ns2:tpegPointLocation>
+                </ns2:groupOfLocations>
+                <ns2:roadsideServiceDisruptionType>serviceAreaClosed</ns2:roadsideServiceDisruptionType>
+              </ns2:situationRecord>
+            </ns2:situation>
+            </ns2:payloadPublication>
+            </d2LogicalModel>
+            </soap:Body>
+            </soap:Envelope>
         """.trimIndent()
     }
 }
