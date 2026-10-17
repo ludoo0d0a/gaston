@@ -42,6 +42,7 @@ import fr.geoking.gaston.auto.AutoMapSettingsScreen
 import fr.geoking.gaston.auto.AutoPoiUiHelper
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.auto.actionCompassIcon
+import fr.geoking.gaston.auto.menuVisibilityAction
 import fr.geoking.gaston.auto.actionMapIcon
 import fr.geoking.gaston.auto.actionSettingsIcon
 import fr.geoking.gaston.auto.actionZoomInIcon
@@ -118,6 +119,7 @@ class MapsforgePoiScreen(
     private var zoom: Int = AutoMapCamera.DEFAULT_ZOOM
     private var sortByPrice: Boolean = false
     private var isCheapestFilterActive: Boolean = false
+    private var isMenuVisible: Boolean = true
     private var currentVisibleArea: Rect? = null
     private var mapWidthPx: Int = 800
     private var mapHeightPx: Int = 480
@@ -599,12 +601,16 @@ class MapsforgePoiScreen(
         title: String,
         @Suppress("UNUSED_PARAMETER") currentSettings: AppSettings,
         cheapestAction: Action? = null,
+        visibilityAction: Action? = null,
     ): Header.Builder {
         val builder = Header.Builder()
             .setTitle(title)
             .setStartHeaderAction(Action.BACK)
         if (cheapestAction != null) {
             builder.addEndHeaderAction(cheapestAction)
+        }
+        if (visibilityAction != null) {
+            builder.addEndHeaderAction(visibilityAction)
         }
         return builder
     }
@@ -857,7 +863,14 @@ class MapsforgePoiScreen(
         val currentSettings = settingsManager.settings.value
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
 
+        val visibilityAction = carContext.menuVisibilityAction(isMenuVisible) {
+            isMenuVisible = !isMenuVisible
+            invalidate()
+        }
+
         val actionStripBuilder = ActionStrip.Builder()
+
+        actionStripBuilder.addAction(visibilityAction)
 
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         val cheapestAction = if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
@@ -929,11 +942,16 @@ class MapsforgePoiScreen(
 
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
-        val contentHeader = mapContentHeaderBuilder(title, currentSettings, cheapestAction).build()
+        val contentHeader = mapContentHeaderBuilder(title, currentSettings, cheapestAction, visibilityAction).build()
         val contentTemplate = if (isLoading) {
             ListTemplate.Builder()
                 .setLoading(true)
                 .setHeader(contentHeader)
+                .build()
+        } else if (!isMenuVisible) {
+            ListTemplate.Builder()
+                .setHeader(contentHeader)
+                .setSingleList(ItemList.Builder().build())
                 .build()
         } else {
             val filteredPoisForSorting = getFilteredPois(currentSettings)

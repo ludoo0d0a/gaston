@@ -30,6 +30,39 @@ class NativeMapPoiScreenAaTest {
     }
 
     @Test
+    fun menuVisibilityToggleClearsAndRestoresList() {
+        val screen = newScreen()
+        CarScreenTestHarness.createAndStart(screen)
+
+        val template = screen.onGetTemplate() as PlaceListMapTemplate
+        val actionStrip = template.actionStrip
+        org.junit.Assert.assertNotNull("actionStrip should not be null", actionStrip)
+
+        val visibilityAction = actionStrip!!.actions.firstOrNull { action ->
+            action.icon != null
+        }
+        org.junit.Assert.assertNotNull("visibility action should exist on ActionStrip", visibilityAction)
+
+        val dummyCallback = object : androidx.car.app.OnDoneCallback {
+            override fun onSuccess(value: androidx.car.app.serialization.Bundleable?) {}
+            override fun onFailure(value: androidx.car.app.serialization.Bundleable) {}
+        }
+
+        // Trigger toggle off
+        visibilityAction!!.onClickDelegate?.sendClick(dummyCallback)
+
+        val hiddenTemplate = screen.onGetTemplate() as PlaceListMapTemplate
+        org.junit.Assert.assertNotNull("hidden content list should not be null", hiddenTemplate.itemList)
+        org.junit.Assert.assertTrue("hidden itemList should be empty", hiddenTemplate.itemList!!.items.isEmpty())
+
+        // Trigger toggle on again
+        visibilityAction.onClickDelegate?.sendClick(dummyCallback)
+
+        val restoredTemplate = screen.onGetTemplate() as PlaceListMapTemplate
+        org.junit.Assert.assertNotNull("restored content list should not be null", restoredTemplate.itemList)
+    }
+
+    @Test
     fun actionStripStaysWithinMapTemplateLimits() {
         val screen = newScreen()
         CarScreenTestHarness.createAndStart(screen)

@@ -73,6 +73,7 @@ class NativeMapPoiScreen(
     private var loadPoisJob: Job? = null
     private var loadPoisGeneration: Int = 0
     private var isCheapestFilterActive: Boolean = false
+    private var isMenuVisible: Boolean = true
 
     init {
         lifecycle.addObserver(this)
@@ -225,7 +226,14 @@ class NativeMapPoiScreen(
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
+        val visibilityAction = carContext.menuVisibilityAction(isMenuVisible) {
+            isMenuVisible = !isMenuVisible
+            invalidate()
+        }
+
         val actionStripBuilder = ActionStrip.Builder()
+
+        actionStripBuilder.addAction(visibilityAction)
 
         val fuelIdsForFilter = effectiveEnergies - "electric"
         if (hasFuelFilter && (isCheapestFilterActive || pois.any { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForFilter } == true })) {
@@ -316,36 +324,38 @@ class NativeMapPoiScreen(
         val otherPois = sortedPois.filter { it !in poisWithPrices }.take(listLimit - poisWithPrices.size)
         val displayPois = (poisWithPrices + otherPois).sortedBy { approxDistanceKm(searchLat, searchLon, it.latitude, it.longitude) }
 
-        displayPois.take(listLimit).forEach { item ->
-            val availability = availabilityByPoiId[item.id]
-            val isFav = item.id in favoriteIds
-            itemListBuilder.addItem(
-                AutoPoiUiHelper.buildPoiRow(
-                    carContext = carContext,
-                    poi = item,
-                    availability = availability,
-                    effectiveEnergyTypes = effectiveEnergies,
-                    effectivePowerLevels = effectivePowerLevels,
-                    distanceFromLatLon = searchLat to searchLon,
-                    includePlace = true,
-                    isFavorite = isFav,
-                ) {
-                loadPoisJob?.cancel()
-                isLoading = false
-                    screenManager.push(
-                        PlaceListMapStationDetailScreen(
-                            carContext = carContext,
-                            poi = item,
-                            availability = availability,
-                            searchLat = searchLat,
-                            searchLon = searchLon,
-                            effectiveEnergies = effectiveEnergies,
-                            effectivePowerLevels = effectivePowerLevels,
-                            favoritesRepo = favoritesRepo,
+        if (isMenuVisible) {
+            displayPois.take(listLimit).forEach { item ->
+                val availability = availabilityByPoiId[item.id]
+                val isFav = item.id in favoriteIds
+                itemListBuilder.addItem(
+                    AutoPoiUiHelper.buildPoiRow(
+                        carContext = carContext,
+                        poi = item,
+                        availability = availability,
+                        effectiveEnergyTypes = effectiveEnergies,
+                        effectivePowerLevels = effectivePowerLevels,
+                        distanceFromLatLon = searchLat to searchLon,
+                        includePlace = true,
+                        isFavorite = isFav,
+                    ) {
+                        loadPoisJob?.cancel()
+                        isLoading = false
+                        screenManager.push(
+                            PlaceListMapStationDetailScreen(
+                                carContext = carContext,
+                                poi = item,
+                                availability = availability,
+                                searchLat = searchLat,
+                                searchLon = searchLon,
+                                effectiveEnergies = effectiveEnergies,
+                                effectivePowerLevels = effectivePowerLevels,
+                                favoritesRepo = favoritesRepo,
+                            )
                         )
-                    )
-                }
-            )
+                    }
+                )
+            }
         }
 
         PlaceListMapTemplate.Builder()
