@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.traffic
 
+import fr.geoking.gaston.shared.datetime.DateTimeUtils
 import org.kobjects.ktxml.api.EventType
 import org.kobjects.ktxml.api.XmlPullParser
 import org.kobjects.ktxml.mini.MiniXmlPullParser
@@ -281,62 +282,10 @@ object DatexSituationParser {
     }
 
     /**
-     * Parses DATEX timestamps like `2026-10-04T00:00:13.685+02:00` or `…Z` to epoch millis.
+     * Parses DATEX timestamps like `2026-10-04T00:00:13.685+02:00` or `…Z` to epoch millis using [DateTimeUtils].
      */
     fun parseDatexTime(s: String?): Long? {
         if (s.isNullOrBlank()) return null
-        return try {
-            val trimmed = s.trim()
-            val tIdx = trimmed.indexOf('T')
-            if (tIdx < 0) return null
-            val dateParts = trimmed.substring(0, tIdx).split("-")
-            if (dateParts.size < 3) return null
-            val y = dateParts[0].toInt()
-            val m = dateParts[1].toInt().coerceIn(1, 12)
-            val d = dateParts[2].toInt().coerceIn(1, 31)
-
-            val afterT = trimmed.substring(tIdx + 1)
-            var offsetMinutes = 0
-            val timePart: String
-            when {
-                afterT.endsWith("Z", ignoreCase = true) -> {
-                    timePart = afterT.dropLast(1)
-                    offsetMinutes = 0
-                }
-                else -> {
-                    val plusIdx = afterT.lastIndexOf('+')
-                    val minusIdx = afterT.lastIndexOf('-')
-                    val offIdx = when {
-                        plusIdx > 0 -> plusIdx
-                        minusIdx > 0 -> minusIdx
-                        else -> -1
-                    }
-                    if (offIdx > 0) {
-                        timePart = afterT.substring(0, offIdx)
-                        val sign = if (afterT[offIdx] == '-') -1 else 1
-                        val off = afterT.substring(offIdx + 1)
-                        val oh = off.substringBefore(':').toIntOrNull() ?: 0
-                        val om = off.substringAfter(':', "0").toIntOrNull() ?: 0
-                        offsetMinutes = sign * (oh * 60 + om)
-                    } else {
-                        timePart = afterT
-                    }
-                }
-            }
-            val timeBits = timePart.split(":", ".")
-            val h = timeBits.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: return null
-            val min = timeBits.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: return null
-            val sec = timeBits.getOrNull(2)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
-
-            val monthDays = intArrayOf(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
-            val leap = if (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) 1 else 0
-            val dayOfYear = monthDays.getOrElse(m - 1) { 0 } + d + if (m > 2) leap else 0
-            val yearDays = (y - 1970) * 365 + (y - 1968) / 4 - (y - 1900) / 100 + (y - 1600) / 400
-            val totalDays = yearDays + dayOfYear - 1
-            val utcSeconds = totalDays * 86400L + h * 3600L + min * 60L + sec - offsetMinutes * 60L
-            utcSeconds * 1000L
-        } catch (_: Exception) {
-            null
-        }
+        return DateTimeUtils.parseFlexible(s)?.toEpochMilliseconds()
     }
 }
