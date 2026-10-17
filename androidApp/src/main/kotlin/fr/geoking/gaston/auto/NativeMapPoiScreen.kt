@@ -19,6 +19,7 @@ import androidx.car.app.model.PlaceListMapTemplate
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
+import fr.geoking.gaston.entitlements.Feature
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.StationMapFilters
@@ -289,12 +290,14 @@ class NativeMapPoiScreen(
                 .build()
         }
 
-        val listLimit = try {
+        val rawListLimit = try {
             carContext.getCarService(ConstraintManager::class.java)
                 .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
         } catch (_: Exception) {
             6
         }
+        val entitlementLimit = settingsManager.entitlements.limit(Feature.AutoStationList)
+        val listLimit = minOf(rawListLimit, entitlementLimit)
 
         val noItemsMessage = if (isLoading) {
             carContext.getString(R.string.poi_searching)

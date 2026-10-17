@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.EvStation
 import androidx.compose.material.icons.filled.LocalGasStation
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.community.FavoritesRepository
+import fr.geoking.gaston.entitlements.Feature
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
@@ -46,20 +48,21 @@ fun FavoritesScreen(
     val scope = rememberCoroutineScope()
     val settings by settingsManager.settings.collectAsState()
 
-    var showPaywall by remember { mutableStateOf(!settings.hasPremiumFeatures) }
-    if (showPaywall && !settings.hasPremiumFeatures) {
+    var paywallTrigger by remember { mutableStateOf<Feature?>(null) }
+
+    if (paywallTrigger != null) {
         PremiumPaywallPopup(
             billingManager = billingManager,
-            onDismiss = onBack,
+            trigger = paywallTrigger,
+            onDismiss = { paywallTrigger = null },
             onPurchaseSuccess = {
                 scope.launch {
                     billingManager.refreshStatus()
                     settingsManager.setPremium(billingManager.isPremium.value)
-                    showPaywall = false
+                    paywallTrigger = null
                 }
             }
         )
-        return
     }
 
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -105,6 +108,13 @@ fun FavoritesScreen(
                     pois = favoritePois,
                     onSelect = onSelectPoi,
                     onNavigate = onNavigateToPoi,
+                    onTogglePriceAlerts = {
+                        if (settingsManager.entitlements.can(Feature.PriceAlerts)) {
+                            // Price alert toggled
+                        } else {
+                            paywallTrigger = Feature.PriceAlerts
+                        }
+                    },
                     onRemove = { poi ->
                         scope.launch {
                             favoritesRepo.removeFavorite(poi.id)
@@ -130,6 +140,7 @@ private fun FavoritePoisList(
     pois: List<Poi>,
     onSelect: (Poi) -> Unit,
     onNavigate: (Poi) -> Unit,
+    onTogglePriceAlerts: (Poi) -> Unit,
     onRemove: (Poi) -> Unit
 ) {
     if (pois.isEmpty()) {
@@ -154,6 +165,13 @@ private fun FavoritePoisList(
                     },
                     trailingContent = {
                         Row {
+                            IconButton(onClick = { onTogglePriceAlerts(poi) }) {
+                                Icon(
+                                    Icons.Default.NotificationsActive,
+                                    contentDescription = "Price Alerts",
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
+                            }
                             IconButton(onClick = { onNavigate(poi) }) {
                                 Icon(Icons.Default.Directions, contentDescription = stringResource(R.string.cd_route), tint = MaterialTheme.colorScheme.primary)
                             }

@@ -102,7 +102,9 @@ import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.api.traffic.TrafficRequest
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
+import fr.geoking.gaston.entitlements.Feature
 import fr.geoking.gaston.premium.BillingManager
+import fr.geoking.gaston.shared.rate.DailyUserRateLimiter
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -161,17 +163,19 @@ fun RoutePlanningScreen(
 
     val settings by settingsManager.settings.collectAsState()
     val scope = rememberCoroutineScope()
-    var showPaywallForFavorite by remember { mutableStateOf(false) }
+    val rateLimiter = remember { DailyUserRateLimiter() }
+    var paywallTrigger by remember { mutableStateOf<Feature?>(null) }
 
-    if (showPaywallForFavorite && !settings.hasPremiumFeatures) {
+    if (paywallTrigger != null) {
         PremiumPaywallPopup(
             billingManager = billingManager,
-            onDismiss = { showPaywallForFavorite = false },
+            trigger = paywallTrigger,
+            onDismiss = { paywallTrigger = null },
             onPurchaseSuccess = {
                 scope.launch {
                     billingManager.refreshStatus()
                     settingsManager.setPremium(billingManager.isPremium.value)
-                    showPaywallForFavorite = false
+                    paywallTrigger = null
                 }
             }
         )
@@ -347,10 +351,12 @@ fun RoutePlanningScreen(
                                 if (place != null) {
                                     val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
                                     IconButton(onClick = {
-                                        if (settings.hasPremiumFeatures) {
+                                        val maxFav = settingsManager.entitlements.limit(Feature.FavoritesUnlimited)
+                                        val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
+                                        if (isFavorite || settings.favoriteLocations.size < maxFav) {
                                             settingsManager.toggleFavoriteLocation(place)
                                         } else {
-                                            showPaywallForFavorite = true
+                                            paywallTrigger = Feature.FavoritesUnlimited
                                         }
                                     }) {
                                         Icon(
@@ -419,10 +425,12 @@ fun RoutePlanningScreen(
                                             if (!isFavorite && (isHistory || suggestion.latitude != 0.0)) {
                                                 IconButton(
                                                     onClick = {
-                                                        if (settings.hasPremiumFeatures) {
+                                                        val maxFav = settingsManager.entitlements.limit(Feature.FavoritesUnlimited)
+                                                        val isFav = settings.favoriteLocations.any { it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
+                                                        if (isFav || settings.favoriteLocations.size < maxFav) {
                                                             settingsManager.toggleFavoriteLocation(suggestion)
                                                         } else {
-                                                            showPaywallForFavorite = true
+                                                            paywallTrigger = Feature.FavoritesUnlimited
                                                         }
                                                     },
                                                     modifier = Modifier.size(24.dp)
@@ -432,10 +440,12 @@ fun RoutePlanningScreen(
                                             } else if (isFavorite) {
                                                 IconButton(
                                                     onClick = {
-                                                        if (settings.hasPremiumFeatures) {
+                                                        val maxFav = settingsManager.entitlements.limit(Feature.FavoritesUnlimited)
+                                                        val isFav = settings.favoriteLocations.any { it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
+                                                        if (isFav || settings.favoriteLocations.size < maxFav) {
                                                             settingsManager.toggleFavoriteLocation(suggestion)
                                                         } else {
-                                                            showPaywallForFavorite = true
+                                                            paywallTrigger = Feature.FavoritesUnlimited
                                                         }
                                                     },
                                                     modifier = Modifier.size(24.dp)
@@ -489,10 +499,12 @@ fun RoutePlanningScreen(
                             if (place != null) {
                                 val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
                                 IconButton(onClick = {
-                                    if (settings.hasPremiumFeatures) {
+                                    val maxFav = settingsManager.entitlements.limit(Feature.FavoritesUnlimited)
+                                    val isFavorite = settings.favoriteLocations.any { it.latitude == place.latitude && it.longitude == place.longitude }
+                                    if (isFavorite || settings.favoriteLocations.size < maxFav) {
                                         settingsManager.toggleFavoriteLocation(place)
                                     } else {
-                                        showPaywallForFavorite = true
+                                        paywallTrigger = Feature.FavoritesUnlimited
                                     }
                                 }) {
                                     Icon(
@@ -566,10 +578,12 @@ fun RoutePlanningScreen(
                                         if (!isFavorite && (isHistory || suggestion.latitude != 0.0)) {
                                             IconButton(
                                                 onClick = {
-                                                    if (settings.hasPremiumFeatures) {
+                                                    val maxFav = settingsManager.entitlements.limit(Feature.FavoritesUnlimited)
+                                                    val isFav = settings.favoriteLocations.any { it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
+                                                    if (isFav || settings.favoriteLocations.size < maxFav) {
                                                         settingsManager.toggleFavoriteLocation(suggestion)
                                                     } else {
-                                                        showPaywallForFavorite = true
+                                                        paywallTrigger = Feature.FavoritesUnlimited
                                                     }
                                                 },
                                                 modifier = Modifier.size(24.dp)
@@ -579,10 +593,12 @@ fun RoutePlanningScreen(
                                         } else if (isFavorite) {
                                             IconButton(
                                                 onClick = {
-                                                    if (settings.hasPremiumFeatures) {
+                                                    val maxFav = settingsManager.entitlements.limit(Feature.FavoritesUnlimited)
+                                                    val isFav = settings.favoriteLocations.any { it.latitude == suggestion.latitude && it.longitude == suggestion.longitude }
+                                                    if (isFav || settings.favoriteLocations.size < maxFav) {
                                                         settingsManager.toggleFavoriteLocation(suggestion)
                                                     } else {
-                                                        showPaywallForFavorite = true
+                                                        paywallTrigger = Feature.FavoritesUnlimited
                                                     }
                                                 },
                                                 modifier = Modifier.size(24.dp)
@@ -601,12 +617,21 @@ fun RoutePlanningScreen(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = {
-                        loading = true
-                        error = null
-                        stations = emptyList()
-                        tollEstimate = null
-                        routeTraffic = null
-                        calculateTrigger++
+                        scope.launch {
+                            val limit = settingsManager.entitlements.limit(Feature.RouteSearchUnlimited)
+                            val userId = settings.googleUserName?.ifBlank { "anon" } ?: "anon"
+                            val allowed = rateLimiter.tryAcquire(userId, limit)
+                            if (!allowed) {
+                                paywallTrigger = Feature.RouteSearchUnlimited
+                            } else {
+                                loading = true
+                                error = null
+                                stations = emptyList()
+                                tollEstimate = null
+                                routeTraffic = null
+                                calculateTrigger++
+                            }
+                        }
                     },
                     modifier = Modifier.weight(1f),
                     enabled = !loading && destQuery.isNotBlank() && (useCurrentLocationAsOrigin || originQuery.isNotBlank())

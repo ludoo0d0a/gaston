@@ -25,6 +25,7 @@ import com.google.android.gms.location.Priority
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.FuelCard
 import fr.geoking.gaston.R
+import fr.geoking.gaston.entitlements.Feature
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.VehicleType
@@ -964,12 +965,14 @@ class MapsforgePoiScreen(
                 selectedFuelIds = effectiveEnergies - "electric"
             )
 
-            val listLimit = try {
+            val rawListLimit = try {
                 carContext.getCarService(ConstraintManager::class.java)
                     .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
             } catch (_: Exception) {
                 6
             }
+            val entitlementLimit = settingsManager.entitlements.limit(Feature.AutoStationList)
+            val listLimit = minOf(rawListLimit, entitlementLimit)
 
             val noItemsMessage = if (isLoading || isQueryPending) {
                 carContext.getString(R.string.poi_searching)

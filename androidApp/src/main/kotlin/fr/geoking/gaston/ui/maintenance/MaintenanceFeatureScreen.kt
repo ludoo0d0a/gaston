@@ -39,6 +39,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +52,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.R
+import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.UserVehicle
+import fr.geoking.gaston.entitlements.Feature
 import fr.geoking.gaston.feature.maintenance.MaintenanceEvent
 import fr.geoking.gaston.feature.maintenance.MaintenanceEventType
 import fr.geoking.gaston.feature.maintenance.MaintenanceReminderEvaluator
@@ -59,8 +62,12 @@ import fr.geoking.gaston.feature.maintenance.MaintenanceStatsCalculator
 import fr.geoking.gaston.feature.maintenance.ServiceInterval
 import fr.geoking.gaston.feature.maintenance.ServiceKind
 import fr.geoking.gaston.feature.maintenance.newMaintenanceId
+import fr.geoking.gaston.premium.BillingManager
+import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import fr.geoking.gaston.ui.dashboard.GastonTheme
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import java.text.DateFormat
 import java.util.Date
 
@@ -81,11 +88,15 @@ private enum class MaintenanceDest {
 fun MaintenanceFeatureScreen(
     onBack: () -> Unit,
     viewModel: MaintenanceViewModel = koinViewModel(),
+    settingsManager: SettingsManager = koinInject(),
+    billingManager: BillingManager = koinInject(),
 ) {
     var dest by remember { mutableStateOf(MaintenanceDest.Hub) }
     var editingEvent by remember { mutableStateOf<MaintenanceEvent?>(null) }
     var editingInterval by remember { mutableStateOf<ServiceInterval?>(null) }
+    var paywallTrigger by remember { mutableStateOf<Feature?>(null) }
     val hubListState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     val vehicles by viewModel.vehicles.collectAsState()
     val selectedVehicle by viewModel.selectedVehicle.collectAsState()
@@ -108,6 +119,21 @@ fun MaintenanceFeatureScreen(
         }
     }
 
+    if (paywallTrigger != null) {
+        PremiumPaywallPopup(
+            billingManager = billingManager,
+            trigger = paywallTrigger,
+            onDismiss = { paywallTrigger = null },
+            onPurchaseSuccess = {
+                scope.launch {
+                    billingManager.refreshStatus()
+                    settingsManager.setPremium(billingManager.isPremium.value)
+                    paywallTrigger = null
+                }
+            }
+        )
+    }
+
     GastonTheme {
         when (dest) {
             MaintenanceDest.Hub -> MaintenanceHubScreen(
@@ -117,7 +143,15 @@ fun MaintenanceFeatureScreen(
                 dueReminders = dueReminders,
                 listState = hubListState,
                 onBack = onBack,
-                onSelectVehicle = viewModel::selectVehicle,
+                onSelectVehicle = { id ->
+                    val maxVehicles = settingsManager.entitlements.limit(Feature.MultiVehicle)
+                    val vehicleIndex = vehicles.indexOfFirst { it.id == id }
+                    if (vehicleIndex < maxVehicles) {
+                        viewModel.selectVehicle(id)
+                    } else {
+                        paywallTrigger = Feature.MultiVehicle
+                    }
+                },
                 onOpenAdd = { dest = MaintenanceDest.AddType },
                 onOpenEvent = {
                     editingEvent = it
@@ -126,13 +160,17 @@ fun MaintenanceFeatureScreen(
                 onOpenStats = { dest = MaintenanceDest.Stats },
                 onOpenIntervals = { dest = MaintenanceDest.Intervals },
                 onExport = {
-                    val csv = viewModel.exportCsv()
-                    val send = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/csv"
-                        putExtra(Intent.EXTRA_SUBJECT, exportSubject)
-                        putExtra(Intent.EXTRA_TEXT, csv)
+                    if (settingsManager.entitlements.can(Feature.MaintenanceExport)) {
+                        val csv = viewModel.exportCsv()
+                        val send = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/csv"
+                            putExtra(Intent.EXTRA_SUBJECT, exportSubject)
+                            putExtra(Intent.EXTRA_TEXT, csv)
+                        }
+                        context.startActivity(Intent.createChooser(send, exportChooser))
+                    } else {
+                        paywallTrigger = Feature.MaintenanceExport
                     }
-                    context.startActivity(Intent.createChooser(send, exportChooser))
                 },
             )
             MaintenanceDest.AddType -> AddEventTypeScreen(
