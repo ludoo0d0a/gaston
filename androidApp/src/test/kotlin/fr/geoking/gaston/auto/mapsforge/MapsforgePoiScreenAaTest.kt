@@ -64,6 +64,41 @@ class MapsforgePoiScreenAaTest {
     }
 
     @Test
+    fun menuVisibilityToggleClearsAndRestoresList() {
+        val (_, screen) = newScreen()
+        CarScreenTestHarness.createAndStart(screen)
+
+        val template = screen.onGetTemplate() as MapWithContentTemplate
+        val actionStrip = template.actionStrip
+        assertNotNull("actionStrip should not be null", actionStrip)
+
+        val visibilityAction = actionStrip!!.actions.firstOrNull { action ->
+            action.icon != null
+        }
+        assertNotNull("visibility action should exist on ActionStrip", visibilityAction)
+
+        val dummyCallback = object : androidx.car.app.OnDoneCallback {
+            override fun onSuccess(value: androidx.car.app.serialization.Bundleable?) {}
+            override fun onFailure(value: androidx.car.app.serialization.Bundleable) {}
+        }
+
+        // Trigger toggle off
+        visibilityAction!!.onClickDelegate?.sendClick(dummyCallback)
+
+        val hiddenTemplate = screen.onGetTemplate() as MapWithContentTemplate
+        val hiddenContent = hiddenTemplate.contentTemplate as androidx.car.app.model.ListTemplate
+        assertNotNull("hidden content list should not be null", hiddenContent.singleList)
+        org.junit.Assert.assertTrue("hidden singleList should be empty", hiddenContent.singleList!!.items.isEmpty())
+
+        // Trigger toggle on again
+        visibilityAction.onClickDelegate?.sendClick(dummyCallback)
+
+        val restoredTemplate = screen.onGetTemplate() as MapWithContentTemplate
+        val restoredContent = restoredTemplate.contentTemplate as androidx.car.app.model.ListTemplate
+        assertNotNull("restored content list should not be null", restoredContent.singleList)
+    }
+
+    @Test
     fun actionStripsStayWithinMapTemplateLimits() {
         val (_, screen) = newScreen()
         CarScreenTestHarness.createAndStart(screen)

@@ -122,6 +122,15 @@ fun CarContext.actionZoomInIcon(): CarIcon = carIcon(R.drawable.ic_add, AutoCarI
 
 fun CarContext.actionZoomOutIcon(): CarIcon = carIcon(R.drawable.ic_remove, AutoCarIcons.primary)
 
+fun CarContext.actionVisibilityIcon(isMenuVisible: Boolean): CarIcon =
+    carIcon(if (isMenuVisible) R.drawable.ic_eye_off else R.drawable.ic_eye, AutoCarIcons.primary)
+
+fun CarContext.menuVisibilityAction(isMenuVisible: Boolean, onToggle: () -> Unit): Action =
+    Action.Builder()
+        .setIcon(actionVisibilityIcon(isMenuVisible))
+        .setOnClickListener(onToggle)
+        .build()
+
 /**
  * Map ActionStrip compass: picks one of 16 pre-rotated untinted needles
  * (filled North / empty South) nearest to [bearingDegrees].
