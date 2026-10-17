@@ -10,6 +10,7 @@ import androidx.car.app.model.ItemList
 import androidx.car.app.model.SearchTemplate
 import androidx.car.app.model.Template
 import androidx.lifecycle.lifecycleScope
+import fr.geoking.gaston.entitlements.Feature
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.R
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
@@ -98,7 +99,8 @@ class AutoPoiSearchScreen(
         val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
-        filteredPois.take(6).forEach { poi ->
+        val maxSearchList = minOf(6, settingsManager.entitlements.limit(Feature.AutoStationList))
+        filteredPois.take(maxSearchList).forEach { poi ->
             val availability = availabilityByPoiId[poi.id]
             val isFav = poi.id in favoriteIds
             itemListBuilder.addItem(

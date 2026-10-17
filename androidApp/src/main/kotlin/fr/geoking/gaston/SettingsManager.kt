@@ -8,6 +8,8 @@ import fr.geoking.gaston.feature.settings.FirestoreSettingsSync
 import fr.geoking.gaston.poi.EnergyFilterMode
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.sanitizeUserPoiProviderSelection
+import fr.geoking.gaston.entitlements.DefaultEntitlements
+import fr.geoking.gaston.entitlements.Plan
 import fr.geoking.gaston.shared.network.NetworkSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -249,6 +251,10 @@ open class SettingsManager(
 
     private val _settings = MutableStateFlow(loadSettings())
     open val settings: StateFlow<AppSettings> = _settings.asStateFlow()
+
+    val entitlements = DefaultEntitlements(
+        if (_settings.value.hasPremiumFeatures) Plan.PREMIUM else Plan.FREE
+    )
 
     fun triggerPullAndMerge() {
         scope.launch {
@@ -497,6 +503,12 @@ open class SettingsManager(
         }
         val sanitized = sanitizedBase
         _settings.value = sanitized
+
+        val newPlan = if (sanitized.hasPremiumFeatures) Plan.PREMIUM else Plan.FREE
+        if (entitlements.plan.value != newPlan) {
+            entitlements.setPlan(newPlan)
+        }
+
         prefs.edit()
             .putString("ui_theme_mode", sanitized.uiThemeMode.name)
             .putString("map_theme_mode", sanitized.mapThemeMode.name)

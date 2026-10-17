@@ -42,6 +42,7 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.shared.location.approxDistanceKm
+import fr.geoking.gaston.entitlements.Feature
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
@@ -100,6 +101,7 @@ fun PoiOverlayHost(
     if (showPaywallForFavorite && !settings.hasPremiumFeatures) {
         PremiumPaywallPopup(
             billingManager = billingManager,
+            trigger = Feature.FavoritesUnlimited,
             onDismiss = { showPaywallForFavorite = false },
             onPurchaseSuccess = {
                 scope.launch {
@@ -275,7 +277,9 @@ fun PoiOverlayHost(
                     },
                     onToggleFavorite = if (isLoggedIn && favoritesRepo != null) {
                         {
-                            if (hasPremiumFeatures) {
+                            val maxFav = settingsManager.entitlements.limit(Feature.FavoritesUnlimited)
+                            val isFav = poi.id in favoriteIds
+                            if (isFav || favoriteIds.size < maxFav) {
                                 scope.launch {
                                     favoritesRepo.toggleFavorite(poi)
                                     setFavoriteIds(favoritesRepo.getFavorites().map { it.id }.toSet())
@@ -321,7 +325,9 @@ fun PoiOverlayHost(
             isFavorite = poi.id in favoriteIds,
             onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
                 {
-                    if (settings.hasPremiumFeatures) {
+                    val maxFav = settingsManager.entitlements.limit(Feature.FavoritesUnlimited)
+                    val isFav = poi.id in favoriteIds
+                    if (isFav || favoriteIds.size < maxFav) {
                         scope.launch {
                             favoritesRepo.toggleFavorite(poi)
                             setFavoriteIds(favoritesRepo.getFavorites().map { it.id }.toSet())

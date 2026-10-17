@@ -15,11 +15,15 @@ import com.revenuecat.purchases.kmp.models.PurchasesException
 import com.revenuecat.purchases.kmp.models.PurchasesTransactionException
 import com.revenuecat.purchases.kmp.models.StoreProduct
 import com.revenuecat.purchases.kmp.models.StoreTransaction
+import fr.geoking.gaston.entitlements.DefaultEntitlements
+import fr.geoking.gaston.entitlements.Plan
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class BillingManager {
+    val entitlements = DefaultEntitlements()
+
     private val _isPremium = MutableStateFlow(false)
     val isPremium: StateFlow<Boolean> = _isPremium.asStateFlow()
 
@@ -102,8 +106,10 @@ class BillingManager {
         _subscriptionNotice.value = premiumNoticeFrom(entitlement)
     }
 
-    fun updatePremiumStatus(entitlements: Map<String, EntitlementInfo>) {
-        _isPremium.value = entitlements[ENTITLEMENT_ID]?.isActive == true
+    fun updatePremiumStatus(entitlementsMap: Map<String, EntitlementInfo>) {
+        val active = entitlementsMap[ENTITLEMENT_ID]?.isActive == true
+        _isPremium.value = active
+        entitlements.setPlan(if (active) Plan.PREMIUM else Plan.FREE)
     }
 
     private suspend fun fetchPremiumPackage(): Package? {
