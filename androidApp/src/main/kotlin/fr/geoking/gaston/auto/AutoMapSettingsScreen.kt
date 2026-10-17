@@ -108,6 +108,19 @@ class AutoMapSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
+                .setTitle(carContext.getString(R.string.settings_radar_warning))
+                .addText(carContext.getString(R.string.settings_radar_warning_subtitle))
+                .setToggle(
+                    Toggle.Builder { checked ->
+                        settingsManager.setRadarWarningEnabled(checked)
+                        invalidate()
+                    }.setChecked(settings.radarWarningEnabled).build()
+                )
+                .build()
+        )
+
+        listBuilder.addItem(
+            Row.Builder()
                 .setTitle(carContext.getString(R.string.screen_vehicle_and_range))
                 .addText("${settings.vehicleType.name}, ${settings.evRangeKm} km")
                 .setOnClickListener {

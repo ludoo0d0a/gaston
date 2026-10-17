@@ -350,6 +350,8 @@
     <string name="settings_nsw_secret">Secret API NSW FuelCheck</string>
     <string name="settings_opencm_key">Clé API OpenChargeMap</string>
     <string name="settings_show_traffic">Afficher le trafic</string>
+    <string name="settings_radar_warning">Avertisseur de radar</string>
+    <string name="settings_radar_warning_subtitle">Alertes vocales (TTS, bips) et notifications HUN pour les zones de danger</string>
     <string name="settings_theme_night_maps">S\'applique aussi aux cartes pour la conduite de nuit</string>
     <string name="settings_toll_french_highway">Estimation péages autoroute français</string>
     <string name="settings_vehicle_summary">%1$s, %2$d km</string>

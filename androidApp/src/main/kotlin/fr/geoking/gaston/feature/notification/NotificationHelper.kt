@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import androidx.car.app.connection.CarConnection
 import androidx.car.app.notification.CarAppExtender
 import androidx.car.app.notification.CarNotificationManager
 import androidx.car.app.notification.CarPendingIntent
@@ -53,6 +54,9 @@ open class NotificationHelper(private val context: Context) {
     private val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+    private val carConnection = CarConnection(context)
+    private var carConnectionType: Int = CarConnection.CONNECTION_TYPE_NOT_CONNECTED
+
     private val mainHandler = Handler(Looper.getMainLooper())
     private val pendingCancelById = mutableMapOf<Int, Runnable>()
 
@@ -60,6 +64,11 @@ open class NotificationHelper(private val context: Context) {
 
     init {
         createNotificationChannel()
+        mainHandler.post {
+            carConnection.type.observeForever { type ->
+                carConnectionType = type ?: CarConnection.CONNECTION_TYPE_NOT_CONNECTED
+            }
+        }
     }
 
     @Synchronized
@@ -496,8 +505,15 @@ open class NotificationHelper(private val context: Context) {
         )
     }
 
+    /** Returns whether Android Auto projection is currently connected. */
+    private fun isCarConnected(): Boolean {
+        return carConnectionType == CarConnection.CONNECTION_TYPE_PROJECTION ||
+               carConnectionType == CarConnection.CONNECTION_TYPE_NATIVE
+    }
+
     /**
-     * Temporary phone heads-up + Android Auto HUN (auto-dismiss after [TEMPORARY_NOTIFICATION_MS]).
+     * Temporary phone heads-up OR Android Auto HUN (auto-dismiss after [TEMPORARY_NOTIFICATION_MS]).
+     * If AA is connected, posts HUN to AA only. If phone only, posts HUN to phone only.
      * When [openRadarLatitude]/[openRadarLongitude] are set, phone tap opens the radar map at that point.
      */
     private fun postTemporaryCarHeadsUp(
@@ -537,12 +553,9 @@ open class NotificationHelper(private val context: Context) {
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            // Navigation category: AA treats as driver-relevant HUN (same as park-save alert).
-            .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .setTimeoutAfter(TEMPORARY_NOTIFICATION_MS)
-            .setOnlyAlertOnce(true)
             .setContentIntent(phonePending)
             .extend(
                 CarAppExtender.Builder()
@@ -554,9 +567,12 @@ open class NotificationHelper(private val context: Context) {
                     .build()
             )
 
-        val notification = builder.build()
-        notificationManager.notify(notificationId, notification)
-        CarNotificationManager.from(context).notify(notificationId, builder)
+        if (isCarConnected()) {
+            CarNotificationManager.from(context).notify(notificationId, builder)
+        } else {
+            val notification = builder.build()
+            notificationManager.notify(notificationId, notification)
+        }
         scheduleAutoCancel(notificationId, TEMPORARY_NOTIFICATION_MS)
     }
 

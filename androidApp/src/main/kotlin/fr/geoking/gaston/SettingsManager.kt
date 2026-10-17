@@ -450,7 +450,7 @@ open class SettingsManager(
             debugBarEnabled = prefs.getBoolean("debug_bar_enabled", false),
             networkFloatingBarEnabled = prefs.getBoolean("network_floating_bar_enabled", false),
             testAaMapSurfaceEnabled = prefs.getBoolean("test_aa_map_surface_enabled", false),
-            radarWarningEnabled = true,
+            radarWarningEnabled = prefs.getBoolean("radar_warning_enabled", true),
             radarWarningDistanceMeters = prefs.getInt("radar_warning_distance_m", 1000),
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
             filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false),
@@ -495,8 +495,7 @@ open class SettingsManager(
                 gasConsumptionLper100km = sanitizeConsumption(withGarage.gasConsumptionLper100km),
             )
         }
-        // Danger-zone alerts are always active (no user opt-out).
-        val sanitized = sanitizedBase.copy(radarWarningEnabled = true)
+        val sanitized = sanitizedBase
         _settings.value = sanitized
         prefs.edit()
             .putString("ui_theme_mode", sanitized.uiThemeMode.name)
@@ -819,9 +818,8 @@ open class SettingsManager(
         saveSettings(_settings.value.copy(filterOnlyHighwayStations = enabled))
     }
 
-    /** No-op: danger-zone alerts stay enabled (kill switch via BuildConfig only). */
     open fun setRadarWarningEnabled(enabled: Boolean) {
-        saveSettings(_settings.value.copy(radarWarningEnabled = true))
+        saveSettings(_settings.value.copy(radarWarningEnabled = enabled))
     }
 
     open fun setRadarWarningDistanceMeters(distanceMeters: Int) {
