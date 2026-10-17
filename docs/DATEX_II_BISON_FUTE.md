@@ -92,7 +92,7 @@ Catalog / discovery: [transport.data.gouv.fr — évènements RRN non concédé]
 |-----------|------|
 | `BisonFuteTrafficClient` | Open DATEX dump + ETag / TTL cache |
 | `TipiRestrictedTrafficClient` | Action B / Action C + Basic auth + TTL cache |
-| `DatexSituationParser` / `BisonFuteDatexParser` | Minimal `SituationPublication` → `TrafficEvent` |
+| `DatexSituationParser` / `BisonFuteDatexParser` | Streaming KtXML pull parse of `SituationPublication` → `TrafficEvent` |
 | `TipiActionTrafficProvider` | Restricted feed → `TrafficProvider` |
 | `BisonFuteTrafficProvider` | Open feed → `TrafficProvider` |
 | `FranceTrafficProvider` | Merge open → B → C (same `sourceId` → later wins, C preferred) |

@@ -82,6 +82,7 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.kermit)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.ktxml.core)
             // Play-only: Amazon excludes are applied via configurations below (KMP
             // implementation(notation) { } only accepts String, not catalog Providers).
             implementation(libs.revenuecat.kmp.core)

@@ -1,76 +1,30 @@
 package fr.geoking.gaston.api.traffic
 
+import org.kobjects.ktxml.api.EventType
+import org.kobjects.ktxml.api.XmlPullParser
+import org.kobjects.ktxml.mini.MiniXmlPullParser
+
 /**
- * Minimal regex parser for DATEX II 2.x SituationPublication XML (SOAP or bare),
- * with optional `ns2:` prefixes. Maps selected situationRecord types to [TrafficEvent].
+ * Streaming DATEX II 2.x [SituationPublication] parser (SOAP or bare, optional `ns2:` prefixes).
+ *
+ * Uses [MiniXmlPullParser] (KtXML / kxml2) — pull-based, no DOM, constant memory beyond the input
+ * string and the emitted [TrafficEvent] list. Maps selected `situationRecord` types to events.
  */
 object DatexSituationParser {
-
-    private val ns = """(?:ns2:)?"""
-    private val recordStart = Regex(
-        """<$ns(?:situationRecord)\s+([^>]*)xsi:type="(?:ns2:)?([^"]+)"([^>]*)>""",
-        RegexOption.IGNORE_CASE
-    )
-    private val recordEndNs = "</ns2:situationRecord>"
-    private val recordEndBare = "</situationRecord>"
-    private val idAttr = Regex("""\bid\s*=\s*"([^"]+)"""", RegexOption.IGNORE_CASE)
-    private val latitude = Regex("""<$ns(?:latitude)>([^<]+)</$ns(?:latitude)>""", RegexOption.IGNORE_CASE)
-    private val longitude = Regex("""<$ns(?:longitude)>([^<]+)</$ns(?:longitude)>""", RegexOption.IGNORE_CASE)
-    private val linkName = Regex(
-        """<$ns(?:tpegOtherPointDescriptorType)>\s*linkName\s*</$ns(?:tpegOtherPointDescriptorType)>""",
-        RegexOption.IGNORE_CASE
-    )
-    private val valueTag = Regex("""<$ns(?:value)(?:\s[^>]*)?>([^<]+)</$ns(?:value)>""", RegexOption.IGNORE_CASE)
-    private val tpegDirection = Regex(
-        """<$ns(?:tpegDirection)>([^<]+)</$ns(?:tpegDirection)>""",
-        RegexOption.IGNORE_CASE
-    )
-    private val commentBlock = Regex(
-        """<$ns(?:generalPublicComment)>(.*?)</$ns(?:generalPublicComment)>""",
-        setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-    )
-    private val commentType = Regex(
-        """<$ns(?:commentType)>([^<]+)</$ns(?:commentType)>""",
-        RegexOption.IGNORE_CASE
-    )
-    private val overallEndTime = Regex(
-        """<$ns(?:overallEndTime)>([^<]+)</$ns(?:overallEndTime)>""",
-        RegexOption.IGNORE_CASE
-    )
-    private val versionTime = Regex(
-        """<$ns(?:situationRecordVersionTime)>([^<]+)</$ns(?:situationRecordVersionTime)>""",
-        RegexOption.IGNORE_CASE
-    )
-    private val vehicleObstructionType = Regex(
-        """<$ns(?:vehicleObstructionType)>([^<]+)</$ns(?:vehicleObstructionType)>""",
-        RegexOption.IGNORE_CASE
-    )
-    private val obstructionType = Regex(
-        """<$ns(?:obstructionType)>([^<]+)</$ns(?:obstructionType)>""",
-        RegexOption.IGNORE_CASE
-    )
-    private val accidentType = Regex(
-        """<$ns(?:accidentType)>([^<]+)</$ns(?:accidentType)>""",
-        RegexOption.IGNORE_CASE
-    )
-    private val laneManagementType = Regex(
-        """<$ns(?:roadOrCarriagewayOrLaneManagementType)>([^<]+)</$ns(?:roadOrCarriagewayOrLaneManagementType)>""",
-        RegexOption.IGNORE_CASE
-    )
 
     private val obstructionRecordTypes = setOf(
         "VehicleObstruction",
         "GeneralObstruction",
         "EnvironmentalObstruction",
         "AnimalPresenceObstruction",
-        "InfrastructureDamageObstruction"
+        "InfrastructureDamageObstruction",
     )
 
     private val closureManagementTypes = setOf(
         "roadClosed",
         "carriagewayClosures",
         "laneClosures",
-        "closedPermanentlyForTheWinter"
+        "closedPermanentlyForTheWinter",
     )
 
     /**
@@ -80,114 +34,196 @@ object DatexSituationParser {
     fun parse(
         xml: String,
         nowMs: Long = System.currentTimeMillis(),
-        defaultRoadRef: String = "FR"
+        defaultRoadRef: String = "FR",
     ): List<TrafficEvent> {
         if (xml.isBlank()) return emptyList()
-        val out = mutableListOf<TrafficEvent>()
-        var searchFrom = 0
-        while (true) {
-            val startMatch = recordStart.find(xml, searchFrom) ?: break
-            val recordType = startMatch.groupValues[2]
-            val attrs = startMatch.groupValues[1] + startMatch.groupValues[3]
-            val contentStart = startMatch.range.last + 1
-            val endNs = xml.indexOf(recordEndNs, contentStart, ignoreCase = true)
-            val endBare = xml.indexOf(recordEndBare, contentStart, ignoreCase = true)
-            val endIdx = when {
-                endNs >= 0 && (endBare < 0 || endNs <= endBare) -> endNs
-                endBare >= 0 -> endBare
-                else -> -1
-            }
-            if (endIdx < 0) break
-            val endTagLen = if (endIdx == endNs) recordEndNs.length else recordEndBare.length
-            val block = xml.substring(contentStart, endIdx)
-            searchFrom = endIdx + endTagLen
-
-            val severity = severityFor(recordType, block) ?: continue
-            val endStr = overallEndTime.find(block)?.groupValues?.get(1)
-            val endMs = parseDatexTime(endStr)
-            if (endMs != null && endMs < nowMs) continue
-
-            val bbox = bboxFromCoords(block) ?: continue
-            val id = idAttr.find(attrs)?.groupValues?.get(1)
-            val road = extractLinkName(block) ?: defaultRoadRef
-            val direction = tpegDirection.find(block)?.groupValues?.get(1)?.trim()
-            val message = buildMessage(recordType, block)
-            val updatedAt = parseDatexTime(versionTime.find(block)?.groupValues?.get(1))
-
-            out.add(
-                TrafficEvent(
-                    roadRef = road,
-                    direction = direction,
-                    severity = severity,
-                    message = message,
-                    travelTimeSeconds = null,
-                    bbox = bbox,
-                    sourceId = id,
-                    updatedAt = updatedAt
-                )
+        return try {
+            val parser = MiniXmlPullParser(
+                source = xml,
+                processNamespaces = false,
+                relaxed = true,
             )
+            val out = ArrayList<TrafficEvent>()
+            while (parser.next() != EventType.END_DOCUMENT) {
+                if (parser.eventType != EventType.START_TAG) continue
+                if (localName(parser.name) != "situationRecord") continue
+                try {
+                    parseSituationRecord(parser, nowMs, defaultRoadRef)?.let { out.add(it) }
+                } catch (_: Exception) {
+                    // Skip malformed record; continue scanning the feed.
+                }
+            }
+            out
+        } catch (_: Exception) {
+            emptyList()
         }
-        return out
     }
 
-    private fun severityFor(recordType: String, block: String): TrafficSeverity? = when (recordType) {
-        "Accident" -> TrafficSeverity.Accident
-        in obstructionRecordTypes -> TrafficSeverity.Accident
-        "AbnormalTraffic" -> TrafficSeverity.Congestion
-        "ConstructionWorks", "MaintenanceWorks" -> TrafficSeverity.Roadworks
-        "RoadOrCarriagewayOrLaneManagement" -> {
-            val mgmt = laneManagementType.find(block)?.groupValues?.get(1)?.trim()
-            if (mgmt != null && mgmt in closureManagementTypes) TrafficSeverity.Closure else null
+    private fun parseSituationRecord(
+        parser: XmlPullParser,
+        nowMs: Long,
+        defaultRoadRef: String,
+    ): TrafficEvent? {
+        val recordType = stripNsPrefix(attrLocal(parser, "type") ?: return null) ?: return null
+        val id = attrLocal(parser, "id")
+        val recordDepth = parser.depth
+
+        var overallEnd: String? = null
+        var versionTime: String? = null
+        var direction: String? = null
+        var accidentType: String? = null
+        var vehicleObstructionType: String? = null
+        var obstructionType: String? = null
+        var laneManagementType: String? = null
+        var lastValue: String? = null
+        var roadRef: String? = null
+        var inPublicComment = false
+        var commentValue: String? = null
+        var commentType: String? = null
+        val messageParts = ArrayList<String>(4)
+        val lats = ArrayList<Double>(4)
+        val lons = ArrayList<Double>(4)
+
+        while (parser.next() != EventType.END_DOCUMENT) {
+            when (parser.eventType) {
+                EventType.START_TAG -> {
+                    when (localName(parser.name)) {
+                        "generalPublicComment" -> {
+                            inPublicComment = true
+                            commentValue = null
+                            commentType = null
+                        }
+                        "overallEndTime" -> overallEnd = parser.nextText().trim()
+                        "situationRecordVersionTime" -> versionTime = parser.nextText().trim()
+                        "latitude" -> parser.nextText().toDoubleOrNull()?.let { lats.add(it) }
+                        "longitude" -> parser.nextText().toDoubleOrNull()?.let { lons.add(it) }
+                        "tpegDirection" -> direction = parser.nextText().trim().ifBlank { null }
+                        "value" -> {
+                            val v = parser.nextText().trim()
+                            lastValue = v
+                            if (inPublicComment) commentValue = v
+                        }
+                        "tpegOtherPointDescriptorType" -> {
+                            if (parser.nextText().trim() == "linkName") {
+                                roadRef = lastValue?.takeIf { it.isNotBlank() }
+                            }
+                        }
+                        "commentType" -> commentType = parser.nextText().trim().ifBlank { null }
+                        "accidentType" -> accidentType = parser.nextText().trim().ifBlank { null }
+                        "vehicleObstructionType" ->
+                            vehicleObstructionType = parser.nextText().trim().ifBlank { null }
+                        "obstructionType" ->
+                            obstructionType = parser.nextText().trim().ifBlank { null }
+                        "roadOrCarriagewayOrLaneManagementType" ->
+                            laneManagementType = parser.nextText().trim().ifBlank { null }
+                    }
+                }
+                EventType.END_TAG -> {
+                    val tag = localName(parser.name)
+                    if (tag == "generalPublicComment") {
+                        if (commentType == "description" || commentType == "locationDescriptor") {
+                            commentValue?.takeIf { it.isNotBlank() }?.let { messageParts.add(it) }
+                        }
+                        inPublicComment = false
+                    }
+                    if (tag == "situationRecord" && parser.depth == recordDepth) {
+                        break
+                    }
+                }
+                else -> Unit
+            }
         }
-        else -> null
+
+        val severity = severityFor(recordType, laneManagementType) ?: return null
+        val endMs = parseDatexTime(overallEnd)
+        if (endMs != null && endMs < nowMs) return null
+        val bbox = bboxFromCoords(lats, lons) ?: return null
+
+        prependTypeMessage(
+            recordType = recordType,
+            accidentType = accidentType,
+            vehicleObstructionType = vehicleObstructionType,
+            obstructionType = obstructionType,
+            laneManagementType = laneManagementType,
+            messageParts = messageParts,
+        )
+        val message = messageParts.take(4).joinToString(" — ").ifBlank { null }
+
+        return TrafficEvent(
+            roadRef = roadRef ?: defaultRoadRef,
+            direction = direction,
+            severity = severity,
+            message = message,
+            travelTimeSeconds = null,
+            bbox = bbox,
+            sourceId = id,
+            updatedAt = parseDatexTime(versionTime),
+        )
     }
 
-    private fun extractLinkName(block: String): String? {
-        val linkMatch = linkName.find(block) ?: return null
-        val before = block.substring(0, linkMatch.range.first)
-        val values = valueTag.findAll(before).toList()
-        return values.lastOrNull()?.groupValues?.get(1)?.trim()?.takeIf { it.isNotBlank() }
-    }
-
-    private fun buildMessage(recordType: String, block: String): String? {
-        val parts = mutableListOf<String>()
+    private fun severityFor(recordType: String, laneManagementType: String?): TrafficSeverity? =
         when (recordType) {
-            "Accident" -> {
-                accidentType.find(block)?.groupValues?.get(1)?.trim()?.let { parts.add(it) }
-            }
-            "VehicleObstruction" -> {
-                vehicleObstructionType.find(block)?.groupValues?.get(1)?.trim()?.let { parts.add(it) }
-                    ?: parts.add(recordType)
-            }
-            in obstructionRecordTypes -> {
-                obstructionType.find(block)?.groupValues?.get(1)?.trim()?.let { parts.add(it) }
-                    ?: parts.add(recordType)
-            }
+            "Accident" -> TrafficSeverity.Accident
+            in obstructionRecordTypes -> TrafficSeverity.Accident
+            "AbnormalTraffic" -> TrafficSeverity.Congestion
+            "ConstructionWorks", "MaintenanceWorks" -> TrafficSeverity.Roadworks
             "RoadOrCarriagewayOrLaneManagement" -> {
-                laneManagementType.find(block)?.groupValues?.get(1)?.trim()?.let { parts.add(it) }
+                if (laneManagementType != null && laneManagementType in closureManagementTypes) {
+                    TrafficSeverity.Closure
+                } else {
+                    null
+                }
             }
-            else -> parts.add(recordType)
+            else -> null
         }
-        for (m in commentBlock.findAll(block)) {
-            val commentXml = m.groupValues[1]
-            val type = commentType.find(commentXml)?.groupValues?.get(1)?.trim()
-            if (type != null && type != "description" && type != "locationDescriptor") continue
-            val text = valueTag.find(commentXml)?.groupValues?.get(1)?.trim() ?: continue
-            if (text.isNotBlank()) parts.add(text)
+
+    private fun prependTypeMessage(
+        recordType: String,
+        accidentType: String?,
+        vehicleObstructionType: String?,
+        obstructionType: String?,
+        laneManagementType: String?,
+        messageParts: MutableList<String>,
+    ) {
+        val head: String? = when (recordType) {
+            "Accident" -> accidentType
+            "VehicleObstruction" -> vehicleObstructionType ?: recordType
+            in obstructionRecordTypes -> obstructionType ?: recordType
+            "RoadOrCarriagewayOrLaneManagement" -> laneManagementType
+            else -> recordType
         }
-        return parts.take(4).joinToString(" — ").ifBlank { null }
+        if (!head.isNullOrBlank()) {
+            messageParts.add(0, head)
+        }
     }
 
-    private fun bboxFromCoords(block: String): Bbox? {
-        val lats = latitude.findAll(block).mapNotNull { it.groupValues[1].toDoubleOrNull() }.toList()
-        val lons = longitude.findAll(block).mapNotNull { it.groupValues[1].toDoubleOrNull() }.toList()
+    private fun bboxFromCoords(lats: List<Double>, lons: List<Double>): Bbox? {
         if (lats.isEmpty() || lons.isEmpty()) return null
         return Bbox(
             latMin = lats.minOrNull()!!,
             lonMin = lons.minOrNull()!!,
             latMax = lats.maxOrNull()!!,
-            lonMax = lons.maxOrNull()!!
+            lonMax = lons.maxOrNull()!!,
         )
+    }
+
+    private fun localName(raw: String): String {
+        val i = raw.indexOf(':')
+        return if (i >= 0) raw.substring(i + 1) else raw
+    }
+
+    private fun stripNsPrefix(raw: String): String? {
+        val local = localName(raw).trim()
+        return local.takeIf { it.isNotEmpty() }
+    }
+
+    private fun attrLocal(parser: XmlPullParser, local: String): String? {
+        for (i in 0 until parser.attributeCount) {
+            if (localName(parser.getAttributeName(i)).equals(local, ignoreCase = true)) {
+                return parser.getAttributeValue(i)
+            }
+        }
+        return null
     }
 
     /**

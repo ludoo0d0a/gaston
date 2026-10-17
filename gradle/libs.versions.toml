@@ -22,6 +22,7 @@ mapsforge = "0.21.0"
 httpclient-android = "4.3.5.1"
 play-app-update = "2.1.0"
 kotlinx-datetime = "0.8.0"
+ktxml = "1.0.0"
 google-services = "4.4.4"
 firebase-crashlytics-gradle = "3.0.8"
 play-services-location = "21.4.0"
@@ -74,6 +75,7 @@ koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+ktxml-core = { module = "org.kobjects.ktxml:core", version.ref = "ktxml" }
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }
 maplibre-android = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre-android" }
 mapbox-maps = { module = "com.mapbox.maps:android-ndk27", version.ref = "mapbox" }
