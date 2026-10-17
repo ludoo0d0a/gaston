@@ -1,7 +1,6 @@
-package fr.geoking.julius.ui.map
+package fr.geoking.gaston.ui.map
 
 import fr.geoking.gaston.poi.Poi
-import fr.geoking.gaston.ui.map.PhoneMapPoiHitTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

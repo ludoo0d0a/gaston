@@ -51,7 +51,8 @@ class TipiRestrictedTrafficClientTest {
             password = "pass"
         )
         assertTrue(client.hasCredentials)
-        assertEquals("<xml/>", client.fetchDatexXml())
+        val xml = client.fetchDatexXml()
+        assertEquals("<xml/>", xml)
         assertTrue(auth!!.startsWith("Basic "))
     }
 }
