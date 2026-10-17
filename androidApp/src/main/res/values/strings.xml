@@ -295,6 +295,8 @@
     <string name="settings_current_theme">Current: %1$s</string>
     <string name="settings_map_mode">Map Mode</string>
     <string name="settings_show_traffic">Show Traffic</string>
+    <string name="settings_radar_warning">Speed camera alerts</string>
+    <string name="settings_radar_warning_subtitle">Audio warnings (TTS, beeps) and HUN alerts for danger zones</string>
     <string name="settings_vehicle_summary">%1$s, %2$d km</string>
     <string name="emergency_call">Call Emergency: %1$s</string>
     <string name="emergency_universal_number">Universal number for this region</string>
