@@ -293,8 +293,8 @@ dependencies {
             .map { rootProject.file(it) }
             .any { it.resolve("android").isDirectory }
     if (gkToolsPresent) {
-        implementation("fr.geoking.tools:debug-bar")
-        implementation("fr.geoking.tools:in-app-update")
+        implementation(project(":debug-bar"))
+        implementation(project(":in-app-update"))
     } else {
         implementation(project(":tools-stub:debug-bar"))
         implementation(project(":tools-stub:in-app-update"))

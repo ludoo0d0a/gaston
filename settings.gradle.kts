@@ -36,12 +36,13 @@ val gkToolsRoot = System.getenv("GK_TOOLS")
         ?.absolutePath
 
 if (gkToolsRoot != null) {
-    includeBuild("$gkToolsRoot/android") {
-        dependencySubstitution {
-            substitute(module("fr.geoking.tools:debug-bar")).using(project(":debug-bar"))
-            substitute(module("fr.geoking.tools:in-app-update")).using(project(":in-app-update"))
-        }
-    }
+    // Same-build include (not includeBuild): Android Studio sync fails to map composite
+    // Android library modules ("Expected android module not found! … Path: :debug-bar").
+    val toolsAndroid = file(gkToolsRoot).resolve("android")
+    include(":debug-bar")
+    project(":debug-bar").projectDir = toolsAndroid.resolve("debug-bar")
+    include(":in-app-update")
+    project(":in-app-update").projectDir = toolsAndroid.resolve("in-app-update")
 } else {
     include(":tools-stub:debug-bar")
     include(":tools-stub:in-app-update")
