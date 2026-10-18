@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import fr.geoking.gaston.persistence.AppDatabase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -25,6 +26,7 @@ class MaintenanceRepositoryTest {
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+            .setQueryCoroutineContext(Dispatchers.IO)
             .allowMainThreadQueries()
             .build()
         repo = MaintenanceRepository(db.maintenanceEventDao(), db.serviceIntervalDao())

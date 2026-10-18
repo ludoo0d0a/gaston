@@ -395,7 +395,10 @@ val appModule = module {
     single<AppDatabase> {
         fun buildAndValidate(builder: androidx.room.RoomDatabase.Builder<AppDatabase>): AppDatabase? {
             return try {
-                val db = builder.fallbackToDestructiveMigration(dropAllTables = true).build()
+                val db = builder
+                    .setQueryCoroutineContext(Dispatchers.IO)
+                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .build()
                 db.openHelper.writableDatabase.query("SELECT 1").close()
                 db
             } catch (e: Throwable) {
