@@ -31,8 +31,22 @@ data class TrafficEvent(
     /** Provider-specific event id. */
     val sourceId: String? = null,
     /** Last update timestamp from source, if available. */
-    val updatedAt: Long? = null
-)
+    val updatedAt: Long? = null,
+    /** Latitude of the primary POI location (first point of the zone/event). */
+    val latitude: Double? = null,
+    /** Longitude of the primary POI location (first point of the zone/event). */
+    val longitude: Double? = null,
+    /** Coordinates defining the zone if 2 points are different; null if points are identical or single point. */
+    val zonePoints: List<Pair<Double, Double>>? = null
+) {
+    /** Resolved POI latitude, using [latitude] or falling back to bbox center. */
+    val poiLatitude: Double?
+        get() = latitude ?: bbox?.let { (it.latMin + it.latMax) / 2.0 }
+
+    /** Resolved POI longitude, using [longitude] or falling back to bbox center. */
+    val poiLongitude: Double?
+        get() = longitude ?: bbox?.let { (it.lonMin + it.lonMax) / 2.0 }
+}
 
 /**
  * Bounding box: (latMin, lonMin, latMax, lonMax).

@@ -45,6 +45,17 @@ object CitaGeoJsonParser {
                 }
             }.ifBlank { null }
             val ts = props["timestamp"]?.jsonPrimitive?.contentOrNull
+            val points = extractPointsFromGeometry(geom)
+            val firstLat = points.firstOrNull()?.first
+            val firstLon = points.firstOrNull()?.second
+            val distinctPoints = ArrayList<Pair<Double, Double>>()
+            for (pt in points) {
+                if (distinctPoints.isEmpty() || distinctPoints.last() != pt) {
+                    distinctPoints.add(pt)
+                }
+            }
+            val zonePoints = if (distinctPoints.size >= 2) distinctPoints else null
+
             out.add(
                 TrafficEvent(
                     roadRef = road,
@@ -54,7 +65,10 @@ object CitaGeoJsonParser {
                     travelTimeSeconds = null,
                     bbox = bbox,
                     sourceId = id,
-                    updatedAt = CitaDatexParser.parseMeasurementTime(ts)
+                    updatedAt = CitaDatexParser.parseMeasurementTime(ts),
+                    latitude = firstLat,
+                    longitude = firstLon,
+                    zonePoints = zonePoints,
                 )
             )
         }
@@ -94,6 +108,24 @@ object CitaGeoJsonParser {
             }
             else -> null
         }
+    }
+
+    private fun extractPointsFromGeometry(geom: JsonObject): List<Pair<Double, Double>> {
+        val type = geom["type"]?.jsonPrimitive?.contentOrNull ?: return emptyList()
+        val coords = geom["coordinates"] ?: return emptyList()
+        val out = mutableListOf<Pair<Double, Double>>()
+        when (type) {
+            "Polygon" -> {
+                val ring = coords.jsonArray.getOrNull(0) as? JsonArray ?: return emptyList()
+                for (pt in ring) {
+                    val pair = pt as? JsonArray ?: continue
+                    val lon = pair.getOrNull(0)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: continue
+                    val lat = pair.getOrNull(1)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: continue
+                    out.add(Pair(lat, lon))
+                }
+            }
+        }
+        return out
     }
 
     private fun ringToBbox(ring: JsonArray?): Bbox? {

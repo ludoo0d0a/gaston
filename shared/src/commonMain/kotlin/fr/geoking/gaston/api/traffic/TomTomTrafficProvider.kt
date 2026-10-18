@@ -72,6 +72,17 @@ private object TomTomIncidentParser {
             val delay = props["magnitudeOfDelay"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0
             val desc = firstEventDescription(props)
             val severity = severityFrom(icon, delay)
+            val points = extractPointsFromGeometry(geom)
+            val firstLat = points.firstOrNull()?.first
+            val firstLon = points.firstOrNull()?.second
+            val distinctPoints = ArrayList<Pair<Double, Double>>()
+            for (pt in points) {
+                if (distinctPoints.isEmpty() || distinctPoints.last() != pt) {
+                    distinctPoints.add(pt)
+                }
+            }
+            val zonePoints = if (distinctPoints.size >= 2) distinctPoints else null
+
             out.add(
                 TrafficEvent(
                     roadRef = "TomTom",
@@ -81,7 +92,10 @@ private object TomTomIncidentParser {
                     travelTimeSeconds = null,
                     bbox = bbox,
                     sourceId = id,
-                    updatedAt = null
+                    updatedAt = null,
+                    latitude = firstLat,
+                    longitude = firstLon,
+                    zonePoints = zonePoints,
                 )
             )
         }
@@ -129,6 +143,27 @@ private object TomTomIncidentParser {
             }
             else -> null
         }
+    }
+
+    private fun extractPointsFromGeometry(geom: JsonObject): List<Pair<Double, Double>> {
+        val out = mutableListOf<Pair<Double, Double>>()
+        val coords = geom["coordinates"]?.jsonArray ?: return emptyList()
+        when (geom["type"]?.jsonPrimitive?.contentOrNull) {
+            "Point" -> {
+                val lon = coords.getOrNull(0)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
+                val lat = coords.getOrNull(1)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
+                if (lat != null && lon != null) out.add(Pair(lat, lon))
+            }
+            "LineString" -> {
+                for (pt in coords) {
+                    val pair = pt as? JsonArray ?: continue
+                    val lon = pair.getOrNull(0)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: continue
+                    val lat = pair.getOrNull(1)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: continue
+                    out.add(Pair(lat, lon))
+                }
+            }
+        }
+        return out
     }
 
     private fun pointBbox(coords: JsonArray?): Bbox? {
