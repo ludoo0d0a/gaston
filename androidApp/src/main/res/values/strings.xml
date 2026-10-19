@@ -66,6 +66,9 @@
     <string name="finding_stations">Finding stations along route…</string>
     <string name="search_mode_ev">EV</string>
     <string name="search_mode_fuel">Fuel</string>
+    <string name="search_mode_traffic">Traffic</string>
+    <string name="search_mode_meteo">Weather</string>
+    <string name="search_mode_radar">Radar</string>
     <string name="search_mode_my_car">My vehicle</string>
     <string name="search_mode_other">Places</string>
     <string name="searching_address">Searching address…</string>

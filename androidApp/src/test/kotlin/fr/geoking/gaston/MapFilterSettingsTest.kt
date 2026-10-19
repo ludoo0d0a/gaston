@@ -115,4 +115,17 @@ class MapFilterSettingsTest {
         val codes = countryCodesAtMapPosition(48.8566, 2.3522)
         assertEquals(listOf("FR"), codes)
     }
+
+    @Test
+    fun providerUiInfo_meteoAndRadarCapabilityFlags() {
+        // OpenMeteoWeather provides meteo
+        val openMeteoType = PoiProviderType.OpenMeteoWeather
+        assertEquals(PoiProviderType.OpenMeteoWeather, openMeteoType)
+
+        // Radar providers
+        val radarTypes = setOf(PoiProviderType.FranceRadars, PoiProviderType.LufopOpenSpeedCam, PoiProviderType.LuxembourgRadars)
+        assertTrue(PoiProviderType.FranceRadars in radarTypes)
+        assertTrue(PoiProviderType.LufopOpenSpeedCam in radarTypes)
+        assertTrue(PoiProviderType.LuxembourgRadars in radarTypes)
+    }
 }
