@@ -78,11 +78,70 @@ class FranceTrafficProviderTest {
         assertTrue(result.events[0].message!!.contains("open"))
     }
 
+    @Test
+    fun actionBException_doesNotFailOpenTraffic() = runBlocking {
+        val open = FakeProvider(
+            enabledFlag = true,
+            info = TrafficInfo(events = listOf(event("o1", "A6", "open")), providerId = "bison_fute")
+        )
+        val failingActionB = ThrowingProvider()
+        val france = FranceTrafficProvider(
+            openProvider = open,
+            actionB = failingActionB,
+            actionC = null
+        )
+        val result = france.getTraffic(TrafficRequest.Bbox(48.8, 2.3, 48.9, 2.4))
+        assertEquals(1, result!!.events.size)
+        assertEquals("o1", result.events[0].sourceId)
+    }
+
+    @Test
+    fun actionCOverwriteWithoutCoords_doesNotStripCoordinatesFromOpen() = runBlocking {
+        val open = FakeProvider(
+            enabledFlag = true,
+            info = TrafficInfo(events = listOf(event("o1", "A6", "open_with_coords")), providerId = "bison_fute")
+        )
+        val actionCNoCoords = FakeProvider(
+            enabledFlag = true,
+            info = TrafficInfo(
+                events = listOf(
+                    TrafficEvent(
+                        roadRef = "A6",
+                        severity = TrafficSeverity.Accident,
+                        message = "action_c_no_coords",
+                        bbox = null,
+                        latitude = null,
+                        longitude = null,
+                        sourceId = "o1"
+                    )
+                ),
+                providerId = TipiActionTrafficProvider.ACTION_C_ID
+            )
+        )
+        val france = FranceTrafficProvider(
+            openProvider = open,
+            actionB = null,
+            actionC = actionCNoCoords
+        )
+        val result = france.getTraffic(TrafficRequest.Bbox(48.8, 2.3, 48.9, 2.4))
+        assertEquals(1, result!!.events.size)
+        val event = result.events[0]
+        assertEquals("o1", event.sourceId)
+        assertTrue(event.poiLatitude != null, "Coordinates should be preserved from open provider")
+    }
+
     private class FakeProvider(
         private val enabledFlag: Boolean,
         private val info: TrafficInfo?
     ) : TrafficProvider {
         override val enabled: Boolean get() = enabledFlag
         override suspend fun getTraffic(request: TrafficRequest): TrafficInfo? = info
+    }
+
+    private class ThrowingProvider : TrafficProvider {
+        override val enabled: Boolean get() = true
+        override suspend fun getTraffic(request: TrafficRequest): TrafficInfo? {
+            throw RuntimeException("TIPI HTTP 401 Unauthorized")
+        }
     }
 }
