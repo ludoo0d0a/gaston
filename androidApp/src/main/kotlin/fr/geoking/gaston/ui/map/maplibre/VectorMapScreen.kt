@@ -536,6 +536,11 @@ fun VectorMapScreen(
                         userLon = userLon,
                         userHeading = userHeading,
                         weatherRadarEnabled = "weather" in settings.selectedOverpassAmenityTypes,
+                        trafficEvents = if (settings.mapTrafficEnabled) {
+                            mapData.trafficInfo?.events.orEmpty()
+                        } else {
+                            emptyList()
+                        },
                     )
 
                     MapLoadingOverlay(

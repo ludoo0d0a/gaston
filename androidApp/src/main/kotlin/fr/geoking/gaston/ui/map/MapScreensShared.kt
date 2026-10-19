@@ -212,43 +212,89 @@ fun rememberMapDataState(
 
         // Avoid collectLatest: cancelling mid-flight dropped slower Lufop once Overpass/camera
         // re-emitted. Let nearby in-flight searches finish; only restart on a real move/refresh.
+        // Traffic runs in its own job so a slow DATEX dump (Bison Futé ~4MB) is not stuck behind
+        // POI search, and a POI-only restart does not cancel an in-flight traffic fetch for the
+        // same viewport.
         var searchJob: Job? = null
+        var trafficJob: Job? = null
         var searchingSample: MapCameraSample? = null
+        var trafficSample: MapCameraSample? = null
 
         merge(cameraFlow, refreshRequestFlow).collect { sample ->
             lastCameraSample = sample
             if (isErrorPaused) return@collect
 
             val inFlight = searchingSample
-            if (searchJob?.isActive == true && inFlight != null && isNearSameViewport(inFlight, sample)) {
+            val searchNear = searchJob?.isActive == true && inFlight != null && isNearSameViewport(inFlight, sample)
+            val trafficNear = trafficJob?.isActive == true && trafficSample != null && isNearSameViewport(trafficSample!!, sample)
+            if (searchNear && trafficNear) {
+                return@collect
+            }
+
+            val widthPx = latestMapWidthPx
+            val heightPx = latestMapHeightPx
+            if (widthPx <= 0 || heightPx <= 0) return@collect
+
+            val centerLat = sample.centerLat
+            val centerLng = sample.centerLon
+            val zoom = sample.zoom
+
+            val viewport = calculateBoundsFromMapViewport(
+                centerLat,
+                centerLng,
+                zoom,
+                widthPx,
+                heightPx
+            )
+
+            val requiredRadiusKm = radiusKmFromMapViewport(
+                centerLat,
+                centerLng,
+                viewport
+            ).coerceIn(1, 50)
+
+            if (!trafficNear) {
+                trafficJob?.cancel()
+                trafficSample = sample
+                trafficJob = launch {
+                    val trafficEnabled = settingsManager.settings.value.mapTrafficEnabled
+                    if (!trafficEnabled || trafficProviderFactory == null) {
+                        trafficInfo = null
+                        return@launch
+                    }
+                    try {
+                        val trafficProvider = trafficProviderFactory.getProvider(centerLat, centerLng)
+                        val latMin = viewport.minLat ?: (centerLat - 0.15)
+                        val latMax = viewport.maxLat ?: (centerLat + 0.15)
+                        val lonMin = viewport.minLng ?: (centerLng - 0.15)
+                        val lonMax = viewport.maxLng ?: (centerLng + 0.15)
+                        trafficInfo = trafficProvider?.getTraffic(
+                            TrafficRequest.Bbox(
+                                latMin = latMin,
+                                lonMin = lonMin,
+                                latMax = latMax,
+                                lonMax = lonMax,
+                            )
+                        )
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        diagnostics.recordError(
+                            (e as? NetworkException)?.httpCode,
+                            "Map traffic ($effectiveProvidersLabel): ${e.message ?: e}"
+                        )
+                    } finally {
+                        if (trafficSample == sample) trafficSample = null
+                    }
+                }
+            }
+
+            if (searchNear) {
                 return@collect
             }
 
             searchJob?.cancel()
             searchingSample = sample
             searchJob = launch {
-                val widthPx = latestMapWidthPx
-                val heightPx = latestMapHeightPx
-                if (widthPx <= 0 || heightPx <= 0) return@launch
-
-                val centerLat = sample.centerLat
-                val centerLng = sample.centerLon
-                val zoom = sample.zoom
-
-                val viewport = calculateBoundsFromMapViewport(
-                    centerLat,
-                    centerLng,
-                    zoom,
-                    widthPx,
-                    heightPx
-                )
-
-                val requiredRadiusKm = radiusKmFromMapViewport(
-                    centerLat,
-                    centerLng,
-                    viewport
-                ).coerceIn(1, 50)
-
                 mapErrorMessage = null
 
                 try {
@@ -303,26 +349,6 @@ fun rememberMapDataState(
                                 diagnostics.recordError(err.httpCode, "Map ($effectiveProvidersLabel): ${err.message}")
                             }
                         }
-                    }
-
-                    // Traffic uses the visible map bbox (latMin,lonMin,latMax,lonMax), not a fixed span.
-                    val trafficEnabled = settingsManager.settings.value.mapTrafficEnabled
-                    trafficInfo = if (trafficEnabled && trafficProviderFactory != null) {
-                        val trafficProvider = trafficProviderFactory.getProvider(centerLat, centerLng)
-                        val latMin = viewport.minLat ?: (centerLat - 0.15)
-                        val latMax = viewport.maxLat ?: (centerLat + 0.15)
-                        val lonMin = viewport.minLng ?: (centerLng - 0.15)
-                        val lonMax = viewport.maxLng ?: (centerLng + 0.15)
-                        trafficProvider?.getTraffic(
-                            TrafficRequest.Bbox(
-                                latMin = latMin,
-                                lonMin = lonMin,
-                                latMax = latMax,
-                                lonMax = lonMax,
-                            )
-                        )
-                    } else {
-                        null
                     }
                 } catch (e: Exception) {
                     if (e is CancellationException) throw e

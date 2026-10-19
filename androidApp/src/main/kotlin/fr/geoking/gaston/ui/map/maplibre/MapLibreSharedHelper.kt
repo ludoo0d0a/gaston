@@ -3,6 +3,8 @@ package fr.geoking.gaston.ui.map.maplibre
 import android.content.Context
 import fr.geoking.gaston.aac.DangerZoneTriangle
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.api.traffic.TrafficEvent
+import fr.geoking.gaston.api.traffic.TrafficSeverity
 import fr.geoking.gaston.auto.AutoMapCamera
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
@@ -11,6 +13,7 @@ import fr.geoking.gaston.ui.map.MarkerStyle
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.CircleLayer
 import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
@@ -49,6 +52,13 @@ object MapLibreSharedHelper {
     const val HEADING_PROPERTY = "user-heading"
     const val RAINVIEWER_SOURCE_ID = "rainviewer-radar-source"
     const val RAINVIEWER_LAYER_ID = "rainviewer-radar-layer"
+    const val TRAFFIC_ZONE_SOURCE_ID = "traffic-zone-source"
+    const val TRAFFIC_ZONE_FILL_LAYER_ID = "traffic-zone-fill"
+    const val TRAFFIC_ZONE_LINE_LAYER_ID = "traffic-zone-line"
+    const val TRAFFIC_POINT_SOURCE_ID = "traffic-point-source"
+    const val TRAFFIC_POINT_LAYER_ID = "traffic-point-layer"
+    private const val TRAFFIC_COLOR_PROPERTY = "traffic-color"
+    private const val TRAFFIC_FILL_OPACITY_PROPERTY = "traffic-fill-opacity"
 
     /**
      * Initializes the POI source and symbol layer.
@@ -190,6 +200,117 @@ object MapLibreSharedHelper {
     }
 
     private fun argbAlpha(argb: Int): Float = ((argb ushr 24) and 0xFF) / 255f
+
+    /**
+     * Draws traffic events (zone polygons + point markers) when the traffic overlay is enabled.
+     * Pass an empty list to clear. Placed below POI symbols so station pins stay on top.
+     */
+    fun syncTrafficLayer(map: MapLibreMap, events: List<TrafficEvent>) {
+        map.getStyle { style ->
+            if (style.getSource(TRAFFIC_ZONE_SOURCE_ID) == null) {
+                style.addSource(GeoJsonSource(TRAFFIC_ZONE_SOURCE_ID))
+            }
+            if (style.getSource(TRAFFIC_POINT_SOURCE_ID) == null) {
+                style.addSource(GeoJsonSource(TRAFFIC_POINT_SOURCE_ID))
+            }
+            if (style.getLayer(TRAFFIC_ZONE_FILL_LAYER_ID) == null) {
+                val fill = FillLayer(TRAFFIC_ZONE_FILL_LAYER_ID, TRAFFIC_ZONE_SOURCE_ID).withProperties(
+                    PropertyFactory.fillColor(Expression.get(TRAFFIC_COLOR_PROPERTY)),
+                    PropertyFactory.fillOpacity(Expression.get(TRAFFIC_FILL_OPACITY_PROPERTY)),
+                )
+                if (style.getLayer(POI_LAYER_ID) != null) {
+                    style.addLayerBelow(fill, POI_LAYER_ID)
+                } else {
+                    style.addLayer(fill)
+                }
+            }
+            if (style.getLayer(TRAFFIC_ZONE_LINE_LAYER_ID) == null) {
+                val line = LineLayer(TRAFFIC_ZONE_LINE_LAYER_ID, TRAFFIC_ZONE_SOURCE_ID).withProperties(
+                    PropertyFactory.lineColor(Expression.get(TRAFFIC_COLOR_PROPERTY)),
+                    PropertyFactory.lineWidth(3f),
+                    PropertyFactory.lineOpacity(0.9f),
+                )
+                if (style.getLayer(POI_LAYER_ID) != null) {
+                    style.addLayerBelow(line, POI_LAYER_ID)
+                } else {
+                    style.addLayer(line)
+                }
+            }
+            if (style.getLayer(TRAFFIC_POINT_LAYER_ID) == null) {
+                val circles = CircleLayer(TRAFFIC_POINT_LAYER_ID, TRAFFIC_POINT_SOURCE_ID).withProperties(
+                    PropertyFactory.circleRadius(7f),
+                    PropertyFactory.circleColor(Expression.get(TRAFFIC_COLOR_PROPERTY)),
+                    PropertyFactory.circleStrokeWidth(1.5f),
+                    PropertyFactory.circleStrokeColor("#FFFFFF"),
+                    PropertyFactory.circleOpacity(0.95f),
+                )
+                if (style.getLayer(POI_LAYER_ID) != null) {
+                    style.addLayerBelow(circles, POI_LAYER_ID)
+                } else {
+                    style.addLayer(circles)
+                }
+            }
+
+            val zoneFeatures = ArrayList<Feature>()
+            val pointFeatures = ArrayList<Feature>()
+            for (event in events) {
+                val color = trafficSeverityColorHex(event.severity)
+                val zonePoints = event.zonePoints
+                if (zonePoints != null && zonePoints.size >= 2) {
+                    val ringLatLng = if (zonePoints.size == 2) {
+                        val p1 = zonePoints[0]
+                        val p2 = zonePoints[1]
+                        val latMin = minOf(p1.first, p2.first)
+                        var latMax = maxOf(p1.first, p2.first)
+                        val lonMin = minOf(p1.second, p2.second)
+                        var lonMax = maxOf(p1.second, p2.second)
+                        if (latMax == latMin) latMax += 0.0001
+                        if (lonMax == lonMin) lonMax += 0.0001
+                        listOf(
+                            latMin to lonMin,
+                            latMax to lonMin,
+                            latMax to lonMax,
+                            latMin to lonMax,
+                            latMin to lonMin,
+                        )
+                    } else {
+                        val closed = ArrayList(zonePoints)
+                        if (closed.first() != closed.last()) {
+                            closed.add(closed.first())
+                        }
+                        closed
+                    }
+                    if (ringLatLng.size >= 4) {
+                        val ring = ringLatLng.map { (lat, lon) -> Point.fromLngLat(lon, lat) }
+                        zoneFeatures.add(
+                            Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).apply {
+                                addStringProperty(TRAFFIC_COLOR_PROPERTY, color)
+                                addNumberProperty(TRAFFIC_FILL_OPACITY_PROPERTY, 0.3)
+                            }
+                        )
+                    }
+                }
+                val poiLat = event.poiLatitude ?: continue
+                val poiLon = event.poiLongitude ?: continue
+                pointFeatures.add(
+                    Feature.fromGeometry(Point.fromLngLat(poiLon, poiLat)).apply {
+                        addStringProperty(TRAFFIC_COLOR_PROPERTY, color)
+                    }
+                )
+            }
+            style.getSourceAs<GeoJsonSource>(TRAFFIC_ZONE_SOURCE_ID)
+                ?.setGeoJson(FeatureCollection.fromFeatures(zoneFeatures))
+            style.getSourceAs<GeoJsonSource>(TRAFFIC_POINT_SOURCE_ID)
+                ?.setGeoJson(FeatureCollection.fromFeatures(pointFeatures))
+        }
+    }
+
+    private fun trafficSeverityColorHex(severity: TrafficSeverity): String = when (severity) {
+        TrafficSeverity.Normal -> "#4CAF50"
+        TrafficSeverity.Congestion -> "#FF9800"
+        TrafficSeverity.Closure, TrafficSeverity.Accident, TrafficSeverity.Roadworks -> "#E53935"
+        TrafficSeverity.Unknown -> "#FFC107"
+    }
 
     /**
      * Synchronizes the red circle search radius boundary.

@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.api.weather.RainViewerMapsClient
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.ui.map.PhoneMapPoiHitTest
@@ -41,6 +42,8 @@ fun LibreMap(
     userHeading: Float = 0f,
     /** When true, fetch RainViewer radar tiles and show as a raster under POIs. */
     weatherRadarEnabled: Boolean = false,
+    /** Traffic incident/segment overlays (France Bison Futé, Luxembourg CITA, …). */
+    trafficEvents: List<TrafficEvent> = emptyList(),
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -72,6 +75,7 @@ fun LibreMap(
         userHeading,
         rainViewerTileUrl,
         weatherRadarEnabled,
+        trafficEvents,
     ) {
         arrayOf(
             poisInView,
@@ -84,6 +88,7 @@ fun LibreMap(
             userHeading,
             rainViewerTileUrl,
             weatherRadarEnabled,
+            trafficEvents,
         )
     }
 
@@ -126,6 +131,7 @@ fun LibreMap(
                 map = map,
                 tileUrlTemplate = if (weatherRadarEnabled) rainViewerTileUrl else null,
             )
+            MapLibreSharedHelper.syncTrafficLayer(map, trafficEvents)
             MapLibreSharedHelper.syncPoiLayer(
                 context = context,
                 map = map,
