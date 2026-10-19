@@ -95,19 +95,6 @@ class AutoMapSettingsScreen(
 
         listBuilder.addItem(
             Row.Builder()
-                .setTitle(carContext.getString(R.string.settings_show_traffic))
-                .addText(carContext.getString(R.string.filter_google_traffic))
-                .setToggle(
-                    Toggle.Builder { checked ->
-                        settingsManager.setMapTrafficEnabled(checked)
-                        invalidate()
-                    }.setChecked(settings.mapTrafficEnabled).build()
-                )
-                .build()
-        )
-
-        listBuilder.addItem(
-            Row.Builder()
                 .setTitle(carContext.getString(R.string.settings_radar_warning))
                 .addText(carContext.getString(R.string.settings_radar_warning_subtitle))
                 .setToggle(

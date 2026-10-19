@@ -285,8 +285,30 @@ fun SearchCategorySelector(
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
                 ) {
+                    // Traffic is a map overlay (not an Overpass amenity), same exclusivity as radar/weather.
+                    FilterChip(
+                        selected = settings.mapTrafficEnabled,
+                        onClick = {
+                            if (settings.mapTrafficEnabled) {
+                                settingsManager.setOtherMode("parking")
+                            } else {
+                                settingsManager.setTrafficMode()
+                            }
+                        },
+                        label = { Text(stringResource(R.string.search_mode_traffic)) },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_poi_traffic),
+                                contentDescription = null,
+                                tint = Color(0xFFF59E0B),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
+                        modifier = Modifier.testTag("amenity_traffic"),
+                    )
                     OVERPASS_AMENITY_OPTIONS.forEach { (id, resId) ->
-                        val isSelected = settings.selectedOverpassAmenityTypes.contains(id)
+                        val isSelected = !settings.mapTrafficEnabled &&
+                            settings.selectedOverpassAmenityTypes.contains(id)
                         FilterChip(
                             selected = isSelected,
                             onClick = {

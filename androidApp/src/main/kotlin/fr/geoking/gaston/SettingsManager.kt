@@ -920,6 +920,8 @@ open class SettingsManager(
                 selectedOverpassAmenityTypes = types,
                 cacheWarmAmenityTypes = (current.cacheWarmAmenityTypes + types) - "weather",
                 selectedPoiProviders = providers,
+                // Amenity chips are exclusive with the traffic overlay (dashboard / phone chip).
+                mapTrafficEnabled = false,
             )
         )
     }

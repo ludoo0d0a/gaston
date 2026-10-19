@@ -100,6 +100,17 @@ class BulkFileAndOtherModeSettingsTest {
     }
 
     @Test
+    fun setOverpassAmenityTypes_clearsTrafficOverlay() {
+        val manager = SettingsManager(RuntimeEnvironment.getApplication(), firestoreSync = null)
+        manager.setTrafficMode()
+        assertTrue(manager.settings.value.mapTrafficEnabled)
+        manager.setOverpassAmenityTypes(setOf("parking"))
+        val after = manager.settings.value
+        assertFalse(after.mapTrafficEnabled)
+        assertEquals(setOf("parking"), after.selectedOverpassAmenityTypes)
+    }
+
+    @Test
     fun isOtherModeActive_fuelProviderExitsOther() {
         val settings = AppSettings(
             poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
