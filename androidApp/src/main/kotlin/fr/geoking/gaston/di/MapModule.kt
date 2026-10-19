@@ -621,14 +621,25 @@ val mapModule = module {
     }
 
     // Traffic: Lux CITA first (inside FR bbox), then France composite (open ± TIPI B/C), TomTom elsewhere.
-    single { BisonFuteTrafficClient(get()) }
+    // Dedicated disk dir (filesDir/tipi/) for multi‑MB national DATEX dumps — not shared with AAC radars.
+    single(named("tipi_disk_cache")) {
+        fr.geoking.gaston.aac.AndroidTextFileCache(androidContext(), subdirectory = "tipi")
+    }
+    single {
+        BisonFuteTrafficClient(
+            client = get(),
+            diskCache = get(named("tipi_disk_cache")),
+        )
+    }
     single { BisonFuteTrafficProvider(get()) }
     single(named("tipi_action_c")) {
         TipiRestrictedTrafficClient(
             client = get(),
             contentUrl = TipiRestrictedTrafficClient.ACTION_C_URL,
             username = BuildConfig.TIPI_USER,
-            password = BuildConfig.TIPI_PASSWORD
+            password = BuildConfig.TIPI_PASSWORD,
+            diskCache = get(named("tipi_disk_cache")),
+            diskKey = TipiRestrictedTrafficClient.DISK_CACHE_KEY_ACTION_C,
         )
     }
     single(named("tipi_action_b")) {
@@ -636,7 +647,9 @@ val mapModule = module {
             client = get(),
             contentUrl = TipiRestrictedTrafficClient.ACTION_B_URL,
             username = BuildConfig.TIPI_USER,
-            password = BuildConfig.TIPI_PASSWORD
+            password = BuildConfig.TIPI_PASSWORD,
+            diskCache = get(named("tipi_disk_cache")),
+            diskKey = TipiRestrictedTrafficClient.DISK_CACHE_KEY_ACTION_B,
         )
     }
     single(named("tipi_action_c_provider")) {

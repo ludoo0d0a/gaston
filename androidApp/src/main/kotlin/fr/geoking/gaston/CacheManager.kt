@@ -5,12 +5,15 @@ import coil3.SingletonImageLoader
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
 import fr.geoking.gaston.shared.logging.DebugLogStore
 import fr.geoking.gaston.api.radars.LufopOpenSpeedCamClient
+import fr.geoking.gaston.api.traffic.BisonFuteTrafficClient
+import fr.geoking.gaston.api.traffic.TipiRestrictedTrafficClient
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.tools.debugbar.model.CacheStatRow
 import fr.geoking.tools.debugbar.model.CacheStats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.core.context.GlobalContext
+import org.koin.core.qualifier.named
 import java.io.File
 
 object CacheManager {
@@ -31,6 +34,16 @@ object CacheManager {
             GlobalContext.get().getOrNull<LufopOpenSpeedCamClient>()?.clearCache()
         } catch (e: Exception) {
             android.util.Log.e("CacheManager", "Error clearing Lufop cache", e)
+        }
+
+        // TIPI / Bison Futé national DATEX dumps (dedicated filesDir/tipi/).
+        try {
+            val koin = GlobalContext.get()
+            koin.getOrNull<BisonFuteTrafficClient>()?.clearCache()
+            koin.getOrNull<TipiRestrictedTrafficClient>(named("tipi_action_c"))?.clearCache()
+            koin.getOrNull<TipiRestrictedTrafficClient>(named("tipi_action_b"))?.clearCache()
+        } catch (e: Exception) {
+            android.util.Log.e("CacheManager", "Error clearing TIPI traffic cache", e)
         }
 
         // 2. Network Debug Logs (Memory-only, fast)
@@ -106,6 +119,20 @@ object CacheManager {
             }
         } catch (e: Exception) {
             android.util.Log.e("CacheManager", "Error reading cacheDir stats", e)
+        }
+
+        try {
+            val tipiDir = File(context.filesDir, "tipi")
+            if (tipiDir.exists()) {
+                val (bytes, count) = dirStats(tipiDir)
+                byType += CacheStatRow(
+                    label = "TIPI DATEX (disk)",
+                    sizeBytes = bytes,
+                    itemCount = count,
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("CacheManager", "Error reading TIPI cache stats", e)
         }
 
         CacheStats(

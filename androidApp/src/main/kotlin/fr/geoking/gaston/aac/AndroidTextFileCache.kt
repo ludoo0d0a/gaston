@@ -4,12 +4,14 @@ import android.content.Context
 import java.io.File
 
 /**
- * Android disk cache for AAC CSV payloads (filesDir/aac/).
+ * Android disk cache for large text payloads under [filesDir]/subdirectory]/].
+ * Default `aac` for radar CSVs; use `tipi` for TIPI / Bison Futé DATEX dumps.
  */
 class AndroidTextFileCache(
     context: Context,
+    subdirectory: String = "aac",
 ) : TextFileCache {
-    private val dir = File(context.filesDir, "aac").also { it.mkdirs() }
+    private val dir = File(context.filesDir, subdirectory).also { it.mkdirs() }
 
     override fun read(key: String): CachedText? {
         val bodyFile = File(dir, "$key.txt")

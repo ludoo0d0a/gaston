@@ -145,6 +145,7 @@ private fun SharedNetworkLog.toDebugBarLog(): NetworkLog {
         timestamp = timestamp,
         requestSizeBytes = requestSizeBytes,
         responseSizeBytes = responseSizeBytes,
+        fromCache = fromCache,
     )
 }
 

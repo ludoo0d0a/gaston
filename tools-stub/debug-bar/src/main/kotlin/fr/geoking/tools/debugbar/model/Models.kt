@@ -44,6 +44,7 @@ data class NetworkLog(
     val durationMs: Long = 0L,
     val requestSizeBytes: Long? = 0L,
     val responseSizeBytes: Long? = 0L,
+    val fromCache: Boolean = false,
 )
 
 enum class ProviderTracePhase {

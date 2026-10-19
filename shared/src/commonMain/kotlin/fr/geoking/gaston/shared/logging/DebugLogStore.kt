@@ -30,6 +30,7 @@ fun resolveProviderName(host: String): String? {
         h.contains("mityc.es") -> "Spain Minetur"
         h.contains("overpass") -> "OpenStreetMap / Overpass"
         h.contains("lufop") -> "Lufop"
+        h.contains("bison-fute") || h.contains("tipi.") -> "TIPI / Bison Futé"
         h.contains("nominatim") -> "Nominatim Geocoding"
         h.contains("tile.openstreetmap.org") -> "OSM Map Tiles"
         h.contains("mimit.gov.it") -> "Italy Mimit"
@@ -62,6 +63,8 @@ data class NetworkLog(
     val timestamp: Long,
     val requestSizeBytes: Long = 0,
     val responseSizeBytes: Long = 0,
+    /** True when the response body was served from an app-level cache (no network body). */
+    val fromCache: Boolean = false,
 ) {
     // Helper to allow reading properties from other modules without smart cast issues on nullables
     val safeRequestBody: String get() = requestBody ?: ""
