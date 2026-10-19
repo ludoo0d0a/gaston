@@ -809,6 +809,9 @@ private fun SourcesConfig(
         val providesFuel: Boolean = type.providesFuel,
         val providesElectric: Boolean = type.providesElectric,
         val providesSwap: Boolean = type.providesSwap,
+        val providesTraffic: Boolean = false,
+        val providesMeteo: Boolean = type == PoiProviderType.OpenMeteoWeather,
+        val providesRadar: Boolean = type in setOf(PoiProviderType.FranceRadars, PoiProviderType.LufopOpenSpeedCam, PoiProviderType.LuxembourgRadars),
     )
 
     fun providerLabel(type: PoiProviderType): String =
@@ -948,6 +951,9 @@ private fun SourcesConfig(
                     "fuel" -> p.providesFuel
                     "electric" -> p.providesElectric
                     "swap" -> p.providesSwap
+                    "traffic" -> p.providesTraffic
+                    "meteo" -> p.providesMeteo
+                    "radar" -> p.providesRadar
                     else -> true
                 }
             }
@@ -1045,7 +1051,10 @@ private fun SourcesConfig(
                     "all" to stringResource(R.string.action_all),
                     "fuel" to stringResource(R.string.search_mode_fuel),
                     "electric" to stringResource(R.string.search_mode_ev),
-                    "swap" to "Swap"
+                    "swap" to "Swap",
+                    "traffic" to stringResource(R.string.search_mode_traffic),
+                    "meteo" to stringResource(R.string.search_mode_meteo),
+                    "radar" to stringResource(R.string.search_mode_radar)
                 ).forEach { (id, label) ->
                     FilterChip(
                         selected = energyFilter == id,
@@ -1078,6 +1087,9 @@ private fun SourcesConfig(
                         "fuel" -> p.providesFuel
                         "electric" -> p.providesElectric
                         "swap" -> p.providesSwap
+                        "traffic" -> p.providesTraffic
+                        "meteo" -> p.providesMeteo
+                        "radar" -> p.providesRadar
                         else -> true
                     }
                 }
