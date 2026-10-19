@@ -31,6 +31,27 @@ class DatexSituationParserTest {
     }
 
     @Test
+    fun test_lat_lon_parsing_directly_adjacent() {
+        val xml = """
+            <situationRecord xsi:type="Accident" id="adj-1" version="1">
+              <validity>
+                <validityTimeSpecification>
+                  <overallEndTime>2026-12-01T00:00:00.000+01:00</overallEndTime>
+                </validityTimeSpecification>
+              </validity>
+              <pointCoordinates><latitude>48.85</latitude><longitude>2.35</longitude></pointCoordinates>
+              <accidentType>accident</accidentType>
+            </situationRecord>
+        """.trimIndent()
+        val events = DatexSituationParser.parse(xml, nowMs = nowMs)
+        assertEquals(1, events.size)
+        val event = events[0]
+        assertEquals(48.85, event.latitude)
+        assertEquals(2.35, event.longitude)
+        assertNotNull(event.bbox)
+    }
+
+    @Test
     fun parse_bare_tags_without_ns2_prefix() {
         val events = DatexSituationParser.parse(FIXTURE_BARE_XML, nowMs = nowMs)
         assertEquals(1, events.size)
