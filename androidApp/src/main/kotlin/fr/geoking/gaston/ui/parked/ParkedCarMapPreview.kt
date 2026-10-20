@@ -56,11 +56,13 @@ fun ParkedCarMapPreview(
     val context = LocalContext.current
     val density = LocalDensity.current.density
 
-    val carMarkerIcon = remember(context, density) {
-        BitmapDescriptorFactory.fromBitmap(createCarMarkerBitmap(context, density))
+    // Bitmaps are fine before the Maps SDK is ready; BitmapDescriptorFactory is not.
+    // Build descriptors inside GoogleMap content (after MapView init), same as MapScreen.
+    val carMarkerBitmap = remember(context, density) {
+        createCarMarkerBitmap(context, density)
     }
-    val blueDotIcon = remember(density) {
-        BitmapDescriptorFactory.fromBitmap(createBlueDotBitmap(density))
+    val blueDotBitmap = remember(density) {
+        createBlueDotBitmap(density)
     }
 
     val carTarget = LatLng(carLatitude, carLongitude)
@@ -119,6 +121,12 @@ fun ParkedCarMapPreview(
                 compassEnabled = false,
             ),
         ) {
+            val carMarkerIcon = remember(carMarkerBitmap) {
+                BitmapDescriptorFactory.fromBitmap(carMarkerBitmap)
+            }
+            val blueDotIcon = remember(blueDotBitmap) {
+                BitmapDescriptorFactory.fromBitmap(blueDotBitmap)
+            }
             Marker(
                 state = rememberUpdatedMarkerState(position = carTarget),
                 icon = carMarkerIcon,
