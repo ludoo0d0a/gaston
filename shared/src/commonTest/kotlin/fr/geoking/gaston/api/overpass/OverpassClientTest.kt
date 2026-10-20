@@ -103,6 +103,49 @@ class OverpassClientTest {
     }
 
     @Test
+    fun queryDrivableRoadWaysInBbox_parsesWayGeometries() = runBlocking {
+        val json = """
+            {
+              "elements": [
+                {
+                  "type": "way",
+                  "id": 12345,
+                  "geometry": [
+                    { "lat": 48.8566, "lon": 2.3522 },
+                    { "lat": 48.8570, "lon": 2.3530 }
+                  ],
+                  "tags": {
+                    "highway": "primary",
+                    "name": "Boulevard Saint-Germain"
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+        val engine = MockEngine { request ->
+            respond(
+                content = json,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            )
+        }
+        val client = OverpassClient(
+            HttpClient(engine),
+            baseUrl = "https://overpass-api.de/api/interpreter",
+            minIntervalMs = 0L,
+        )
+        val ways = client.queryDrivableRoadWaysInBbox(48.85, 2.35, 48.86, 2.36)
+        assertEquals(1, ways.size)
+        val way = ways.first()
+        assertEquals(12345L, way.id)
+        assertEquals("primary", way.tags["highway"])
+        assertEquals("Boulevard Saint-Germain", way.tags["name"])
+        assertEquals(2, way.points.size)
+        assertEquals(48.8566 to 2.3522, way.points[0])
+        assertEquals(48.8570 to 2.3530, way.points[1])
+    }
+
+    @Test
     fun overpassElement_streetAndAddressExtraction_formatsDetailedAddress() {
         val element = OverpassElement(
             id = 100L,
