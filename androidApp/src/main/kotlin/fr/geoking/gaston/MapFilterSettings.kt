@@ -60,6 +60,7 @@ fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
     "water" -> PoiCategory.WaterBody
     "cafe" -> PoiCategory.Cafe
     "supermarket" -> PoiCategory.Supermarket
+    "traffic" -> PoiCategory.Traffic
     else -> null
 }
 
@@ -68,6 +69,10 @@ fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
 
     // Amenities: strictly based on selection
     selectedOverpassAmenityTypes.mapNotNullTo(categories) { categoryFromAmenityId(it) }
+
+    if (mapTrafficEnabled) {
+        categories.add(PoiCategory.Traffic)
+    }
 
     // In "Other" mode, we ONLY want the selected amenities.
     if (isOtherModeActive()) {

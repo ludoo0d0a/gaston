@@ -70,6 +70,7 @@ object PoiMarkerHelper {
         val brandInfo = BrandHelper.getBrandInfo(poi.brand)
         val amenityStyle = if (brandInfo == null) {
             AmenityIconCatalog.styleForWeatherPoi(poi)
+                ?: AmenityIconCatalog.styleForTrafficPoi(poi)
                 ?: AmenityIconCatalog.styleForCategory(poi.poiCategory)
         } else {
             null
@@ -505,6 +506,8 @@ object PoiMarkerHelper {
             PoiCategory.Supermarket -> 0xFF8B5CF6.toInt()
             PoiCategory.Weather -> AmenityIconCatalog.styleForWeatherPoi(poi)?.discFillArgb
                 ?: 0xFFFBBF24.toInt()
+            PoiCategory.Traffic -> AmenityIconCatalog.styleForTrafficPoi(poi)?.discFillArgb
+                ?: 0xFFEF4444.toInt()
             else -> 0xFF17A2B8.toInt()
         }
     }
@@ -532,6 +535,16 @@ object PoiMarkerHelper {
             PoiCategory.FastFood -> R.drawable.ic_poi_fast_food_rounded
             PoiCategory.TruckStop -> R.drawable.ic_poi_truck_rounded
             PoiCategory.RestArea -> R.drawable.ic_poi_rest_area_rounded
+            PoiCategory.Traffic -> {
+                val severity = poi.rawSourceData?.get("traffic_severity")
+                when (severity) {
+                    "Accident" -> R.drawable.ic_poi_traffic_accident
+                    "Closure" -> R.drawable.ic_poi_traffic_closure
+                    "Roadworks" -> R.drawable.ic_poi_traffic_roadworks
+                    "Congestion" -> R.drawable.ic_poi_traffic_congestion
+                    else -> R.drawable.ic_poi_traffic_hazard
+                }
+            }
             else -> if (poi.isElectric) R.drawable.ic_poi_electric_rounded else R.drawable.ic_poi_gas_rounded
         }
     }
@@ -589,6 +602,16 @@ object PoiMarkerHelper {
                 PoiCategory.FastFood -> R.drawable.ic_poi_fast_food
                 PoiCategory.TruckStop -> R.drawable.ic_poi_truck
                 PoiCategory.RestArea -> R.drawable.ic_poi_rest_area
+                PoiCategory.Traffic -> {
+                    val severity = poi.rawSourceData?.get("traffic_severity")
+                    when (severity) {
+                        "Accident" -> R.drawable.ic_poi_traffic_accident
+                        "Closure" -> R.drawable.ic_poi_traffic_closure
+                        "Roadworks" -> R.drawable.ic_poi_traffic_roadworks
+                        "Congestion" -> R.drawable.ic_poi_traffic_congestion
+                        else -> R.drawable.ic_poi_traffic_hazard
+                    }
+                }
                 else -> if (poi.isElectric) R.drawable.ic_poi_electric else R.drawable.ic_poi_gas
             }
         }

@@ -61,7 +61,9 @@ enum class PoiCategory {
     /** Supermarket / convenience store (OSM shop=supermarket / shop=convenience). */
     Supermarket,
     /** Weather grid sample (Open-Meteo current precipitation). */
-    Weather;
+    Weather,
+    /** Traffic events / incidents / roadworks / closures / congestion. */
+    Traffic;
     companion object {
         /** OSM amenity tag value for this category, when applicable. */
         fun fromOsmAmenity(amenity: String): PoiCategory? = when (amenity) {

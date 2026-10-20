@@ -1,5 +1,9 @@
 package fr.geoking.gaston.api.traffic
 
+import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
+import fr.geoking.gaston.shared.datetime.DateTimeUtils
+
 /**
  * Severity of a traffic event, normalized across providers.
  */
@@ -37,7 +41,11 @@ data class TrafficEvent(
     /** Longitude of the primary POI location (first point of the zone/event). */
     val longitude: Double? = null,
     /** Coordinates defining the zone if 2 points are different; null if points are identical or single point. */
-    val zonePoints: List<Pair<Double, Double>>? = null
+    val zonePoints: List<Pair<Double, Double>>? = null,
+    /** Raw XML snippet of the situationRecord element if from DATEX II feed. */
+    val rawXml: String? = null,
+    /** Raw JSON string or source data if from JSON feed. */
+    val rawData: String? = null
 ) {
     /** Resolved POI latitude, using [latitude] or falling back to bbox center. */
     val poiLatitude: Double?
@@ -46,6 +54,40 @@ data class TrafficEvent(
     /** Resolved POI longitude, using [longitude] or falling back to bbox center. */
     val poiLongitude: Double?
         get() = longitude ?: bbox?.let { (it.lonMin + it.lonMax) / 2.0 }
+}
+
+/**
+ * Converts a [TrafficEvent] into a standard [Poi] object.
+ */
+fun TrafficEvent.toPoi(sourceName: String = "Traffic"): Poi {
+    val poiLat = poiLatitude ?: 0.0
+    val poiLon = poiLongitude ?: 0.0
+    val titleName = roadRef + (direction?.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: "")
+    val addr = message?.takeIf { it.isNotBlank() } ?: direction ?: roadRef
+    val payload = rawXml ?: rawData ?: message ?: ""
+    val rawMap = buildMap<String, String> {
+        if (payload.isNotBlank()) {
+            put(sourceName, payload)
+        }
+        put("traffic_severity", severity.name)
+        direction?.takeIf { it.isNotBlank() }?.let { put("traffic_direction", it) }
+        roadRef.takeIf { it.isNotBlank() }?.let { put("traffic_road_ref", it) }
+    }
+    val updateTimeMap = updatedAt?.let {
+        mapOf(sourceName to kotlin.time.Instant.fromEpochMilliseconds(it).toString())
+    }
+
+    return Poi(
+        id = sourceId ?: "traffic_${roadRef}_${poiLat}_${poiLon}",
+        name = titleName,
+        address = addr,
+        latitude = poiLat,
+        longitude = poiLon,
+        poiCategory = PoiCategory.Traffic,
+        source = sourceName,
+        sourceUpdates = updateTimeMap,
+        rawSourceData = rawMap,
+    )
 }
 
 /**

@@ -77,6 +77,7 @@ import fr.geoking.gaston.api.traffic.TrafficInfo
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.api.traffic.TrafficRequest
 import fr.geoking.gaston.api.traffic.TrafficSeverity
+import fr.geoking.gaston.api.traffic.toPoi
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
 import fr.geoking.gaston.shared.network.NetworkException
 import fr.geoking.gaston.community.CommunityPoiRepository
@@ -695,9 +696,16 @@ fun MapScreen(
                             )
                         }
                         if (settings.mapTrafficEnabled) {
+                            val providerName = when (mapData.trafficInfo?.providerId) {
+                                "bison_fute", "france_traffic" -> "Bison Futé"
+                                "tomtom" -> "TomTom Traffic"
+                                "cita" -> "CITA Traffic"
+                                else -> "Traffic"
+                            }
                             mapData.trafficInfo?.events?.forEach { event ->
                                 val poiLat = event.poiLatitude ?: return@forEach
                                 val poiLon = event.poiLongitude ?: return@forEach
+                                val trafficPoi = remember(event, providerName) { event.toPoi(providerName) }
 
                                 val zonePoints = event.zonePoints
                                 if (zonePoints != null && zonePoints.size >= 2) {
@@ -733,21 +741,41 @@ fun MapScreen(
                                         strokeColor = strokeColor,
                                         strokeWidth = 4f,
                                         fillColor = fillColor,
+                                        clickable = true,
+                                        onClick = {
+                                            selectedPoi = trafficPoi
+                                        }
                                     )
                                 }
 
-                                val hue = when (event.severity) {
-                                    TrafficSeverity.Normal -> 120f
-                                    TrafficSeverity.Congestion -> 30f
-                                    TrafficSeverity.Closure, TrafficSeverity.Accident, TrafficSeverity.Roadworks -> 0f
-                                    TrafficSeverity.Unknown -> 60f
+                                val isPoiSelected = selectedPoi?.id == trafficPoi.id
+                                val markerSizePx = if (isPoiSelected) 160 else 120
+                                val effectiveEnergies = remember(settings) { settings.effectiveMapEnergyFilterIds() }
+                                val effectivePowerLevels = remember(settings) { settings.effectiveIrvePowerLevels() }
+                                val markerBitmap = remember(trafficPoi, isPoiSelected, markerSizePx) {
+                                    BitmapDescriptorFactory.fromBitmap(
+                                        PoiMarkerHelper.getMarkerBitmap(
+                                            context = context,
+                                            poi = trafficPoi,
+                                            effectiveEnergyTypes = effectiveEnergies,
+                                            effectivePowerLevels = effectivePowerLevels,
+                                            isSelected = isPoiSelected,
+                                            sizePx = markerSizePx,
+                                            markerStyle = MarkerStyle.Circle
+                                        )
+                                    )
                                 }
+
                                 Marker(
                                     state = rememberUpdatedMarkerState(position = LatLng(poiLat, poiLon)),
-                                    title = "${event.roadRef}${event.direction?.let { " ($it)" } ?: ""}",
-                                    snippet = event.message,
-                                    icon = BitmapDescriptorFactory.defaultMarker(hue),
-                                    onClick = { true }
+                                    title = trafficPoi.name,
+                                    snippet = trafficPoi.address,
+                                    icon = markerBitmap,
+                                    anchor = Offset(0.5f, 1f),
+                                    onClick = {
+                                        selectedPoi = trafficPoi
+                                        true
+                                    }
                                 )
                             }
                         }

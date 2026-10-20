@@ -48,6 +48,7 @@ import fr.geoking.gaston.api.belib.matchAvailabilityToPois
 import fr.geoking.gaston.api.traffic.TrafficInfo
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.api.traffic.TrafficRequest
+import fr.geoking.gaston.api.traffic.toPoi
 import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
@@ -268,7 +269,7 @@ fun rememberMapDataState(
                         val latMax = viewport.maxLat ?: (centerLat + 0.15)
                         val lonMin = viewport.minLng ?: (centerLng - 0.15)
                         val lonMax = viewport.maxLng ?: (centerLng + 0.15)
-                        trafficInfo = trafficProvider?.getTraffic(
+                        val fetchedInfo = trafficProvider?.getTraffic(
                             TrafficRequest.Bbox(
                                 latMin = latMin,
                                 lonMin = lonMin,
@@ -276,6 +277,19 @@ fun rememberMapDataState(
                                 lonMax = lonMax,
                             )
                         )
+                        trafficInfo = fetchedInfo
+                        if (fetchedInfo != null) {
+                            val providerName = when (fetchedInfo.providerId) {
+                                "bison_fute", "france_traffic" -> "Bison Futé"
+                                "tomtom" -> "TomTom Traffic"
+                                "cita" -> "CITA Traffic"
+                                else -> "Traffic"
+                            }
+                            val trafficPois = fetchedInfo.events.map { it.toPoi(providerName) }
+                            if (trafficPois.isNotEmpty()) {
+                                cachedPois = PoiMerger.mergeInto(cachedPois, trafficPois)
+                            }
+                        }
                     } catch (e: Exception) {
                         if (e is CancellationException) throw e
                         diagnostics.recordError(
