@@ -80,12 +80,13 @@ class FranceTrafficProvider(
         absorb(actionBInfo)
         absorb(actionCInfo)
 
-        val events = byId.values.toList() + noId
+        val events = (byId.values.toList() + noId).take(MAX_TRAFFIC_EVENTS)
         if (events.isEmpty()) return@coroutineScope null
         TrafficInfo(events = events, providerId = PROVIDER_ID)
     }
 
     companion object {
         const val PROVIDER_ID = "france_traffic"
+        const val MAX_TRAFFIC_EVENTS = 250
     }
 }

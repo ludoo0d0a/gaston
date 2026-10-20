@@ -39,13 +39,14 @@ class BisonFuteTrafficProvider(
         val filtered = all.filter { e ->
             val b = e.bbox ?: return@filter false
             b.intersects(q)
-        }
+        }.take(MAX_TRAFFIC_EVENTS)
         if (filtered.isEmpty()) return null
         return TrafficInfo(events = filtered, providerId = PROVIDER_ID)
     }
 
     companion object {
         const val PROVIDER_ID = "bison_fute"
+        const val MAX_TRAFFIC_EVENTS = 250
         const val FRANCE_LAT_MIN = 41.2
         const val FRANCE_LON_MIN = -5.5
         const val FRANCE_LAT_MAX = 51.2

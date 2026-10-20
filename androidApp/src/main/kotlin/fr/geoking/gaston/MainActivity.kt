@@ -572,6 +572,10 @@ fun MainUI(
     }
     val settings by settingsManager.settings.collectAsState()
 
+    LaunchedEffect(Unit) {
+        onRequestMapDeps()
+    }
+
     LaunchedEffect(showMap, showRoutePlanning, showFavorites, isPlaystoreDistribution) {
         if (showMap || showRoutePlanning || showFavorites || isPlaystoreDistribution) onRequestMapDeps()
     }
