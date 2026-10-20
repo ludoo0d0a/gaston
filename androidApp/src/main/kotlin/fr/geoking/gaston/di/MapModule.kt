@@ -622,13 +622,14 @@ val mapModule = module {
 
     // Traffic: Lux CITA first (inside FR bbox), then France composite (open ± TIPI B/C), TomTom elsewhere.
     // Dedicated disk dir (filesDir/tipi/) for multi‑MB national DATEX dumps — not shared with AAC radars.
-    single(named("tipi_disk_cache")) {
+    // Bind as TextFileCache: BisonFute/Tipi clients inject TextFileCache?, not AndroidTextFileCache.
+    single<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")) {
         fr.geoking.gaston.aac.AndroidTextFileCache(androidContext(), subdirectory = "tipi")
     }
     single {
         BisonFuteTrafficClient(
             client = get(),
-            diskCache = get(named("tipi_disk_cache")),
+            diskCache = get<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")),
         )
     }
     single { BisonFuteTrafficProvider(get()) }
@@ -638,7 +639,7 @@ val mapModule = module {
             contentUrl = TipiRestrictedTrafficClient.ACTION_C_URL,
             username = BuildConfig.TIPI_USER,
             password = BuildConfig.TIPI_PASSWORD,
-            diskCache = get(named("tipi_disk_cache")),
+            diskCache = get<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")),
             diskKey = TipiRestrictedTrafficClient.DISK_CACHE_KEY_ACTION_C,
         )
     }
@@ -648,7 +649,7 @@ val mapModule = module {
             contentUrl = TipiRestrictedTrafficClient.ACTION_B_URL,
             username = BuildConfig.TIPI_USER,
             password = BuildConfig.TIPI_PASSWORD,
-            diskCache = get(named("tipi_disk_cache")),
+            diskCache = get<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")),
             diskKey = TipiRestrictedTrafficClient.DISK_CACHE_KEY_ACTION_B,
         )
     }
@@ -795,6 +796,9 @@ object MapModuleLoader {
 
     private val lock = Any()
 
+    /** True after [ensureLoaded] has registered [mapModule] in the current Koin process. */
+    fun isLoaded(): Boolean = loaded
+
     fun ensureLoaded() {
         if (loaded) return
         synchronized(lock) {
@@ -802,6 +806,13 @@ object MapModuleLoader {
             android.util.Log.d("MapModuleLoader", "Loading map module (first map open)")
             org.koin.core.context.loadKoinModules(mapModule)
             loaded = true
+        }
+    }
+
+    /** For unit tests that [org.koin.core.context.stopKoin] and restart. */
+    internal fun resetForTests() {
+        synchronized(lock) {
+            loaded = false
         }
     }
 }

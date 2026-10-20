@@ -575,12 +575,9 @@ fun MainUI(
     }
     val settings by settingsManager.settings.collectAsState()
 
+    // Dashboard POI widgets + map need mapModule (PoiProvider, traffic, …). Load for every flavor.
     LaunchedEffect(Unit) {
         onRequestMapDeps()
-    }
-
-    LaunchedEffect(showMap, showRoutePlanning, showFavorites, isPlaystoreDistribution) {
-        if (showMap || showRoutePlanning || showFavorites || isPlaystoreDistribution) onRequestMapDeps()
     }
     val paletteIndex by AnimationPalettes.index.collectAsState()
     val palette = remember(paletteIndex) { AnimationPalettes.paletteFor(paletteIndex) }
