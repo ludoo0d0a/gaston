@@ -273,6 +273,9 @@ class SelectorPoiProvider(
         PoiProviderType.LufopOpenSpeedCam -> lufopOpenSpeedCam
         PoiProviderType.LuxembourgRadars -> luxembourgRadars
         PoiProviderType.OpenMeteoWeather -> openMeteoWeather
+        PoiProviderType.TipiBisonFute,
+        PoiProviderType.TomTomTraffic ->
+            error("Traffic overlay $type is not a station PoiProvider")
         PoiProviderType.Overpass -> overpass
         PoiProviderType.Hybrid -> hybridProvider
     }

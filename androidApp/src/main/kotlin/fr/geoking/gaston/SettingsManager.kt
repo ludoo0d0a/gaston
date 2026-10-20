@@ -165,7 +165,12 @@ data class AppSettings(
     val useVehicleFilter: Boolean = false,
     /** When [Auto], provider set is derived from current country (GPS / network). */
     val poiProviderSelectionMode: PoiProviderSelectionMode = PoiProviderSelectionMode.Manual,
-    val selectedPoiProviders: Set<PoiProviderType> = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
+    val selectedPoiProviders: Set<PoiProviderType> = setOf(
+        PoiProviderType.Etalab,
+        PoiProviderType.Overpass,
+        PoiProviderType.TipiBisonFute,
+        PoiProviderType.TomTomTraffic,
+    ),
     /**
      * Policy for bulk file providers (national CSV/JSON dumps).
      * Geo-filtered APIs (including Lufop) are unaffected.
@@ -312,10 +317,15 @@ open class SettingsManager(
                     try { PoiProviderType.valueOf(name) } catch (_: Exception) { null }
                 }
             }?.toSet()
-            val base = (stored ?: setOf(PoiProviderType.Etalab, PoiProviderType.Overpass))
+            val base = (stored ?: setOf(
+                PoiProviderType.Etalab,
+                PoiProviderType.Overpass,
+                PoiProviderType.TipiBisonFute,
+                PoiProviderType.TomTomTraffic,
+            ))
                 .sanitizeUserPoiProviderSelection()
             // Older builds merged Overpass at runtime without persisting it; keep that once in prefs.
-            if (!prefs.getBoolean("poi_providers_overpass_migrated_v1", false)) {
+            var migrated = if (!prefs.getBoolean("poi_providers_overpass_migrated_v1", false)) {
                 val merged = base + PoiProviderType.Overpass
                 prefs.edit()
                     .putBoolean("poi_providers_overpass_migrated_v1", true)
@@ -325,6 +335,15 @@ open class SettingsManager(
             } else {
                 base
             }
+            // Enable Tipi + TomTom traffic overlays for France (selectable in Settings → Sources).
+            if (!prefs.getBoolean("poi_providers_traffic_migrated_v1", false)) {
+                migrated = migrated + PoiProviderType.TipiBisonFute + PoiProviderType.TomTomTraffic
+                prefs.edit()
+                    .putBoolean("poi_providers_traffic_migrated_v1", true)
+                    .putStringSet("poi_providers", migrated.map { it.name }.toSet())
+                    .apply()
+            }
+            migrated
         }
 
         fun readIntSet(key: String, fallback: Set<Int>): Set<Int> =
@@ -731,11 +750,18 @@ open class SettingsManager(
      */
     open fun setTrafficMode() {
         val current = _settings.value
+        val trafficProviders = current.selectedPoiProviders
+            .filter { it.providesTraffic }
+            .toSet()
+            .ifEmpty {
+                setOf(PoiProviderType.TipiBisonFute, PoiProviderType.TomTomTraffic)
+            }
         saveSettings(
             current.copy(
                 useVehicleFilter = false,
                 poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
-                selectedPoiProviders = setOf(PoiProviderType.Overpass),
+                // Overpass + empty amenities hides station POIs; keep selected traffic overlays.
+                selectedPoiProviders = trafficProviders + PoiProviderType.Overpass,
                 selectedOverpassAmenityTypes = emptySet(),
                 mapTrafficEnabled = true,
             )

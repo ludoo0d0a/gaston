@@ -115,6 +115,8 @@ import fr.geoking.gaston.api.traffic.TipiRestrictedTrafficClient
 import fr.geoking.gaston.api.traffic.TomTomTrafficClient
 import fr.geoking.gaston.api.traffic.TomTomTrafficProvider
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
+import fr.geoking.gaston.api.traffic.TrafficProviderRegistration
+import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.api.weather.MetNorwayWeatherProvider
 import fr.geoking.gaston.api.weather.OpenMeteoGeocodingClient
 import fr.geoking.gaston.api.weather.OpenMeteoWeatherGridClient
@@ -620,7 +622,8 @@ val mapModule = module {
         )
     }
 
-    // Traffic: Lux CITA first (inside FR bbox), then France composite (open ± TIPI B/C), TomTom elsewhere.
+    // Traffic: Lux CITA (always), France Tipi/Bison Futé + TomTom (user-selectable for FR),
+    // TomTom elsewhere. Selection via Settings → Sources → traffic (TipiBisonFute / TomTomTraffic).
     // Dedicated disk dir (filesDir/tipi/) for multi‑MB national DATEX dumps — not shared with AAC radars.
     // Bind as TextFileCache: BisonFute/Tipi clients inject TextFileCache?, not AndroidTextFileCache.
     single<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")) {
@@ -678,16 +681,35 @@ val mapModule = module {
     single { TomTomTrafficClient(get()) }
     single { TomTomTrafficProvider(get(), BuildConfig.TOMTOM_KEY) }
     single<TrafficProviderFactory> {
+        val franceBbox = GeographicRegion.Bbox(
+            BisonFuteTrafficProvider.FRANCE_LAT_MIN,
+            BisonFuteTrafficProvider.FRANCE_LON_MIN,
+            BisonFuteTrafficProvider.FRANCE_LAT_MAX,
+            BisonFuteTrafficProvider.FRANCE_LON_MAX
+        )
+        val tomtom = get<TomTomTrafficProvider>()
         TrafficProviderFactory(
             listOf(
-                GeographicRegion.Bbox(49.4, 5.7, 50.2, 6.6) to get<CitaTrafficProvider>(),
-                GeographicRegion.Bbox(
-                    BisonFuteTrafficProvider.FRANCE_LAT_MIN,
-                    BisonFuteTrafficProvider.FRANCE_LON_MIN,
-                    BisonFuteTrafficProvider.FRANCE_LAT_MAX,
-                    BisonFuteTrafficProvider.FRANCE_LON_MAX
-                ) to get<FranceTrafficProvider>(),
-                GeographicRegion.Everywhere to get<TomTomTrafficProvider>()
+                TrafficProviderRegistration(
+                    region = GeographicRegion.Bbox(49.4, 5.7, 50.2, 6.6),
+                    provider = get<CitaTrafficProvider>(),
+                    selectionKey = null,
+                ),
+                TrafficProviderRegistration(
+                    region = franceBbox,
+                    provider = get<FranceTrafficProvider>(),
+                    selectionKey = PoiProviderType.TipiBisonFute,
+                ),
+                TrafficProviderRegistration(
+                    region = franceBbox,
+                    provider = tomtom,
+                    selectionKey = PoiProviderType.TomTomTraffic,
+                ),
+                TrafficProviderRegistration(
+                    region = GeographicRegion.Everywhere,
+                    provider = tomtom,
+                    selectionKey = PoiProviderType.TomTomTraffic,
+                ),
             )
         )
     }

@@ -263,19 +263,23 @@ fun rememberMapDataState(
                         return@launch
                     }
                     try {
-                        val trafficProvider = trafficProviderFactory.getProvider(centerLat, centerLng)
+                        val selected = settingsManager.settings.value.selectedPoiProviders
+                        val trafficProviders = trafficProviderFactory.getProviders(
+                            centerLat,
+                            centerLng,
+                            selectedProviders = selected,
+                        )
                         val latMin = viewport.minLat ?: (centerLat - 0.15)
                         val latMax = viewport.maxLat ?: (centerLat + 0.15)
                         val lonMin = viewport.minLng ?: (centerLng - 0.15)
                         val lonMax = viewport.maxLng ?: (centerLng + 0.15)
-                        trafficInfo = trafficProvider?.getTraffic(
-                            TrafficRequest.Bbox(
-                                latMin = latMin,
-                                lonMin = lonMin,
-                                latMax = latMax,
-                                lonMax = lonMax,
-                            )
+                        val request = TrafficRequest.Bbox(
+                            latMin = latMin,
+                            lonMin = lonMin,
+                            latMax = latMax,
+                            lonMax = lonMax,
                         )
+                        trafficInfo = TrafficProviderFactory.mergeTraffic(trafficProviders, request)
                     } catch (e: Exception) {
                         if (e is CancellationException) throw e
                         diagnostics.recordError(

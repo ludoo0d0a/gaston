@@ -113,7 +113,8 @@ enum class PoiCategory {
 }
 
 /**
- * POI data source. [providesFuel] / [providesElectric] classify providers for UI (e.g. filter mode), not OSM extras.
+ * POI / overlay data source. [providesFuel] / [providesElectric] / [providesTraffic] classify for UI
+ * (e.g. Settings → Sources filters), not OSM extras.
  */
 @Serializable
 /**
@@ -129,6 +130,7 @@ enum class PoiProviderType(
     val providesFuel: Boolean = false,
     val providesElectric: Boolean = false,
     val providesSwap: Boolean = false,
+    val providesTraffic: Boolean = false,
     val fetchKind: PoiProviderFetchKind = PoiProviderFetchKind.Api,
 ) {
     Routex(providesFuel = true),
@@ -216,9 +218,25 @@ enum class PoiProviderType(
     LuxembourgRadars(fetchKind = PoiProviderFetchKind.File),
     /** Open-Meteo precipitation grid for the weather map amenity. */
     OpenMeteoWeather,
+    /**
+     * France traffic overlay: open Bison Futé DATEX ± TIPI Action B/C.
+     * Not a station POI source — used by TrafficProviderFactory when map traffic is on.
+     */
+    TipiBisonFute(providesTraffic = true),
+    /**
+     * TomTom Traffic Incidents (global, including France when selected).
+     * Not a station POI source — used by TrafficProviderFactory when map traffic is on.
+     */
+    TomTomTraffic(providesTraffic = true),
     Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }
+
+/** Traffic overlay sources shown under Settings → Sources → traffic (not station POI feeds). */
+val TRAFFIC_OVERLAY_POI_PROVIDERS: Set<PoiProviderType> = setOf(
+    PoiProviderType.TipiBisonFute,
+    PoiProviderType.TomTomTraffic,
+)
 
 /** True when this source downloads a bulk national file (CSV/JSON/gz) rather than a geo-filtered API. */
 val PoiProviderType.isBulkFileDownload: Boolean
@@ -251,6 +269,18 @@ fun Iterable<PoiProviderType>.anyProvidesElectric(): Boolean = any { it.provides
 
 /** True if any selected provider can supply battery swap POIs. */
 fun Iterable<PoiProviderType>.anyProvidesSwap(): Boolean = any { it.providesSwap }
+
+/** True if any selected provider can supply traffic overlays. */
+fun Iterable<PoiProviderType>.anyProvidesTraffic(): Boolean = any { it.providesTraffic }
+
+/**
+ * Which traffic overlay backends to call.
+ * Empty selection → both Tipi and TomTom (legacy / default geographic behaviour).
+ */
+fun Set<PoiProviderType>.effectiveTrafficOverlayProviders(): Set<PoiProviderType> {
+    val selected = filter { it.providesTraffic }.toSet()
+    return selected.ifEmpty { TRAFFIC_OVERLAY_POI_PROVIDERS }
+}
 
 /**
  * IRVE-only details: connector types, tarification (free text), opening hours, payment, etc.

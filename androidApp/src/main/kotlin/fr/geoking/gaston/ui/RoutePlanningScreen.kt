@@ -1011,10 +1011,14 @@ fun RoutePlanningScreen(
                     tollEstimate = tollEstimateService.estimateToll(route.points, settings.vehicleType)
                 }
                 val activeRoute = currentRoute ?: route
-                val trafficProviders = trafficProviderFactory?.getProvidersForRoute(activeRoute.points).orEmpty()
-                routeTraffic = trafficProviders.firstOrNull()?.let { provider ->
-                    provider.getTraffic(TrafficRequest.Route(activeRoute.points))
-                }
+                val trafficProviders = trafficProviderFactory?.getProvidersForRoute(
+                    activeRoute.points,
+                    selectedProviders = settings.selectedPoiProviders,
+                ).orEmpty()
+                routeTraffic = TrafficProviderFactory.mergeTraffic(
+                    trafficProviders,
+                    TrafficRequest.Route(activeRoute.points),
+                )
 
                 routePlanner.getStationsAlongRouteFlow(
                     activeRoute.points,
