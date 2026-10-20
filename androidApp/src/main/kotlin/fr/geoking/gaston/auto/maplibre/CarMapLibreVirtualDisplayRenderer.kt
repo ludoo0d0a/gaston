@@ -5,6 +5,7 @@ import androidx.car.app.CarContext
 import androidx.car.app.SurfaceContainer
 import androidx.lifecycle.Lifecycle
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.auto.AaMapSurfaceRenderer
 import fr.geoking.gaston.auto.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
@@ -65,6 +66,10 @@ class CarMapLibreVirtualDisplayRenderer(
         selectedId: String?,
     ) {
         host.updatePois(newPois, effectiveEnergyTypes, effectivePowerLevels, availability, selectedId)
+    }
+
+    override fun updateTraffic(events: List<TrafficEvent>) {
+        host.updateTraffic(events)
     }
 
     override fun updateSearchRadius(centerLat: Double, centerLon: Double, radiusKm: Double?) {

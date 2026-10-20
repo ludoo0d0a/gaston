@@ -170,6 +170,7 @@ data class AppSettings(
         PoiProviderType.Overpass,
         PoiProviderType.TipiBisonFute,
         PoiProviderType.TomTomTraffic,
+        PoiProviderType.CitaTraffic,
     ),
     /**
      * Policy for bulk file providers (national CSV/JSON dumps).
@@ -322,6 +323,7 @@ open class SettingsManager(
                 PoiProviderType.Overpass,
                 PoiProviderType.TipiBisonFute,
                 PoiProviderType.TomTomTraffic,
+                PoiProviderType.CitaTraffic,
             ))
                 .sanitizeUserPoiProviderSelection()
             // Older builds merged Overpass at runtime without persisting it; keep that once in prefs.
@@ -335,11 +337,20 @@ open class SettingsManager(
             } else {
                 base
             }
-            // Enable Tipi + TomTom traffic overlays for France (selectable in Settings → Sources).
+            // Enable Tipi + TomTom + CITA traffic overlays (selectable in Settings → Sources).
             if (!prefs.getBoolean("poi_providers_traffic_migrated_v1", false)) {
-                migrated = migrated + PoiProviderType.TipiBisonFute + PoiProviderType.TomTomTraffic
+                migrated = migrated +
+                    PoiProviderType.TipiBisonFute +
+                    PoiProviderType.TomTomTraffic +
+                    PoiProviderType.CitaTraffic
                 prefs.edit()
                     .putBoolean("poi_providers_traffic_migrated_v1", true)
+                    .putStringSet("poi_providers", migrated.map { it.name }.toSet())
+                    .apply()
+            } else if (!prefs.getBoolean("poi_providers_cita_traffic_migrated_v1", false)) {
+                migrated = migrated + PoiProviderType.CitaTraffic
+                prefs.edit()
+                    .putBoolean("poi_providers_cita_traffic_migrated_v1", true)
                     .putStringSet("poi_providers", migrated.map { it.name }.toSet())
                     .apply()
             }
@@ -754,7 +765,11 @@ open class SettingsManager(
             .filter { it.providesTraffic }
             .toSet()
             .ifEmpty {
-                setOf(PoiProviderType.TipiBisonFute, PoiProviderType.TomTomTraffic)
+                setOf(
+                    PoiProviderType.TipiBisonFute,
+                    PoiProviderType.TomTomTraffic,
+                    PoiProviderType.CitaTraffic,
+                )
             }
         saveSettings(
             current.copy(

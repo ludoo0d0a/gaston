@@ -303,5 +303,6 @@ class OverpassProvider(
         PoiCategory.Cafe -> OverpassTranslator.translate("Cafe", lang) ?: "Cafe"
         PoiCategory.Supermarket -> OverpassTranslator.translate("Supermarket", lang) ?: "Supermarket"
         PoiCategory.Weather -> OverpassTranslator.translate("Weather", lang) ?: "Weather"
+        PoiCategory.Traffic -> OverpassTranslator.translate("Traffic", lang) ?: "Traffic"
     }
 }

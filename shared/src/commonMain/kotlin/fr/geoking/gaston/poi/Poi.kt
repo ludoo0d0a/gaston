@@ -61,7 +61,9 @@ enum class PoiCategory {
     /** Supermarket / convenience store (OSM shop=supermarket / shop=convenience). */
     Supermarket,
     /** Weather grid sample (Open-Meteo current precipitation). */
-    Weather;
+    Weather,
+    /** Traffic incident / service-level segment (TIPI, CITA, TomTom, …). */
+    Traffic;
     companion object {
         /** OSM amenity tag value for this category, when applicable. */
         fun fromOsmAmenity(amenity: String): PoiCategory? = when (amenity) {
@@ -228,6 +230,11 @@ enum class PoiProviderType(
      * Not a station POI source — used by TrafficProviderFactory when map traffic is on.
      */
     TomTomTraffic(providesTraffic = true),
+    /**
+     * Luxembourg CITA motorway service levels (GeoJSON).
+     * Not a station POI source — used by TrafficProviderFactory when map traffic is on.
+     */
+    CitaTraffic(providesTraffic = true),
     Overpass(providesFuel = true, providesElectric = true, providesSwap = true),
     Hybrid(providesFuel = true, providesElectric = true),
 }
@@ -236,6 +243,7 @@ enum class PoiProviderType(
 val TRAFFIC_OVERLAY_POI_PROVIDERS: Set<PoiProviderType> = setOf(
     PoiProviderType.TipiBisonFute,
     PoiProviderType.TomTomTraffic,
+    PoiProviderType.CitaTraffic,
 )
 
 /** True when this source downloads a bulk national file (CSV/JSON/gz) rather than a geo-filtered API. */
@@ -275,7 +283,7 @@ fun Iterable<PoiProviderType>.anyProvidesTraffic(): Boolean = any { it.providesT
 
 /**
  * Which traffic overlay backends to call.
- * Empty selection → both Tipi and TomTom (legacy / default geographic behaviour).
+ * Empty selection → Tipi + TomTom + CITA (legacy / default geographic behaviour).
  */
 fun Set<PoiProviderType>.effectiveTrafficOverlayProviders(): Set<PoiProviderType> {
     val selected = filter { it.providesTraffic }.toSet()

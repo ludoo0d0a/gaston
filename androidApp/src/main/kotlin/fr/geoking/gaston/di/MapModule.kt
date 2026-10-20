@@ -693,7 +693,7 @@ val mapModule = module {
                 TrafficProviderRegistration(
                     region = GeographicRegion.Bbox(49.4, 5.7, 50.2, 6.6),
                     provider = get<CitaTrafficProvider>(),
-                    selectionKey = null,
+                    selectionKey = PoiProviderType.CitaTraffic,
                 ),
                 TrafficProviderRegistration(
                     region = franceBbox,

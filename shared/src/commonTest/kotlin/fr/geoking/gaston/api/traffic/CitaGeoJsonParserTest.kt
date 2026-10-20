@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.traffic
 
+import fr.geoking.gaston.poi.PoiCategory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -40,5 +41,37 @@ class CitaGeoJsonParserTest {
         assertNotNull(e.bbox)
         assertTrue(e.bbox!!.intersects(Bbox(49.55, 6.05, 49.75, 6.25)))
         assertTrue((e.zonePoints?.size ?: 0) >= 2)
+    }
+
+    @Test
+    fun parseJam_mapsToCongestionAndMapPoi() {
+        val body = """
+            {
+              "type": "FeatureCollection",
+              "features": [{
+                "type": "Feature",
+                "id": "A3-jam",
+                "geometry": {
+                  "type": "Polygon",
+                  "coordinates": [[[6.12, 49.55], [6.13, 49.55], [6.13, 49.56], [6.12, 49.56], [6.12, 49.55]]]
+                },
+                "properties": {
+                  "road": "a3",
+                  "direction": "mv",
+                  "name": "A3 jam",
+                  "service_level": 4,
+                  "service_level_desc": "jam"
+                }
+              }]
+            }
+        """.trimIndent()
+
+        val events = CitaGeoJsonParser.parse(body)
+        assertEquals(1, events.size)
+        assertEquals(TrafficSeverity.Congestion, events[0].severity)
+        val poi = events[0].toMapPoi(CitaTrafficProvider.PROVIDER_ID)
+        assertNotNull(poi)
+        assertEquals(PoiCategory.Traffic, poi!!.poiCategory)
+        assertEquals("cita", poi.source)
     }
 }

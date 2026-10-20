@@ -61,6 +61,7 @@ class AutoPoiProviderSelectionScreen(
         PoiProviderType.LuxembourgRadars to "Radars (Luxembourg)",
         PoiProviderType.TipiBisonFute to "TIPI / Bison Futé (France)",
         PoiProviderType.TomTomTraffic to "TomTom Traffic",
+        PoiProviderType.CitaTraffic to "CITA (Luxembourg)",
         PoiProviderType.Overpass to "Overpass",
         PoiProviderType.Hybrid to "Hybrid (Gas + EV)"
     ).filter { (type, _) -> type.isUserSelectablePoiDataSource() }

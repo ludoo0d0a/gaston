@@ -505,7 +505,18 @@ object PoiMarkerHelper {
             PoiCategory.Supermarket -> 0xFF8B5CF6.toInt()
             PoiCategory.Weather -> AmenityIconCatalog.styleForWeatherPoi(poi)?.discFillArgb
                 ?: 0xFFFBBF24.toInt()
+            PoiCategory.Traffic -> trafficSeverityColorArgb(poi)
             else -> 0xFF17A2B8.toInt()
+        }
+    }
+
+    private fun trafficSeverityColorArgb(poi: Poi): Int {
+        val severity = poi.rawSourceData?.get(fr.geoking.gaston.api.traffic.RAW_SEVERITY)
+        return when (severity) {
+            "Normal" -> 0xFF4CAF50.toInt()
+            "Congestion" -> 0xFFFF9800.toInt()
+            "Closure", "Accident", "Roadworks" -> 0xFFE53935.toInt()
+            else -> 0xFFFFC107.toInt()
         }
     }
 
@@ -532,6 +543,7 @@ object PoiMarkerHelper {
             PoiCategory.FastFood -> R.drawable.ic_poi_fast_food_rounded
             PoiCategory.TruckStop -> R.drawable.ic_poi_truck_rounded
             PoiCategory.RestArea -> R.drawable.ic_poi_rest_area_rounded
+            PoiCategory.Traffic -> R.drawable.ic_poi_traffic
             else -> if (poi.isElectric) R.drawable.ic_poi_electric_rounded else R.drawable.ic_poi_gas_rounded
         }
     }
@@ -589,6 +601,7 @@ object PoiMarkerHelper {
                 PoiCategory.FastFood -> R.drawable.ic_poi_fast_food
                 PoiCategory.TruckStop -> R.drawable.ic_poi_truck
                 PoiCategory.RestArea -> R.drawable.ic_poi_rest_area
+                PoiCategory.Traffic -> R.drawable.ic_poi_traffic
                 else -> if (poi.isElectric) R.drawable.ic_poi_electric else R.drawable.ic_poi_gas
             }
         }

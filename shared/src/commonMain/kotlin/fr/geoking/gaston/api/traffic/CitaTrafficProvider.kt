@@ -36,7 +36,8 @@ class CitaTrafficProvider(
         val filtered = all.filter { e ->
             val b = e.bbox ?: return@filter false
             b.intersects(q)
-        }
+        }.prioritizeForMapDisplay(MAX_TRAFFIC_EVENTS)
+        if (filtered.isEmpty()) return null
         return TrafficInfo(events = filtered, providerId = PROVIDER_ID)
     }
 
@@ -66,5 +67,6 @@ class CitaTrafficProvider(
 
     companion object {
         const val PROVIDER_ID = "cita"
+        const val MAX_TRAFFIC_EVENTS = 250
     }
 }

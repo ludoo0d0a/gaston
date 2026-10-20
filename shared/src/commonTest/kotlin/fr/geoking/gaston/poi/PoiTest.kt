@@ -20,7 +20,11 @@ class PoiTest {
     @Test
     fun effectiveTrafficOverlayProviders_defaultsToBothWhenEmpty() {
         assertEquals(
-            setOf(PoiProviderType.TipiBisonFute, PoiProviderType.TomTomTraffic),
+            setOf(
+                PoiProviderType.TipiBisonFute,
+                PoiProviderType.TomTomTraffic,
+                PoiProviderType.CitaTraffic,
+            ),
             emptySet<PoiProviderType>().effectiveTrafficOverlayProviders()
         )
     }

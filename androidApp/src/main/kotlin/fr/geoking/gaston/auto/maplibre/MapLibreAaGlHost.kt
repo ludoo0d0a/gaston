@@ -16,6 +16,7 @@ import android.widget.FrameLayout
 import androidx.car.app.CarContext
 import androidx.car.app.SurfaceContainer
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.api.weather.RainViewerMapsClient
 import fr.geoking.gaston.auto.AutoMapCamera
 import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
@@ -80,6 +81,7 @@ internal class MapLibreAaGlHost(
 
     private var selectedPoiId: String? = null
     private var lastPois: List<Poi> = emptyList()
+    private var lastTrafficEvents: List<TrafficEvent> = emptyList()
     private var effectiveEnergyTypes: Set<String> = emptySet()
     private var effectivePowerLevels: Set<Int> = emptySet()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
@@ -144,6 +146,11 @@ internal class MapLibreAaGlHost(
         availabilityByPoiId = availability
         selectedPoiId = selectedId
         uiHandler.post { syncPois() }
+    }
+
+    fun updateTraffic(events: List<TrafficEvent>) {
+        lastTrafficEvents = events
+        uiHandler.post { syncTraffic() }
     }
 
     fun updateSearchRadius(centerLat: Double, centerLon: Double, radiusKm: Double?) {
@@ -256,6 +263,7 @@ internal class MapLibreAaGlHost(
         MapLibreSharedHelper.initPoiLayer(map)
         MapLibreSharedHelper.initUserLocationLayer(carContext, map)
         syncPois()
+        syncTraffic()
         syncSearchRadius()
         syncUser()
         updateCamera()
@@ -291,10 +299,12 @@ internal class MapLibreAaGlHost(
             map = map,
             tileUrlTemplate = if (weatherActive) rainViewerTileUrl else null,
         )
+        // Traffic pins are drawn by [syncTraffic] (zones + points); keep station/amenity pins here.
+        val stationPois = lastPois.filter { it.poiCategory != PoiCategory.Traffic }
         MapLibreSharedHelper.syncPoiLayer(
             context = carContext,
             map = map,
-            pois = lastPois,
+            pois = stationPois,
             selectedPoiId = selectedPoiId,
             availabilityByPoiId = availabilityByPoiId,
             effectiveEnergyTypes = effectiveEnergyTypes,
@@ -304,6 +314,12 @@ internal class MapLibreAaGlHost(
                 if (isSelected) base + 8 else base
             },
         )
+    }
+
+    private fun syncTraffic() {
+        val map = mapLibreMap ?: return
+        if (!styleReady) return
+        MapLibreSharedHelper.syncTrafficLayer(map, lastTrafficEvents)
     }
 
     private fun syncSearchRadius() {

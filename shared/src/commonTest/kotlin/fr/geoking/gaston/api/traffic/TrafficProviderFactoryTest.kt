@@ -38,7 +38,7 @@ class TrafficProviderFactoryTest {
             TrafficProviderRegistration(
                 GeographicRegion.Bbox(49.4, 5.7, 50.2, 6.6),
                 cita,
-                selectionKey = null,
+                selectionKey = PoiProviderType.CitaTraffic,
             ),
             TrafficProviderRegistration(
                 franceBbox,
@@ -61,6 +61,26 @@ class TrafficProviderFactoryTest {
     @Test
     fun luxembourg_uses_cita_not_france() {
         assertSame(cita, factory.getProvider(49.61, 6.13))
+    }
+
+    @Test
+    fun luxembourg_cita_only_when_selected() {
+        val providers = factory.getProviders(
+            49.61,
+            6.13,
+            selectedProviders = setOf(PoiProviderType.CitaTraffic),
+        )
+        assertEquals(listOf(cita), providers)
+    }
+
+    @Test
+    fun luxembourg_skips_cita_when_deselected() {
+        val providers = factory.getProviders(
+            49.61,
+            6.13,
+            selectedProviders = setOf(PoiProviderType.TomTomTraffic),
+        )
+        assertEquals(listOf(tomtom), providers)
     }
 
     @Test
@@ -125,6 +145,7 @@ class TrafficProviderFactoryTest {
                 TrafficProviderRegistration(
                     GeographicRegion.Bbox(49.4, 5.7, 50.2, 6.6),
                     cita,
+                    selectionKey = PoiProviderType.CitaTraffic,
                 ),
                 TrafficProviderRegistration(
                     GeographicRegion.Everywhere,

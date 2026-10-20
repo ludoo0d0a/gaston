@@ -3,6 +3,7 @@ package fr.geoking.gaston.auto
 import android.graphics.Rect
 import androidx.car.app.SurfaceContainer
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.poi.Poi
 
 /**
@@ -32,6 +33,8 @@ interface AaMapSurfaceRenderer {
         availability: Map<String, StationAvailabilitySummary>,
         selectedId: String? = null,
     )
+    /** Traffic zone/point overlay (MapLibre GL). Canvas modes usually get traffic as [Poi] pins. */
+    fun updateTraffic(events: List<TrafficEvent>) {}
     fun updateSearchRadius(centerLat: Double, centerLon: Double, radiusKm: Double?)
     fun setQueryPending(pending: Boolean)
     fun requestRedraw()

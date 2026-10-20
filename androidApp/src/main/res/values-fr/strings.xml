@@ -494,6 +494,7 @@
     <string name="provider_luxembourg_radars">Radars (Luxembourg PCH)</string>
     <string name="provider_tipi_bison_fute">TIPI / Bison Futé (France)</string>
     <string name="provider_tomtom_traffic">TomTom Traffic</string>
+    <string name="provider_cita_traffic">CITA (Luxembourg)</string>
 
     <!-- AAC / niveau A -->
     <string name="aac_settings_title">Assistant d\'aide à la conduite</string>
