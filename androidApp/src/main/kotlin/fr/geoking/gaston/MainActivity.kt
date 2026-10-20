@@ -215,6 +215,9 @@ class MainActivity : ComponentActivity() {
             val fuelForecastRepository: FuelForecastRepository = get()
             android.util.Log.d("MainActivity", "Dependencies resolved successfully.")
 
+            // Ensure map dependencies are loaded at startup so dashboard POIs load immediately
+            ensureMapDeps()
+
             android.util.Log.d("MainActivity", "Calling setContent...")
             installMainComposeContent(
                 diagnostics = diagnostics,
