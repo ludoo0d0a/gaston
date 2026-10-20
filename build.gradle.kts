@@ -2,6 +2,7 @@ buildscript {
     dependencies {
         // AGP 9 built-in Kotlin: pin KGP above AGP’s default (2.2.10)
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
+        classpath("io.insert-koin:koin-gradle-plugin:${libs.versions.koin.get()}")
     }
 }
 
