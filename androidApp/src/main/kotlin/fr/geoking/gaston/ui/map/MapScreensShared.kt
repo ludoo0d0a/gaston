@@ -48,6 +48,7 @@ import fr.geoking.gaston.api.belib.matchAvailabilityToPois
 import fr.geoking.gaston.api.traffic.TrafficInfo
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.api.traffic.TrafficRequest
+import fr.geoking.gaston.api.traffic.toPoi
 import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
@@ -279,7 +280,20 @@ fun rememberMapDataState(
                             latMax = latMax,
                             lonMax = lonMax,
                         )
-                        trafficInfo = TrafficProviderFactory.mergeTraffic(trafficProviders, request)
+                        val fetchedInfo = TrafficProviderFactory.mergeTraffic(trafficProviders, request)
+                        trafficInfo = fetchedInfo
+                        if (fetchedInfo != null) {
+                            val providerName = when (fetchedInfo.providerId) {
+                                "bison_fute", "france_traffic" -> "Bison Futé"
+                                "tomtom" -> "TomTom Traffic"
+                                "cita" -> "CITA Traffic"
+                                else -> "Traffic"
+                            }
+                            val trafficPois = fetchedInfo.events.map { it.toPoi(providerName) }
+                            if (trafficPois.isNotEmpty()) {
+                                cachedPois = PoiMerger.mergeInto(cachedPois, trafficPois)
+                            }
+                        }
                     } catch (e: Exception) {
                         if (e is CancellationException) throw e
                         diagnostics.recordError(

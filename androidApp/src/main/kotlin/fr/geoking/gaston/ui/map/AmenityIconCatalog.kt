@@ -21,6 +21,10 @@ import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.Water
 import androidx.compose.material.icons.rounded.WaterDrop
+import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.rounded.Construction
+import androidx.compose.material.icons.rounded.DirectionsCar
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.material.icons.rounded.Wc
 import androidx.compose.ui.graphics.asAndroidPath
@@ -73,6 +77,7 @@ object AmenityIconCatalog {
         "cafe" -> Icons.Rounded.LocalCafe
         "supermarket" -> Icons.Rounded.LocalGroceryStore
         "weather" -> Icons.Rounded.WbSunny
+        "traffic" -> Icons.Rounded.Warning
         else -> Icons.Rounded.LocationOn
     }
 
@@ -110,7 +115,53 @@ object AmenityIconCatalog {
             discFillArgb = 0xFFFBBF24.toInt(),
             discStrokeArgb = 0xFFD97706.toInt(),
         )
+        PoiCategory.Traffic -> Style(
+            icon = Icons.Rounded.Warning,
+            glyphArgb = 0xFFFFFFFF.toInt(),
+            discFillArgb = 0xFFEF4444.toInt(),
+            discStrokeArgb = 0xFFB91C1C.toInt(),
+        )
         else -> null
+    }
+
+    /**
+     * Marker style for a traffic POI based on event severity.
+     */
+    fun styleForTrafficPoi(poi: Poi): Style? {
+        if (poi.poiCategory != PoiCategory.Traffic) return null
+        val severity = poi.rawSourceData?.get("traffic_severity")
+        return when (severity) {
+            "Accident" -> Style(
+                icon = Icons.Rounded.Warning,
+                glyphArgb = 0xFFFFFFFF.toInt(),
+                discFillArgb = 0xFFE53935.toInt(),
+                discStrokeArgb = 0xFFB71C1C.toInt(),
+            )
+            "Closure" -> Style(
+                icon = Icons.Rounded.Block,
+                glyphArgb = 0xFFFFFFFF.toInt(),
+                discFillArgb = 0xFFD32F2F.toInt(),
+                discStrokeArgb = 0xFF9A0007.toInt(),
+            )
+            "Roadworks" -> Style(
+                icon = Icons.Rounded.Construction,
+                glyphArgb = 0xFFFFFFFF.toInt(),
+                discFillArgb = 0xFFF59E0B.toInt(),
+                discStrokeArgb = 0xFFB45309.toInt(),
+            )
+            "Congestion" -> Style(
+                icon = Icons.Rounded.DirectionsCar,
+                glyphArgb = 0xFFFFFFFF.toInt(),
+                discFillArgb = 0xFFFF9800.toInt(),
+                discStrokeArgb = 0xFFE65100.toInt(),
+            )
+            else -> Style(
+                icon = Icons.Rounded.Warning,
+                glyphArgb = 0xFFFFFFFF.toInt(),
+                discFillArgb = 0xFFFFC107.toInt(),
+                discStrokeArgb = 0xFFFF8F00.toInt(),
+            )
+        }
     }
 
     /**

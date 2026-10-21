@@ -78,7 +78,29 @@ object DatexSituationParser {
                 processNamespaces = false,
                 relaxed = true,
             )
-            parseFromParser(parser, nowMs, defaultRoadRef)
+            // String source: extract each situationRecord snippet for raw XML display on POI detail.
+            val out = ArrayList<TrafficEvent>()
+            var searchIndex = 0
+            while (parser.next() != EventType.END_DOCUMENT) {
+                if (parser.eventType != EventType.START_TAG) continue
+                if (localName(parser.name) != "situationRecord") continue
+                val tagName = parser.name
+                val startIdx = xml.indexOf("<$tagName", searchIndex).let { if (it != -1) it else xml.indexOf("<", searchIndex) }
+                val endTag = "</$tagName>"
+                val endIdx = if (startIdx != -1) xml.indexOf(endTag, startIdx) else -1
+                val rawSnippet = if (startIdx != -1 && endIdx != -1) {
+                    xml.substring(startIdx, endIdx + endTag.length)
+                } else null
+                if (endIdx != -1) {
+                    searchIndex = endIdx + endTag.length
+                }
+                try {
+                    parseSituationRecord(parser, nowMs, defaultRoadRef, rawXml = rawSnippet)?.let { out.add(it) }
+                } catch (_: Exception) {
+                    // Skip malformed record; continue scanning the feed.
+                }
+            }
+            out
         } catch (_: Exception) {
             emptyList()
         }
@@ -106,6 +128,7 @@ object DatexSituationParser {
         parser: XmlPullParser,
         nowMs: Long,
         defaultRoadRef: String,
+        rawXml: String? = null,
     ): TrafficEvent? {
         val recordType = stripNsPrefix(attrLocal(parser, "type") ?: return null) ?: return null
         val id = attrLocal(parser, "id")
@@ -241,6 +264,7 @@ object DatexSituationParser {
             latitude = firstLat,
             longitude = firstLon,
             zonePoints = zonePoints,
+            rawXml = rawXml,
         )
     }
 

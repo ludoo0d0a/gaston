@@ -122,6 +122,23 @@ class DatexSituationParserTest {
     }
 
     @Test
+    fun parse_populatesRawXml_and_toPoi() {
+        val events = DatexSituationParser.parse(FIXTURE_BARE_XML, nowMs = nowMs)
+        assertEquals(1, events.size)
+        val event = events[0]
+        val raw = assertNotNull(event.rawXml)
+        assertTrue(raw.contains("bare-1"))
+        assertTrue(raw.startsWith("<situationRecord"))
+
+        val poi = event.toPoi("Bison Futé")
+        assertEquals("bare-1", poi.id)
+        assertEquals(fr.geoking.gaston.poi.PoiCategory.Traffic, poi.poiCategory)
+        assertEquals("Bison Futé", poi.source)
+        val rawSource = assertNotNull(poi.rawSourceData)
+        assertEquals(raw, rawSource["Bison Futé"])
+    }
+
+    @Test
     fun bisonWrapper_delegates() {
         val viaWrapper = BisonFuteDatexParser.parse(FIXTURE_NS2_XML, nowMs = nowMs)
         val viaGeneric = DatexSituationParser.parse(FIXTURE_NS2_XML, nowMs = nowMs)

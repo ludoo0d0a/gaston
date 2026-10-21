@@ -96,6 +96,7 @@ private object TomTomIncidentParser {
                     latitude = firstLat,
                     longitude = firstLon,
                     zonePoints = zonePoints,
+                    rawData = feature.toString(),
                 )
             )
         }
