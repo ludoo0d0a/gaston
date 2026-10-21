@@ -17,8 +17,8 @@ import java.util.Locale
 
 interface RadarAudioNotifier {
     fun playOkSpeedBeeps()
-    fun playOverSpeedBeepsAndSpeak(speedLimitKmH: Int?, isDevMode: Boolean = false)
-    fun speakDangerZone(speedLimitKmH: Int?, isDevMode: Boolean = false)
+    fun playOverSpeedBeepsAndSpeak(speedLimitKmH: Int?, distanceMeters: Double? = null, isDevMode: Boolean = false)
+    fun speakDangerZone(speedLimitKmH: Int?, distanceMeters: Double? = null, isDevMode: Boolean = false)
     fun shutdown()
 }
 
@@ -154,7 +154,11 @@ class AndroidRadarAudioNotifier(
         mainHandler.postDelayed(releaseFocusRunnable, FOCUS_TIMEOUT_MS)
     }
 
-    override fun playOverSpeedBeepsAndSpeak(speedLimitKmH: Int?, isDevMode: Boolean) {
+    override fun playOverSpeedBeepsAndSpeak(
+        speedLimitKmH: Int?,
+        distanceMeters: Double?,
+        isDevMode: Boolean,
+    ) {
         requestAlertAudioFocus()
         lastTonePlayedAtMs = SystemClock.elapsedRealtime()
         toneDurationMs = 300L
@@ -163,11 +167,15 @@ class AndroidRadarAudioNotifier(
         } catch (e: Exception) {
             Log.w(TAG, "ToneGenerator error", e)
         }
-        speakDangerZone(speedLimitKmH, isDevMode)
+        speakDangerZone(speedLimitKmH, distanceMeters, isDevMode)
     }
 
-    override fun speakDangerZone(speedLimitKmH: Int?, isDevMode: Boolean) {
-        val basePhrase = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH)
+    override fun speakDangerZone(
+        speedLimitKmH: Int?,
+        distanceMeters: Double?,
+        isDevMode: Boolean,
+    ) {
+        val basePhrase = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH, distanceMeters)
         val phrase = if (isDevMode) "[Gaston] $basePhrase" else basePhrase
 
         val elapsed = SystemClock.elapsedRealtime() - lastTonePlayedAtMs
