@@ -72,6 +72,7 @@ object CitaGeoJsonParser {
                     latitude = firstLat,
                     longitude = firstLon,
                     zonePoints = zonePoints,
+                    rawData = feature.toString(),
                 )
             )
         }

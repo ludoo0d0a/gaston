@@ -86,10 +86,10 @@ class RadarAlertManager(
                 if (radar.id !in alertedRadarIds) {
                     alertedRadarIds.add(radar.id)
                     if (eval.isOverspeed) {
-                        audioNotifier.playOverSpeedBeepsAndSpeak(eval.speedLimitKmH, isDevMode)
+                        audioNotifier.playOverSpeedBeepsAndSpeak(eval.speedLimitKmH, eval.distanceMeters, isDevMode)
                     } else {
                         audioNotifier.playOkSpeedBeeps()
-                        audioNotifier.speakDangerZone(eval.speedLimitKmH, isDevMode)
+                        audioNotifier.speakDangerZone(eval.speedLimitKmH, eval.distanceMeters, isDevMode)
                     }
                     notificationHelper?.showDangerZoneNotification(
                         eval.speedLimitKmH,

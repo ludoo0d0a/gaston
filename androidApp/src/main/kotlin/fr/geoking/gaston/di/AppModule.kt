@@ -392,6 +392,11 @@ val appModule = module {
         )
     }
 
+    single { get<AppDatabase>().trafficEventDao() }
+    single<fr.geoking.gaston.api.traffic.TrafficRepository> {
+        fr.geoking.gaston.persistence.RoomTrafficRepository(get())
+    }
+
     single<AppDatabase> {
         fun buildAndValidate(builder: androidx.room.RoomDatabase.Builder<AppDatabase>): AppDatabase? {
             return try {

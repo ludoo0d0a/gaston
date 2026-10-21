@@ -62,7 +62,7 @@ enum class PoiCategory {
     Supermarket,
     /** Weather grid sample (Open-Meteo current precipitation). */
     Weather,
-    /** Traffic incident / service-level segment (TIPI, CITA, TomTom, …). */
+    /** Traffic incident / event (TIPI, CITA, TomTom, roadworks, closures, congestion). */
     Traffic;
     companion object {
         /** OSM amenity tag value for this category, when applicable. */

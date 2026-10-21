@@ -31,6 +31,7 @@ import androidx.compose.ui.window.DialogProperties
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.poi.MapPoiFilter
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.isChargingStation
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.shared.datetime.DateTimeUtils
@@ -520,19 +521,34 @@ fun PoiDetailsFullscreenDialog(
                             }
                         }
 
-                        if (showRawDetail) {
+                        if (currentPoi.poiCategory == PoiCategory.Traffic) {
+                            val severity = currentPoi.rawSourceData?.get("traffic_severity")
+                            val direction = currentPoi.rawSourceData?.get("traffic_direction")
+                            val roadRef = currentPoi.rawSourceData?.get("traffic_road_ref")
+                            SectionHeader("Traffic Event")
+                            if (!roadRef.isNullOrBlank()) {
+                                PoiDetailRowStr("Road", roadRef)
+                            }
+                            if (!direction.isNullOrBlank()) {
+                                PoiDetailRowStr("Direction", direction)
+                            }
+                            if (!severity.isNullOrBlank()) {
+                                PoiDetailRowStr("Severity", severity)
+                            }
+                        }
+
+                        val isRawVisible = showRawDetail || currentPoi.poiCategory == PoiCategory.Traffic || !currentPoi.rawSourceData.isNullOrEmpty()
+                        if (isRawVisible) {
                             SectionHeader(stringResource(R.string.poi_section_raw_data))
-                            // Only list real provider sources / JSON payloads — skip metadata
-                            // keys (e.g. FranceRadars vma/type/id/aac_zone) already present in JSON.
-                            val sourceList = remember(poi.source, poi.rawSourceData) {
-                                val jsonPayloadKeys = poi.rawSourceData
+                            val sourceList = remember(currentPoi.source, currentPoi.rawSourceData) {
+                                val payloadKeys = currentPoi.rawSourceData
                                     ?.filter { (_, v) ->
                                         val t = v.trimStart()
-                                        t.startsWith("{") || t.startsWith("[")
+                                        t.startsWith("{") || t.startsWith("[") || t.startsWith("<")
                                     }
                                     ?.keys
                                     .orEmpty()
-                                (sources + jsonPayloadKeys).distinct().ifEmpty { listOfNotNull(poi.source) }
+                                (sources + payloadKeys).distinct().ifEmpty { listOfNotNull(currentPoi.source) }
                             }
                             sourceList.forEach { s ->
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -543,29 +559,49 @@ fun PoiDetailsFullscreenDialog(
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
-                                val rawString = poi.rawSourceData?.get(s)
-                                val jsonElement = remember(rawString, poi) {
-                                    if (!rawString.isNullOrBlank()) {
-                                        try {
-                                            Json.parseToJsonElement(rawString)
-                                        } catch (e: Exception) {
-                                            JsonPrimitive(rawString)
-                                        }
-                                    } else {
-                                        try {
-                                            Json.encodeToJsonElement(Poi.serializer(), poi)
-                                        } catch (e: Exception) {
-                                            JsonPrimitive(poi.toString())
+                                val rawString = currentPoi.rawSourceData?.get(s)
+                                val isXml = remember(rawString) {
+                                    rawString?.trimStart()?.startsWith("<") == true
+                                }
+                                if (isXml && !rawString.isNullOrBlank()) {
+                                    val formattedXml = remember(rawString) { formatXmlIndented(rawString) }
+                                    Surface(
+                                        color = Color(0xFF0F172A),
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = formattedXml,
+                                            color = Color(0xFF38BDF8),
+                                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.padding(12.dp)
+                                        )
+                                    }
+                                } else {
+                                    val jsonElement = remember(rawString, currentPoi) {
+                                        if (!rawString.isNullOrBlank()) {
+                                            try {
+                                                Json.parseToJsonElement(rawString)
+                                            } catch (e: Exception) {
+                                                JsonPrimitive(rawString)
+                                            }
+                                        } else {
+                                            try {
+                                                Json.encodeToJsonElement(Poi.serializer(), currentPoi)
+                                            } catch (e: Exception) {
+                                                JsonPrimitive(currentPoi.toString())
+                                            }
                                         }
                                     }
-                                }
-                                Surface(
-                                    color = Color(0xFF0F172A),
-                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                                ) {
-                                    Column(modifier = Modifier.padding(8.dp)) {
-                                        JsonTree(jsonElement = jsonElement, initialExpanded = false)
+                                    Surface(
+                                        color = Color(0xFF0F172A),
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(8.dp)) {
+                                            JsonTree(jsonElement = jsonElement, initialExpanded = false)
+                                        }
                                     }
                                 }
                             }
@@ -605,4 +641,40 @@ private fun SectionHeader(title: String) {
         fontWeight = FontWeight.SemiBold
     )
     Spacer(modifier = Modifier.height(12.dp))
+}
+
+fun formatXmlIndented(rawXml: String): String {
+    val trimmed = rawXml.trim()
+    if (!trimmed.startsWith("<")) return rawXml
+    return try {
+        val lines = mutableListOf<String>()
+        var indent = 0
+        val regex = Regex("""(<[^>]+>|[^<]+)""")
+        val matches = regex.findAll(trimmed).map { it.value.trim() }.filter { it.isNotEmpty() }.toList()
+
+        var i = 0
+        while (i < matches.size) {
+            val token = matches[i]
+            if (token.startsWith("</")) {
+                indent = (indent - 1).coerceAtLeast(0)
+                lines.add("  ".repeat(indent) + token)
+            } else if (token.startsWith("<") && (token.endsWith("/>") || token.startsWith("<?") || token.startsWith("<!"))) {
+                lines.add("  ".repeat(indent) + token)
+            } else if (token.startsWith("<")) {
+                if (i + 2 < matches.size && !matches[i + 1].startsWith("<") && matches[i + 2].startsWith("</")) {
+                    lines.add("  ".repeat(indent) + token + matches[i + 1] + matches[i + 2])
+                    i += 2
+                } else {
+                    lines.add("  ".repeat(indent) + token)
+                    indent++
+                }
+            } else {
+                lines.add("  ".repeat(indent) + token)
+            }
+            i++
+        }
+        lines.joinToString("\n")
+    } catch (_: Exception) {
+        rawXml
+    }
 }

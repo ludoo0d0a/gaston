@@ -36,10 +36,24 @@ class TipiRestrictedTrafficClientTest {
     @Test
     fun sendsBasicAuthHeader() = runBlocking {
         var auth: String? = null
+        val xmlFixture = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <d2LogicalModel xmlns="http://datex2.eu/schema/2/2_0">
+                <payloadPublication>
+                    <situation>
+                        <situationRecord id="ACTION_C_1" type="Accident">
+                            <latitude>48.85</latitude>
+                            <longitude>2.35</longitude>
+                        </situationRecord>
+                    </situation>
+                </payloadPublication>
+            </d2LogicalModel>
+        """.trimIndent()
+
         val engine = MockEngine { request ->
             auth = request.headers[HttpHeaders.Authorization]
             respond(
-                "<xml/>",
+                xmlFixture,
                 HttpStatusCode.OK,
                 headersOf(HttpHeaders.ContentType, "application/xml")
             )
@@ -52,7 +66,7 @@ class TipiRestrictedTrafficClientTest {
         )
         assertTrue(client.hasCredentials)
         val xml = client.fetchDatexXml()
-        assertEquals("<xml/>", xml)
+        assertEquals("OK", xml)
         assertTrue(auth!!.startsWith("Basic "))
     }
 }

@@ -4,12 +4,14 @@ import fr.geoking.gaston.shared.datetime.DateTimeUtils
 import org.kobjects.ktxml.api.EventType
 import org.kobjects.ktxml.api.XmlPullParser
 import org.kobjects.ktxml.mini.MiniXmlPullParser
+import java.io.InputStream
+import java.io.InputStreamReader
 
 /**
  * Streaming DATEX II 2.x [SituationPublication] parser (SOAP or bare, optional `ns2:` prefixes).
  *
- * Uses [MiniXmlPullParser] (KtXML / kxml2) — pull-based, no DOM, constant memory beyond the input
- * string and the emitted [TrafficEvent] list. Maps selected `situationRecord` types to events.
+ * Uses [MiniXmlPullParser] (KtXML / kxml2) — pull-based, no DOM, constant memory reading directly
+ * from an [InputStream] or String source. Maps selected `situationRecord` types to events.
  */
 object DatexSituationParser {
 
@@ -29,7 +31,39 @@ object DatexSituationParser {
     )
 
     /**
-     * Parses DATEX SituationPublication XML into [TrafficEvent]s.
+     * Parses DATEX SituationPublication XML stream into [TrafficEvent]s without buffering the full XML string in memory.
+     */
+    fun parseStream(
+        inputStream: InputStream,
+        nowMs: Long = System.currentTimeMillis(),
+        defaultRoadRef: String = "FR",
+    ): List<TrafficEvent> {
+        return try {
+            val reader = InputStreamReader(inputStream, Charsets.UTF_8)
+            val iterator = object : CharIterator() {
+                private var current = reader.read()
+
+                override fun hasNext(): Boolean = current != -1
+
+                override fun nextChar(): Char {
+                    val c = current.toChar()
+                    current = reader.read()
+                    return c
+                }
+            }
+            val parser = MiniXmlPullParser(
+                source = iterator,
+                processNamespaces = false,
+                relaxed = true,
+            )
+            parseFromParser(parser, nowMs, defaultRoadRef)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    /**
+     * Parses DATEX SituationPublication XML string into [TrafficEvent]s.
      * Skips records with [overallEndTime] in the past and unsupported record types.
      */
     fun parse(
@@ -44,12 +78,24 @@ object DatexSituationParser {
                 processNamespaces = false,
                 relaxed = true,
             )
+            // String source: extract each situationRecord snippet for raw XML display on POI detail.
             val out = ArrayList<TrafficEvent>()
+            var searchIndex = 0
             while (parser.next() != EventType.END_DOCUMENT) {
                 if (parser.eventType != EventType.START_TAG) continue
                 if (localName(parser.name) != "situationRecord") continue
+                val tagName = parser.name
+                val startIdx = xml.indexOf("<$tagName", searchIndex).let { if (it != -1) it else xml.indexOf("<", searchIndex) }
+                val endTag = "</$tagName>"
+                val endIdx = if (startIdx != -1) xml.indexOf(endTag, startIdx) else -1
+                val rawSnippet = if (startIdx != -1 && endIdx != -1) {
+                    xml.substring(startIdx, endIdx + endTag.length)
+                } else null
+                if (endIdx != -1) {
+                    searchIndex = endIdx + endTag.length
+                }
                 try {
-                    parseSituationRecord(parser, nowMs, defaultRoadRef)?.let { out.add(it) }
+                    parseSituationRecord(parser, nowMs, defaultRoadRef, rawXml = rawSnippet)?.let { out.add(it) }
                 } catch (_: Exception) {
                     // Skip malformed record; continue scanning the feed.
                 }
@@ -60,10 +106,29 @@ object DatexSituationParser {
         }
     }
 
+    private fun parseFromParser(
+        parser: XmlPullParser,
+        nowMs: Long,
+        defaultRoadRef: String
+    ): List<TrafficEvent> {
+        val out = ArrayList<TrafficEvent>()
+        while (parser.next() != EventType.END_DOCUMENT) {
+            if (parser.eventType != EventType.START_TAG) continue
+            if (localName(parser.name) != "situationRecord") continue
+            try {
+                parseSituationRecord(parser, nowMs, defaultRoadRef)?.let { out.add(it) }
+            } catch (_: Exception) {
+                // Skip malformed record; continue scanning the feed.
+            }
+        }
+        return out
+    }
+
     private fun parseSituationRecord(
         parser: XmlPullParser,
         nowMs: Long,
         defaultRoadRef: String,
+        rawXml: String? = null,
     ): TrafficEvent? {
         val recordType = stripNsPrefix(attrLocal(parser, "type") ?: return null) ?: return null
         val id = attrLocal(parser, "id")
@@ -199,6 +264,7 @@ object DatexSituationParser {
             latitude = firstLat,
             longitude = firstLon,
             zonePoints = zonePoints,
+            rawXml = rawXml,
         )
     }
 
