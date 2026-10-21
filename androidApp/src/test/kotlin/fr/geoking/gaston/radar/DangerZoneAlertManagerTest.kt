@@ -32,16 +32,24 @@ class DangerZoneAlertManagerTest {
             okBeepsCount++
         }
 
-        override fun playOverSpeedBeepsAndSpeak(speedLimitKmH: Int?, isDevMode: Boolean) {
+        override fun playOverSpeedBeepsAndSpeak(
+            speedLimitKmH: Int?,
+            distanceMeters: Double?,
+            isDevMode: Boolean,
+        ) {
             overSpeedCount++
             lastSpokenSpeedLimit = speedLimitKmH
-            val base = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH)
+            val base = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH, distanceMeters)
             spokenPhrases.add(if (isDevMode) "[Gaston] $base" else base)
         }
 
-        override fun speakDangerZone(speedLimitKmH: Int?, isDevMode: Boolean) {
+        override fun speakDangerZone(
+            speedLimitKmH: Int?,
+            distanceMeters: Double?,
+            isDevMode: Boolean,
+        ) {
             lastSpokenSpeedLimit = speedLimitKmH
-            val base = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH)
+            val base = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH, distanceMeters)
             spokenPhrases.add(if (isDevMode) "[Gaston] $base" else base)
         }
 
@@ -452,17 +460,18 @@ class DangerZoneAlertManagerTest {
     }
 
     @Test
-    fun frAlertCopyNeverContainsRadarPlusDistance() {
-        val phrases = listOf(
-            DangerZoneAlertCopy.frZoneEntry(130),
-            DangerZoneAlertCopy.frZoneEntry(null),
-            DangerZoneAlertCopy.frZoneEntryShort(90),
-        )
-        val banned = Regex("""radar.{0,20}\d+\s*m""", RegexOption.IGNORE_CASE)
-        phrases.forEach { phrase ->
-            assertFalse(banned.containsMatchIn(phrase), "Banned pattern in: $phrase")
-            assertFalse(phrase.contains("Attention, radar", ignoreCase = true))
-        }
+    fun frAlertCopyContainsFormattedDistanceWhenProvided() {
+        val entryWithDist = DangerZoneAlertCopy.frZoneEntry(130, 2000.0)
+        assertEquals("radar 130 km heure à 2 kilomètres", entryWithDist)
+
+        val entry500m = DangerZoneAlertCopy.frZoneEntry(80, 500.0)
+        assertEquals("radar 80 km heure à 500 mètres", entry500m)
+
+        val entryNoSpeed = DangerZoneAlertCopy.frZoneEntry(null, 200.0)
+        assertEquals("radar à 200 mètres", entryNoSpeed)
+
+        val entry1_5km = DangerZoneAlertCopy.frZoneEntry(110, 1500.0)
+        assertEquals("radar 110 km heure à 1,5 kilomètres", entry1_5km)
     }
 
     @Test

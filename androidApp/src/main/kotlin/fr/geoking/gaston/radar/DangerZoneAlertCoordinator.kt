@@ -96,7 +96,8 @@ class DangerZoneAlertCoordinator(
                     if (e is kotlinx.coroutines.CancellationException) throw e
                     Log.w(TAG, "Danger zone alert check error", e)
                 }
-                delay(POLL_MS)
+                val pollMs = if (manager.hudState.value.active) IN_ZONE_POLL_MS else NORMAL_POLL_MS
+                delay(pollMs)
             }
             manager.clearAlerts()
             Log.i(TAG, "Danger-zone alert loop stopped")
@@ -105,7 +106,8 @@ class DangerZoneAlertCoordinator(
 
     companion object {
         private const val TAG = "DangerZoneAlertCoord"
-        private const val POLL_MS = 2_000L
+        private const val NORMAL_POLL_MS = 15_000L
+        private const val IN_ZONE_POLL_MS = 5_000L
         private const val ZONE_CACHE_RADIUS_KM = 100.0
         private const val TEST_HUD_CLEAR_MS = 8_000L
     }

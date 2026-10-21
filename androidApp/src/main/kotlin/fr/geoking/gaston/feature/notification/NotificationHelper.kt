@@ -512,8 +512,9 @@ open class NotificationHelper(private val context: Context) {
     }
 
     /**
-     * Temporary phone heads-up OR Android Auto HUN (auto-dismiss after [TEMPORARY_NOTIFICATION_MS]).
-     * If AA is connected, posts HUN to AA only. If phone only, posts HUN to phone only.
+     * Temporary phone heads-up AND Android Auto HUN (auto-dismiss after [TEMPORARY_NOTIFICATION_MS]).
+     * Always posts through system [NotificationManager] with [CarAppExtender], and additionally
+     * notifies [CarNotificationManager] when AA projection is active.
      * When [openRadarLatitude]/[openRadarLongitude] are set, phone tap opens the radar map at that point.
      */
     private fun postTemporaryCarHeadsUp(
@@ -567,11 +568,14 @@ open class NotificationHelper(private val context: Context) {
                     .build()
             )
 
+        val notification = builder.build()
+        notificationManager.notify(notificationId, notification)
         if (isCarConnected()) {
-            CarNotificationManager.from(context).notify(notificationId, builder)
-        } else {
-            val notification = builder.build()
-            notificationManager.notify(notificationId, notification)
+            try {
+                CarNotificationManager.from(context).notify(notificationId, builder)
+            } catch (_: Exception) {
+                // Ignore if CarHost is temporarily unavailable
+            }
         }
         scheduleAutoCancel(notificationId, TEMPORARY_NOTIFICATION_MS)
     }
