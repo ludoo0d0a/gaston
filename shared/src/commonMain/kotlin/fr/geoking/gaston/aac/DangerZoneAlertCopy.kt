@@ -8,7 +8,7 @@ import kotlin.math.roundToInt
 object DangerZoneAlertCopy {
     fun frZoneEntry(speedLimitKmH: Int?, distanceMeters: Double? = null): String {
         val speedPart = if (speedLimitKmH != null && speedLimitKmH > 0) {
-            "radar $speedLimitKmH km heure"
+            "radar ${speedLimitKmH}km/h"
         } else {
             "radar"
         }
@@ -17,7 +17,7 @@ object DangerZoneAlertCopy {
         } else {
             ""
         }
-        return "$speedPart$distancePart"
+        return "Gaston, $speedPart$distancePart"
     }
 
     fun formatDistanceForTts(distanceMeters: Double): String {
@@ -26,14 +26,14 @@ object DangerZoneAlertCopy {
             val roundedKm1Dec = ((km * 10).roundToInt()) / 10.0
             if (roundedKm1Dec % 1.0 == 0.0) {
                 val kmInt = roundedKm1Dec.toInt()
-                if (kmInt == 1) "à 1 kilomètre" else "à $kmInt kilomètres"
+                "dans ${kmInt}km"
             } else {
                 val formatted = roundedKm1Dec.toString().replace('.', ',')
-                "à $formatted kilomètres"
+                "dans ${formatted}km"
             }
         } else {
             val roundedMeters = (((distanceMeters / 50.0).roundToInt()) * 50).coerceAtLeast(50)
-            "à $roundedMeters mètres"
+            "dans ${roundedMeters}m"
         }
     }
 

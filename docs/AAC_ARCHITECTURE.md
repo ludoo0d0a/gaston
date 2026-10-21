@@ -20,7 +20,7 @@ data.gouv CSV (resolved URL) + StaticNonRadarDangerZones
  DangerZoneAlertManager (GPS loop ~2 s)
         │
         ├── DangerZoneEvaluator (in-zone + ahead bearing)
-        ├── RadarAudioNotifier (TTS: zone de danger + VMA)
+        ├── RadarAudioNotifier (Distance-adapted beeps + TTS: "Gaston, radar 90km/h dans 1km")
         ├── NotificationHelper (phone + AA HUN)
         └── DangerZoneHudBanner / AA map presence badge
 ```
@@ -33,6 +33,7 @@ data.gouv CSV (resolved URL) + StaticNonRadarDangerZones
 | FR CSV | `FranceRadarsClient` + `FranceRadarsCsvResolver` |
 | Mix | `DangerZoneRepository` + `StaticNonRadarDangerZones` |
 | Alerts | `DangerZoneAlertCoordinator` → `DangerZoneAlertManager` + HUN |
+| Audio Notifications | `RadarAudioNotifier` (3 strident notes for closest warning ≤300m, 2 beeps for 300m..1000m, 1 beep for >1000m ; TTS: `"Gaston, radar 90km/h dans 1km"`) |
 | Map pins FR | Disabled (`FranceRadarsProvider` empty; Overpass radar filtered in FR) |
 | Kill / Play | `BuildConfig.AAC_ALERTS_AVAILABLE` + settings default OFF |
 
@@ -41,7 +42,8 @@ data.gouv CSV (resolved URL) + StaticNonRadarDangerZones
 | Exigence | Implémentation |
 |----------|----------------|
 | Pas de localisation précise contrôle | Zones étendues ; pas de pin FR alertes |
-| Vocabulaire zone / VMA | `DangerZoneAlertCopy`, strings `aac_*` |
+| Vocabulaire zone / VMA / distance TTS | `DangerZoneAlertCopy` (`"Gaston, radar [VMA]km/h dans [distance]"`), strings `aac_*` |
+| Bips selon distance | `AndroidRadarAudioNotifier` (3 notes stridentes ≤300m, 2 bips 300m..1000m, 1 bip >1000m) |
 | Distances réseau | `DangerZoneDistances` (4/2/0.3 km) |
 | Zones hors radar | `StaticNonRadarDangerZones` (+ doc BAAC) |
 | Perf | Cache local zones ; pas de `poiProvider.search` chaque tick |

@@ -25,7 +25,7 @@ class RadarAlertTest {
         var lastSpokenSpeedLimit: Int? = null
         var lastIsDevMode: Boolean = false
 
-        override fun playOkSpeedBeeps() {
+        override fun playOkSpeedBeeps(distanceMeters: Double?) {
             okBeepsCount++
         }
 
