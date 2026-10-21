@@ -74,4 +74,31 @@ class CitaGeoJsonParserTest {
         assertEquals(PoiCategory.Traffic, poi!!.poiCategory)
         assertEquals("cita", poi.source)
     }
+
+    @Test
+    fun parseNormalFluid_isFilteredOut() {
+        val body = """
+            {
+              "type": "FeatureCollection",
+              "features": [{
+                "type": "Feature",
+                "id": "A1-fluid",
+                "geometry": {
+                  "type": "Polygon",
+                  "coordinates": [[[6.1, 49.6], [6.2, 49.6], [6.2, 49.7], [6.1, 49.7], [6.1, 49.6]]]
+                },
+                "properties": {
+                  "road": "a1",
+                  "direction": "ns",
+                  "name": "A1 fluid",
+                  "service_level": 1,
+                  "service_level_desc": "fluide"
+                }
+              }]
+            }
+        """.trimIndent()
+
+        val events = CitaGeoJsonParser.parse(body)
+        assertEquals(0, events.size)
+    }
 }

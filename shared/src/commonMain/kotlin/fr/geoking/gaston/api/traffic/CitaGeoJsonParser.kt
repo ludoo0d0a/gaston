@@ -36,6 +36,9 @@ object CitaGeoJsonParser {
             val desc = props["service_level_desc"]?.jsonPrimitive?.contentOrNull ?: ""
             val level = props["service_level"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
             val severity = levelToSeverity(level, desc)
+            if (severity == TrafficSeverity.Normal) {
+                continue
+            }
             val message = buildString {
                 if (desc.isNotBlank()) append(desc)
                 val name = props["name"]?.jsonPrimitive?.contentOrNull
