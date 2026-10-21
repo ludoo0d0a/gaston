@@ -112,6 +112,30 @@ fun CarContext.dashboardParkedCarIcon(): CarIcon = carIcon(R.drawable.ic_poi_par
 /** Pin when a garage vehicle already has a saved parked position. */
 fun CarContext.dashboardParkedCarActiveIcon(): CarIcon = carIcon(R.drawable.ic_location_on, AutoCarIcons.primary)
 
+/** Traffic alert ActionStrip icon — active uses emergency tint. */
+fun CarContext.dashboardTrafficAlertIcon(enabled: Boolean): CarIcon =
+    carIcon(R.drawable.ic_poi_traffic, if (enabled) AutoCarIcons.emergency else AutoCarIcons.muted)
+
+/** Speed-camera / danger-zone alert ActionStrip icon — active uses emergency tint. */
+fun CarContext.dashboardRadarAlertIcon(enabled: Boolean): CarIcon =
+    carIcon(R.drawable.ic_poi_radar, if (enabled) AutoCarIcons.emergency else AutoCarIcons.muted)
+
+/**
+ * Icon-only ActionStrip toggle for traffic / radar alerts.
+ * Active uses [Action.FLAG_PRIMARY] so the strip background tints.
+ */
+fun CarContext.alertToggleAction(enabled: Boolean, icon: CarIcon, onToggle: () -> Unit): Action {
+    val builder = Action.Builder()
+        .setIcon(icon)
+        .setOnClickListener(onToggle)
+    if (enabled) {
+        builder
+            .setFlags(Action.FLAG_PRIMARY)
+            .setBackgroundColor(AutoCarIcons.emergency)
+    }
+    return builder.build()
+}
+
 fun CarContext.actionHomeIcon(): CarIcon = carIcon(R.drawable.ic_home, AutoCarIcons.primary)
 
 fun CarContext.actionSettingsIcon(): CarIcon = carIcon(R.drawable.ic_settings, AutoCarIcons.primary)

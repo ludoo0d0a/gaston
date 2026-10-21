@@ -48,6 +48,8 @@ class RadarAlertTest {
             lastIsDevMode = isDevMode
         }
 
+        override fun speakPhrase(phrase: String) = Unit
+
         override fun shutdown() {}
     }
 

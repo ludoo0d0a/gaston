@@ -26,7 +26,7 @@ class AutoOtherDashboardScreen(
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoOtherDashboardScreen") {
         val gridBuilder = ItemList.Builder()
 
-        // Traffic / radar / weather open modes are phone-only; AA keeps alert toggle in map settings.
+        // Traffic / radar / weather open modes are phone-only; AA alert toggles live on the root dashboard ActionStrip.
         OVERPASS_AMENITY_OPTIONS
             .filter { (id, _) -> id != "speed_camera" && id != "weather" }
             .forEach { (id, resId) ->

@@ -19,6 +19,8 @@ interface RadarAudioNotifier {
     fun playOkSpeedBeeps(distanceMeters: Double? = null)
     fun playOverSpeedBeepsAndSpeak(speedLimitKmH: Int?, distanceMeters: Double? = null, isDevMode: Boolean = false)
     fun speakDangerZone(speedLimitKmH: Int?, distanceMeters: Double? = null, isDevMode: Boolean = false)
+    /** Speak an arbitrary alert phrase (e.g. traffic) after optional beeps. */
+    fun speakPhrase(phrase: String)
     fun shutdown()
 }
 
@@ -196,7 +198,10 @@ class AndroidRadarAudioNotifier(
     ) {
         val basePhrase = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH, distanceMeters)
         val phrase = if (isDevMode) "[Gaston] $basePhrase" else basePhrase
+        speakPhrase(phrase)
+    }
 
+    override fun speakPhrase(phrase: String) {
         val elapsed = SystemClock.elapsedRealtime() - lastTonePlayedAtMs
         val remainingToneMs = (toneDurationMs + 50L - elapsed).coerceAtLeast(0L)
 

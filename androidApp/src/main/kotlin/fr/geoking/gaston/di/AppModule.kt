@@ -238,6 +238,15 @@ val appModule = module {
         )
     }
 
+    // Process-wide traffic approach alerts (beep + TTS + HUN); loop gated by trafficAlertEnabled.
+    single(createdAtStart = true) {
+        fr.geoking.gaston.traffic.TrafficAlertCoordinator(
+            context = androidContext(),
+            settingsManager = get(),
+            notificationHelper = get(),
+        )
+    }
+
     single { fr.geoking.gaston.parked.ParkCandidateStore(androidContext()) }
 
     single {

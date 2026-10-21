@@ -187,6 +187,8 @@ data class AppSettings(
     val mapIrveOperators: Set<String> = DEFAULT_MAP_IRVE_OPERATORS,
     val selectedMapConnectorTypes: Set<String> = emptySet(),
     val mapTrafficEnabled: Boolean = false,
+    /** Beep + TTS + HUN for nearby traffic incidents (AA dashboard toggle). */
+    val trafficAlertEnabled: Boolean = false,
     val debugLoggingEnabled: Boolean = false,
     val disableCache: Boolean = false,
     val mapTileDebugEnabled: Boolean = false,
@@ -226,8 +228,10 @@ data class AppSettings(
     val networkFloatingBarEnabled: Boolean = false,
     val testAaMapSurfaceEnabled: Boolean = false,
     /**
-     * AAC danger-zone alerts. Always on for product builds (user cannot disable);
-     * emergency off is [BuildConfig.AAC_ALERTS_KILL_SWITCH] only.
+     * AAC danger-zone / speed-camera alerts (beep + TTS + HUN).
+     * Toggled from the AA dashboard ActionStrip (and map settings).
+     * Loop also requires [BuildConfig.AAC_ALERTS_AVAILABLE] and is killed by
+     * [BuildConfig.AAC_ALERTS_KILL_SWITCH].
      */
     val radarWarningEnabled: Boolean = true,
     val radarWarningDistanceMeters: Int = 1000,
@@ -454,6 +458,7 @@ open class SettingsManager(
             mapIrveOperators = prefs.getStringSet("map_irve_operators", null)?.toSet() ?: DEFAULT_MAP_IRVE_OPERATORS,
             selectedMapConnectorTypes = prefs.getStringSet("map_connector_types", null)?.toSet() ?: emptySet(),
             mapTrafficEnabled = prefs.getBoolean("map_traffic_enabled", false),
+            trafficAlertEnabled = prefs.getBoolean("traffic_alert_enabled", false),
             debugLoggingEnabled = prefs.getBoolean("debug_logging_enabled", false),
             disableCache = prefs.getBoolean("disable_cache", false),
             mapTileDebugEnabled = prefs.getBoolean("map_tile_debug_enabled", false),
@@ -564,6 +569,7 @@ open class SettingsManager(
             .putStringSet("map_irve_operators", settings.mapIrveOperators)
             .putStringSet("map_connector_types", settings.selectedMapConnectorTypes)
             .putBoolean("map_traffic_enabled", settings.mapTrafficEnabled)
+            .putBoolean("traffic_alert_enabled", settings.trafficAlertEnabled)
             .putBoolean("debug_logging_enabled", settings.debugLoggingEnabled)
             .putBoolean("disable_cache", settings.disableCache)
             .putBoolean("map_tile_debug_enabled", settings.mapTileDebugEnabled)
@@ -664,6 +670,10 @@ open class SettingsManager(
 
     open fun setMapTrafficEnabled(enabled: Boolean) {
         saveSettings(_settings.value.copy(mapTrafficEnabled = enabled))
+    }
+
+    open fun setTrafficAlertEnabled(enabled: Boolean) {
+        saveSettings(_settings.value.copy(trafficAlertEnabled = enabled))
     }
 
     open fun setDisableCache(disabled: Boolean) {

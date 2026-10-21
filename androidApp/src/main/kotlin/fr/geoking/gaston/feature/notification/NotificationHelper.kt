@@ -31,6 +31,7 @@ open class NotificationHelper(private val context: Context) {
         private const val NOTIFICATION_ID_BORDER = 1001
         private const val NOTIFICATION_ID_DANGER_ZONE = 1003
         private const val NOTIFICATION_ID_NEAR_RADAR = 1004
+        private const val NOTIFICATION_ID_TRAFFIC_ALERT = 1008
         private const val NOTIFICATION_ID_REMEMBER_PARKED = 1005
         private const val NOTIFICATION_ID_PHONE_PARKED_CONFIRMED = 1006
         private const val NOTIFICATION_ID_PHONE_REMEMBER_PARKED = 1007
@@ -260,6 +261,29 @@ open class NotificationHelper(private val context: Context) {
             title = title,
             message = message,
             smallIcon = R.drawable.ic_poi_radar,
+            openRadarLatitude = latitude,
+            openRadarLongitude = longitude,
+        )
+    }
+
+    /** Temporary phone notification + Android Auto HUN for a traffic approach alert. */
+    open fun showTrafficAlertNotification(
+        message: String,
+        latitude: Double? = null,
+        longitude: Double? = null,
+        isDevMode: Boolean = false,
+    ) {
+        if (!canPostNotifications()) return
+        if (shouldSuppressDuplicate("traffic_alert", message)) return
+
+        val baseTitle = context.getString(R.string.notification_traffic_alert_title)
+        val title = if (isDevMode) "[Gaston] $baseTitle" else baseTitle
+
+        postTemporaryCarHeadsUp(
+            notificationId = NOTIFICATION_ID_TRAFFIC_ALERT,
+            title = title,
+            message = message,
+            smallIcon = R.drawable.ic_poi_traffic,
             openRadarLatitude = latitude,
             openRadarLongitude = longitude,
         )

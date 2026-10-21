@@ -23,13 +23,16 @@ import fr.geoking.gaston.auto.poi.AutoFavoritesScreen
 import fr.geoking.gaston.auto.settings.map.AutoMapSettingsScreen
 import fr.geoking.gaston.auto.route.AutoRoutePlanningScreen
 import fr.geoking.gaston.auto.settings.AutoSettingsScreen
+import fr.geoking.gaston.auto.alertToggleAction
 import fr.geoking.gaston.auto.dashboardEvIcon
 import fr.geoking.gaston.auto.dashboardFavoritesIcon
 import fr.geoking.gaston.auto.dashboardFuelIcon
 import fr.geoking.gaston.auto.dashboardMyCarIcon
 import fr.geoking.gaston.auto.dashboardNetworkIcon
 import fr.geoking.gaston.auto.dashboardOtherIcon
+import fr.geoking.gaston.auto.dashboardRadarAlertIcon
 import fr.geoking.gaston.auto.dashboardRoutesIcon
+import fr.geoking.gaston.auto.dashboardTrafficAlertIcon
 import fr.geoking.gaston.auto.safeCarTemplate
 import fr.geoking.gaston.auto.carIconUntinted
 import fr.geoking.gaston.auto.dashboardEmergencyIcon
@@ -49,6 +52,9 @@ class AutoDashboardScreen(
 ) : Screen(carContext) {
 
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoDashboardScreen") {
+        val settings = settingsManager.settings.value
+        val trafficAlertsOn = settings.trafficAlertEnabled
+        val radarAlertsOn = settings.radarWarningEnabled
         val gridBuilder = ItemList.Builder()
 
         // 1. Fuel
@@ -117,7 +123,8 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        val appTitle = if (settingsManager.settings.value.hasPremiumFeatures) {
+        // Header end actions (max 2): traffic + speed-camera alert toggles (icon-only).
+        val appTitle = if (settings.hasPremiumFeatures) {
             carContext.getString(R.string.premium_brand_title)
         } else {
             carContext.getString(R.string.app_name)
@@ -128,6 +135,24 @@ class AutoDashboardScreen(
                 Header.Builder()
                     .setTitle(appTitle)
                     .setStartHeaderAction(Action.APP_ICON)
+                    .addEndHeaderAction(
+                        carContext.alertToggleAction(
+                            enabled = trafficAlertsOn,
+                            icon = carContext.dashboardTrafficAlertIcon(trafficAlertsOn),
+                        ) {
+                            settingsManager.setTrafficAlertEnabled(!trafficAlertsOn)
+                            invalidate()
+                        },
+                    )
+                    .addEndHeaderAction(
+                        carContext.alertToggleAction(
+                            enabled = radarAlertsOn,
+                            icon = carContext.dashboardRadarAlertIcon(radarAlertsOn),
+                        ) {
+                            settingsManager.setRadarWarningEnabled(!radarAlertsOn)
+                            invalidate()
+                        },
+                    )
                     .build()
             )
             .build()

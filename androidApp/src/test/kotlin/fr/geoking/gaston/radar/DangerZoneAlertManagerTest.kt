@@ -50,7 +50,11 @@ class DangerZoneAlertManagerTest {
         ) {
             lastSpokenSpeedLimit = speedLimitKmH
             val base = DangerZoneAlertCopy.frZoneEntry(speedLimitKmH, distanceMeters)
-            spokenPhrases.add(if (isDevMode) "[Gaston] $base" else base)
+            speakPhrase(if (isDevMode) "[Gaston] $base" else base)
+        }
+
+        override fun speakPhrase(phrase: String) {
+            spokenPhrases.add(phrase)
         }
 
         override fun shutdown() {}

@@ -1092,6 +1092,7 @@
     <string name="notification_near_radar_title">Radar nearby</string>
     <string name="notification_near_radar_message">Radar nearby %d km/h</string>
     <string name="notification_near_radar_message_generic">Radar nearby</string>
+    <string name="notification_traffic_alert_title">Traffic</string>
     <string name="parked_car_title">Parked car</string>
     <string name="parked_car_intro">Save where you left your vehicle, then navigate back to it later.</string>
     <string name="parked_car_vehicle_section">Vehicle</string>

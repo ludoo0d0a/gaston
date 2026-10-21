@@ -24,7 +24,8 @@ import org.koin.core.context.GlobalContext
  *
  * Starts at app launch via Koin `createdAtStart` when AAC alerts are available.
  * GPS poll → local [DangerZoneRepository] → beep + TTS + temporary phone/AA HUN + shared HUD.
- * Always on (no user toggle); emergency off is [BuildConfig.AAC_ALERTS_KILL_SWITCH] only.
+ * User toggle: [SettingsManager] `radarWarningEnabled` (AA dashboard ActionStrip).
+ * Emergency off: [BuildConfig.AAC_ALERTS_KILL_SWITCH] only.
  */
 class DangerZoneAlertCoordinator(
     context: Context,
