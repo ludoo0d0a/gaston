@@ -14,8 +14,9 @@ import androidx.room.RoomDatabase
         NationalFuelPriceEntity::class,
         MaintenanceEventEntity::class,
         ServiceIntervalEntity::class,
+        TrafficEventEntity::class,
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -28,4 +29,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun nationalFuelPriceDao(): NationalFuelPriceDao
     abstract fun maintenanceEventDao(): MaintenanceEventDao
     abstract fun serviceIntervalDao(): ServiceIntervalDao
+    abstract fun trafficEventDao(): TrafficEventDao
 }
