@@ -231,13 +231,6 @@ fun PoiDetailCard(
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
-                            resolvedAvailability?.let { summary ->
-                                Spacer(modifier = Modifier.height(4.dp))
-                                AvailabilitySlotsRow(
-                                    summary = summary,
-                                    textColor = Color.White.copy(alpha = 0.85f),
-                                )
-                            }
 
                             // Display power level with its specific color.
                             val powerKw = poi.powerKw
