@@ -249,7 +249,7 @@ class DangerZoneAlertManager(
         if (isOverspeed) {
             audioNotifier.playOverSpeedBeepsAndSpeak(speedLimitKmH, distanceMeters, isDevMode)
         } else {
-            audioNotifier.playOkSpeedBeeps()
+            audioNotifier.playOkSpeedBeeps(distanceMeters)
             audioNotifier.speakDangerZone(speedLimitKmH, distanceMeters, isDevMode)
         }
     }

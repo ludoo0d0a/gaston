@@ -16,7 +16,7 @@ import fr.geoking.gaston.aac.DangerZoneAlertCopy
 import java.util.Locale
 
 interface RadarAudioNotifier {
-    fun playOkSpeedBeeps()
+    fun playOkSpeedBeeps(distanceMeters: Double? = null)
     fun playOverSpeedBeepsAndSpeak(speedLimitKmH: Int?, distanceMeters: Double? = null, isDevMode: Boolean = false)
     fun speakDangerZone(speedLimitKmH: Int?, distanceMeters: Double? = null, isDevMode: Boolean = false)
     fun shutdown()
@@ -140,18 +140,44 @@ class AndroidRadarAudioNotifier(
         }
     }
 
-    override fun playOkSpeedBeeps() {
+    private fun playBeepSequence(distanceMeters: Double?, isOverspeed: Boolean) {
         requestAlertAudioFocus()
         lastTonePlayedAtMs = SystemClock.elapsedRealtime()
-        toneDurationMs = 100L
-        try {
-            toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 100)
-        } catch (e: Exception) {
-            Log.w(TAG, "ToneGenerator error", e)
+
+        val isClosest = distanceMeters != null && distanceMeters <= 300.0
+        val isMedium = distanceMeters != null && distanceMeters > 300.0 && distanceMeters <= 1000.0
+
+        val toneType = if (isClosest || isOverspeed) {
+            ToneGenerator.TONE_CDMA_HIGH_L
+        } else {
+            ToneGenerator.TONE_PROP_BEEP
         }
-        // Focus kept until TTS finishes (or timeout if no speech follows).
+
+        val (count, toneDur, gapDur) = when {
+            isClosest -> Triple(3, 80L, 50L) // 3 strident notes for closest warning (<= 300m)
+            isMedium -> Triple(2, 90L, 60L)  // 2 beeps for medium distance (300m..1000m)
+            else -> Triple(1, if (isOverspeed) 150L else 100L, 0L) // 1 beep for far distance (>1000m)
+        }
+
+        toneDurationMs = count * toneDur + (count - 1) * gapDur
+
+        for (i in 0 until count) {
+            val delay = i * (toneDur + gapDur)
+            mainHandler.postDelayed({
+                try {
+                    toneGenerator?.startTone(toneType, toneDur.toInt())
+                } catch (e: Exception) {
+                    Log.w(TAG, "ToneGenerator error", e)
+                }
+            }, delay)
+        }
+
         mainHandler.removeCallbacks(releaseFocusRunnable)
         mainHandler.postDelayed(releaseFocusRunnable, FOCUS_TIMEOUT_MS)
+    }
+
+    override fun playOkSpeedBeeps(distanceMeters: Double?) {
+        playBeepSequence(distanceMeters = distanceMeters, isOverspeed = false)
     }
 
     override fun playOverSpeedBeepsAndSpeak(
@@ -159,14 +185,7 @@ class AndroidRadarAudioNotifier(
         distanceMeters: Double?,
         isDevMode: Boolean,
     ) {
-        requestAlertAudioFocus()
-        lastTonePlayedAtMs = SystemClock.elapsedRealtime()
-        toneDurationMs = 300L
-        try {
-            toneGenerator?.startTone(ToneGenerator.TONE_CDMA_HIGH_L, 300)
-        } catch (e: Exception) {
-            Log.w(TAG, "ToneGenerator error", e)
-        }
+        playBeepSequence(distanceMeters = distanceMeters, isOverspeed = true)
         speakDangerZone(speedLimitKmH, distanceMeters, isDevMode)
     }
 

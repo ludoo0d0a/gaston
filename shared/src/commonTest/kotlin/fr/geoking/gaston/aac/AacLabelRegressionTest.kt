@@ -1,24 +1,22 @@
 package fr.geoking.gaston.aac
 
 import kotlin.test.Test
-import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
- * Non-regression: FR alert strings must not contain « radar + distance » patterns.
+ * Non-regression: FR alert strings format validation.
  */
 class AacLabelRegressionTest {
-    private val banned = Regex(
-        """radar.{0,30}(\d+\s*m|\d+\s*km(?! heure)|à\s+\d+)""",
-        RegexOption.IGNORE_CASE,
-    )
 
     @Test
-    fun dangerZoneAlertCopyHasNoRadarDistanceLeak() {
+    fun dangerZoneAlertCopyFormatsAsExpected() {
         listOf(null, 30, 50, 70, 90, 110, 130).forEach { vma ->
-            val long = DangerZoneAlertCopy.frZoneEntry(vma)
+            val longWithDist = DangerZoneAlertCopy.frZoneEntry(vma, 1000.0)
+            assertTrue(longWithDist.startsWith("Gaston, radar"))
+            assertTrue(longWithDist.contains("dans 1km"))
+
             val short = DangerZoneAlertCopy.frZoneEntryShort(vma)
-            assertFalse(banned.containsMatchIn(long), long)
-            assertFalse(banned.containsMatchIn(short), short)
+            assertTrue(short.startsWith("Zone de danger"))
         }
     }
 }

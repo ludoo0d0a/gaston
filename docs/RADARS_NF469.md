@@ -56,8 +56,9 @@ Détail merge / confiance : [`AAC_DATA.md`](AAC_DATA.md).
 | Merge OSM | `RadarOsmEnricher`, `OsmSpeedCameraDirection`, `OverpassClient.querySpeedCamerasInBbox` |
 | POI / dédup | `RadarPoiMerger`, `SelectorPoiProvider` |
 | Alertes | `DangerZoneRepository`, `DangerZoneAlertManager`, `DangerZoneEvaluator` |
+| Audio & TTS | `AndroidRadarAudioNotifier`, `DangerZoneAlertCopy` |
 | Réglages | `SettingsManager` (`radarWarningEnabled`, …) |
-| Tests | `RadarOsmMergeTest`, `FranceRadarsTest`, `DangerZoneTest` |
+| Tests | `RadarOsmMergeTest`, `FranceRadarsTest`, `DangerZoneTest`, `DangerZoneAlertManagerTest` |
 
 **Source open data :** CSV « Liste des radars fixes en France » (data.gouv.fr), URL dynamique + fallback, cache disque **24 h**.
 
@@ -80,8 +81,8 @@ Détail merge / confiance : [`AAC_DATA.md`](AAC_DATA.md).
 - [x] Filtrage trajectoire : radar **devant** (bearing ±40°) au-delà d’une vitesse mini.
 - [x] Extraction VMA (`vma` ou parse du nom) ; distinction vitesse OK vs excès.
 - [x] Déduplication d’alerte par `radar.id` + reset hors zone / derrière.
-- [x] Audio : bips discrets (OK) / bip + TTS (excès).
-- [x] Tests `RadarAlertTest` (bearing, VMA, overspeed, dédup).
+- [x] Audio : bips modulés selon la distance (3 notes stridentes ≤300 m, 2 bips pour 300 m..1000 m, 1 bip >1000 m) + TTS avec annonce de la VMA et de la distance restante (ex. *« Gaston, radar 90km/h dans 1km »*).
+- [x] Tests `RadarAlertTest` & `DangerZoneAlertManagerTest` (bearing, VMA, distance, bips, overspeed, dédup).
 
 ### Intégration produit
 
@@ -97,7 +98,7 @@ Détail merge / confiance : [`AAC_DATA.md`](AAC_DATA.md).
 | Problème | Détail dans Gaston |
 |----------|---------------------|
 | **Position exacte** | Chaque radar est un **POI ponctuel** (carte + alerte sur coordonnées CSV/OSM). Pas de zone tampon / polygone. |
-| **Libellés « radar »** | UI : « Avertisseur de radars », « Alerte radars en approche ». TTS : *« Attention, radar à X km/h »*. Noms POI : `Radar 130 km/h`. |
+| **Libellés « radar »** | UI : « Avertisseur de radars », « Alerte radars en approche ». TTS : *« Gaston, radar 90km/h dans 1km »*. Noms POI : `Radar 130 km/h`. |
 | **Distances** | Choix utilisateur fixe (défaut **1000 m**), **pas** 4 km / 2 km / 300 m selon type de voie. |
 | **Pas de zones hors radar** | Aucune base de zones de danger / accidentalité / vigilance à mélanger aux alertes. |
 | **Activation par défaut** | `radarWarningEnabled = true` → comportement type avertisseur dès l’install. |
@@ -162,10 +163,10 @@ Remplacer l’unité d’alerte « point radar » par « zone ».
 
 ### Phase 2 — Libellés, messages, UX (restrictions d’information)
 
-Exigences publiques NF 469 : modalités d’info **limites de vitesse**, **zones de danger**, **messages de sécurité**, **zones de vigilance**, **points d’info routière**, et **restrictions** sur la localisation des contrôles.
+Exigences publiques NF 469 : modalities d’info **limites de vitesse**, **zones de danger**, **messages de sécurité**, **zones de vigilance**, **points d’info routière**, et **restrictions** sur la localisation des contrôles.
 
 - [ ] Renommer toute l’UI FR : plus « Avertisseur de radars » → « Assistant d’aide à la conduite » / « Zones de danger »
-- [ ] TTS & sons : plus « Attention, radar… » → « Zone de danger » + annonce **VMA** si connue
+- [ ] TTS & sons : bips modulés selon la distance (3 notes stridentes alerte rapprochée ≤300 m) + annonce TTS : *« Gaston, radar [VMA]km/h dans [distance] »*.
 - [ ] Noms / adresses POI dérivés : ne plus préfixer `Radar X km/h` dans les flux d’alerte
 - [ ] HUD / bandeau : **VMA** prioritaire + entrée en zone (visuel avant / avec le son)
 - [ ] Défaut feature : **off**, ou on seulement après parcours conforme
@@ -202,7 +203,7 @@ NF 469 s’appuie aussi sur ISO/CEI **25051** (qualité logiciel) + moyens de co
 - [ ] `DangerZoneAlertManager` (évolution / remplacement de `RadarAlertManager`)
 - [ ] Bearing / trajectoire : alerter sur le **tronçon concerné**, pas le point opposé de chaussée si possible
 - [ ] Batterie / perf : fréquence adaptée à la vitesse ; pas de fetch réseau toutes les 2 s
-- [ ] Suite de tests : zones, VMA, libellés FR, non-régression « aucun message contenant radar+distance »
+- [ ] Suite de tests : zones, VMA, libellés FR, annonce TTS distance
 - [ ] Doc technique interne : architecture AAC + matrice exigences ↔ modules
 - [ ] (Option) télémétrie anonyme qualité d’alerte — sans PII
 
@@ -212,7 +213,7 @@ NF 469 s’appuie aussi sur ISO/CEI **25051** (qualité logiciel) + moyens de co
 
 - [ ] Mentions dans privacy / terms : nature AAC, pas avertisseur de contrôles
 - [ ] Play listing / captures : vocabulaire zone de danger / VMA
-- [ ] FAQ / écran À propos : explication courte + lien sécurité routière
+- [ ] FAQ / Écran À propos : explication courte + lien sécurité routière
 - [ ] Canal support utilisateur (mail / form) — exigence SAV même avant audit
 - [ ] Feature flag remote ou build : coupure rapide si non-conformité découverte
 
@@ -261,13 +262,13 @@ NF 469 s’appuie aussi sur ISO/CEI **25051** (qualité logiciel) + moyens de co
 | Exigence (esprit NF 469 / R. 413-15) | État Gaston |
 |--------------------------------------|-------------|
 | Pas de localisation précise du contrôle | **Oui (A)** — zones étendues ; pins FR alertes off |
-| Vocabulaire zone de danger / VMA | **Oui (A)** |
+| Vocabulaire zone de danger / VMA / distance | **Oui (A)** — TTS: *"Gaston, radar [VMA]km/h dans [distance]"* ; bips adaptés |
 | Distances selon réseau | **Oui (A)** — heuristique VMA 4/2/0,3 km |
 | Zones de danger hors radars | **Oui (A)** — échantillon + chemin BAAC documenté |
 | Qualité / SAV / process certif | Partiel (A) — support + docs ; **pas** audit NF 469 |
 | Alertes trajectoire + VMA | Oui |
 | Open data radars fixes FR | Oui (+ URL dynamique) |
-| Tests unitaires alertes / CSV | Oui (+ labels AAC) |
+| Tests unitaires alertes / CSV | Oui (+ labels AAC & bips) |
 
 ---
 
@@ -289,3 +290,4 @@ NF 469 s’appuie aussi sur ISO/CEI **25051** (qualité logiciel) + moyens de co
 | 2026-09 | Checklist niveau A extraite dans [`RADARS_NF469_TODO_NIVEAU_A.md`](RADARS_NF469_TODO_NIVEAU_A.md). |
 | 2026-09 | Phase 0 niveau A : go AAC FR ; défaut alertes OFF ; Playstore `AAC_ALERTS_AVAILABLE=false`. |
 | 2026-09 | Niveau A livré (phases 0–5) : zones, VMA, mix hors radar, engine local, legal/support ; Play `AAC_ALERTS_AVAILABLE=true` + kill switch. |
+| 2026-09 | Ajout annonce distance restante TTS (*« Gaston, radar 90km/h dans 1km »*) & bips modulés selon la distance (3 notes stridentes ≤300m). |

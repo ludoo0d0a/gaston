@@ -28,7 +28,7 @@ class DangerZoneAlertManagerTest {
         var spokenPhrases = mutableListOf<String>()
         var lastSpokenSpeedLimit: Int? = null
 
-        override fun playOkSpeedBeeps() {
+        override fun playOkSpeedBeeps(distanceMeters: Double?) {
             okBeepsCount++
         }
 
@@ -462,16 +462,16 @@ class DangerZoneAlertManagerTest {
     @Test
     fun frAlertCopyContainsFormattedDistanceWhenProvided() {
         val entryWithDist = DangerZoneAlertCopy.frZoneEntry(130, 2000.0)
-        assertEquals("radar 130 km heure à 2 kilomètres", entryWithDist)
+        assertEquals("Gaston, radar 130km/h dans 2km", entryWithDist)
 
         val entry500m = DangerZoneAlertCopy.frZoneEntry(80, 500.0)
-        assertEquals("radar 80 km heure à 500 mètres", entry500m)
+        assertEquals("Gaston, radar 80km/h dans 500m", entry500m)
 
         val entryNoSpeed = DangerZoneAlertCopy.frZoneEntry(null, 200.0)
-        assertEquals("radar à 200 mètres", entryNoSpeed)
+        assertEquals("Gaston, radar dans 200m", entryNoSpeed)
 
         val entry1_5km = DangerZoneAlertCopy.frZoneEntry(110, 1500.0)
-        assertEquals("radar 110 km heure à 1,5 kilomètres", entry1_5km)
+        assertEquals("Gaston, radar 110km/h dans 1,5km", entry1_5km)
     }
 
     @Test

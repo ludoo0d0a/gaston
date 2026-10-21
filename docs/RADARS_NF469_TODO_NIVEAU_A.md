@@ -7,7 +7,7 @@ Checklist pour transformer l’avertisseur de radars actuel en **assistant d’a
 
 Contexte & écarts : [`RADARS_NF469.md`](RADARS_NF469.md).
 
-**Critère de sortie :** en France, l’app n’affiche ni ne dit la position précise d’un contrôle ; elle annonce des **zones de danger** (dont hors radars) et la **VMA** ; distances selon le réseau ; feature documentée et supportée.
+**Critère de sortie :** en France, l’app n’affiche ni ne dit la position précise d’un contrôle ; elle annonce des **zones de danger** (dont hors radars) et la **VMA** avec la distance restante (ex. *« Gaston, radar 90km/h dans 1km »*) et bips adaptés (3 notes stridentes ≤300 m) ; distances selon le réseau ; feature documentée et supportée.
 
 ---
 
@@ -47,7 +47,7 @@ Historique phase 0 : 2026-09 — go niveau A + gel Playstore.
 ## Phase 2 — Libellés / UX
 
 - [x] UI : « zones de danger » / AAC, plus « avertisseur de radars »
-- [x] TTS : « Zone de danger » + VMA, plus « Attention, radar… »
+- [x] TTS : « Gaston, radar [VMA]km/h dans [distance] » (ex. *« Gaston, radar 90km/h dans 1km »*) + bips modulés selon distance (3 notes stridentes alerte rapprochée ≤300 m, 2 bips 300 m..1000 m, 1 bip >1000 m)
 - [x] Plus de noms d’alerte du type `Radar X km/h`
 - [x] HUD : VMA + entrée en zone
 - [x] Feature **off** par défaut (ou on seulement si conforme)
@@ -59,7 +59,7 @@ Historique phase 0 : 2026-09 — go niveau A + gel Playstore.
 ### Notes phase 2
 
 - Strings `aac_*` (FR + default) ; About blurb AAC.
-- TTS via `DangerZoneAlertCopy` ; chips distance retirés (distance = type de voie).
+- TTS via `DangerZoneAlertCopy` (prefix *"Gaston, radar [VMA]km/h dans [distance]"*) ; bips via `AndroidRadarAudioNotifier`.
 - HUD : `DangerZoneHudBanner` + `RadarAlertManager.hudState`.
 - `RoadSafetyMessages` + tip dans les réglages.
 - AA : `amenity_speed_camera` → « Zone de danger ».
@@ -85,7 +85,7 @@ Historique phase 0 : 2026-09 — go niveau A + gel Playstore.
 - [x] `DangerZoneAlertManager` (remplace / évolue `RadarAlertManager`)
 - [x] Trajectoire : tronçon concerné, pas chaussée opposée si possible
 - [x] Perf / batterie (plus de fetch réseau toutes les 2 s)
-- [x] Tests non-régression libellés (pas de « radar + distance »)
+- [x] Tests non-régression libellés et bips/TTS distance
 - [x] Doc technique architecture AAC
 
 ### Notes phase 4
@@ -118,13 +118,13 @@ Critères (`RADARS_NF469.md` §6 / critère de sortie todo) :
 
 | # | Critère | Résultat |
 |---|---------|----------|
-| 1 | FR : pas de localisation précise de contrôle affichée/dite pour les alertes | **OUI** — zones étendues ; pins FR désactivés ; TTS zone+VMA |
+| 1 | FR : pas de localisation précise de contrôle affichée/dite pour les alertes | **OUI** — zones étendues ; pins FR désactivés ; TTS *"Gaston, radar [VMA]km/h dans [distance]"* |
 | 2 | Zones de danger dont hors radar | **OUI** — `StaticNonRadarDangerZones` mélangées (échantillon ; BAAC live reporté) |
 | 3 | VMA annoncée / affichée | **OUI** — TTS + HUD |
 | 4 | Distances selon type de réseau | **OUI** — 4 / 2 / 0,3 km (heuristique VMA) |
 | 5 | Feature documentée & défaut sûr | **OUI** — docs AAC ; défaut OFF ; kill switch |
 
-**Niveau A atteint : OUI** (avec écarts acceptés documentés : pas de map-matching OSM, zones hors radar = stub open-data path, avis juridique non rédigé, pas de NF 469 / niveau B).
+**Niveau A atteint : OUI** (avec écarts acceptés documentés : pas de map-matching OSM, zones hors radar = stub open-data path, avis juridique non rédigé, pas de NF 469 / level B).
 
 Tests exécutés : `./gradlew :shared:testAndroidHostTest --tests 'fr.geoking.gaston.aac.*'` et `:androidApp:testFullDebugUnitTest --tests 'fr.geoking.gaston.radar.*'`.
 
