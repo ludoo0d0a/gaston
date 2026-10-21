@@ -59,6 +59,8 @@ object MapLibreSharedHelper {
     const val TRAFFIC_POINT_LAYER_ID = "traffic-point-layer"
     private const val TRAFFIC_COLOR_PROPERTY = "traffic-color"
     private const val TRAFFIC_FILL_OPACITY_PROPERTY = "traffic-fill-opacity"
+    const val ROAD_VECTOR_SOURCE_ID = "road-vector-source"
+    const val ROAD_VECTOR_LAYER_ID = "road-vector-layer"
 
     /**
      * Initializes the POI source and symbol layer.
@@ -310,6 +312,41 @@ object MapLibreSharedHelper {
         TrafficSeverity.Congestion -> "#FF9800"
         TrafficSeverity.Closure, TrafficSeverity.Accident, TrafficSeverity.Roadworks -> "#E53935"
         TrafficSeverity.Unknown -> "#FFC107"
+    }
+
+    /**
+     * Draws road vector polylines (from OSM road geometry) as a cyan line layer on the map surface.
+     * Pass an empty list to clear. Placed below POI symbol layer.
+     */
+    fun syncRoadVectorLayer(map: MapLibreMap, polylines: List<fr.geoking.gaston.road.RoadPolyline>) {
+        map.getStyle { style ->
+            if (style.getSource(ROAD_VECTOR_SOURCE_ID) == null) {
+                style.addSource(GeoJsonSource(ROAD_VECTOR_SOURCE_ID))
+            }
+            if (style.getLayer(ROAD_VECTOR_LAYER_ID) == null) {
+                val line = LineLayer(ROAD_VECTOR_LAYER_ID, ROAD_VECTOR_SOURCE_ID).withProperties(
+                    PropertyFactory.lineColor("#00BCD4"),
+                    PropertyFactory.lineWidth(3.5f),
+                    PropertyFactory.lineOpacity(0.85f),
+                )
+                if (style.getLayer(POI_LAYER_ID) != null) {
+                    style.addLayerBelow(line, POI_LAYER_ID)
+                } else {
+                    style.addLayer(line)
+                }
+            }
+
+            val features = polylines.mapNotNull { polyline ->
+                if (polyline.points.size < 2) return@mapNotNull null
+                val points = polyline.points.map { (lat, lon) -> Point.fromLngLat(lon, lat) }
+                Feature.fromGeometry(LineString.fromLngLats(points)).apply {
+                    addStringProperty("highway", polyline.highwayType ?: "")
+                    addStringProperty("name", polyline.name ?: "")
+                }
+            }
+            style.getSourceAs<GeoJsonSource>(ROAD_VECTOR_SOURCE_ID)
+                ?.setGeoJson(FeatureCollection.fromFeatures(features))
+        }
     }
 
     /**

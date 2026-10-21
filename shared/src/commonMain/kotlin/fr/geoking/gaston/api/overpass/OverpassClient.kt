@@ -164,6 +164,52 @@ open class OverpassClient(
     }
 
     /**
+     * Fetch drivable road ways with line geometry (lat/lon points) in a bounding box.
+     * Excludes non-drivable paths such as footways, cycleways, steps, etc.
+     */
+    open suspend fun queryDrivableRoadWaysInBbox(
+        minLat: Double,
+        minLon: Double,
+        maxLat: Double,
+        maxLon: Double,
+        limit: Int = 500,
+    ): List<OverpassWayGeom> {
+        val bbox = "$minLat,$minLon,$maxLat,$maxLon"
+        val query = """
+            [out:json][timeout:25];
+            way["highway"]["highway"!~"^(footway|pedestrian|steps|path|cycleway|bridleway|proposed|construction|corridor|platform|raceway|bus_stop)$"]($bbox);
+            out geom qt ${limit.coerceIn(1, 1000)};
+        """.trimIndent()
+        val jsonText = executeQuery(query)
+        return parseWayGeometries(jsonText)
+    }
+
+    private fun parseWayGeometries(body: String): List<OverpassWayGeom> {
+        val root = json.parseToJsonElement(body).jsonObject
+        val arr = root["elements"]?.jsonArray ?: return emptyList()
+        val ways = mutableListOf<OverpassWayGeom>()
+        for (el in arr) {
+            val obj = el.jsonObject
+            val type = obj["type"]?.jsonPrimitive?.content ?: continue
+            if (type != "way") continue
+            val id = obj["id"]?.jsonPrimitive?.content?.toLongOrNull() ?: continue
+            val tags = (obj["tags"] as? JsonObject)?.mapValues { (_, v) ->
+                (v as? kotlinx.serialization.json.JsonPrimitive)?.content ?: ""
+            } ?: emptyMap()
+            val geometry = obj["geometry"]?.jsonArray?.mapNotNull { pt ->
+                val p = pt.jsonObject
+                val lat = p["lat"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: return@mapNotNull null
+                val lon = p["lon"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: return@mapNotNull null
+                lat to lon
+            }.orEmpty()
+            if (geometry.size >= 2) {
+                ways.add(OverpassWayGeom(id = id, tags = tags, points = geometry))
+            }
+        }
+        return ways
+    }
+
+    /**
      * Speed cameras in a bbox plus enforcement relations (from/to node coords when available).
      * Also returns nearby highway ways with lightweight geometry endpoints for forward/backward.
      */
