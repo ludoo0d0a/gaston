@@ -19,7 +19,7 @@ data class RoadPolyline(
 /**
  * Repository for fetching and caching drivable road vector line geometries from Overpass API.
  */
-class RoadGeometryRepository(
+open class RoadGeometryRepository(
     private val overpassClient: OverpassClient,
 ) {
     private val mutex = Mutex()
@@ -32,7 +32,7 @@ class RoadGeometryRepository(
      * Fetches drivable road polylines around [latitude]/[longitude] within [radiusKm].
      * Returns cached polylines if the requested area is already covered.
      */
-    suspend fun fetchRoadsNear(
+    open suspend fun fetchRoadsNear(
         latitude: Double,
         longitude: Double,
         radiusKm: Double = 1.0,
@@ -86,7 +86,7 @@ class RoadGeometryRepository(
     }
 
     /** Clears the in-memory cache of road polylines. */
-    suspend fun clearCache() {
+    open suspend fun clearCache() {
         mutex.withLock {
             cachedCenterLat = null
             cachedCenterLon = null
