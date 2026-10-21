@@ -43,7 +43,8 @@ data class DangerZoneOverlayRing(
  *
  * - Unidirectional monitored bearing → sector of radius R, half-angle [HALF_ANGLE_DEGREES],
  *   axis = approach from (`monitoredBearing + 180°`).
- * - Missing / bidirectional direction → full AFFTAC circle of R.
+ * - Bidirectional with a known road-axis bearing → **two** opposite sectors (bearing and +180°).
+ * - Missing direction / bidirectional without axis → full AFFTAC circle of R.
  *
  * Overlay rings for each alert radius (R, km milestones, 200 m) share this geometry.
  */
@@ -86,25 +87,41 @@ object DangerZoneTriangle {
         0xFFFCD34D.toInt(),
     )
 
-    /**
-     * Resolves a unidirectional monitored bearing from radar POI [rawSourceData], or null
-     * when direction is missing / bidirectional (full-circle geometry).
-     */
-    fun monitoredBearingDegrees(poi: Poi): Double? {
-        if (poi.poiCategory != PoiCategory.Radar) return null
-        val raw = poi.rawSourceData ?: return null
+    fun isBidirectional(poi: Poi): Boolean {
+        if (poi.poiCategory != PoiCategory.Radar) return false
+        val raw = poi.rawSourceData ?: return false
         if (
             raw[RAW_BIDIRECTIONAL]?.equals("true", ignoreCase = true) == true ||
             raw["bidirectional"]?.equals("true", ignoreCase = true) == true
         ) {
-            return null
+            return true
         }
+        val info = OsmSpeedCameraDirection.resolve(directionTag = raw[RAW_DIRECTION])
+        return info.bidirectional
+    }
+
+    /**
+     * Road-axis / monitored bearing from radar POI [rawSourceData], including when bidirectional
+     * (axis used to draw opposite approach sectors). Null when unknown.
+     */
+    fun axisBearingDegrees(poi: Poi): Double? {
+        if (poi.poiCategory != PoiCategory.Radar) return null
+        val raw = poi.rawSourceData ?: return null
         raw[RAW_MONITORED_BEARING]?.toDoubleOrNull()?.let {
             return OsmSpeedCameraDirection.normalizeBearing(it)
         }
         val info = OsmSpeedCameraDirection.resolve(directionTag = raw[RAW_DIRECTION])
-        if (info.bidirectional) return null
         return info.monitoredBearingDegrees
+    }
+
+    /**
+     * Resolves a unidirectional monitored bearing from radar POI [rawSourceData], or null
+     * when direction is missing / bidirectional (use [axisBearingDegrees] + [isBidirectional]
+     * for dual-sector / full-circle geometry).
+     */
+    fun monitoredBearingDegrees(poi: Poi): Double? {
+        if (isBidirectional(poi)) return null
+        return axisBearingDegrees(poi)
     }
 
     /**
@@ -145,17 +162,18 @@ object DangerZoneTriangle {
 
     /**
      * All colored overlay rings for a radar POI (largest → smallest). Empty for non-radar.
+     * Bidirectional with axis bearing yields two rings per radius (opposite approach sectors).
      */
     fun overlayRingsForRadarPoi(poi: Poi): List<DangerZoneOverlayRing> {
         if (poi.poiCategory != PoiCategory.Radar) return emptyList()
         val zoneRadius = DangerZoneDistances.radiusMetersForRadarPoiVma(poi.rawSourceData?.get("vma"))
         if (zoneRadius <= 0.0) return emptyList()
-        val bearing = monitoredBearingDegrees(poi)
         return overlayRings(
             tipLat = poi.latitude,
             tipLon = poi.longitude,
             zoneRadiusMeters = zoneRadius,
-            monitoredBearingDegrees = bearing,
+            monitoredBearingDegrees = axisBearingDegrees(poi),
+            bidirectional = isBidirectional(poi),
         )
     }
 
@@ -164,7 +182,8 @@ object DangerZoneTriangle {
             tipLat = zone.centerLatitude,
             tipLon = zone.centerLongitude,
             zoneRadiusMeters = zone.radiusMeters,
-            monitoredBearingDegrees = if (zone.usesApproachTrapezoid) zone.monitoredBearingDegrees else null,
+            monitoredBearingDegrees = zone.monitoredBearingDegrees,
+            bidirectional = zone.monitoredBidirectional,
         )
 
     fun overlayRings(
@@ -172,27 +191,47 @@ object DangerZoneTriangle {
         tipLon: Double,
         zoneRadiusMeters: Double,
         monitoredBearingDegrees: Double?,
+        bidirectional: Boolean = false,
     ): List<DangerZoneOverlayRing> {
         val radii = alertRadiiMeters(zoneRadiusMeters)
+        val bearings = approachBearings(monitoredBearingDegrees, bidirectional)
         var kmIndex = 0
-        return radii.map { r ->
+        return radii.flatMap { r ->
             val kind = overlayKindForRadius(r, zoneRadiusMeters)
             val (fill, stroke) = colorsFor(kind, kmIndex)
             if (kind == DangerZoneOverlayKind.KmReminder) kmIndex++
-            val points = latLngRing(
-                tipLat = tipLat,
-                tipLon = tipLon,
-                radiusMeters = r,
-                monitoredBearingDegrees = monitoredBearingDegrees,
-            )
-            DangerZoneOverlayRing(
-                radiusMeters = r,
-                kind = kind,
-                fillArgb = fill,
-                strokeArgb = stroke,
-                points = points,
-            )
+            bearings.map { bearing ->
+                DangerZoneOverlayRing(
+                    radiusMeters = r,
+                    kind = kind,
+                    fillArgb = fill,
+                    strokeArgb = stroke,
+                    points = latLngRing(
+                        tipLat = tipLat,
+                        tipLon = tipLon,
+                        radiusMeters = r,
+                        monitoredBearingDegrees = bearing,
+                    ),
+                )
+            }
         }
+    }
+
+    /**
+     * Bearings whose approach sectors to draw / hit-test.
+     * - Unidirectional → one bearing
+     * - Bidirectional + axis → that bearing and opposite
+     * - Else → single null (full circle)
+     */
+    fun approachBearings(
+        monitoredBearingDegrees: Double?,
+        bidirectional: Boolean,
+    ): List<Double?> {
+        if (monitoredBearingDegrees == null) return listOf(null)
+        if (!bidirectional) return listOf(monitoredBearingDegrees)
+        val a = OsmSpeedCameraDirection.normalizeBearing(monitoredBearingDegrees)
+        val b = OsmSpeedCameraDirection.normalizeBearing(monitoredBearingDegrees + 180.0)
+        return listOf(a, b)
     }
 
     private fun colorsFor(kind: DangerZoneOverlayKind, kmIndex: Int): Pair<Int, Int> = when (kind) {
@@ -206,18 +245,36 @@ object DangerZoneTriangle {
 
     /**
      * Closed ring for one radius: sector when [monitoredBearingDegrees] is set, else full circle.
+     * For bidirectional with axis, returns the first approach sector only — prefer
+     * [overlayRingsForRadarPoi] / [latLngRingsForRadarPoi] for both directions.
      * Always returns a ring (never null) when [radiusMeters] &gt; 0.
      */
     fun latLngRingForRadarPoi(poi: Poi): List<Pair<Double, Double>>? {
         if (poi.poiCategory != PoiCategory.Radar) return null
         val radiusM = DangerZoneDistances.radiusMetersForRadarPoiVma(poi.rawSourceData?.get("vma"))
         if (radiusM <= 0.0) return null
+        val bearings = approachBearings(axisBearingDegrees(poi), isBidirectional(poi))
         return latLngRing(
             tipLat = poi.latitude,
             tipLon = poi.longitude,
             radiusMeters = radiusM,
-            monitoredBearingDegrees = monitoredBearingDegrees(poi),
+            monitoredBearingDegrees = bearings.first(),
         )
+    }
+
+    /** All approach rings for a radar POI (one or two sectors, or one full circle). */
+    fun latLngRingsForRadarPoi(poi: Poi): List<List<Pair<Double, Double>>> {
+        if (poi.poiCategory != PoiCategory.Radar) return emptyList()
+        val radiusM = DangerZoneDistances.radiusMetersForRadarPoiVma(poi.rawSourceData?.get("vma"))
+        if (radiusM <= 0.0) return emptyList()
+        return approachBearings(axisBearingDegrees(poi), isBidirectional(poi)).map { bearing ->
+            latLngRing(
+                tipLat = poi.latitude,
+                tipLon = poi.longitude,
+                radiusMeters = radiusM,
+                monitoredBearingDegrees = bearing,
+            )
+        }
     }
 
     /**
@@ -302,15 +359,20 @@ object DangerZoneTriangle {
         radiusMeters: Double,
         monitoredBearingDegrees: Double?,
         halfAngleDegrees: Double = HALF_ANGLE_DEGREES,
+        bidirectional: Boolean = false,
     ): Boolean {
         if (radiusMeters <= 0.0) return false
         val distM = haversineKm(lat, lon, tipLat, tipLon) * 1000.0
         if (distM > radiusMeters) return false
-        if (monitoredBearingDegrees == null) return true
+        val bearings = approachBearings(monitoredBearingDegrees, bidirectional)
+        if (bearings.size == 1 && bearings[0] == null) return true
         if (distM < 1.0) return true // at tip
-        val approachFrom = OsmSpeedCameraDirection.normalizeBearing(monitoredBearingDegrees + 180.0)
         val bearingFromTip = DangerZoneEvaluator.calculateBearing(tipLat, tipLon, lat, lon)
-        return DangerZoneEvaluator.angleDifference(bearingFromTip, approachFrom) <= halfAngleDegrees
+        return bearings.any { bearing ->
+            if (bearing == null) return@any true
+            val approachFrom = OsmSpeedCameraDirection.normalizeBearing(bearing + 180.0)
+            DangerZoneEvaluator.angleDifference(bearingFromTip, approachFrom) <= halfAngleDegrees
+        }
     }
 
     /**

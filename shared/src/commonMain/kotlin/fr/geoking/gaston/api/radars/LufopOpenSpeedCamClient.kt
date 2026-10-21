@@ -369,6 +369,10 @@ data class LufopOpenSpeedCamRecord(
                 put("bidirectional", "true")
                 put(fr.geoking.gaston.aac.DangerZoneTriangle.RAW_BIDIRECTIONAL, "true")
                 put(fr.geoking.gaston.aac.DangerZoneTriangle.RAW_DIRECTION, "both")
+                // Keep azimut as road-axis so overlays draw opposite approach sectors (not a full disk).
+                azimut?.let {
+                    put(fr.geoking.gaston.aac.DangerZoneTriangle.RAW_MONITORED_BEARING, it.toString())
+                }
             } else {
                 azimut?.let {
                     put(fr.geoking.gaston.aac.DangerZoneTriangle.RAW_MONITORED_BEARING, it.toString())

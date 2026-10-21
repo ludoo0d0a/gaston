@@ -57,6 +57,17 @@ class OsmSpeedCameraDirectionTest {
     }
 
     @Test
+    fun bothKeepsWayBearingAsAxis() {
+        val info = OsmSpeedCameraDirection.resolve(
+            directionTag = "both",
+            wayBearingDegrees = 115.0,
+        )
+        assertEquals(DirectionConfidence.High, info.confidence)
+        assertTrue(info.bidirectional)
+        assertEquals(115.0, info.monitoredBearingDegrees!!, 0.01)
+    }
+
+    @Test
     fun degreesAreLowConfidence() {
         val info = OsmSpeedCameraDirection.resolve(directionTag = "270")
         assertEquals(DirectionConfidence.Low, info.confidence)
@@ -199,12 +210,58 @@ class RadarOsmEnricherTest {
             poiCategory = PoiCategory.Radar,
             source = "LufopOpenSpeedCam",
             rawSourceData = mapOf(
+                DangerZoneTriangle.RAW_DIRECTION to "90",
                 DangerZoneTriangle.RAW_MONITORED_BEARING to "90.0",
                 "vma" to "90",
             ),
         )
+        assertTrue(RadarOsmEnricher.alreadyHasDirection(lufop))
         val out = enricher.enrichPois(listOf(lufop))
         assertEquals("90.0", out[0].rawSourceData?.get(DangerZoneTriangle.RAW_MONITORED_BEARING))
+        Unit
+    }
+
+    @Test
+    fun enrichPoisUpgradesAzimutOnlyToBidirectional() = runBlocking {
+        val camera = OverpassElement(
+            200,
+            48.8566,
+            2.3522,
+            mapOf("highway" to "speed_camera", "direction" to "both", "maxspeed" to "90"),
+        )
+        val way = fr.geoking.gaston.api.overpass.OverpassWayGeom(
+            id = 1,
+            tags = mapOf("highway" to "primary"),
+            points = listOf(48.8560 to 2.3522, 48.8572 to 2.3522),
+        )
+        val enricher = RadarOsmEnricher(
+            FakeSpeedCameraOverpassClient(
+                SpeedCameraOverpassBundle(
+                    cameras = listOf(camera),
+                    nodesById = mapOf(200L to camera),
+                    ways = listOf(way),
+                ),
+            )
+        )
+        // Lufop azimut alone must not block OSM direction=both enrich.
+        val lufop = Poi(
+            id = "osc_radar_1",
+            name = "Zone",
+            address = "",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            poiCategory = PoiCategory.Radar,
+            source = "LufopOpenSpeedCam",
+            rawSourceData = mapOf(
+                DangerZoneTriangle.RAW_MONITORED_BEARING to "90.0",
+                "vma" to "90",
+            ),
+        )
+        assertFalse(RadarOsmEnricher.alreadyHasDirection(lufop))
+        val out = enricher.enrichPois(listOf(lufop))
+        assertTrue(DangerZoneTriangle.isBidirectional(out[0]))
+        assertNotNull(DangerZoneTriangle.axisBearingDegrees(out[0]))
+        assertEquals(2, DangerZoneTriangle.latLngRingsForRadarPoi(out[0]).size)
         Unit
     }
 

@@ -25,7 +25,7 @@ class DangerZoneTriangleTest {
     }
 
     @Test
-    fun bidirectionalMeansFullCircleRing() {
+    fun bidirectionalWithoutAxisMeansFullCircleRing() {
         val poi = radarPoi(
             raw = mapOf(
                 "vma" to "90",
@@ -34,7 +34,61 @@ class DangerZoneTriangleTest {
             )
         )
         assertNull(DangerZoneTriangle.monitoredBearingDegrees(poi))
-        assertNotNull(DangerZoneTriangle.latLngRingForRadarPoi(poi))
+        assertNull(DangerZoneTriangle.axisBearingDegrees(poi))
+        assertTrue(DangerZoneTriangle.isBidirectional(poi))
+        val rings = DangerZoneTriangle.latLngRingsForRadarPoi(poi)
+        assertEquals(1, rings.size)
+        assertTrue(rings[0].size >= 4)
+        // Full circle: first ≈ last, no tip spike at center
+        assertEquals(rings[0].first().first, rings[0].last().first, 1e-9)
+    }
+
+    @Test
+    fun bidirectionalWithAxisDrawsOppositeSectors() {
+        val tipLat = 48.8566
+        val tipLon = 2.3522
+        val poi = Poi(
+            id = "t1",
+            name = "Zone",
+            address = "",
+            latitude = tipLat,
+            longitude = tipLon,
+            poiCategory = PoiCategory.Radar,
+            source = "test",
+            rawSourceData = mapOf(
+                "vma" to "90",
+                DangerZoneTriangle.RAW_DIRECTION to "both",
+                DangerZoneTriangle.RAW_BIDIRECTIONAL to "true",
+                DangerZoneTriangle.RAW_MONITORED_BEARING to "0",
+            ),
+        )
+        assertNull(DangerZoneTriangle.monitoredBearingDegrees(poi))
+        assertEquals(0.0, DangerZoneTriangle.axisBearingDegrees(poi)!!)
+        val overlays = DangerZoneTriangle.overlayRingsForRadarPoi(poi)
+        // Extra-urban R=2000 → radii 2000,1000,200; ×2 sectors each
+        assertEquals(6, overlays.size)
+        assertEquals(2, overlays.count { it.radiusMeters == 2_000.0 })
+
+        val radiusM = 2_000.0
+        // Approach from south (northbound traffic) and from north (southbound)
+        val fromSouth = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 800.0)
+        val fromNorth = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 0.0, 800.0)
+        val fromEast = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 90.0, 800.0)
+        assertTrue(
+            DangerZoneTriangle.containsSectorOrCircle(
+                fromSouth.first, fromSouth.second, tipLat, tipLon, radiusM, 0.0, bidirectional = true,
+            ),
+        )
+        assertTrue(
+            DangerZoneTriangle.containsSectorOrCircle(
+                fromNorth.first, fromNorth.second, tipLat, tipLon, radiusM, 0.0, bidirectional = true,
+            ),
+        )
+        assertFalse(
+            DangerZoneTriangle.containsSectorOrCircle(
+                fromEast.first, fromEast.second, tipLat, tipLon, radiusM, 0.0, bidirectional = true,
+            ),
+        )
     }
 
     @Test

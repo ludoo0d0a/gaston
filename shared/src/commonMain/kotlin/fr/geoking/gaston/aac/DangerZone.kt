@@ -37,7 +37,8 @@ enum class DangerZoneKind {
  * Geometry:
  * - Unidirectional monitored bearing → approach sector (part of a disk) ahead of the radar
  *   ([DangerZoneTriangle]; radius = [radiusMeters], half-angle 45°).
- * - Missing / bidirectional direction → AFFTAC circle of [radiusMeters].
+ * - Bidirectional with a known road-axis bearing → two opposite approach sectors.
+ * - Missing direction / bidirectional without axis → AFFTAC circle of [radiusMeters].
  *
  * [centerLatitude]/[centerLongitude] are the radar / control coordinates (circle / sector
  * tip), not an exposed "exact control point" for alert UX.
@@ -60,9 +61,13 @@ data class DangerZone(
     val osmNodeId: Long? = null,
     val matchedDistanceMeters: Double? = null,
 ) {
-    /** True when alert hit-testing uses the approach sector instead of the AFFTAC circle. */
+    /** True when alert hit-testing uses a single approach sector instead of the AFFTAC circle. */
     val usesApproachTrapezoid: Boolean
         get() = monitoredBearingDegrees != null && !monitoredBidirectional
+
+    /** True when hit-testing uses two opposite approach sectors along the road axis. */
+    val usesBidirectionalCorridors: Boolean
+        get() = monitoredBearingDegrees != null && monitoredBidirectional
 
     fun contains(latitude: Double, longitude: Double): Boolean {
         return DangerZoneTriangle.containsSectorOrCircle(
@@ -71,7 +76,11 @@ data class DangerZone(
             tipLat = centerLatitude,
             tipLon = centerLongitude,
             radiusMeters = radiusMeters,
-            monitoredBearingDegrees = if (usesApproachTrapezoid) monitoredBearingDegrees else null,
+            monitoredBearingDegrees = when {
+                usesApproachTrapezoid || usesBidirectionalCorridors -> monitoredBearingDegrees
+                else -> null
+            },
+            bidirectional = monitoredBidirectional && monitoredBearingDegrees != null,
         )
     }
 

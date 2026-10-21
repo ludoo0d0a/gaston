@@ -143,7 +143,8 @@ class LufopOpenSpeedCamTest {
         assertEquals("true", poi.rawSourceData?.get("bidirectional"))
         assertEquals("true", poi.rawSourceData?.get("direction_bidirectional"))
         assertEquals("both", poi.rawSourceData?.get("direction"))
-        assertEquals(null, poi.rawSourceData?.get("monitored_bearing"))
+        // Keep azimut as road axis for opposite approach polygons.
+        assertEquals("45.0", poi.rawSourceData?.get("monitored_bearing"))
     }
 
     @Test

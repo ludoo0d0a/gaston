@@ -23,7 +23,11 @@ enum class DirectionConfidence {
  */
 data class OsmDirectionInfo(
     val confidence: DirectionConfidence,
-    /** Bearing of monitored traffic [0, 360), null if bidirectional or unknown. */
+    /**
+     * Bearing of monitored traffic [0, 360).
+     * When [bidirectional], this is the optional road-axis bearing (for dual approach sectors);
+     * null when the axis is unknown.
+     */
     val monitoredBearingDegrees: Double? = null,
     val bidirectional: Boolean = false,
     val osmNodeId: Long? = null,
@@ -85,7 +89,8 @@ object OsmSpeedCameraDirection {
         when (d) {
             "both", "two_way", "twoway" -> return OsmDirectionInfo(
                 confidence = DirectionConfidence.High,
-                monitoredBearingDegrees = null,
+                // Keep road-axis bearing when known so overlays can draw opposite approach sectors.
+                monitoredBearingDegrees = wayBearingDegrees?.let { normalizeBearing(it) },
                 bidirectional = true,
                 osmNodeId = osmNodeId,
                 matchedDistanceMeters = matchedDistanceMeters,

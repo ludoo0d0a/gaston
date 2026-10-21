@@ -194,6 +194,32 @@ class DangerZoneTest {
     }
 
     @Test
+    fun bidirectionalWithAxisAcceptsBothApproaches() {
+        val tipLat = 48.8566
+        val tipLon = 2.3522
+        val zone = DangerZoneFactory.fromSpeedControlPoint(
+            id = "bi1",
+            latitude = tipLat,
+            longitude = tipLon,
+            speedLimitKmH = 90,
+            source = "test",
+        ).copy(
+            monitoredBearingDegrees = 0.0,
+            monitoredBidirectional = true,
+            directionConfidence = DirectionConfidence.High,
+        )
+        assertTrue(zone.usesBidirectionalCorridors)
+        assertFalse(zone.usesApproachTrapezoid)
+
+        val fromSouth = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 180.0, 800.0)
+        assertTrue(zone.contains(fromSouth.first, fromSouth.second))
+        val fromNorth = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 0.0, 800.0)
+        assertTrue(zone.contains(fromNorth.first, fromNorth.second))
+        val fromEast = DangerZoneTriangle.offsetMeters(tipLat, tipLon, 90.0, 800.0)
+        assertFalse(zone.contains(fromEast.first, fromEast.second))
+    }
+
+    @Test
     fun withBearingUsesSectorNotCircle() {
         val tipLat = 48.8566
         val tipLon = 2.3522

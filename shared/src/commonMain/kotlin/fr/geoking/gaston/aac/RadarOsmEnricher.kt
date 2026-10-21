@@ -34,8 +34,10 @@ class RadarOsmEnricher(
 
         fun alreadyHasDirection(poi: Poi): Boolean {
             val raw = poi.rawSourceData ?: return false
+            // Explicit bidirectional / direction tag is enough. Lufop azimut-only
+            // (monitored_bearing without direction) must still allow OSM enrich so
+            // direction=both can upgrade a single-sector pin to dual corridors.
             return !raw[DangerZoneTriangle.RAW_DIRECTION].isNullOrBlank() ||
-                !raw[DangerZoneTriangle.RAW_MONITORED_BEARING].isNullOrBlank() ||
                 raw[DangerZoneTriangle.RAW_BIDIRECTIONAL]?.equals("true", ignoreCase = true) == true ||
                 raw["bidirectional"]?.equals("true", ignoreCase = true) == true
         }
@@ -47,8 +49,15 @@ class RadarOsmEnricher(
             info.matchedDistanceMeters?.let { raw["osm_match_m"] = it.toString() }
             if (info.bidirectional) {
                 raw[DangerZoneTriangle.RAW_BIDIRECTIONAL] = "true"
+                raw["bidirectional"] = "true"
                 raw[DangerZoneTriangle.RAW_DIRECTION] = "both"
+                // Prefer OSM axis; otherwise keep existing Lufop azimut as road axis.
+                info.monitoredBearingDegrees?.let { bearing ->
+                    raw[DangerZoneTriangle.RAW_MONITORED_BEARING] = bearing.toString()
+                }
             } else {
+                raw.remove(DangerZoneTriangle.RAW_BIDIRECTIONAL)
+                raw.remove("bidirectional")
                 info.monitoredBearingDegrees?.let { bearing ->
                     raw[DangerZoneTriangle.RAW_MONITORED_BEARING] = bearing.toString()
                 }
