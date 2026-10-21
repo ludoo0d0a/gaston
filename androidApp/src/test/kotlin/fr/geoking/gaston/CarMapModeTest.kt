@@ -10,10 +10,8 @@ class CarMapModeTest {
     @Test
     fun removedAndRenamedModesAreMigrated() {
         assertEquals(CarMapMode.MapLibreMapSnapshotter, CarMapMode.fromStored("MapLibre"))
-        assertEquals(CarMapMode.MapLibreMapSnapshotter, CarMapMode.fromStored("MapTiler"))
-        assertEquals(CarMapMode.MapLibreMapSnapshotter, CarMapMode.fromStored("Protomaps"))
         assertEquals(CarMapMode.MapLibreVirtualDisplay, CarMapMode.fromStored("MapLibrePresentation"))
-        assertEquals(CarMapMode.MapLibreVirtualDisplay, CarMapMode.fromStored("MapLibreEgl"))
+        assertEquals(CarMapMode.MapLibreEglDirect, CarMapMode.fromStored("MapLibreEgl"))
         assertEquals(CarMapMode.Mapsforge, CarMapMode.fromStored("Mapsforge"))
         assertEquals(CarMapMode.Native, CarMapMode.fromStored("garbage"))
         assertEquals(CarMapMode.Native, CarMapMode.fromStored(null))

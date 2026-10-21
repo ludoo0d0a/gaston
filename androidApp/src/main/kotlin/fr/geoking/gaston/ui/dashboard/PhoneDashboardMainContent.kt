@@ -215,7 +215,6 @@ fun PhoneDashboardMainContent(
             PhoneDashboardOtherActionsGrid(otherActions = gridActions)
         }
 
-
         item(contentType = "emergency_card") {
             PhoneDashboardEmergencyCard(onOpenEmergency = onOpenEmergency)
         }
@@ -252,7 +251,6 @@ fun PhoneDashboardMainContent(
         }
     }
 }
-
 
 @Composable
 private fun PhoneDashboardNearbyCheapestSection(

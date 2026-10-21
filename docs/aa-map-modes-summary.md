@@ -36,7 +36,7 @@ Phone (`MapEngine`) and AA (`CarMapMode`) settings remain separate.
 | **Mapsforge** | `mapsforge.MapsforgePoiScreen` | `CarMapsforgeRenderer` | Offline `.map` | Vector, offline |
 
 MapTiler, Protomaps, Presentation and EGL modes were removed/merged; stored preferences are migrated by `CarMapMode.fromStored`.
-Central dispatch: [`AutoMapScreenFactory.kt`](../androidApp/src/main/kotlin/fr/geoking/gaston/auto/AutoMapScreenFactory.kt).
+Central dispatch: [`AutoMapScreenFactory.kt`](../androidApp/src/main/kotlin/fr/geoking/gaston/auto/map/AutoMapScreenFactory.kt).
 
 ### Surface ownership and mode swap
 

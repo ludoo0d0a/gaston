@@ -2,9 +2,7 @@ package fr.geoking.gaston.auto.map.pmtiles
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import fr.geoking.gaston.auto.mapsforge.DownloadProgress
-import fr.geoking.gaston.auto.pmtiles.PmtilesMapManager
-import fr.geoking.gaston.auto.pmtiles.PmtilesPresetServers
+import fr.geoking.gaston.auto.map.mapsforge.DownloadProgress
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue

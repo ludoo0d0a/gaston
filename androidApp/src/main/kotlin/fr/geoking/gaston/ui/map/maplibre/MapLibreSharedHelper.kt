@@ -5,7 +5,7 @@ import fr.geoking.gaston.aac.DangerZoneTriangle
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.api.traffic.TrafficSeverity
-import fr.geoking.gaston.auto.AutoMapCamera
+import fr.geoking.gaston.ui.map.components.AutoMapCamera
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.resolveAvailabilitySummary

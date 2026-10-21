@@ -1,0 +1,224 @@
+package fr.geoking.gaston.auto.settings.map
+
+import fr.geoking.gaston.R
+import androidx.car.app.CarContext
+import androidx.car.app.Screen
+import androidx.car.app.model.*
+import fr.geoking.gaston.MapTheme
+import fr.geoking.gaston.PoiProviderSelectionMode
+import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.shared.network.NetworkService
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import fr.geoking.gaston.auto.settings.vehicle.AutoVehicleSettingsScreen
+import fr.geoking.gaston.auto.map.maplibre.CarMapLibreRenderer
+import fr.geoking.gaston.auto.safeCarTemplate
+import fr.geoking.gaston.ui.map.components.AutoSurfaceRenderer
+import fr.geoking.gaston.auto.map.displayLabel
+
+class AutoMapSettingsScreen(
+    carContext: CarContext,
+    private val settingsManager: SettingsManager
+) : Screen(carContext), KoinComponent {
+
+    private val networkService: NetworkService by inject()
+
+    override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoMapSettingsScreen", "ListTemplate") {
+        val settings = settingsManager.settings.value
+        val listBuilder = ItemList.Builder()
+
+        val mapModeLabel = settings.carMapMode.displayLabel(carContext)
+
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.settings_map_mode))
+                .addText(mapModeLabel)
+                .setOnClickListener {
+                    settingsManager.setCarMapMode(settings.carMapMode.next())
+                    invalidate()
+                }
+                .build()
+        )
+
+        val dataSourceText = when (settings.poiProviderSelectionMode) {
+            PoiProviderSelectionMode.Auto -> {
+                val net = networkService.status.value
+                val countryLine = net.countryName ?: net.countryCode
+                buildString {
+                    append(carContext.getString(R.string.action_auto_by_country))
+                    if (!countryLine.isNullOrBlank()) {
+                        append('\n').append(carContext.getString(R.string.network_country_label, countryLine))
+                    }
+                }
+            }
+            PoiProviderSelectionMode.Manual ->
+                if (settings.selectedPoiProviders.isEmpty()) carContext.getString(R.string.network_none)
+                else settings.selectedPoiProviders.joinToString(", ") { it.name }
+        }
+
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.screen_data_source))
+                .addText(dataSourceText)
+                .setOnClickListener {
+                    val next = if (settings.poiProviderSelectionMode == PoiProviderSelectionMode.Manual) {
+                        PoiProviderSelectionMode.Auto
+                    } else {
+                        PoiProviderSelectionMode.Manual
+                    }
+                    settingsManager.setPoiProviderSelectionMode(next)
+                    invalidate()
+                }
+                .build()
+        )
+
+        val themeLabel = when (settings.mapTheme) {
+            MapTheme.Dark -> carContext.getString(R.string.map_theme_dark_matter)
+            MapTheme.Voyager -> carContext.getString(R.string.map_theme_voyager)
+            MapTheme.Standard -> carContext.getString(R.string.map_theme_osm)
+            MapTheme.Positron -> carContext.getString(R.string.map_theme_positron)
+            MapTheme.Fiord -> carContext.getString(R.string.map_theme_fiord)
+            MapTheme.OsmFr -> carContext.getString(R.string.map_theme_osm_fr)
+            MapTheme.Hot -> carContext.getString(R.string.map_theme_hot)
+            MapTheme.Bright -> carContext.getString(R.string.map_theme_bright)
+            MapTheme.Liberty -> carContext.getString(R.string.map_theme_liberty)
+        }
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.settings_map_theme))
+                .addText(themeLabel)
+                .setOnClickListener {
+                    val entries = MapTheme.entries
+                    val nextTheme = entries[(settings.mapTheme.ordinal + 1) % entries.size]
+                    settingsManager.setMapTheme(nextTheme)
+                    invalidate()
+                }
+                .build()
+        )
+
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.settings_radar_warning))
+                .addText(carContext.getString(R.string.settings_radar_warning_subtitle))
+                .setToggle(
+                    Toggle.Builder { checked ->
+                        settingsManager.setRadarWarningEnabled(checked)
+                        invalidate()
+                    }.setChecked(settings.radarWarningEnabled).build()
+                )
+                .build()
+        )
+
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.screen_vehicle_and_range))
+                .addText("${settings.vehicleType.name}, ${settings.evRangeKm} km")
+                .setOnClickListener {
+                    screenManager.pop()
+                    screenManager.push(AutoVehicleSettingsScreen(carContext, settingsManager))
+                }
+                .build()
+        )
+
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.dev_debug_grid))
+                .addText(carContext.getString(R.string.dev_debug_grid_subtitle))
+                .setToggle(
+                    Toggle.Builder { checked ->
+                        settingsManager.setMapTileDebugEnabled(checked)
+                        invalidate()
+                    }.setChecked(settings.mapTileDebugEnabled).build()
+                )
+                .build()
+        )
+
+        if (settings.mapTileDebugEnabled) {
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.tile_diagnostics))
+                    .addText(carContext.getString(R.string.tile_diagnostics_subtitle))
+                    .setOnClickListener {
+                        screenManager.push(AutoTileDiagnosticsScreen(carContext))
+                    }
+                    .build()
+            )
+
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.tile_clear_cache))
+                    .addText(carContext.getString(R.string.tile_clear_cache_subtitle))
+                    .setOnClickListener {
+                        AutoSurfaceRenderer.clearTileCache()
+                        try {
+                            carContext.getCarService(androidx.car.app.AppManager::class.java)
+                                .showToast(
+                                    carContext.getString(R.string.tile_cache_cleared),
+                                    androidx.car.app.CarToast.LENGTH_SHORT
+                                )
+                        } catch (_: Exception) {}
+                        invalidate()
+                    }
+                    .build()
+            )
+        }
+
+        ListTemplate.Builder()
+            .setSingleList(listBuilder.build())
+            .setHeader(Header.Builder().setTitle(carContext.getString(R.string.screen_map_settings)).setStartHeaderAction(Action.BACK).build())
+            .build()
+    }
+}
+
+class AutoTileDiagnosticsScreen(carContext: CarContext) : Screen(carContext) {
+    override fun onGetTemplate(): Template {
+        val tileErrors = AutoSurfaceRenderer.getRecentTileErrors()
+        val snapshotErrors = CarMapLibreRenderer.getRecentSnapshotErrors()
+        val contentText = when {
+            tileErrors.isEmpty() && snapshotErrors.isEmpty() ->
+                carContext.getString(R.string.tile_no_errors)
+            else -> buildString {
+                if (snapshotErrors.isNotEmpty()) {
+                    append("MapLibre snapshot\n")
+                    append(
+                        snapshotErrors.joinToString("\n\n") { err ->
+                            val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                                .format(java.util.Date(err.timestamp))
+                            "[$time] ${err.message}"
+                        }
+                    )
+                }
+                if (tileErrors.isNotEmpty()) {
+                    if (isNotEmpty()) append("\n\n")
+                    append("Raster tiles\n")
+                    append(
+                        tileErrors.joinToString("\n\n") { err ->
+                            val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                                .format(java.util.Date(err.timestamp))
+                            carContext.getString(R.string.tile_error_entry, time, err.statusCode, err.url, err.errorMessage)
+                        }
+                    )
+                }
+            }
+        }
+
+        return MessageTemplate.Builder(contentText)
+            .setHeader(
+                Header.Builder()
+                    .setTitle(carContext.getString(R.string.tile_diagnostics))
+                    .setStartHeaderAction(Action.BACK)
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
+                    .setTitle(carContext.getString(R.string.settings_clear_logs))
+                    .setOnClickListener {
+                        AutoSurfaceRenderer.clearRecentTileErrors()
+                        CarMapLibreRenderer.clearRecentSnapshotErrors()
+                        invalidate()
+                    }
+                    .build()
+            )
+            .build()
+    }
+}

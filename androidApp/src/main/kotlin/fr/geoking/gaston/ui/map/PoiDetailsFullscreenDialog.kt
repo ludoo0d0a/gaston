@@ -420,7 +420,6 @@ fun PoiDetailsFullscreenDialog(
                             }
                         }
 
-
                         // Restaurant Details
                         poi.restaurantDetails?.let { d ->
                             SectionHeader(stringResource(R.string.poi_section_restaurant))
@@ -627,7 +626,6 @@ fun PoiDetailsFullscreenDialog(
         }
     }
 }
-
 
 @Composable
 private fun SectionHeader(title: String) {

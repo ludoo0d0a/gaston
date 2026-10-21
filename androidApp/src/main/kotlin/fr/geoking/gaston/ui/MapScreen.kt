@@ -123,7 +123,7 @@ import fr.geoking.gaston.ui.map.rememberErrorClipboardCopyHandler
 import fr.geoking.gaston.ui.map.rememberMapDataState
 import fr.geoking.gaston.ui.map.PoiOverlayHost
 import fr.geoking.gaston.ui.map.STATION_OVERLAY_CARD_HEIGHT
-
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
 /** Converts a vector drawable to a BitmapDescriptor for map markers (fromResource only supports bitmaps). Scales with zoom when sizePx varies. */
 private fun vectorDrawableToBitmapDescriptor(
     context: android.content.Context,
@@ -194,7 +194,6 @@ fun MapScreen(
     var poiSortOrder by remember { mutableStateOf(fr.geoking.gaston.ui.map.PoiSortOrder.Distance) }
     var fullErrorMessageToShow by remember { mutableStateOf<String?>(null) }
 
-
     var hasLocationPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -220,7 +219,7 @@ fun MapScreen(
             LocationHelper.getLocationUpdates(context).collect { loc ->
                 userLat = loc.latitude
                 userLon = loc.longitude
-                userHeading = fr.geoking.gaston.auto.AutoMapHeading.resolveBearing(loc, userHeading)
+                userHeading = fr.geoking.gaston.ui.map.components.AutoMapHeading.resolveBearing(loc, userHeading)
             }
         }
     }

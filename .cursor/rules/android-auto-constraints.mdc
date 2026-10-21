@@ -112,7 +112,7 @@ Official: [template restrictions — Template quota](https://developer.android.c
 
 ## Examples in codebase
 
-- Safe wrapper: `CarTemplateSafe.kt`
-- POI rows: `AutoPoiUiHelper.kt`
-- Long detail: `PoiDetailScreen.kt` (`LongMessageTemplate` + `ParkedOnlyOnClickListener` actions), `AutoAboutScreen.kt` (`LongMessageTemplate`, no actions)
-- Map + list: `CustomMapPoiScreen.kt`, `NativeMapPoiScreen.kt`
+- Safe wrapper: `auto/CarTemplateSafe.kt`
+- POI rows: `auto/poi/AutoPoiUiHelper.kt`
+- Long detail: `auto/poi/PoiDetailScreen.kt` (`LongMessageTemplate` + `ParkedOnlyOnClickListener` actions), `auto/settings/about/AutoAboutScreen.kt` (`LongMessageTemplate`, no actions)
+- Map + list: `auto/map/CustomMapPoiScreen.kt`, `auto/map/NativeMapPoiScreen.kt`

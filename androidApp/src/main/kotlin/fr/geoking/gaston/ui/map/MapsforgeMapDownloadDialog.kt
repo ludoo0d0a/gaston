@@ -14,10 +14,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.R
-import fr.geoking.gaston.auto.mapsforge.DownloadProgress
-import fr.geoking.gaston.auto.mapsforge.MapsforgeMapManager
-import fr.geoking.gaston.auto.mapsforge.MapsforgePresetServers
-import fr.geoking.gaston.auto.mapsforge.MapsforgeServerMap
+import fr.geoking.gaston.auto.map.mapsforge.DownloadProgress
+import fr.geoking.gaston.auto.map.mapsforge.MapsforgeMapManager
+import fr.geoking.gaston.auto.map.mapsforge.MapsforgePresetServers
+import fr.geoking.gaston.auto.map.mapsforge.MapsforgeServerMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.File

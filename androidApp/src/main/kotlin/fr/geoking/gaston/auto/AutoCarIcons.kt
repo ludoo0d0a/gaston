@@ -11,6 +11,8 @@ import fr.geoking.gaston.R
 import fr.geoking.gaston.feature.emergency.EmergencyCategory
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
+import fr.geoking.gaston.auto.poi.AutoPoiUiHelper
 
 /**
  * Tinted [CarIcon] helpers for Android Auto UI chrome (dashboard, action strips).

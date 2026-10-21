@@ -388,10 +388,10 @@ Additional rules:
 - `LongMessageTemplate` body actions added via `addAction()` **must** wrap their click listener in
   `ParkedOnlyOnClickListener.create { … }`. A plain `setOnClickListener` throws
   `IllegalArgumentException` when the template is built, which the host surfaces as a rejected
-  screen (see `PoiDetailScreen.kt`).
+  screen (see `auto/poi/PoiDetailScreen.kt`).
 - `MessageTemplate` supports at most **2** `addAction()` calls and an optional icon.
 
-Reference implementations: `AutoAboutScreen.kt` (long scrollable text, no actions), `PoiDetailScreen.kt` (`LongMessageTemplate` with `ParkedOnlyOnClickListener` actions), `ErrorScreen.kt` (short status).
+Reference implementations: `auto/settings/about/AutoAboutScreen.kt` (long scrollable text, no actions), `auto/poi/PoiDetailScreen.kt` (`LongMessageTemplate` with `ParkedOnlyOnClickListener` actions), `auto/ErrorScreen.kt` (short status).
 
 ---
 
@@ -429,7 +429,7 @@ Do not put all map controls on the ActionStrip; strict hosts reject overloaded s
 
 ## safeCarTemplate wrapper
 
-`CarTemplateSafe.kt` wraps every `onGetTemplate()` call:
+`auto/CarTemplateSafe.kt` wraps every `onGetTemplate()` call:
 
 - Catches any `Exception` thrown during template build (e.g. `IllegalStateException` from the
   library's constraint validators).

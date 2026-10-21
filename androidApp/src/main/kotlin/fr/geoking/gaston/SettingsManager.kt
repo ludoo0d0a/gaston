@@ -31,7 +31,7 @@ enum class BulkFileDownloadPolicy {
 }
 
 enum class CarMapMode {
-  /** Host Google map on Android Auto ([NativeMapPoiScreen]). */
+  /** Host Google map on Android Auto ([fr.geoking.gaston.auto.map.NativeMapPoiScreen]). */
     Native,
   /** Raster OSM / OpenFreeMap tiles on AA surface — frozen reference implementation. */
     Raster,
@@ -65,8 +65,9 @@ enum class CarMapMode {
         /** Maps a persisted name (including removed/renamed modes) to a current mode. */
         fun fromStored(name: String?): CarMapMode = when (name) {
             null -> Native
-            "MapLibre", "MapTiler", "Protomaps" -> MapLibreMapSnapshotter
-            "MapLibrePresentation", "MapLibreEgl" -> MapLibreVirtualDisplay
+            "MapLibre" -> MapLibreMapSnapshotter
+            "MapLibrePresentation" -> MapLibreVirtualDisplay
+            "MapLibreEgl" -> MapLibreEglDirect
             else -> entries.firstOrNull { it.name == name } ?: Native
         }
     }

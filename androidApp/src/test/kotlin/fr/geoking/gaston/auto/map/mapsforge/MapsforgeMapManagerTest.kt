@@ -2,9 +2,6 @@ package fr.geoking.gaston.auto.map.mapsforge
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import fr.geoking.gaston.auto.mapsforge.DownloadProgress
-import fr.geoking.gaston.auto.mapsforge.MapsforgeMapManager
-import fr.geoking.gaston.auto.mapsforge.MapsforgePresetServers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue

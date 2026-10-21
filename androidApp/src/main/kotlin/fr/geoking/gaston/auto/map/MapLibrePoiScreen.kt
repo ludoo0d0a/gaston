@@ -1,0 +1,1201 @@
+package fr.geoking.gaston.auto.map
+
+import android.util.Log
+import androidx.annotation.VisibleForTesting
+import androidx.car.app.CarContext
+import androidx.car.app.Screen
+import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
+import androidx.car.app.model.Header
+import androidx.car.app.model.ItemList
+import androidx.car.app.model.MessageTemplate
+import androidx.car.app.navigation.model.MapController
+import androidx.car.app.navigation.model.MapWithContentTemplate
+import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.Template
+import android.graphics.Rect
+import androidx.car.app.SurfaceCallback
+import androidx.car.app.SurfaceContainer
+import androidx.car.app.AppManager
+import androidx.car.app.CarToast
+import androidx.car.app.constraints.ConstraintManager
+import com.google.android.gms.location.Priority
+import androidx.lifecycle.DefaultLifecycleObserver
+import fr.geoking.gaston.poi.PoiProviderType
+import androidx.lifecycle.lifecycleScope
+import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.FuelCard
+import fr.geoking.gaston.MapTheme
+import fr.geoking.gaston.R
+import fr.geoking.gaston.entitlements.Feature
+import fr.geoking.gaston.SettingsManager
+import fr.geoking.gaston.StationMapFilters
+import fr.geoking.gaston.VehicleType
+import fr.geoking.gaston.filterPoisByViewport
+import fr.geoking.gaston.poi.MapPoiFilter
+import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiMerger
+import fr.geoking.gaston.poi.PoiSearchRequest
+import fr.geoking.gaston.poi.PoiSearchResult
+import fr.geoking.gaston.poi.PoiProviderError
+import fr.geoking.gaston.community.CommunityPoiRepository
+import fr.geoking.gaston.community.FavoritesRepository
+import fr.geoking.gaston.di.MapDeps
+import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.LoadedPoiRegion
+import fr.geoking.gaston.poi.mergeLoadedRegion
+import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
+import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.api.geocoding.GeocodingClient
+import fr.geoking.gaston.api.routing.RoutePlanner
+import fr.geoking.gaston.api.routing.RoutingClient
+import fr.geoking.gaston.api.traffic.TrafficEvent
+import fr.geoking.gaston.api.traffic.TrafficProviderFactory
+import fr.geoking.gaston.effectiveIrvePowerLevels
+import fr.geoking.gaston.effectiveMapEnergyFilterIds
+import fr.geoking.gaston.effectiveProvidersAt
+import fr.geoking.gaston.feature.location.LocationHelper
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import fr.geoking.gaston.toll.TollCalculator
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import fr.geoking.gaston.api.belib.matchAvailabilityToPois
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import fr.geoking.gaston.auto.poi.AutoPoiUiHelper
+import fr.geoking.gaston.auto.pushMapScreen
+import fr.geoking.gaston.auto.safeCarTemplate
+import fr.geoking.gaston.auto.swapMapMode
+import fr.geoking.gaston.auto.actionCompassIcon
+import fr.geoking.gaston.auto.actionMapIcon
+import fr.geoking.gaston.auto.actionSettingsIcon
+import fr.geoking.gaston.auto.actionZoomInIcon
+import fr.geoking.gaston.auto.actionZoomOutIcon
+import fr.geoking.gaston.auto.cheapestFilterAction
+import fr.geoking.gaston.auto.compassArrowSector
+import fr.geoking.gaston.auto.menuVisibilityAction
+import fr.geoking.gaston.auto.settings.map.AutoMapSettingsScreen
+import fr.geoking.gaston.ui.map.components.AutoMapCamera
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
+import fr.geoking.gaston.ui.map.components.AutoTrafficOverlay
+import fr.geoking.gaston.ui.map.components.MapOrientationMode
+import fr.geoking.gaston.ui.map.components.OfflineMapAvailability
+import fr.geoking.gaston.ui.map.components.shouldAddTrailPoint
+import fr.geoking.gaston.ui.map.components.shouldRedrawFromMovement
+import fr.geoking.gaston.ui.map.components.shouldRequeryForViewportChange
+import fr.geoking.gaston.ui.map.components.shouldRequeryPois
+import fr.geoking.gaston.ui.map.components.AutoMapPoiHitTest
+
+/**
+ * POI map with a canvas surface renderer (MapLibre, Mapsforge).
+ * [CustomMapPoiScreen] is the frozen raster reference and does not use this screen.
+ */
+open class MapLibrePoiScreen(
+    carContext: CarContext,
+    private val poiProvider: PoiProvider,
+    private val availabilityProviderFactory: BorneAvailabilityProviderFactory,
+    private val settingsManager: SettingsManager,
+    private val routePlanner: RoutePlanner? = null,
+    private val routingClient: RoutingClient? = null,
+    private val tollCalculator: TollCalculator? = null,
+    private val trafficProviderFactory: TrafficProviderFactory? = null,
+    private val geocodingClient: GeocodingClient? = null,
+    private val communityRepo: CommunityPoiRepository? = null,
+    private val favoritesRepo: FavoritesRepository? = null,
+    private val title: String = carContext.getString(R.string.dashboard_nearby_stations),
+    private val itineraryPoints: List<Pair<Double, Double>> = emptyList(),
+    private val canvasMapModeConfig: CanvasMapModeConfig = CanvasMapModeConfig.mapLibreSnapshotter(carContext),
+    private val mapDeps: MapDeps? = null,
+) : Screen(carContext), SurfaceCallback, DefaultLifecycleObserver, MapSurfaceOwner {
+
+    private var surfaceAttached = false
+
+    private var pois: List<Poi> = emptyList()
+    private var errors: List<PoiProviderError> = emptyList()
+    private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
+    private var favoriteIds: Set<String> = emptySet()
+    private var isLoading = true
+    private var isQueryPending = false
+    private var queryGeneration: Int = 0
+    private var searchLat: Double = settingsManager.settings.value.lastKnownLat ?: 48.8566
+    private var searchLon: Double = settingsManager.settings.value.lastKnownLon ?: 2.3522
+    private var zoom: Int = AutoMapCamera.DEFAULT_ZOOM
+    private var sortByPrice: Boolean = false
+    private var isCheapestFilterActive: Boolean = false
+    private var isMenuVisible: Boolean = true
+    private var currentVisibleArea: Rect? = null
+    private var mapWidthPx: Int = 800
+    private var mapHeightPx: Int = 480
+
+    private var mapRenderer: AaMapSurfaceRenderer? = null
+
+    /** Test seam: lets tests read the renderer's state (e.g. offlineUnavailable) without exposing it in production. */
+    @VisibleForTesting
+    internal val mapRendererForTest: AaMapSurfaceRenderer?
+        get() = mapRenderer
+
+    private var headingUpdateJob: Job? = null
+    private var orientationMode: MapOrientationMode = MapOrientationMode.HeadingUp
+    private var lastKnownBearingDegrees: Float = 0f
+    private var lastCompassSector: Int = 0
+    private var lastMapOrientationUpdateMillis: Long = 0
+    private val historyPoints = mutableListOf<Pair<Double, Double>>()
+
+    /** Last resolved search center; combined with settings so auto mode reloads when the vehicle moves across regions. */
+    private val searchCenterFlow = MutableStateFlow(searchLat to searchLon)
+
+    private var lastCameraFitWidth: Int = 0
+    private var lastCameraFitHeight: Int = 0
+    private var hasAppliedVisibleAreaCamera: Boolean = false
+    private var lastAppliedSearchLat: Double = searchLat
+    private var lastAppliedSearchLon: Double = searchLon
+    private var lastAppliedZoom: Int = zoom
+    private var lastSyncedPoiIds: List<String> = emptyList()
+    private var visibleAreaCameraJob: Job? = null
+    /** When set, map markers are filtered to this station only (selection / detail handoff). */
+    private var mapSelectedPoi: Poi? = null
+    private var lastQueryCoverage: LoadedPoiRegion? = null
+    private var lastRedrawPosition: Pair<Double, Double>? = null
+    private var trafficEvents: List<TrafficEvent> = emptyList()
+    private var trafficPois: List<Poi> = emptyList()
+
+    private fun openStationDetail(poi: Poi, availability: StationAvailabilitySummary?) {
+        loadPoisJob?.cancel()
+        isQueryPending = false
+        isLoading = false
+        val settings = settingsManager.settings.value
+        val energies = settings.effectiveMapEnergyFilterIds()
+        val powerLevels = settings.effectiveIrvePowerLevels()
+        mapSelectedPoi = poi
+        // Center + filter before push so a shared MapWithContent surface keeps only this station.
+        lastAppliedSearchLat = poi.latitude
+        lastAppliedSearchLon = poi.longitude
+        lastAppliedZoom = zoom
+        mapRenderer?.updateLocation(poi.latitude, poi.longitude, zoom)
+        syncRendererWithMapState()
+        screenManager.push(
+            canvasMapModeConfig.createStationDetailScreen(
+                carContext,
+                poi,
+                availability,
+                searchLat,
+                searchLon,
+                zoom,
+                orientationMode,
+                lastKnownBearingDegrees,
+                energies,
+                powerLevels,
+                settingsManager,
+                favoritesRepo,
+            ) {
+                mapSelectedPoi = null
+                lastAppliedSearchLat = searchLat
+                lastAppliedSearchLon = searchLon
+                mapRenderer?.updateLocation(searchLat, searchLon, zoom)
+                syncRendererWithMapState()
+                invalidate()
+            }
+        )
+    }
+
+    init {
+        lifecycle.addObserver(this)
+        mapRenderer = createMapRenderer()
+        lifecycleScope.launch {
+            combine(settingsManager.settings, searchCenterFlow) { s, (la, lo) ->
+                PoiFetchSettings(
+                    s.effectiveProvidersAt(la, lo),
+                    s.useVehicleFilter,
+                    s.fuelCard,
+                    s.vehicleType,
+                    s.vehicleEnergy,
+                    s.selectedOverpassAmenityTypes,
+                    s.mapTrafficEnabled,
+                    s.selectedPoiProviders.filter { it.providesTraffic }.toSet(),
+                )
+            }
+                .distinctUntilChanged()
+                .collectLatest {
+                    loadPois(showLoading = pois.isEmpty())
+                }
+        }
+        lifecycleScope.launch {
+            settingsManager.settings
+                .map { s ->
+                    PoiFilterSettings(
+                        s.selectedMapEnergyTypes,
+                        s.mapPowerLevels,
+                        s.mapIrveOperators,
+                        s.mapBrands,
+                        s.selectedMapConnectorTypes,
+                        s.vehicleGasTypes,
+                        s.vehiclePowerLevels,
+                        s.mapTheme
+                    )
+                }
+                .distinctUntilChanged()
+                .collectLatest {
+                    syncRendererWithMapState()
+                    invalidate()
+                }
+        }
+        lifecycleScope.launch {
+            settingsManager.settings
+                .map { it.mapTileDebugEnabled }
+                .distinctUntilChanged()
+                .collectLatest {
+                    mapRenderer?.requestRedraw()
+                    invalidate()
+                }
+        }
+    }
+
+    private companion object {
+        private const val VISIBLE_AREA_SIZE_DELTA_PX = 8
+        private const val VISIBLE_AREA_CAMERA_DEBOUNCE_MS = 150L
+    }
+
+    private fun recordQueryCoverage(lat: Double, lon: Double) {
+        lastQueryCoverage = mergeLoadedRegion(
+            existing = lastQueryCoverage,
+            centerLat = lat,
+            centerLng = lon,
+            requiredRadiusKm = currentSearchRadiusKm().toInt(),
+            loadedAtMs = System.currentTimeMillis(),
+            fetchedProviders = emptySet(),
+            fetchedCategories = emptySet(),
+        )
+        lastRedrawPosition = lat to lon
+    }
+
+    private data class PoiFetchSettings(
+        val providers: Set<PoiProviderType>,
+        val useVehicleFilter: Boolean,
+        val fuelCard: FuelCard,
+        val vehicleType: VehicleType,
+        val vehicleEnergy: String,
+        val amenities: Set<String>,
+        val mapTrafficEnabled: Boolean,
+        val trafficProviders: Set<PoiProviderType>,
+    )
+
+    private data class PoiFilterSettings(
+        val energies: Set<String>,
+        val powerLevels: Set<Int>,
+        val operators: Set<String>,
+        val brands: Set<String>,
+        val connectors: Set<String>,
+        val vehicleGasTypes: Set<String>,
+        val vehiclePowerLevels: Set<Int>,
+        val mapTheme: MapTheme
+    )
+
+    private fun getFilteredPois(currentSettings: AppSettings): List<Poi> {
+        val effectiveProviders = currentSettings.effectiveProvidersAt(searchLat, searchLon)
+        val basePois = StationMapFilters.apply(
+            settings = currentSettings,
+            pois = pois,
+            providers = effectiveProviders,
+            skipWhenOnlyOverpass = true
+        )
+
+        val (fitW, fitH) = mapFitSizePx()
+        val visiblePois = filterPoisByViewport(
+            pois = basePois,
+            lat = searchLat,
+            lon = searchLon,
+            zoom = zoom.toFloat(),
+            widthPx = fitW,
+            heightPx = fitH
+        )
+
+        return if (isCheapestFilterActive) {
+            val fuelIds = currentSettings.effectiveMapEnergyFilterIds() - "electric"
+            val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
+            MapPoiFilter.filterCheapest(
+                pois = visiblePois,
+                selectedFuelIds = fuelIds,
+                isLuxembourg = isLuxembourg,
+                fromLat = searchLat,
+                fromLon = searchLon,
+                limit = MapPoiFilter.CAR_CHEAPEST_COUNT,
+            )
+        } else {
+            visiblePois
+        }
+    }
+
+    private fun mapFitSizePx(): Pair<Int, Int> {
+        val area = currentVisibleArea
+        return if (area != null && area.width() > 0 && area.height() > 0) {
+            area.width() to area.height()
+        } else {
+            mapWidthPx to mapHeightPx
+        }
+    }
+
+    /** Viewport sized to the host-visible map boundary when zoomed out; null when default nearby radius covers the screen. */
+    private fun currentSearchViewport() = mapFitSizePx().let { (w, h) ->
+        AutoMapCamera.searchViewportOrNull(
+            centerLat = searchLat,
+            centerLon = searchLon,
+            zoom = zoom,
+            mapWidthPx = w,
+            mapHeightPx = h,
+        )
+    }
+
+    /** Search radius matching the visible map (at least the default nearby radius). */
+    private fun currentSearchRadiusKm(): Double = mapFitSizePx().let { (w, h) ->
+        AutoMapCamera.searchRadiusKm(
+            centerLat = searchLat,
+            centerLon = searchLon,
+            zoom = zoom,
+            mapWidthPx = w,
+            mapHeightPx = h,
+        ).toDouble()
+    }
+
+    private fun applyCameraForStations(
+        userLat: Double,
+        userLon: Double,
+        stations: List<Poi>,
+        settings: AppSettings,
+        preserveZoom: Boolean = false,
+    ) {
+        val (fitW, fitH) = mapFitSizePx()
+        val fuelIds = settings.effectiveMapEnergyFilterIds() - "electric"
+        val camera = if (preserveZoom) {
+            AutoMapCamera.Camera(userLat, userLon, zoom)
+        } else {
+            AutoMapCamera.cameraForMapFocus(
+                userLat = userLat,
+                userLon = userLon,
+                stations = stations,
+                mapWidthPx = fitW,
+                mapHeightPx = fitH,
+                fallbackZoom = AutoMapCamera.DEFAULT_ZOOM,
+                sortByPrice = sortByPrice,
+                selectedFuelIds = fuelIds,
+            )
+        }
+        searchLat = camera.centerLat
+        searchLon = camera.centerLon
+        zoom = if (preserveZoom) zoom else camera.zoom
+        lastAppliedSearchLat = searchLat
+        lastAppliedSearchLon = searchLon
+        lastAppliedZoom = zoom
+    }
+
+    private fun shouldRefitCameraForVisibleArea(area: Rect): Boolean {
+        if (area.width() <= 0 || area.height() <= 0) return false
+        if (!hasAppliedVisibleAreaCamera) return true
+        return abs(area.width() - lastCameraFitWidth) > VISIBLE_AREA_SIZE_DELTA_PX ||
+            abs(area.height() - lastCameraFitHeight) > VISIBLE_AREA_SIZE_DELTA_PX
+    }
+
+    private fun refitCameraForVisibleAreaIfNeeded() {
+        val area = currentVisibleArea ?: return
+        if (isLoading || !shouldRefitCameraForVisibleArea(area)) return
+        val settings = settingsManager.settings.value
+        val filteredPois = getFilteredPois(settings)
+        if (filteredPois.isEmpty() && itineraryPoints.isEmpty()) return
+
+        val prevLat = searchLat
+        val prevLon = searchLon
+        val prevZoom = zoom
+        val (userLat, userLon) = searchCenterFlow.value
+        if (itineraryPoints.isNotEmpty()) {
+            applyCameraForItinerary(userLat, userLon, filteredPois)
+        } else {
+            applyCameraForStations(userLat, userLon, filteredPois, settings)
+        }
+        lastCameraFitWidth = area.width()
+        lastCameraFitHeight = area.height()
+        hasAppliedVisibleAreaCamera = true
+
+        if (prevLat != searchLat || prevLon != searchLon || prevZoom != zoom) {
+            Log.d(
+                "MapLibrePoiScreen",
+                "refitCamera applied area=${area.width()}x${area.height()} zoom=$prevZoom->$zoom"
+            )
+            syncRendererWithMapState()
+        }
+    }
+
+    private fun syncRendererWithMapState() {
+        val renderer = mapRenderer ?: return
+        val settings = settingsManager.settings.value
+        val offlineReady = !canvasMapModeConfig.requiresOfflineFile ||
+            OfflineMapAvailability.isOfflineFileAvailable(settings)
+        val styleUrl = canvasMapModeConfig.styleUrlResolver(settings, carContext)
+        renderer.offlineUnavailable = when {
+            canvasMapModeConfig.requiresOfflineFile && !offlineReady -> true
+            styleUrl == null -> true
+            else -> false
+        }
+        if (styleUrl != null) {
+            renderer.setStyleUrl(styleUrl)
+        }
+        val filteredPois = getFilteredPois(settings)
+        val poiIds = filteredPois.map { it.id }
+
+        val selected = mapSelectedPoi
+        val cameraLat = selected?.latitude ?: searchLat
+        val cameraLon = selected?.longitude ?: searchLon
+        if (cameraLat != lastAppliedSearchLat ||
+            cameraLon != lastAppliedSearchLon ||
+            zoom != lastAppliedZoom
+        ) {
+            renderer.updateLocation(cameraLat, cameraLon, zoom)
+            lastAppliedSearchLat = cameraLat
+            lastAppliedSearchLon = cameraLon
+            lastAppliedZoom = zoom
+        }
+        renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
+        // Show the same filtered stations as the list; focus stations are only for zoom.
+        // When a station is selected, keep only that marker (detail handoff / shared surface).
+        val mapPois = if (selected != null) {
+            listOf(selected)
+        } else {
+            filteredPois + trafficPois
+        }
+        renderer.updatePois(
+            newPois = mapPois,
+            effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
+            effectivePowerLevels = settings.effectiveIrvePowerLevels(),
+            availability = availabilityByPoiId,
+            selectedId = selected?.id,
+        )
+        renderer.updateTraffic(if (settings.mapTrafficEnabled) trafficEvents else emptyList())
+        val (userLat, userLon) = searchCenterFlow.value
+        renderer.updateSearchRadius(
+            centerLat = userLat,
+            centerLon = userLon,
+            radiusKm = if (itineraryPoints.isEmpty()) {
+                currentSearchRadiusKm()
+            } else {
+                null
+            },
+        )
+        renderer.setQueryPending(isQueryPending)
+        lastSyncedPoiIds = poiIds
+    }
+
+    private suspend fun searchPoisWithZoomOut(
+        userLat: Double,
+        userLon: Double,
+        settings: AppSettings,
+        preserveZoom: Boolean = false
+    ): Pair<List<Poi>, List<PoiProviderError>> {
+        if (itineraryPoints.isNotEmpty() && routePlanner != null) {
+            val result = routePlanner.getStationsAlongRoute(
+                points = itineraryPoints,
+                poiProvider = poiProvider
+            )
+            val loadedPois = result.getOrDefault(emptyList())
+            val filteredPois = StationMapFilters.apply(
+                settings = settings,
+                pois = loadedPois,
+                providers = settings.effectiveProvidersAt(userLat, userLon),
+                skipWhenOnlyOverpass = true
+            )
+            applyCameraForItinerary(userLat, userLon, filteredPois)
+            return loadedPois to emptyList()
+        }
+
+        if (preserveZoom) {
+            val filteredPois = getFilteredPois(settings)
+            applyCameraForStations(userLat, userLon, filteredPois, settings, preserveZoom = true)
+            return pois to errors
+        }
+
+        var lastResult = PoiSearchResult()
+        poiProvider.searchFlow(
+            PoiSearchRequest(
+                latitude = userLat,
+                longitude = userLon,
+                viewport = currentSearchViewport(),
+                categories = emptySet(),
+                skipFilters = true,
+            )
+        ).collect { result ->
+            lastResult = result
+            val filteredPois = StationMapFilters.apply(
+                settings = settings,
+                pois = result.pois,
+                providers = settings.effectiveProvidersAt(userLat, userLon),
+                skipWhenOnlyOverpass = true,
+            )
+            applyCameraForStations(userLat, userLon, filteredPois, settings)
+        }
+        return lastResult.pois to lastResult.errors
+    }
+
+    private fun applyCameraForItinerary(userLat: Double, userLon: Double, stations: List<Poi>) {
+        val pointsToFit = itineraryPoints + stations.map { it.latitude to it.longitude }
+        if (pointsToFit.isEmpty()) return
+
+        var minLat = pointsToFit.minOf { it.first }
+        var maxLat = pointsToFit.maxOf { it.first }
+        var minLon = pointsToFit.minOf { it.second }
+        var maxLon = pointsToFit.maxOf { it.second }
+
+        val (fitW, fitH) = mapFitSizePx()
+        val zoomLevel = AutoMapCamera.zoomForBounds(
+            minLat = minLat,
+            maxLat = maxLat,
+            minLng = minLon,
+            maxLng = maxLon,
+            mapWidthPx = fitW,
+            mapHeightPx = fitH
+        )
+
+        searchLat = (minLat + maxLat) / 2.0
+        searchLon = (minLon + maxLon) / 2.0
+        zoom = zoomLevel
+        lastAppliedSearchLat = searchLat
+        lastAppliedSearchLon = searchLon
+        lastAppliedZoom = zoom
+    }
+
+    private var loadPoisJob: Job? = null
+
+    private fun loadPois(preserveZoom: Boolean = false, showLoading: Boolean = true) {
+        if (mapSelectedPoi != null) return
+        loadPoisJob?.cancel()
+        val gen = ++queryGeneration
+        loadPoisJob = lifecycleScope.launch {
+            isQueryPending = true
+            syncRendererWithMapState()
+            if (showLoading) {
+                isLoading = true
+                invalidate()
+            }
+
+            var queryLat: Double? = null
+            var queryLon: Double? = null
+            try {
+                val location = LocationHelper.getCurrentLocation(carContext)
+                val (lat, lon) = if (location != null) {
+                    settingsManager.saveLastKnownLocation(location.latitude, location.longitude)
+                    location.latitude to location.longitude
+                } else {
+                    LocationHelper.getInitialLocation(carContext, settingsManager)
+                }
+                queryLat = lat
+                queryLon = lon
+
+                searchCenterFlow.value = lat to lon
+                lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+                Log.d("MapLibrePoiScreen", "loadPois search center lat=$lat lon=$lon bearing=$lastKnownBearingDegrees")
+
+                if (itineraryPoints.isEmpty()) {
+                    searchLat = lat
+                    searchLon = lon
+                }
+
+                mapRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+                applyMapOrientationToRenderer()
+
+                val settings = settingsManager.settings.value
+                trafficEvents = AutoTrafficOverlay.loadEvents(
+                    factory = trafficProviderFactory,
+                    settings = settings,
+                    centerLat = lat,
+                    centerLon = lon,
+                    viewport = currentSearchViewport(),
+                )
+                trafficPois = AutoTrafficOverlay.toMapPois(trafficEvents)
+
+                if (itineraryPoints.isNotEmpty() && routePlanner != null) {
+                    val result = routePlanner.getStationsAlongRoute(
+                        points = itineraryPoints,
+                        poiProvider = poiProvider
+                    )
+                    pois = result.getOrDefault(emptyList())
+                    errors = emptyList()
+                    val filteredPois = getFilteredPois(settings)
+                    applyCameraForItinerary(lat, lon, filteredPois)
+                    mapRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+                    syncRendererWithMapState()
+                    isLoading = false
+                    refitCameraForVisibleAreaIfNeeded()
+                    invalidate()
+
+                    // Availability for itinerary stations
+                    val provider = availabilityProviderFactory.getProvider(lat, lon)
+                    if (provider != null) {
+                        val availabilities = try {
+                            provider.getAvailability(lat, lon, 10)
+                        } catch (e: Exception) {
+                            if (e is kotlinx.coroutines.CancellationException) throw e
+                            emptyList()
+                        }
+                        availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
+                        syncRendererWithMapState()
+                        invalidate()
+                    }
+                } else {
+                    suspend fun collectNearbySearch(preserveCameraZoom: Boolean) {
+                        poiProvider.searchFlow(
+                            PoiSearchRequest(
+                                latitude = lat,
+                                longitude = lon,
+                                viewport = currentSearchViewport(),
+                                categories = emptySet(),
+                                skipFilters = true,
+                            )
+                        ).collect { result ->
+                            pois = PoiMerger.mergeInto(pois, result.pois)
+                            errors = result.errors
+                            val filteredPois = getFilteredPois(settings)
+
+                            applyCameraForStations(
+                                userLat = lat,
+                                userLon = lon,
+                                stations = filteredPois,
+                                settings = settings,
+                                preserveZoom = preserveCameraZoom,
+                            )
+                            mapRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+                            syncRendererWithMapState()
+                            isLoading = false
+                            refitCameraForVisibleAreaIfNeeded()
+                            invalidate()
+
+                            val provider = availabilityProviderFactory.getProvider(lat, lon)
+                            if (provider != null) {
+                                val availabilityRadiusKm = currentSearchRadiusKm().toInt().coerceIn(10, 20)
+                                val availabilities = try {
+                                    provider.getAvailability(lat, lon, availabilityRadiusKm)
+                                } catch (e: Exception) {
+                                    if (e is kotlinx.coroutines.CancellationException) throw e
+                                    emptyList()
+                                }
+                                availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
+                                syncRendererWithMapState()
+                                invalidate()
+                            }
+                        }
+                    }
+
+                    val radiusBeforeCameraKm = currentSearchRadiusKm()
+                    collectNearbySearch(preserveCameraZoom = preserveZoom)
+                    // Camera may zoom out to frame focus stations; re-query for that wider visible boundary.
+                    if (!preserveZoom && currentSearchRadiusKm() > radiusBeforeCameraKm) {
+                        collectNearbySearch(preserveCameraZoom = true)
+                    }
+                }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                Log.e("MapLibrePoiScreen", "loadPois failed", e)
+                pois = emptyList()
+                errors = listOf(PoiProviderError("System", e.message ?: "Unknown error", isCritical = true))
+            } finally {
+                if (gen == queryGeneration) {
+                    val lat = queryLat
+                    val lon = queryLon
+                    if (lat != null && lon != null && itineraryPoints.isEmpty()) {
+                        recordQueryCoverage(lat, lon)
+                    }
+                    isQueryPending = false
+                    isLoading = false
+                    syncRendererWithMapState()
+                    invalidate()
+                }
+            }
+        }
+    }
+
+    /**
+     * MapWithContentTemplate with a surface renderer allows at most one action on the top [ActionStrip].
+     * Extra actions (e.g. API errors) belong on the nested template [Header].
+     */
+    private fun pushApiErrorsDetailScreen() {
+        val errorMsg = errors.joinToString("\n") { "${it.providerName}: ${it.message}" }
+        screenManager.push(
+            object : Screen(carContext) {
+                override fun onGetTemplate(): Template {
+                    return MessageTemplate.Builder(errorMsg)
+                        .setHeader(
+                            Header.Builder()
+                                .setTitle(carContext.getString(R.string.screen_api_errors))
+                                .setStartHeaderAction(Action.BACK)
+                                .build()
+                        )
+                        .addAction(
+                            Action.Builder()
+                                .setTitle(carContext.getString(R.string.action_retry))
+                                .setOnClickListener {
+                                    screenManager.pop()
+                                    loadPois()
+                                }
+                                .build()
+                        )
+                        .build()
+                }
+            }
+        )
+    }
+
+    private fun mapContentHeaderBuilder(
+        title: String,
+        @Suppress("UNUSED_PARAMETER") currentSettings: AppSettings,
+        cheapestAction: Action? = null,
+        visibilityAction: Action? = null,
+    ): Header.Builder {
+        val builder = Header.Builder()
+            .setTitle(title)
+            .setStartHeaderAction(Action.BACK)
+        if (cheapestAction != null) {
+            builder.addEndHeaderAction(cheapestAction)
+        }
+        if (visibilityAction != null) {
+            builder.addEndHeaderAction(visibilityAction)
+        }
+        return builder
+    }
+
+    private fun applyMapOrientationToRenderer() {
+        mapRenderer?.setMapOrientation(orientationMode, lastKnownBearingDegrees)
+        lastMapOrientationUpdateMillis = System.currentTimeMillis()
+    }
+
+    private fun mapCompassBearing(): Float =
+        AutoMapHeading.effectiveBearing(orientationMode, lastKnownBearingDegrees)
+
+    /** Rebuild ActionStrip when the 22.5° compass icon sector changes. */
+    private fun invalidateIfCompassSectorChanged() {
+        val sector = compassArrowSector(mapCompassBearing())
+        if (sector != lastCompassSector) {
+            lastCompassSector = sector
+            invalidate()
+        }
+    }
+
+    protected open fun createMapRenderer(): AaMapSurfaceRenderer =
+        canvasMapModeConfig.createRenderer(carContext, lifecycle, canvasMapModeConfig).also { renderer ->
+            renderer.hudModeLabel = canvasMapModeConfig.hudLabel
+            renderer.onFatalError = { fallbackToCustomMap() }
+        }
+
+    /** The renderer cannot show a map any more: switch to the Custom raster mode so a map is always visible. */
+    private fun fallbackToCustomMap() {
+        val deps = mapDeps ?: return
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) return
+        if (settingsManager.settings.value.carMapMode == fr.geoking.gaston.CarMapMode.Raster) return
+        Log.e("MapLibrePoiScreen", "Renderer failed; falling back to Custom map mode")
+        releaseSurface()
+        settingsManager.setCarMapMode(fr.geoking.gaston.CarMapMode.Raster)
+        screenManager.pop()
+        pushMapScreen(settingsManager, deps, title)
+    }
+
+    private fun toggleMapOrientation() {
+        orientationMode = when (orientationMode) {
+            MapOrientationMode.NorthUp -> MapOrientationMode.HeadingUp
+            MapOrientationMode.HeadingUp -> MapOrientationMode.NorthUp
+        }
+        applyMapOrientationToRenderer()
+        if (orientationMode == MapOrientationMode.HeadingUp) {
+            lifecycleScope.launch { refreshHeadingFromLocation() }
+        } else {
+            syncRendererWithMapState()
+        }
+        invalidate()
+    }
+
+    private fun recenterMap() {
+        lifecycleScope.launch {
+            val location = LocationHelper.getCurrentLocation(carContext)
+            if (location != null) {
+                searchLat = location.latitude
+                searchLon = location.longitude
+                settingsManager.saveLastKnownLocation(location.latitude, location.longitude)
+                searchCenterFlow.value = searchLat to searchLon
+                lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+                mapRenderer?.updateLocation(searchLat, searchLon, zoom)
+                mapRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
+                applyMapOrientationToRenderer()
+            }
+            loadPois(preserveZoom = true)
+        }
+    }
+
+    private fun startHeadingUpdates() {
+        stopHeadingUpdates()
+        headingUpdateJob = lifecycleScope.launch {
+            while (isActive) {
+                refreshHeadingFromLocation()
+                delay(30_000)
+            }
+        }
+    }
+
+    private fun stopHeadingUpdates() {
+        headingUpdateJob?.cancel()
+        headingUpdateJob = null
+    }
+
+    private suspend fun refreshHeadingFromLocation() {
+        val priority = if (orientationMode == MapOrientationMode.HeadingUp) {
+            Priority.PRIORITY_HIGH_ACCURACY
+        } else {
+            Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        }
+        val location = LocationHelper.getCurrentLocation(carContext, timeoutMs = 2_000L, priority = priority)
+        if (location != null) {
+            val lat = location.latitude
+            val lon = location.longitude
+            val newPos = lat to lon
+            lastKnownBearingDegrees = AutoMapHeading.resolveBearing(location, lastKnownBearingDegrees)
+
+            searchLat = lat
+            searchLon = lon
+            searchCenterFlow.value = newPos
+            // Keep following the vehicle after zoom; only freeze the camera while a station is selected.
+            if (mapSelectedPoi == null) {
+                mapRenderer?.updateLocation(lat, lon, zoom)
+                lastAppliedSearchLat = lat
+                lastAppliedSearchLon = lon
+                lastAppliedZoom = zoom
+            }
+            mapRenderer?.updateUserLocation(lat, lon, lastKnownBearingDegrees)
+
+            if (shouldAddTrailPoint(historyPoints.lastOrNull(), newPos)) {
+                historyPoints.add(newPos)
+            }
+
+            val shouldRequery = itineraryPoints.isEmpty() &&
+                mapSelectedPoi == null &&
+                shouldRequeryPois(lastQueryCoverage, lat, lon, currentSearchRadiusKm().toInt())
+            if (shouldRequery) {
+                loadPois(preserveZoom = true, showLoading = false)
+            } else if (shouldRedrawFromMovement(lastRedrawPosition, newPos)) {
+                lastRedrawPosition = newPos
+                syncRendererWithMapState()
+                if (orientationMode == MapOrientationMode.HeadingUp) {
+                    applyMapOrientationToRenderer()
+                } else {
+                    invalidate()
+                }
+            } else if (orientationMode == MapOrientationMode.HeadingUp) {
+                applyMapOrientationToRenderer()
+            }
+            invalidateIfCompassSectorChanged()
+        }
+    }
+
+    override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
+        Log.d("MapLibrePoiScreen", "onSurfaceAvailable")
+        AaSurfaceSession.container = surfaceContainer
+        attachToSurface(surfaceContainer)
+    }
+
+    private fun attachToSurface(surfaceContainer: SurfaceContainer) {
+        mapRenderer?.detachSurface()
+        surfaceAttached = false
+        startHeadingUpdates()
+        val surface = surfaceContainer.surface
+        if (surface == null) {
+            Log.w("MapLibrePoiScreen", "SurfaceContainer.surface is null; skipping renderer start")
+            mapRenderer = null
+            return
+        }
+        mapWidthPx = surfaceContainer.width
+        mapHeightPx = surfaceContainer.height
+        val renderer = mapRenderer ?: createMapRenderer().also { mapRenderer = it }
+        val settings = settingsManager.settings.value
+        canvasMapModeConfig.styleUrlResolver(settings, carContext)?.let { renderer.setStyleUrl(it) }
+        renderer.attachSurface(surfaceContainer)
+        surfaceAttached = true
+        (currentVisibleArea ?: AaSurfaceSession.visibleArea)?.let {
+            currentVisibleArea = it
+            renderer.updateVisibleArea(it)
+        }
+        renderer.updateLocation(searchLat, searchLon, zoom)
+        lastSyncedPoiIds = emptyList()
+        syncRendererWithMapState()
+        registerSurfaceCallback()
+        renderer.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
+        syncRendererWithMapState()
+        renderer.requestRedraw()
+    }
+
+    override fun releaseSurface() {
+        visibleAreaCameraJob?.cancel()
+        mapRenderer?.detachSurface()
+        surfaceAttached = false
+    }
+
+    override fun onDestroy(owner: androidx.lifecycle.LifecycleOwner) {
+        releaseSurface()
+    }
+
+    override fun onVisibleAreaChanged(visibleArea: Rect) {
+        Log.d("MapLibrePoiScreen", "onVisibleAreaChanged: $visibleArea")
+        currentVisibleArea = visibleArea
+        AaSurfaceSession.visibleArea = visibleArea
+        mapRenderer?.updateVisibleArea(visibleArea)
+        visibleAreaCameraJob?.cancel()
+        visibleAreaCameraJob = lifecycleScope.launch {
+            delay(VISIBLE_AREA_CAMERA_DEBOUNCE_MS)
+            refitCameraForVisibleAreaIfNeeded()
+        }
+    }
+
+    override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) {
+        Log.d("MapLibrePoiScreen", "onSurfaceDestroyed")
+        if (AaSurfaceSession.container === surfaceContainer) {
+            AaSurfaceSession.container = null
+        }
+        releaseSurface()
+    }
+
+    override fun onClick(x: Float, y: Float) {
+        val renderer = mapRenderer ?: return
+        val clickedPois = renderer.findPoisAt(x, y)
+        if (clickedPois.isEmpty()) return
+
+        val poi = if (clickedPois.size == 1) {
+            clickedPois.first()
+        } else if (
+            AutoMapPoiHitTest.shouldZoomInsteadOfOpen(
+                hits = clickedPois,
+                mapLat = renderer.mapLatForHitTest(),
+                mapLon = renderer.mapLonForHitTest(),
+                zoom = renderer.zoomForHitTest(),
+                centerPxX = renderer.centerPxXForHitTest(),
+                centerPxY = renderer.centerPxYForHitTest(),
+            )
+        ) {
+            carContext.getCarService(AppManager::class.java)
+                .showToast(carContext.getString(R.string.error_multiple_stations), CarToast.LENGTH_LONG)
+            bumpZoom(1)
+            return
+        } else {
+            clickedPois.first()
+        }
+
+        openStationDetail(poi, availabilityByPoiId[poi.id])
+    }
+
+    private fun registerSurfaceCallback() {
+        carContext.getCarService(AppManager::class.java).setSurfaceCallback(this)
+    }
+
+    override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+        registerSurfaceCallback()
+        // Mode swap: the host may not re-deliver the Surface, so attach from the cached one right away.
+        if (!surfaceAttached) {
+            AaSurfaceSession.usableContainer()?.let { attachToSurface(it) }
+        }
+        // Returning from station detail: show all filtered pins and resume follow.
+        loadPoisJob?.cancel()
+        isQueryPending = false
+        isLoading = false
+        mapSelectedPoi = null
+        lastAppliedSearchLat = searchLat
+        lastAppliedSearchLon = searchLon
+        mapRenderer?.updateLocation(searchLat, searchLon, zoom)
+        startHeadingUpdates()
+        syncRendererWithMapState()
+        lifecycleScope.launch {
+            favoriteIds = favoritesRepo?.getFavorites()?.map { it.id }?.toSet() ?: emptySet()
+            invalidate()
+        }
+    }
+
+    override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
+        stopHeadingUpdates()
+    }
+
+    private fun bumpZoom(delta: Int) {
+        val prevZoom = zoom
+        zoom = (zoom + delta).coerceIn(AutoMapCamera.MIN_ZOOM, AutoMapCamera.MAX_ZOOM)
+        lastAppliedZoom = zoom
+        mapRenderer?.updateLocation(searchLat, searchLon, zoom)
+        if (headingUpdateJob?.isActive != true) {
+            startHeadingUpdates()
+        }
+        if (zoom < prevZoom) {
+            val (userLat, userLon) = searchCenterFlow.value
+            if (shouldRequeryForViewportChange(lastQueryCoverage, userLat, userLon, currentSearchRadiusKm().toInt())) {
+                loadPois(preserveZoom = true, showLoading = false)
+            } else {
+                syncRendererWithMapState()
+                invalidate()
+            }
+        } else {
+            syncRendererWithMapState()
+            invalidate()
+        }
+    }
+
+    override fun onGetTemplate(): Template = safeCarTemplate(
+        carContext = carContext,
+        logTag = canvasMapModeConfig.logTag,
+        templateName = "MapWithContentTemplate"
+    ) {
+        val currentSettings = settingsManager.settings.value
+        val effectiveEnergies = currentSettings.effectiveMapEnergyFilterIds()
+
+        val visibilityAction = carContext.menuVisibilityAction(isMenuVisible) {
+            isMenuVisible = !isMenuVisible
+            invalidate()
+        }
+
+        val actionStripBuilder = ActionStrip.Builder()
+
+        actionStripBuilder.addAction(visibilityAction)
+
+        val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
+        val cheapestAction = if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
+            carContext.cheapestFilterAction(isCheapestFilterActive) {
+                if (isCheapestFilterActive) {
+                    isCheapestFilterActive = false
+                    sortByPrice = false
+                } else {
+                    isCheapestFilterActive = true
+                    sortByPrice = true
+                    val filtered = getFilteredPois(currentSettings)
+                    carContext.getCarService(AppManager::class.java)
+                        .showToast(carContext.getString(R.string.cheapest_stations_toast, filtered.size), CarToast.LENGTH_SHORT)
+                }
+                syncRendererWithMapState()
+                invalidate()
+            }
+        } else {
+            null
+        }
+
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setIcon(
+                    carContext.actionCompassIcon(
+                        bearingDegrees = mapCompassBearing(),
+                        isNorthUp = orientationMode == MapOrientationMode.NorthUp,
+                    )
+                )
+                .setOnClickListener { toggleMapOrientation() }
+                .build()
+        )
+
+        actionStripBuilder.addAction(
+            Action.Builder()
+                .setIcon(carContext.actionSettingsIcon())
+                .setOnClickListener { screenManager.push(AutoMapSettingsScreen(carContext, settingsManager)) }
+                .build()
+        )
+
+        if (mapDeps != null) {
+            actionStripBuilder.addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionMapIcon())
+                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
+                    .build()
+            )
+        }
+        val actionStrip = actionStripBuilder.build()
+
+        val mapActionStrip = ActionStrip.Builder()
+            .addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionZoomInIcon())
+                    .setOnClickListener { bumpZoom(1) }
+                    .build()
+            )
+            .addAction(
+                Action.Builder()
+                    .setIcon(carContext.actionZoomOutIcon())
+                    .setOnClickListener { bumpZoom(-1) }
+                    .build()
+            )
+            .build()
+
+        val mapController = MapController.Builder()
+            .setMapActionStrip(mapActionStrip)
+            .build()
+
+        val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
+
+        val contentHeader = mapContentHeaderBuilder(title, currentSettings, cheapestAction, visibilityAction).build()
+        val contentTemplate = if (isLoading) {
+            ListTemplate.Builder()
+                .setLoading(true)
+                .setHeader(contentHeader)
+                .build()
+        } else if (!isMenuVisible) {
+            ListTemplate.Builder()
+                .setHeader(contentHeader)
+                .setSingleList(ItemList.Builder().build())
+                .build()
+        } else {
+            val filteredPoisForSorting = getFilteredPois(currentSettings)
+            val (userLat, userLon) = searchCenterFlow.value
+            val sortedPois = MapPoiFilter.sortPois(
+                pois = filteredPoisForSorting,
+                lat = userLat,
+                lon = userLon,
+                sortByPrice = sortByPrice,
+                selectedFuelIds = effectiveEnergies - "electric"
+            )
+
+            val rawListLimit = try {
+                carContext.getCarService(ConstraintManager::class.java)
+                    .getContentLimit(ConstraintManager.CONTENT_LIMIT_TYPE_LIST)
+            } catch (_: Exception) {
+                6
+            }
+            val entitlementLimit = settingsManager.entitlements.limit(Feature.AutoStationList)
+            val listLimit = minOf(rawListLimit, entitlementLimit)
+
+            val noItemsMessage = if (isLoading || isQueryPending) {
+                carContext.getString(R.string.poi_searching)
+            } else {
+                carContext.getString(R.string.poi_no_results)
+            }
+
+            val itemListBuilder = ItemList.Builder()
+                .setNoItemsMessage(noItemsMessage)
+
+            val limitedPois = sortedPois.take(listLimit)
+            limitedPois.forEach { item ->
+                val availability = availabilityByPoiId[item.id]
+                val isFav = item.id in favoriteIds
+                itemListBuilder.addItem(
+                    AutoPoiUiHelper.buildPoiRow(
+                        carContext = carContext,
+                        poi = item,
+                        availability = availability,
+                        effectiveEnergyTypes = effectiveEnergies,
+                        effectivePowerLevels = effectivePowerLevels,
+                        distanceFromLatLon = userLat to userLon,
+                        includePlace = false,
+                        browsable = true,
+                        isFavorite = isFav,
+                    ) {
+                        openStationDetail(item, availability)
+                    }
+                )
+            }
+
+            ListTemplate.Builder()
+                .setHeader(contentHeader)
+                .setSingleList(itemListBuilder.build())
+                .build()
+        }
+
+        MapWithContentTemplate.Builder()
+            .setContentTemplate(contentTemplate)
+            .setActionStrip(actionStrip)
+            .setMapController(mapController)
+            .build()
+    }
+}

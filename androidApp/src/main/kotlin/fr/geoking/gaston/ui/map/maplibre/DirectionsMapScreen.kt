@@ -44,7 +44,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
-
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DirectionsMapScreen(
@@ -68,7 +68,7 @@ fun DirectionsMapScreen(
         fr.geoking.gaston.feature.location.LocationHelper.getLocationUpdates(context).collect { loc ->
             userLat = loc.latitude
             userLon = loc.longitude
-            userHeading = fr.geoking.gaston.auto.AutoMapHeading.resolveBearing(loc, userHeading)
+            userHeading = fr.geoking.gaston.ui.map.components.AutoMapHeading.resolveBearing(loc, userHeading)
         }
     }
 

@@ -31,6 +31,11 @@ import fr.geoking.gaston.toll.TollCalculator
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.component.inject
+import fr.geoking.gaston.auto.dashboard.AutoDashboardScreen
+import fr.geoking.gaston.auto.dashboard.AutoNetworkLocationInfoScreen
+import fr.geoking.gaston.auto.parked.AutoParkCandidateResultScreen
+import fr.geoking.gaston.auto.parked.AutoRememberParkedCarScreen
+import fr.geoking.gaston.auto.route.AutoRoutePlanningScreen
 
 /**
  * Android Auto session without wiring the phone voice manager into the car (no car STT/TTS session hook).

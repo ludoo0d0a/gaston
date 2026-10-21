@@ -6,6 +6,9 @@ import androidx.car.app.Screen
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.di.MapDeps
+import fr.geoking.gaston.auto.map.AutoMapScreenFactory
+import fr.geoking.gaston.auto.map.MapSurfaceOwner
+import fr.geoking.gaston.auto.map.displayLabel
 
 /**
  * Common navigation helpers for Android Auto.

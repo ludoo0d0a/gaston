@@ -2,7 +2,6 @@ package fr.geoking.gaston.ui.map
 
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -22,12 +21,11 @@ import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
-import fr.geoking.gaston.auto.AutoMapCamera
-import fr.geoking.gaston.auto.AutoMapHeading
-import fr.geoking.gaston.auto.AutoSurfaceRenderer
-import fr.geoking.gaston.auto.MapOrientationMode
-import fr.geoking.gaston.auto.mapsforge.CarMapsforgeRenderer
-import fr.geoking.gaston.auto.mapsforge.MapsforgeMapManager
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
+import fr.geoking.gaston.ui.map.components.AutoSurfaceRenderer
+import fr.geoking.gaston.ui.map.components.MapOrientationMode
+import fr.geoking.gaston.auto.map.mapsforge.CarMapsforgeRenderer
+import fr.geoking.gaston.auto.map.mapsforge.MapsforgeMapManager
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.effectiveIrvePowerLevels
@@ -40,7 +38,6 @@ import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.shared.diagnostics.DiagnosticStore
 import fr.geoking.gaston.ui.components.MapLoadingOverlay
 import fr.geoking.gaston.ui.components.SearchCategorySelector
-import fr.geoking.gaston.ui.components.SearchMode
 import fr.geoking.gaston.ui.components.SearchModeSelector
 import fr.geoking.gaston.ui.components.rememberSearchMode
 import fr.geoking.gaston.ui.SettingsScreen
@@ -53,10 +50,10 @@ import fr.geoking.gaston.ui.dashboard.GastonTheme
 import fr.geoking.gaston.ui.dashboard.PhoneDashboardDestinationSearch
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
+import fr.geoking.gaston.auto.map.mapsforge.MapsforgePresetServers
 
 @OptIn(ExperimentalMaterial3Api::class, kotlinx.coroutines.FlowPreview::class)
 @Composable
@@ -760,7 +757,7 @@ fun SurfaceMapsforgeMapScreen(
                         val activeMapFile = remember(installedMaps) { mapManager.getActiveMapFile() }
                         if (activeMapFile == null) {
                             val recommendedPreset = remember(mapLat, mapLon) {
-                                fr.geoking.gaston.auto.mapsforge.MapsforgePresetServers.getRecommendedPreset(mapLat, mapLon)
+                                MapsforgePresetServers.getRecommendedPreset(mapLat, mapLon)
                             }
                             val downloadScope = rememberCoroutineScope()
                             val progress by mapManager.downloadProgress.collectAsState()

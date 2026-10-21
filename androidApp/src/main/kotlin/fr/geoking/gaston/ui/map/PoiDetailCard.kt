@@ -444,8 +444,6 @@ fun PoiDetailCard(
     }
 }
 
-
-
 @Preview(showBackground = true, backgroundColor = 0xFF0F172A)
 @Composable
 private fun PoiDetailCardPreview() {

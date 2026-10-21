@@ -6,8 +6,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import com.google.gson.JsonArray
-import com.google.gson.JsonPrimitive
-import fr.geoking.gaston.auto.maplibre.CarMapLibreRenderer
 
 @RunWith(RobolectricTestRunner::class)
 class CarMapLibreRendererTest {

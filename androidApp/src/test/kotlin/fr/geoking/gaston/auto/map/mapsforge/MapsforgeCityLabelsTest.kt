@@ -1,9 +1,7 @@
 package fr.geoking.gaston.auto.map.mapsforge
 
-import fr.geoking.gaston.auto.mapsforge.CityLabel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mapsforge.core.model.LatLong

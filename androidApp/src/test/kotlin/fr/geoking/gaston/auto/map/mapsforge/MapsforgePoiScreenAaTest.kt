@@ -10,7 +10,6 @@ import androidx.car.app.testing.TestCarContext
 import androidx.test.core.app.ApplicationProvider
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
-import fr.geoking.gaston.auto.mapsforge.MapsforgePoiScreen
 import fr.geoking.gaston.auto.testutil.ActionStripLimits
 import fr.geoking.gaston.auto.testutil.CarScreenTestHarness
 import fr.geoking.gaston.auto.testutil.FakeBorneAvailabilityProvider
@@ -23,7 +22,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 /**
- * MapsforgePoiScreen builds a fresh [fr.geoking.gaston.auto.mapsforge.CarMapsforgeRenderer] on every surface attach, and that renderer
+ * MapsforgePoiScreen builds a fresh [CarMapsforgeRenderer] on every surface attach, and that renderer
  * spins up a real background draw thread. Unlike Protomaps, this mode has no offline-unavailable banner
  * wiring today — a missing .map file falls back to online raster rendering instead (see
  * CarMapsforgeRenderer's "using online raster fallback" log path) — so this suite only asserts that

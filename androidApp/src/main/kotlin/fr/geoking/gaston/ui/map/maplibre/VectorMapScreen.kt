@@ -102,7 +102,7 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
-
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
 @OptIn(ExperimentalMaterial3Api::class, kotlinx.coroutines.FlowPreview::class)
 @Composable
 fun VectorMapScreen(
@@ -167,7 +167,7 @@ fun VectorMapScreen(
             LocationHelper.getLocationUpdates(context).collect { loc ->
                 userLat = loc.latitude
                 userLon = loc.longitude
-                userHeading = fr.geoking.gaston.auto.AutoMapHeading.resolveBearing(loc, userHeading)
+                userHeading = fr.geoking.gaston.ui.map.components.AutoMapHeading.resolveBearing(loc, userHeading)
             }
         }
     }

@@ -86,6 +86,10 @@ import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import fr.geoking.gaston.auto.map.mapsforge.MapsforgeMapManager
+import fr.geoking.gaston.auto.map.mapsforge.MapsforgePresetServers
+import fr.geoking.gaston.auto.map.pmtiles.PmtilesMapManager
+import fr.geoking.gaston.auto.map.pmtiles.PmtilesPresetServers
 
 enum class SettingsScreenPage {
     Main,
@@ -413,7 +417,7 @@ private fun MapConfig(
 
             // Mapsforge (.map)
             run {
-                val mapManager = remember(context) { fr.geoking.gaston.auto.mapsforge.MapsforgeMapManager(context) }
+                val mapManager = remember(context) { MapsforgeMapManager(context) }
                 val installedMaps by mapManager.installedMaps.collectAsState()
                 val downloadProgress by mapManager.downloadProgress.collectAsState()
                 val scope = rememberCoroutineScope()
@@ -448,7 +452,7 @@ private fun MapConfig(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        fr.geoking.gaston.auto.mapsforge.MapsforgePresetServers.PRIORITY_REGIONS.forEach { preset ->
+                        MapsforgePresetServers.PRIORITY_REGIONS.forEach { preset ->
                             fr.geoking.gaston.ui.map.MapsforgePresetDownloadRow(
                                 preset = preset,
                                 installedMaps = installedMaps,
@@ -478,7 +482,12 @@ private fun MapConfig(
 
             // Protomaps / PMTiles (.pmtiles)
             run {
-                val pmtilesManager = remember(context) { fr.geoking.gaston.auto.pmtiles.PmtilesMapManager(context, settingsManager = null) }
+                val pmtilesManager = remember(context) {
+                    PmtilesMapManager(
+                        context,
+                        settingsManager = null
+                    )
+                }
                 val installedMaps by pmtilesManager.installedMaps.collectAsState()
                 val downloadProgress by pmtilesManager.downloadProgress.collectAsState()
                 val scope = rememberCoroutineScope()
@@ -518,7 +527,7 @@ private fun MapConfig(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        fr.geoking.gaston.auto.pmtiles.PmtilesPresetServers.PRIORITY_REGIONS.forEach { preset ->
+                        PmtilesPresetServers.PRIORITY_REGIONS.forEach { preset ->
                             fr.geoking.gaston.ui.map.PmtilesPresetDownloadRow(
                                 preset = preset,
                                 installedMaps = installedMaps,
@@ -2457,7 +2466,6 @@ private fun VehicleConfig(
         }
     }
 }
-
 
 @Composable
 private fun ConfigTextField(

@@ -41,11 +41,11 @@ import androidx.compose.ui.res.stringResource
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.StationMapFilters
-import fr.geoking.gaston.auto.AutoMapCamera
-import fr.geoking.gaston.auto.AutoMapHeading
-import fr.geoking.gaston.auto.AutoSurfaceRenderer
-import fr.geoking.gaston.auto.MapOrientationMode
-import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
+import fr.geoking.gaston.ui.map.components.AutoMapCamera
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
+import fr.geoking.gaston.ui.map.components.AutoSurfaceRenderer
+import fr.geoking.gaston.ui.map.components.MapOrientationMode
+import fr.geoking.gaston.ui.map.components.AutoMapFollowFocalPoint
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProvidersAt

@@ -14,10 +14,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.R
-import fr.geoking.gaston.auto.mapsforge.DownloadProgress
-import fr.geoking.gaston.auto.pmtiles.PmtilesMapManager
-import fr.geoking.gaston.auto.pmtiles.PmtilesPresetServers
-import fr.geoking.gaston.auto.pmtiles.PmtilesServerMap
+import fr.geoking.gaston.auto.map.mapsforge.DownloadProgress
+import fr.geoking.gaston.auto.map.pmtiles.PmtilesMapManager
+import fr.geoking.gaston.auto.map.pmtiles.PmtilesPresetServers
+import fr.geoking.gaston.auto.map.pmtiles.PmtilesServerMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.File
