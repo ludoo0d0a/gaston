@@ -36,6 +36,9 @@ object CitaGeoJsonParser {
             val desc = props["service_level_desc"]?.jsonPrimitive?.contentOrNull ?: ""
             val level = props["service_level"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
             val severity = levelToSeverity(level, desc)
+            if (severity == TrafficSeverity.Normal) {
+                continue
+            }
             val message = buildString {
                 if (desc.isNotBlank()) append(desc)
                 val name = props["name"]?.jsonPrimitive?.contentOrNull
@@ -107,6 +110,13 @@ object CitaGeoJsonParser {
                 }
                 acc
             }
+            "LineString" -> ringToBbox(coords.jsonArray)
+            "Point" -> {
+                val arr = coords.jsonArray
+                val lon = arr.getOrNull(0)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: return null
+                val lat = arr.getOrNull(1)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: return null
+                Bbox(lat, lon, lat, lon)
+            }
             else -> null
         }
     }
@@ -118,15 +128,33 @@ object CitaGeoJsonParser {
         when (type) {
             "Polygon" -> {
                 val ring = coords.jsonArray.getOrNull(0) as? JsonArray ?: return emptyList()
-                for (pt in ring) {
-                    val pair = pt as? JsonArray ?: continue
-                    val lon = pair.getOrNull(0)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: continue
-                    val lat = pair.getOrNull(1)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: continue
-                    out.add(Pair(lat, lon))
+                appendRingPoints(ring, out)
+            }
+            "MultiPolygon" -> {
+                for (poly in coords.jsonArray) {
+                    val polyArr = poly as? JsonArray ?: continue
+                    val ring = polyArr.getOrNull(0) as? JsonArray ?: continue
+                    appendRingPoints(ring, out)
                 }
+            }
+            "LineString" -> appendRingPoints(coords.jsonArray, out)
+            "Point" -> {
+                val arr = coords.jsonArray
+                val lon = arr.getOrNull(0)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: return emptyList()
+                val lat = arr.getOrNull(1)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: return emptyList()
+                out.add(Pair(lat, lon))
             }
         }
         return out
+    }
+
+    private fun appendRingPoints(ring: JsonArray, out: MutableList<Pair<Double, Double>>) {
+        for (pt in ring) {
+            val pair = pt as? JsonArray ?: continue
+            val lon = pair.getOrNull(0)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: continue
+            val lat = pair.getOrNull(1)?.jsonPrimitive?.contentOrNull?.toDoubleOrNull() ?: continue
+            out.add(Pair(lat, lon))
+        }
     }
 
     private fun ringToBbox(ring: JsonArray?): Bbox? {

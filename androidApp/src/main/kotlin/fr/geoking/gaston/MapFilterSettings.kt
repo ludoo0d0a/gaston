@@ -37,10 +37,12 @@ val AMENITY_ONLY_POI_PROVIDERS: Set<PoiProviderType> = setOf(
 )
 
 /** True when the user explicitly selected "Other" (amenities) mode. */
-fun AppSettings.isOtherModeActive(): Boolean =
-    poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
-        selectedPoiProviders.isNotEmpty() &&
-        selectedPoiProviders.all { it in AMENITY_ONLY_POI_PROVIDERS }
+fun AppSettings.isOtherModeActive(): Boolean {
+    val stationProviders = selectedPoiProviders.filter { !it.providesTraffic }
+    return poiProviderSelectionMode == PoiProviderSelectionMode.Manual &&
+        stationProviders.isNotEmpty() &&
+        stationProviders.all { it in AMENITY_ONLY_POI_PROVIDERS }
+}
 
 fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
     "toilets" -> PoiCategory.Toilet
@@ -238,11 +240,13 @@ fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Se
     } else {
         base.filterProvidersForEnergy(wantFuel, wantElectric)
     }
+    // Traffic overlays are not station POI feeds (TrafficProviderFactory).
+    val withoutTraffic = energyFiltered.filterNot { it.providesTraffic }.toSet()
 
     if (useVehicleFilter && fuelCard == FuelCard.Routex) {
-        return energyFiltered + setOf(PoiProviderType.Routex, PoiProviderType.Overpass)
+        return withoutTraffic + setOf(PoiProviderType.Routex, PoiProviderType.Overpass)
     }
-    return energyFiltered
+    return withoutTraffic
 }
 
 /** ISO country codes for [latitude]/[longitude] when it falls in known [ParkingRegion]s or within 10km of their borders. */

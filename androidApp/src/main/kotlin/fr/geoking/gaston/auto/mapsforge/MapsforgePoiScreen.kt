@@ -35,7 +35,9 @@ import fr.geoking.gaston.api.belib.matchAvailabilityToPois
 import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
+import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
+import fr.geoking.gaston.auto.AutoTrafficOverlay
 import fr.geoking.gaston.auto.AutoMapCamera
 import fr.geoking.gaston.auto.AutoMapHeading
 import fr.geoking.gaston.auto.AutoMapPoiHitTest
@@ -146,6 +148,8 @@ class MapsforgePoiScreen(
     private var mapSelectedPoi: Poi? = null
     private var lastQueryCoverage: LoadedPoiRegion? = null
     private var lastRedrawPosition: Pair<Double, Double>? = null
+    private var trafficEvents: List<TrafficEvent> = emptyList()
+    private var trafficPois: List<Poi> = emptyList()
 
     private fun openStationDetail(poi: Poi, availability: StationAvailabilitySummary?) {
         loadPoisJob?.cancel()
@@ -197,7 +201,9 @@ class MapsforgePoiScreen(
                     s.fuelCard,
                     s.vehicleType,
                     s.vehicleEnergy,
-                    s.selectedOverpassAmenityTypes
+                    s.selectedOverpassAmenityTypes,
+                    s.mapTrafficEnabled,
+                    s.selectedPoiProviders.filter { it.providesTraffic }.toSet(),
                 )
             }
                 .distinctUntilChanged()
@@ -250,7 +256,9 @@ class MapsforgePoiScreen(
         val fuelCard: FuelCard,
         val vehicleType: VehicleType,
         val vehicleEnergy: String,
-        val amenities: Set<String>
+        val amenities: Set<String>,
+        val mapTrafficEnabled: Boolean,
+        val trafficProviders: Set<PoiProviderType>,
     )
 
     private data class PoiFilterSettings(
@@ -412,7 +420,11 @@ class MapsforgePoiScreen(
             lastAppliedZoom = zoom
         }
         renderer.setMapOrientation(orientationMode, lastKnownBearingDegrees)
-        val mapPois = if (selected != null) listOf(selected) else filteredPois
+        val mapPois = if (selected != null) {
+            listOf(selected)
+        } else {
+            filteredPois + trafficPois
+        }
         renderer.updatePois(
             newPois = mapPois,
             effectiveEnergyTypes = settings.effectiveMapEnergyFilterIds(),
@@ -499,6 +511,14 @@ class MapsforgePoiScreen(
                 applyMapOrientationToRenderer()
 
                 val settings = settingsManager.settings.value
+                trafficEvents = AutoTrafficOverlay.loadEvents(
+                    factory = trafficProviderFactory,
+                    settings = settings,
+                    centerLat = lat,
+                    centerLon = lon,
+                    viewport = currentSearchViewport(),
+                )
+                trafficPois = AutoTrafficOverlay.toMapPois(trafficEvents)
 
                 if (itineraryPoints.isNotEmpty() && routePlanner != null) {
                     val result = routePlanner.getStationsAlongRoute(

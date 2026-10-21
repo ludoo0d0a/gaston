@@ -29,13 +29,21 @@ class RadarAlertTest {
             okBeepsCount++
         }
 
-        override fun playOverSpeedBeepsAndSpeak(speedLimitKmH: Int?, isDevMode: Boolean) {
+        override fun playOverSpeedBeepsAndSpeak(
+            speedLimitKmH: Int?,
+            distanceMeters: Double?,
+            isDevMode: Boolean,
+        ) {
             overSpeedCount++
             lastSpokenSpeedLimit = speedLimitKmH
             lastIsDevMode = isDevMode
         }
 
-        override fun speakDangerZone(speedLimitKmH: Int?, isDevMode: Boolean) {
+        override fun speakDangerZone(
+            speedLimitKmH: Int?,
+            distanceMeters: Double?,
+            isDevMode: Boolean,
+        ) {
             lastSpokenSpeedLimit = speedLimitKmH
             lastIsDevMode = isDevMode
         }

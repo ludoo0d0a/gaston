@@ -2,14 +2,14 @@ package fr.geoking.gaston.api.traffic
 
 /**
  * [TrafficProvider] for mainland France + Corsica using the open Bison Futé / TIPI DATEX feed
- * (national non-concessioned network). No API key.
+ * (national non-concessioned network).
  */
 class BisonFuteTrafficProvider(
     private val client: BisonFuteTrafficClient,
+    private val trafficRepository: TrafficRepository? = null,
     private val nowMs: () -> Long = { System.currentTimeMillis() }
 ) : TrafficProvider {
 
-    /** Approximate France + Corsica bounding box. */
     private val franceBbox = GeographicRegion.Bbox(
         latMin = FRANCE_LAT_MIN,
         lonMin = FRANCE_LON_MIN,
@@ -20,28 +20,31 @@ class BisonFuteTrafficProvider(
     override val enabled: Boolean = true
 
     override suspend fun getTraffic(request: TrafficRequest): TrafficInfo? {
-        when (request) {
-            is TrafficRequest.Bbox -> {
-                val midLat = (request.latMin + request.latMax) / 2
-                val midLon = (request.lonMin + request.lonMax) / 2
-                if (!franceBbox.contains(midLat, midLon)) return null
-            }
-            is TrafficRequest.Route -> {
-                if (request.points.isEmpty()) return null
-                val (lat, lon) = request.points[request.points.size / 2]
-                if (!franceBbox.contains(lat, lon)) return null
-            }
-        }
-        val body = client.fetchDatexXml() ?: return null
-        val all = DatexSituationParser.parse(body, nowMs = nowMs(), defaultRoadRef = "FR")
-        if (all.isEmpty()) return null
         val q = queryBbox(request) ?: return null
-        val filtered = all.filter { e ->
-            val b = e.bbox ?: return@filter false
-            b.intersects(q)
-        }.take(MAX_TRAFFIC_EVENTS)
-        if (filtered.isEmpty()) return null
-        return TrafficInfo(events = filtered, providerId = PROVIDER_ID)
+        val midLat = (q.latMin + q.latMax) / 2
+        val midLon = (q.lonMin + q.lonMax) / 2
+        if (!franceBbox.contains(midLat, midLon)) return null
+
+        val repo = trafficRepository
+        val fetchedEvents = client.fetchAndStoreTrafficEvents()
+
+        val events = if (repo != null) {
+            repo.getTrafficInBbox(
+                latMin = q.latMin,
+                lonMin = q.lonMin,
+                latMax = q.latMax,
+                lonMax = q.lonMax,
+                maxEvents = MAX_TRAFFIC_EVENTS
+            )
+        } else {
+            fetchedEvents.filter { e ->
+                val b = e.bbox ?: return@filter false
+                b.intersects(q)
+            }.take(MAX_TRAFFIC_EVENTS)
+        }
+
+        if (events.isEmpty()) return null
+        return TrafficInfo(events = events, providerId = PROVIDER_ID)
     }
 
     companion object {

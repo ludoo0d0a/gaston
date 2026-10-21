@@ -222,6 +222,9 @@ private fun poiProviderLabelRes(type: PoiProviderType): Int = when (type) {
     PoiProviderType.FranceRadars -> R.string.provider_france_radars
     PoiProviderType.LufopOpenSpeedCam -> R.string.provider_lufop_openspeedcam
     PoiProviderType.LuxembourgRadars -> R.string.provider_luxembourg_radars
+    PoiProviderType.TipiBisonFute -> R.string.provider_tipi_bison_fute
+    PoiProviderType.TomTomTraffic -> R.string.provider_tomtom_traffic
+    PoiProviderType.CitaTraffic -> R.string.provider_cita_traffic
     else -> R.string.provider_overpass
 }
 
@@ -809,7 +812,7 @@ private fun SourcesConfig(
         val providesFuel: Boolean = type.providesFuel,
         val providesElectric: Boolean = type.providesElectric,
         val providesSwap: Boolean = type.providesSwap,
-        val providesTraffic: Boolean = false,
+        val providesTraffic: Boolean = type.providesTraffic,
         val providesMeteo: Boolean = type == PoiProviderType.OpenMeteoWeather,
         val providesRadar: Boolean = type in setOf(PoiProviderType.FranceRadars, PoiProviderType.LufopOpenSpeedCam, PoiProviderType.LuxembourgRadars),
     )
@@ -907,6 +910,9 @@ private fun SourcesConfig(
         ProviderUiInfo(PoiProviderType.FranceRadars, listOf("FR")),
         ProviderUiInfo(PoiProviderType.LufopOpenSpeedCam, listOf("GLOBAL")),
         ProviderUiInfo(PoiProviderType.LuxembourgRadars, listOf("LU")),
+        ProviderUiInfo(PoiProviderType.TipiBisonFute, listOf("FR")),
+        ProviderUiInfo(PoiProviderType.TomTomTraffic, listOf("FR", "GLOBAL")),
+        ProviderUiInfo(PoiProviderType.CitaTraffic, listOf("LU")),
     )
         .filter { it.type.isUserSelectablePoiDataSource() }
         .distinctBy { it.type }

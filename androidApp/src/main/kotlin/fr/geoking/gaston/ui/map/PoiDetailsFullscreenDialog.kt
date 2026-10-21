@@ -248,14 +248,6 @@ fun PoiDetailsFullscreenDialog(
                                     fontSize = 13.sp
                                 )
                             }
-                            resolvedAvailability?.let { summary ->
-                                Spacer(modifier = Modifier.height(8.dp))
-                                AvailabilitySlotsRow(
-                                    summary = summary,
-                                    textColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    barHeight = 5.dp,
-                                )
-                            }
                         }
 
                         // Fuel Prices

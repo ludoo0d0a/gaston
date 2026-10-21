@@ -18,6 +18,27 @@ class PoiTest {
     }
 
     @Test
+    fun effectiveTrafficOverlayProviders_defaultsToBothWhenEmpty() {
+        assertEquals(
+            setOf(
+                PoiProviderType.TipiBisonFute,
+                PoiProviderType.TomTomTraffic,
+                PoiProviderType.CitaTraffic,
+            ),
+            emptySet<PoiProviderType>().effectiveTrafficOverlayProviders()
+        )
+    }
+
+    @Test
+    fun effectiveTrafficOverlayProviders_respectsExplicitSelection() {
+        assertEquals(
+            setOf(PoiProviderType.TomTomTraffic),
+            setOf(PoiProviderType.Etalab, PoiProviderType.TomTomTraffic)
+                .effectiveTrafficOverlayProviders()
+        )
+    }
+
+    @Test
     fun testMockPoiProvider() = runBlocking {
         val provider = MockPoiProvider()
         val pois = provider.getGasStations(48.8566, 2.3522)

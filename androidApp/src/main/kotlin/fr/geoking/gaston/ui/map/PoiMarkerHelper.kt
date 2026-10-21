@@ -507,8 +507,18 @@ object PoiMarkerHelper {
             PoiCategory.Weather -> AmenityIconCatalog.styleForWeatherPoi(poi)?.discFillArgb
                 ?: 0xFFFBBF24.toInt()
             PoiCategory.Traffic -> AmenityIconCatalog.styleForTrafficPoi(poi)?.discFillArgb
-                ?: 0xFFEF4444.toInt()
+                ?: trafficSeverityColorArgb(poi)
             else -> 0xFF17A2B8.toInt()
+        }
+    }
+
+    private fun trafficSeverityColorArgb(poi: Poi): Int {
+        val severity = poi.rawSourceData?.get(fr.geoking.gaston.api.traffic.RAW_SEVERITY)
+        return when (severity) {
+            "Normal" -> 0xFF4CAF50.toInt()
+            "Congestion" -> 0xFFFF9800.toInt()
+            "Closure", "Accident", "Roadworks" -> 0xFFE53935.toInt()
+            else -> 0xFFFFC107.toInt()
         }
     }
 

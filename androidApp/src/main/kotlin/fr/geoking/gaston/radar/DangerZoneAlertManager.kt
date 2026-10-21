@@ -107,7 +107,7 @@ class DangerZoneAlertManager(
                 if (zone.id !in alertedZoneIds) {
                     alertedZoneIds.add(zone.id)
                     logDetection(RadarDetectionLog.Event.ENTRY, zone, eval, debugLogs)
-                    playAlertAudio(eval.isOverspeed, eval.speedLimitKmH, isDevMode)
+                    playAlertAudio(eval.isOverspeed, eval.speedLimitKmH, eval.distanceToCenterMeters, isDevMode)
                     notificationHelper?.showDangerZoneNotification(
                         eval.speedLimitKmH,
                         latitude = zone.centerLatitude,
@@ -128,7 +128,7 @@ class DangerZoneAlertManager(
                         if (eval.distanceToCenterMeters <= kmRadius) {
                             firedKm.add(kmRadius)
                             logDetection(RadarDetectionLog.Event.ENTRY, zone, eval, debugLogs)
-                            playAlertAudio(eval.isOverspeed, eval.speedLimitKmH, isDevMode)
+                            playAlertAudio(eval.isOverspeed, eval.speedLimitKmH, eval.distanceToCenterMeters, isDevMode)
                             notificationHelper?.showDangerZoneKmReminderNotification(
                                 speedLimitKmH = eval.speedLimitKmH,
                                 distanceMeters = kmRadius,
@@ -146,7 +146,7 @@ class DangerZoneAlertManager(
                 ) {
                     nearAlertedZoneIds.add(zone.id)
                     logDetection(RadarDetectionLog.Event.NEAR, zone, eval, debugLogs)
-                    playAlertAudio(eval.isOverspeed, eval.speedLimitKmH, isDevMode)
+                    playAlertAudio(eval.isOverspeed, eval.speedLimitKmH, eval.distanceToCenterMeters, isDevMode)
                     notificationHelper?.showNearRadarNotification(
                         eval.speedLimitKmH,
                         latitude = zone.centerLatitude,
@@ -240,12 +240,17 @@ class DangerZoneAlertManager(
         hudStore.clear()
     }
 
-    private fun playAlertAudio(isOverspeed: Boolean, speedLimitKmH: Int?, isDevMode: Boolean) {
+    private fun playAlertAudio(
+        isOverspeed: Boolean,
+        speedLimitKmH: Int?,
+        distanceMeters: Double? = null,
+        isDevMode: Boolean = false,
+    ) {
         if (isOverspeed) {
-            audioNotifier.playOverSpeedBeepsAndSpeak(speedLimitKmH, isDevMode)
+            audioNotifier.playOverSpeedBeepsAndSpeak(speedLimitKmH, distanceMeters, isDevMode)
         } else {
             audioNotifier.playOkSpeedBeeps()
-            audioNotifier.speakDangerZone(speedLimitKmH, isDevMode)
+            audioNotifier.speakDangerZone(speedLimitKmH, distanceMeters, isDevMode)
         }
     }
 

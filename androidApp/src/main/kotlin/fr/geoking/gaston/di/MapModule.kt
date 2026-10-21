@@ -114,7 +114,10 @@ import fr.geoking.gaston.api.traffic.TipiActionTrafficProvider
 import fr.geoking.gaston.api.traffic.TipiRestrictedTrafficClient
 import fr.geoking.gaston.api.traffic.TomTomTrafficClient
 import fr.geoking.gaston.api.traffic.TomTomTrafficProvider
+import fr.geoking.gaston.api.traffic.TrafficPolygonEnricher
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
+import fr.geoking.gaston.api.traffic.TrafficProviderRegistration
+import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.api.weather.MetNorwayWeatherProvider
 import fr.geoking.gaston.api.weather.OpenMeteoGeocodingClient
 import fr.geoking.gaston.api.weather.OpenMeteoWeatherGridClient
@@ -315,6 +318,7 @@ val mapModule = module {
         }
     }
     single { OverpassClient(get()) }
+    single { fr.geoking.gaston.road.RoadGeometryRepository(get()) }
     single { fr.geoking.gaston.aac.OsmRoadClassifier(get()) }
     single<PoiProvider>(named("overpass")) {
         OverpassProvider(get(), radiusKm = 5, limit = 100)
@@ -620,7 +624,8 @@ val mapModule = module {
         )
     }
 
-    // Traffic: Lux CITA first (inside FR bbox), then France composite (open ± TIPI B/C), TomTom elsewhere.
+    // Traffic: Lux CITA (always), France Tipi/Bison Futé + TomTom (user-selectable for FR),
+    // TomTom elsewhere. Selection via Settings → Sources → traffic (TipiBisonFute / TomTomTraffic).
     // Dedicated disk dir (filesDir/tipi/) for multi‑MB national DATEX dumps — not shared with AAC radars.
     // Bind as TextFileCache: BisonFute/Tipi clients inject TextFileCache?, not AndroidTextFileCache.
     single<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")) {
@@ -629,18 +634,17 @@ val mapModule = module {
     single {
         BisonFuteTrafficClient(
             client = get(),
-            diskCache = get<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")),
+            trafficRepository = getOrNull(),
         )
     }
-    single { BisonFuteTrafficProvider(get()) }
+    single { BisonFuteTrafficProvider(get(), trafficRepository = getOrNull()) }
     single(named("tipi_action_c")) {
         TipiRestrictedTrafficClient(
             client = get(),
             contentUrl = TipiRestrictedTrafficClient.ACTION_C_URL,
             username = BuildConfig.TIPI_USER,
             password = BuildConfig.TIPI_PASSWORD,
-            diskCache = get<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")),
-            diskKey = TipiRestrictedTrafficClient.DISK_CACHE_KEY_ACTION_C,
+            trafficRepository = getOrNull(),
         )
     }
     single(named("tipi_action_b")) {
@@ -649,20 +653,21 @@ val mapModule = module {
             contentUrl = TipiRestrictedTrafficClient.ACTION_B_URL,
             username = BuildConfig.TIPI_USER,
             password = BuildConfig.TIPI_PASSWORD,
-            diskCache = get<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")),
-            diskKey = TipiRestrictedTrafficClient.DISK_CACHE_KEY_ACTION_B,
+            trafficRepository = getOrNull(),
         )
     }
     single(named("tipi_action_c_provider")) {
         TipiActionTrafficProvider(
             client = get(named("tipi_action_c")),
-            providerId = TipiActionTrafficProvider.ACTION_C_ID
+            providerId = TipiActionTrafficProvider.ACTION_C_ID,
+            trafficRepository = getOrNull(),
         )
     }
     single(named("tipi_action_b_provider")) {
         TipiActionTrafficProvider(
             client = get(named("tipi_action_b")),
-            providerId = TipiActionTrafficProvider.ACTION_B_ID
+            providerId = TipiActionTrafficProvider.ACTION_B_ID,
+            trafficRepository = getOrNull(),
         )
     }
     single {
@@ -673,21 +678,41 @@ val mapModule = module {
             actionC = get<TipiActionTrafficProvider>(named("tipi_action_c_provider")),
         )
     }
+    single { TrafficPolygonEnricher(getOrNull(), getOrNull()) }
     single { CitaGeoJsonTrafficClient(get()) }
     single { CitaTrafficProvider(get()) }
     single { TomTomTrafficClient(get()) }
     single { TomTomTrafficProvider(get(), BuildConfig.TOMTOM_KEY) }
     single<TrafficProviderFactory> {
+        val franceBbox = GeographicRegion.Bbox(
+            BisonFuteTrafficProvider.FRANCE_LAT_MIN,
+            BisonFuteTrafficProvider.FRANCE_LON_MIN,
+            BisonFuteTrafficProvider.FRANCE_LAT_MAX,
+            BisonFuteTrafficProvider.FRANCE_LON_MAX
+        )
+        val tomtom = get<TomTomTrafficProvider>()
         TrafficProviderFactory(
             listOf(
-                GeographicRegion.Bbox(49.4, 5.7, 50.2, 6.6) to get<CitaTrafficProvider>(),
-                GeographicRegion.Bbox(
-                    BisonFuteTrafficProvider.FRANCE_LAT_MIN,
-                    BisonFuteTrafficProvider.FRANCE_LON_MIN,
-                    BisonFuteTrafficProvider.FRANCE_LAT_MAX,
-                    BisonFuteTrafficProvider.FRANCE_LON_MAX
-                ) to get<FranceTrafficProvider>(),
-                GeographicRegion.Everywhere to get<TomTomTrafficProvider>()
+                TrafficProviderRegistration(
+                    region = GeographicRegion.Bbox(49.4, 5.7, 50.2, 6.6),
+                    provider = get<CitaTrafficProvider>(),
+                    selectionKey = PoiProviderType.CitaTraffic,
+                ),
+                TrafficProviderRegistration(
+                    region = franceBbox,
+                    provider = get<FranceTrafficProvider>(),
+                    selectionKey = PoiProviderType.TipiBisonFute,
+                ),
+                TrafficProviderRegistration(
+                    region = franceBbox,
+                    provider = tomtom,
+                    selectionKey = PoiProviderType.TomTomTraffic,
+                ),
+                TrafficProviderRegistration(
+                    region = GeographicRegion.Everywhere,
+                    provider = tomtom,
+                    selectionKey = PoiProviderType.TomTomTraffic,
+                ),
             )
         )
     }

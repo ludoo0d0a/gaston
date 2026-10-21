@@ -19,7 +19,7 @@ fun fakeMapDeps(poiProvider: PoiProvider = FakePoiProvider()): MapDeps {
         availabilityProviderFactory = BorneAvailabilityProviderFactory(belibProvider = FakeBorneAvailabilityProvider()),
         communityRepo = FakeCommunityPoiRepository(),
         favoritesRepo = FakeFavoritesRepository(),
-        trafficProviderFactory = TrafficProviderFactory(emptyList()),
+        trafficProviderFactory = TrafficProviderFactory(emptyList<fr.geoking.gaston.api.traffic.TrafficProviderRegistration>()),
         weatherProviderFactory = WeatherProviderFactory(emptyList()),
         routePlanner = RoutePlanner(FakeRoutingClient()),
         routingClient = FakeRoutingClient(),

@@ -7,6 +7,7 @@ package fr.geoking.gaston.api.traffic
 class TipiActionTrafficProvider(
     private val client: TipiRestrictedTrafficClient,
     private val providerId: String,
+    private val trafficRepository: TrafficRepository? = null,
     private val nowMs: () -> Long = { System.currentTimeMillis() }
 ) : TrafficProvider {
 
@@ -15,16 +16,28 @@ class TipiActionTrafficProvider(
 
     override suspend fun getTraffic(request: TrafficRequest): TrafficInfo? {
         if (!enabled) return null
-        val body = client.fetchDatexXml() ?: return null
-        val all = DatexSituationParser.parse(body, nowMs = nowMs(), defaultRoadRef = "FR")
-        if (all.isEmpty()) return null
         val q = queryBbox(request) ?: return null
-        val filtered = all.filter { e ->
-            val b = e.bbox ?: return@filter false
-            b.intersects(q)
+
+        val repo = trafficRepository
+        val fetchedEvents = client.fetchAndStoreTrafficEvents()
+
+        val events = if (repo != null) {
+            repo.getTrafficInBbox(
+                latMin = q.latMin,
+                lonMin = q.lonMin,
+                latMax = q.latMax,
+                lonMax = q.lonMax,
+                maxEvents = FranceTrafficProvider.MAX_TRAFFIC_EVENTS
+            )
+        } else {
+            fetchedEvents.filter { e ->
+                val b = e.bbox ?: return@filter false
+                b.intersects(q)
+            }.take(FranceTrafficProvider.MAX_TRAFFIC_EVENTS)
         }
-        if (filtered.isEmpty()) return null
-        return TrafficInfo(events = filtered, providerId = providerId)
+
+        if (events.isEmpty()) return null
+        return TrafficInfo(events = events, providerId = providerId)
     }
 
     companion object {

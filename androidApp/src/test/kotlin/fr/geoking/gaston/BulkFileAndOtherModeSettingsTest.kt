@@ -97,6 +97,8 @@ class BulkFileAndOtherModeSettingsTest {
         assertTrue(after.mapTrafficEnabled)
         assertTrue(after.selectedOverpassAmenityTypes.isEmpty())
         assertEquals(setOf(PoiCategory.Traffic), after.effectiveAllowedCategories())
+        assertTrue(PoiProviderType.TipiBisonFute in after.selectedPoiProviders)
+        assertTrue(PoiProviderType.TomTomTraffic in after.selectedPoiProviders)
     }
 
     @Test
