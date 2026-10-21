@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /** Whether national CSV/JSON dump providers may download on the current network. */
@@ -35,7 +34,7 @@ enum class CarMapMode {
   /** Host Google map on Android Auto ([NativeMapPoiScreen]). */
     Native,
   /** Raster OSM / OpenFreeMap tiles on AA surface — frozen reference implementation. */
-    Custom,
+    Raster,
   /** MapLibre vector (OpenFreeMap) rendered by MapSnapshotter, blitted with Canvas (never EGL). */
     MapLibreMapSnapshotter,
   /** MapLibre GL: a real MapView in a VirtualDisplay whose output is the AA Surface. */
@@ -72,7 +71,7 @@ enum class CarMapMode {
         }
     }
 }
-enum class MapEngine { Google, MapLibre, Custom, Mapsforge }
+enum class MapEngine { Google, MapLibre, Raster, Mapsforge }
 enum class ThemeMode { System, Light, Dark }
 
 /** Phone map basemap: streets / photo / hybrid / terrain (Google map types + MapLibre equivalents). */

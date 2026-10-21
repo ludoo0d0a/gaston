@@ -1,8 +1,5 @@
 package fr.geoking.gaston.auto
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.car.app.CarContext
@@ -15,7 +12,6 @@ import androidx.car.app.model.MessageTemplate
 import androidx.car.app.navigation.model.MapController
 import androidx.car.app.navigation.model.MapWithContentTemplate
 import androidx.car.app.model.ListTemplate
-import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import android.graphics.Rect
 import androidx.car.app.SurfaceCallback
@@ -71,8 +67,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-
-import fr.geoking.gaston.auto.maplibre.resolveAutoMapStyleUrl
 
 /**
  * POI map with a canvas surface renderer (MapLibre, MapTiler, Protomaps, Mapsforge).
@@ -772,10 +766,10 @@ open class MapLibrePoiScreen(
     private fun fallbackToCustomMap() {
         val deps = mapDeps ?: return
         if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) return
-        if (settingsManager.settings.value.carMapMode == fr.geoking.gaston.CarMapMode.Custom) return
+        if (settingsManager.settings.value.carMapMode == fr.geoking.gaston.CarMapMode.Raster) return
         Log.e("MapLibrePoiScreen", "Renderer failed; falling back to Custom map mode")
         releaseSurface()
-        settingsManager.setCarMapMode(fr.geoking.gaston.CarMapMode.Custom)
+        settingsManager.setCarMapMode(fr.geoking.gaston.CarMapMode.Raster)
         screenManager.pop()
         pushMapScreen(settingsManager, deps, title)
     }

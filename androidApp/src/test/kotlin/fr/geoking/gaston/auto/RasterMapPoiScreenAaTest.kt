@@ -20,7 +20,7 @@ import org.robolectric.RobolectricTestRunner
  * to the map screen must still not crash, and its background draw thread must be stopped cleanly.
  */
 @RunWith(RobolectricTestRunner::class)
-class CustomMapPoiScreenAaTest {
+class RasterMapPoiScreenAaTest {
 
     private fun newScreen(): Pair<androidx.car.app.testing.TestCarContext, CustomMapPoiScreen> {
         val carContext = CarScreenTestHarness.newTestCarContext()

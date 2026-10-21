@@ -102,7 +102,7 @@ class AutoMapScreenPushDepthTest {
                 effectivePowerLevels = emptySet(),
             )
 
-            CarMapMode.Custom -> CustomMapStationDetailScreen(
+            CarMapMode.Raster -> CustomMapStationDetailScreen(
                 carContext = carContext,
                 poi = poi,
                 availability = availability,

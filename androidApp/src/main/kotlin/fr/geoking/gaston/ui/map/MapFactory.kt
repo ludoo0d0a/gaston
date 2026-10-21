@@ -75,7 +75,7 @@ fun MapFactory(
             initialZoom = initialZoom,
             showAds = showAds
         )
-        MapEngine.Custom -> SurfaceCustomMapScreen(
+        MapEngine.Raster -> SurfaceCustomMapScreen(
             poiProvider = poiProvider,
             availabilityProviderFactory = availabilityProviderFactory,
             trafficProviderFactory = trafficProviderFactory,

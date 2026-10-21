@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -30,7 +29,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,8 +38,6 @@ import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.BulkFileDownloadPolicy
 import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.DEFAULT_EV_RANGE_KM
-import fr.geoking.gaston.effectiveMapEnergyFilterIds
-import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.FuelCard
 import fr.geoking.gaston.MapEngine
 import fr.geoking.gaston.MapTheme
@@ -57,7 +53,6 @@ import fr.geoking.gaston.selectActiveVehicle
 import fr.geoking.gaston.upsertVehicle
 import fr.geoking.gaston.feature.auth.GoogleAuthManager
 import fr.geoking.gaston.poi.PoiProviderType
-import fr.geoking.gaston.poi.anyProvidesElectric
 import fr.geoking.gaston.poi.isBulkFileDownload
 import fr.geoking.gaston.poi.isUserSelectablePoiDataSource
 import fr.geoking.gaston.CacheManager
@@ -107,7 +102,7 @@ enum class SettingsScreenPage {
 @Composable
 private fun CarMapMode.displayLabel(): String = when (this) {
     CarMapMode.Native -> stringResource(R.string.map_mode_google)
-    CarMapMode.Custom -> stringResource(R.string.map_mode_custom)
+    CarMapMode.Raster -> stringResource(R.string.map_mode_custom)
     CarMapMode.MapLibreMapSnapshotter -> stringResource(R.string.map_mode_maplibre_snapshotter)
     CarMapMode.Mapbox -> stringResource(R.string.map_mode_mapbox)
     CarMapMode.MapLibreVirtualDisplay -> stringResource(R.string.map_mode_maplibre_virtualdisplay)
@@ -118,7 +113,7 @@ private fun CarMapMode.displayLabel(): String = when (this) {
 @Composable
 private fun CarMapMode.displayDescription(): String = when (this) {
     CarMapMode.Native -> stringResource(R.string.map_mode_google_desc)
-    CarMapMode.Custom -> stringResource(R.string.map_mode_custom_desc)
+    CarMapMode.Raster -> stringResource(R.string.map_mode_custom_desc)
     CarMapMode.MapLibreMapSnapshotter -> stringResource(R.string.map_mode_maplibre_snapshotter_desc)
     CarMapMode.Mapbox -> stringResource(R.string.map_mode_mapbox_desc)
     CarMapMode.MapLibreVirtualDisplay -> stringResource(R.string.map_mode_maplibre_virtualdisplay_desc)
@@ -130,7 +125,7 @@ private fun CarMapMode.displayDescription(): String = when (this) {
 private fun MapEngine.displayLabel(): String = when (this) {
     MapEngine.Google -> stringResource(R.string.map_engine_google)
     MapEngine.MapLibre -> stringResource(R.string.map_engine_maplibre)
-    MapEngine.Custom -> stringResource(R.string.map_engine_custom)
+    MapEngine.Raster -> stringResource(R.string.map_engine_raster)
     MapEngine.Mapsforge -> stringResource(R.string.map_engine_mapsforge)
 }
 

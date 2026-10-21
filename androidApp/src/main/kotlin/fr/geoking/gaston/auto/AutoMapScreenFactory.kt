@@ -27,7 +27,7 @@ object AutoMapScreenFactory {
             title = title,
             mapDeps = mapDeps,
         )
-        CarMapMode.Custom -> CustomMapPoiScreen(
+        CarMapMode.Raster -> CustomMapPoiScreen(
             carContext = carContext,
             poiProvider = mapDeps.poiProvider,
             availabilityProviderFactory = mapDeps.availabilityProviderFactory,
