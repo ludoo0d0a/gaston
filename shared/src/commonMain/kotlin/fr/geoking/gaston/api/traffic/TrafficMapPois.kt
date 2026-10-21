@@ -2,15 +2,33 @@ package fr.geoking.gaston.api.traffic
 
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+private val defaultEnricherScope = CoroutineScope(Dispatchers.Default)
 
 /**
  * Map pin for a [TrafficEvent] (phone list overlays use markers; AA canvas uses [Poi] pins).
  */
-fun TrafficEvent.toMapPoi(providerId: String = "traffic"): Poi? {
+fun TrafficEvent.toMapPoi(
+    providerId: String = "traffic",
+    enricher: TrafficPolygonEnricher? = null,
+): Poi? {
     val lat = poiLatitude ?: return null
     val lon = poiLongitude ?: return null
     val stableId = sourceId?.takeIf { it.isNotBlank() }
         ?: "${roadRef}_${lat}_${lon}"
+
+    if (enricher != null && zonePoints == null && sourceId != null) {
+        // Asynchronously trigger lazy polygon enrichment when displayed on map
+        defaultEnricherScope.launch {
+            try {
+                enricher.enrichAndCachePolygon(this@toMapPoi, providerId)
+            } catch (_: Exception) {}
+        }
+    }
+
     return Poi(
         id = "traffic_$stableId",
         name = buildString {
@@ -29,8 +47,8 @@ fun TrafficEvent.toMapPoi(providerId: String = "traffic"): Poi? {
     )
 }
 
-fun TrafficInfo.toMapPois(): List<Poi> =
-    events.mapNotNull { it.toMapPoi(providerId) }
+fun TrafficInfo.toMapPois(enricher: TrafficPolygonEnricher? = null): List<Poi> =
+    events.mapNotNull { it.toMapPoi(providerId, enricher) }
 
 /** Prefer non-fluid CITA segments when capping density for map pins. */
 fun List<TrafficEvent>.prioritizeForMapDisplay(max: Int = FranceTrafficProvider.MAX_TRAFFIC_EVENTS): List<TrafficEvent> {

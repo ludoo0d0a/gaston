@@ -1,85 +1,90 @@
 package fr.geoking.gaston.api.traffic
 
-import fr.geoking.gaston.aac.TextFileCache
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
-import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.utils.io.jvm.javaio.toInputStream
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * Fetches TIPI restricted DATEX SituationPublication feeds (Action B / Action C) with HTTP Basic auth.
- * Credentials blank → [fetchDatexXml] returns null.
- *
- * Uses a dedicated [TipiDatexBodyCache] (memory + optional disk under `filesDir/tipi/`) — Action
- * dumps are large national XML files. Cache is TTL-only (Action C ignores If-None-Match).
- *
- * Request access: diffusion-numerique@info-routiere.gouv.fr
+ * Fetches TIPI restricted DATEX SituationPublication feeds (Action B / Action C) with HTTP Basic auth
+ * and stores/parses events into [TrafficRepository].
  */
 class TipiRestrictedTrafficClient(
     private val client: HttpClient,
     private val contentUrl: String,
     private val username: String,
     private val password: String,
+    private val trafficRepository: TrafficRepository? = null,
     private val cacheTtlMs: Long = DEFAULT_CACHE_TTL_MS,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
-    diskCache: TextFileCache? = null,
-    diskKey: String = diskKeyForUrl(contentUrl),
+    val sourceId: String = sourceIdForUrl(contentUrl),
 ) {
-    private val bodyCache = TipiDatexBodyCache(
-        diskCache = diskCache,
-        diskKey = diskKey,
-        contentUrl = contentUrl,
-        cacheTtlMs = cacheTtlMs,
-        nowMs = nowMs,
-    )
 
     val hasCredentials: Boolean
         get() = username.isNotBlank() && password.isNotBlank()
 
     @OptIn(ExperimentalEncodingApi::class)
-    suspend fun fetchDatexXml(): String? {
-        if (!hasCredentials) return null
-        bodyCache.getIfFresh()?.let { return it.body }
-        val stale = bodyCache.peekMemory()
+    suspend fun fetchAndStoreTrafficEvents(): List<TrafficEvent> {
+        if (!hasCredentials) return emptyList()
+
+        val repository = trafficRepository
+        if (repository != null && repository.isSourceFresh(sourceId, cacheTtlMs)) {
+            return emptyList()
+        }
+
         val basic = Base64.Default.encode("$username:$password".encodeToByteArray())
         return try {
             val response = client.get(contentUrl) {
                 header(HttpHeaders.Authorization, "Basic $basic")
             }
-            when (response.status) {
-                HttpStatusCode.OK -> {
-                    val body = response.bodyAsText()
-                    if (body.isBlank()) return stale?.body
-                    bodyCache.put(body = body, etag = null)
-                    body
-                }
-                else -> stale?.body
+            if (response.status == HttpStatusCode.OK) {
+                val channel = response.bodyAsChannel()
+                val inputStream = channel.toInputStream()
+                val events = DatexSituationParser.parseStream(
+                    inputStream = inputStream,
+                    nowMs = nowMs(),
+                    defaultRoadRef = "FR"
+                )
+                repository?.replaceEventsForSource(
+                    sourceId = sourceId,
+                    events = events,
+                    fetchedAtMs = nowMs()
+                )
+                events
+            } else {
+                emptyList()
             }
         } catch (_: Exception) {
-            stale?.body
+            emptyList()
         }
     }
 
+    suspend fun fetchDatexXml(): String? {
+        val events = fetchAndStoreTrafficEvents()
+        return if (events.isNotEmpty() || (trafficRepository?.isSourceFresh(sourceId, cacheTtlMs) == true)) "OK" else null
+    }
+
     suspend fun clearCache() {
-        bodyCache.clear()
+        trafficRepository?.clear(sourceId)
     }
 
     companion object {
-        const val DEFAULT_CACHE_TTL_MS = 10 * 60_000L
+        const val DEFAULT_CACHE_TTL_MS = 60 * 60_000L // 1 hour
         const val ACTION_C_URL =
             "https://tipi.bison-fute.gouv.fr/bison-fute-restreint/publications-restreintes/grt/ACTION-C/content.xml"
         const val ACTION_B_URL =
             "https://tipi.bison-fute.gouv.fr/bison-fute-restreint/publications-restreintes/grt/ACTION-B/content.xml"
-        const val DISK_CACHE_KEY_ACTION_C = "tipi_action_c"
-        const val DISK_CACHE_KEY_ACTION_B = "tipi_action_b"
+        const val SOURCE_ID_ACTION_C = "tipi_action_c"
+        const val SOURCE_ID_ACTION_B = "tipi_action_b"
 
-        fun diskKeyForUrl(url: String): String = when (url) {
-            ACTION_C_URL -> DISK_CACHE_KEY_ACTION_C
-            ACTION_B_URL -> DISK_CACHE_KEY_ACTION_B
+        fun sourceIdForUrl(url: String): String = when (url) {
+            ACTION_C_URL -> SOURCE_ID_ACTION_C
+            ACTION_B_URL -> SOURCE_ID_ACTION_B
             else -> "tipi_" + url.hashCode().toUInt().toString(16)
         }
     }

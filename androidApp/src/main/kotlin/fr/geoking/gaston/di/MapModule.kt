@@ -114,6 +114,7 @@ import fr.geoking.gaston.api.traffic.TipiActionTrafficProvider
 import fr.geoking.gaston.api.traffic.TipiRestrictedTrafficClient
 import fr.geoking.gaston.api.traffic.TomTomTrafficClient
 import fr.geoking.gaston.api.traffic.TomTomTrafficProvider
+import fr.geoking.gaston.api.traffic.TrafficPolygonEnricher
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.api.traffic.TrafficProviderRegistration
 import fr.geoking.gaston.poi.PoiProviderType
@@ -633,18 +634,17 @@ val mapModule = module {
     single {
         BisonFuteTrafficClient(
             client = get(),
-            diskCache = get<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")),
+            trafficRepository = getOrNull(),
         )
     }
-    single { BisonFuteTrafficProvider(get()) }
+    single { BisonFuteTrafficProvider(get(), trafficRepository = getOrNull()) }
     single(named("tipi_action_c")) {
         TipiRestrictedTrafficClient(
             client = get(),
             contentUrl = TipiRestrictedTrafficClient.ACTION_C_URL,
             username = BuildConfig.TIPI_USER,
             password = BuildConfig.TIPI_PASSWORD,
-            diskCache = get<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")),
-            diskKey = TipiRestrictedTrafficClient.DISK_CACHE_KEY_ACTION_C,
+            trafficRepository = getOrNull(),
         )
     }
     single(named("tipi_action_b")) {
@@ -653,20 +653,21 @@ val mapModule = module {
             contentUrl = TipiRestrictedTrafficClient.ACTION_B_URL,
             username = BuildConfig.TIPI_USER,
             password = BuildConfig.TIPI_PASSWORD,
-            diskCache = get<fr.geoking.gaston.aac.TextFileCache>(named("tipi_disk_cache")),
-            diskKey = TipiRestrictedTrafficClient.DISK_CACHE_KEY_ACTION_B,
+            trafficRepository = getOrNull(),
         )
     }
     single(named("tipi_action_c_provider")) {
         TipiActionTrafficProvider(
             client = get(named("tipi_action_c")),
-            providerId = TipiActionTrafficProvider.ACTION_C_ID
+            providerId = TipiActionTrafficProvider.ACTION_C_ID,
+            trafficRepository = getOrNull(),
         )
     }
     single(named("tipi_action_b_provider")) {
         TipiActionTrafficProvider(
             client = get(named("tipi_action_b")),
-            providerId = TipiActionTrafficProvider.ACTION_B_ID
+            providerId = TipiActionTrafficProvider.ACTION_B_ID,
+            trafficRepository = getOrNull(),
         )
     }
     single {
@@ -677,6 +678,7 @@ val mapModule = module {
             actionC = get<TipiActionTrafficProvider>(named("tipi_action_c_provider")),
         )
     }
+    single { TrafficPolygonEnricher(getOrNull(), getOrNull()) }
     single { CitaGeoJsonTrafficClient(get()) }
     single { CitaTrafficProvider(get()) }
     single { TomTomTrafficClient(get()) }
