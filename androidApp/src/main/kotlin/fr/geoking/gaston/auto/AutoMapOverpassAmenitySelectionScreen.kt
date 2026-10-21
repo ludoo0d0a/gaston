@@ -16,9 +16,9 @@ class AutoMapOverpassAmenitySelectionScreen(
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
 
-        // Weather / traffic are dashboard shortcuts, not AA map settings toggles.
+        // Traffic / radar / weather are phone shortcuts; AA only keeps the radar alert toggle.
         OVERPASS_AMENITY_OPTIONS
-            .filter { (id, _) -> id != "weather" }
+            .filter { (id, _) -> id != "weather" && id != "speed_camera" }
             .forEach { (id, resId) ->
             val isSelected = settings.selectedOverpassAmenityTypes.contains(id)
             listBuilder.addItem(
