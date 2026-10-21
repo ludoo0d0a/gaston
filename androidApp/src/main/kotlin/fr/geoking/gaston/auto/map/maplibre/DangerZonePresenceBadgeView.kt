@@ -1,11 +1,11 @@
-package fr.geoking.gaston.auto.maplibre
+package fr.geoking.gaston.auto.map.maplibre
 
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.View
-import fr.geoking.gaston.auto.AutoMapOverlayHelper
+import fr.geoking.gaston.ui.map.components.AutoMapOverlayHelper
 import fr.geoking.gaston.radar.DangerZoneHudState
 import fr.geoking.gaston.radar.DangerZoneHudStore
 import kotlinx.coroutines.CoroutineScope

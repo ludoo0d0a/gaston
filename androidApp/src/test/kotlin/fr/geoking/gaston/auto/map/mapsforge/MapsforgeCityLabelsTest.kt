@@ -1,5 +1,6 @@
-package fr.geoking.gaston.auto.mapsforge
+package fr.geoking.gaston.auto.map.mapsforge
 
+import fr.geoking.gaston.auto.mapsforge.CityLabel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull

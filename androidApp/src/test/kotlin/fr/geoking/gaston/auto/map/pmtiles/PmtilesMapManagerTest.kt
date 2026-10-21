@@ -1,8 +1,10 @@
-package fr.geoking.gaston.auto.pmtiles
+package fr.geoking.gaston.auto.map.pmtiles
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import fr.geoking.gaston.auto.mapsforge.DownloadProgress
+import fr.geoking.gaston.auto.pmtiles.PmtilesMapManager
+import fr.geoking.gaston.auto.pmtiles.PmtilesPresetServers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -12,6 +14,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.File
 import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+
 @RunWith(RobolectricTestRunner::class)
 class PmtilesMapManagerTest {
 
@@ -100,11 +105,11 @@ class PmtilesMapManagerTest {
         val zipFile = File(pmtilesDir, "sample.zip")
         val target = File(pmtilesDir, "Sample Region.pmtiles")
         val payload = "PMTiles-dummy-bytes".toByteArray()
-        java.util.zip.ZipOutputStream(FileOutputStream(zipFile)).use { zos ->
-            zos.putNextEntry(java.util.zip.ZipEntry("region-pack/README.txt"))
+        ZipOutputStream(FileOutputStream(zipFile)).use { zos ->
+            zos.putNextEntry(ZipEntry("region-pack/README.txt"))
             zos.write("ignore".toByteArray())
             zos.closeEntry()
-            zos.putNextEntry(java.util.zip.ZipEntry("region-pack/sample.pmtiles"))
+            zos.putNextEntry(ZipEntry("region-pack/sample.pmtiles"))
             zos.write(payload)
             zos.closeEntry()
         }

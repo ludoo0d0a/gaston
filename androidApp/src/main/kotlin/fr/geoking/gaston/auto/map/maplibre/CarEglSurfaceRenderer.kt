@@ -1,4 +1,4 @@
-package fr.geoking.gaston.auto.maplibre
+package fr.geoking.gaston.auto.map.maplibre
 
 import android.opengl.EGL14
 import android.opengl.EGLConfig

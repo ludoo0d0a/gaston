@@ -1,4 +1,4 @@
-package fr.geoking.gaston.auto.mapbox
+package fr.geoking.gaston.auto.map.mapbox
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -7,30 +7,29 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.car.app.CarContext
 import androidx.car.app.SurfaceContainer
 import androidx.lifecycle.Lifecycle
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
-import fr.geoking.gaston.auto.AutoMapCamera
-import fr.geoking.gaston.auto.AaMapSurfaceRenderer
-import fr.geoking.gaston.auto.AutoMapOverlayHelper
-import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
-import fr.geoking.gaston.auto.AutoMapHeading
-import fr.geoking.gaston.auto.AutoMapPoiHitTest
-import fr.geoking.gaston.auto.AutoMapQueryLoader
-import fr.geoking.gaston.auto.AutoSurfaceRenderer
-import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.ui.map.components.AutoMapCamera
+import fr.geoking.gaston.auto.map.AaMapSurfaceRenderer
+import fr.geoking.gaston.ui.map.components.AutoMapOverlayHelper
+import fr.geoking.gaston.ui.map.components.AutoMapFollowFocalPoint
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
+import fr.geoking.gaston.ui.map.components.AutoMapPoiHitTest
+import fr.geoking.gaston.ui.map.components.AutoMapQueryLoader
+import fr.geoking.gaston.ui.map.components.AutoSurfaceRenderer
+import fr.geoking.gaston.ui.map.components.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
-import com.mapbox.maps.MapOptions
-import com.mapbox.maps.Style
-import java.util.Collections
+import fr.geoking.gaston.SettingsManager
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.ln
 import kotlin.math.tan
+import fr.geoking.gaston.auto.map.maplibre.CarMapLibreRenderer
+import org.koin.core.context.GlobalContext
 
 /**
  * Mapbox Renderer for Android Auto.
@@ -45,7 +44,7 @@ class CarMapboxRenderer(
     override var hudModeLabel: String = "Mapbox"
     override var offlineUnavailable: Boolean = false
     private val uiHandler = Handler(Looper.getMainLooper())
-    private val settingsManager = org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.SettingsManager>()
+    private val settingsManager = GlobalContext.get().get<SettingsManager>()
 
     private var surfaceContainer: SurfaceContainer? = null
     private var styleUrl: String = "mapbox://styles/mapbox/streets-v12"

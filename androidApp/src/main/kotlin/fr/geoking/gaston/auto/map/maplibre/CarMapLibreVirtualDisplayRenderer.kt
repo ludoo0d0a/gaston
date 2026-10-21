@@ -1,14 +1,16 @@
-package fr.geoking.gaston.auto.maplibre
+package fr.geoking.gaston.auto.map.maplibre
 
 import android.graphics.Rect
 import androidx.car.app.CarContext
 import androidx.car.app.SurfaceContainer
 import androidx.lifecycle.Lifecycle
+import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.traffic.TrafficEvent
-import fr.geoking.gaston.auto.AaMapSurfaceRenderer
-import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.auto.map.AaMapSurfaceRenderer
+import fr.geoking.gaston.ui.map.components.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
+import org.koin.core.context.GlobalContext
 
 /**
  * High-performance MapLibre renderer for Android Auto using VirtualDisplay + Presentation.
@@ -25,7 +27,7 @@ class CarMapLibreVirtualDisplayRenderer(
         set(value) { host.onFatalError = value }
 
     private val settingsManager =
-        org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.SettingsManager>()
+        GlobalContext.get().get<SettingsManager>()
     private val host = MapLibreAaGlHost(carContext, TAG)
 
     init {

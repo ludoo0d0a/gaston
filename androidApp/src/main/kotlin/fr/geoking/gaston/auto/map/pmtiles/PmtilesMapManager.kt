@@ -1,10 +1,11 @@
-package fr.geoking.gaston.auto.pmtiles
+package fr.geoking.gaston.auto.map.pmtiles
 
 import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.util.Log
 import fr.geoking.gaston.SettingsManager
-import fr.geoking.gaston.auto.mapsforge.DownloadProgress
+import fr.geoking.gaston.auto.map.mapsforge.DownloadProgress
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -389,7 +390,7 @@ class PmtilesMapManager(
     private fun getFileNameFromUri(uri: Uri): String? {
         return try {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 if (nameIndex != -1 && cursor.moveToFirst()) {
                     cursor.getString(nameIndex)
                 } else null

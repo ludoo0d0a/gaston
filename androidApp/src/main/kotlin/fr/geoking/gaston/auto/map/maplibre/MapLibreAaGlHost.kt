@@ -1,4 +1,4 @@
-package fr.geoking.gaston.auto.maplibre
+package fr.geoking.gaston.auto.map.maplibre
 
 import android.app.Presentation
 import android.content.Context
@@ -15,15 +15,16 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.car.app.CarContext
 import androidx.car.app.SurfaceContainer
+import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.api.weather.RainViewerMapsClient
-import fr.geoking.gaston.auto.AutoMapCamera
-import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
-import fr.geoking.gaston.auto.AutoMapHeading
-import fr.geoking.gaston.auto.AutoMapPoiHitTest
-import fr.geoking.gaston.auto.AutoSurfaceRenderer
-import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.ui.map.components.AutoMapCamera
+import fr.geoking.gaston.ui.map.components.AutoMapFollowFocalPoint
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
+import fr.geoking.gaston.ui.map.components.AutoMapPoiHitTest
+import fr.geoking.gaston.ui.map.components.AutoSurfaceRenderer
+import fr.geoking.gaston.ui.map.components.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.radar.DangerZoneHudStore
@@ -208,7 +209,7 @@ internal class MapLibreAaGlHost(
                 mapView?.onResume()
                 val url = styleUrl.ifBlank {
                     resolveAutoMapStyleUrl(
-                        org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.SettingsManager>().settings.value,
+                        GlobalContext.get().get<SettingsManager>().settings.value,
                         carContext,
                     )
                 }.also { styleUrl = it }
@@ -356,7 +357,7 @@ internal class MapLibreAaGlHost(
     private fun bindPresenceBadge(badge: DangerZonePresenceBadgeView) {
         badge.setVisibleArea(visibleArea)
         try {
-            val store = org.koin.core.context.GlobalContext.getOrNull()
+            val store = GlobalContext.getOrNull()
                 ?.get<DangerZoneHudStore>()
             if (store != null) {
                 badge.bindHudStore(store)

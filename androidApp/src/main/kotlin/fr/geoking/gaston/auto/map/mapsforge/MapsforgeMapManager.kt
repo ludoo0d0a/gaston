@@ -1,7 +1,8 @@
-package fr.geoking.gaston.auto.mapsforge
+package fr.geoking.gaston.auto.map.mapsforge
 
 import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,6 @@ import io.ktor.utils.io.readAvailable
 import org.koin.core.context.GlobalContext
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
 
 data class DownloadProgress(
     val fileName: String,
@@ -330,7 +330,7 @@ class MapsforgeMapManager(
     private fun getFileNameFromUri(uri: Uri): String? {
         return try {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 if (nameIndex != -1 && cursor.moveToFirst()) {
                     cursor.getString(nameIndex)
                 } else null

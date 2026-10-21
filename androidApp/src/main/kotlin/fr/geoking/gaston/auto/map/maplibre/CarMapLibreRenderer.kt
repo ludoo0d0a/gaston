@@ -1,4 +1,4 @@
-package fr.geoking.gaston.auto.maplibre
+package fr.geoking.gaston.auto.map.maplibre
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -17,20 +17,28 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonPrimitive
+import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
-import fr.geoking.gaston.auto.AutoMapCamera
-import fr.geoking.gaston.auto.AaMapSurfaceRenderer
-import fr.geoking.gaston.auto.AutoMapOverlayHelper
-import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
-import fr.geoking.gaston.auto.AutoMapHeading
-import fr.geoking.gaston.auto.AutoMapPoiHitTest
-import fr.geoking.gaston.auto.AutoMapQueryLoader
-import fr.geoking.gaston.auto.AutoSurfaceRenderer
-import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.ui.map.components.AutoMapCamera
+import fr.geoking.gaston.auto.map.AaMapSurfaceRenderer
+import fr.geoking.gaston.ui.map.components.AutoMapOverlayHelper
+import fr.geoking.gaston.ui.map.components.AutoMapFollowFocalPoint
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
+import fr.geoking.gaston.ui.map.components.AutoMapPoiHitTest
+import fr.geoking.gaston.ui.map.components.AutoMapQueryLoader
+import fr.geoking.gaston.ui.map.components.AutoSurfaceRenderer
+import fr.geoking.gaston.ui.map.components.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
+import fr.geoking.gaston.road.RoadPolyline
+import fr.geoking.gaston.road.RoomRoadGeometryRepository
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import org.koin.core.context.GlobalContext
+import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.Style
@@ -62,7 +70,7 @@ class CarMapLibreRenderer(
     override var onFatalError: (() -> Unit)? = null
     private var fatalNotified = false
     private val uiHandler = Handler(Looper.getMainLooper())
-    private val settingsManager = org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.SettingsManager>()
+    private val settingsManager = GlobalContext.get().get<SettingsManager>()
 
     private var surfaceContainer: SurfaceContainer? = null
     private var styleUrl: String = resolveAutoMapStyleUrl(settingsManager.settings.value, carContext)
@@ -141,10 +149,10 @@ class CarMapLibreRenderer(
     }
 
     private val roomRoadRepo = runCatching {
-        org.koin.core.context.GlobalContext.get().get<fr.geoking.gaston.road.RoomRoadGeometryRepository>()
+        GlobalContext.get().get<RoomRoadGeometryRepository>()
     }.getOrNull()
-    private val coroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
-    private var roadPolylines: List<fr.geoking.gaston.road.RoadPolyline> = emptyList()
+    private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var roadPolylines: List<RoadPolyline> = emptyList()
 
     private val snapshotRunnable = Runnable {
         requestVectorSnapshotInternal()
@@ -436,7 +444,7 @@ class CarMapLibreRenderer(
 
         try {
             try {
-                org.maplibre.android.MapLibre.getInstance(carContext)
+                MapLibre.getInstance(carContext)
             } catch (e: Throwable) {
                 Log.w(TAG, "MapLibre.getInstance failed in CarMapLibreRenderer", e)
                 debugLastError = "MapLibre.init: ${e.message}"

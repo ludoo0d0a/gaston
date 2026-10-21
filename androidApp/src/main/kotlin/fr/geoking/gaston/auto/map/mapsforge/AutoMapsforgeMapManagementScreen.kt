@@ -1,4 +1,4 @@
-package fr.geoking.gaston.auto.mapsforge
+package fr.geoking.gaston.auto.map.mapsforge
 
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast

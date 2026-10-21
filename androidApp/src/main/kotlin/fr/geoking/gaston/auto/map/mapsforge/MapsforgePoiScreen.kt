@@ -1,4 +1,4 @@
-package fr.geoking.gaston.auto.mapsforge
+package fr.geoking.gaston.auto.map.mapsforge
 
 import android.graphics.Rect
 import android.util.Log
@@ -14,7 +14,7 @@ import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
-import androidx.car.app.model.MessageTemplate
+import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.car.app.navigation.model.MapController
 import androidx.car.app.navigation.model.MapWithContentTemplate
@@ -37,13 +37,13 @@ import fr.geoking.gaston.api.routing.RoutePlanner
 import fr.geoking.gaston.api.routing.RoutingClient
 import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.api.traffic.TrafficProviderFactory
-import fr.geoking.gaston.auto.AutoTrafficOverlay
-import fr.geoking.gaston.auto.AutoMapCamera
-import fr.geoking.gaston.auto.AutoMapHeading
-import fr.geoking.gaston.auto.AutoMapPoiHitTest
-import fr.geoking.gaston.auto.AutoMapSettingsScreen
-import fr.geoking.gaston.auto.AutoPoiUiHelper
-import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.ui.map.components.AutoTrafficOverlay
+import fr.geoking.gaston.ui.map.components.AutoMapCamera
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
+import fr.geoking.gaston.ui.map.components.AutoMapPoiHitTest
+import fr.geoking.gaston.auto.settings.map.AutoMapSettingsScreen
+import fr.geoking.gaston.auto.poi.AutoPoiUiHelper
+import fr.geoking.gaston.ui.map.components.MapOrientationMode
 import fr.geoking.gaston.auto.actionCompassIcon
 import fr.geoking.gaston.auto.menuVisibilityAction
 import fr.geoking.gaston.auto.actionMapIcon
@@ -52,15 +52,16 @@ import fr.geoking.gaston.auto.actionZoomInIcon
 import fr.geoking.gaston.auto.actionZoomOutIcon
 import fr.geoking.gaston.auto.cheapestFilterAction
 import fr.geoking.gaston.auto.compassArrowSector
-import fr.geoking.gaston.auto.maplibre.resolveAutoRasterTileUrl
+import fr.geoking.gaston.auto.map.maplibre.resolveAutoRasterTileUrl
 import fr.geoking.gaston.auto.safeCarTemplate
-import fr.geoking.gaston.auto.shouldAddTrailPoint
-import fr.geoking.gaston.auto.shouldRedrawFromMovement
-import fr.geoking.gaston.auto.shouldRequeryForViewportChange
-import fr.geoking.gaston.auto.shouldRequeryPois
+import fr.geoking.gaston.ui.map.components.shouldAddTrailPoint
+import fr.geoking.gaston.ui.map.components.shouldRedrawFromMovement
+import fr.geoking.gaston.ui.map.components.shouldRequeryForViewportChange
+import fr.geoking.gaston.ui.map.components.shouldRequeryPois
 import fr.geoking.gaston.auto.swapMapMode
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
+import fr.geoking.gaston.countryCodesAtMapPosition
 import fr.geoking.gaston.di.MapDeps
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
@@ -75,9 +76,9 @@ import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.poi.PoiProviderError
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.PoiSearchRequest
-import fr.geoking.gaston.poi.PoiSearchResult
 import fr.geoking.gaston.poi.mergeLoadedRegion
 import fr.geoking.gaston.toll.TollCalculator
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -292,7 +293,7 @@ class MapsforgePoiScreen(
 
         return if (isCheapestFilterActive) {
             val fuelIds = currentSettings.effectiveMapEnergyFilterIds() - "electric"
-            val isLuxembourg = fr.geoking.gaston.countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
+            val isLuxembourg = countryCodesAtMapPosition(searchLat, searchLon).contains("LU")
             MapPoiFilter.filterCheapest(
                 pois = visiblePois,
                 selectedFuelIds = fuelIds,
@@ -540,7 +541,7 @@ class MapsforgePoiScreen(
                         val availabilities = try {
                             provider.getAvailability(lat, lon, 10)
                         } catch (e: Exception) {
-                            if (e is kotlinx.coroutines.CancellationException) throw e
+                            if (e is CancellationException) throw e
                             emptyList()
                         }
                         availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
@@ -581,7 +582,7 @@ class MapsforgePoiScreen(
                                 val availabilities = try {
                                     provider.getAvailability(lat, lon, availabilityRadiusKm)
                                 } catch (e: Exception) {
-                                    if (e is kotlinx.coroutines.CancellationException) throw e
+                                    if (e is CancellationException) throw e
                                     emptyList()
                                 }
                                 availabilityByPoiId = matchAvailabilityToPois(availabilities, pois)
@@ -598,7 +599,7 @@ class MapsforgePoiScreen(
                     }
                 }
             } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
+                if (e is CancellationException) throw e
                 Log.e("MapsforgePoiScreen", "loadPois failed", e)
                 pois = emptyList()
                 errors = listOf(PoiProviderError("System", e.message ?: "Unknown error", isCritical = true))
@@ -1006,7 +1007,7 @@ class MapsforgePoiScreen(
             val activeMap = mapManager.getActiveMapFile()
             if (activeMap == null) {
                 itemListBuilder.addItem(
-                    androidx.car.app.model.Row.Builder()
+                    Row.Builder()
                         .setTitle(carContext.getString(R.string.mapsforge_active_map) + ": " + carContext.getString(R.string.network_none))
                         .addText(carContext.getString(R.string.mapsforge_offline_maps_subtitle))
                         .setOnClickListener {

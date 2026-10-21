@@ -1,4 +1,4 @@
-package fr.geoking.gaston.auto.maplibre
+package fr.geoking.gaston.auto.map.maplibre
 
 import fr.geoking.gaston.MapTheme
 import org.junit.Assert.assertTrue

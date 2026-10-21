@@ -1,4 +1,4 @@
-package fr.geoking.gaston.auto.mapsforge
+package fr.geoking.gaston.auto.map.mapsforge
 
 import android.graphics.Rect
 import android.util.Log
@@ -21,10 +21,10 @@ import androidx.lifecycle.lifecycleScope
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
-import fr.geoking.gaston.auto.AutoPoiUiHelper
-import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.auto.poi.AutoPoiUiHelper
+import fr.geoking.gaston.ui.map.components.MapOrientationMode
 import fr.geoking.gaston.auto.favoriteStationAction
-import fr.geoking.gaston.auto.maplibre.resolveAutoRasterTileUrl
+import fr.geoking.gaston.auto.map.maplibre.resolveAutoRasterTileUrl
 import fr.geoking.gaston.auto.navigateToStationAction
 import fr.geoking.gaston.auto.safeCarTemplate
 import fr.geoking.gaston.community.FavoritesRepository

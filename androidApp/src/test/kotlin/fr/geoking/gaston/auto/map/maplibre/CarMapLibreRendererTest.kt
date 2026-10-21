@@ -1,4 +1,4 @@
-package fr.geoking.gaston.auto.maplibre
+package fr.geoking.gaston.auto.map.maplibre
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -7,6 +7,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import com.google.gson.JsonArray
 import com.google.gson.JsonPrimitive
+import fr.geoking.gaston.auto.maplibre.CarMapLibreRenderer
 
 @RunWith(RobolectricTestRunner::class)
 class CarMapLibreRendererTest {

@@ -1,4 +1,4 @@
-package fr.geoking.gaston.auto.mapsforge
+package fr.geoking.gaston.auto.map.mapsforge
 
 import android.app.Application
 import android.content.Context
@@ -14,13 +14,13 @@ import android.util.LruCache
 import android.view.Surface
 import fr.geoking.gaston.R
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
-import fr.geoking.gaston.auto.AutoMapCamera
-import fr.geoking.gaston.auto.AutoMapFollowFocalPoint
-import fr.geoking.gaston.auto.AutoMapHeading
-import fr.geoking.gaston.auto.AutoMapOverlayHelper
-import fr.geoking.gaston.auto.AutoMapPoiHitTest
-import fr.geoking.gaston.auto.AutoMapQueryLoader
-import fr.geoking.gaston.auto.MapOrientationMode
+import fr.geoking.gaston.ui.map.components.AutoMapCamera
+import fr.geoking.gaston.ui.map.components.AutoMapFollowFocalPoint
+import fr.geoking.gaston.ui.map.components.AutoMapHeading
+import fr.geoking.gaston.ui.map.components.AutoMapOverlayHelper
+import fr.geoking.gaston.ui.map.components.AutoMapPoiHitTest
+import fr.geoking.gaston.ui.map.components.AutoMapQueryLoader
+import fr.geoking.gaston.ui.map.components.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
@@ -48,6 +48,7 @@ import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.runBlocking
 import org.koin.core.context.GlobalContext
+import org.mapsforge.core.graphics.GraphicFactory
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -62,6 +63,7 @@ import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.ln
 import kotlin.math.max
+import kotlin.math.sin
 import kotlin.math.tan
 
 data class MapsforgeTileError(
@@ -301,7 +303,7 @@ class CarMapsforgeRenderer(
         reloadMapsforgeDataStore()
     }
 
-    private fun obtainThemeFuture(graphicFactory: org.mapsforge.core.graphics.GraphicFactory): RenderThemeFuture =
+    private fun obtainThemeFuture(graphicFactory: GraphicFactory): RenderThemeFuture =
         synchronized(this) {
             themeFuture ?: RenderThemeFuture(graphicFactory, renderTheme, displayModel).also {
                 it.run()
@@ -653,8 +655,8 @@ class CarMapsforgeRenderer(
 
         val gc = AndroidGraphicFactory.createGraphicContext(canvas)
         val theta = Math.toRadians(-bearing.toDouble())
-        val cosT = kotlin.math.cos(theta)
-        val sinT = kotlin.math.sin(theta)
+        val cosT = cos(theta)
+        val sinT = sin(theta)
         val margin = 160.0
         for (item in labelCache.toList()) {
             try {
