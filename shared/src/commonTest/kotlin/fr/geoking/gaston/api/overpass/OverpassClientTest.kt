@@ -103,6 +103,66 @@ class OverpassClientTest {
     }
 
     @Test
+    fun queryNodesWithTagFilters_emptyFilter_returnsEmptyListWithoutNetworkCall() = runBlocking {
+        var callCount = 0
+        val engine = MockEngine {
+            callCount++
+            respond(content = "{}", status = HttpStatusCode.OK)
+        }
+        val client = OverpassClient(HttpClient(engine), minIntervalMs = 0L)
+        val result = client.queryNodesWithTagFilters(
+            latitude = 48.85,
+            longitude = 2.35,
+            tagFilters = emptyList()
+        )
+        assertTrue(result.isEmpty())
+        assertEquals(0, callCount)
+    }
+
+    @Test
+    fun queryDrivableRoadWaysInBbox_invalidBbox_returnsEmptyListWithoutNetworkCall() = runBlocking {
+        var callCount = 0
+        val engine = MockEngine {
+            callCount++
+            respond(content = "{}", status = HttpStatusCode.OK)
+        }
+        val client = OverpassClient(HttpClient(engine), minIntervalMs = 0L)
+        val result = client.queryDrivableRoadWaysInBbox(
+            minLat = 48.86,
+            minLon = 2.35,
+            maxLat = 48.85, // maxLat <= minLat
+            maxLon = 2.36
+        )
+        assertTrue(result.isEmpty())
+        assertEquals(0, callCount)
+    }
+
+    @Test
+    fun executeQuery_checksRateLimitTrackerBeforeCall() = runBlocking {
+        RateLimitTracker.recordRateLimit("overpass-api.de", defaultCooldownMs = 30_000L)
+        var callCount = 0
+        val engine = MockEngine {
+            callCount++
+            respond(content = "{}", status = HttpStatusCode.OK)
+        }
+        val client = OverpassClient(
+            HttpClient(engine),
+            baseUrl = "https://overpass-api.de/api/interpreter",
+            minIntervalMs = 0L
+        )
+        val ex = assertFailsWith<NetworkException> {
+            client.queryNodes(
+                latitude = 48.85,
+                longitude = 2.35,
+                radiusKm = 1,
+                amenityValues = setOf("fuel")
+            )
+        }
+        assertEquals(429, ex.httpCode)
+        assertEquals(0, callCount)
+    }
+
+    @Test
     fun queryDrivableRoadWaysInBbox_parsesWayGeometries() = runBlocking {
         val json = """
             {

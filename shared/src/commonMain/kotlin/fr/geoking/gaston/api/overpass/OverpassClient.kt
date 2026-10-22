@@ -1,6 +1,7 @@
 package fr.geoking.gaston.api.overpass
 
 import fr.geoking.gaston.shared.network.NetworkException
+import fr.geoking.gaston.shared.network.RateLimitTracker
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.header
@@ -174,6 +175,7 @@ open class OverpassClient(
         maxLon: Double,
         limit: Int = 500,
     ): List<OverpassWayGeom> {
+        if (minLat >= maxLat || minLon >= maxLon || limit <= 0) return emptyList()
         val bbox = "$minLat,$minLon,$maxLat,$maxLon"
         val query = """
             [out:json][timeout:25];
@@ -220,6 +222,7 @@ open class OverpassClient(
         maxLon: Double,
         limit: Int = 300,
     ): SpeedCameraOverpassBundle {
+        if (minLat >= maxLat || minLon >= maxLon || limit <= 0) return SpeedCameraOverpassBundle()
         val bbox = "$minLat,$minLon,$maxLat,$maxLon"
         val query = """
             [out:json][timeout:25];
@@ -246,7 +249,14 @@ open class OverpassClient(
      * so further calls fail fast without flooding the public instance.
      */
     protected suspend fun executeQuery(query: String): String {
+        val host = RateLimitTracker.extractHost(baseUrl)
+        if (RateLimitTracker.isRateLimited(host)) {
+            throw NetworkException(429, RateLimitTracker.cooldownMessage(host))
+        }
         return mutex.withLock {
+            if (RateLimitTracker.isRateLimited(host)) {
+                throw NetworkException(429, RateLimitTracker.cooldownMessage(host))
+            }
             maybeDelayForMinInterval()
             val response = try {
                 client.submitForm(
@@ -265,6 +275,10 @@ open class OverpassClient(
             if (response.status.value == 200) {
                 body
             } else {
+                if (response.status.value == 429) {
+                    val retryAfter = response.headers[HttpHeaders.RetryAfter]
+                    RateLimitTracker.recordRateLimit(baseUrl, retryAfterHeader = retryAfter, responseBody = body)
+                }
                 throw NetworkException(
                     response.status.value,
                     "Overpass API error: ${body.take(500)}",
