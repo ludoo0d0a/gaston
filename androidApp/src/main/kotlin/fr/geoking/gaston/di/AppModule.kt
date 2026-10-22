@@ -83,14 +83,23 @@ val appModule = module {
                         val reqBody = request.attributes.getOrNull(requestBodyKey)
                         val contentLength = response.headers["Content-Length"]?.toLongOrNull()
                         val logId = UUID.randomUUID().toString()
+                        val host = request.url.host
+                        // TIPI / Bison Futé national DATEX dumps are multi‑MB and streamed into
+                        // Room via bodyAsChannel(). Reading bodyAsText() here would consume the
+                        // stream (empty parse → no Tipi POIs) and can OOM the debug bar.
+                        val skipBodyPreview = host.contains("bison-fute.gouv.fr", ignoreCase = true) ||
+                            (contentLength != null && contentLength > DEBUG_BODY_PREVIEW_MAX_BYTES)
 
-                        // Always keep a truncated preview (never omit). Truncation avoids
-                        // OOM in the log store / debug-bar Compose viewer.
-                        val (respBody, bodyLength) = try {
-                            val bodyText = response.bodyAsText()
-                            truncateDebugBody(bodyText) to bodyText.length.toLong()
-                        } catch (e: Throwable) {
-                            "[body unreadable: ${e.message}]" to 0L
+                        val (respBody, bodyLength) = if (skipBodyPreview) {
+                            val hint = contentLength?.let { "Content-Length=$it" } ?: "streaming body"
+                            "[body omitted: $hint — not consumed so DATEX stream parse can proceed]" to (contentLength ?: 0L)
+                        } else {
+                            try {
+                                val bodyText = response.bodyAsText()
+                                truncateDebugBody(bodyText) to bodyText.length.toLong()
+                            } catch (e: Throwable) {
+                                "[body unreadable: ${e.message}]" to 0L
+                            }
                         }
                         val responseSizeBytes = contentLength ?: bodyLength
 
@@ -114,7 +123,7 @@ val appModule = module {
                             NetworkLog(
                                 id = logId,
                                 url = request.url.toString(),
-                                host = request.url.host,
+                                host = host,
                                 method = request.method.value,
                                 requestHeaders = request.headers.toMap(),
                                 requestBody = truncatedReq,
@@ -438,6 +447,8 @@ val appModule = module {
 }
 
 private const val DEBUG_BODY_MAX_CHARS = 8_192
+/** Skip ResponseObserver bodyAsText above this size (DATEX national dumps are ~4MB+). */
+private const val DEBUG_BODY_PREVIEW_MAX_BYTES = 256_000L
 
 /** Best-effort textual request body for the debug bar (null = nothing captured). */
 private fun debugRequestBodyText(body: Any?): String? {

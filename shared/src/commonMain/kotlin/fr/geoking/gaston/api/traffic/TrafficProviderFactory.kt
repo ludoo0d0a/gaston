@@ -2,6 +2,7 @@ package fr.geoking.gaston.api.traffic
 
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.poi.effectiveTrafficOverlayProviders
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
@@ -85,10 +86,10 @@ class TrafficProviderFactory(
         ): TrafficInfo? = coroutineScope {
             if (providers.isEmpty()) return@coroutineScope null
             if (providers.size == 1) {
-                return@coroutineScope runCatching { providers[0].getTraffic(request) }.getOrNull()
+                return@coroutineScope trafficOrNull(providers[0], request)
             }
             val deferred = providers.map { p ->
-                async { runCatching { p.getTraffic(request) }.getOrNull() }
+                async { trafficOrNull(p, request) }
             }
             val byId = linkedMapOf<String, TrafficEvent>()
             val noId = mutableListOf<TrafficEvent>()
@@ -111,6 +112,17 @@ class TrafficProviderFactory(
                 events = events,
                 providerId = lastProviderId ?: "merged",
             )
+        }
+
+        private suspend fun trafficOrNull(
+            provider: TrafficProvider,
+            request: TrafficRequest,
+        ): TrafficInfo? = try {
+            provider.getTraffic(request)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
         }
     }
 }

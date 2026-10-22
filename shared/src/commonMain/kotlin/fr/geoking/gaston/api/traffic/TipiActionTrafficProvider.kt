@@ -1,8 +1,13 @@
 package fr.geoking.gaston.api.traffic
 
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+
 /**
  * TIPI restricted Action B or Action C SituationPublication feed.
  * [enabled] only when the underlying client has credentials.
+ *
+ * National DATEX refresh is [NonCancellable] (same rationale as [BisonFuteTrafficProvider]).
  */
 class TipiActionTrafficProvider(
     private val client: TipiRestrictedTrafficClient,
@@ -19,7 +24,9 @@ class TipiActionTrafficProvider(
         val q = queryBbox(request) ?: return null
 
         val repo = trafficRepository
-        val fetchedEvents = client.fetchAndStoreTrafficEvents()
+        val fetchedEvents = withContext(NonCancellable) {
+            client.fetchAndStoreTrafficEvents()
+        }
 
         val events = if (repo != null) {
             repo.getTrafficInBbox(
@@ -27,7 +34,8 @@ class TipiActionTrafficProvider(
                 lonMin = q.lonMin,
                 latMax = q.latMax,
                 lonMax = q.lonMax,
-                maxEvents = FranceTrafficProvider.MAX_TRAFFIC_EVENTS
+                maxEvents = FranceTrafficProvider.MAX_TRAFFIC_EVENTS,
+                sourceId = client.sourceId,
             )
         } else {
             fetchedEvents.filter { e ->

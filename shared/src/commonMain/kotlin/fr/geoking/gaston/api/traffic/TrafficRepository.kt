@@ -14,7 +14,9 @@ interface TrafficRepository {
         lonMin: Double,
         latMax: Double,
         lonMax: Double,
-        maxEvents: Int = 250
+        maxEvents: Int = 250,
+        /** When set, only events from this DATEX / provider source (e.g. `bison_fute_rrn`). */
+        sourceId: String? = null,
     ): List<TrafficEvent>
 
     /**

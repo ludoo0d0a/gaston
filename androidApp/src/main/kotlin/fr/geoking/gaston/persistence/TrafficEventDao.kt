@@ -27,6 +27,24 @@ interface TrafficEventDao {
         limit: Int
     ): List<TrafficEventEntity>
 
+    @Query(
+        """
+        SELECT * FROM traffic_events
+        WHERE sourceId = :sourceId
+          AND latMax >= :latMin AND latMin <= :latMax
+          AND lonMax >= :lonMin AND lonMin <= :lonMax
+        LIMIT :limit
+        """
+    )
+    suspend fun getEventsInBboxForSource(
+        sourceId: String,
+        latMin: Double,
+        lonMin: Double,
+        latMax: Double,
+        lonMax: Double,
+        limit: Int
+    ): List<TrafficEventEntity>
+
     @Query("SELECT MAX(fetchedAtMs) FROM traffic_events WHERE sourceId = :sourceId")
     suspend fun getLastFetchTimestamp(sourceId: String): Long?
 

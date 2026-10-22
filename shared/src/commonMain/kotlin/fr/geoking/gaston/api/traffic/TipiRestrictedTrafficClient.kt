@@ -7,6 +7,8 @@ import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.jvm.javaio.toInputStream
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -24,6 +26,7 @@ class TipiRestrictedTrafficClient(
     private val nowMs: () -> Long = { System.currentTimeMillis() },
     val sourceId: String = sourceIdForUrl(contentUrl),
 ) {
+    private val fetchMutex = Mutex()
 
     val hasCredentials: Boolean
         get() = username.isNotBlank() && password.isNotBlank()
@@ -38,29 +41,35 @@ class TipiRestrictedTrafficClient(
         }
 
         val basic = Base64.Default.encode("$username:$password".encodeToByteArray())
-        return try {
-            val response = client.get(contentUrl) {
-                header(HttpHeaders.Authorization, "Basic $basic")
+        return fetchMutex.withLock {
+            if (repository != null && repository.isSourceFresh(sourceId, cacheTtlMs)) {
+                return@withLock emptyList()
             }
-            if (response.status == HttpStatusCode.OK) {
-                val channel = response.bodyAsChannel()
-                val inputStream = channel.toInputStream()
-                val events = DatexSituationParser.parseStream(
-                    inputStream = inputStream,
-                    nowMs = nowMs(),
-                    defaultRoadRef = "FR"
-                )
-                repository?.replaceEventsForSource(
-                    sourceId = sourceId,
-                    events = events,
-                    fetchedAtMs = nowMs()
-                )
-                events
-            } else {
+            try {
+                val response = client.get(contentUrl) {
+                    header(HttpHeaders.Authorization, "Basic $basic")
+                }
+                if (response.status == HttpStatusCode.OK) {
+                    val channel = response.bodyAsChannel()
+                    val inputStream = channel.toInputStream()
+                    val events = DatexSituationParser.parseStream(
+                        inputStream = inputStream,
+                        nowMs = nowMs(),
+                        defaultRoadRef = "FR"
+                    )
+                    repository?.replaceEventsForSource(
+                        sourceId = sourceId,
+                        events = events,
+                        fetchedAtMs = nowMs()
+                    )
+                    events
+                } else {
+                    emptyList()
+                }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 emptyList()
             }
-        } catch (_: Exception) {
-            emptyList()
         }
     }
 

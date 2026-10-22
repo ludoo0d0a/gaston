@@ -11,9 +11,15 @@ class FakeTrafficRepository(
         lonMin: Double,
         latMax: Double,
         lonMax: Double,
-        maxEvents: Int
+        maxEvents: Int,
+        sourceId: String?,
     ): List<TrafficEvent> {
-        return storage.values.flatten().filter { e ->
+        val pools = if (sourceId != null) {
+            listOf(storage[sourceId].orEmpty())
+        } else {
+            storage.values.toList()
+        }
+        return pools.flatten().filter { e ->
             val b = e.bbox ?: return@filter false
             b.latMin <= latMax && b.latMax >= latMin && b.lonMin <= lonMax && b.lonMax >= lonMin
         }.take(maxEvents)
