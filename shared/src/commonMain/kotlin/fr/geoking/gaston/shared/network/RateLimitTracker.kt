@@ -27,6 +27,12 @@ object RateLimitTracker {
     private val inSecondsRegex =
         Regex("""in\s+(\d+)\s+seconds?""", RegexOption.IGNORE_CASE)
 
+    private val slotAvailableRegex =
+        Regex("""slot\s+available\s+in\s+(\d+)\s*s(?:econds?)?""", RegexOption.IGNORE_CASE)
+
+    private val waitSecondsRegex =
+        Regex("""(?:wait|after)\s+(\d+)\s*s(?:econds?)?""", RegexOption.IGNORE_CASE)
+
     /**
      * Records an HTTP 429 rate limit for [hostOrUrl].
      *
@@ -142,6 +148,14 @@ object RateLimitTracker {
             ?.takeIf { it > 0 }
             ?.let { return it }
         inSecondsRegex.find(text)?.groupValues?.getOrNull(1)
+            ?.toLongOrNull()
+            ?.takeIf { it > 0 }
+            ?.let { return it }
+        slotAvailableRegex.find(text)?.groupValues?.getOrNull(1)
+            ?.toLongOrNull()
+            ?.takeIf { it > 0 }
+            ?.let { return it }
+        waitSecondsRegex.find(text)?.groupValues?.getOrNull(1)
             ?.toLongOrNull()
             ?.takeIf { it > 0 }
             ?.let { return it }
