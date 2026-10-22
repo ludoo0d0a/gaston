@@ -85,6 +85,42 @@ class MapFilterSettingsTest {
     }
 
     @Test
+    fun stationMapFilters_preservesTrafficPoisInElectricModeAndHighwayFilter() {
+        val settings = AppSettings(
+            mapEnergyMode = fr.geoking.gaston.poi.EnergyFilterMode.Electric,
+            mapTrafficEnabled = true,
+            filterOnlyHighwayStations = true,
+        )
+        val trafficPoi = Poi(
+            id = "traffic_1",
+            name = "A6 Accident",
+            latitude = 48.85,
+            longitude = 2.35,
+            address = "A6",
+            poiCategory = PoiCategory.Traffic,
+            isOnHighway = false,
+            isElectric = false,
+        )
+        val nonHighwayGasStation = Poi(
+            id = "gas_1",
+            name = "Gas Station",
+            latitude = 48.85,
+            longitude = 2.35,
+            address = "Local road",
+            poiCategory = PoiCategory.Gas,
+            isOnHighway = false,
+            isElectric = false,
+        )
+        val filtered = StationMapFilters.apply(
+            settings = settings,
+            pois = listOf(trafficPoi, nonHighwayGasStation),
+            providers = emptySet(),
+            skipWhenOnlyOverpass = false,
+        )
+        assertEquals(listOf("traffic_1"), filtered.map { it.id })
+    }
+
+    @Test
     fun testCountryCodesAtMapPosition_MaizieresLesMetz() {
         // Maizières-lès-Metz is in France, about 40km away from Germany's border.
         // It must detect France (FR) and NOT Germany (DE).

@@ -323,11 +323,13 @@ object StationMapFilters {
 
         if (skipWhenOnlyOverpass && providers.isOnlyOverpass()) return result
 
-        // Filter by energy type
+        // Filter by energy type for station POIs only (Gas / Irve / null). Non-station POIs (Traffic, Radar, Toilets, etc.) are unaffected.
         val mode = settings.effectiveEnergyFilterMode()
         val fuelFilters = settings.selectedMapEnergyTypes
         result = result.filter { poi ->
-            if (poi.poiCategory == PoiCategory.BatterySwap) {
+            val cat = poi.poiCategory
+            val isStationPoi = cat == PoiCategory.Gas || cat == PoiCategory.Irve || cat == null
+            if (cat == PoiCategory.BatterySwap) {
                 // If Swap filter is explicitly selected, or if we are in My Vehicle mode with a Motorcycle
                 val swapExplicitlySelected = fuelFilters.contains("swap")
                 val isMotorcycle = settings.useVehicleFilter && settings.vehicleType == VehicleType.Motorcycle
@@ -351,8 +353,10 @@ object StationMapFilters {
                     // Manual mode: show if "swap" chip is selected
                     swapExplicitlySelected
                 }
-            } else {
+            } else if (isStationPoi) {
                 MapPoiFilter.matchesEnergyFilter(poi, mode, fuelFilters)
+            } else {
+                true
             }
         }
 
@@ -390,9 +394,13 @@ object StationMapFilters {
             }
         }
 
-        // Filter by highway (autoroute)
+        // Filter by highway (autoroute) for station POIs only
         if (settings.filterOnlyHighwayStations) {
-            result = result.filter { it.isOnHighway }
+            result = result.filter { poi ->
+                val cat = poi.poiCategory
+                val isStationPoi = cat == PoiCategory.Gas || cat == PoiCategory.Irve || cat == null
+                !isStationPoi || poi.isOnHighway
+            }
         }
 
         // Fuel card: Routex only

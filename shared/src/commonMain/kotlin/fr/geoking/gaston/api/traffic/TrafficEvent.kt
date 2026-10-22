@@ -60,6 +60,14 @@ data class TrafficEvent(
  * Converts a [TrafficEvent] into a standard [Poi] object.
  */
 fun TrafficEvent.toPoi(sourceName: String = "Traffic"): Poi {
+    val resolvedSource = when {
+        roadRef == "TomTom" -> "TomTom Traffic"
+        sourceId?.contains("cita", ignoreCase = true) == true || roadRef == "CITA" -> "CITA Traffic"
+        sourceId?.contains("action_b", ignoreCase = true) == true || sourceId?.contains("action_c", ignoreCase = true) == true -> "TIPI"
+        sourceId?.contains("bison_fute", ignoreCase = true) == true -> "Bison Futé"
+        sourceName.isNotBlank() && sourceName != "Traffic" -> sourceName
+        else -> "Bison Futé / TIPI"
+    }
     val poiLat = poiLatitude ?: 0.0
     val poiLon = poiLongitude ?: 0.0
     val titleName = roadRef + (direction?.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: "")
@@ -67,14 +75,14 @@ fun TrafficEvent.toPoi(sourceName: String = "Traffic"): Poi {
     val payload = rawXml ?: rawData ?: message ?: ""
     val rawMap = buildMap<String, String> {
         if (payload.isNotBlank()) {
-            put(sourceName, payload)
+            put(resolvedSource, payload)
         }
         put("traffic_severity", severity.name)
         direction?.takeIf { it.isNotBlank() }?.let { put("traffic_direction", it) }
         roadRef.takeIf { it.isNotBlank() }?.let { put("traffic_road_ref", it) }
     }
     val updateTimeMap = updatedAt?.let {
-        mapOf(sourceName to kotlin.time.Instant.fromEpochMilliseconds(it).toString())
+        mapOf(resolvedSource to kotlin.time.Instant.fromEpochMilliseconds(it).toString())
     }
 
     return Poi(
@@ -84,7 +92,7 @@ fun TrafficEvent.toPoi(sourceName: String = "Traffic"): Poi {
         latitude = poiLat,
         longitude = poiLon,
         poiCategory = PoiCategory.Traffic,
-        source = sourceName,
+        source = resolvedSource,
         sourceUpdates = updateTimeMap,
         rawSourceData = rawMap,
     )
