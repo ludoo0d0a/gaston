@@ -283,13 +283,13 @@ fun rememberMapDataState(
                         val fetchedInfo = TrafficProviderFactory.mergeTraffic(trafficProviders, request)
                         trafficInfo = fetchedInfo
                         if (fetchedInfo != null) {
-                            val providerName = when (fetchedInfo.providerId) {
+                            val defaultProviderName = when (fetchedInfo.providerId) {
                                 "bison_fute", "france_traffic" -> "Bison Futé"
                                 "tomtom" -> "TomTom Traffic"
                                 "cita" -> "CITA Traffic"
                                 else -> "Traffic"
                             }
-                            val trafficPois = fetchedInfo.events.map { it.toPoi(providerName) }
+                            val trafficPois = fetchedInfo.events.map { it.toPoi(defaultProviderName) }
                             if (trafficPois.isNotEmpty()) {
                                 cachedPois = PoiMerger.mergeInto(cachedPois, trafficPois)
                             }

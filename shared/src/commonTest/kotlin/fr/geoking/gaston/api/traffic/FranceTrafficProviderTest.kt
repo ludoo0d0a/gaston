@@ -144,4 +144,30 @@ class FranceTrafficProviderTest {
             throw RuntimeException("TIPI HTTP 401 Unauthorized")
         }
     }
+
+    @Test
+    fun trafficEventToPoi_resolvesCorrectSourceNames() {
+        val tomtomEvent = TrafficEvent(
+            roadRef = "TomTom",
+            severity = TrafficSeverity.Accident,
+            bbox = Bbox(48.8, 2.3, 48.9, 2.4),
+            sourceId = "tt_1"
+        )
+        val tipiEvent = TrafficEvent(
+            roadRef = "A6",
+            severity = TrafficSeverity.Congestion,
+            bbox = Bbox(48.8, 2.3, 48.9, 2.4),
+            sourceId = "ACTION_B_123"
+        )
+        val bisonEvent = TrafficEvent(
+            roadRef = "A13",
+            severity = TrafficSeverity.Roadworks,
+            bbox = Bbox(48.8, 2.3, 48.9, 2.4),
+            sourceId = "bison_fute_456"
+        )
+
+        assertEquals("TomTom Traffic", tomtomEvent.toPoi().source)
+        assertEquals("TIPI", tipiEvent.toPoi().source)
+        assertEquals("Bison Futé", bisonEvent.toPoi().source)
+    }
 }
