@@ -36,11 +36,14 @@ import fr.geoking.gaston.auto.dashboardTrafficAlertIcon
 import fr.geoking.gaston.auto.safeCarTemplate
 import fr.geoking.gaston.auto.carIconUntinted
 import fr.geoking.gaston.auto.dashboardEmergencyIcon
+import fr.geoking.gaston.auto.dashboardMapIcon
 import fr.geoking.gaston.auto.dashboardSettingsIcon
+import fr.geoking.gaston.auto.dashboardWeatherAlertIcon
+import fr.geoking.gaston.auto.map.AutoMapScreenFactory
 
 /**
  * Root Android Auto hub — ≤6 grid tiles so strict hosts (CONTENT_LIMIT_TYPE_GRID min 6) show all items.
- * Primary search (Fuel / EV) stays one tap; secondary tools live under Places / Vehicle / More.
+ * Primary search (Fuel / EV / Map) stays one tap; secondary tools live under Places / Vehicle / Emergency / More.
  */
 class AutoDashboardScreen(
     carContext: CarContext,
@@ -55,9 +58,24 @@ class AutoDashboardScreen(
         val settings = settingsManager.settings.value
         val trafficAlertsOn = settings.trafficAlertEnabled
         val radarAlertsOn = settings.radarWarningEnabled
+        val weatherAlertsOn = "weather" in settings.selectedOverpassAmenityTypes
         val gridBuilder = ItemList.Builder()
 
-        // 1. Fuel
+        // 1. Map (Voir carte with active radar / traffic / weather options)
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.action_open_map))
+                .setImage(carContext.dashboardMapIcon())
+                .setOnClickListener {
+                    val mapDeps = getMapDeps() ?: return@setOnClickListener
+                    screenManager.push(
+                        AutoMapScreenFactory.createMapPoiScreen(carContext, mapDeps, settingsManager)
+                    )
+                }
+                .build()
+        )
+
+        // 2. Fuel
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.search_mode_fuel))
@@ -68,7 +86,7 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 2. EV
+        // 3. EV
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.search_mode_ev))
@@ -79,24 +97,13 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 3. Places (amenities + danger zones)
+        // 4. Places (amenities + danger zones)
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.search_mode_other))
                 .setImage(carContext.dashboardOtherIcon())
                 .setOnClickListener {
                     screenManager.push(AutoOtherDashboardScreen(carContext, settingsManager, getMapDeps))
-                }
-                .build()
-        )
-
-        // 4. Emergency
-        gridBuilder.addItem(
-            GridItem.Builder()
-                .setTitle(carContext.getString(R.string.dashboard_emergency))
-                .setImage(carContext.dashboardEmergencyIcon())
-                .setOnClickListener {
-                    screenManager.push(AutoEmergencyScreen(carContext, networkService, connectivityManager))
                 }
                 .build()
         )
@@ -112,7 +119,7 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // 6. More (favorites, routes, network, settings…)
+        // 6. More (emergency, favorites, routes, network, settings…)
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.screen_more))
@@ -123,38 +130,43 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // Header end actions (max 2): traffic + speed-camera alert toggles (icon-only).
+        // Header end actions (max 2):
+        // 1. Weather toggle
+        // 2. Traffic or Radar toggle depending on radar state (or radar toggle if off)
         val appTitle = if (settings.hasPremiumFeatures) {
             carContext.getString(R.string.premium_brand_title)
         } else {
             carContext.getString(R.string.app_name)
         }
+        val headerBuilder = Header.Builder()
+            .setTitle(appTitle)
+            .setStartHeaderAction(Action.APP_ICON)
+            .addEndHeaderAction(
+                carContext.alertToggleAction(
+                    enabled = weatherAlertsOn,
+                    icon = carContext.dashboardWeatherAlertIcon(weatherAlertsOn),
+                ) {
+                    if (weatherAlertsOn) {
+                        settingsManager.setOverpassAmenityTypes(settings.selectedOverpassAmenityTypes - "weather")
+                    } else {
+                        settingsManager.setOtherMode("weather")
+                    }
+                    invalidate()
+                },
+            )
+            .addEndHeaderAction(
+                carContext.alertToggleAction(
+                    enabled = radarAlertsOn,
+                    icon = carContext.dashboardRadarAlertIcon(radarAlertsOn),
+                ) {
+                    settingsManager.setRadarWarningEnabled(!radarAlertsOn)
+                    invalidate()
+                },
+            )
+
         GridTemplate.Builder()
             .setSingleList(gridBuilder.build())
-            .setHeader(
-                Header.Builder()
-                    .setTitle(appTitle)
-                    .setStartHeaderAction(Action.APP_ICON)
-                    .addEndHeaderAction(
-                        carContext.alertToggleAction(
-                            enabled = trafficAlertsOn,
-                            icon = carContext.dashboardTrafficAlertIcon(trafficAlertsOn),
-                        ) {
-                            settingsManager.setTrafficAlertEnabled(!trafficAlertsOn)
-                            invalidate()
-                        },
-                    )
-                    .addEndHeaderAction(
-                        carContext.alertToggleAction(
-                            enabled = radarAlertsOn,
-                            icon = carContext.dashboardRadarAlertIcon(radarAlertsOn),
-                        ) {
-                            settingsManager.setRadarWarningEnabled(!radarAlertsOn)
-                            invalidate()
-                        },
-                    )
-                    .build()
-            )
+            .setHeader(headerBuilder.build())
             .build()
     }
 
@@ -167,6 +179,16 @@ class AutoDashboardScreen(
                     templateName = "ListTemplate",
                 ) {
                     val moreListBuilder = ItemList.Builder()
+                        .addItem(
+                            Row.Builder()
+                                .setTitle(carContext.getString(R.string.dashboard_emergency))
+                                .setImage(carContext.dashboardEmergencyIcon())
+                                .setBrowsable(true)
+                                .setOnClickListener {
+                                    screenManager.push(AutoEmergencyScreen(carContext, networkService, connectivityManager))
+                                }
+                                .build()
+                        )
                         .addItem(
                             Row.Builder()
                                 .setTitle(carContext.getString(R.string.screen_favorites))

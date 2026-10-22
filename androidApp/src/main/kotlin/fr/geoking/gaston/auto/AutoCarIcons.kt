@@ -120,8 +120,15 @@ fun CarContext.dashboardTrafficAlertIcon(enabled: Boolean): CarIcon =
 fun CarContext.dashboardRadarAlertIcon(enabled: Boolean): CarIcon =
     carIcon(R.drawable.ic_poi_radar, if (enabled) AutoCarIcons.emergency else AutoCarIcons.muted)
 
+/** Weather alert ActionStrip icon — active uses emergency tint. */
+fun CarContext.dashboardWeatherAlertIcon(enabled: Boolean): CarIcon =
+    carIcon(R.drawable.ic_poi_weather, if (enabled) AutoCarIcons.emergency else AutoCarIcons.muted)
+
+/** Map grid icon. */
+fun CarContext.dashboardMapIcon(): CarIcon = carIcon(R.drawable.ic_map, AutoCarIcons.primary)
+
 /**
- * Icon-only ActionStrip toggle for traffic / radar alerts.
+ * Icon-only ActionStrip toggle for traffic / radar / weather alerts.
  * Active uses [Action.FLAG_PRIMARY] so the strip background tints.
  */
 fun CarContext.alertToggleAction(enabled: Boolean, icon: CarIcon, onToggle: () -> Unit): Action {
