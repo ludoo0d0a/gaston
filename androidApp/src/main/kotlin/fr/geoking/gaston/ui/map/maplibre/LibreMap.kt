@@ -14,8 +14,6 @@ import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.api.weather.RainViewerMapsClient
 import fr.geoking.gaston.poi.Poi
-import fr.geoking.gaston.road.RoadGeometryRepository
-import fr.geoking.gaston.road.RoadPolyline
 import fr.geoking.gaston.ui.map.PhoneMapPoiHitTest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -51,12 +49,10 @@ fun LibreMap(
     val density = LocalDensity.current
     val paddingBottomPx = with(density) { contentPaddingBottom.roundToPx() }
     val rainViewerClient = koinInject<RainViewerMapsClient>()
-    val roadGeometryRepository = koinInject<RoadGeometryRepository>()
 
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
     val lastPaddingBottomPx = remember { intArrayOf(-1) }
     var rainViewerTileUrl by remember { mutableStateOf<String?>(null) }
-    var roadPolylines by remember { mutableStateOf<List<RoadPolyline>>(emptyList()) }
 
     LaunchedEffect(weatherRadarEnabled) {
         if (!weatherRadarEnabled) {
@@ -65,15 +61,6 @@ fun LibreMap(
         }
         rainViewerTileUrl = withContext(Dispatchers.IO) {
             runCatching { rainViewerClient.latestRadarFrame()?.tileUrlTemplate }.getOrNull()
-        }
-    }
-
-    val targetLat = userLat ?: initialCameraPosition.first.latitude
-    val targetLon = userLon ?: initialCameraPosition.first.longitude
-
-    LaunchedEffect(targetLat, targetLon) {
-        roadPolylines = withContext(Dispatchers.IO) {
-            roadGeometryRepository.fetchRoadsNear(targetLat, targetLon, radiusKm = 1.0)
         }
     }
 
@@ -89,7 +76,6 @@ fun LibreMap(
         rainViewerTileUrl,
         weatherRadarEnabled,
         trafficEvents,
-        roadPolylines,
     ) {
         arrayOf(
             poisInView,
@@ -103,7 +89,6 @@ fun LibreMap(
             rainViewerTileUrl,
             weatherRadarEnabled,
             trafficEvents,
-            roadPolylines,
         )
     }
 
@@ -147,7 +132,6 @@ fun LibreMap(
                 tileUrlTemplate = if (weatherRadarEnabled) rainViewerTileUrl else null,
             )
             MapLibreSharedHelper.syncTrafficLayer(map, trafficEvents)
-            MapLibreSharedHelper.syncRoadVectorLayer(map, roadPolylines)
             MapLibreSharedHelper.syncPoiLayer(
                 context = context,
                 map = map,

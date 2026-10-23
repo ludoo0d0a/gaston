@@ -1010,6 +1010,7 @@ class MapsforgePoiScreen(
                     Row.Builder()
                         .setTitle(carContext.getString(R.string.mapsforge_active_map) + ": " + carContext.getString(R.string.network_none))
                         .addText(carContext.getString(R.string.mapsforge_offline_maps_subtitle))
+                        .setBrowsable(true)
                         .setOnClickListener {
                             screenManager.push(AutoMapsforgeMapManagementScreen(carContext, mapManager))
                         }

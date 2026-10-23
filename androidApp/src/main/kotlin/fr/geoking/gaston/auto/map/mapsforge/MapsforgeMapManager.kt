@@ -163,9 +163,15 @@ object MapsforgePresetServers {
 class MapsforgeMapManager(
     private val context: Context,
     private val httpClient: HttpClient? = null,
+    private val settingsManager: fr.geoking.gaston.SettingsManager? = null,
 ) {
     private val client: HttpClient
         get() = httpClient ?: GlobalContext.get().get()
+
+    private val settings: fr.geoking.gaston.SettingsManager?
+        get() = settingsManager ?: runCatching {
+            GlobalContext.get().get<fr.geoking.gaston.SettingsManager>()
+        }.getOrNull()
 
     private val prefs = context.getSharedPreferences("mapsforge_map_prefs", Context.MODE_PRIVATE)
     private val mapsDir: File
@@ -188,14 +194,27 @@ class MapsforgeMapManager(
     fun refreshInstalledMaps() {
         val files = mapsDir.listFiles { _, name -> name.endsWith(".map", ignoreCase = true) }?.toList() ?: emptyList()
         _installedMaps.value = files.sortedBy { it.name }
+        val active = getActiveMapFile()
+        if (active != null) {
+            settings?.setOfflineMapsforgePath(active.absolutePath)
+        }
     }
 
     /** Total bytes used on disk by installed Mapsforge `.map` files. */
     fun getUsedStorageBytes(): Long = _installedMaps.value.sumOf { it.length() }
 
     fun getActiveMapFile(): File? {
+        val configuredPath = settings?.settings?.value?.offlineMapsforgePath
         val activeName = prefs.getString("active_map_name", null)
         val installed = _installedMaps.value
+
+        if (!configuredPath.isNullOrBlank()) {
+            val file = File(configuredPath)
+            if (file.exists() && file.length() > 0L) return file
+            val found = installed.firstOrNull { it.name == file.name }
+            if (found != null && found.exists()) return found
+        }
+
         if (activeName != null) {
             val found = installed.firstOrNull { it.name == activeName }
             if (found != null && found.exists()) return found
@@ -205,6 +224,7 @@ class MapsforgeMapManager(
 
     fun setActiveMapFile(file: File) {
         prefs.edit().putString("active_map_name", file.name).apply()
+        settings?.setOfflineMapsforgePath(file.absolutePath)
     }
 
     fun createMapDataStore(): MapDataStore? {

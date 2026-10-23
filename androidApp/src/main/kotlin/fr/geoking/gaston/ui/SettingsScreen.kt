@@ -423,8 +423,15 @@ private fun MapConfig(
                 val downloadProgress by mapManager.downloadProgress.collectAsState()
                 val scope = rememberCoroutineScope()
                 var showDownloadDialog by remember { mutableStateOf(false) }
-                val activeMap = remember(installedMaps) { mapManager.getActiveMapFile() }
+                val activeMap = remember(installedMaps, settings.offlineMapsforgePath) {
+                    settings.offlineMapsforgePath?.let { File(it) }?.takeIf { it.exists() }
+                        ?: mapManager.getActiveMapFile()
+                }
                 val usedBytes = remember(installedMaps) { mapManager.getUsedStorageBytes() }
+                val onMapsforgeChanged: () -> Unit = {
+                    val newActive = mapManager.getActiveMapFile()
+                    onUpdate(settings.copy(offlineMapsforgePath = newActive?.absolutePath))
+                }
 
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
@@ -460,7 +467,7 @@ private fun MapConfig(
                                 progress = downloadProgress,
                                 scope = scope,
                                 mapManager = mapManager,
-                                onMapFileChanged = {},
+                                onMapFileChanged = onMapsforgeChanged,
                             )
                         }
 
@@ -476,7 +483,8 @@ private fun MapConfig(
                 if (showDownloadDialog) {
                     fr.geoking.gaston.ui.map.MapsforgeMapDownloadDialog(
                         mapManager = mapManager,
-                        onDismiss = { showDownloadDialog = false }
+                        onDismiss = { showDownloadDialog = false },
+                        onMapFileChanged = onMapsforgeChanged,
                     )
                 }
             }
