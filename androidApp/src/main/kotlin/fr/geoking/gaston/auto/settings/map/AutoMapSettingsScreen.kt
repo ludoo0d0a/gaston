@@ -96,15 +96,44 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
+        val meteoOn = "weather" in settings.selectedOverpassAmenityTypes
+        val trafficOn = settings.mapTrafficEnabled || settings.trafficAlertEnabled
+
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.search_mode_meteo))
+                .addText(carContext.getString(R.string.settings_meteo_detection_subtitle))
+                .setToggle(
+                    Toggle.Builder { checked ->
+                        settingsManager.setMeteoDetectionEnabled(checked)
+                        invalidate()
+                    }.setChecked(meteoOn).build()
+                )
+                .build()
+        )
+
         listBuilder.addItem(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.settings_radar_warning))
                 .addText(carContext.getString(R.string.settings_radar_warning_subtitle))
                 .setToggle(
                     Toggle.Builder { checked ->
-                        settingsManager.setRadarWarningEnabled(checked)
+                        settingsManager.setRadarDetectionEnabled(checked)
                         invalidate()
                     }.setChecked(settings.radarWarningEnabled).build()
+                )
+                .build()
+        )
+
+        listBuilder.addItem(
+            Row.Builder()
+                .setTitle(carContext.getString(R.string.search_mode_traffic))
+                .addText(carContext.getString(R.string.settings_traffic_detection_subtitle))
+                .setToggle(
+                    Toggle.Builder { checked ->
+                        settingsManager.setTrafficDetectionEnabled(checked)
+                        invalidate()
+                    }.setChecked(trafficOn).build()
                 )
                 .build()
         )

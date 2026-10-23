@@ -102,7 +102,35 @@ class AutoDashboardScreenTest {
     }
 
     @Test
-    fun testWeatherToggle_updatesSettings() {
+    fun testDetectionToggles_layerAndAlert_noneMeansNoAlerts() {
+        // Defaults: nothing selected → no meteo layer, no radar/traffic alerts
+        assertTrue("weather" !in settingsManager.settings.value.selectedOverpassAmenityTypes)
+        assertTrue(!settingsManager.settings.value.radarWarningEnabled)
+        assertTrue(!settingsManager.settings.value.trafficAlertEnabled)
+        assertTrue(!settingsManager.settings.value.mapTrafficEnabled)
+
+        settingsManager.setMeteoDetectionEnabled(true)
+        assertTrue("weather" in settingsManager.settings.value.selectedOverpassAmenityTypes)
+
+        settingsManager.setRadarDetectionEnabled(true)
+        assertTrue(settingsManager.settings.value.radarWarningEnabled)
+        assertTrue("speed_camera" in settingsManager.settings.value.selectedOverpassAmenityTypes)
+
+        settingsManager.setTrafficDetectionEnabled(true)
+        assertTrue(settingsManager.settings.value.mapTrafficEnabled)
+        assertTrue(settingsManager.settings.value.trafficAlertEnabled)
+
+        settingsManager.setMeteoDetectionEnabled(false)
+        settingsManager.setRadarDetectionEnabled(false)
+        settingsManager.setTrafficDetectionEnabled(false)
+        assertTrue("weather" !in settingsManager.settings.value.selectedOverpassAmenityTypes)
+        assertTrue(!settingsManager.settings.value.radarWarningEnabled)
+        assertTrue(!settingsManager.settings.value.trafficAlertEnabled)
+        assertTrue(!settingsManager.settings.value.mapTrafficEnabled)
+    }
+
+    @Test
+    fun testOnGetTemplate_includesTrafficActionStrip() {
         val carContext = CarScreenTestHarness.newTestCarContext()
         val screen = AutoDashboardScreen(
             carContext = carContext,
@@ -113,13 +141,10 @@ class AutoDashboardScreenTest {
             getMapDeps = { fakeMapDeps() }
         )
 
-        // Initial weather state is off
-        assertTrue("weather" !in settingsManager.settings.value.selectedOverpassAmenityTypes)
-
-        // Toggle weather via settings (simulating weather action tap)
-        settingsManager.setOtherMode("weather")
-
-        assertTrue("weather" in settingsManager.settings.value.selectedOverpassAmenityTypes)
+        val template = screen.onGetTemplate() as GridTemplate
+        assertNotNull("ActionStrip should hold radar + traffic detection toggles", template.actionStrip)
+        assertEquals(2, template.actionStrip!!.actions.size)
+        assertNotNull("Header should hold meteo toggle", template.header)
     }
 }
 
