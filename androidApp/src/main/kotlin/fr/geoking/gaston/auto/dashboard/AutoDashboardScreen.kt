@@ -3,7 +3,6 @@ package fr.geoking.gaston.auto.dashboard
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
-import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.GridItem
 import androidx.car.app.model.GridTemplate
 import androidx.car.app.model.Header
@@ -39,7 +38,6 @@ import fr.geoking.gaston.auto.carIconUntinted
 import fr.geoking.gaston.auto.dashboardEmergencyIcon
 import fr.geoking.gaston.auto.dashboardMapIcon
 import fr.geoking.gaston.auto.dashboardSettingsIcon
-import fr.geoking.gaston.auto.dashboardWeatherAlertIcon
 import fr.geoking.gaston.auto.map.AutoMapScreenFactory
 
 /**
@@ -58,9 +56,9 @@ class AutoDashboardScreen(
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoDashboardScreen") {
         val settings = settingsManager.settings.value
         // Layer + alert detection (independent). None selected → no warning / no alert.
+        // Header end actions replace deprecated GridTemplate.setActionStrip (max 2).
         val trafficOn = settings.mapTrafficEnabled || settings.trafficAlertEnabled
         val radarOn = settings.radarWarningEnabled
-        val meteoOn = "weather" in settings.selectedOverpassAmenityTypes
         val gridBuilder = ItemList.Builder()
 
         // 1. Map (Voir carte with active radar / traffic / weather options)
@@ -132,28 +130,16 @@ class AutoDashboardScreen(
                 .build()
         )
 
-        // Header (max 2 end actions) + ActionStrip (max 2 on GridTemplate):
-        // meteo on header; radar + traffic on ActionStrip.
+        // Header end actions only (max 2) — GridTemplate.setActionStrip is deprecated.
         val appTitle = if (settings.hasPremiumFeatures) {
             carContext.getString(R.string.premium_brand_title)
         } else {
             carContext.getString(R.string.app_name)
         }
-        val headerBuilder = Header.Builder()
+        val header = Header.Builder()
             .setTitle(appTitle)
             .setStartHeaderAction(Action.APP_ICON)
             .addEndHeaderAction(
-                carContext.alertToggleAction(
-                    enabled = meteoOn,
-                    icon = carContext.dashboardWeatherAlertIcon(meteoOn),
-                ) {
-                    settingsManager.setMeteoDetectionEnabled(!meteoOn)
-                    invalidate()
-                },
-            )
-
-        val actionStrip = ActionStrip.Builder()
-            .addAction(
                 carContext.alertToggleAction(
                     enabled = radarOn,
                     icon = carContext.dashboardRadarAlertIcon(radarOn),
@@ -162,7 +148,7 @@ class AutoDashboardScreen(
                     invalidate()
                 },
             )
-            .addAction(
+            .addEndHeaderAction(
                 carContext.alertToggleAction(
                     enabled = trafficOn,
                     icon = carContext.dashboardTrafficAlertIcon(trafficOn),
@@ -175,8 +161,7 @@ class AutoDashboardScreen(
 
         GridTemplate.Builder()
             .setSingleList(gridBuilder.build())
-            .setHeader(headerBuilder.build())
-            .setActionStrip(actionStrip)
+            .setHeader(header)
             .build()
     }
 

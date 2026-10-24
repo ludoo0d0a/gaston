@@ -78,7 +78,7 @@ class AutoDashboardScreenTest {
     }
 
     @Test
-    fun testOnGetTemplate_returnsGridTemplateWithMapTileAndWeatherHeaderAction() {
+    fun testOnGetTemplate_returnsGridTemplateWithMapTileAndAlertHeaderActions() {
         val carContext = CarScreenTestHarness.newTestCarContext()
         val screen = AutoDashboardScreen(
             carContext = carContext,
@@ -99,6 +99,11 @@ class AutoDashboardScreenTest {
 
         val header = gridTemplate.header
         assertNotNull("Header should not be null", header)
+        assertEquals(
+            "Header end actions hold radar + traffic toggles (replaces deprecated ActionStrip)",
+            2,
+            header!!.endHeaderActions.size,
+        )
     }
 
     @Test
@@ -130,7 +135,7 @@ class AutoDashboardScreenTest {
     }
 
     @Test
-    fun testOnGetTemplate_includesTrafficActionStrip() {
+    fun testOnGetTemplate_includesRadarAndTrafficHeaderActions() {
         val carContext = CarScreenTestHarness.newTestCarContext()
         val screen = AutoDashboardScreen(
             carContext = carContext,
@@ -142,9 +147,9 @@ class AutoDashboardScreenTest {
         )
 
         val template = screen.onGetTemplate() as GridTemplate
-        assertNotNull("ActionStrip should hold radar + traffic detection toggles", template.actionStrip)
-        assertEquals(2, template.actionStrip!!.actions.size)
-        assertNotNull("Header should hold meteo toggle", template.header)
+        val header = template.header
+        assertNotNull("Header should hold radar + traffic detection toggles", header)
+        assertEquals(2, header!!.endHeaderActions.size)
     }
 }
 

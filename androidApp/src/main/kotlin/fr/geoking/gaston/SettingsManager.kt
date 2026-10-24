@@ -229,7 +229,7 @@ data class AppSettings(
     val testAaMapSurfaceEnabled: Boolean = false,
     /**
      * AAC danger-zone / speed-camera alerts (beep + TTS + HUN) + radar layer.
-     * Toggled from the AA dashboard ActionStrip / header (and map settings).
+     * Toggled from the AA dashboard header end actions (and map settings).
      * Loop also requires [BuildConfig.AAC_ALERTS_AVAILABLE] and is killed by
      * [BuildConfig.AAC_ALERTS_KILL_SWITCH]. Default off: no warning until opted in.
      */
