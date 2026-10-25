@@ -1,0 +1,14 @@
+---
+description: Idempotence POIs carte ↔ menu (mêmes listes)
+globs: androidApp/**/map/**/*.kt,androidApp/**/dashboard/**/*.kt,androidApp/**/MapFilter*.kt,androidApp/**/MainActivity.kt,androidApp/**/SettingsManager.kt
+alwaysApply: false
+---
+
+# Idempotence carte ↔ menu (obligatoire)
+
+La liste des POIs affichés sur la carte et celle du menu (liste / Place List / dashboard results) doivent rester **toujours cohérentes** :
+
+- Si un POI est sur la carte → il doit être dans le menu
+- Si un POI est dans le menu → il doit être sur la carte
+
+Même source de vérité, mêmes filtres (`MapFilterSettings`, amenity types, providers). Pas de trim / limite / requête distincte d’un seul côté.
