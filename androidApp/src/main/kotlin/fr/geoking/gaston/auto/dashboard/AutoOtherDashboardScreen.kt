@@ -26,17 +26,44 @@ class AutoOtherDashboardScreen(
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoOtherDashboardScreen") {
         val gridBuilder = ItemList.Builder()
 
-        // Traffic / radar / weather open modes are phone-only; AA radar+traffic toggles live on AutoDashboardScreen header.
-        OVERPASS_AMENITY_OPTIONS
-            .filter { (id, _) -> id != "speed_camera" && id != "weather" }
-            .forEach { (id, resId) ->
-            val label = carContext.getString(resId)
+        // Traffic is a map overlay (not an Overpass amenity), next to radar / weather.
+        gridBuilder.addItem(
+            GridItem.Builder()
+                .setTitle(carContext.getString(R.string.dashboard_traffic))
+                .setImage(carContext.carIcon(R.drawable.ic_poi_traffic, AutoCarIcons.emergency))
+                .setOnClickListener {
+                    settingsManager.setTrafficMode()
+                    val mapDeps = getMapDeps()
+                    if (mapDeps != null) {
+                        screenManager.pop()
+                        pushMapScreen(
+                            settingsManager,
+                            mapDeps,
+                            carContext.getString(R.string.dashboard_traffic),
+                        )
+                    }
+                }
+                .build()
+        )
+
+        OVERPASS_AMENITY_OPTIONS.forEach { (id, resId) ->
+            // Match phone dashboard labels for radar / weather shortcuts.
+            val label = when (id) {
+                "speed_camera" -> carContext.getString(R.string.dashboard_radars)
+                "weather" -> carContext.getString(R.string.dashboard_weather)
+                else -> carContext.getString(resId)
+            }
             val iconResId = getAmenityIcon(id)
+            val iconTint = when (id) {
+                "speed_camera" -> AutoCarIcons.emergency
+                "weather" -> AutoCarIcons.fuel
+                else -> AutoCarIcons.primary
+            }
 
             gridBuilder.addItem(
                 GridItem.Builder()
                     .setTitle(label)
-                    .setImage(carContext.carIcon(iconResId, AutoCarIcons.primary))
+                    .setImage(carContext.carIcon(iconResId, iconTint))
                     .setOnClickListener {
                         settingsManager.setOtherMode(id)
                         val mapDeps = getMapDeps()
@@ -70,6 +97,8 @@ class AutoOtherDashboardScreen(
         "rest_area" -> R.drawable.ic_poi_rest_area
         "restaurant" -> R.drawable.ic_poi_restaurant
         "fast_food" -> R.drawable.ic_poi_fast_food
+        "speed_camera" -> R.drawable.ic_poi_radar
+        "weather" -> R.drawable.ic_poi_weather
         "parking" -> R.drawable.ic_poi_parking
         "viewpoint" -> R.drawable.ic_poi_viewpoint
         "post_box" -> R.drawable.ic_poi_post_box
