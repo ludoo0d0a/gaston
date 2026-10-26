@@ -288,17 +288,15 @@ object DangerZoneEvaluator {
         // Proximity alone is never enough — require motion + heading toward the zone.
         var alertActive = geometricallyInside && isAhead
 
-        // High-confidence OSM monitored direction: drop opposite-sense approaches.
-        if (alertActive &&
-            zone.directionConfidence == DirectionConfidence.High &&
-            !zone.monitoredBidirectional
-        ) {
-            val dir = OsmDirectionInfo(
-                confidence = zone.directionConfidence,
-                monitoredBearingDegrees = zone.monitoredBearingDegrees,
-                bidirectional = zone.monitoredBidirectional,
-            )
-            if (!OsmSpeedCameraDirection.isVehicleCompatible(vehBearing, dir, MONITOR_DIRECTION_TOLERANCE_DEGREES)) {
+        // Monitored direction filter: vehicle direction vs radar direction tolerance (30°).
+        if (alertActive && zone.monitoredBearingDegrees != null) {
+            if (!OsmSpeedCameraDirection.isVehicleCompatible(
+                    vehBearing = vehBearing,
+                    monitoredBearingDegrees = zone.monitoredBearingDegrees,
+                    bidirectional = zone.monitoredBidirectional,
+                    toleranceDegrees = MONITOR_DIRECTION_TOLERANCE_DEGREES,
+                )
+            ) {
                 alertActive = false
             }
         }
