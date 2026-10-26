@@ -63,25 +63,47 @@ class MapFilterSettingsTest {
     }
 
     @Test
-    fun stationMapFilters_trafficModeHidesAllPois() {
-        val settings = AppSettings(
+    fun testTrafficPoisIncludedInTrafficModeAndFilter() {
+        // Traffic mode setting (e.g., via settingsManager.setTrafficMode())
+        val trafficModeSettings = AppSettings(
             poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
-            selectedPoiProviders = setOf(PoiProviderType.Overpass),
+            selectedPoiProviders = setOf(
+                PoiProviderType.TipiBisonFute,
+                PoiProviderType.TomTomTraffic,
+                PoiProviderType.CitaTraffic,
+                PoiProviderType.Overpass
+            ),
             selectedOverpassAmenityTypes = emptySet(),
             mapTrafficEnabled = true,
         )
-        assertTrue(settings.isOtherModeActive())
-        val filtered = StationMapFilters.apply(
-            settings = settings,
-            pois = listOf(
-                poi("gas", PoiCategory.Gas),
-                poi("radar", PoiCategory.Radar),
-                poi("weather", PoiCategory.Weather),
-            ),
-            providers = settings.selectedPoiProviders,
+        assertTrue(trafficModeSettings.isOtherModeActive())
+
+        val trafficPoi = poi("traffic_event_1", PoiCategory.Traffic)
+        val gasPoi = poi("gas_station_1", PoiCategory.Gas)
+        val radarPoi = poi("radar_1", PoiCategory.Radar)
+
+        // In Traffic mode, StationMapFilters.apply retains Traffic POIs and drops station/radar POIs
+        val filteredInTrafficMode = StationMapFilters.apply(
+            settings = trafficModeSettings,
+            pois = listOf(trafficPoi, gasPoi, radarPoi),
+            providers = trafficModeSettings.selectedPoiProviders,
             skipWhenOnlyOverpass = false,
         )
-        assertTrue(filtered.isEmpty())
+        assertEquals(listOf("traffic_event_1"), filteredInTrafficMode.map { it.id })
+
+        // In Fuel mode with traffic overlay enabled, StationMapFilters.apply retains both Fuel and Traffic POIs
+        val fuelWithTrafficSettings = AppSettings(
+            mapEnergyMode = fr.geoking.gaston.poi.EnergyFilterMode.Fuel,
+            selectedMapEnergyTypes = setOf("sp95"),
+            mapTrafficEnabled = true,
+        )
+        val filteredFuelWithTraffic = StationMapFilters.apply(
+            settings = fuelWithTrafficSettings,
+            pois = listOf(trafficPoi, gasPoi, radarPoi),
+            providers = emptySet(),
+            skipWhenOnlyOverpass = false,
+        )
+        assertEquals(listOf("traffic_event_1", "gas_station_1"), filteredFuelWithTraffic.map { it.id })
     }
 
     @Test
