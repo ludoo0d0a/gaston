@@ -34,6 +34,8 @@ import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.belib.matchAvailabilityToPois
+import fr.geoking.gaston.api.traffic.TrafficEvent
+import fr.geoking.gaston.api.traffic.TrafficProviderFactory
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProvidersAt
@@ -54,6 +56,7 @@ import fr.geoking.gaston.auto.cheapestFilterAction
 import fr.geoking.gaston.auto.menuVisibilityAction
 import fr.geoking.gaston.auto.settings.map.AutoMapSettingsScreen
 import fr.geoking.gaston.ui.map.components.AutoMapCamera
+import fr.geoking.gaston.ui.map.components.AutoTrafficOverlay
 
 /**
  * POI map using the host-rendered [PlaceListMapTemplate] (Google Maps on Android Auto).
@@ -69,10 +72,13 @@ class NativeMapPoiScreen(
     private val communityRepo: CommunityPoiRepository? = null,
     private val favoritesRepo: FavoritesRepository? = null,
     private val title: String = carContext.getString(R.string.dashboard_nearby_stations),
-    private val mapDeps: MapDeps? = null
+    private val mapDeps: MapDeps? = null,
+    private val trafficProviderFactory: TrafficProviderFactory? = mapDeps?.trafficProviderFactory,
 ) : Screen(carContext), DefaultLifecycleObserver {
 
     private var pois: List<Poi> = emptyList()
+    private var trafficEvents: List<TrafficEvent> = emptyList()
+    private var trafficPois: List<Poi> = emptyList()
     private var availabilityByPoiId: Map<String, StationAvailabilitySummary> = emptyMap()
     private var favoriteIds: Set<String> = emptySet()
     private var isLoading = true
@@ -105,9 +111,10 @@ class NativeMapPoiScreen(
 
     private fun getFilteredPois(currentSettings: AppSettings): List<Poi> {
         val effectiveProviders = currentSettings.effectiveProvidersAt(searchLat, searchLon)
+        val allPois = pois + trafficPois
         val basePois = StationMapFilters.apply(
             settings = currentSettings,
-            pois = pois,
+            pois = allPois,
             providers = effectiveProviders,
             skipWhenOnlyOverpass = true
         )
@@ -157,6 +164,16 @@ class NativeMapPoiScreen(
 
             searchLat = lat
             searchLon = lon
+
+            val settings = settingsManager.settings.value
+            trafficEvents = AutoTrafficOverlay.loadEvents(
+                factory = trafficProviderFactory ?: mapDeps?.trafficProviderFactory,
+                settings = settings,
+                centerLat = lat,
+                centerLon = lon,
+                viewport = null,
+            )
+            trafficPois = AutoTrafficOverlay.toMapPois(trafficEvents)
 
             try {
                 poiProvider.searchFlow(

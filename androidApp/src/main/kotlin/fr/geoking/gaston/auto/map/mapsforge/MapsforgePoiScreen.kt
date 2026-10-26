@@ -274,9 +274,10 @@ class MapsforgePoiScreen(
 
     private fun getFilteredPois(currentSettings: AppSettings): List<Poi> {
         val effectiveProviders = currentSettings.effectiveProvidersAt(searchLat, searchLon)
+        val allPois = pois + trafficPois
         val basePois = StationMapFilters.apply(
             settings = currentSettings,
-            pois = pois,
+            pois = allPois,
             providers = effectiveProviders,
             skipWhenOnlyOverpass = true
         )
@@ -424,7 +425,7 @@ class MapsforgePoiScreen(
         val mapPois = if (selected != null) {
             listOf(selected)
         } else {
-            filteredPois + trafficPois
+            filteredPois
         }
         renderer.updatePois(
             newPois = mapPois,
