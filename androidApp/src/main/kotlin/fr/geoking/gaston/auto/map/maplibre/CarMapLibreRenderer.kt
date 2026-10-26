@@ -805,10 +805,26 @@ class CarMapLibreRenderer(
         val cx = centerPxXForHitTest().toFloat()
         val cy = centerPxYForHitTest().toFloat()
 
+        val radarPois = lastPois.filter { it.poiCategory == PoiCategory.Radar }
+        val density = carContext.resources.displayMetrics.density
+
+        AutoMapOverlayHelper.drawRadarRoadCorridors(
+            canvas = canvas,
+            density = density,
+            radarPois = radarPois,
+            roadPolylines = roadPolylines,
+        ) { lat, lon ->
+            val tileX = lonToTileX(lon, zoom)
+            val tileY = latToTileY(lat, zoom)
+            val drawX = ((tileX - mapCenterX) * AutoSurfaceRenderer.TILE_SIZE + cx).toFloat()
+            val drawY = ((tileY - mapCenterY) * AutoSurfaceRenderer.TILE_SIZE + cy).toFloat()
+            drawX to drawY
+        }
+
         AutoMapOverlayHelper.drawRadarDangerZoneTriangles(
             canvas = canvas,
-            density = carContext.resources.displayMetrics.density,
-            radarPois = lastPois.filter { it.poiCategory == PoiCategory.Radar },
+            density = density,
+            radarPois = radarPois,
         ) { lat, lon ->
             val tileX = lonToTileX(lon, zoom)
             val tileY = latToTileY(lat, zoom)

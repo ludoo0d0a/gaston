@@ -2,6 +2,8 @@ package fr.geoking.gaston.ui.map.maplibre
 
 import android.content.Context
 import fr.geoking.gaston.aac.DangerZoneTriangle
+import fr.geoking.gaston.aac.RadarRoadCorridorCalculator
+import fr.geoking.gaston.road.RoadPolyline
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.api.traffic.TrafficSeverity
@@ -39,6 +41,9 @@ object MapLibreSharedHelper {
     const val POI_ID_PROPERTY = "poi-id"
     const val SEARCH_RADIUS_SOURCE_ID = "search-radius-source"
     const val SEARCH_RADIUS_LAYER_ID = "search-radius-layer"
+    const val RADAR_CORRIDOR_SOURCE_ID = "radar-road-corridor-source"
+    const val RADAR_CORRIDOR_FILL_LAYER_ID = "radar-road-corridor-fill"
+    const val RADAR_CORRIDOR_LINE_LAYER_ID = "radar-road-corridor-line"
     const val RADAR_ZONE_SOURCE_ID = "radar-danger-zone-source"
     const val RADAR_ZONE_FILL_LAYER_ID = "radar-danger-zone-fill"
     const val RADAR_ZONE_LINE_LAYER_ID = "radar-danger-zone-line"
@@ -142,6 +147,57 @@ object MapLibreSharedHelper {
                 ?.setGeoJson(FeatureCollection.fromFeatures(features))
         }
         syncRadarDangerZoneLayer(map, pois)
+    }
+
+    /**
+     * Synchronizes radar road corridor polygons (ribbon along upstream roads) for radar POIs.
+     */
+    fun syncRadarRoadCorridorLayer(
+        map: MapLibreMap,
+        pois: List<Poi>,
+        roadPolylines: List<RoadPolyline>
+    ) {
+        map.getStyle { style ->
+            if (style.getSource(RADAR_CORRIDOR_SOURCE_ID) == null) {
+                style.addSource(GeoJsonSource(RADAR_CORRIDOR_SOURCE_ID))
+            }
+            if (style.getLayer(RADAR_CORRIDOR_FILL_LAYER_ID) == null) {
+                val fill = FillLayer(RADAR_CORRIDOR_FILL_LAYER_ID, RADAR_CORRIDOR_SOURCE_ID).withProperties(
+                    PropertyFactory.fillColor(Expression.get(RADAR_ZONE_FILL_COLOR_PROPERTY)),
+                    PropertyFactory.fillOpacity(Expression.get(RADAR_ZONE_FILL_OPACITY_PROPERTY)),
+                )
+                if (style.getLayer(POI_LAYER_ID) != null) {
+                    style.addLayerBelow(fill, POI_LAYER_ID)
+                } else {
+                    style.addLayer(fill)
+                }
+            }
+            if (style.getLayer(RADAR_CORRIDOR_LINE_LAYER_ID) == null) {
+                val line = LineLayer(RADAR_CORRIDOR_LINE_LAYER_ID, RADAR_CORRIDOR_SOURCE_ID).withProperties(
+                    PropertyFactory.lineColor(Expression.get(RADAR_ZONE_STROKE_COLOR_PROPERTY)),
+                    PropertyFactory.lineWidth(3f),
+                    PropertyFactory.lineOpacity(0.95f),
+                )
+                if (style.getLayer(POI_LAYER_ID) != null) {
+                    style.addLayerBelow(line, POI_LAYER_ID)
+                } else {
+                    style.addLayer(line)
+                }
+            }
+
+            val source = style.getSourceAs<GeoJsonSource>(RADAR_CORRIDOR_SOURCE_ID) ?: return@getStyle
+            val features = pois.filter { it.poiCategory == PoiCategory.Radar }.mapNotNull { poi ->
+                val corridor = RadarRoadCorridorCalculator.calculateCorridor(poi, roadPolylines) ?: return@mapNotNull null
+                if (corridor.points.size < 4) return@mapNotNull null
+                val ring = corridor.points.map { (lat, lon) -> Point.fromLngLat(lon, lat) }
+                Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).apply {
+                    addStringProperty(RADAR_ZONE_FILL_COLOR_PROPERTY, argbToRgbHex(corridor.fillArgb))
+                    addNumberProperty(RADAR_ZONE_FILL_OPACITY_PROPERTY, argbAlpha(corridor.fillArgb).toDouble())
+                    addStringProperty(RADAR_ZONE_STROKE_COLOR_PROPERTY, argbToRgbHex(corridor.strokeArgb))
+                }
+            }
+            source.setGeoJson(FeatureCollection.fromFeatures(features))
+        }
     }
 
     /**

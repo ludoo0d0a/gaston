@@ -8,10 +8,50 @@ import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
 import fr.geoking.gaston.aac.DangerZoneTriangle
+import fr.geoking.gaston.aac.RadarRoadCorridorCalculator
+import fr.geoking.gaston.aac.RadarRoadCorridorPolygon
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.road.RoadPolyline
 import kotlin.math.cos
 
 object AutoMapOverlayHelper {
+
+    /**
+     * Draws upstream road corridor polygons along the road geometry in front of radar POIs.
+     */
+    fun drawRadarRoadCorridors(
+        canvas: Canvas,
+        density: Float,
+        radarPois: List<Poi>,
+        roadPolylines: List<RoadPolyline>,
+        toScreenXy: (lat: Double, lon: Double) -> Pair<Float, Float>,
+    ) {
+        if (radarPois.isEmpty()) return
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+        }
+        val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 3f * density
+            strokeJoin = Paint.Join.ROUND
+        }
+
+        for (poi in radarPois) {
+            val corridor = RadarRoadCorridorCalculator.calculateCorridor(poi, roadPolylines) ?: continue
+            if (corridor.points.size < 4) continue
+
+            fillPaint.color = corridor.fillArgb
+            strokePaint.color = corridor.strokeArgb
+            val path = Path()
+            corridor.points.forEachIndexed { index, (lat, lon) ->
+                val (x, y) = toScreenXy(lat, lon)
+                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            path.close()
+            canvas.drawPath(path, fillPaint)
+            canvas.drawPath(path, strokePaint)
+        }
+    }
 
     /**
      * Shared danger-zone sectors for radar amenity POIs (AFFTAC R + km reminders + 200 m).

@@ -325,6 +325,14 @@ val mapModule = module {
             roadCacheDao = get<fr.geoking.gaston.persistence.AppDatabase>().roadCacheDao()
         )
     }
+    single {
+        get<fr.geoking.gaston.persistence.AppDatabase>().radarCorridorDao()
+    }
+    single {
+        fr.geoking.gaston.road.RoomRadarCorridorRepository(
+            corridorDao = get()
+        )
+    }
     single { fr.geoking.gaston.aac.OsmRoadClassifier(get()) }
     single<PoiProvider>(named("overpass")) {
         OverpassProvider(get(), radiusKm = 5, limit = 100)

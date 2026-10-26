@@ -148,6 +148,7 @@ fun LibreMap(
             )
             MapLibreSharedHelper.syncTrafficLayer(map, trafficEvents)
             MapLibreSharedHelper.syncRoadVectorLayer(map, roadPolylines)
+            MapLibreSharedHelper.syncRadarRoadCorridorLayer(map, poisInView, roadPolylines)
             MapLibreSharedHelper.syncPoiLayer(
                 context = context,
                 map = map,
