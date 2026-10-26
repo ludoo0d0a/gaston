@@ -75,10 +75,12 @@ class OsmSpeedCameraDirectionTest {
     }
 
     @Test
-    fun lowConfidenceDoesNotFilterVehicle() {
+    fun directionFilteringWith30DegreeTolerance() {
         val low = OsmSpeedCameraDirection.resolve(directionTag = "N")
         assertEquals(DirectionConfidence.Low, low.confidence)
-        assertTrue(OsmSpeedCameraDirection.isVehicleCompatible(180.0, low))
+        assertEquals(0.0, low.monitoredBearingDegrees)
+        assertTrue(OsmSpeedCameraDirection.isVehicleCompatible(20.0, low))
+        assertFalse(OsmSpeedCameraDirection.isVehicleCompatible(180.0, low))
     }
 
     @Test
