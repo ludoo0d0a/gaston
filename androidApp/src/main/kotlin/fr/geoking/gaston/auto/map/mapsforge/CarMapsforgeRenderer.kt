@@ -1210,10 +1210,26 @@ class CarMapsforgeRenderer(
     private fun drawRadarPreventionCircles(canvas: Canvas) {
         val centerX = lonToTileX(lon, zoom)
         val centerY = latToTileY(lat, zoom)
+        val radarPois = pois.filter { it.poiCategory == PoiCategory.Radar }
+        val density = context.resources.displayMetrics.density
+
+        AutoMapOverlayHelper.drawRadarRoadCorridors(
+            canvas = canvas,
+            density = density,
+            radarPois = radarPois,
+            roadPolylines = emptyList(), // Mapsforge uses vector tile basemap
+        ) { lat, lon ->
+            val tileX = lonToTileX(lon, zoom)
+            val tileY = latToTileY(lat, zoom)
+            val drawX = ((tileX - centerX) * TILE_SIZE + centerPxX).toFloat()
+            val drawY = ((tileY - centerY) * TILE_SIZE + centerPxY).toFloat()
+            drawX to drawY
+        }
+
         AutoMapOverlayHelper.drawRadarDangerZoneTriangles(
             canvas = canvas,
-            density = context.resources.displayMetrics.density,
-            radarPois = pois.filter { it.poiCategory == PoiCategory.Radar },
+            density = density,
+            radarPois = radarPois,
         ) { lat, lon ->
             val tileX = lonToTileX(lon, zoom)
             val tileY = latToTileY(lat, zoom)
