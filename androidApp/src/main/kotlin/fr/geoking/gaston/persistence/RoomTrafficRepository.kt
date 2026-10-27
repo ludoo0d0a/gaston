@@ -17,10 +17,17 @@ class RoomTrafficRepository(
         lonMin: Double,
         latMax: Double,
         lonMax: Double,
-        maxEvents: Int
+        maxEvents: Int,
+        sourceId: String?,
     ): List<TrafficEvent> {
-        val entities = dao.getEventsInBbox(latMin, lonMin, latMax, lonMax, maxEvents)
-        return entities.map { entityToDomain(it) }
+        val entities = if (sourceId != null) {
+            dao.getEventsInBboxForSource(sourceId, latMin, lonMin, latMax, lonMax, maxEvents)
+        } else {
+            dao.getEventsInBbox(latMin, lonMin, latMax, lonMax, maxEvents)
+        }
+        return entities.mapNotNull { entity ->
+            if (entity.primaryKey.endsWith(FETCH_MARKER_SUFFIX)) null else entityToDomain(entity)
+        }
     }
 
     override suspend fun isSourceFresh(sourceId: String, ttlMs: Long): Boolean {
@@ -40,7 +47,37 @@ class RoomTrafficRepository(
         }
         if (entities.isNotEmpty()) {
             dao.insertEvents(entities)
+        } else {
+            // Keep TTL even when the feed parsed to zero in-bbox events so we do not
+            // re-download the multi‑MB national dump on every map pan.
+            dao.insertEvents(
+                listOf(
+                    TrafficEventEntity(
+                        primaryKey = "$sourceId$FETCH_MARKER_SUFFIX",
+                        sourceId = sourceId,
+                        eventId = null,
+                        roadRef = "",
+                        direction = null,
+                        severity = TrafficSeverity.Unknown.name,
+                        message = null,
+                        travelTimeSeconds = null,
+                        latMin = 0.0,
+                        lonMin = 0.0,
+                        latMax = 0.0,
+                        lonMax = 0.0,
+                        latitude = null,
+                        longitude = null,
+                        zonePointsJson = null,
+                        updatedAtMs = null,
+                        fetchedAtMs = fetchedAtMs,
+                    )
+                )
+            )
         }
+    }
+
+    companion object {
+        private const val FETCH_MARKER_SUFFIX = "__fetch_marker"
     }
 
     override suspend fun updateZonePoints(

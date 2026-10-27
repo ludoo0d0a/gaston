@@ -354,7 +354,9 @@
     <string name="settings_opencm_key">Clé API OpenChargeMap</string>
     <string name="settings_show_traffic">Afficher le trafic</string>
     <string name="settings_radar_warning">Avertisseur de radar</string>
-    <string name="settings_radar_warning_subtitle">Alertes vocales (TTS, bips) et notifications HUN pour les zones de danger</string>
+    <string name="settings_radar_warning_subtitle">Couche carte + audio (TTS, bips) et HUN AA pour les zones de danger</string>
+    <string name="settings_meteo_detection_subtitle">Couche météo (Open-Meteo / radar pluie). Alertes uniquement sur Android Auto</string>
+    <string name="settings_traffic_detection_subtitle">Couche trafic + alertes d\'approche (HUN AA uniquement)</string>
     <string name="settings_theme_night_maps">S\'applique aussi aux cartes pour la conduite de nuit</string>
     <string name="settings_toll_french_highway">Estimation péages autoroute français</string>
     <string name="settings_vehicle_summary">%1$s, %2$d km</string>
@@ -492,6 +494,7 @@
     <string name="provider_france_radars">Zones de danger (data.gouv.fr France)</string>
     <string name="provider_lufop_openspeedcam">Lufop</string>
     <string name="provider_luxembourg_radars">Radars (Luxembourg PCH)</string>
+    <string name="provider_open_meteo">Open-Meteo (météo)</string>
     <string name="provider_tipi_bison_fute">TIPI / Bison Futé (France)</string>
     <string name="provider_tomtom_traffic">TomTom Traffic</string>
     <string name="provider_cita_traffic">CITA (Luxembourg)</string>

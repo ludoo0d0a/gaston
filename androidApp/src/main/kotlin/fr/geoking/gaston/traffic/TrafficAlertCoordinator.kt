@@ -21,8 +21,9 @@ import kotlinx.coroutines.launch
 import org.koin.core.context.GlobalContext
 
 /**
- * Process-wide traffic approach alerts (beep + TTS + HUN).
- * Starts at app launch; GPS loop runs only while [SettingsManager] `trafficAlertEnabled` is true.
+ * Process-wide traffic approach alerts (beep + TTS + AA-only HUN).
+ * Starts at app launch; GPS loop runs only while [SettingsManager] `trafficAlertEnabled` is true
+ * (AA dashboard / map settings via [SettingsManager.setTrafficDetectionEnabled]).
  */
 class TrafficAlertCoordinator(
     context: Context,

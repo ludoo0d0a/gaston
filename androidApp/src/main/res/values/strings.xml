@@ -299,7 +299,9 @@
     <string name="settings_map_mode">Map Mode</string>
     <string name="settings_show_traffic">Show Traffic</string>
     <string name="settings_radar_warning">Speed camera alerts</string>
-    <string name="settings_radar_warning_subtitle">Audio warnings (TTS, beeps) and HUN alerts for danger zones</string>
+    <string name="settings_radar_warning_subtitle">Map layer + audio (TTS, beeps) and AA HUN for danger zones</string>
+    <string name="settings_meteo_detection_subtitle">Weather map layer (Open-Meteo / rain radar). Alerts only on Android Auto</string>
+    <string name="settings_traffic_detection_subtitle">Traffic map layer + approach alerts (AA HUN only)</string>
     <string name="settings_vehicle_summary">%1$s, %2$d km</string>
     <string name="emergency_call">Call Emergency: %1$s</string>
     <string name="emergency_universal_number">Universal number for this region</string>
@@ -490,6 +492,7 @@
     <string name="provider_france_radars">Danger zones (data.gouv.fr France)</string>
     <string name="provider_lufop_openspeedcam">Lufop</string>
     <string name="provider_luxembourg_radars">Radars (Luxembourg PCH)</string>
+    <string name="provider_open_meteo">Open-Meteo (weather)</string>
     <string name="provider_tipi_bison_fute">TIPI / Bison Futé (France)</string>
     <string name="provider_tomtom_traffic">TomTom Traffic</string>
     <string name="provider_cita_traffic">CITA (Luxembourg)</string>

@@ -1,8 +1,14 @@
 package fr.geoking.gaston.api.traffic
 
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+
 /**
  * [TrafficProvider] for mainland France + Corsica using the open Bison Futé / TIPI DATEX feed
  * (national non-concessioned network).
+ *
+ * National DATEX dumps are multi‑MB: refresh runs under [NonCancellable] so map camera moves
+ * do not abort store-into-Room; viewport only affects the subsequent bbox query.
  */
 class BisonFuteTrafficProvider(
     private val client: BisonFuteTrafficClient,
@@ -26,7 +32,9 @@ class BisonFuteTrafficProvider(
         if (!franceBbox.contains(midLat, midLon)) return null
 
         val repo = trafficRepository
-        val fetchedEvents = client.fetchAndStoreTrafficEvents()
+        val fetchedEvents = withContext(NonCancellable) {
+            client.fetchAndStoreTrafficEvents()
+        }
 
         val events = if (repo != null) {
             repo.getTrafficInBbox(
@@ -34,7 +42,8 @@ class BisonFuteTrafficProvider(
                 lonMin = q.lonMin,
                 latMax = q.latMax,
                 lonMax = q.lonMax,
-                maxEvents = MAX_TRAFFIC_EVENTS
+                maxEvents = MAX_TRAFFIC_EVENTS,
+                sourceId = BisonFuteTrafficClient.SOURCE_ID,
             )
         } else {
             fetchedEvents.filter { e ->

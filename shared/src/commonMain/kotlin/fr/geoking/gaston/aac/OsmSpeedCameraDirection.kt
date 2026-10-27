@@ -44,7 +44,7 @@ data class OsmDirectionInfo(
  * Parses OSM `direction=*` and enforcement bearings into [OsmDirectionInfo].
  */
 object OsmSpeedCameraDirection {
-    const val MONITOR_TOLERANCE_DEGREES = 45.0
+    const val MONITOR_TOLERANCE_DEGREES = 30.0
 
     fun parseMaxspeedKmH(raw: String?): Int? {
         if (raw.isNullOrBlank()) return null
@@ -148,14 +148,31 @@ object OsmSpeedCameraDirection {
      */
     fun isVehicleCompatible(
         vehBearing: Double?,
+        monitoredBearingDegrees: Double?,
+        bidirectional: Boolean,
+        toleranceDegrees: Double = MONITOR_TOLERANCE_DEGREES,
+    ): Boolean {
+        val monitored = monitoredBearingDegrees ?: return true
+        if (vehBearing == null) return true
+        if (bidirectional) {
+            val opp = normalizeBearing(monitored + 180.0)
+            return DangerZoneEvaluator.angleDifference(vehBearing, monitored) <= toleranceDegrees ||
+                DangerZoneEvaluator.angleDifference(vehBearing, opp) <= toleranceDegrees
+        }
+        return DangerZoneEvaluator.angleDifference(vehBearing, monitored) <= toleranceDegrees
+    }
+
+    fun isVehicleCompatible(
+        vehBearing: Double?,
         info: OsmDirectionInfo,
         toleranceDegrees: Double = MONITOR_TOLERANCE_DEGREES,
     ): Boolean {
-        if (info.confidence != DirectionConfidence.High) return true
-        if (info.bidirectional) return true
-        val monitored = info.monitoredBearingDegrees ?: return true
-        if (vehBearing == null) return false
-        return DangerZoneEvaluator.angleDifference(vehBearing, monitored) <= toleranceDegrees
+        return isVehicleCompatible(
+            vehBearing = vehBearing,
+            monitoredBearingDegrees = info.monitoredBearingDegrees,
+            bidirectional = info.bidirectional,
+            toleranceDegrees = toleranceDegrees,
+        )
     }
 
     private fun parseCardinalOrDegrees(d: String): Double? {

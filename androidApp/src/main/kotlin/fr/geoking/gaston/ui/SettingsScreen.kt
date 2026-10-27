@@ -221,6 +221,7 @@ private fun poiProviderLabelRes(type: PoiProviderType): Int = when (type) {
     PoiProviderType.FranceRadars -> R.string.provider_france_radars
     PoiProviderType.LufopOpenSpeedCam -> R.string.provider_lufop_openspeedcam
     PoiProviderType.LuxembourgRadars -> R.string.provider_luxembourg_radars
+    PoiProviderType.OpenMeteoWeather -> R.string.provider_open_meteo
     PoiProviderType.TipiBisonFute -> R.string.provider_tipi_bison_fute
     PoiProviderType.TomTomTraffic -> R.string.provider_tomtom_traffic
     PoiProviderType.CitaTraffic -> R.string.provider_cita_traffic
@@ -422,8 +423,15 @@ private fun MapConfig(
                 val downloadProgress by mapManager.downloadProgress.collectAsState()
                 val scope = rememberCoroutineScope()
                 var showDownloadDialog by remember { mutableStateOf(false) }
-                val activeMap = remember(installedMaps) { mapManager.getActiveMapFile() }
+                val activeMap = remember(installedMaps, settings.offlineMapsforgePath) {
+                    settings.offlineMapsforgePath?.let { File(it) }?.takeIf { it.exists() }
+                        ?: mapManager.getActiveMapFile()
+                }
                 val usedBytes = remember(installedMaps) { mapManager.getUsedStorageBytes() }
+                val onMapsforgeChanged: () -> Unit = {
+                    val newActive = mapManager.getActiveMapFile()
+                    onUpdate(settings.copy(offlineMapsforgePath = newActive?.absolutePath))
+                }
 
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
@@ -459,7 +467,7 @@ private fun MapConfig(
                                 progress = downloadProgress,
                                 scope = scope,
                                 mapManager = mapManager,
-                                onMapFileChanged = {},
+                                onMapFileChanged = onMapsforgeChanged,
                             )
                         }
 
@@ -475,7 +483,8 @@ private fun MapConfig(
                 if (showDownloadDialog) {
                     fr.geoking.gaston.ui.map.MapsforgeMapDownloadDialog(
                         mapManager = mapManager,
-                        onDismiss = { showDownloadDialog = false }
+                        onDismiss = { showDownloadDialog = false },
+                        onMapFileChanged = onMapsforgeChanged,
                     )
                 }
             }
@@ -914,6 +923,7 @@ private fun SourcesConfig(
         ProviderUiInfo(PoiProviderType.FranceRadars, listOf("FR")),
         ProviderUiInfo(PoiProviderType.LufopOpenSpeedCam, listOf("GLOBAL")),
         ProviderUiInfo(PoiProviderType.LuxembourgRadars, listOf("LU")),
+        ProviderUiInfo(PoiProviderType.OpenMeteoWeather, listOf("GLOBAL")),
         ProviderUiInfo(PoiProviderType.TipiBisonFute, listOf("FR")),
         ProviderUiInfo(PoiProviderType.TomTomTraffic, listOf("FR", "GLOBAL")),
         ProviderUiInfo(PoiProviderType.CitaTraffic, listOf("LU")),
@@ -933,13 +943,13 @@ private fun SourcesConfig(
     val sortedCountryKeys = remember(providersByCountry) {
         val keys = providersByCountry.keys
         buildList {
+            if ("GLOBAL" in keys) add("GLOBAL")
+            if ("EU" in keys) add("EU")
             if ("FR" in keys) add("FR")
             addAll(
                 (keys - setOf("FR", "EU", "GLOBAL"))
                     .sortedBy { countryLabel(it).lowercase() }
             )
-            if ("EU" in keys) add("EU")
-            if ("GLOBAL" in keys) add("GLOBAL")
         }
     }
 
@@ -1053,9 +1063,10 @@ private fun SourcesConfig(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 listOf(
                     "all" to stringResource(R.string.action_all),
@@ -1064,7 +1075,7 @@ private fun SourcesConfig(
                     "swap" to "Swap",
                     "traffic" to stringResource(R.string.search_mode_traffic),
                     "meteo" to stringResource(R.string.search_mode_meteo),
-                    "radar" to stringResource(R.string.search_mode_radar)
+                    "radar" to stringResource(R.string.search_mode_radar),
                 ).forEach { (id, label) ->
                     FilterChip(
                         selected = energyFilter == id,

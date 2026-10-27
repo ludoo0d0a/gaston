@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.traffic
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
@@ -39,12 +40,12 @@ class FranceTrafficProvider(
             }
         }
 
-        val openDeferred = async { runCatching { openProvider.getTraffic(request) }.getOrNull() }
+        val openDeferred = async { trafficOrNull(openProvider, request) }
         val actionBDeferred = if (actionB?.enabled == true) {
-            async { runCatching { actionB.getTraffic(request) }.getOrNull() }
+            async { trafficOrNull(actionB, request) }
         } else null
         val actionCDeferred = if (actionC?.enabled == true) {
-            async { runCatching { actionC.getTraffic(request) }.getOrNull() }
+            async { trafficOrNull(actionC, request) }
         } else null
 
         val openInfo = openDeferred.await()
@@ -88,5 +89,16 @@ class FranceTrafficProvider(
     companion object {
         const val PROVIDER_ID = "france_traffic"
         const val MAX_TRAFFIC_EVENTS = 250
+
+        private suspend fun trafficOrNull(
+            provider: TrafficProvider,
+            request: TrafficRequest,
+        ): TrafficInfo? = try {
+            provider.getTraffic(request)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
     }
 }

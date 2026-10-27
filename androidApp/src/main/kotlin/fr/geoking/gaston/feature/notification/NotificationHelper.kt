@@ -21,7 +21,6 @@ import fr.geoking.gaston.MainActivity
 import fr.geoking.gaston.NetworkLocationIntents
 import fr.geoking.gaston.ParkedCarIntents
 import fr.geoking.gaston.R
-import fr.geoking.gaston.RadarMapIntents
 import fr.geoking.gaston.auto.VoiceAppService
 
 open class NotificationHelper(private val context: Context) {
@@ -170,7 +169,7 @@ open class NotificationHelper(private val context: Context) {
     )
     fun showUpdateAvailableNotification() = showUpdateAvailableCarNotification()
 
-    /** Temporary phone notification + Android Auto HUN on danger-zone entry. */
+    /** Android Auto HUN on danger-zone entry (not shown on the phone shade). */
     open fun showDangerZoneNotification(
         speedLimitKmH: Int?,
         latitude: Double? = null,
@@ -189,7 +188,7 @@ open class NotificationHelper(private val context: Context) {
             context.getString(R.string.notification_danger_zone_message)
         }
 
-        postTemporaryCarHeadsUp(
+        postAaOnlyHeadsUp(
             notificationId = NOTIFICATION_ID_DANGER_ZONE,
             title = title,
             message = message,
@@ -200,8 +199,8 @@ open class NotificationHelper(private val context: Context) {
     }
 
     /**
-     * Temporary HUN for a kilometre reminder while approaching the zone center.
-     * Distinct dedupe key so it is not suppressed by the entry HUN.
+     * Android Auto HUN for a kilometre reminder while approaching the zone center.
+     * Distinct dedupe key so it is not suppressed by the entry HUN. Not shown on the phone.
      */
     open fun showDangerZoneKmReminderNotification(
         speedLimitKmH: Int?,
@@ -223,7 +222,7 @@ open class NotificationHelper(private val context: Context) {
             context.getString(R.string.notification_danger_zone_km_message, km)
         }
 
-        postTemporaryCarHeadsUp(
+        postAaOnlyHeadsUp(
             notificationId = NOTIFICATION_ID_DANGER_ZONE,
             title = title,
             message = message,
@@ -234,9 +233,8 @@ open class NotificationHelper(private val context: Context) {
     }
 
     /**
-     * Temporary HUN when within ~200 m of the zone center (after / with zone entry).
-     * FR copy: "Radar proche %d km/h".
-     * Phone tap opens the radar map centered on [latitude]/[longitude] when set.
+     * Android Auto HUN when within ~200 m of the zone center (after / with zone entry).
+     * FR copy: "Radar proche %d km/h". Not shown on the phone shade.
      */
     open fun showNearRadarNotification(
         speedLimitKmH: Int?,
@@ -256,7 +254,7 @@ open class NotificationHelper(private val context: Context) {
             context.getString(R.string.notification_near_radar_message_generic)
         }
 
-        postTemporaryCarHeadsUp(
+        postAaOnlyHeadsUp(
             notificationId = NOTIFICATION_ID_NEAR_RADAR,
             title = title,
             message = message,
@@ -266,7 +264,7 @@ open class NotificationHelper(private val context: Context) {
         )
     }
 
-    /** Temporary phone notification + Android Auto HUN for a traffic approach alert. */
+    /** Android Auto HUN for a traffic approach alert (not shown on the phone shade). */
     open fun showTrafficAlertNotification(
         message: String,
         latitude: Double? = null,
@@ -279,7 +277,7 @@ open class NotificationHelper(private val context: Context) {
         val baseTitle = context.getString(R.string.notification_traffic_alert_title)
         val title = if (isDevMode) "[Gaston] $baseTitle" else baseTitle
 
-        postTemporaryCarHeadsUp(
+        postAaOnlyHeadsUp(
             notificationId = NOTIFICATION_ID_TRAFFIC_ALERT,
             title = title,
             message = message,
@@ -536,33 +534,20 @@ open class NotificationHelper(private val context: Context) {
     }
 
     /**
-     * Temporary phone heads-up AND Android Auto HUN (auto-dismiss after [TEMPORARY_NOTIFICATION_MS]).
-     * Always posts through system [NotificationManager] with [CarAppExtender], and additionally
-     * notifies [CarNotificationManager] when AA projection is active.
-     * When [openRadarLatitude]/[openRadarLongitude] are set, phone tap opens the radar map at that point.
+     * Radar / traffic / danger-zone HUN for Android Auto only.
+     * Skips entirely when the car is not connected (no phone shade notification).
+     * When projected, posts a silent phone-side notification (required by [CarAppExtender])
+     * plus [CarNotificationManager] so the HUN appears in the car.
      */
-    private fun postTemporaryCarHeadsUp(
+    private fun postAaOnlyHeadsUp(
         notificationId: Int,
         title: String,
         message: String,
         smallIcon: Int,
-        openRadarLatitude: Double? = null,
-        openRadarLongitude: Double? = null,
+        @Suppress("UNUSED_PARAMETER") openRadarLatitude: Double? = null,
+        @Suppress("UNUSED_PARAMETER") openRadarLongitude: Double? = null,
     ) {
-        val phoneIntent = Intent(context, MainActivity::class.java).apply {
-            action = RadarMapIntents.ACTION_OPEN_RADAR_MAP
-            if (openRadarLatitude != null && openRadarLongitude != null) {
-                putExtra(RadarMapIntents.EXTRA_LATITUDE, openRadarLatitude)
-                putExtra(RadarMapIntents.EXTRA_LONGITUDE, openRadarLongitude)
-            }
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val phonePending = PendingIntent.getActivity(
-            context,
-            notificationId,
-            phoneIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        if (!isCarConnected()) return
 
         val carIntent = Intent(context, VoiceAppService::class.java)
         val carPending = CarPendingIntent.getCarApp(
@@ -572,16 +557,17 @@ open class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
+        // Phone side: silent / min priority so the shade does not interrupt while driving.
+        // Car side: HIGH importance via CarAppExtender → AA HUN.
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(smallIcon)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setSilent(true)
             .setAutoCancel(true)
             .setTimeoutAfter(TEMPORARY_NOTIFICATION_MS)
-            .setContentIntent(phonePending)
             .extend(
                 CarAppExtender.Builder()
                     .setImportance(NotificationManager.IMPORTANCE_HIGH)
@@ -592,14 +578,11 @@ open class NotificationHelper(private val context: Context) {
                     .build()
             )
 
-        val notification = builder.build()
-        notificationManager.notify(notificationId, notification)
-        if (isCarConnected()) {
-            try {
-                CarNotificationManager.from(context).notify(notificationId, builder)
-            } catch (_: Exception) {
-                // Ignore if CarHost is temporarily unavailable
-            }
+        notificationManager.notify(notificationId, builder.build())
+        try {
+            CarNotificationManager.from(context).notify(notificationId, builder)
+        } catch (_: Exception) {
+            // Ignore if CarHost is temporarily unavailable
         }
         scheduleAutoCancel(notificationId, TEMPORARY_NOTIFICATION_MS)
     }

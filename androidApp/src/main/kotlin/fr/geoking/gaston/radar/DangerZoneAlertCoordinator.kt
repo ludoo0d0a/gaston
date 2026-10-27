@@ -23,8 +23,9 @@ import org.koin.core.context.GlobalContext
  * [fr.geoking.gaston.shared.location.ConnectivityManager] for border-crossing HUNs).
  *
  * Starts at app launch via Koin `createdAtStart` when AAC alerts are available.
- * GPS poll → local [DangerZoneRepository] → beep + TTS + temporary phone/AA HUN + shared HUD.
- * User toggle: [SettingsManager] `radarWarningEnabled` (AA dashboard ActionStrip).
+ * GPS poll → local [DangerZoneRepository] → beep + TTS + AA-only HUN + shared HUD.
+ * User toggle: [SettingsManager] `radarWarningEnabled` via AA dashboard / map settings
+ * ([SettingsManager.setRadarDetectionEnabled]).
  * Emergency off: [BuildConfig.AAC_ALERTS_KILL_SWITCH] only.
  */
 class DangerZoneAlertCoordinator(

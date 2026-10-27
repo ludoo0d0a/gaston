@@ -253,8 +253,6 @@ val PoiProviderType.isBulkFileDownload: Boolean
 private val POI_DATA_SOURCES_DISABLED_FOR_USER_SELECTION: Set<PoiProviderType> = setOf(
     PoiProviderType.DataGouvPrixQuotidien,
     PoiProviderType.Overpass, // OSM enrich remains available via RadarOsmEnricher; map amenity source hidden for now
-    PoiProviderType.FranceRadars, // kept wired for AAC fallback; hidden from user selection for now
-    PoiProviderType.OpenMeteoWeather, // amenity-only via setOtherMode("weather")
 )
 
 /** True if this source is shown in map / Auto POI data source pickers. */

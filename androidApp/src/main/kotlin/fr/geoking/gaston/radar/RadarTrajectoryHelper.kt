@@ -1,5 +1,7 @@
 package fr.geoking.gaston.radar
 
+import fr.geoking.gaston.aac.DangerZoneTriangle
+import fr.geoking.gaston.aac.OsmSpeedCameraDirection
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlin.math.abs
@@ -95,7 +97,19 @@ object RadarTrajectoryHelper {
             false
         }
 
-        val isWithinWarningDistance = isAhead && distanceMeters <= warningDistanceMeters
+        val monitoredBearing = DangerZoneTriangle.axisBearingDegrees(radar)
+        val isDirectionCompatible = if (monitoredBearing != null && vehBearing != null) {
+            OsmSpeedCameraDirection.isVehicleCompatible(
+                vehBearing = vehBearing,
+                monitoredBearingDegrees = monitoredBearing,
+                bidirectional = DangerZoneTriangle.isBidirectional(radar),
+                toleranceDegrees = OsmSpeedCameraDirection.MONITOR_TOLERANCE_DEGREES,
+            )
+        } else {
+            true
+        }
+
+        val isWithinWarningDistance = isAhead && isDirectionCompatible && distanceMeters <= warningDistanceMeters
         val speedLimit = extractSpeedLimitKmH(radar)
         val isOverspeed = if (speedLimit != null) vehSpeedKmH > speedLimit else false
 

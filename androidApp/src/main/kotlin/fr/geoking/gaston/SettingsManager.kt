@@ -228,12 +228,12 @@ data class AppSettings(
     val networkFloatingBarEnabled: Boolean = false,
     val testAaMapSurfaceEnabled: Boolean = false,
     /**
-     * AAC danger-zone / speed-camera alerts (beep + TTS + HUN).
-     * Toggled from the AA dashboard ActionStrip (and map settings).
+     * AAC danger-zone / speed-camera alerts (beep + TTS + HUN) + radar layer.
+     * Toggled from the AA dashboard header end actions (and map settings).
      * Loop also requires [BuildConfig.AAC_ALERTS_AVAILABLE] and is killed by
-     * [BuildConfig.AAC_ALERTS_KILL_SWITCH].
+     * [BuildConfig.AAC_ALERTS_KILL_SWITCH]. Default off: no warning until opted in.
      */
-    val radarWarningEnabled: Boolean = true,
+    val radarWarningEnabled: Boolean = false,
     val radarWarningDistanceMeters: Int = 1000,
     val routeStationSearchRadiusMeters: Int = 2000,
     val filterOnlyHighwayStations: Boolean = false,
@@ -491,7 +491,7 @@ open class SettingsManager(
             debugBarEnabled = prefs.getBoolean("debug_bar_enabled", false),
             networkFloatingBarEnabled = prefs.getBoolean("network_floating_bar_enabled", false),
             testAaMapSurfaceEnabled = prefs.getBoolean("test_aa_map_surface_enabled", false),
-            radarWarningEnabled = prefs.getBoolean("radar_warning_enabled", true),
+            radarWarningEnabled = prefs.getBoolean("radar_warning_enabled", false),
             radarWarningDistanceMeters = prefs.getInt("radar_warning_distance_m", 1000),
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
             filterOnlyHighwayStations = prefs.getBoolean("filter_only_highway", false),
@@ -674,6 +674,75 @@ open class SettingsManager(
 
     open fun setTrafficAlertEnabled(enabled: Boolean) {
         saveSettings(_settings.value.copy(trafficAlertEnabled = enabled))
+    }
+
+    /**
+     * AA detection toggle: traffic map layer + approach alerts together.
+     * When off (and meteo/radar also off), no traffic warning/alert fires.
+     */
+    open fun setTrafficDetectionEnabled(enabled: Boolean) {
+        saveSettings(
+            _settings.value.copy(
+                mapTrafficEnabled = enabled,
+                trafficAlertEnabled = enabled,
+            )
+        )
+    }
+
+    /**
+     * AA detection toggle: weather / RainViewer layer (Open-Meteo POIs).
+     * Non-destructive: keeps current energy/search mode; only adds/removes weather.
+     */
+    open fun setMeteoDetectionEnabled(enabled: Boolean) {
+        val current = _settings.value
+        val types = if (enabled) {
+            current.selectedOverpassAmenityTypes + "weather"
+        } else {
+            current.selectedOverpassAmenityTypes - "weather"
+        }
+        val providers = if (enabled) {
+            current.selectedPoiProviders + PoiProviderType.OpenMeteoWeather
+        } else {
+            current.selectedPoiProviders - PoiProviderType.OpenMeteoWeather
+        }
+        saveSettings(
+            current.copy(
+                selectedOverpassAmenityTypes = types,
+                selectedPoiProviders = providers,
+                cacheWarmAmenityTypes = (current.cacheWarmAmenityTypes + types) - "weather",
+            )
+        )
+    }
+
+    /**
+     * AA detection toggle: radar / danger-zone layer + alerts together.
+     * Non-destructive: keeps current energy/search mode; only adds/removes radar amenities.
+     */
+    open fun setRadarDetectionEnabled(enabled: Boolean) {
+        val current = _settings.value
+        val types = if (enabled) {
+            current.selectedOverpassAmenityTypes + "speed_camera"
+        } else {
+            current.selectedOverpassAmenityTypes - "speed_camera"
+        }
+        val providers = current.selectedPoiProviders.toMutableSet()
+        if (enabled) {
+            providers += PoiProviderType.LufopOpenSpeedCam
+            providers += PoiProviderType.LuxembourgRadars
+            providers += PoiProviderType.Overpass
+        } else if ("speed_camera" !in types) {
+            // Drop dedicated radar feeds when radar detection is off.
+            providers -= PoiProviderType.LufopOpenSpeedCam
+            providers -= PoiProviderType.LuxembourgRadars
+        }
+        saveSettings(
+            current.copy(
+                radarWarningEnabled = enabled,
+                selectedOverpassAmenityTypes = types,
+                selectedPoiProviders = providers,
+                cacheWarmAmenityTypes = current.cacheWarmAmenityTypes + types,
+            )
+        )
     }
 
     open fun setDisableCache(disabled: Boolean) {
@@ -882,6 +951,7 @@ open class SettingsManager(
     }
 
     open fun setRadarWarningEnabled(enabled: Boolean) {
+        // Prefer [setRadarDetectionEnabled] from AA (layer + alert). This keeps alert-only callers working.
         saveSettings(_settings.value.copy(radarWarningEnabled = enabled))
     }
 
