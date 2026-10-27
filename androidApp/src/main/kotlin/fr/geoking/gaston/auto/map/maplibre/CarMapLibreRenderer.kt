@@ -30,7 +30,13 @@ import fr.geoking.gaston.ui.map.components.MapOrientationMode
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
+import fr.geoking.gaston.road.RoadPolyline
+import fr.geoking.gaston.road.RoomRoadGeometryRepository
 import fr.geoking.gaston.ui.map.PoiMarkerHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.koin.core.context.GlobalContext
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
@@ -136,6 +142,18 @@ class CarMapLibreRenderer(
         style = Paint.Style.FILL
     }
 
+    private val roadLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+
+    private val roomRoadRepo = runCatching {
+        GlobalContext.get().get<RoomRoadGeometryRepository>()
+    }.getOrNull()
+    private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var roadPolylines: List<RoadPolyline> = emptyList()
+
     private val snapshotRunnable = Runnable {
         requestVectorSnapshotInternal()
     }
@@ -193,7 +211,23 @@ class CarMapLibreRenderer(
         centerLat = lat
         centerLon = lon
         zoom = coercedZoom
+        fetchOverpassRoads()
         scheduleVectorSnapshot()
+    }
+
+    private fun fetchOverpassRoads() {
+        val repo = roomRoadRepo ?: return
+        val lat = centerLat
+        val lon = centerLon
+        coroutineScope.launch {
+            val polylines = runCatching {
+                repo.fetchRoadsNear(lat, lon, radiusKm = 1.5)
+            }.getOrDefault(emptyList())
+            if (roadPolylines != polylines) {
+                roadPolylines = polylines
+                uiHandler.post { drawOnSurface() }
+            }
+        }
     }
 
     override fun updateUserLocation(lat: Double, lon: Double, bearing: Float) {
@@ -300,6 +334,7 @@ class CarMapLibreRenderer(
             "attachSurface ${surfaceWidth}x${surfaceHeight} dpi=$surfaceDpi valid=$surfaceValid style=$styleUrl",
         )
         debugPhase = if (surfaceValid) "surface_ready" else "surface_invalid"
+        fetchOverpassRoads()
         scheduleVectorSnapshot()
         drawOnSurface()
     }
@@ -579,6 +614,7 @@ class CarMapLibreRenderer(
             canvas.rotate(-bearing, cx, cy)
         }
 
+        drawPriorityOverpassRoads(canvas)
         drawSearchRadius(canvas)
         drawPois(canvas)
         drawUserLocation(canvas)
@@ -696,6 +732,52 @@ class CarMapLibreRenderer(
             "snaps=$debugSnapshotCount last=$snapAgeSec ago bmp=${if (hasBitmap) "yes" else "no"} pending=$isSnapshotPending${if (pendingForMs > 0) " ${pendingForMs}ms" else ""}",
             "err=${debugLastError ?: "—"}",
         )
+    }
+
+    private fun drawPriorityOverpassRoads(canvas: Canvas) {
+        val polylines = roadPolylines
+        if (polylines.isEmpty()) return
+
+        val mapCenterX = lonToTileX(centerLon, zoom)
+        val mapCenterY = latToTileY(centerLat, zoom)
+        val cx = centerPxXForHitTest().toFloat()
+        val cy = centerPxYForHitTest().toFloat()
+
+        val density = carContext.resources.displayMetrics.density
+
+        for (polyline in polylines) {
+            if (polyline.points.size < 2) continue
+            val highway = polyline.highwayType
+            val strokeWidth = when (highway) {
+                "motorway", "trunk", "primary" -> 7f * density
+                "secondary", "tertiary" -> 5f * density
+                else -> 3.5f * density
+            }
+            val colorHex = when (highway) {
+                "motorway", "trunk" -> "#FF6F00"
+                "primary", "secondary" -> "#00BCD4"
+                else -> "#26C6DA"
+            }
+
+            roadLinePaint.color = Color.parseColor(colorHex)
+            roadLinePaint.strokeWidth = strokeWidth
+
+            val path = Path()
+            var isFirst = true
+            for ((lat, lon) in polyline.points) {
+                val tileX = lonToTileX(lon, zoom)
+                val tileY = latToTileY(lat, zoom)
+                val px = ((tileX - mapCenterX) * AutoSurfaceRenderer.TILE_SIZE + cx).toFloat()
+                val py = ((tileY - mapCenterY) * AutoSurfaceRenderer.TILE_SIZE + cy).toFloat()
+                if (isFirst) {
+                    path.moveTo(px, py)
+                    isFirst = false
+                } else {
+                    path.lineTo(px, py)
+                }
+            }
+            canvas.drawPath(path, roadLinePaint)
+        }
     }
 
     private fun drawSearchRadius(canvas: Canvas) {
