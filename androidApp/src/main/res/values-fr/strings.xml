@@ -1150,4 +1150,6 @@
     <string name="parked_car_take_photo">Prendre une photo</string>
     <string name="parked_car_pick_photo">Choisir une photo</string>
     <string name="parked_car_remove_photo">Supprimer la photo</string>
+    <string name="map_download_warning_title">Avertissement de téléchargement</string>
+    <string name="map_download_warning_message">Vous allez télécharger %1$s (~%2$d Mo).\n\nLe téléchargement de fichiers cartes volumineux via des données mobiles ou en itinérance (roaming) peut entraîner des frais supplémentaires selon votre opérateur. Souhaitez-vous continuer ?</string>
 </resources>

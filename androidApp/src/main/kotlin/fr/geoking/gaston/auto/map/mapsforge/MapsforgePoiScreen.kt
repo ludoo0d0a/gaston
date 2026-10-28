@@ -1006,14 +1006,34 @@ class MapsforgePoiScreen(
                 .setNoItemsMessage(noItemsMessage)
 
             val activeMap = mapManager.getActiveMapFile()
-            if (activeMap == null) {
+            val recommendedPreset = MapsforgePresetServers.getRecommendedPreset(searchLat, searchLon)
+            val isCoveredByInstalledMap = activeMap != null && mapManager.installedMaps.value.any { file ->
+                file.name.contains(recommendedPreset.storageKey, ignoreCase = true)
+            }
+
+            if (!isCoveredByInstalledMap) {
+                val suggestTitle = carContext.getString(
+                    R.string.mapsforge_suggest_download_region,
+                    recommendedPreset.name,
+                    recommendedPreset.sizeEstimateMb
+                )
                 itemListBuilder.addItem(
                     Row.Builder()
-                        .setTitle(carContext.getString(R.string.mapsforge_active_map) + ": " + carContext.getString(R.string.network_none))
-                        .addText(carContext.getString(R.string.mapsforge_offline_maps_subtitle))
+                        .setTitle(suggestTitle)
+                        .addText(carContext.getString(R.string.map_offline_unavailable))
                         .setBrowsable(true)
                         .setOnClickListener {
-                            screenManager.push(AutoMapsforgeMapManagementScreen(carContext, mapManager))
+                            screenManager.push(
+                                AutoMapsforgeDownloadSuggestScreen(
+                                    carContext = carContext,
+                                    mapManager = mapManager,
+                                    preset = recommendedPreset,
+                                    onDownloaded = {
+                                        surfaceRenderer?.reloadMapsforgeDataStore()
+                                        invalidate()
+                                    }
+                                )
+                            )
                         }
                         .build()
                 )
