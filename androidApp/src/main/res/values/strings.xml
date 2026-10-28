@@ -535,6 +535,7 @@
     <string name="dashboard_nearest_nearby">Nearest nearby</string>
     <string name="dashboard_nearby_stations">Nearby Stations</string>
     <string name="dashboard_searching_nearby">Searching nearby...</string>
+    <string name="dashboard_see_all_matches">See all matches</string>
     <string name="dashboard_emergency_subtitle">Locate yourself · share location · call 112</string>
     <string name="dashboard_accident">Accident / statement</string>
     <string name="dashboard_accident_subtitle">Prefill · exchange phones · paper constat help</string>

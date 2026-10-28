@@ -102,7 +102,7 @@ fun CheapestStationsCard(
 
             if (stations.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    stations.forEach { poi ->
+                    stations.take(5).forEach { poi ->
                         val isCheapest = CheapestStationHighlight.isCheapestFuelStation(
                             poi = poi,
                             minPrice = minPrice,
@@ -119,6 +119,22 @@ fun CheapestStationsCard(
                                 selectedEnergyIds = selectedEnergyIds,
                                 isCheapest = isCheapest,
                                 onClick = { onClick(poi) }
+                            )
+                        }
+                    }
+
+                    if (stations.size > 5) {
+                        TextButton(
+                            onClick = onMapClick,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("dashboard_see_all_matches_btn")
+                        ) {
+                            Text(
+                                text = stringResource(R.string.dashboard_see_all_matches),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }

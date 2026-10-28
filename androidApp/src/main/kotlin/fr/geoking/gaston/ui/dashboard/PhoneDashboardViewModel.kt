@@ -252,7 +252,6 @@ class PhoneDashboardViewModel(
                     distA.compareTo(distB)
                 }
             }
-            .take(5)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val nearbyElectricPois: StateFlow<List<Poi>> = combine(
@@ -280,7 +279,6 @@ class PhoneDashboardViewModel(
         )
             .filter { approxDistanceKm(baseLat, baseLon, it.latitude, it.longitude) <= 10.0 }
             .sortedBy { approxDistanceKm(baseLat, baseLon, it.latitude, it.longitude) }
-            .take(5)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val uiState: StateFlow<PhoneDashboardUiState> = combine(

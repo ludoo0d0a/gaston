@@ -537,6 +537,7 @@
     <string name="dashboard_nearest_nearby">Plus proche</string>
     <string name="dashboard_nearby_stations">Stations à proximité</string>
     <string name="dashboard_searching_nearby">Recherche à proximité…</string>
+    <string name="dashboard_see_all_matches">Voir tous les matchs</string>
     <string name="dashboard_emergency_subtitle">Localisez-vous · partagez la position · appelez le 112</string>
     <string name="dashboard_accident">Accident / constat</string>
     <string name="dashboard_accident_subtitle">Préremplir · échanger les numéros · aide au constat papier</string>
