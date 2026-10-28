@@ -1148,4 +1148,6 @@
     <string name="parked_car_take_photo">Take photo</string>
     <string name="parked_car_pick_photo">Choose photo</string>
     <string name="parked_car_remove_photo">Remove photo</string>
+    <string name="map_download_warning_title">Map Download Warning</string>
+    <string name="map_download_warning_message">You are about to download %1$s (~%2$d MB).\n\nDownloading large map files over mobile data or roaming networks may incur significant data charges from your mobile operator. Do you want to continue?</string>
 </resources>

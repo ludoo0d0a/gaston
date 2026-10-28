@@ -123,28 +123,14 @@ class AutoMapsforgeMapManagementScreen(
                             }
                             return@setOnClickListener
                         }
-                        lifecycleScope.launch {
-                            try {
-                                carContext.getCarService(AppManager::class.java)
-                                    .showToast(
-                                        carContext.getString(R.string.mapsforge_starting_download, preset.name),
-                                        CarToast.LENGTH_SHORT,
-                                    )
-                            } catch (_: Exception) {
-                            }
-                            val result = mapManager.downloadMap(preset.url, "${preset.name}.map")
-                            if (result.isSuccess) {
-                                try {
-                                    carContext.getCarService(AppManager::class.java)
-                                        .showToast(
-                                            carContext.getString(R.string.mapsforge_download_success, preset.name),
-                                            CarToast.LENGTH_SHORT,
-                                        )
-                                } catch (_: Exception) {
-                                }
-                            }
-                            invalidate()
-                        }
+                        screenManager.push(
+                            AutoMapsforgeDownloadSuggestScreen(
+                                carContext = carContext,
+                                mapManager = mapManager,
+                                preset = preset,
+                                onDownloaded = { invalidate() }
+                            )
+                        )
                     }
                     .build()
             )
