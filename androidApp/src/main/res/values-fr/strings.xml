@@ -1136,6 +1136,8 @@
     <string name="parked_car_candidate_detected">Arrêt détecté — position retenue</string>
     <string name="parked_car_candidate_ignored">Suggestion de stationnement ignorée</string>
     <string name="parked_car_map_section">Position sur la carte</string>
+    <string name="settings_auto_park_on_aa_disconnect_title">Mémoriser automatiquement le stationnement à la déconnexion d’Android Auto</string>
+    <string name="settings_auto_park_on_aa_disconnect_desc">Enregistre l’emplacement de votre véhicule dès que vous coupez Android Auto, même si Gaston n’était pas affiché à l’écran.</string>
     <string name="parked_car_underground_toggle">Parking souterrain</string>
     <string name="parked_car_underground_details_section">Détails parking souterrain</string>
     <string name="parked_car_level_label">Étage / Niveau</string>
