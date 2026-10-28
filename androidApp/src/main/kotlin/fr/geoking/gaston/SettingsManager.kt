@@ -982,6 +982,11 @@ open class SettingsManager(
         longitude: Double,
         vehicleId: String = _settings.value.activeVehicleId,
         savedAtEpochMs: Long = System.currentTimeMillis(),
+        isUnderground: Boolean = false,
+        level: String? = null,
+        spotNumber: String? = null,
+        spotColor: String? = null,
+        photoUri: String? = null,
     ) {
         val settings = _settings.value
         val id = vehicleId.ifBlank { settings.activeVehicleId }
@@ -994,6 +999,11 @@ open class SettingsManager(
                     latitude = latitude,
                     longitude = longitude,
                     savedAtEpochMs = savedAtEpochMs,
+                    isUnderground = isUnderground,
+                    level = level?.takeIf { it.isNotBlank() },
+                    spotNumber = spotNumber?.takeIf { it.isNotBlank() },
+                    spotColor = spotColor?.takeIf { it.isNotBlank() },
+                    photoUri = photoUri?.takeIf { it.isNotBlank() },
                 )
             )
         )
