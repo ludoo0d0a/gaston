@@ -95,4 +95,24 @@ class MapsforgeMapManagerTest {
         )
         assertEquals(50, progress.progressPercent)
     }
+
+    @Test
+    fun testFilterPresetsByNameRegionOrStorageKey() {
+        val byName = MapsforgePresetServers.filterPresets("lorraine")
+        assertTrue(byName.any { it.name == "Lorraine" })
+        assertTrue(byName.any { it.name == "Moselle" }) // storageKey Lorraine
+
+        val byRegion = MapsforgePresetServers.filterPresets("europe")
+        assertTrue(byRegion.any { it.name == "Belgium" })
+
+        val byCountryWide = MapsforgePresetServers.filterPresets("France (All)")
+        assertEquals(1, byCountryWide.size)
+        assertEquals("France (All)", byCountryWide.first().name)
+
+        assertTrue(MapsforgePresetServers.filterPresets("zzzz-no-match").isEmpty())
+        assertEquals(
+            MapsforgePresetServers.PRESET_MAPS.size,
+            MapsforgePresetServers.filterPresets("  ").size,
+        )
+    }
 }

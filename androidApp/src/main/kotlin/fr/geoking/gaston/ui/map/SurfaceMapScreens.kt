@@ -799,7 +799,7 @@ fun SurfaceMapsforgeMapScreen(
                                         Button(
                                             onClick = {
                                                 downloadScope.launch {
-                                                    val result = mapManager.downloadMap(recommendedPreset.url, "${recommendedPreset.name}.map")
+                                                    val result = mapManager.downloadMap(recommendedPreset.url, "${recommendedPreset.storageKey}.map")
                                                     if (result.isSuccess) {
                                                         surfaceRendererRef?.reloadMapsforgeDataStore()
                                                     }

@@ -26,12 +26,17 @@ import java.io.File
 fun PmtilesMapDownloadDialog(
     mapManager: PmtilesMapManager,
     onDismiss: () -> Unit,
-    onMapFileChanged: () -> Unit = {}
+    onMapFileChanged: () -> Unit = {},
+    initialQuery: String = "",
 ) {
     val scope = rememberCoroutineScope()
     val installedMaps by mapManager.installedMaps.collectAsState()
     val downloadProgress by mapManager.downloadProgress.collectAsState()
     val activeMap = remember(installedMaps) { mapManager.getActiveMapFile() }
+    var searchQuery by remember { mutableStateOf(initialQuery) }
+    val filteredPresets = remember(searchQuery) {
+        PmtilesPresetServers.filterPresets(searchQuery)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -46,13 +51,21 @@ fun PmtilesMapDownloadDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 400.dp),
+                    .heightIn(max = 480.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text = "Télécharger et gérer les cartes PMTiles par région",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.offline_maps_search_hint)) },
                 )
 
                 val progress = downloadProgress
@@ -140,29 +153,50 @@ fun PmtilesMapDownloadDialog(
                     HorizontalDivider()
                 }
 
-                Text(
-                    text = stringResource(R.string.filter_all),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(
-                        items = PmtilesPresetServers.PRESET_MAPS,
-                        key = { it.storageKey },
-                        contentType = { "pmtiles_preset" },
-                    ) { preset ->
-                        PmtilesPresetDownloadRow(
-                            preset = preset,
-                            installedMaps = installedMaps,
-                            progress = progress,
-                            scope = scope,
-                            mapManager = mapManager,
-                            onMapFileChanged = onMapFileChanged,
-                        )
+                    if (searchQuery.isNotBlank()) {
+                        if (filteredPresets.isEmpty()) {
+                            item {
+                                Text(
+                                    text = stringResource(R.string.offline_maps_search_empty, searchQuery.trim()),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        } else {
+                            items(
+                                items = filteredPresets,
+                                key = { "${it.storageKey}-${it.name}" },
+                                contentType = { "pmtiles_preset" },
+                            ) { preset ->
+                                PmtilesPresetDownloadRow(
+                                    preset = preset,
+                                    installedMaps = installedMaps,
+                                    progress = progress,
+                                    scope = scope,
+                                    mapManager = mapManager,
+                                    onMapFileChanged = onMapFileChanged,
+                                )
+                            }
+                        }
+                    } else {
+                        items(
+                            items = PmtilesPresetServers.PRESET_MAPS,
+                            key = { it.storageKey },
+                            contentType = { "pmtiles_preset" },
+                        ) { preset ->
+                            PmtilesPresetDownloadRow(
+                                preset = preset,
+                                installedMaps = installedMaps,
+                                progress = progress,
+                                scope = scope,
+                                mapManager = mapManager,
+                                onMapFileChanged = onMapFileChanged,
+                            )
+                        }
                     }
                 }
             }

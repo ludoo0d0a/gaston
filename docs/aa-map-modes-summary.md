@@ -16,7 +16,7 @@ For MapLibre EGL / GL migration background, see [`maplibre_android_auto_audit.md
 | **Keep all modes until final tests** | No mode removal while A/B continues |
 | **Custom frozen** | Reference shell — rotation + POIs |
 | **Feature parity** | Other modes aim to match Custom: zoom +/-, stations list, map settings, cheapest filter |
-| **Manual offline only** | Never auto-download map files on AA; user configures paths on phone |
+| **User-initiated offline packs** | AA can suggest + download the GPS region (Mapsforge) via `MapDownloadService` (resume); no silent auto-download. Full catalog + search live on phone Settings |
 | **OpenFreeMap vector** | Preferred fluid look via OpenFreeMap style → PBF |
 
 Phone (`MapEngine`) and AA (`CarMapMode`) settings remain separate.

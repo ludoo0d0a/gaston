@@ -6,18 +6,14 @@ import android.provider.OpenableColumns
 import android.util.Log
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.auto.map.mapsforge.DownloadProgress
+import fr.geoking.gaston.map.download.MapDownloadProgressHub
+import fr.geoking.gaston.map.download.MapDownloadService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import io.ktor.client.HttpClient
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.statement.bodyAsChannel
-import io.ktor.http.HttpHeaders
-import io.ktor.http.contentLength
-import io.ktor.utils.io.readAvailable
 import org.koin.core.context.GlobalContext
 import java.io.BufferedInputStream
 import java.io.File
@@ -151,6 +147,17 @@ object PmtilesPresetServers {
         val matchingAnyMap = PRESET_MAPS.firstOrNull { it.contains(lat, lon) }
         return matchingAnyMap ?: PRESET_MAPS.first { it.name.contains("Île-de-France") }
     }
+
+    /** Filter presets by country / region / display name (Settings search). */
+    fun filterPresets(query: String): List<PmtilesServerMap> {
+        val needle = query.trim()
+        if (needle.isEmpty()) return PRESET_MAPS
+        return PRESET_MAPS.filter { preset ->
+            preset.name.contains(needle, ignoreCase = true) ||
+                preset.region.contains(needle, ignoreCase = true) ||
+                preset.storageKey.contains(needle, ignoreCase = true)
+        }
+    }
 }
 
 class PmtilesMapManager(
@@ -171,8 +178,7 @@ class PmtilesMapManager(
     private val _installedMaps = MutableStateFlow<List<File>>(emptyList())
     val installedMaps: StateFlow<List<File>> = _installedMaps.asStateFlow()
 
-    private val _downloadProgress = MutableStateFlow<DownloadProgress?>(null)
-    val downloadProgress: StateFlow<DownloadProgress?> = _downloadProgress.asStateFlow()
+    val downloadProgress: StateFlow<DownloadProgress?> = MapDownloadProgressHub.progress
 
     init {
         refreshInstalledMaps()
@@ -255,39 +261,19 @@ class PmtilesMapManager(
         val tempDownload = File(pmtilesDir, "$fileName.download")
         val targetFile = File(pmtilesDir, fileName)
 
+        Log.d("PmtilesMapManager", "Starting download from $urlString to ${tempDownload.absolutePath}")
+        val download = MapDownloadService.downloadToTemp(
+            context = context,
+            url = urlString,
+            tempFile = tempDownload,
+            fileName = fileName,
+            userAgent = "GastonAndroid/1.0 (pmtiles-download)",
+        )
+        if (download.isFailure) {
+            return@withContext Result.failure(download.exceptionOrNull() ?: Exception("Download failed"))
+        }
+
         try {
-            Log.d("PmtilesMapManager", "Starting download from $urlString to ${tempDownload.absolutePath}")
-            _downloadProgress.value = DownloadProgress(fileName, 0, -1)
-
-            val response = client.get(urlString) {
-                header(HttpHeaders.UserAgent, "GastonAndroid/1.0 (pmtiles-download)")
-            }
-            val code = response.status.value
-            if (code !in 200..299) {
-                val err = "HTTP Error $code: ${response.status.description}"
-                _downloadProgress.value = DownloadProgress(fileName, 0, -1, error = err)
-                return@withContext Result.failure(Exception(err))
-            }
-
-            val totalBytes = response.contentLength() ?: -1L
-            var bytesDownloaded = 0L
-            val channel = response.bodyAsChannel()
-
-            FileOutputStream(tempDownload).use { output ->
-                val buffer = ByteArray(64 * 1024)
-                while (!channel.isClosedForRead) {
-                    val read = channel.readAvailable(buffer, 0, buffer.size)
-                    if (read <= 0) break
-                    output.write(buffer, 0, read)
-                    bytesDownloaded += read
-                    _downloadProgress.value = DownloadProgress(
-                        fileName = fileName,
-                        bytesDownloaded = bytesDownloaded,
-                        totalBytes = totalBytes
-                    )
-                }
-            }
-
             val isZip = urlString.substringBefore('?').endsWith(".zip", ignoreCase = true) ||
                 looksLikeZip(tempDownload)
             if (isZip) {
@@ -304,15 +290,17 @@ class PmtilesMapManager(
             if (!targetFile.isFile || targetFile.length() == 0L) {
                 targetFile.delete()
                 val err = "Downloaded file is missing or empty"
-                _downloadProgress.value = DownloadProgress(fileName, 0, -1, error = err)
+                MapDownloadProgressHub.publish(DownloadProgress(fileName, 0, -1, error = err))
                 return@withContext Result.failure(Exception(err))
             }
 
-            _downloadProgress.value = DownloadProgress(
-                fileName = fileName,
-                bytesDownloaded = targetFile.length(),
-                totalBytes = targetFile.length(),
-                isComplete = true
+            MapDownloadProgressHub.publish(
+                DownloadProgress(
+                    fileName = fileName,
+                    bytesDownloaded = targetFile.length(),
+                    totalBytes = targetFile.length(),
+                    isComplete = true,
+                )
             )
 
             refreshInstalledMaps()
@@ -320,14 +308,11 @@ class PmtilesMapManager(
             Log.d("PmtilesMapManager", "Download complete: ${targetFile.absolutePath}")
             Result.success(targetFile)
         } catch (e: Exception) {
-            Log.e("PmtilesMapManager", "Download pmtiles map failed", e)
-            tempDownload.delete()
+            Log.e("PmtilesMapManager", "Download pmtiles finalize failed", e)
+            // Keep tempDownload for resume; only drop empty target.
             if (targetFile.exists() && targetFile.length() == 0L) targetFile.delete()
-            _downloadProgress.value = DownloadProgress(
-                fileName = fileName,
-                bytesDownloaded = 0,
-                totalBytes = -1,
-                error = e.message ?: "Download failed"
+            MapDownloadProgressHub.publish(
+                DownloadProgress(fileName, 0, -1, error = e.message ?: "Download failed")
             )
             Result.failure(e)
         }

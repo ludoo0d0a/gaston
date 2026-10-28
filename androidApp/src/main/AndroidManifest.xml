@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Offline map packs (Mapsforge / PMTiles): user-initiated download with resume. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Android Auto: required for POI category (Play validation) -->
     <uses-permission android:name="androidx.car.app.MAP_TEMPLATES" />
@@ -66,6 +69,12 @@
                 <category android:name="androidx.car.app.category.POI"/>
             </intent-filter>
         </service>
+
+        <!-- Offline map download (survives Activity / AA screen teardown; HTTP Range resume). -->
+        <service
+            android:name=".map.download.MapDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <receiver
             android:name=".parked.ParkedCarActionReceiver"

@@ -231,6 +231,14 @@ class MapsforgePoiScreen(
                     invalidate()
                 }
         }
+        lifecycleScope.launch {
+            mapManager.downloadProgress.collectLatest { progress ->
+                if (progress?.isComplete == true && progress.error == null) {
+                    surfaceRenderer?.reloadMapsforgeDataStore()
+                }
+                invalidate()
+            }
+        }
     }
 
     private companion object {
@@ -1007,13 +1015,65 @@ class MapsforgePoiScreen(
 
             val activeMap = mapManager.getActiveMapFile()
             if (activeMap == null) {
+                val (lat, lon) = searchCenterFlow.value
+                val recommended = MapsforgePresetServers.getRecommendedPreset(lat, lon)
+                val progress = mapManager.downloadProgress.value
+                val downloading = progress != null && !progress.isComplete && progress.error == null
+
+                if (downloading) {
+                    val p = progress!!
+                    itemListBuilder.addItem(
+                        Row.Builder()
+                            .setTitle(carContext.getString(R.string.mapsforge_downloading, p.fileName))
+                            .addText("${p.progressPercent}% (${p.bytesDownloaded / (1024 * 1024)} MB)")
+                            .build()
+                    )
+                } else {
+                    itemListBuilder.addItem(
+                        Row.Builder()
+                            .setTitle(
+                                carContext.getString(
+                                    R.string.mapsforge_download_region,
+                                    recommended.name,
+                                )
+                            )
+                            .addText(
+                                carContext.getString(
+                                    R.string.mapsforge_suggest_download_region,
+                                    recommended.name,
+                                    recommended.sizeEstimateMb,
+                                )
+                            )
+                            .setOnClickListener {
+                                lifecycleScope.launch {
+                                    val result = mapManager.downloadMap(
+                                        recommended.url,
+                                        "${recommended.storageKey}.map",
+                                    )
+                                    if (result.isSuccess) {
+                                        surfaceRenderer?.reloadMapsforgeDataStore()
+                                    }
+                                    invalidate()
+                                }
+                            }
+                            .build()
+                    )
+                }
+
                 itemListBuilder.addItem(
                     Row.Builder()
-                        .setTitle(carContext.getString(R.string.mapsforge_active_map) + ": " + carContext.getString(R.string.network_none))
+                        .setTitle(carContext.getString(R.string.offline_maps_manage))
                         .addText(carContext.getString(R.string.mapsforge_offline_maps_subtitle))
                         .setBrowsable(true)
                         .setOnClickListener {
-                            screenManager.push(AutoMapsforgeMapManagementScreen(carContext, mapManager))
+                            screenManager.push(
+                                AutoMapsforgeMapManagementScreen(
+                                    carContext = carContext,
+                                    mapManager = mapManager,
+                                    recommendLat = lat,
+                                    recommendLon = lon,
+                                )
+                            )
                         }
                         .build()
                 )

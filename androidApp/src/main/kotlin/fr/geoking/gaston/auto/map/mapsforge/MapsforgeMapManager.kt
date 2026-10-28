@@ -11,11 +11,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import org.mapsforge.map.datastore.MapDataStore
 import org.mapsforge.map.reader.MapFile
+import fr.geoking.gaston.map.download.MapDownloadProgressHub
+import fr.geoking.gaston.map.download.MapDownloadService
 import io.ktor.client.HttpClient
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsChannel
-import io.ktor.http.contentLength
-import io.ktor.utils.io.readAvailable
 import org.koin.core.context.GlobalContext
 import java.io.File
 import java.io.FileOutputStream
@@ -158,6 +156,17 @@ object MapsforgePresetServers {
 
         return PRESET_MAPS.firstOrNull { it.contains(lat, lon) } ?: default
     }
+
+    /** Filter presets by country / region / display name (Settings search). */
+    fun filterPresets(query: String): List<MapsforgeServerMap> {
+        val needle = query.trim()
+        if (needle.isEmpty()) return PRESET_MAPS
+        return PRESET_MAPS.filter { preset ->
+            preset.name.contains(needle, ignoreCase = true) ||
+                preset.region.contains(needle, ignoreCase = true) ||
+                preset.storageKey.contains(needle, ignoreCase = true)
+        }
+    }
 }
 
 class MapsforgeMapManager(
@@ -184,8 +193,7 @@ class MapsforgeMapManager(
     private val _installedMaps = MutableStateFlow<List<File>>(emptyList())
     val installedMaps: StateFlow<List<File>> = _installedMaps.asStateFlow()
 
-    private val _downloadProgress = MutableStateFlow<DownloadProgress?>(null)
-    val downloadProgress: StateFlow<DownloadProgress?> = _downloadProgress.asStateFlow()
+    val downloadProgress: StateFlow<DownloadProgress?> = MapDownloadProgressHub.progress
 
     init {
         refreshInstalledMaps()
@@ -267,67 +275,46 @@ class MapsforgeMapManager(
         urlString: String,
         customFileName: String? = null
     ): Result<File> = withContext(Dispatchers.IO) {
-        try {
-            val rawFileName = customFileName
-                ?: urlString.substringAfterLast('/').substringBefore('?')
+        val rawFileName = customFileName
+            ?: urlString.substringAfterLast('/').substringBefore('?')
                 .ifBlank { "downloaded_map.map" }
-            val fileName = if (rawFileName.endsWith(".map", ignoreCase = true)) rawFileName else "$rawFileName.map"
-            val tempFile = File(mapsDir, "$fileName.tmp")
-            val targetFile = File(mapsDir, fileName)
+        val fileName = if (rawFileName.endsWith(".map", ignoreCase = true)) rawFileName else "$rawFileName.map"
+        val tempFile = File(mapsDir, "$fileName.tmp")
+        val targetFile = File(mapsDir, fileName)
 
-            Log.d("MapsforgeMapManager", "Starting download from $urlString to ${tempFile.absolutePath}")
-            _downloadProgress.value = DownloadProgress(fileName, 0, -1)
+        Log.d("MapsforgeMapManager", "Starting download from $urlString to ${tempFile.absolutePath}")
+        val download = MapDownloadService.downloadToTemp(
+            context = context,
+            url = urlString,
+            tempFile = tempFile,
+            fileName = fileName,
+        )
+        if (download.isFailure) {
+            return@withContext Result.failure(download.exceptionOrNull() ?: Exception("Download failed"))
+        }
 
-            val response = client.get(urlString)
-            val code = response.status.value
-            if (code !in 200..299) {
-                val err = "HTTP Error $code: ${response.status.description}"
-                _downloadProgress.value = DownloadProgress(fileName, 0, -1, error = err)
-                return@withContext Result.failure(Exception(err))
+        try {
+            if (targetFile.exists()) targetFile.delete()
+            if (!tempFile.renameTo(targetFile)) {
+                tempFile.copyTo(targetFile, overwrite = true)
+                tempFile.delete()
             }
-
-            val totalBytes = response.contentLength() ?: -1L
-            var bytesDownloaded = 0L
-            val channel = response.bodyAsChannel()
-
-            FileOutputStream(tempFile).use { output ->
-                val buffer = ByteArray(64 * 1024)
-                while (!channel.isClosedForRead) {
-                    val read = channel.readAvailable(buffer, 0, buffer.size)
-                    if (read <= 0) break
-                    output.write(buffer, 0, read)
-                    bytesDownloaded += read
-                    _downloadProgress.value = DownloadProgress(
-                        fileName = fileName,
-                        bytesDownloaded = bytesDownloaded,
-                        totalBytes = totalBytes
-                    )
-                }
-            }
-
-            if (tempFile.exists()) {
-                if (targetFile.exists()) targetFile.delete()
-                tempFile.renameTo(targetFile)
-            }
-
-            _downloadProgress.value = DownloadProgress(
-                fileName = fileName,
-                bytesDownloaded = bytesDownloaded,
-                totalBytes = totalBytes,
-                isComplete = true
-            )
-
             refreshInstalledMaps()
             setActiveMapFile(targetFile)
+            MapDownloadProgressHub.publish(
+                DownloadProgress(
+                    fileName = fileName,
+                    bytesDownloaded = targetFile.length(),
+                    totalBytes = targetFile.length(),
+                    isComplete = true,
+                )
+            )
             Log.d("MapsforgeMapManager", "Download complete: ${targetFile.absolutePath}")
             Result.success(targetFile)
         } catch (e: Exception) {
-            Log.e("MapsforgeMapManager", "Download map failed", e)
-            _downloadProgress.value = DownloadProgress(
-                fileName = customFileName ?: "map.map",
-                bytesDownloaded = 0,
-                totalBytes = -1,
-                error = e.message ?: "Download failed"
+            Log.e("MapsforgeMapManager", "Download map finalize failed", e)
+            MapDownloadProgressHub.publish(
+                DownloadProgress(fileName, 0, -1, error = e.message ?: "Download failed")
             )
             Result.failure(e)
         }

@@ -1082,6 +1082,12 @@
     <string name="offline_maps_by_region_subtitle">Download maps for your usual regions for offline navigation, both on the phone and in Android Auto</string>
     <string name="offline_maps_storage_used">Storage used: %1$s</string>
     <string name="offline_maps_other_regions">Other regions…</string>
+    <string name="offline_maps_search_hint">Search country, region, or name</string>
+    <string name="offline_maps_search_empty">No region matches \"%1$s\"</string>
+    <string name="offline_maps_manage">Manage offline maps</string>
+    <string name="map_download_notification_title">Offline map download</string>
+    <string name="map_download_notification_channel">Map downloads</string>
+    <string name="map_download_notification_channel_desc">Progress while downloading offline map files</string>
     <string name="action_legend">Legend</string>
     <string name="screen_map_legend">Map Legend</string>
     <string name="legend_available">Available</string>

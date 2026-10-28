@@ -20,7 +20,9 @@ import java.io.File
 
 class AutoMapsforgeMapManagementScreen(
     carContext: CarContext,
-    private val mapManager: MapsforgeMapManager
+    private val mapManager: MapsforgeMapManager,
+    private val recommendLat: Double? = null,
+    private val recommendLon: Double? = null,
 ) : Screen(carContext) {
 
     private var installedMaps: List<File> = mapManager.installedMaps.value
@@ -89,63 +91,54 @@ class AutoMapsforgeMapManagementScreen(
             )
         }
 
-        // Prefer France regions in the capped AA list; full catalog is on phone Settings.
-        val presetsForAa = MapsforgePresetServers.FRANCE_REGION_MAPS +
-            MapsforgePresetServers.NEIGHBOR_MAPS +
-            listOf(MapsforgePresetServers.FRANCE_ALL)
+        val recommended = MapsforgePresetServers.getRecommendedPreset(recommendLat, recommendLon)
+        val catalog = buildList {
+            add(recommended)
+            for (preset in MapsforgePresetServers.FRANCE_REGION_MAPS +
+                MapsforgePresetServers.NEIGHBOR_MAPS +
+                listOf(MapsforgePresetServers.FRANCE_ALL)
+            ) {
+                if (preset.storageKey != recommended.storageKey || preset.name != recommended.name) {
+                    add(preset)
+                }
+            }
+        }
 
-        for (preset in presetsForAa) {
+        for (preset in catalog) {
             if (!canAdd()) break
             val isInstalled = installedMaps.any {
-                it.name == preset.name ||
-                    it.name == "${preset.name}.map" ||
-                    it.name.contains(preset.name, ignoreCase = true)
+                it.name.equals(preset.storageKey, ignoreCase = true) ||
+                    it.name.equals("${preset.storageKey}.map", ignoreCase = true) ||
+                    it.name.contains(preset.storageKey, ignoreCase = true)
             }
-            val subtitle = if (isInstalled) {
+            val isRecommended = preset.storageKey == recommended.storageKey &&
+                preset.name == recommended.name
+            val status = if (isInstalled) {
                 carContext.getString(R.string.mapsforge_installed, preset.sizeEstimateMb)
             } else {
                 carContext.getString(R.string.mapsforge_available, preset.sizeEstimateMb)
             }
+            val subtitle = if (isRecommended) {
+                carContext.getString(
+                    R.string.mapsforge_suggest_download_region,
+                    preset.name,
+                    preset.sizeEstimateMb,
+                )
+            } else {
+                "${preset.region} · $status"
+            }
 
             addRow(
                 Row.Builder()
-                    .setTitle(preset.name)
-                    .addText("${preset.region} · $subtitle")
-                    .setOnClickListener {
-                        if (progress != null && !progress.isComplete && progress.error == null) {
-                            try {
-                                carContext.getCarService(AppManager::class.java)
-                                    .showToast(
-                                        carContext.getString(R.string.mapsforge_download_in_progress),
-                                        CarToast.LENGTH_SHORT,
-                                    )
-                            } catch (_: Exception) {
-                            }
-                            return@setOnClickListener
+                    .setTitle(
+                        if (isRecommended) {
+                            carContext.getString(R.string.mapsforge_download_region, preset.name)
+                        } else {
+                            preset.name
                         }
-                        lifecycleScope.launch {
-                            try {
-                                carContext.getCarService(AppManager::class.java)
-                                    .showToast(
-                                        carContext.getString(R.string.mapsforge_starting_download, preset.name),
-                                        CarToast.LENGTH_SHORT,
-                                    )
-                            } catch (_: Exception) {
-                            }
-                            val result = mapManager.downloadMap(preset.url, "${preset.name}.map")
-                            if (result.isSuccess) {
-                                try {
-                                    carContext.getCarService(AppManager::class.java)
-                                        .showToast(
-                                            carContext.getString(R.string.mapsforge_download_success, preset.name),
-                                            CarToast.LENGTH_SHORT,
-                                        )
-                                } catch (_: Exception) {
-                                }
-                            }
-                            invalidate()
-                        }
-                    }
+                    )
+                    .addText(subtitle.take(500))
+                    .setOnClickListener { startDownload(preset, progress) }
                     .build()
             )
         }
@@ -159,5 +152,41 @@ class AutoMapsforgeMapManagementScreen(
                     .build()
             )
             .build()
+    }
+
+    private fun startDownload(preset: MapsforgeServerMap, progress: DownloadProgress?) {
+        if (progress != null && !progress.isComplete && progress.error == null) {
+            try {
+                carContext.getCarService(AppManager::class.java)
+                    .showToast(
+                        carContext.getString(R.string.mapsforge_download_in_progress),
+                        CarToast.LENGTH_SHORT,
+                    )
+            } catch (_: Exception) {
+            }
+            return
+        }
+        lifecycleScope.launch {
+            try {
+                carContext.getCarService(AppManager::class.java)
+                    .showToast(
+                        carContext.getString(R.string.mapsforge_starting_download, preset.name),
+                        CarToast.LENGTH_SHORT,
+                    )
+            } catch (_: Exception) {
+            }
+            val result = mapManager.downloadMap(preset.url, "${preset.storageKey}.map")
+            if (result.isSuccess) {
+                try {
+                    carContext.getCarService(AppManager::class.java)
+                        .showToast(
+                            carContext.getString(R.string.mapsforge_download_success, preset.name),
+                            CarToast.LENGTH_SHORT,
+                        )
+                } catch (_: Exception) {
+                }
+            }
+            invalidate()
+        }
     }
 }

@@ -423,6 +423,7 @@ private fun MapConfig(
                 val downloadProgress by mapManager.downloadProgress.collectAsState()
                 val scope = rememberCoroutineScope()
                 var showDownloadDialog by remember { mutableStateOf(false) }
+                var mapsforgeSearch by remember { mutableStateOf("") }
                 val activeMap = remember(installedMaps, settings.offlineMapsforgePath) {
                     settings.offlineMapsforgePath?.let { File(it) }?.takeIf { it.exists() }
                         ?: mapManager.getActiveMapFile()
@@ -431,6 +432,13 @@ private fun MapConfig(
                 val onMapsforgeChanged: () -> Unit = {
                     val newActive = mapManager.getActiveMapFile()
                     onUpdate(settings.copy(offlineMapsforgePath = newActive?.absolutePath))
+                }
+                val mapsforgeRows = remember(mapsforgeSearch) {
+                    if (mapsforgeSearch.isBlank()) {
+                        MapsforgePresetServers.PRIORITY_REGIONS
+                    } else {
+                        MapsforgePresetServers.filterPresets(mapsforgeSearch)
+                    }
                 }
 
                 Card(
@@ -460,15 +468,31 @@ private fun MapConfig(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        MapsforgePresetServers.PRIORITY_REGIONS.forEach { preset ->
-                            fr.geoking.gaston.ui.map.MapsforgePresetDownloadRow(
-                                preset = preset,
-                                installedMaps = installedMaps,
-                                progress = downloadProgress,
-                                scope = scope,
-                                mapManager = mapManager,
-                                onMapFileChanged = onMapsforgeChanged,
+                        OutlinedTextField(
+                            value = mapsforgeSearch,
+                            onValueChange = { mapsforgeSearch = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text(stringResource(R.string.offline_maps_search_hint)) },
+                        )
+
+                        if (mapsforgeSearch.isNotBlank() && mapsforgeRows.isEmpty()) {
+                            Text(
+                                stringResource(R.string.offline_maps_search_empty, mapsforgeSearch.trim()),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                        } else {
+                            mapsforgeRows.forEach { preset ->
+                                fr.geoking.gaston.ui.map.MapsforgePresetDownloadRow(
+                                    preset = preset,
+                                    installedMaps = installedMaps,
+                                    progress = downloadProgress,
+                                    scope = scope,
+                                    mapManager = mapManager,
+                                    onMapFileChanged = onMapsforgeChanged,
+                                )
+                            }
                         }
 
                         Button(
@@ -485,6 +509,7 @@ private fun MapConfig(
                         mapManager = mapManager,
                         onDismiss = { showDownloadDialog = false },
                         onMapFileChanged = onMapsforgeChanged,
+                        initialQuery = mapsforgeSearch,
                     )
                 }
             }
@@ -501,6 +526,7 @@ private fun MapConfig(
                 val downloadProgress by pmtilesManager.downloadProgress.collectAsState()
                 val scope = rememberCoroutineScope()
                 var showPmtilesDownloadDialog by remember { mutableStateOf(false) }
+                var pmtilesSearch by remember { mutableStateOf("") }
                 val activeMap = remember(installedMaps, settings.offlinePmtilesPath) {
                     settings.offlinePmtilesPath?.let { File(it) }?.takeIf { it.exists() } ?: pmtilesManager.getActiveMapFile()
                 }
@@ -508,6 +534,13 @@ private fun MapConfig(
                 val onPmtilesChanged: () -> Unit = {
                     val newActive = pmtilesManager.getActiveMapFile()
                     onUpdate(settings.copy(offlinePmtilesPath = newActive?.absolutePath))
+                }
+                val pmtilesRows = remember(pmtilesSearch) {
+                    if (pmtilesSearch.isBlank()) {
+                        PmtilesPresetServers.PRIORITY_REGIONS
+                    } else {
+                        PmtilesPresetServers.filterPresets(pmtilesSearch)
+                    }
                 }
 
                 Card(
@@ -536,15 +569,31 @@ private fun MapConfig(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        PmtilesPresetServers.PRIORITY_REGIONS.forEach { preset ->
-                            fr.geoking.gaston.ui.map.PmtilesPresetDownloadRow(
-                                preset = preset,
-                                installedMaps = installedMaps,
-                                progress = downloadProgress,
-                                scope = scope,
-                                mapManager = pmtilesManager,
-                                onMapFileChanged = onPmtilesChanged,
+                        OutlinedTextField(
+                            value = pmtilesSearch,
+                            onValueChange = { pmtilesSearch = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text(stringResource(R.string.offline_maps_search_hint)) },
+                        )
+
+                        if (pmtilesSearch.isNotBlank() && pmtilesRows.isEmpty()) {
+                            Text(
+                                stringResource(R.string.offline_maps_search_empty, pmtilesSearch.trim()),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                        } else {
+                            pmtilesRows.forEach { preset ->
+                                fr.geoking.gaston.ui.map.PmtilesPresetDownloadRow(
+                                    preset = preset,
+                                    installedMaps = installedMaps,
+                                    progress = downloadProgress,
+                                    scope = scope,
+                                    mapManager = pmtilesManager,
+                                    onMapFileChanged = onPmtilesChanged,
+                                )
+                            }
                         }
 
                         Button(
@@ -561,6 +610,7 @@ private fun MapConfig(
                         mapManager = pmtilesManager,
                         onDismiss = { showPmtilesDownloadDialog = false },
                         onMapFileChanged = onPmtilesChanged,
+                        initialQuery = pmtilesSearch,
                     )
                 }
             }
