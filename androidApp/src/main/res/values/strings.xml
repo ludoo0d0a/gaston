@@ -1136,4 +1136,6 @@
     <string name="parked_car_candidate_detected">Stop detected — parking spot retained</string>
     <string name="parked_car_candidate_ignored">Parking suggestion dismissed</string>
     <string name="parked_car_map_section">Location on map</string>
+    <string name="settings_auto_park_on_aa_disconnect_title">Auto-memorize parking on Android Auto disconnect</string>
+    <string name="settings_auto_park_on_aa_disconnect_desc">Save vehicle location when disconnecting Android Auto even if Gaston was not opened on screen.</string>
 </resources>

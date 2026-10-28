@@ -85,6 +85,10 @@ class AaPostSessionParkSuggester(
         if (sessionElapsed < minSessionMs) return
 
         val settings = settingsManager.settings.value
+        if (!settings.autoParkOnAaDisconnectEnabled) {
+            Log.d(TAG, "Post-session skipped: autoParkOnAaDisconnectEnabled is false")
+            return
+        }
         val activeId = activeVehicleId(settings)
         if (shouldSkipSuggestion(activeId, recentlySavedParkMs)) {
             Log.d(TAG, "Post-session skipped: park already retained/suggested/saved")

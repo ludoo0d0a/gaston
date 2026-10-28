@@ -233,6 +233,8 @@ data class AppSettings(
      * Loop also requires [BuildConfig.AAC_ALERTS_AVAILABLE] and is killed by
      * [BuildConfig.AAC_ALERTS_KILL_SWITCH]. Default off: no warning until opted in.
      */
+    /** Automatically suggest/save parked vehicle position when Android Auto or car projection disconnects. */
+    val autoParkOnAaDisconnectEnabled: Boolean = true,
     val radarWarningEnabled: Boolean = false,
     val radarWarningDistanceMeters: Int = 1000,
     val routeStationSearchRadiusMeters: Int = 2000,
@@ -491,6 +493,7 @@ open class SettingsManager(
             debugBarEnabled = prefs.getBoolean("debug_bar_enabled", false),
             networkFloatingBarEnabled = prefs.getBoolean("network_floating_bar_enabled", false),
             testAaMapSurfaceEnabled = prefs.getBoolean("test_aa_map_surface_enabled", false),
+            autoParkOnAaDisconnectEnabled = prefs.getBoolean("auto_park_on_aa_disconnect_enabled", true),
             radarWarningEnabled = prefs.getBoolean("radar_warning_enabled", false),
             radarWarningDistanceMeters = prefs.getInt("radar_warning_distance_m", 1000),
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
@@ -601,6 +604,7 @@ open class SettingsManager(
             .putBoolean("debug_bar_enabled", sanitized.debugBarEnabled)
             .putBoolean("network_floating_bar_enabled", sanitized.networkFloatingBarEnabled)
             .putBoolean("test_aa_map_surface_enabled", sanitized.testAaMapSurfaceEnabled)
+            .putBoolean("auto_park_on_aa_disconnect_enabled", sanitized.autoParkOnAaDisconnectEnabled)
             .putBoolean("radar_warning_enabled", sanitized.radarWarningEnabled)
             .putInt("radar_warning_distance_m", sanitized.radarWarningDistanceMeters)
             .putInt("route_station_radius_m", sanitized.routeStationSearchRadiusMeters)
@@ -948,6 +952,10 @@ open class SettingsManager(
 
     open fun setFilterOnlyHighwayStations(enabled: Boolean) {
         saveSettings(_settings.value.copy(filterOnlyHighwayStations = enabled))
+    }
+
+    open fun setAutoParkOnAaDisconnectEnabled(enabled: Boolean) {
+        saveSettings(_settings.value.copy(autoParkOnAaDisconnectEnabled = enabled))
     }
 
     open fun setRadarWarningEnabled(enabled: Boolean) {
