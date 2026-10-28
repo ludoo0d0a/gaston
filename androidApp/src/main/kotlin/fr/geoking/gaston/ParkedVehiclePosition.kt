@@ -15,6 +15,11 @@ data class ParkedVehiclePosition(
     val longitude: Double,
     /** Wall-clock time when the pin was saved (epoch ms). */
     val savedAtEpochMs: Long,
+    val isUnderground: Boolean = false,
+    val level: String? = null,
+    val spotNumber: String? = null,
+    val spotColor: String? = null,
+    val photoUri: String? = null,
 ) {
     /** Locale-aware date + time for UI (phone + Android Auto). */
     fun formattedTimestamp(

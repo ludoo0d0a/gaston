@@ -35,4 +35,26 @@ class ParkedVehiclePositionTest {
         assertEquals("v2", settings.latestParkedPosition()!!.vehicleId)
         assertEquals(300L, settings.latestParkedPosition()!!.savedAtEpochMs)
     }
+
+    @Test
+    fun preservesUndergroundDetails() {
+        val pos = ParkedVehiclePosition(
+            vehicleId = "v1",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            savedAtEpochMs = 1000L,
+            isUnderground = true,
+            level = "-2",
+            spotNumber = "142",
+            spotColor = "Bleu",
+            photoUri = "content://media/external/images/media/123",
+        )
+        val settings = AppSettings().upsertParkedPosition(pos)
+        val saved = settings.parkedPositionFor("v1")!!
+        assertEquals(true, saved.isUnderground)
+        assertEquals("-2", saved.level)
+        assertEquals("142", saved.spotNumber)
+        assertEquals("Bleu", saved.spotColor)
+        assertEquals("content://media/external/images/media/123", saved.photoUri)
+    }
 }
