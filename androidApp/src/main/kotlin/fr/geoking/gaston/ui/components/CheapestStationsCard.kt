@@ -40,6 +40,8 @@ import fr.geoking.gaston.ui.ColorHelper
 import fr.geoking.gaston.poi.MapPoiFilter
 import kotlin.math.roundToInt
 
+private const val MAX_DISPLAYED_STATIONS = 5
+
 @Composable
 fun CheapestStationsCard(
     stations: List<Poi>,
@@ -102,7 +104,7 @@ fun CheapestStationsCard(
 
             if (stations.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    stations.take(5).forEach { poi ->
+                    stations.take(MAX_DISPLAYED_STATIONS).forEach { poi ->
                         val isCheapest = CheapestStationHighlight.isCheapestFuelStation(
                             poi = poi,
                             minPrice = minPrice,
@@ -123,7 +125,7 @@ fun CheapestStationsCard(
                         }
                     }
 
-                    if (stations.size > 5) {
+                    if (stations.size > MAX_DISPLAYED_STATIONS) {
                         TextButton(
                             onClick = onMapClick,
                             modifier = Modifier
