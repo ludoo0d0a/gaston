@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui.map
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +19,8 @@ import fr.geoking.gaston.auto.map.mapsforge.DownloadProgress
 import fr.geoking.gaston.auto.map.pmtiles.PmtilesMapManager
 import fr.geoking.gaston.auto.map.pmtiles.PmtilesPresetServers
 import fr.geoking.gaston.auto.map.pmtiles.PmtilesServerMap
+import fr.geoking.gaston.ui.map.preview.MapRegionPreviewMap
+import fr.geoking.gaston.ui.map.preview.toRegionItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.File
@@ -34,9 +37,12 @@ fun PmtilesMapDownloadDialog(
     val downloadProgress by mapManager.downloadProgress.collectAsState()
     val activeMap = remember(installedMaps) { mapManager.getActiveMapFile() }
     var searchQuery by remember { mutableStateOf(initialQuery) }
+    var selectedRegionKey by remember { mutableStateOf<String?>(null) }
     val filteredPresets = remember(searchQuery) {
         PmtilesPresetServers.filterPresets(searchQuery)
     }
+    val allPresets = remember { PmtilesPresetServers.PRESET_MAPS }
+    val regionItems = remember(allPresets) { allPresets.map { it.toRegionItem() } }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -51,13 +57,24 @@ fun PmtilesMapDownloadDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 480.dp),
+                    .heightIn(max = 520.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text = "Télécharger et gérer les cartes PMTiles par région",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                MapRegionPreviewMap(
+                    regions = regionItems,
+                    selectedRegionKey = selectedRegionKey,
+                    onRegionSelected = { selected ->
+                        selectedRegionKey = selected.key
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
                 )
 
                 OutlinedTextField(
@@ -169,12 +186,14 @@ fun PmtilesMapDownloadDialog(
                         } else {
                             items(
                                 items = filteredPresets,
-                                key = { "${it.storageKey}-${it.name}" },
+                                key = { it.storageKey },
                                 contentType = { "pmtiles_preset" },
                             ) { preset ->
                                 PmtilesPresetDownloadRow(
                                     preset = preset,
                                     installedMaps = installedMaps,
+                                    isSelected = selectedRegionKey == preset.storageKey,
+                                    onSelectRegion = { selectedRegionKey = preset.storageKey },
                                     progress = progress,
                                     scope = scope,
                                     mapManager = mapManager,
@@ -191,6 +210,8 @@ fun PmtilesMapDownloadDialog(
                             PmtilesPresetDownloadRow(
                                 preset = preset,
                                 installedMaps = installedMaps,
+                                isSelected = selectedRegionKey == preset.storageKey,
+                                onSelectRegion = { selectedRegionKey = preset.storageKey },
                                 progress = progress,
                                 scope = scope,
                                 mapManager = mapManager,
@@ -213,19 +234,67 @@ fun PmtilesMapDownloadDialog(
 internal fun PmtilesPresetDownloadRow(
     preset: PmtilesServerMap,
     installedMaps: List<File>,
+    isSelected: Boolean = false,
+    onSelectRegion: () -> Unit = {},
     progress: DownloadProgress?,
     scope: CoroutineScope,
     mapManager: PmtilesMapManager,
     onMapFileChanged: () -> Unit,
 ) {
+    var showWarningDialog by remember { mutableStateOf(false) }
+
     val isInstalled = installedMaps.any {
         it.name.equals(preset.storageKey, ignoreCase = true) ||
             it.name.equals("${preset.storageKey}.pmtiles", ignoreCase = true) ||
             it.name.contains(preset.storageKey, ignoreCase = true)
     }
+
+    if (showWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showWarningDialog = false },
+            title = { Text(stringResource(R.string.map_download_warning_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.map_download_warning_message,
+                        preset.name,
+                        preset.sizeEstimateMb
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showWarningDialog = false
+                        scope.launch {
+                            val res = mapManager.downloadMap(preset.url, "${preset.storageKey}.pmtiles")
+                            if (res.isSuccess) {
+                                onMapFileChanged()
+                            }
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.action_download))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWarningDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
     OutlinedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelectRegion() },
+        shape = RoundedCornerShape(8.dp),
+        border = if (isSelected) {
+            androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else {
+            CardDefaults.outlinedCardBorder()
+        }
     ) {
         Row(
             modifier = Modifier
@@ -251,14 +320,7 @@ internal fun PmtilesPresetDownloadRow(
                 )
             }
             Button(
-                onClick = {
-                    scope.launch {
-                        val res = mapManager.downloadMap(preset.url, "${preset.storageKey}.pmtiles")
-                        if (res.isSuccess) {
-                            onMapFileChanged()
-                        }
-                    }
-                },
+                onClick = { showWarningDialog = true },
                 enabled = progress == null || progress.isComplete || progress.error != null
             ) {
                 Text(if (isInstalled) stringResource(R.string.action_refresh) else stringResource(R.string.action_download))

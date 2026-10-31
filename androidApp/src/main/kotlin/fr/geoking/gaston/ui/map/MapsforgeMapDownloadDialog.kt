@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui.map
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,9 +19,10 @@ import fr.geoking.gaston.auto.map.mapsforge.DownloadProgress
 import fr.geoking.gaston.auto.map.mapsforge.MapsforgeMapManager
 import fr.geoking.gaston.auto.map.mapsforge.MapsforgePresetServers
 import fr.geoking.gaston.auto.map.mapsforge.MapsforgeServerMap
+import fr.geoking.gaston.ui.map.preview.MapRegionPreviewMap
+import fr.geoking.gaston.ui.map.preview.toRegionItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import java.io.File
 
 @Composable
 fun MapsforgeMapDownloadDialog(
@@ -34,9 +36,12 @@ fun MapsforgeMapDownloadDialog(
     val downloadProgress by mapManager.downloadProgress.collectAsState()
     val activeMap = remember(installedMaps) { mapManager.getActiveMapFile() }
     var searchQuery by remember { mutableStateOf(initialQuery) }
+    var selectedRegionKey by remember { mutableStateOf<String?>(null) }
     val filteredPresets = remember(searchQuery) {
         MapsforgePresetServers.filterPresets(searchQuery)
     }
+    val allPresets = remember { MapsforgePresetServers.PRESET_MAPS }
+    val regionItems = remember(allPresets) { allPresets.map { it.toRegionItem() } }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -51,13 +56,24 @@ fun MapsforgeMapDownloadDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 480.dp),
+                    .heightIn(max = 520.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text = stringResource(R.string.mapsforge_offline_maps_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                MapRegionPreviewMap(
+                    regions = regionItems,
+                    selectedRegionKey = selectedRegionKey,
+                    onRegionSelected = { selected ->
+                        selectedRegionKey = selected.key
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
                 )
 
                 OutlinedTextField(
@@ -98,7 +114,7 @@ fun MapsforgeMapDownloadDialog(
                     }
                 } else if (progress?.error != null) {
                     Text(
-                        text = "${stringResource(R.string.mapsforge_download_error)}: ${progress.error}",
+                        text = stringResource(R.string.mapsforge_download_error) + ": ${progress.error}",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -111,29 +127,24 @@ fun MapsforgeMapDownloadDialog(
                         fontWeight = FontWeight.Bold
                     )
                     installedMaps.forEach { file ->
-                        val isActive = activeMap?.name == file.name
+                        val isActive = activeMap?.absolutePath == file.absolutePath
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 RadioButton(
                                     selected = isActive,
                                     onClick = {
                                         mapManager.setActiveMapFile(file)
-                                        mapManager.refreshInstalledMaps()
                                         onMapFileChanged()
                                     }
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = file.name,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
+                                    modifier = Modifier.padding(start = 4.dp)
                                 )
                             }
                             IconButton(
@@ -144,7 +155,7 @@ fun MapsforgeMapDownloadDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = stringResource(R.string.settings_clear_logs),
+                                    contentDescription = stringResource(R.string.action_remove),
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -174,6 +185,8 @@ fun MapsforgeMapDownloadDialog(
                             ) { preset ->
                                 MapsforgePresetDownloadRow(
                                     preset = preset,
+                                    isSelected = selectedRegionKey == preset.storageKey,
+                                    onSelectRegion = { selectedRegionKey = preset.storageKey },
                                     progress = progress,
                                     scope = scope,
                                     mapManager = mapManager,
@@ -196,6 +209,8 @@ fun MapsforgeMapDownloadDialog(
                         ) { preset ->
                             MapsforgePresetDownloadRow(
                                 preset = preset,
+                                isSelected = selectedRegionKey == preset.storageKey,
+                                onSelectRegion = { selectedRegionKey = preset.storageKey },
                                 progress = progress,
                                 scope = scope,
                                 mapManager = mapManager,
@@ -217,6 +232,8 @@ fun MapsforgeMapDownloadDialog(
                         ) { preset ->
                             MapsforgePresetDownloadRow(
                                 preset = preset,
+                                isSelected = selectedRegionKey == preset.storageKey,
+                                onSelectRegion = { selectedRegionKey = preset.storageKey },
                                 progress = progress,
                                 scope = scope,
                                 mapManager = mapManager,
@@ -234,6 +251,8 @@ fun MapsforgeMapDownloadDialog(
                         item {
                             MapsforgePresetDownloadRow(
                                 preset = MapsforgePresetServers.FRANCE_ALL,
+                                isSelected = selectedRegionKey == MapsforgePresetServers.FRANCE_ALL.storageKey,
+                                onSelectRegion = { selectedRegionKey = MapsforgePresetServers.FRANCE_ALL.storageKey },
                                 progress = progress,
                                 scope = scope,
                                 mapManager = mapManager,
@@ -255,17 +274,63 @@ fun MapsforgeMapDownloadDialog(
 @Composable
 internal fun MapsforgePresetDownloadRow(
     preset: MapsforgeServerMap,
+    isSelected: Boolean = false,
+    onSelectRegion: () -> Unit = {},
     progress: DownloadProgress?,
     scope: CoroutineScope,
     mapManager: MapsforgeMapManager,
     onMapFileChanged: () -> Unit,
 ) {
-    // Observe install list so rows recompose when downloads finish.
     val installedMaps by mapManager.installedMaps.collectAsState()
     val isInstalled = remember(installedMaps, preset) { mapManager.isPresetInstalled(preset) }
+    var showWarningDialog by remember { mutableStateOf(false) }
+
+    if (showWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showWarningDialog = false },
+            title = { Text(stringResource(R.string.map_download_warning_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.map_download_warning_message,
+                        preset.name,
+                        preset.sizeEstimateMb
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showWarningDialog = false
+                        scope.launch {
+                            val res = mapManager.downloadMap(preset.url, "${preset.storageKey}.map")
+                            if (res.isSuccess) {
+                                onMapFileChanged()
+                            }
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.action_download))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWarningDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
+
     OutlinedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelectRegion() },
+        shape = RoundedCornerShape(8.dp),
+        border = if (isSelected) {
+            androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else {
+            CardDefaults.outlinedCardBorder()
+        }
     ) {
         Row(
             modifier = Modifier
@@ -291,14 +356,7 @@ internal fun MapsforgePresetDownloadRow(
                 )
             }
             Button(
-                onClick = {
-                    scope.launch {
-                        val res = mapManager.downloadMap(preset.url, "${preset.storageKey}.map")
-                        if (res.isSuccess) {
-                            onMapFileChanged()
-                        }
-                    }
-                },
+                onClick = { showWarningDialog = true },
                 enabled = progress == null || progress.isComplete || progress.error != null
             ) {
                 Text(if (isInstalled) stringResource(R.string.action_refresh) else stringResource(R.string.action_download))

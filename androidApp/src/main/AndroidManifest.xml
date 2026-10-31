@@ -10,6 +10,9 @@
     <!-- Offline map packs (Mapsforge / PMTiles): user-initiated download with resume. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Android Auto: required for POI category (Play validation) -->
     <uses-permission android:name="androidx.car.app.MAP_TEMPLATES" />
@@ -82,6 +85,18 @@
             <intent-filter>
                 <action android:name="fr.geoking.gaston.action.SAVE_PARKED_CANDIDATE" />
                 <action android:name="fr.geoking.gaston.action.IGNORE_PARKED_CANDIDATE" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".parked.AaCarModeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
+                <action android:name="android.bluetooth.device.action.ACL_DISCONNECTED" />
+                <action android:name="android.app.action.ENTER_CAR_MODE" />
+                <action android:name="android.app.action.EXIT_CAR_MODE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
 

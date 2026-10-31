@@ -146,7 +146,27 @@ class AutoMapsforgeMapManagementScreen(
                         }
                     )
                     .addText(subtitle.take(500))
-                    .setOnClickListener { startDownload(preset, progress) }
+                    .setOnClickListener {
+                        if (progress != null && !progress.isComplete && progress.error == null) {
+                            try {
+                                carContext.getCarService(AppManager::class.java)
+                                    .showToast(
+                                        carContext.getString(R.string.mapsforge_download_in_progress),
+                                        CarToast.LENGTH_SHORT,
+                                    )
+                            } catch (_: Exception) {
+                            }
+                            return@setOnClickListener
+                        }
+                        screenManager.push(
+                            AutoMapsforgeDownloadSuggestScreen(
+                                carContext = carContext,
+                                mapManager = mapManager,
+                                preset = preset,
+                                onDownloaded = { invalidate() },
+                            )
+                        )
+                    }
                     .build()
             )
         }
@@ -160,41 +180,5 @@ class AutoMapsforgeMapManagementScreen(
                     .build()
             )
             .build()
-    }
-
-    private fun startDownload(preset: MapsforgeServerMap, progress: DownloadProgress?) {
-        if (progress != null && !progress.isComplete && progress.error == null) {
-            try {
-                carContext.getCarService(AppManager::class.java)
-                    .showToast(
-                        carContext.getString(R.string.mapsforge_download_in_progress),
-                        CarToast.LENGTH_SHORT,
-                    )
-            } catch (_: Exception) {
-            }
-            return
-        }
-        lifecycleScope.launch {
-            try {
-                carContext.getCarService(AppManager::class.java)
-                    .showToast(
-                        carContext.getString(R.string.mapsforge_starting_download, preset.name),
-                        CarToast.LENGTH_SHORT,
-                    )
-            } catch (_: Exception) {
-            }
-            val result = mapManager.downloadMap(preset.url, "${preset.storageKey}.map")
-            if (result.isSuccess) {
-                try {
-                    carContext.getCarService(AppManager::class.java)
-                        .showToast(
-                            carContext.getString(R.string.mapsforge_download_success, preset.name),
-                            CarToast.LENGTH_SHORT,
-                        )
-                } catch (_: Exception) {
-                }
-            }
-            invalidate()
-        }
     }
 }

@@ -1,6 +1,9 @@
 package fr.geoking.gaston.ui.parked
 
 import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -11,34 +14,44 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.activeVehicle
@@ -48,7 +61,10 @@ import fr.geoking.gaston.parked.ParkCandidate
 import fr.geoking.gaston.parked.ParkCandidateActions
 import fr.geoking.gaston.parked.ParkCandidateSaveHelper
 import fr.geoking.gaston.parked.ParkCandidateStore
+import fr.geoking.gaston.parked.UndergroundParkingDetector
 import fr.geoking.gaston.parkedPositionFor
+import fr.geoking.gaston.parking.ParkingAggregator
+import fr.geoking.gaston.parking.ParkingQueryContext
 import fr.geoking.gaston.ui.dashboard.GastonTheme
 import fr.geoking.gaston.vehicleById
 import kotlinx.coroutines.launch
@@ -92,6 +108,18 @@ fun ParkedCarFeatureScreen(
     val vehicle = settings.vehicleById(selectedVehicleId) ?: settings.activeVehicle()
     val parked = settings.parkedPositionFor(selectedVehicleId)
 
+    var isUnderground by remember(parked) { mutableStateOf(parked?.isUnderground ?: false) }
+    var level by remember(parked) { mutableStateOf(parked?.level.orEmpty()) }
+    var spotNumber by remember(parked) { mutableStateOf(parked?.spotNumber.orEmpty()) }
+    var spotColor by remember(parked) { mutableStateOf(parked?.spotColor.orEmpty()) }
+    var photoUri by remember(parked) { mutableStateOf(parked?.photoUri) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { photoUri = it.toString() }
+    }
+
     val pendingCandidate: ParkCandidate? = when {
         !intentCandidateDismissed && candidateLatitude != null && candidateLongitude != null ->
             ParkCandidate(
@@ -106,6 +134,32 @@ fun ParkedCarFeatureScreen(
 
     val mapLat = parked?.latitude ?: pendingCandidate?.latitude
     val mapLon = parked?.longitude ?: pendingCandidate?.longitude
+
+    LaunchedEffect(mapLat, mapLon, parked) {
+        val lat = mapLat
+        val lon = mapLon
+        if (parked == null && lat != null && lon != null) {
+            try {
+                val aggregator = GlobalContext.get().getOrNull<ParkingAggregator>()
+                val parkings = aggregator?.getParkingNearby(
+                    ParkingQueryContext(userLat = lat, userLon = lon),
+                    radiusMeters = 500,
+                ).orEmpty()
+                val isGpsLost = userLocation == null
+                val detected = UndergroundParkingDetector.isLikelyUnderground(
+                    latitude = lat,
+                    longitude = lon,
+                    nearbyParkings = parkings,
+                    isGpsLostNearParking = isGpsLost,
+                )
+                if (detected) {
+                    isUnderground = true
+                }
+            } catch (e: Exception) {
+                // Ignore background detection errors
+            }
+        }
+    }
 
     GastonTheme(themeMode = settings.uiThemeMode) {
         Scaffold(
@@ -146,6 +200,40 @@ fun ParkedCarFeatureScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.settings_auto_park_on_aa_disconnect_title),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_auto_park_on_aa_disconnect_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = settings.autoParkOnAaDisconnectEnabled,
+                            onCheckedChange = { settingsManager.setAutoParkOnAaDisconnectEnabled(it) },
+                            modifier = Modifier.testTag("parked_car_auto_aa_switch"),
+                        )
+                    }
+                }
 
                 Text(
                     text = stringResource(R.string.parked_car_vehicle_section),
@@ -235,10 +323,11 @@ fun ParkedCarFeatureScreen(
                 }
 
                 if (parked != null) {
+                    val p = parked
                     Text(
                         text = stringResource(
                             R.string.parked_car_parked_at,
-                            parked.formattedTimestamp(DateFormat.MEDIUM, DateFormat.SHORT),
+                            p.formattedTimestamp(DateFormat.MEDIUM, DateFormat.SHORT),
                         ),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
@@ -246,12 +335,26 @@ fun ParkedCarFeatureScreen(
                     Text(
                         text = stringResource(
                             R.string.parked_car_coords,
-                            String.format("%.5f", parked.latitude),
-                            String.format("%.5f", parked.longitude),
+                            String.format("%.5f", p.latitude),
+                            String.format("%.5f", p.longitude),
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    val undergroundInfoParts = buildList {
+                        if (p.isUnderground) add(stringResource(R.string.parked_car_underground_toggle))
+                        if (!p.level.isNullOrBlank()) add("${stringResource(R.string.parked_car_level_label)}: ${p.level}")
+                        if (!p.spotNumber.isNullOrBlank()) add("${stringResource(R.string.parked_car_spot_number_label)}: ${p.spotNumber}")
+                        if (!p.spotColor.isNullOrBlank()) add("${stringResource(R.string.parked_car_spot_color_label)}: ${p.spotColor}")
+                    }
+                    if (undergroundInfoParts.isNotEmpty()) {
+                        Text(
+                            text = undergroundInfoParts.joinToString(" • "),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 } else if (pendingCandidate == null) {
                     Text(
                         text = stringResource(R.string.parked_car_none_yet),
@@ -275,6 +378,116 @@ fun ParkedCarFeatureScreen(
                             columnScrollEnabled = !interacting
                         },
                     )
+                }
+
+                // Underground parking controls & notes
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_poi_parking),
+                            contentDescription = null,
+                            tint = if (isUnderground) ParkedAccent else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp),
+                        )
+                        Text(
+                            text = stringResource(R.string.parked_car_underground_toggle),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Switch(
+                        checked = isUnderground,
+                        onCheckedChange = { isUnderground = it },
+                        modifier = Modifier.testTag("parked_car_underground_switch"),
+                    )
+                }
+
+                if (isUnderground || level.isNotBlank() || spotNumber.isNotBlank() || spotColor.isNotBlank() || !photoUri.isNullOrBlank()) {
+                    Text(
+                        text = stringResource(R.string.parked_car_underground_details_section),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+
+                    OutlinedTextField(
+                        value = level,
+                        onValueChange = { level = it },
+                        label = { Text(stringResource(R.string.parked_car_level_label)) },
+                        placeholder = { Text(stringResource(R.string.parked_car_level_hint)) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("parked_car_level_input"),
+                        singleLine = true,
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = spotNumber,
+                            onValueChange = { spotNumber = it },
+                            label = { Text(stringResource(R.string.parked_car_spot_number_label)) },
+                            placeholder = { Text(stringResource(R.string.parked_car_spot_number_hint)) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("parked_car_spot_number_input"),
+                            singleLine = true,
+                        )
+
+                        OutlinedTextField(
+                            value = spotColor,
+                            onValueChange = { spotColor = it },
+                            label = { Text(stringResource(R.string.parked_car_spot_color_label)) },
+                            placeholder = { Text(stringResource(R.string.parked_car_spot_color_hint)) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("parked_car_spot_color_input"),
+                            singleLine = true,
+                        )
+                    }
+
+                    Text(
+                        text = stringResource(R.string.parked_car_photo_label),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                    )
+
+                    if (!photoUri.isNullOrBlank()) {
+                        AsyncImage(
+                            model = photoUri,
+                            contentDescription = stringResource(R.string.parked_car_photo_label),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop,
+                        )
+                        OutlinedButton(
+                            onClick = { photoUri = null },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("parked_car_remove_photo_btn"),
+                        ) {
+                            Text(stringResource(R.string.parked_car_remove_photo))
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("parked_car_pick_photo_btn"),
+                        ) {
+                            Text(stringResource(R.string.parked_car_pick_photo))
+                        }
+                    }
                 }
 
                 statusMessage?.let {
@@ -314,7 +527,16 @@ fun ParkedCarFeatureScreen(
                                         context.getString(R.string.parked_car_location_unavailable)
                                 } else {
                                     val (lat, lon) = coords
-                                    settingsManager.saveParkedPosition(lat, lon, selectedVehicleId)
+                                    settingsManager.saveParkedPosition(
+                                        latitude = lat,
+                                        longitude = lon,
+                                        vehicleId = selectedVehicleId,
+                                        isUnderground = isUnderground,
+                                        level = level,
+                                        spotNumber = spotNumber,
+                                        spotColor = spotColor,
+                                        photoUri = photoUri,
+                                    )
                                     if (candidate != null && candidate.vehicleId == selectedVehicleId) {
                                         candidateStore.clear()
                                     } else if (loc != null && candidateLatitude == null) {

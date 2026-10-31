@@ -1144,4 +1144,20 @@
     <string name="parked_car_candidate_detected">Stop detected — parking spot retained</string>
     <string name="parked_car_candidate_ignored">Parking suggestion dismissed</string>
     <string name="parked_car_map_section">Location on map</string>
+    <string name="settings_auto_park_on_aa_disconnect_title">Auto-memorize parking on Android Auto disconnect</string>
+    <string name="settings_auto_park_on_aa_disconnect_desc">Save vehicle location when disconnecting Android Auto even if Gaston was not opened on screen.</string>
+    <string name="parked_car_underground_toggle">Underground parking</string>
+    <string name="parked_car_underground_details_section">Underground details</string>
+    <string name="parked_car_level_label">Level / Floor</string>
+    <string name="parked_car_level_hint">e.g. -2 or Floor 1</string>
+    <string name="parked_car_spot_number_label">Spot number</string>
+    <string name="parked_car_spot_number_hint">e.g. 142</string>
+    <string name="parked_car_spot_color_label">Zone / Color</string>
+    <string name="parked_car_spot_color_hint">e.g. Blue zone</string>
+    <string name="parked_car_photo_label">Spot / car photo</string>
+    <string name="parked_car_take_photo">Take photo</string>
+    <string name="parked_car_pick_photo">Choose photo</string>
+    <string name="parked_car_remove_photo">Remove photo</string>
+    <string name="map_download_warning_title">Map Download Warning</string>
+    <string name="map_download_warning_message">You are about to download %1$s (~%2$d MB).\n\nDownloading large map files over mobile data or roaming networks may incur significant data charges from your mobile operator. Do you want to continue?</string>
 </resources>

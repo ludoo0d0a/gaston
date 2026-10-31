@@ -86,9 +86,19 @@ class AutoRememberParkedCarScreen(
             parked != null -> carContext.getString(R.string.parked_car_update)
             else -> carContext.getString(R.string.parked_car_remember)
         }
+        val undergroundDetails = if (parked != null) {
+            buildList {
+                if (parked.isUnderground) add(carContext.getString(R.string.parked_car_underground_toggle))
+                if (!parked.level.isNullOrBlank()) add("${carContext.getString(R.string.parked_car_level_label)}: ${parked.level}")
+                if (!parked.spotNumber.isNullOrBlank()) add("${carContext.getString(R.string.parked_car_spot_number_label)}: ${parked.spotNumber}")
+                if (!parked.spotColor.isNullOrBlank()) add("${carContext.getString(R.string.parked_car_spot_color_label)}: ${parked.spotColor}")
+            }.joinToString(" • ")
+        } else ""
+
         val saveSubtitle = statusMessage
             ?: if (parked != null) {
-                carContext.getString(R.string.parked_car_parked_at, parked.formattedTimestamp())
+                val timeStr = carContext.getString(R.string.parked_car_parked_at, parked.formattedTimestamp())
+                if (undergroundDetails.isNotBlank()) "$timeStr\n$undergroundDetails" else timeStr
             } else {
                 carContext.getString(R.string.parked_car_remember_subtitle)
             }
@@ -103,12 +113,11 @@ class AutoRememberParkedCarScreen(
         )
 
         if (parked != null) {
+            val navSubtitle = if (undergroundDetails.isNotBlank()) undergroundDetails else carContext.getString(R.string.parked_car_parked_at, parked.formattedTimestamp())
             listBuilder.addItem(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.parked_car_navigate))
-                    .addText(
-                        carContext.getString(R.string.parked_car_parked_at, parked.formattedTimestamp())
-                    )
+                    .addText(navSubtitle)
                     .setOnClickListener {
                         val uri = IntentNavigationHelper.getNavigationUri(parked.latitude, parked.longitude)
                         carContext.startCarApp(Intent(CarContext.ACTION_NAVIGATE).apply { data = uri })

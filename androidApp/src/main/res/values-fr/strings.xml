@@ -1144,4 +1144,20 @@
     <string name="parked_car_candidate_detected">Arrêt détecté — position retenue</string>
     <string name="parked_car_candidate_ignored">Suggestion de stationnement ignorée</string>
     <string name="parked_car_map_section">Position sur la carte</string>
+    <string name="settings_auto_park_on_aa_disconnect_title">Mémoriser automatiquement le stationnement à la déconnexion d’Android Auto</string>
+    <string name="settings_auto_park_on_aa_disconnect_desc">Enregistre l’emplacement de votre véhicule dès que vous coupez Android Auto, même si Gaston n’était pas affiché à l’écran.</string>
+    <string name="parked_car_underground_toggle">Parking souterrain</string>
+    <string name="parked_car_underground_details_section">Détails parking souterrain</string>
+    <string name="parked_car_level_label">Étage / Niveau</string>
+    <string name="parked_car_level_hint">ex: -2 ou Niveau 1</string>
+    <string name="parked_car_spot_number_label">Numéro de place</string>
+    <string name="parked_car_spot_number_hint">ex: 142</string>
+    <string name="parked_car_spot_color_label">Zone / Couleur</string>
+    <string name="parked_car_spot_color_hint">ex: Zone bleue</string>
+    <string name="parked_car_photo_label">Photo de la place / voiture</string>
+    <string name="parked_car_take_photo">Prendre une photo</string>
+    <string name="parked_car_pick_photo">Choisir une photo</string>
+    <string name="parked_car_remove_photo">Supprimer la photo</string>
+    <string name="map_download_warning_title">Avertissement de téléchargement</string>
+    <string name="map_download_warning_message">Vous allez télécharger %1$s (~%2$d Mo).\n\nLe téléchargement de fichiers cartes volumineux via des données mobiles ou en itinérance (roaming) peut entraîner des frais supplémentaires selon votre opérateur. Souhaitez-vous continuer ?</string>
 </resources>

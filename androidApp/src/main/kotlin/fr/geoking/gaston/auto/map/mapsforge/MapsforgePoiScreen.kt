@@ -869,7 +869,7 @@ class MapsforgePoiScreen(
         val missing = mapManager.getMissingRecommendedPreset(lat, lon) ?: return
         missingRegionPromptShownThisSession = true
         screenManager.push(
-            AutoMapsforgeMissingRegionScreen(
+            AutoMapsforgeDownloadSuggestScreen(
                 carContext = carContext,
                 mapManager = mapManager,
                 preset = missing,
@@ -1048,11 +1048,12 @@ class MapsforgePoiScreen(
                 )
             }
 
-            if (downloading && progress != null) {
+            if (downloading) {
+                val p = checkNotNull(progress)
                 itemListBuilder.addItem(
                     Row.Builder()
-                        .setTitle(carContext.getString(R.string.mapsforge_downloading, progress.fileName))
-                        .addText("${progress.progressPercent}% (${progress.bytesDownloaded / (1024 * 1024)} MB)")
+                        .setTitle(carContext.getString(R.string.mapsforge_downloading, p.fileName))
+                        .addText("${p.progressPercent}% (${p.bytesDownloaded / (1024 * 1024)} MB)")
                         .build()
                 )
             } else if (missingPreset != null) {
@@ -1071,17 +1072,19 @@ class MapsforgePoiScreen(
                                 missingPreset.sizeEstimateMb,
                             )
                         )
+                        .setBrowsable(true)
                         .setOnClickListener {
-                            lifecycleScope.launch {
-                                val result = mapManager.downloadMap(
-                                    missingPreset.url,
-                                    "${missingPreset.storageKey}.map",
+                            screenManager.push(
+                                AutoMapsforgeDownloadSuggestScreen(
+                                    carContext = carContext,
+                                    mapManager = mapManager,
+                                    preset = missingPreset,
+                                    onDownloaded = {
+                                        surfaceRenderer?.reloadMapsforgeDataStore()
+                                        invalidate()
+                                    },
                                 )
-                                if (result.isSuccess) {
-                                    surfaceRenderer?.reloadMapsforgeDataStore()
-                                }
-                                invalidate()
-                            }
+                            )
                         }
                         .build()
                 )

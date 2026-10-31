@@ -233,6 +233,8 @@ data class AppSettings(
      * Loop also requires [BuildConfig.AAC_ALERTS_AVAILABLE] and is killed by
      * [BuildConfig.AAC_ALERTS_KILL_SWITCH]. Default off: no warning until opted in.
      */
+    /** Automatically suggest/save parked vehicle position when Android Auto or car projection disconnects. */
+    val autoParkOnAaDisconnectEnabled: Boolean = true,
     val radarWarningEnabled: Boolean = false,
     val radarWarningDistanceMeters: Int = 1000,
     val routeStationSearchRadiusMeters: Int = 2000,
@@ -491,6 +493,7 @@ open class SettingsManager(
             debugBarEnabled = prefs.getBoolean("debug_bar_enabled", false),
             networkFloatingBarEnabled = prefs.getBoolean("network_floating_bar_enabled", false),
             testAaMapSurfaceEnabled = prefs.getBoolean("test_aa_map_surface_enabled", false),
+            autoParkOnAaDisconnectEnabled = prefs.getBoolean("auto_park_on_aa_disconnect_enabled", true),
             radarWarningEnabled = prefs.getBoolean("radar_warning_enabled", false),
             radarWarningDistanceMeters = prefs.getInt("radar_warning_distance_m", 1000),
             routeStationSearchRadiusMeters = prefs.getInt("route_station_radius_m", 2000),
@@ -601,6 +604,7 @@ open class SettingsManager(
             .putBoolean("debug_bar_enabled", sanitized.debugBarEnabled)
             .putBoolean("network_floating_bar_enabled", sanitized.networkFloatingBarEnabled)
             .putBoolean("test_aa_map_surface_enabled", sanitized.testAaMapSurfaceEnabled)
+            .putBoolean("auto_park_on_aa_disconnect_enabled", sanitized.autoParkOnAaDisconnectEnabled)
             .putBoolean("radar_warning_enabled", sanitized.radarWarningEnabled)
             .putInt("radar_warning_distance_m", sanitized.radarWarningDistanceMeters)
             .putInt("route_station_radius_m", sanitized.routeStationSearchRadiusMeters)
@@ -950,6 +954,10 @@ open class SettingsManager(
         saveSettings(_settings.value.copy(filterOnlyHighwayStations = enabled))
     }
 
+    open fun setAutoParkOnAaDisconnectEnabled(enabled: Boolean) {
+        saveSettings(_settings.value.copy(autoParkOnAaDisconnectEnabled = enabled))
+    }
+
     open fun setRadarWarningEnabled(enabled: Boolean) {
         // Prefer [setRadarDetectionEnabled] from AA (layer + alert). This keeps alert-only callers working.
         saveSettings(_settings.value.copy(radarWarningEnabled = enabled))
@@ -974,6 +982,11 @@ open class SettingsManager(
         longitude: Double,
         vehicleId: String = _settings.value.activeVehicleId,
         savedAtEpochMs: Long = System.currentTimeMillis(),
+        isUnderground: Boolean = false,
+        level: String? = null,
+        spotNumber: String? = null,
+        spotColor: String? = null,
+        photoUri: String? = null,
     ) {
         val settings = _settings.value
         val id = vehicleId.ifBlank { settings.activeVehicleId }
@@ -986,6 +999,11 @@ open class SettingsManager(
                     latitude = latitude,
                     longitude = longitude,
                     savedAtEpochMs = savedAtEpochMs,
+                    isUnderground = isUnderground,
+                    level = level?.takeIf { it.isNotBlank() },
+                    spotNumber = spotNumber?.takeIf { it.isNotBlank() },
+                    spotColor = spotColor?.takeIf { it.isNotBlank() },
+                    photoUri = photoUri?.takeIf { it.isNotBlank() },
                 )
             )
         )

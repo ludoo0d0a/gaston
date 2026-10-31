@@ -805,6 +805,29 @@ private fun MapConfig(
             }
         }
 
+        // Auto-memorize parking on AA disconnect
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                Text(
+                    stringResource(R.string.settings_auto_park_on_aa_disconnect_title),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Text(
+                    stringResource(R.string.settings_auto_park_on_aa_disconnect_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = settings.autoParkOnAaDisconnectEnabled,
+                onCheckedChange = { onUpdate(settings.copy(autoParkOnAaDisconnectEnabled = it)) },
+            )
+        }
+
         // Traffic
         Row(
             modifier = Modifier.fillMaxWidth(),
