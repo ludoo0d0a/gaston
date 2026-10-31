@@ -53,8 +53,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
-import fr.geoking.gaston.auto.map.mapsforge.MapsforgePresetServers
-
 @OptIn(ExperimentalMaterial3Api::class, kotlinx.coroutines.FlowPreview::class)
 @Composable
 fun SurfaceCustomMapScreen(
@@ -754,11 +752,10 @@ fun SurfaceMapsforgeMapScreen(
                                 .padding(end = 16.dp, bottom = if (selectedPoi != null) STATION_OVERLAY_CARD_HEIGHT + 16.dp else 16.dp)
                         )
 
-                        val activeMapFile = remember(installedMaps) { mapManager.getActiveMapFile() }
-                        if (activeMapFile == null) {
-                            val recommendedPreset = remember(mapLat, mapLon) {
-                                MapsforgePresetServers.getRecommendedPreset(mapLat, mapLon)
-                            }
+                        val missingRecommendedPreset = remember(installedMaps, mapLat, mapLon) {
+                            mapManager.getMissingRecommendedPreset(mapLat, mapLon)
+                        }
+                        if (missingRecommendedPreset != null) {
                             val downloadScope = rememberCoroutineScope()
                             val progress by mapManager.downloadProgress.collectAsState()
 
@@ -787,8 +784,8 @@ fun SurfaceMapsforgeMapScreen(
                                         Text(
                                             text = stringResource(
                                                 R.string.mapsforge_suggest_download_region,
-                                                recommendedPreset.name,
-                                                recommendedPreset.sizeEstimateMb
+                                                missingRecommendedPreset.name,
+                                                missingRecommendedPreset.sizeEstimateMb
                                             ),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.9f)
@@ -799,7 +796,10 @@ fun SurfaceMapsforgeMapScreen(
                                         Button(
                                             onClick = {
                                                 downloadScope.launch {
-                                                    val result = mapManager.downloadMap(recommendedPreset.url, "${recommendedPreset.storageKey}.map")
+                                                    val result = mapManager.downloadMap(
+                                                        missingRecommendedPreset.url,
+                                                        "${missingRecommendedPreset.storageKey}.map",
+                                                    )
                                                     if (result.isSuccess) {
                                                         surfaceRendererRef?.reloadMapsforgeDataStore()
                                                     }
@@ -810,7 +810,12 @@ fun SurfaceMapsforgeMapScreen(
                                                 containerColor = MaterialTheme.colorScheme.error
                                             )
                                         ) {
-                                            Text(stringResource(R.string.mapsforge_download_region, recommendedPreset.name))
+                                            Text(
+                                                stringResource(
+                                                    R.string.mapsforge_download_region,
+                                                    missingRecommendedPreset.name,
+                                                )
+                                            )
                                         }
                                         Spacer(modifier = Modifier.width(4.dp))
                                         TextButton(onClick = { showDownloadDialog = true }) {

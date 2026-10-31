@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -16,11 +17,17 @@ class MapsforgeMapManagerTest {
 
     private lateinit var context: Context
     private lateinit var mapManager: MapsforgeMapManager
+    private lateinit var mapsDir: File
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        mapsDir = File(context.getExternalFilesDir(null), "mapsforge").also {
+            it.mkdirs()
+            it.listFiles()?.forEach { file -> file.delete() }
+        }
         mapManager = MapsforgeMapManager(context)
+        mapManager.refreshInstalledMaps()
     }
 
     @Test
@@ -114,5 +121,45 @@ class MapsforgeMapManagerTest {
             MapsforgePresetServers.PRESET_MAPS.size,
             MapsforgePresetServers.filterPresets("  ").size,
         )
+    }
+
+    @Test
+    fun testMissingRecommendedPresetWhenOnlyNeighborInstalled() {
+        // Nancy (Lorraine) — Luxembourg installed alone must still report Lorraine as missing.
+        File(mapsDir, "Luxembourg.map").writeText("dummy luxembourg")
+        mapManager.refreshInstalledMaps()
+
+        val lorraine = MapsforgePresetServers.FRANCE_REGION_MAPS.first { it.name == "Lorraine" }
+        assertTrue(mapManager.isPresetInstalled(
+            MapsforgePresetServers.NEIGHBOR_MAPS.first { it.name == "Luxembourg" },
+        ))
+        assertEquals(
+            "Lorraine",
+            mapManager.getMissingRecommendedPreset(48.6921, 6.1844)?.name,
+        )
+
+        File(mapsDir, "Lorraine.map").writeText("dummy lorraine")
+        mapManager.refreshInstalledMaps()
+        assertTrue(mapManager.isPresetInstalled(lorraine))
+        assertNull(mapManager.getMissingRecommendedPreset(48.6921, 6.1844))
+        assertEquals(listOf("Lorraine", "Luxembourg"), mapManager.installedRegionLabels().sorted())
+
+        mapsDir.listFiles()?.forEach { it.delete() }
+        mapManager.refreshInstalledMaps()
+    }
+
+    @Test
+    fun testCreateMapDataStoreWithNoOrInvalidFiles() {
+        assertNull(mapManager.createMapDataStore())
+
+        File(mapsDir, "Luxembourg.map").writeText("not a real mapsforge file")
+        File(mapsDir, "Lorraine.map").writeText("not a real mapsforge file either")
+        mapManager.refreshInstalledMaps()
+        assertEquals(2, mapManager.installedMaps.value.size)
+        // Invalid headers cannot be opened; multi-map creation fails closed.
+        assertNull(mapManager.createMapDataStore())
+
+        mapsDir.listFiles()?.forEach { it.delete() }
+        mapManager.refreshInstalledMaps()
     }
 }

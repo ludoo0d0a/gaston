@@ -1085,6 +1085,8 @@
     <string name="offline_maps_search_hint">Search country, region, or name</string>
     <string name="offline_maps_search_empty">No region matches \"%1$s\"</string>
     <string name="offline_maps_manage">Manage offline maps</string>
+    <string name="mapsforge_installed_regions">Installed: %1$s</string>
+    <string name="mapsforge_no_regions_installed">No offline regions installed</string>
     <string name="map_download_notification_title">Offline map download</string>
     <string name="map_download_notification_channel">Map downloads</string>
     <string name="map_download_notification_channel_desc">Progress while downloading offline map files</string>

@@ -486,7 +486,6 @@ private fun MapConfig(
                             mapsforgeRows.forEach { preset ->
                                 fr.geoking.gaston.ui.map.MapsforgePresetDownloadRow(
                                     preset = preset,
-                                    installedMaps = installedMaps,
                                     progress = downloadProgress,
                                     scope = scope,
                                     mapManager = mapManager,

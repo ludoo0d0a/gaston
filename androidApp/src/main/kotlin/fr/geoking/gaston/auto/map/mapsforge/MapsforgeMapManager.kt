@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import org.mapsforge.map.datastore.MapDataStore
+import org.mapsforge.map.datastore.MultiMapDataStore
 import org.mapsforge.map.reader.MapFile
 import fr.geoking.gaston.map.download.MapDownloadProgressHub
 import fr.geoking.gaston.map.download.MapDownloadService
@@ -235,14 +236,82 @@ class MapsforgeMapManager(
         settings?.setOfflineMapsforgePath(file.absolutePath)
     }
 
+    /** Whether a catalog preset has a matching installed `.map` on disk. */
+    fun isPresetInstalled(preset: MapsforgeServerMap): Boolean =
+        isStorageKeyInstalled(preset.storageKey)
+
+    fun isStorageKeyInstalled(storageKey: String): Boolean {
+        val installed = _installedMaps.value
+        return installed.any { file ->
+            file.name.equals(storageKey, ignoreCase = true) ||
+                file.name.equals("$storageKey.map", ignoreCase = true) ||
+                file.nameWithoutExtension.equals(storageKey, ignoreCase = true)
+        }
+    }
+
+    /**
+     * Recommended preset for [lat]/[lon] when that region is not yet installed.
+     * Returns null when the recommended map is already on disk (or when there is no coords).
+     */
+    fun getMissingRecommendedPreset(lat: Double?, lon: Double?): MapsforgeServerMap? {
+        if (lat == null || lon == null) return null
+        val recommended = MapsforgePresetServers.getRecommendedPreset(lat, lon)
+        return if (isPresetInstalled(recommended)) null else recommended
+    }
+
+    /**
+     * Human-readable labels for installed map files (matched to catalog names when possible).
+     */
+    fun installedRegionLabels(): List<String> {
+        val installed = _installedMaps.value
+        if (installed.isEmpty()) return emptyList()
+        return installed.map { file ->
+            val key = file.nameWithoutExtension
+            MapsforgePresetServers.PRESET_MAPS
+                .firstOrNull { it.storageKey.equals(key, ignoreCase = true) }
+                ?.name
+                ?: key
+        }.distinct()
+    }
+
+    /**
+     * Opens all installed `.map` files for rendering.
+     * One file → [MapFile]; several → [MultiMapDataStore] with [MultiMapDataStore.DataPolicy.RETURN_ALL]
+     * so adjacent regions (e.g. Luxembourg + Lorraine) draw together.
+     */
     fun createMapDataStore(): MapDataStore? {
-        val activeFile = getActiveMapFile() ?: return null
+        val installed = _installedMaps.value.filter { it.exists() && it.length() > 0L }
+        if (installed.isEmpty()) return null
+
         return try {
-            if (activeFile.exists() && activeFile.length() > 0) {
-                MapFile(activeFile)
-            } else null
+            if (installed.size == 1) {
+                MapFile(installed.first())
+            } else {
+                val active = getActiveMapFile()
+                val multi = MultiMapDataStore(MultiMapDataStore.DataPolicy.RETURN_ALL)
+                // Prefer active file first so start position/zoom come from the user's last choice.
+                val ordered = buildList {
+                    if (active != null && installed.any { it.absolutePath == active.absolutePath }) {
+                        add(active)
+                    }
+                    for (file in installed) {
+                        if (active == null || file.absolutePath != active.absolutePath) add(file)
+                    }
+                }
+                var assignedStart = false
+                for (file in ordered) {
+                    try {
+                        val useStart = !assignedStart
+                        multi.addMapDataStore(MapFile(file), useStart, useStart)
+                        assignedStart = true
+                    } catch (e: Exception) {
+                        Log.e("MapsforgeMapManager", "Failed to open MapFile: ${file.absolutePath}", e)
+                    }
+                }
+                if (!assignedStart || multi.boundingBox() == null) null else multi
+            }
         } catch (e: Exception) {
-            Log.e("MapsforgeMapManager", "Failed to open MapFile: ${activeFile.absolutePath}", e)
+            Log.e("MapsforgeMapManager", "Failed to create MapDataStore", e)
             null
         }
     }

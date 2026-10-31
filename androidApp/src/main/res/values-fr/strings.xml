@@ -1085,6 +1085,8 @@
     <string name="offline_maps_search_hint">Rechercher pays, région ou nom</string>
     <string name="offline_maps_search_empty">Aucune région ne correspond à « %1$s »</string>
     <string name="offline_maps_manage">Gérer les cartes hors-ligne</string>
+    <string name="mapsforge_installed_regions">Installées : %1$s</string>
+    <string name="mapsforge_no_regions_installed">Aucune région hors-ligne installée</string>
     <string name="map_download_notification_title">Téléchargement de carte hors-ligne</string>
     <string name="map_download_notification_channel">Téléchargements de cartes</string>
     <string name="map_download_notification_channel_desc">Progression du téléchargement des fichiers de carte hors-ligne</string>

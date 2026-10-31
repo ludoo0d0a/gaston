@@ -174,7 +174,6 @@ fun MapsforgeMapDownloadDialog(
                             ) { preset ->
                                 MapsforgePresetDownloadRow(
                                     preset = preset,
-                                    installedMaps = installedMaps,
                                     progress = progress,
                                     scope = scope,
                                     mapManager = mapManager,
@@ -197,7 +196,6 @@ fun MapsforgeMapDownloadDialog(
                         ) { preset ->
                             MapsforgePresetDownloadRow(
                                 preset = preset,
-                                installedMaps = installedMaps,
                                 progress = progress,
                                 scope = scope,
                                 mapManager = mapManager,
@@ -219,7 +217,6 @@ fun MapsforgeMapDownloadDialog(
                         ) { preset ->
                             MapsforgePresetDownloadRow(
                                 preset = preset,
-                                installedMaps = installedMaps,
                                 progress = progress,
                                 scope = scope,
                                 mapManager = mapManager,
@@ -237,7 +234,6 @@ fun MapsforgeMapDownloadDialog(
                         item {
                             MapsforgePresetDownloadRow(
                                 preset = MapsforgePresetServers.FRANCE_ALL,
-                                installedMaps = installedMaps,
                                 progress = progress,
                                 scope = scope,
                                 mapManager = mapManager,
@@ -259,17 +255,14 @@ fun MapsforgeMapDownloadDialog(
 @Composable
 internal fun MapsforgePresetDownloadRow(
     preset: MapsforgeServerMap,
-    installedMaps: List<File>,
     progress: DownloadProgress?,
     scope: CoroutineScope,
     mapManager: MapsforgeMapManager,
     onMapFileChanged: () -> Unit,
 ) {
-    val isInstalled = installedMaps.any {
-        it.name.equals(preset.storageKey, ignoreCase = true) ||
-            it.name.equals("${preset.storageKey}.map", ignoreCase = true) ||
-            it.name.contains(preset.storageKey, ignoreCase = true)
-    }
+    // Observe install list so rows recompose when downloads finish.
+    val installedMaps by mapManager.installedMaps.collectAsState()
+    val isInstalled = remember(installedMaps, preset) { mapManager.isPresetInstalled(preset) }
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp)

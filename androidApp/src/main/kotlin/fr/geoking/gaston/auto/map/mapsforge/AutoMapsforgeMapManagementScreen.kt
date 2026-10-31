@@ -66,11 +66,16 @@ class AutoMapsforgeMapManagementScreen(
             slotsUsed++
         }
 
-        val activeLabel = activeMap?.name ?: carContext.getString(R.string.network_none)
+        val installedLabels = mapManager.installedRegionLabels()
+        val activeLabel = when {
+            installedLabels.isNotEmpty() -> installedLabels.joinToString(", ")
+            activeMap != null -> activeMap.name
+            else -> carContext.getString(R.string.network_none)
+        }
         addRow(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.mapsforge_active_map))
-                .addText(activeLabel)
+                .addText(activeLabel.take(500))
                 .build()
         )
 
@@ -92,25 +97,28 @@ class AutoMapsforgeMapManagementScreen(
         }
 
         val recommended = MapsforgePresetServers.getRecommendedPreset(recommendLat, recommendLon)
+        val missingRecommended = mapManager.getMissingRecommendedPreset(recommendLat, recommendLon)
+
+        // Order: installed presets first, then missing recommended, then remaining catalog.
         val catalog = buildList {
-            add(recommended)
-            for (preset in MapsforgePresetServers.FRANCE_REGION_MAPS +
-                MapsforgePresetServers.NEIGHBOR_MAPS +
-                listOf(MapsforgePresetServers.FRANCE_ALL)
-            ) {
-                if (preset.storageKey != recommended.storageKey || preset.name != recommended.name) {
-                    add(preset)
-                }
+            val seenKeys = mutableSetOf<String>()
+            fun addUnique(preset: MapsforgeServerMap) {
+                val key = "${preset.storageKey}|${preset.name}"
+                if (seenKeys.add(key)) add(preset)
+            }
+            for (preset in MapsforgePresetServers.PRESET_MAPS) {
+                if (mapManager.isPresetInstalled(preset)) addUnique(preset)
+            }
+            if (missingRecommended != null) addUnique(missingRecommended)
+            addUnique(recommended)
+            for (preset in MapsforgePresetServers.PRESET_MAPS) {
+                addUnique(preset)
             }
         }
 
         for (preset in catalog) {
             if (!canAdd()) break
-            val isInstalled = installedMaps.any {
-                it.name.equals(preset.storageKey, ignoreCase = true) ||
-                    it.name.equals("${preset.storageKey}.map", ignoreCase = true) ||
-                    it.name.contains(preset.storageKey, ignoreCase = true)
-            }
+            val isInstalled = mapManager.isPresetInstalled(preset)
             val isRecommended = preset.storageKey == recommended.storageKey &&
                 preset.name == recommended.name
             val status = if (isInstalled) {
@@ -118,20 +126,20 @@ class AutoMapsforgeMapManagementScreen(
             } else {
                 carContext.getString(R.string.mapsforge_available, preset.sizeEstimateMb)
             }
-            val subtitle = if (isRecommended) {
-                carContext.getString(
+            val subtitle = when {
+                isRecommended && !isInstalled -> carContext.getString(
                     R.string.mapsforge_suggest_download_region,
                     preset.name,
                     preset.sizeEstimateMb,
                 )
-            } else {
-                "${preset.region} · $status"
+                isInstalled -> status
+                else -> "${preset.region} · $status"
             }
 
             addRow(
                 Row.Builder()
                     .setTitle(
-                        if (isRecommended) {
+                        if (isRecommended && !isInstalled) {
                             carContext.getString(R.string.mapsforge_download_region, preset.name)
                         } else {
                             preset.name
