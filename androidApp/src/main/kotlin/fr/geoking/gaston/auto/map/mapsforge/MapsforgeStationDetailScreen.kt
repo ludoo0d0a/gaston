@@ -144,8 +144,13 @@ class MapsforgeStationDetailScreen(
             hudModeLabel = carContext.getString(R.string.map_mode_mapsforge)
             updateLocation(poi.latitude, poi.longitude, zoom)
             setMapOrientation(orientationMode, bearing)
-            setTileUrlTemplate(resolveAutoRasterTileUrl(settingsManager.settings.value))
-            setMapTileDebugEnabled(settingsManager.settings.value.mapTileDebugEnabled)
+            val settings = settingsManager.settings.value
+            setTileUrlTemplate(resolveAutoRasterTileUrl(settings))
+            setRenderTheme(
+                MapsforgeMapTheme.resolveXmlRenderTheme(carContext, settings.mapTheme),
+                isDark = settings.mapTheme.isDark,
+            )
+            setMapTileDebugEnabled(settings.mapTileDebugEnabled)
             updatePois(
                 newPois = listOf(poi),
                 effectiveEnergyTypes = effectiveEnergies,

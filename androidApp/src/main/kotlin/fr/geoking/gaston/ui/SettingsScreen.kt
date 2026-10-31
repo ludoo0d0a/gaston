@@ -681,8 +681,8 @@ private fun MapConfig(
             }
         }
 
-        if (settings.phoneMapEngine == MapEngine.MapLibre) {
-            // Map Theme (for MapLibre)
+        if (settings.phoneMapEngine == MapEngine.MapLibre || settings.phoneMapEngine == MapEngine.Mapsforge) {
+            val showMapLibrePreview = settings.phoneMapEngine == MapEngine.MapLibre
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     stringResource(R.string.settings_map_theme),
@@ -724,24 +724,38 @@ private fun MapConfig(
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Small map preview
-                            Box(
-                                modifier = Modifier
-                                    .size(width = 90.dp, height = 70.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                MapLibreView(
-                                    modifier = Modifier.fillMaxSize(),
-                                    styleUrl = theme.styleUrl,
-                                    cameraPosition = CameraPosition.Builder()
-                                        .target(previewCenter)
-                                        .zoom(9.5)
-                                        .build()
+                            if (showMapLibrePreview) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(width = 90.dp, height = 70.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                ) {
+                                    MapLibreView(
+                                        modifier = Modifier.fillMaxSize(),
+                                        styleUrl = theme.styleUrl,
+                                        cameraPosition = CameraPosition.Builder()
+                                            .target(previewCenter)
+                                            .zoom(9.5)
+                                            .build()
+                                    )
+                                }
+                            } else {
+                                // Mapsforge: colour swatch (no MapLibre preview)
+                                Box(
+                                    modifier = Modifier
+                                        .size(width = 48.dp, height = 48.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (theme.isDark) {
+                                                androidx.compose.ui.graphics.Color(0xFF1A1A2E)
+                                            } else {
+                                                androidx.compose.ui.graphics.Color(0xFFF5F2E9)
+                                            }
+                                        )
                                 )
                             }
 
-                            // Title & Description
                             Column(
                                 modifier = Modifier
                                     .weight(1f)
@@ -761,7 +775,6 @@ private fun MapConfig(
                                 )
                             }
 
-                            // Selection Indicator
                             RadioButton(
                                 selected = isSelected,
                                 onClick = { onUpdate(settings.copy(mapTheme = theme)) }

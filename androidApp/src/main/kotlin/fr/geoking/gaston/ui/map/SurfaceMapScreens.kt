@@ -26,6 +26,7 @@ import fr.geoking.gaston.ui.map.components.AutoSurfaceRenderer
 import fr.geoking.gaston.ui.map.components.MapOrientationMode
 import fr.geoking.gaston.auto.map.mapsforge.CarMapsforgeRenderer
 import fr.geoking.gaston.auto.map.mapsforge.MapsforgeMapManager
+import fr.geoking.gaston.auto.map.mapsforge.MapsforgeMapTheme
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.effectiveIrvePowerLevels
@@ -471,6 +472,14 @@ fun SurfaceMapsforgeMapScreen(
     var showDownloadDialog by remember { mutableStateOf(false) }
     var surfaceRendererRef by remember { mutableStateOf<CarMapsforgeRenderer?>(null) }
 
+    LaunchedEffect(surfaceRendererRef, settings.mapTheme) {
+        val r = surfaceRendererRef ?: return@LaunchedEffect
+        r.setRenderTheme(
+            MapsforgeMapTheme.resolveXmlRenderTheme(context, settings.mapTheme),
+            isDark = settings.mapTheme.isDark,
+        )
+    }
+
     LaunchedEffect(favoritesRepo) {
         if (favoritesRepo != null) {
             favoriteIds = favoritesRepo.getFavorites().map { it.id }.toSet()
@@ -698,6 +707,10 @@ fun SurfaceMapsforgeMapScreen(
                                                 mapManager = mapManager,
                                                 initialLat = mapLat,
                                                 initialLon = mapLon
+                                            )
+                                            r.setRenderTheme(
+                                                MapsforgeMapTheme.resolveXmlRenderTheme(ctx, settings.mapTheme),
+                                                isDark = settings.mapTheme.isDark,
                                             )
                                             renderer = r
                                             surfaceRendererRef = r

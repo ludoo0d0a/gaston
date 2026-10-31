@@ -414,6 +414,10 @@ class MapsforgePoiScreen(
         val renderer = surfaceRenderer ?: return
         val settings = settingsManager.settings.value
         renderer.setTileUrlTemplate(resolveAutoRasterTileUrl(settings))
+        renderer.setRenderTheme(
+            MapsforgeMapTheme.resolveXmlRenderTheme(carContext, settings.mapTheme),
+            isDark = settings.mapTheme.isDark,
+        )
         renderer.setMapTileDebugEnabled(settings.mapTileDebugEnabled)
         val filteredPois = getFilteredPois(settings)
         val poiIds = filteredPois.map { it.id }
@@ -790,7 +794,12 @@ class MapsforgePoiScreen(
         lastSyncedPoiIds = emptyList()
         syncRendererWithMapState()
         surfaceRenderer?.updateUserLocation(searchLat, searchLon, lastKnownBearingDegrees)
-        surfaceRenderer?.setTileUrlTemplate(resolveAutoRasterTileUrl(settingsManager.settings.value))
+        val settings = settingsManager.settings.value
+        surfaceRenderer?.setTileUrlTemplate(resolveAutoRasterTileUrl(settings))
+        surfaceRenderer?.setRenderTheme(
+            MapsforgeMapTheme.resolveXmlRenderTheme(carContext, settings.mapTheme),
+            isDark = settings.mapTheme.isDark,
+        )
     }
 
     override fun onVisibleAreaChanged(visibleArea: Rect) {

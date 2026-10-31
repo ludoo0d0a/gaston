@@ -170,10 +170,11 @@ class CarMapsforgeRenderer(
     private var labelCache: List<MapElementContainer> = emptyList()
     private val identityMatrix by lazy { AndroidGraphicFactory.INSTANCE.createMatrix() }
     private var mapsforgeTileCache: TileCache? = null
-    private val renderTheme: XmlRenderTheme = InternalRenderTheme.DEFAULT
+    @Volatile private var renderTheme: XmlRenderTheme = InternalRenderTheme.DEFAULT
     /** Parsed once per map data store; RenderThemeFuture is expensive to rebuild per tile. */
     @Volatile private var themeFuture: RenderThemeFuture? = null
     private val displayModel = DisplayModel()
+    @Volatile private var darkHud: Boolean = false
 
     /** Composed basemap framebuffer. */
     private val basemapLock = Any()
@@ -190,6 +191,8 @@ class CarMapsforgeRenderer(
     private var basemapDirty: Boolean = true
 
     private val backgroundPaint = Paint().apply { color = Color.parseColor("#F1F0E8") }
+    private val lightBackgroundColor = Color.parseColor("#F1F0E8")
+    private val darkBackgroundColor = Color.parseColor("#1A1A2E")
     private val routePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.RED
         style = Paint.Style.STROKE
@@ -410,6 +413,35 @@ class CarMapsforgeRenderer(
         recycleBasemap()
         basemapDirty = true
         invalidate()
+    }
+
+    /**
+     * Applies a Mapsforge [XmlRenderTheme] (bundled OpenFreeMap-inspired palette).
+     * Clears tile cache and theme future so tiles re-render with the new style.
+     */
+    fun setRenderTheme(theme: XmlRenderTheme, isDark: Boolean = false) {
+        val themeChanged = renderTheme != theme
+        val hudChanged = darkHud != isDark
+        if (!themeChanged && !hudChanged) return
+        if (themeChanged) {
+            renderTheme = theme
+            themeFuture = null
+            clearTileCache()
+            recycleBasemap()
+            basemapDirty = true
+        }
+        if (hudChanged) {
+            darkHud = isDark
+            applyHudColors(isDark)
+        }
+        invalidate(force = true)
+    }
+
+    private fun applyHudColors(isDark: Boolean) {
+        backgroundPaint.color = if (isDark) darkBackgroundColor else lightBackgroundColor
+        cityFillPaint.color = if (isDark) Color.parseColor("#E0E0E0") else Color.parseColor("#0F172A")
+        cityStrokePaint.color = if (isDark) Color.parseColor("#1A1A2E") else Color.WHITE
+        debugTextPaint.color = if (isDark) Color.LTGRAY else Color.DKGRAY
     }
 
     fun setMapTileDebugEnabled(enabled: Boolean) {
@@ -1057,11 +1089,20 @@ class CarMapsforgeRenderer(
         cityFillPaint.isFakeBoldText = isBold
         cityStrokePaint.isFakeBoldText = isBold
 
-        cityFillPaint.color = when (placeType) {
-            "city" -> Color.parseColor("#0F172A")
-            "town" -> Color.parseColor("#1E293B")
-            "village", "suburb" -> Color.parseColor("#334155")
-            else -> Color.parseColor("#475569")
+        cityFillPaint.color = if (darkHud) {
+            when (placeType) {
+                "city" -> Color.parseColor("#F1F5F9")
+                "town" -> Color.parseColor("#E2E8F0")
+                "village", "suburb" -> Color.parseColor("#CBD5E1")
+                else -> Color.parseColor("#94A3B8")
+            }
+        } else {
+            when (placeType) {
+                "city" -> Color.parseColor("#0F172A")
+                "town" -> Color.parseColor("#1E293B")
+                "village", "suburb" -> Color.parseColor("#334155")
+                else -> Color.parseColor("#475569")
+            }
         }
     }
 

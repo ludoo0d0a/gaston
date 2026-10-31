@@ -87,11 +87,9 @@ class AutoMapSettingsScreen(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.settings_map_theme))
                 .addText(themeLabel)
+                .setBrowsable(true)
                 .setOnClickListener {
-                    val entries = MapTheme.entries
-                    val nextTheme = entries[(settings.mapTheme.ordinal + 1) % entries.size]
-                    settingsManager.setMapTheme(nextTheme)
-                    invalidate()
+                    screenManager.push(AutoMapThemeSelectionScreen(carContext, settingsManager))
                 }
                 .build()
         )
