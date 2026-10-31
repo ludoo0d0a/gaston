@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -7,9 +8,9 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Offline map packs (Mapsforge / PMTiles): user-initiated download with resume. -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Strip library FOREGROUND_SERVICE until Play Console FGS declaration —
+         see docs/map-download-fgs.md -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -73,11 +74,11 @@
             </intent-filter>
         </service>
 
-        <!-- Offline map download (survives Activity / AA screen teardown; HTTP Range resume). -->
+        <!-- Offline map download (HTTP Range resume). Re-add FOREGROUND_SERVICE_DATA_SYNC
+             + foregroundServiceType after Play Console declaration (docs/map-download-fgs.md). -->
         <service
             android:name=".map.download.MapDownloadService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:exported="false" />
 
         <receiver
             android:name=".parked.ParkedCarActionReceiver"

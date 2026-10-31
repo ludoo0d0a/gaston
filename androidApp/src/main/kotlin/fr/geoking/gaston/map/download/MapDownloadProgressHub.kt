@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Shared download progress for Mapsforge / PMTiles offline packs.
- * Backed by [MapDownloadService] so UI survives Activity / AA screen teardown.
+ * Backed by [MapDownloadService] (started service until Play Console FGS is declared).
  */
 object MapDownloadProgressHub {
     private val _progress = MutableStateFlow<DownloadProgress?>(null)
