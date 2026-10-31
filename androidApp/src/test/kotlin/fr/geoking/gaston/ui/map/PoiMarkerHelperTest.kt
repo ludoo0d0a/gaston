@@ -1,12 +1,14 @@
 package fr.geoking.gaston.ui.map
 
 import androidx.compose.ui.graphics.toArgb
+import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.poi.FuelPrice
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -282,5 +284,45 @@ class PoiMarkerHelperTest {
         assertNotNull(bitmap)
         assertEquals(120, bitmap.width)
         assertTrue(bitmap.height >= 120)
+    }
+
+    @Test
+    fun `availability bars only when electric filter is active on a charging station`() {
+        val summary = StationAvailabilitySummary(availableCount = 2, totalCount = 4)
+        val evPoi = Poi(
+            id = "ev-1",
+            name = "Charger",
+            address = "Street",
+            latitude = 0.0,
+            longitude = 0.0,
+            isElectric = true,
+            poiCategory = PoiCategory.Irve,
+        )
+        val hybridPoi = Poi(
+            id = "hyb-1",
+            name = "Hybrid",
+            address = "Street",
+            latitude = 0.0,
+            longitude = 0.0,
+            isElectric = true,
+            poiCategory = PoiCategory.Gas,
+            fuelPrices = listOf(FuelPrice("sp95", 1.70)),
+        )
+        val gasPoi = Poi(
+            id = "gas-1",
+            name = "Gas",
+            address = "Street",
+            latitude = 0.0,
+            longitude = 0.0,
+            poiCategory = PoiCategory.Gas,
+            fuelPrices = listOf(FuelPrice("sp95", 1.70)),
+        )
+
+        assertTrue(PoiMarkerHelper.shouldShowAvailabilityBars(evPoi, setOf("electric"), summary))
+        assertTrue(PoiMarkerHelper.shouldShowAvailabilityBars(hybridPoi, setOf("electric", "sp95"), summary))
+        assertFalse(PoiMarkerHelper.shouldShowAvailabilityBars(hybridPoi, setOf("sp95"), summary))
+        assertFalse(PoiMarkerHelper.shouldShowAvailabilityBars(evPoi, setOf("sp95"), summary))
+        assertFalse(PoiMarkerHelper.shouldShowAvailabilityBars(gasPoi, setOf("electric"), summary))
+        assertFalse(PoiMarkerHelper.shouldShowAvailabilityBars(evPoi, setOf("electric"), null))
     }
 }

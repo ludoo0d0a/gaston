@@ -42,7 +42,22 @@ object PoiMarkerHelper {
     }
 
     /** Bump when marker layout changes so [cache] entries are not stale. */
-    private const val MARKER_LAYOUT_CACHE_TAG = "pinColumn15"
+    private const val MARKER_LAYOUT_CACHE_TAG = "pinColumn16"
+
+    /**
+     * Occupancy bars on the map pin are EV-only: charging station + electric filter active.
+     * Fuel-only mode (and fuel-only hybrids) keep the price pill without bars.
+     */
+    internal fun shouldShowAvailabilityBars(
+        poi: Poi,
+        effectiveEnergyTypes: Set<String>,
+        availability: StationAvailabilitySummary?,
+    ): Boolean {
+        return poi.isChargingStation &&
+            "electric" in effectiveEnergyTypes &&
+            availability != null &&
+            availability.totalCount > 0
+    }
 
     /**
      * Builds a column marker bitmap: optional label pill (top) → rounded head (circle + logo in asset) → triangle pin (bottom).
@@ -81,7 +96,12 @@ object PoiMarkerHelper {
         // Radar: pin tip + icon stay red; label pill follows VMA / chantier color.
         val labelFillColor = radarLabelFillColorArgb(poi) ?: categoryColor
 
-        val availKey = availability?.let { "${it.availableCount}/${it.totalCount}" } ?: "na"
+        val showAvailBars = shouldShowAvailabilityBars(poi, effectiveEnergyTypes, availability)
+        val availKey = if (showAvailBars && availability != null) {
+            "${availability.availableCount}/${availability.totalCount}"
+        } else {
+            "na"
+        }
         val headKey = if (amenityStyle != null) {
             "amenity_${System.identityHashCode(amenityStyle.icon)}_${amenityStyle.glyphArgb}_${amenityStyle.discFillArgb}"
         } else {
@@ -120,9 +140,6 @@ object PoiMarkerHelper {
             textSize = labelTextSize
         }
 
-        val showAvailBars = poi.isChargingStation &&
-            availability != null &&
-            availability.totalCount > 0
         val barRowH = if (showAvailBars) w * 0.07f else 0f
         val barRowGap = if (showAvailBars) w * 0.025f else 0f
 
@@ -263,7 +280,7 @@ object PoiMarkerHelper {
                     }
                 }
             }
-            if (showAvailBars) {
+            if (showAvailBars && availability != null) {
                 val barRowTop = if (hasLabel) {
                     labelBaseline + textPaint.fontMetrics.descent + barRowGap
                 } else {
