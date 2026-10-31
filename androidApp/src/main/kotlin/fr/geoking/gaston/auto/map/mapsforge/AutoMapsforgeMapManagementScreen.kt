@@ -20,7 +20,9 @@ import java.io.File
 
 class AutoMapsforgeMapManagementScreen(
     carContext: CarContext,
-    private val mapManager: MapsforgeMapManager
+    private val mapManager: MapsforgeMapManager,
+    private val recommendLat: Double? = null,
+    private val recommendLon: Double? = null,
 ) : Screen(carContext) {
 
     private var installedMaps: List<File> = mapManager.installedMaps.value
@@ -64,11 +66,16 @@ class AutoMapsforgeMapManagementScreen(
             slotsUsed++
         }
 
-        val activeLabel = activeMap?.name ?: carContext.getString(R.string.network_none)
+        val installedLabels = mapManager.installedRegionLabels()
+        val activeLabel = when {
+            installedLabels.isNotEmpty() -> installedLabels.joinToString(", ")
+            activeMap != null -> activeMap.name
+            else -> carContext.getString(R.string.network_none)
+        }
         addRow(
             Row.Builder()
                 .setTitle(carContext.getString(R.string.mapsforge_active_map))
-                .addText(activeLabel)
+                .addText(activeLabel.take(500))
                 .build()
         )
 
@@ -89,28 +96,56 @@ class AutoMapsforgeMapManagementScreen(
             )
         }
 
-        // Prefer France regions in the capped AA list; full catalog is on phone Settings.
-        val presetsForAa = MapsforgePresetServers.FRANCE_REGION_MAPS +
-            MapsforgePresetServers.NEIGHBOR_MAPS +
-            listOf(MapsforgePresetServers.FRANCE_ALL)
+        val recommended = MapsforgePresetServers.getRecommendedPreset(recommendLat, recommendLon)
+        val missingRecommended = mapManager.getMissingRecommendedPreset(recommendLat, recommendLon)
 
-        for (preset in presetsForAa) {
-            if (!canAdd()) break
-            val isInstalled = installedMaps.any {
-                it.name == preset.name ||
-                    it.name == "${preset.name}.map" ||
-                    it.name.contains(preset.name, ignoreCase = true)
+        // Order: installed presets first, then missing recommended, then remaining catalog.
+        val catalog = buildList {
+            val seenKeys = mutableSetOf<String>()
+            fun addUnique(preset: MapsforgeServerMap) {
+                val key = "${preset.storageKey}|${preset.name}"
+                if (seenKeys.add(key)) add(preset)
             }
-            val subtitle = if (isInstalled) {
+            for (preset in MapsforgePresetServers.PRESET_MAPS) {
+                if (mapManager.isPresetInstalled(preset)) addUnique(preset)
+            }
+            if (missingRecommended != null) addUnique(missingRecommended)
+            addUnique(recommended)
+            for (preset in MapsforgePresetServers.PRESET_MAPS) {
+                addUnique(preset)
+            }
+        }
+
+        for (preset in catalog) {
+            if (!canAdd()) break
+            val isInstalled = mapManager.isPresetInstalled(preset)
+            val isRecommended = preset.storageKey == recommended.storageKey &&
+                preset.name == recommended.name
+            val status = if (isInstalled) {
                 carContext.getString(R.string.mapsforge_installed, preset.sizeEstimateMb)
             } else {
                 carContext.getString(R.string.mapsforge_available, preset.sizeEstimateMb)
             }
+            val subtitle = when {
+                isRecommended && !isInstalled -> carContext.getString(
+                    R.string.mapsforge_suggest_download_region,
+                    preset.name,
+                    preset.sizeEstimateMb,
+                )
+                isInstalled -> status
+                else -> "${preset.region} · $status"
+            }
 
             addRow(
                 Row.Builder()
-                    .setTitle(preset.name)
-                    .addText("${preset.region} · $subtitle")
+                    .setTitle(
+                        if (isRecommended && !isInstalled) {
+                            carContext.getString(R.string.mapsforge_download_region, preset.name)
+                        } else {
+                            preset.name
+                        }
+                    )
+                    .addText(subtitle.take(500))
                     .setOnClickListener {
                         if (progress != null && !progress.isComplete && progress.error == null) {
                             try {
@@ -128,7 +163,7 @@ class AutoMapsforgeMapManagementScreen(
                                 carContext = carContext,
                                 mapManager = mapManager,
                                 preset = preset,
-                                onDownloaded = { invalidate() }
+                                onDownloaded = { invalidate() },
                             )
                         )
                     }

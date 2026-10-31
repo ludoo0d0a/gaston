@@ -23,20 +23,23 @@ import fr.geoking.gaston.ui.map.preview.MapRegionPreviewMap
 import fr.geoking.gaston.ui.map.preview.toRegionItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import java.io.File
 
 @Composable
 fun MapsforgeMapDownloadDialog(
     mapManager: MapsforgeMapManager,
     onDismiss: () -> Unit,
-    onMapFileChanged: () -> Unit = {}
+    onMapFileChanged: () -> Unit = {},
+    initialQuery: String = "",
 ) {
     val scope = rememberCoroutineScope()
     val installedMaps by mapManager.installedMaps.collectAsState()
     val downloadProgress by mapManager.downloadProgress.collectAsState()
     val activeMap = remember(installedMaps) { mapManager.getActiveMapFile() }
+    var searchQuery by remember { mutableStateOf(initialQuery) }
     var selectedRegionKey by remember { mutableStateOf<String?>(null) }
-
+    val filteredPresets = remember(searchQuery) {
+        MapsforgePresetServers.filterPresets(searchQuery)
+    }
     val allPresets = remember { MapsforgePresetServers.PRESET_MAPS }
     val regionItems = remember(allPresets) { allPresets.map { it.toRegionItem() } }
 
@@ -62,7 +65,6 @@ fun MapsforgeMapDownloadDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                // MapLibre Global Boundary Preview
                 MapRegionPreviewMap(
                     regions = regionItems,
                     selectedRegionKey = selectedRegionKey,
@@ -72,6 +74,14 @@ fun MapsforgeMapDownloadDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp)
+                )
+
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.offline_maps_search_hint)) },
                 )
 
                 val progress = downloadProgress
@@ -104,7 +114,7 @@ fun MapsforgeMapDownloadDialog(
                     }
                 } else if (progress?.error != null) {
                     Text(
-                        text = "${stringResource(R.string.mapsforge_download_error)}: ${progress.error}",
+                        text = stringResource(R.string.mapsforge_download_error) + ": ${progress.error}",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -117,29 +127,24 @@ fun MapsforgeMapDownloadDialog(
                         fontWeight = FontWeight.Bold
                     )
                     installedMaps.forEach { file ->
-                        val isActive = activeMap?.name == file.name
+                        val isActive = activeMap?.absolutePath == file.absolutePath
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 RadioButton(
                                     selected = isActive,
                                     onClick = {
                                         mapManager.setActiveMapFile(file)
-                                        mapManager.refreshInstalledMaps()
                                         onMapFileChanged()
                                     }
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = file.name,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
+                                    modifier = Modifier.padding(start = 4.dp)
                                 )
                             }
                             IconButton(
@@ -150,7 +155,7 @@ fun MapsforgeMapDownloadDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = stringResource(R.string.settings_clear_logs),
+                                    contentDescription = stringResource(R.string.action_remove),
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -163,72 +168,97 @@ fun MapsforgeMapDownloadDialog(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.mapsforge_section_france_regions),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    items(
-                        items = MapsforgePresetServers.FRANCE_REGION_MAPS,
-                        key = { it.storageKey },
-                        contentType = { "mapsforge_preset" },
-                    ) { preset ->
-                        MapsforgePresetDownloadRow(
-                            preset = preset,
-                            installedMaps = installedMaps,
-                            isSelected = selectedRegionKey == preset.storageKey,
-                            onSelectRegion = { selectedRegionKey = preset.storageKey },
-                            progress = progress,
-                            scope = scope,
-                            mapManager = mapManager,
-                            onMapFileChanged = onMapFileChanged,
-                        )
-                    }
-                    item {
-                        Text(
-                            text = stringResource(R.string.mapsforge_section_neighbors),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-                    items(
-                        items = MapsforgePresetServers.NEIGHBOR_MAPS,
-                        key = { it.storageKey },
-                        contentType = { "mapsforge_preset" },
-                    ) { preset ->
-                        MapsforgePresetDownloadRow(
-                            preset = preset,
-                            installedMaps = installedMaps,
-                            isSelected = selectedRegionKey == preset.storageKey,
-                            onSelectRegion = { selectedRegionKey = preset.storageKey },
-                            progress = progress,
-                            scope = scope,
-                            mapManager = mapManager,
-                            onMapFileChanged = onMapFileChanged,
-                        )
-                    }
-                    item {
-                        Text(
-                            text = stringResource(R.string.mapsforge_section_country_wide),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-                    item {
-                        MapsforgePresetDownloadRow(
-                            preset = MapsforgePresetServers.FRANCE_ALL,
-                            installedMaps = installedMaps,
-                            isSelected = selectedRegionKey == MapsforgePresetServers.FRANCE_ALL.storageKey,
-                            onSelectRegion = { selectedRegionKey = MapsforgePresetServers.FRANCE_ALL.storageKey },
-                            progress = progress,
-                            scope = scope,
-                            mapManager = mapManager,
-                            onMapFileChanged = onMapFileChanged,
-                        )
+                    if (searchQuery.isNotBlank()) {
+                        if (filteredPresets.isEmpty()) {
+                            item {
+                                Text(
+                                    text = stringResource(R.string.offline_maps_search_empty, searchQuery.trim()),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        } else {
+                            items(
+                                items = filteredPresets,
+                                key = { "${it.storageKey}-${it.name}" },
+                                contentType = { "mapsforge_preset" },
+                            ) { preset ->
+                                MapsforgePresetDownloadRow(
+                                    preset = preset,
+                                    isSelected = selectedRegionKey == preset.storageKey,
+                                    onSelectRegion = { selectedRegionKey = preset.storageKey },
+                                    progress = progress,
+                                    scope = scope,
+                                    mapManager = mapManager,
+                                    onMapFileChanged = onMapFileChanged,
+                                )
+                            }
+                        }
+                    } else {
+                        item {
+                            Text(
+                                text = stringResource(R.string.mapsforge_section_france_regions),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        items(
+                            items = MapsforgePresetServers.FRANCE_REGION_MAPS,
+                            key = { "fr-${it.storageKey}-${it.name}" },
+                            contentType = { "mapsforge_preset" },
+                        ) { preset ->
+                            MapsforgePresetDownloadRow(
+                                preset = preset,
+                                isSelected = selectedRegionKey == preset.storageKey,
+                                onSelectRegion = { selectedRegionKey = preset.storageKey },
+                                progress = progress,
+                                scope = scope,
+                                mapManager = mapManager,
+                                onMapFileChanged = onMapFileChanged,
+                            )
+                        }
+                        item {
+                            Text(
+                                text = stringResource(R.string.mapsforge_section_neighbors),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                        items(
+                            items = MapsforgePresetServers.NEIGHBOR_MAPS,
+                            key = { "nb-${it.storageKey}-${it.name}" },
+                            contentType = { "mapsforge_preset" },
+                        ) { preset ->
+                            MapsforgePresetDownloadRow(
+                                preset = preset,
+                                isSelected = selectedRegionKey == preset.storageKey,
+                                onSelectRegion = { selectedRegionKey = preset.storageKey },
+                                progress = progress,
+                                scope = scope,
+                                mapManager = mapManager,
+                                onMapFileChanged = onMapFileChanged,
+                            )
+                        }
+                        item {
+                            Text(
+                                text = stringResource(R.string.mapsforge_section_country_wide),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                        item {
+                            MapsforgePresetDownloadRow(
+                                preset = MapsforgePresetServers.FRANCE_ALL,
+                                isSelected = selectedRegionKey == MapsforgePresetServers.FRANCE_ALL.storageKey,
+                                onSelectRegion = { selectedRegionKey = MapsforgePresetServers.FRANCE_ALL.storageKey },
+                                progress = progress,
+                                scope = scope,
+                                mapManager = mapManager,
+                                onMapFileChanged = onMapFileChanged,
+                            )
+                        }
                     }
                 }
             }
@@ -244,7 +274,6 @@ fun MapsforgeMapDownloadDialog(
 @Composable
 internal fun MapsforgePresetDownloadRow(
     preset: MapsforgeServerMap,
-    installedMaps: List<File>,
     isSelected: Boolean = false,
     onSelectRegion: () -> Unit = {},
     progress: DownloadProgress?,
@@ -252,13 +281,9 @@ internal fun MapsforgePresetDownloadRow(
     mapManager: MapsforgeMapManager,
     onMapFileChanged: () -> Unit,
 ) {
+    val installedMaps by mapManager.installedMaps.collectAsState()
+    val isInstalled = remember(installedMaps, preset) { mapManager.isPresetInstalled(preset) }
     var showWarningDialog by remember { mutableStateOf(false) }
-
-    val isInstalled = installedMaps.any {
-        it.name.equals(preset.storageKey, ignoreCase = true) ||
-            it.name.equals("${preset.storageKey}.map", ignoreCase = true) ||
-            it.name.contains(preset.storageKey, ignoreCase = true)
-    }
 
     if (showWarningDialog) {
         AlertDialog(
@@ -331,9 +356,7 @@ internal fun MapsforgePresetDownloadRow(
                 )
             }
             Button(
-                onClick = {
-                    showWarningDialog = true
-                },
+                onClick = { showWarningDialog = true },
                 enabled = progress == null || progress.isComplete || progress.error != null
             ) {
                 Text(if (isInstalled) stringResource(R.string.action_refresh) else stringResource(R.string.action_download))
