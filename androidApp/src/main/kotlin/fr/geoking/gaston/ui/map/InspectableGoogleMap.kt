@@ -23,7 +23,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 /**
  * Google Map host that is safe under Android Studio Preview / JVM screenshot tools
  * (Paparazzi, Robolectric Compose). When [LocalInspectionMode] is true, renders
- * [placeholder] instead of the Maps SDK view.
+ * [StaticGoogleMapImage] instead of the Maps SDK view.
  *
  * Force inspection in tests:
  * ```
@@ -40,18 +40,15 @@ fun InspectableGoogleMap(
     onMapClick: (LatLng) -> Unit = {},
     /** Optional pre-decoded Static Maps bitmap (screenshot tests). */
     staticMapBitmap: android.graphics.Bitmap? = null,
-    placeholder: @Composable (Modifier) -> Unit = { mapModifier ->
-        StaticGoogleMapImage(
-            center = cameraPositionState.position.target,
-            zoom = cameraPositionState.position.zoom,
-            modifier = mapModifier,
-            preloadedBitmap = staticMapBitmap,
-        )
-    },
     content: @Composable @GoogleMapComposable () -> Unit = {},
 ) {
     if (LocalInspectionMode.current) {
-        placeholder(modifier)
+        StaticGoogleMapImage(
+            center = cameraPositionState.position.target,
+            zoom = cameraPositionState.position.zoom,
+            modifier = modifier,
+            preloadedBitmap = staticMapBitmap,
+        )
     } else {
         GoogleMap(
             modifier = modifier,

@@ -47,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
@@ -128,30 +129,32 @@ fun MarketingMapScreen(
                     position = CameraPosition.fromLatLngZoom(mapCenter, mapZoom)
                 }
                 // Inspection mode: Static Maps tiles + Gaston pins; device: GoogleMap.
-                InspectableGoogleMap(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    cameraPositionState = cameraPositionState,
-                    staticMapBitmap = staticMapBitmap,
-                    placeholder = { mapModifier ->
-                        Box(modifier = mapModifier.fillMaxSize()) {
-                            StaticGoogleMapImage(
-                                center = mapCenter,
-                                zoom = mapZoom,
-                                modifier = Modifier.fillMaxSize(),
-                                preloadedBitmap = staticMapBitmap,
-                            )
-                            MapMarkerPreviewCanvas(
-                                markerSpecs = PreviewPoiSamples.marketingMapMarkerSpecs(),
-                                modifier = Modifier.fillMaxSize(),
-                                drawBackground = false,
-                                viewportCenter = mapCenter,
-                                viewportZoom = mapZoom,
-                            )
-                        }
-                    },
-                )
+                val mapModifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                if (LocalInspectionMode.current) {
+                    Box(modifier = mapModifier.fillMaxSize()) {
+                        StaticGoogleMapImage(
+                            center = mapCenter,
+                            zoom = mapZoom,
+                            modifier = Modifier.fillMaxSize(),
+                            preloadedBitmap = staticMapBitmap,
+                        )
+                        MapMarkerPreviewCanvas(
+                            markerSpecs = PreviewPoiSamples.marketingMapMarkerSpecs(),
+                            modifier = Modifier.fillMaxSize(),
+                            drawBackground = false,
+                            viewportCenter = mapCenter,
+                            viewportZoom = mapZoom,
+                        )
+                    }
+                } else {
+                    InspectableGoogleMap(
+                        modifier = mapModifier,
+                        cameraPositionState = cameraPositionState,
+                        staticMapBitmap = staticMapBitmap,
+                    )
+                }
                 val cards = PreviewPoiSamples.marketingMapCarouselPois()
                 // Same fixed height as PoiOverlayHost — without it, cards expand to the
                 // Column's max height and starve MapMarkerPreviewCanvas (weight 1f → 0).
