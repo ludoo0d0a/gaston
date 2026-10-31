@@ -404,11 +404,16 @@ Reference implementations: `auto/settings/about/AutoAboutScreen.kt` (long scroll
 
 ## Gaston map screen layout
 
-`CustomMapPoiScreen` / `MapLibrePoiScreen` split controls across templates:
+`CustomMapPoiScreen` / `MapLibrePoiScreen` / `MapsforgePoiScreen` split controls across templates:
 
-- **ActionStrip** (top-right): minimal — settings icon, map-mode swap icon (cycles `CarMapMode`), optional
-  cheapest-filter icon (max 3 actions in practice, hard cap 4).
-- **Nested ListTemplate Header** end actions: zoom, recenter, compass/orientation (icon + title where needed).
+- **ActionStrip** (top-right): compass, settings, radar-notification toggle, traffic-notification toggle
+  (hard cap 4). Toggles use `setRadarDetectionEnabled` / `setTrafficDetectionEnabled` (map layer + alerts)
+  and tint when on. Map mode cycling lives in map settings (`AutoMapSettingsScreen`).
+- **Nested ListTemplate Header** end actions: optional cheapest-filter + hide/show menu (eye).
+- **mapActionStrip**: zoom in / zoom out.
+
+`NativeMapPoiScreen` (`PlaceListMapTemplate`): ActionStrip is optional cheapest + settings + radar + traffic
+(no hide-menu; no compass — host owns the map).
 
 Do not put all map controls on the ActionStrip; strict hosts reject overloaded strips.
 

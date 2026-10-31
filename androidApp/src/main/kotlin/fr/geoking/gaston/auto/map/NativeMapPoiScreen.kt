@@ -48,12 +48,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import fr.geoking.gaston.auto.poi.AutoPoiUiHelper
+import fr.geoking.gaston.auto.radarTrafficDetectionActions
 import fr.geoking.gaston.auto.safeCarTemplate
-import fr.geoking.gaston.auto.swapMapMode
-import fr.geoking.gaston.auto.actionMapIcon
 import fr.geoking.gaston.auto.actionSettingsIcon
 import fr.geoking.gaston.auto.cheapestFilterAction
-import fr.geoking.gaston.auto.menuVisibilityAction
 import fr.geoking.gaston.auto.settings.map.AutoMapSettingsScreen
 import fr.geoking.gaston.ui.map.components.AutoMapCamera
 import fr.geoking.gaston.ui.map.components.AutoTrafficOverlay
@@ -253,14 +251,7 @@ class NativeMapPoiScreen(
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
-        val visibilityAction = carContext.menuVisibilityAction(isMenuVisible) {
-            isMenuVisible = !isMenuVisible
-            invalidate()
-        }
-
         val actionStripBuilder = ActionStrip.Builder()
-
-        actionStripBuilder.addAction(visibilityAction)
 
         val fuelIdsForFilter = effectiveEnergies - "electric"
         if (hasFuelFilter && (isCheapestFilterActive || pois.any { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForFilter } == true })) {
@@ -291,14 +282,9 @@ class NativeMapPoiScreen(
                 .build()
         )
 
-        if (mapDeps != null) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionMapIcon())
-                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
-                    .build()
-            )
-        }
+        carContext.radarTrafficDetectionActions(currentSettings, settingsManager) {
+            invalidate()
+        }.forEach { actionStripBuilder.addAction(it) }
         val actionStrip = actionStripBuilder.build()
 
         val anchorPlace = Place.Builder(CarLocation.create(searchLat, searchLon))

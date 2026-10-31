@@ -30,36 +30,36 @@ class NativeMapPoiScreenAaTest {
     }
 
     @Test
-    fun menuVisibilityToggleClearsAndRestoresList() {
-        val screen = newScreen()
+    fun actionStripRadarTrafficTogglesDetectionSettings() {
+        val carContext = CarScreenTestHarness.newTestCarContext()
+        val settingsManager = SettingsManager(ApplicationProvider.getApplicationContext())
+        val screen = NativeMapPoiScreen(
+            carContext = carContext,
+            poiProvider = FakePoiProvider(),
+            availabilityProviderFactory = BorneAvailabilityProviderFactory(belibProvider = FakeBorneAvailabilityProvider()),
+            settingsManager = settingsManager,
+        )
         CarScreenTestHarness.createAndStart(screen)
 
-        val template = screen.onGetTemplate() as PlaceListMapTemplate
-        val actionStrip = template.actionStrip
-        org.junit.Assert.assertNotNull("actionStrip should not be null", actionStrip)
-
-        val visibilityAction = actionStrip!!.actions.firstOrNull { action ->
-            action.icon != null
-        }
-        org.junit.Assert.assertNotNull("visibility action should exist on ActionStrip", visibilityAction)
+        val actions = (screen.onGetTemplate() as PlaceListMapTemplate).actionStrip!!.actions
+        org.junit.Assert.assertTrue("strip should include radar + traffic", actions.size >= 2)
+        val radarAction = actions[actions.size - 2]
+        val trafficAction = actions[actions.size - 1]
 
         val dummyCallback = object : androidx.car.app.OnDoneCallback {
             override fun onSuccess(value: androidx.car.app.serialization.Bundleable?) {}
             override fun onFailure(value: androidx.car.app.serialization.Bundleable) {}
         }
 
-        // Trigger toggle off
-        visibilityAction!!.onClickDelegate?.sendClick(dummyCallback)
+        org.junit.Assert.assertFalse(settingsManager.settings.value.radarWarningEnabled)
+        radarAction.onClickDelegate?.sendClick(dummyCallback)
+        org.junit.Assert.assertTrue(settingsManager.settings.value.radarWarningEnabled)
+        org.junit.Assert.assertTrue("speed_camera" in settingsManager.settings.value.selectedOverpassAmenityTypes)
 
-        val hiddenTemplate = screen.onGetTemplate() as PlaceListMapTemplate
-        org.junit.Assert.assertNotNull("hidden content list should not be null", hiddenTemplate.itemList)
-        org.junit.Assert.assertTrue("hidden itemList should be empty", hiddenTemplate.itemList!!.items.isEmpty())
-
-        // Trigger toggle on again
-        visibilityAction.onClickDelegate?.sendClick(dummyCallback)
-
-        val restoredTemplate = screen.onGetTemplate() as PlaceListMapTemplate
-        org.junit.Assert.assertNotNull("restored content list should not be null", restoredTemplate.itemList)
+        org.junit.Assert.assertFalse(settingsManager.settings.value.mapTrafficEnabled)
+        trafficAction.onClickDelegate?.sendClick(dummyCallback)
+        org.junit.Assert.assertTrue(settingsManager.settings.value.mapTrafficEnabled)
+        org.junit.Assert.assertTrue(settingsManager.settings.value.trafficAlertEnabled)
     }
 
     @Test

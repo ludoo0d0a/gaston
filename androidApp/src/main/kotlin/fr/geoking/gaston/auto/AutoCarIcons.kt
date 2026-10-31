@@ -7,7 +7,9 @@ import androidx.car.app.model.Action
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.core.graphics.drawable.IconCompat
+import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.R
+import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.feature.emergency.EmergencyCategory
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.poi.Poi
@@ -141,6 +143,35 @@ fun CarContext.alertToggleAction(enabled: Boolean, icon: CarIcon, onToggle: () -
             .setBackgroundColor(AutoCarIcons.emergency)
     }
     return builder.build()
+}
+
+/**
+ * Map ActionStrip radar + traffic toggles (display layer + notifications, coupled).
+ * Order: radar, then traffic. Call [onChanged] after each toggle (typically invalidate + sync).
+ */
+fun CarContext.radarTrafficDetectionActions(
+    settings: AppSettings,
+    settingsManager: SettingsManager,
+    onChanged: () -> Unit,
+): List<Action> {
+    val radarOn = settings.radarWarningEnabled
+    val trafficOn = settings.mapTrafficEnabled || settings.trafficAlertEnabled
+    return listOf(
+        alertToggleAction(
+            enabled = radarOn,
+            icon = dashboardRadarAlertIcon(radarOn),
+        ) {
+            settingsManager.setRadarDetectionEnabled(!radarOn)
+            onChanged()
+        },
+        alertToggleAction(
+            enabled = trafficOn,
+            icon = dashboardTrafficAlertIcon(trafficOn),
+        ) {
+            settingsManager.setTrafficDetectionEnabled(!trafficOn)
+            onChanged()
+        },
+    )
 }
 
 fun CarContext.actionHomeIcon(): CarIcon = carIcon(R.drawable.ic_home, AutoCarIcons.primary)

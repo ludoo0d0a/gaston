@@ -46,19 +46,18 @@ import fr.geoking.gaston.auto.poi.AutoPoiUiHelper
 import fr.geoking.gaston.ui.map.components.MapOrientationMode
 import fr.geoking.gaston.auto.actionCompassIcon
 import fr.geoking.gaston.auto.menuVisibilityAction
-import fr.geoking.gaston.auto.actionMapIcon
 import fr.geoking.gaston.auto.actionSettingsIcon
 import fr.geoking.gaston.auto.actionZoomInIcon
 import fr.geoking.gaston.auto.actionZoomOutIcon
 import fr.geoking.gaston.auto.cheapestFilterAction
 import fr.geoking.gaston.auto.compassArrowSector
 import fr.geoking.gaston.auto.map.maplibre.resolveAutoRasterTileUrl
+import fr.geoking.gaston.auto.radarTrafficDetectionActions
 import fr.geoking.gaston.auto.safeCarTemplate
 import fr.geoking.gaston.ui.map.components.shouldAddTrailPoint
 import fr.geoking.gaston.ui.map.components.shouldRedrawFromMovement
 import fr.geoking.gaston.ui.map.components.shouldRequeryForViewportChange
 import fr.geoking.gaston.ui.map.components.shouldRequeryPois
-import fr.geoking.gaston.auto.swapMapMode
 import fr.geoking.gaston.community.CommunityPoiRepository
 import fr.geoking.gaston.community.FavoritesRepository
 import fr.geoking.gaston.countryCodesAtMapPosition
@@ -922,8 +921,6 @@ class MapsforgePoiScreen(
 
         val actionStripBuilder = ActionStrip.Builder()
 
-        actionStripBuilder.addAction(visibilityAction)
-
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         val cheapestAction = if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
             carContext.cheapestFilterAction(isCheapestFilterActive) {
@@ -963,14 +960,10 @@ class MapsforgePoiScreen(
                 .build()
         )
 
-        if (mapDeps != null) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionMapIcon())
-                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
-                    .build()
-            )
-        }
+        carContext.radarTrafficDetectionActions(currentSettings, settingsManager) {
+            syncRendererWithMapState()
+            invalidate()
+        }.forEach { actionStripBuilder.addAction(it) }
         val actionStrip = actionStripBuilder.build()
 
         val mapActionStrip = ActionStrip.Builder()

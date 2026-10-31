@@ -70,25 +70,22 @@ class MapsforgePoiScreenAaTest {
     }
 
     @Test
-    fun menuVisibilityToggleClearsAndRestoresList() {
+    fun menuVisibilityToggleOnHeaderClearsAndRestoresList() {
         val (_, screen) = newScreen()
         CarScreenTestHarness.createAndStart(screen)
 
         val template = screen.onGetTemplate() as MapWithContentTemplate
-        val actionStrip = template.actionStrip
-        assertNotNull("actionStrip should not be null", actionStrip)
-
-        val visibilityAction = actionStrip!!.actions.firstOrNull { action ->
-            action.icon != null
-        }
-        assertNotNull("visibility action should exist on ActionStrip", visibilityAction)
+        val content = template.contentTemplate as ListTemplate
+        val header = content.header
+        assertNotNull("content header should not be null", header)
+        val visibilityAction = header!!.endHeaderActions.lastOrNull()
+        assertNotNull("visibility action should exist on content header", visibilityAction)
 
         val dummyCallback = object : OnDoneCallback {
             override fun onSuccess(value: Bundleable?) {}
             override fun onFailure(value: Bundleable) {}
         }
 
-        // Trigger toggle off
         visibilityAction!!.onClickDelegate?.sendClick(dummyCallback)
 
         val hiddenTemplate = screen.onGetTemplate() as MapWithContentTemplate
@@ -96,12 +93,44 @@ class MapsforgePoiScreenAaTest {
         assertNotNull("hidden content list should not be null", hiddenContent.singleList)
         Assert.assertTrue("hidden singleList should be empty", hiddenContent.singleList!!.items.isEmpty())
 
-        // Trigger toggle on again
         visibilityAction.onClickDelegate?.sendClick(dummyCallback)
 
         val restoredTemplate = screen.onGetTemplate() as MapWithContentTemplate
         val restoredContent = restoredTemplate.contentTemplate as ListTemplate
         assertNotNull("restored content list should not be null", restoredContent.singleList)
+    }
+
+    @Test
+    fun actionStripRadarTrafficTogglesDetectionSettings() {
+        val carContext = CarScreenTestHarness.newTestCarContext()
+        val settingsManager = SettingsManager(ApplicationProvider.getApplicationContext())
+        val screen = MapsforgePoiScreen(
+            carContext = carContext,
+            poiProvider = FakePoiProvider(),
+            availabilityProviderFactory = BorneAvailabilityProviderFactory(belibProvider = FakeBorneAvailabilityProvider()),
+            settingsManager = settingsManager,
+        )
+        CarScreenTestHarness.createAndStart(screen)
+
+        val actions = (screen.onGetTemplate() as MapWithContentTemplate).actionStrip!!.actions
+        Assert.assertTrue("strip should include radar + traffic", actions.size >= 2)
+        val radarAction = actions[actions.size - 2]
+        val trafficAction = actions[actions.size - 1]
+
+        val dummyCallback = object : OnDoneCallback {
+            override fun onSuccess(value: Bundleable?) {}
+            override fun onFailure(value: Bundleable) {}
+        }
+
+        Assert.assertFalse(settingsManager.settings.value.radarWarningEnabled)
+        radarAction.onClickDelegate?.sendClick(dummyCallback)
+        Assert.assertTrue(settingsManager.settings.value.radarWarningEnabled)
+        Assert.assertTrue("speed_camera" in settingsManager.settings.value.selectedOverpassAmenityTypes)
+
+        Assert.assertFalse(settingsManager.settings.value.mapTrafficEnabled)
+        trafficAction.onClickDelegate?.sendClick(dummyCallback)
+        Assert.assertTrue(settingsManager.settings.value.mapTrafficEnabled)
+        Assert.assertTrue(settingsManager.settings.value.trafficAlertEnabled)
     }
 
     @Test

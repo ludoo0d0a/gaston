@@ -69,15 +69,14 @@ import kotlin.math.abs
 import fr.geoking.gaston.auto.map.maplibre.resolveAutoRasterTileUrl
 import fr.geoking.gaston.auto.poi.AutoPoiUiHelper
 import fr.geoking.gaston.auto.safeCarTemplate
-import fr.geoking.gaston.auto.swapMapMode
 import fr.geoking.gaston.auto.actionCompassIcon
-import fr.geoking.gaston.auto.actionMapIcon
 import fr.geoking.gaston.auto.actionSettingsIcon
 import fr.geoking.gaston.auto.actionZoomInIcon
 import fr.geoking.gaston.auto.actionZoomOutIcon
 import fr.geoking.gaston.auto.cheapestFilterAction
 import fr.geoking.gaston.auto.compassArrowSector
 import fr.geoking.gaston.auto.menuVisibilityAction
+import fr.geoking.gaston.auto.radarTrafficDetectionActions
 import fr.geoking.gaston.auto.settings.map.AutoMapSettingsScreen
 import fr.geoking.gaston.ui.map.components.AutoMapCamera
 import fr.geoking.gaston.ui.map.components.AutoMapHeading
@@ -1001,8 +1000,6 @@ class CustomMapPoiScreen(
 
         val actionStripBuilder = ActionStrip.Builder()
 
-        actionStripBuilder.addAction(visibilityAction)
-
         val hasFuelFilter = (effectiveEnergies - "electric").isNotEmpty()
         val cheapestAction = if (hasFuelFilter && (isCheapestFilterActive || getFilteredPois(currentSettings).any { !it.fuelPrices.isNullOrEmpty() })) {
             carContext.cheapestFilterAction(isCheapestFilterActive) {
@@ -1042,14 +1039,10 @@ class CustomMapPoiScreen(
                 .build()
         )
 
-        if (mapDeps != null) {
-            actionStripBuilder.addAction(
-                Action.Builder()
-                    .setIcon(carContext.actionMapIcon())
-                    .setOnClickListener { swapMapMode(settingsManager, mapDeps, title) }
-                    .build()
-            )
-        }
+        carContext.radarTrafficDetectionActions(currentSettings, settingsManager) {
+            syncRendererWithMapState()
+            invalidate()
+        }.forEach { actionStripBuilder.addAction(it) }
         val actionStrip = actionStripBuilder.build()
 
         val mapActionStrip = ActionStrip.Builder()
