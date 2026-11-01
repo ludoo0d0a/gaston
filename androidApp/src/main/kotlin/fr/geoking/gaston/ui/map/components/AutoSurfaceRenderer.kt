@@ -26,6 +26,7 @@ import org.koin.core.context.GlobalContext
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.PI
@@ -239,8 +240,9 @@ class AutoSurfaceRenderer(
             running = false
             drawCondition.signalAll()
         }
-        executor.shutdownNow()
+        drawThread.interrupt()
         try { drawThread.join(500) } catch (_: Exception) {}
+        executor.shutdownNow()
         recycleBasemap()
     }
 
@@ -1203,8 +1205,10 @@ class AutoSurfaceRenderer(
             failedTiles.entries.removeIf { it.value < threshold }
         }
 
+        if (executor.isShutdown) return null
         if (pendingRequests.add(key)) {
-            executor.submit {
+            try {
+                executor.submit {
                 val urlString = tileUrlTemplate
                     .replace("{z}", z.toString())
                     .replace("{x}", wrappedX.toString())
@@ -1256,6 +1260,9 @@ class AutoSurfaceRenderer(
                 } finally {
                     pendingRequests.remove(key)
                 }
+                }
+            } catch (_: RejectedExecutionException) {
+                pendingRequests.remove(key)
             }
         }
 

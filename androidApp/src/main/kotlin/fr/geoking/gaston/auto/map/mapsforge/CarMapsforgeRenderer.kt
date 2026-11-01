@@ -52,6 +52,7 @@ import org.mapsforge.core.graphics.GraphicFactory
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -361,8 +362,9 @@ class CarMapsforgeRenderer(
             running = false
             drawCondition.signalAll()
         }
-        executor.shutdownNow()
+        drawThread.interrupt()
         try { drawThread.join(500) } catch (_: Exception) {}
+        executor.shutdownNow()
         try { activeMapDataStore?.close() } catch (_: Exception) {}
         try { labelStore?.destroy() } catch (_: Exception) {}
         labelStore = null
@@ -1395,9 +1397,11 @@ class CarMapsforgeRenderer(
             return null
         }
 
+        if (executor.isShutdown) return null
         if (pendingRequests.add(key)) {
-            executor.submit {
-                try {
+            try {
+                executor.submit {
+                    try {
                     val renderer = databaseRenderer
                     val ds = activeMapDataStore
                     val graphicFactory = try { AndroidGraphicFactory.INSTANCE } catch (_: Exception) { null }
@@ -1479,6 +1483,9 @@ class CarMapsforgeRenderer(
                 } finally {
                     pendingRequests.remove(key)
                 }
+                }
+            } catch (_: RejectedExecutionException) {
+                pendingRequests.remove(key)
             }
         }
 
