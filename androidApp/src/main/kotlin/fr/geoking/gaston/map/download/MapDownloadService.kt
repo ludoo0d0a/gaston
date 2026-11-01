@@ -7,10 +7,13 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import fr.geoking.gaston.MainActivity
 import fr.geoking.gaston.R
 import fr.geoking.gaston.auto.map.mapsforge.DownloadProgress
@@ -28,11 +31,8 @@ import org.koin.core.context.GlobalContext
 import java.io.File
 
 /**
- * Started [Service] that downloads offline map packs (Mapsforge / PMTiles) with HTTP resume.
- *
- * Not a foreground service: Play Console must declare `FOREGROUND_SERVICE_DATA_SYNC`
- * before shipping an FGS (see `docs/map-download-fgs.md`). Until then, downloads run
- * as a normal service from the foreground UI; partial files allow resume.
+ * Foreground [Service] that downloads offline map packs (Mapsforge / PMTiles) with HTTP resume.
+ * Type **dataSync** — declare it in Play Console (see `docs/map-download-fgs.md`).
  */
 class MapDownloadService : Service() {
 
@@ -59,12 +59,18 @@ class MapDownloadService : Service() {
 
         val tempFile = File(tempPath)
         ensureChannel()
-        notifyProgress(
+        val initial = buildNotification(
             title = getString(R.string.map_download_notification_title),
             text = getString(R.string.mapsforge_downloading, fileName),
             progress = null,
             indeterminate = true,
         )
+        val fgsType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        } else {
+            0
+        }
+        ServiceCompat.startForeground(this, NOTIFICATION_ID, initial, fgsType)
 
         downloadJob?.cancel()
         downloadJob = scope.launch {
@@ -114,7 +120,7 @@ class MapDownloadService : Service() {
         val deferred = activeDeferred
         activeDeferred = null
         deferred?.complete(result)
-        clearProgressNotification()
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
@@ -221,7 +227,7 @@ class MapDownloadService : Service() {
         private var activeDeferred: CompletableDeferred<Result<File>>? = null
 
         /**
-         * Starts the download service and suspends until the temp file download finishes.
+         * Starts the foreground service and suspends until the temp file download finishes.
          * Partial [tempFile] bytes are preserved on failure for a later resume.
          */
         suspend fun downloadToTemp(
@@ -249,7 +255,7 @@ class MapDownloadService : Service() {
                 if (!userAgent.isNullOrBlank()) putExtra(EXTRA_USER_AGENT, userAgent)
             }
             try {
-                context.applicationContext.startService(intent)
+                ContextCompat.startForegroundService(context.applicationContext, intent)
             } catch (e: Exception) {
                 activeDeferred = null
                 MapDownloadProgressHub.publish(

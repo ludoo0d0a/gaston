@@ -8,9 +8,9 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Strip library FOREGROUND_SERVICE until Play Console FGS declaration —
-         see docs/map-download-fgs.md -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
+    <!-- Offline map packs: user-initiated download with resume (Play dataSync FGS). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -74,11 +74,11 @@
             </intent-filter>
         </service>
 
-        <!-- Offline map download (HTTP Range resume). Re-add FOREGROUND_SERVICE_DATA_SYNC
-             + foregroundServiceType after Play Console declaration (docs/map-download-fgs.md). -->
+        <!-- Offline map download (survives Activity / AA teardown; HTTP Range resume). -->
         <service
             android:name=".map.download.MapDownloadService"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <receiver
             android:name=".parked.ParkedCarActionReceiver"
