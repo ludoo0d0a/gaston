@@ -81,6 +81,23 @@ Numéro de radar;Type de radar;Date de mise en service;VMA ;Latitude; Longitude
     }
 
     @Test
+    fun testZoneMatchesDrawnPolygonRadiusAndDirection() {
+        // VMA 50 → urban 300 m on the map, even when OSM classifies the road as a motorway.
+        val record = FranceRadarRecord(
+            "1", "FIXE", 50, 48.8566, 2.3522,
+            monitoredBearingDegrees = 0.0,
+        )
+        val zone = record.toDangerZone(roadClassOverride = fr.geoking.gaston.aac.RoadNetworkClass.Motorway)
+        assertEquals(300.0, zone.radiusMeters)
+        assertEquals(0.0, zone.monitoredBearingDegrees)
+        // Controlled traffic heads north: approach side is south of the radar, not north.
+        val (southLat, southLon) = fr.geoking.gaston.aac.DangerZoneTriangle.offsetMeters(48.8566, 2.3522, 180.0, 200.0)
+        val (northLat, northLon) = fr.geoking.gaston.aac.DangerZoneTriangle.offsetMeters(48.8566, 2.3522, 0.0, 200.0)
+        assertTrue(zone.contains(southLat, southLon))
+        assertFalse(zone.contains(northLat, northLon))
+    }
+
+    @Test
     fun testProviderExposesZoneCenterPoisForMapAmenity() = runBlocking {
         val mockEngine = MockEngine {
             respond(

@@ -92,6 +92,8 @@ class RadarOsmEnricher(
         }
         return records.map { record ->
             val base = record.toDangerZone(roadClassOverride = roadClassOverrides[record.id])
+            // Same rule as enrichPois: an explicit direction from the source is not overridden.
+            if (record.bidirectional) return@map base
             val info = matchAndResolve(record.latitude, record.longitude, record.vma, bundle)
                 ?: return@map base
             base.withOsmDirection(info)

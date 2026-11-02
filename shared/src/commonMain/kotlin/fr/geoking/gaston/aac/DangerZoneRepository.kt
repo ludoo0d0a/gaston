@@ -6,6 +6,7 @@ import fr.geoking.gaston.api.radars.FranceRadarsClient
 import fr.geoking.gaston.api.radars.LufopOpenSpeedCamClient
 import fr.geoking.gaston.api.radars.LuxembourgRadarsClient
 import fr.geoking.gaston.api.radars.toDangerZone
+import fr.geoking.gaston.road.RoadGeometryRepository
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -28,11 +29,15 @@ class DangerZoneRepository(
     private val useOsmRadarsFallback: Boolean = false,
     private val roadClassifier: OsmRoadClassifier? = null,
     private val radarOsmEnricher: RadarOsmEnricher? = null,
+    /** When set, speed-control zones near the vehicle follow the OSM road geometry. */
+    private val roadGeometryRepository: RoadGeometryRepository? = null,
 ) {
     private var cachedZones: List<DangerZone> = emptyList()
     private var cacheCenterLat: Double = Double.NaN
     private var cacheCenterLon: Double = Double.NaN
     private var cacheRadiusKm: Double = 0.0
+    /** Zones whose road geometry was already requested (success or not) — one Overpass try each. */
+    private val corridorAttemptedIds = mutableSetOf<String>()
 
     /**
      * Returns danger zones near the vehicle, refreshing when the vehicle leaves the cached area.
@@ -57,10 +62,55 @@ class DangerZoneRepository(
             cacheCenterLat = latitude
             cacheCenterLon = longitude
             cacheRadiusKm = radiusKm
+            corridorAttemptedIds.clear()
         }
+
+        enrichNearbyWithRoadGeometry(latitude, longitude)
 
         return cachedZones.filter { zone ->
             zone.distanceMetersFrom(latitude, longitude) <= radiusKm * 1000.0 + zone.radiusMeters
+        }
+    }
+
+    /**
+     * Attaches the OSM road corridor (length = zone radius along the road) to the closest
+     * speed-control zones the vehicle is about to reach. Lazy + bounded: Overpass is only asked
+     * for a few zones per call, once each.
+     */
+    private suspend fun enrichNearbyWithRoadGeometry(latitude: Double, longitude: Double) {
+        val roads = roadGeometryRepository ?: return
+        val pending = cachedZones
+            .filter {
+                it.kind == DangerZoneKind.SpeedControlArea &&
+                    it.corridorRings.isEmpty() &&
+                    it.id !in corridorAttemptedIds &&
+                    it.distanceMetersFrom(latitude, longitude) <= it.radiusMeters + CORRIDOR_PREFETCH_METERS
+            }
+            .sortedBy { it.distanceMetersFrom(latitude, longitude) }
+            .take(CORRIDOR_ENRICH_PER_CALL)
+        for (zone in pending) {
+            corridorAttemptedIds.add(zone.id)
+            val polylines = try {
+                roads.fetchRoadsNear(
+                    zone.centerLatitude,
+                    zone.centerLongitude,
+                    radiusKm = zone.radiusMeters / 1000.0 + 0.2,
+                )
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                continue
+            }
+            val rings = RadarRoadCorridorCalculator.corridorRings(
+                tipLat = zone.centerLatitude,
+                tipLon = zone.centerLongitude,
+                radiusMeters = zone.radiusMeters,
+                monitoredBearingDegrees = zone.monitoredBearingDegrees,
+                bidirectional = zone.monitoredBidirectional,
+                roads = polylines,
+            )
+            if (rings.isEmpty()) continue
+            cachedZones = cachedZones.map { if (it.id == zone.id) it.withRoadCorridor(rings) else it }
         }
     }
 
@@ -78,6 +128,8 @@ class DangerZoneRepository(
                     vma = osc.vma,
                     latitude = osc.latitude,
                     longitude = osc.longitude,
+                    monitoredBearingDegrees = osc.azimut,
+                    bidirectional = osc.flash?.contains("double", ignoreCase = true) == true,
                 )
             )
         }
@@ -158,6 +210,7 @@ class DangerZoneRepository(
         cacheCenterLat = Double.NaN
         cacheCenterLon = Double.NaN
         cacheRadiusKm = 0.0
+        corridorAttemptedIds.clear()
     }
 
     /** For tests / diagnostics: is the mix not 100% radar-derived? */
@@ -166,5 +219,7 @@ class DangerZoneRepository(
 
     companion object {
         private const val CLASSIFY_PARALLELISM = 4
+        private const val CORRIDOR_PREFETCH_METERS = 3_000.0
+        private const val CORRIDOR_ENRICH_PER_CALL = 3
     }
 }

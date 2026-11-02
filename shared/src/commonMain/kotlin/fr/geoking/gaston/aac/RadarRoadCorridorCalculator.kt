@@ -4,8 +4,9 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.road.RoadPolyline
 import fr.geoking.gaston.shared.location.haversineKm
-import kotlin.math.abs
-import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.PI
 
 data class RadarRoadCorridorPolygon(
     val poiId: String,
@@ -20,7 +21,8 @@ data class RadarRoadCorridorPolygon(
 
 object RadarRoadCorridorCalculator {
 
-    private const val BUFFER_HALF_WIDTH_METERS = 18.0 // ~36m total corridor width
+    // ~70 m total: tolerates GPS error (10-20 m) and lane / carriageway offset from the OSM centerline.
+    private const val BUFFER_HALF_WIDTH_METERS = 35.0
 
     /**
      * Calculates an upstream road corridor polygon along the drivable road geometries
@@ -128,5 +130,199 @@ object RadarRoadCorridorCalculator {
             strokeArgb = 0xFF1D4ED8.toInt(), // strong border blue
             points = polygonPoints,
         )
+    }
+
+    /** Max distance between the radar and the road it is snapped on. */
+    const val SNAP_MAX_METERS = 60.0
+
+    /** Max gap between two OSM ways for them to be chained into one continuous road. */
+    private const val CHAIN_GAP_METERS = 8.0
+
+    /** Corridor half-width (m) used for the OSM road-following zone geometry. */
+    const val ROAD_CORRIDOR_HALF_WIDTH_METERS = BUFFER_HALF_WIDTH_METERS
+
+    /**
+     * Road-following polygons (one per approach direction) for a radar [Poi]; empty when no OSM
+     * road is close enough. Same geometry as [DangerZone.corridorRings].
+     */
+    fun calculateCorridors(poi: Poi, roadPolylines: List<RoadPolyline>): List<RadarRoadCorridorPolygon> {
+        if (poi.poiCategory != PoiCategory.Radar) return emptyList()
+        val zoneRadiusM = DangerZoneDistances.radiusMetersForRadarPoiVma(poi.rawSourceData?.get("vma"))
+        return corridorRings(
+            tipLat = poi.latitude,
+            tipLon = poi.longitude,
+            radiusMeters = zoneRadiusM,
+            monitoredBearingDegrees = DangerZoneTriangle.axisBearingDegrees(poi),
+            bidirectional = DangerZoneTriangle.isBidirectional(poi),
+            roads = roadPolylines,
+        ).map {
+            RadarRoadCorridorPolygon(
+                poiId = poi.id,
+                zoneRadiusMeters = zoneRadiusM,
+                fillArgb = 0x442563EB.toInt(),
+                strokeArgb = 0xFF1D4ED8.toInt(),
+                points = it,
+            )
+        }
+    }
+
+    /**
+     * Rings following the real OSM road from the radar over [radiusMeters] **measured along the
+     * road**, on the approach side(s): `monitoredBearing + 180°` (both road directions when the
+     * direction is unknown). Ways are chained across junction splits.
+     */
+    fun corridorRings(
+        tipLat: Double,
+        tipLon: Double,
+        radiusMeters: Double,
+        monitoredBearingDegrees: Double?,
+        bidirectional: Boolean,
+        roads: List<RoadPolyline>,
+    ): List<List<Pair<Double, Double>>> {
+        if (radiusMeters <= 0.0 || roads.isEmpty()) return emptyList()
+        val snap = snapToRoad(tipLat, tipLon, roads) ?: return emptyList()
+
+        val forward = walk(snap, forward = true, radiusMeters, roads)
+        val backward = walk(snap, forward = false, radiusMeters, roads)
+        val candidates = listOf(forward, backward).filter { it.size >= 2 }
+        if (candidates.isEmpty()) return emptyList()
+
+        val bearings = DangerZoneTriangle.approachBearings(monitoredBearingDegrees, bidirectional)
+        val chosen = LinkedHashSet<List<Pair<Double, Double>>>()
+        for (b in bearings) {
+            if (b == null) {
+                chosen.addAll(candidates)
+                continue
+            }
+            val approachFrom = OsmSpeedCameraDirection.normalizeBearing(b + 180.0)
+            val best = candidates.minByOrNull { angleTo(it, approachFrom) } ?: continue
+            if (angleTo(best, approachFrom) <= 90.0) chosen.add(best)
+        }
+        return chosen.map { bufferPath(it, BUFFER_HALF_WIDTH_METERS) }
+    }
+
+    private data class Snap(
+        val road: RoadPolyline,
+        val segIndex: Int, // segment [segIndex, segIndex + 1]
+        val point: Pair<Double, Double>,
+    )
+
+    private fun angleTo(path: List<Pair<Double, Double>>, bearing: Double): Double {
+        val start = path.first()
+        // Heading of the first ~40 m of the path (stable against tiny first segments).
+        val ref = path.firstOrNull {
+            haversineKm(start.first, start.second, it.first, it.second) * 1000.0 >= 40.0
+        } ?: path.last()
+        val h = DangerZoneEvaluator.calculateBearing(start.first, start.second, ref.first, ref.second)
+        return DangerZoneEvaluator.angleDifference(h, bearing)
+    }
+
+    private fun snapToRoad(lat: Double, lon: Double, roads: List<RoadPolyline>): Snap? {
+        val kx = 111_320.0 * cos(lat * PI / 180.0)
+        val ky = 110_540.0
+        var best: Snap? = null
+        var bestDist = Double.MAX_VALUE
+        for (road in roads) {
+            for (i in 0 until road.points.size - 1) {
+                val a = road.points[i]
+                val b = road.points[i + 1]
+                val ax = (a.second - lon) * kx
+                val ay = (a.first - lat) * ky
+                val bx = (b.second - lon) * kx
+                val by = (b.first - lat) * ky
+                val dx = bx - ax
+                val dy = by - ay
+                val len2 = dx * dx + dy * dy
+                val t = if (len2 == 0.0) 0.0 else ((-ax * dx - ay * dy) / len2).coerceIn(0.0, 1.0)
+                val d = hypot(ax + t * dx - 0.0, ay + t * dy - 0.0)
+                if (d < bestDist) {
+                    bestDist = d
+                    best = Snap(
+                        road,
+                        i,
+                        (a.first + (b.first - a.first) * t) to (a.second + (b.second - a.second) * t),
+                    )
+                }
+            }
+        }
+        return best?.takeIf { bestDist <= SNAP_MAX_METERS }
+    }
+
+    /** Walks [radiusMeters] along the road from [snap], chaining connected ways. */
+    private fun walk(
+        snap: Snap,
+        forward: Boolean,
+        radiusMeters: Double,
+        roads: List<RoadPolyline>,
+    ): List<Pair<Double, Double>> {
+        val out = mutableListOf(snap.point)
+        var remaining = radiusMeters
+        val used = mutableSetOf(snap.road.id)
+        var vertices = if (forward) {
+            snap.road.points.drop(snap.segIndex + 1)
+        } else {
+            snap.road.points.take(snap.segIndex + 1).reversed()
+        }
+        while (true) {
+            for (v in vertices) {
+                val last = out.last()
+                val seg = haversineKm(last.first, last.second, v.first, v.second) * 1000.0
+                if (seg < 0.5) continue
+                if (seg >= remaining) {
+                    val f = remaining / seg
+                    out.add(
+                        (last.first + (v.first - last.first) * f) to
+                            (last.second + (v.second - last.second) * f),
+                    )
+                    return out
+                }
+                out.add(v)
+                remaining -= seg
+            }
+            // Way exhausted: continue on an unused way starting/ending at this point.
+            val end = out.last()
+            var next: List<Pair<Double, Double>>? = null
+            var nextId = 0L
+            var nextGap = Double.MAX_VALUE
+            for (r in roads) {
+                if (r.id in used || r.points.size < 2) continue
+                for (reversed in listOf(false, true)) {
+                    val pts = if (reversed) r.points.reversed() else r.points
+                    val gap = haversineKm(end.first, end.second, pts.first().first, pts.first().second) * 1000.0
+                    if (gap <= CHAIN_GAP_METERS && gap < nextGap) {
+                        next = pts
+                        nextId = r.id
+                        nextGap = gap
+                    }
+                }
+            }
+            val n = next ?: return out
+            used.add(nextId)
+            vertices = n
+        }
+    }
+
+    /** Closed ribbon of ±[halfWidth] m around [path]. */
+    private fun bufferPath(
+        path: List<Pair<Double, Double>>,
+        halfWidth: Double,
+    ): List<Pair<Double, Double>> {
+        val left = mutableListOf<Pair<Double, Double>>()
+        val right = mutableListOf<Pair<Double, Double>>()
+        for (i in 0 until path.size - 1) {
+            val p1 = path[i]
+            val p2 = path[i + 1]
+            val seg = DangerZoneEvaluator.calculateBearing(p1.first, p1.second, p2.first, p2.second)
+            val lb = OsmSpeedCameraDirection.normalizeBearing(seg - 90.0)
+            val rb = OsmSpeedCameraDirection.normalizeBearing(seg + 90.0)
+            if (left.isEmpty()) {
+                left.add(DangerZoneTriangle.offsetMeters(p1.first, p1.second, lb, halfWidth))
+                right.add(DangerZoneTriangle.offsetMeters(p1.first, p1.second, rb, halfWidth))
+            }
+            left.add(DangerZoneTriangle.offsetMeters(p2.first, p2.second, lb, halfWidth))
+            right.add(DangerZoneTriangle.offsetMeters(p2.first, p2.second, rb, halfWidth))
+        }
+        val ring = left + right.reversed()
+        return ring + ring.first()
     }
 }

@@ -83,4 +83,32 @@ class RadarRoadCorridorCalculatorTest {
         assertTrue(corridor.points.size >= 4)
         assertEquals(corridor.points.first(), corridor.points.last())
     }
+
+    @Test
+    fun corridorFollowsRoadOnApproachSideForFullRadiusAcrossWays() {
+        // Road runs north (bearing 0). Controlled traffic heads north → approach side is south.
+        // Two chained ways: radar sits on the first, the second continues 1.5 km further south.
+        val radarLat = 48.8500
+        val wayNorth = RoadPolyline(1L, "primary", "D1", listOf(48.8400 to 2.35, 48.8600 to 2.35))
+        val southEnd = wayNorth.points.first()
+        val waySouth = RoadPolyline(2L, "primary", "D1", listOf(48.8300 to 2.35, southEnd.first to southEnd.second))
+        val rings = RadarRoadCorridorCalculator.corridorRings(
+            tipLat = radarLat, tipLon = 2.35, radiusMeters = 2_000.0,
+            monitoredBearingDegrees = 0.0, bidirectional = false,
+            roads = listOf(wayNorth, waySouth),
+        )
+        assertEquals(1, rings.size)
+        val zone = DangerZone(
+            id = "z", centerLatitude = radarLat, centerLongitude = 2.35, radiusMeters = 2_000.0,
+            speedLimitKmH = 80, kind = DangerZoneKind.SpeedControlArea, source = "t",
+            roadClass = RoadNetworkClass.ExtraUrban, monitoredBearingDegrees = 0.0,
+        ).withRoadCorridor(rings)
+        // ~1.8 km south along the road (second way): inside; north of the radar: outside.
+        assertTrue(zone.contains(radarLat - 0.0162, 2.35))
+        assertTrue(!zone.contains(radarLat + 0.002, 2.35))
+        // Beyond 2 km along the road: outside.
+        assertTrue(!zone.contains(radarLat - 0.0200, 2.35))
+        // Off the road by ~200 m: outside (sector would have accepted it).
+        assertTrue(!zone.contains(radarLat - 0.005, 2.3528))
+    }
 }
