@@ -1,5 +1,5 @@
-<!-- Gaston Mapsforge theme: approximate OpenFreeMap palette. Based on mapsforge-themes 0.21 default.xml. Not a MapLibre conversion. -->
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Gaston Mapsforge theme: approximate OpenFreeMap palette. Based on mapsforge-themes 0.21 default.xml. Not a MapLibre conversion. -->
 <rendertheme xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" map-background="#FCFCFC"
     map-background-outside="#F0F0F0" version="5" xmlns="http://mapsforge.org/renderTheme"
     xsi:schemaLocation="http://mapsforge.org/renderTheme https://raw.githubusercontent.com/mapsforge/mapsforge/master/resources/renderTheme.xsd">
