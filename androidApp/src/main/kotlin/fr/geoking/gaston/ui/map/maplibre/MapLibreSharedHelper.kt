@@ -186,8 +186,9 @@ object MapLibreSharedHelper {
             }
 
             val source = style.getSourceAs<GeoJsonSource>(RADAR_CORRIDOR_SOURCE_ID) ?: return@getStyle
-            val features = pois.filter { it.poiCategory == PoiCategory.Radar }.mapNotNull { poi ->
-                val corridor = RadarRoadCorridorCalculator.calculateCorridor(poi, roadPolylines) ?: return@mapNotNull null
+            val features = pois.filter { it.poiCategory == PoiCategory.Radar }.flatMap { poi ->
+                RadarRoadCorridorCalculator.calculateCorridors(poi, roadPolylines)
+            }.mapNotNull { corridor ->
                 if (corridor.points.size < 4) return@mapNotNull null
                 val ring = corridor.points.map { (lat, lon) -> Point.fromLngLat(lon, lat) }
                 Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).apply {

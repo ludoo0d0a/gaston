@@ -174,7 +174,11 @@ data class FranceRadarRecord(
     val type: String,
     val vma: Int?,
     val latitude: Double,
-    val longitude: Double
+    val longitude: Double,
+    /** Monitored / road-axis bearing (Lufop `azimut`) — same value the map polygon uses. */
+    val monitoredBearingDegrees: Double? = null,
+    /** Both directions monitored (Lufop "double sens") — map draws two sectors. */
+    val bidirectional: Boolean = false,
 ) {
     fun toPoi(): Poi {
         // Neutral POI label — alert UX must use DangerZone / AAC copy, not "Radar X km/h".

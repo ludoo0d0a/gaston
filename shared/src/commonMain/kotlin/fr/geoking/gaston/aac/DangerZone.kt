@@ -60,7 +60,15 @@ data class DangerZone(
     val directionConfidence: DirectionConfidence = DirectionConfidence.None,
     val osmNodeId: Long? = null,
     val matchedDistanceMeters: Double? = null,
+    /**
+     * OSM road-following polygons (one per approach direction, length = [radiusMeters] along the
+     * road). When non-empty they replace the sector / circle for hit-testing; empty = no road
+     * geometry known (sector / circle fallback).
+     */
+    val corridorRings: List<List<Pair<Double, Double>>> = emptyList(),
 ) {
+    fun withRoadCorridor(rings: List<List<Pair<Double, Double>>>): DangerZone = copy(corridorRings = rings)
+
     /** True when alert hit-testing uses a single approach sector instead of the AFFTAC circle. */
     val usesApproachTrapezoid: Boolean
         get() = monitoredBearingDegrees != null && !monitoredBidirectional
@@ -70,6 +78,9 @@ data class DangerZone(
         get() = monitoredBearingDegrees != null && monitoredBidirectional
 
     fun contains(latitude: Double, longitude: Double): Boolean {
+        if (corridorRings.isNotEmpty()) {
+            return corridorRings.any { DangerZoneTriangle.pointInRing(latitude, longitude, it) }
+        }
         return DangerZoneTriangle.containsSectorOrCircle(
             lat = latitude,
             lon = longitude,
@@ -88,14 +99,22 @@ data class DangerZone(
         return haversineKm(latitude, longitude, centerLatitude, centerLongitude) * 1000.0
     }
 
-    fun withOsmDirection(info: OsmDirectionInfo, speedLimitOverride: Int? = null): DangerZone = copy(
-        speedLimitKmH = speedLimitKmH ?: speedLimitOverride ?: info.osmMaxspeedKmH,
-        monitoredBearingDegrees = info.monitoredBearingDegrees,
-        monitoredBidirectional = info.bidirectional,
-        directionConfidence = info.confidence,
-        osmNodeId = info.osmNodeId,
-        matchedDistanceMeters = info.matchedDistanceMeters,
-    )
+    /**
+     * Same merge rules as [RadarOsmEnricher.applyDirectionToPoi] so the zone matches the drawn
+     * polygon: no OSM info keeps the data-source direction; a missing OSM bearing keeps the
+     * existing one (e.g. Lufop azimut as road axis).
+     */
+    fun withOsmDirection(info: OsmDirectionInfo, speedLimitOverride: Int? = null): DangerZone {
+        if (info.confidence == DirectionConfidence.None) return this
+        return copy(
+            speedLimitKmH = speedLimitKmH ?: speedLimitOverride ?: info.osmMaxspeedKmH,
+            monitoredBearingDegrees = info.monitoredBearingDegrees ?: monitoredBearingDegrees,
+            monitoredBidirectional = info.bidirectional,
+            directionConfidence = info.confidence,
+            osmNodeId = info.osmNodeId,
+            matchedDistanceMeters = info.matchedDistanceMeters,
+        )
+    }
 }
 
 object DangerZoneDistances {

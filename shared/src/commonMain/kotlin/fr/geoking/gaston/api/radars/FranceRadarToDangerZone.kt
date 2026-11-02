@@ -2,6 +2,7 @@ package fr.geoking.gaston.api.radars
 
 import fr.geoking.gaston.aac.DangerZone
 import fr.geoking.gaston.aac.DangerZoneFactory
+import fr.geoking.gaston.aac.DirectionConfidence
 import fr.geoking.gaston.aac.RoadNetworkClass
 
 /**
@@ -20,13 +21,24 @@ fun FranceRadarRecord.toDangerZone(
         "LuxembourgRadars" -> "lu_dz"
         else -> "fr_dz"
     }
-    return DangerZoneFactory.fromSpeedControlPoint(
+    // Radius must match the polygon drawn on the maps (VMA-based, see
+    // DangerZoneDistances.radiusMetersForRadarPoiVma): the OSM road class only labels the zone.
+    val base = DangerZoneFactory.fromSpeedControlPoint(
         id = "${zoneIdPrefix}_$id",
         latitude = latitude,
         longitude = longitude,
         speedLimitKmH = vma,
         source = resolvedSource,
         csvType = type,
-        roadClassOverride = roadClassOverride,
+    )
+    return base.copy(
+        roadClass = roadClassOverride ?: base.roadClass,
+        monitoredBearingDegrees = monitoredBearingDegrees,
+        monitoredBidirectional = bidirectional,
+        directionConfidence = if (monitoredBearingDegrees != null || bidirectional) {
+            DirectionConfidence.Low
+        } else {
+            DirectionConfidence.None
+        },
     )
 }

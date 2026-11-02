@@ -36,8 +36,7 @@ object AutoMapOverlayHelper {
             strokeJoin = Paint.Join.ROUND
         }
 
-        for (poi in radarPois) {
-            val corridor = RadarRoadCorridorCalculator.calculateCorridor(poi, roadPolylines) ?: continue
+        for (corridor in radarPois.flatMap { RadarRoadCorridorCalculator.calculateCorridors(it, roadPolylines) }) {
             if (corridor.points.size < 4) continue
 
             fillPaint.color = corridor.fillArgb
