@@ -146,7 +146,8 @@ class OsmRoadClassifier(
     )
 
     companion object {
-        const val DEFAULT_CACHE_TTL_MS = 3 * 60 * 1000L
+        /** Road classes change rarely: keep them for a week, like radar corridors. */
+        const val DEFAULT_CACHE_TTL_MS = 7 * 24 * 3600 * 1000L
         const val DEFAULT_CACHE_REUSE_KM = 0.5
         private const val MAX_CELL_CACHE = 256
 

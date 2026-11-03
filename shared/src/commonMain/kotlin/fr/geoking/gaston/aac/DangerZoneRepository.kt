@@ -16,6 +16,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlin.math.cos
 import kotlin.math.PI
 
+private val corridorLog by lazy { co.touchlab.kermit.Logger.withTag("RadarCorridor") }
+
 /**
  * Local zone cache around the vehicle — used by the AAC alert loop (no map POI search).
  *
@@ -61,7 +63,7 @@ class DangerZoneRepository(
 
         if (needRefresh) {
             val records = collectRecords(latitude, longitude, radiusKm)
-            val fromRadars = classifyAndEnrich(records)
+            val fromRadars = classifyAndEnrich(records, latitude, longitude)
             val nonRadar = StaticNonRadarDangerZones.near(latitude, longitude, radiusKm)
             stateLock.withLock {
                 cachedZones = fromRadars + nonRadar
@@ -122,8 +124,9 @@ class DangerZoneRepository(
                 )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
-            } catch (_: Exception) {
+            } catch (e: Exception) {
                 // Network / rate-limit failure: allow a later retry (an empty result is final).
+                corridorLog.w(e) { "Road corridor skipped for zone ${zone.id}: ${e.message}" }
                 stateLock.withLock { corridorAttemptedIds.remove(zone.id) }
                 break
             }
@@ -204,8 +207,12 @@ class DangerZoneRepository(
         }
     }
 
-    private suspend fun classifyAndEnrich(records: List<FranceRadarRecord>): List<DangerZone> {
-        val overrides = classifyRoadOverrides(records)
+    private suspend fun classifyAndEnrich(
+        records: List<FranceRadarRecord>,
+        latitude: Double,
+        longitude: Double,
+    ): List<DangerZone> {
+        val overrides = classifyRoadOverrides(records, latitude, longitude)
         val enricher = radarOsmEnricher
         return if (enricher != null) {
             enricher.enrichToZones(records, roadClassOverrides = overrides)
@@ -214,10 +221,21 @@ class DangerZoneRepository(
         }
     }
 
-    private suspend fun classifyRoadOverrides(records: List<FranceRadarRecord>): Map<String, RoadNetworkClass> {
+    /**
+     * Road class per radar from OSM, for radars close to the vehicle only: one Overpass query per
+     * radar over the whole 100 km zone radius saturates the public instance.
+     */
+    private suspend fun classifyRoadOverrides(
+        records: List<FranceRadarRecord>,
+        latitude: Double,
+        longitude: Double,
+    ): Map<String, RoadNetworkClass> {
         val classifier = roadClassifier ?: return emptyMap()
+        val nearby = records.filter {
+            haversineKm(latitude, longitude, it.latitude, it.longitude) <= CLASSIFY_RADIUS_KM
+        }
         return coroutineScope {
-            records.chunked(CLASSIFY_PARALLELISM).flatMap { chunk ->
+            nearby.chunked(CLASSIFY_PARALLELISM).flatMap { chunk ->
                 chunk.map { record ->
                     async {
                         val ctx = classifier.classify(
@@ -247,6 +265,7 @@ class DangerZoneRepository(
 
     companion object {
         private const val CLASSIFY_PARALLELISM = 4
+        private const val CLASSIFY_RADIUS_KM = 5.0
         private const val CORRIDOR_PREFETCH_METERS = 3_000.0
         private const val CORRIDOR_ENRICH_PER_CALL = 3
         private const val CORRIDOR_ENRICH_PER_MAP_CALL = 6
