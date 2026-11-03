@@ -8,10 +8,8 @@ import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
 import fr.geoking.gaston.aac.DangerZoneTriangle
-import fr.geoking.gaston.aac.RadarRoadCorridorCalculator
-import fr.geoking.gaston.aac.RadarRoadCorridorPolygon
 import fr.geoking.gaston.poi.Poi
-import fr.geoking.gaston.road.RoadPolyline
+import fr.geoking.gaston.radar.RadarCorridorStyle
 import kotlin.math.cos
 
 object AutoMapOverlayHelper {
@@ -22,11 +20,10 @@ object AutoMapOverlayHelper {
     fun drawRadarRoadCorridors(
         canvas: Canvas,
         density: Float,
-        radarPois: List<Poi>,
-        roadPolylines: List<RoadPolyline>,
+        rings: List<List<Pair<Double, Double>>>,
         toScreenXy: (lat: Double, lon: Double) -> Pair<Float, Float>,
     ) {
-        if (radarPois.isEmpty()) return
+        if (rings.isEmpty()) return
         val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
         }
@@ -36,13 +33,13 @@ object AutoMapOverlayHelper {
             strokeJoin = Paint.Join.ROUND
         }
 
-        for (corridor in radarPois.flatMap { RadarRoadCorridorCalculator.calculateCorridors(it, roadPolylines) }) {
-            if (corridor.points.size < 4) continue
+        for (ring in rings) {
+            if (ring.size < 4) continue
 
-            fillPaint.color = corridor.fillArgb
-            strokePaint.color = corridor.strokeArgb
+            fillPaint.color = RadarCorridorStyle.FILL_ARGB
+            strokePaint.color = RadarCorridorStyle.STROKE_ARGB
             val path = Path()
-            corridor.points.forEachIndexed { index, (lat, lon) ->
+            ring.forEachIndexed { index, (lat, lon) ->
                 val (x, y) = toScreenXy(lat, lon)
                 if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
             }

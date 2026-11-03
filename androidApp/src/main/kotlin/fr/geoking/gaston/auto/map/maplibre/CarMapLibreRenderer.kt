@@ -216,6 +216,7 @@ class CarMapLibreRenderer(
     }
 
     private fun fetchOverpassRoads() {
+        fr.geoking.gaston.radar.RadarCorridorStore.request(centerLat, centerLon)
         val repo = roomRoadRepo ?: return
         val lat = centerLat
         val lon = centerLon
@@ -811,8 +812,7 @@ class CarMapLibreRenderer(
         AutoMapOverlayHelper.drawRadarRoadCorridors(
             canvas = canvas,
             density = density,
-            radarPois = radarPois,
-            roadPolylines = roadPolylines,
+            rings = fr.geoking.gaston.radar.RadarCorridorStore.rings.value,
         ) { lat, lon ->
             val tileX = lonToTileX(lon, zoom)
             val tileY = latToTileY(lat, zoom)

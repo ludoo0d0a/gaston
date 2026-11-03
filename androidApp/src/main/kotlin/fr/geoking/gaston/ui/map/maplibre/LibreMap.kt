@@ -2,6 +2,7 @@ package fr.geoking.gaston.ui.map.maplibre
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,6 +73,11 @@ fun LibreMap(
     val targetLon = userLon ?: initialCameraPosition.first.longitude
 
     LaunchedEffect(targetLat, targetLon) {
+        fr.geoking.gaston.radar.RadarCorridorStore.request(targetLat, targetLon)
+    }
+    val corridorRings by fr.geoking.gaston.radar.RadarCorridorStore.rings.collectAsState()
+
+    LaunchedEffect(targetLat, targetLon) {
         roadPolylines = withContext(Dispatchers.IO) {
             roadGeometryRepository.fetchRoadsNear(targetLat, targetLon, radiusKm = 1.0)
         }
@@ -90,6 +96,7 @@ fun LibreMap(
         weatherRadarEnabled,
         trafficEvents,
         roadPolylines,
+        corridorRings,
     ) {
         arrayOf(
             poisInView,
@@ -104,6 +111,7 @@ fun LibreMap(
             weatherRadarEnabled,
             trafficEvents,
             roadPolylines,
+            corridorRings,
         )
     }
 
@@ -148,7 +156,7 @@ fun LibreMap(
             )
             MapLibreSharedHelper.syncTrafficLayer(map, trafficEvents)
             MapLibreSharedHelper.syncRoadVectorLayer(map, roadPolylines)
-            MapLibreSharedHelper.syncRadarRoadCorridorLayer(map, poisInView, roadPolylines)
+            MapLibreSharedHelper.syncRadarRoadCorridorLayer(map, corridorRings)
             MapLibreSharedHelper.syncPoiLayer(
                 context = context,
                 map = map,
