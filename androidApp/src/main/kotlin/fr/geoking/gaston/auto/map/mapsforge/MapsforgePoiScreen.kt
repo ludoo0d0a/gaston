@@ -1040,15 +1040,6 @@ class MapsforgePoiScreen(
             val missingPreset = mapManager.getMissingRecommendedPreset(lat, lon)
             val progress = mapManager.downloadProgress.value
             val downloading = progress != null && !progress.isComplete && progress.error == null
-            val installedLabels = mapManager.installedRegionLabels()
-            val installedSubtitle = if (installedLabels.isEmpty()) {
-                carContext.getString(R.string.mapsforge_no_regions_installed)
-            } else {
-                carContext.getString(
-                    R.string.mapsforge_installed_regions,
-                    installedLabels.joinToString(", "),
-                )
-            }
 
             if (downloading) {
                 val p = checkNotNull(progress)
@@ -1091,24 +1082,6 @@ class MapsforgePoiScreen(
                         .build()
                 )
             }
-
-            itemListBuilder.addItem(
-                Row.Builder()
-                    .setTitle(carContext.getString(R.string.offline_maps_manage))
-                    .addText(installedSubtitle.take(500))
-                    .setBrowsable(true)
-                    .setOnClickListener {
-                        screenManager.push(
-                            AutoMapsforgeMapManagementScreen(
-                                carContext = carContext,
-                                mapManager = mapManager,
-                                recommendLat = lat,
-                                recommendLon = lon,
-                            )
-                        )
-                    }
-                    .build()
-            )
 
             val limitedPois = sortedPois.take(listLimit)
             limitedPois.forEach { item ->
