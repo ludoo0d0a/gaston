@@ -11,6 +11,8 @@ import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.math.cos
 import kotlin.math.PI
 
@@ -38,6 +40,8 @@ class DangerZoneRepository(
     private var cacheRadiusKm: Double = 0.0
     /** Zones whose road geometry was already requested (success or not) — one Overpass try each. */
     private val corridorAttemptedIds = mutableSetOf<String>()
+    /** Guards [cachedZones] / [corridorAttemptedIds] updates (alert loop + map UIs share this repo). */
+    private val stateLock = Mutex()
 
     /**
      * Returns danger zones near the vehicle, refreshing when the vehicle leaves the cached area.
@@ -49,6 +53,7 @@ class DangerZoneRepository(
         latitude: Double,
         longitude: Double,
         radiusKm: Double = 100.0,
+        corridorEnrichLimit: Int = CORRIDOR_ENRICH_PER_CALL,
     ): List<DangerZone> {
         val needRefresh = cachedZones.isEmpty() ||
             cacheCenterLat.isNaN() ||
@@ -58,14 +63,16 @@ class DangerZoneRepository(
             val records = collectRecords(latitude, longitude, radiusKm)
             val fromRadars = classifyAndEnrich(records)
             val nonRadar = StaticNonRadarDangerZones.near(latitude, longitude, radiusKm)
-            cachedZones = fromRadars + nonRadar
-            cacheCenterLat = latitude
-            cacheCenterLon = longitude
-            cacheRadiusKm = radiusKm
-            corridorAttemptedIds.clear()
+            stateLock.withLock {
+                cachedZones = fromRadars + nonRadar
+                cacheCenterLat = latitude
+                cacheCenterLon = longitude
+                cacheRadiusKm = radiusKm
+                corridorAttemptedIds.clear()
+            }
         }
 
-        enrichNearbyWithRoadGeometry(latitude, longitude)
+        enrichNearbyWithRoadGeometry(latitude, longitude, corridorEnrichLimit)
 
         return cachedZones.filter { zone ->
             zone.distanceMetersFrom(latitude, longitude) <= radiusKm * 1000.0 + zone.radiusMeters
@@ -73,33 +80,52 @@ class DangerZoneRepository(
     }
 
     /**
+     * Road-following polygons (the exact alert hit-test geometry) of the zones within
+     * [radiusKm] of the point, for drawing on phone / Android Auto maps. Enriches up to
+     * [CORRIDOR_ENRICH_PER_MAP_CALL] more zones per call, so repeated calls fill the map.
+     */
+    suspend fun roadCorridorRingsNear(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double = 8.0,
+    ): List<List<Pair<Double, Double>>> =
+        zonesNear(latitude, longitude, corridorEnrichLimit = CORRIDOR_ENRICH_PER_MAP_CALL)
+            .filter { it.distanceMetersFrom(latitude, longitude) <= radiusKm * 1000.0 }
+            .flatMap { it.corridorRings }
+
+    /**
      * Attaches the OSM road corridor (length = zone radius along the road) to the closest
      * speed-control zones the vehicle is about to reach. Lazy + bounded: Overpass is only asked
      * for a few zones per call, once each.
      */
-    private suspend fun enrichNearbyWithRoadGeometry(latitude: Double, longitude: Double) {
+    private suspend fun enrichNearbyWithRoadGeometry(latitude: Double, longitude: Double, limit: Int) {
         val roads = roadGeometryRepository ?: return
-        val pending = cachedZones
-            .filter {
-                it.kind == DangerZoneKind.SpeedControlArea &&
-                    it.corridorRings.isEmpty() &&
-                    it.id !in corridorAttemptedIds &&
-                    it.distanceMetersFrom(latitude, longitude) <= it.radiusMeters + CORRIDOR_PREFETCH_METERS
-            }
-            .sortedBy { it.distanceMetersFrom(latitude, longitude) }
-            .take(CORRIDOR_ENRICH_PER_CALL)
+        val pending = stateLock.withLock {
+            cachedZones
+                .filter {
+                    it.kind == DangerZoneKind.SpeedControlArea &&
+                        it.corridorRings.isEmpty() &&
+                        it.id !in corridorAttemptedIds &&
+                        it.distanceMetersFrom(latitude, longitude) <= it.radiusMeters + CORRIDOR_PREFETCH_METERS
+                }
+                .sortedBy { it.distanceMetersFrom(latitude, longitude) }
+                .take(limit)
+                .also { picked -> corridorAttemptedIds.addAll(picked.map { it.id }) }
+        }
         for (zone in pending) {
-            corridorAttemptedIds.add(zone.id)
             val polylines = try {
-                roads.fetchRoadsNear(
+                roads.fetchRoadsAround(
                     zone.centerLatitude,
                     zone.centerLongitude,
-                    radiusKm = zone.radiusMeters / 1000.0 + 0.2,
+                    zone.radiusMeters,
+                    zone.roadClass,
                 )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (_: Exception) {
-                continue
+                // Network / rate-limit failure: allow a later retry (an empty result is final).
+                stateLock.withLock { corridorAttemptedIds.remove(zone.id) }
+                break
             }
             val rings = RadarRoadCorridorCalculator.corridorRings(
                 tipLat = zone.centerLatitude,
@@ -110,7 +136,9 @@ class DangerZoneRepository(
                 roads = polylines,
             )
             if (rings.isEmpty()) continue
-            cachedZones = cachedZones.map { if (it.id == zone.id) it.withRoadCorridor(rings) else it }
+            stateLock.withLock {
+                cachedZones = cachedZones.map { if (it.id == zone.id) it.withRoadCorridor(rings) else it }
+            }
         }
     }
 
@@ -221,5 +249,6 @@ class DangerZoneRepository(
         private const val CLASSIFY_PARALLELISM = 4
         private const val CORRIDOR_PREFETCH_METERS = 3_000.0
         private const val CORRIDOR_ENRICH_PER_CALL = 3
+        private const val CORRIDOR_ENRICH_PER_MAP_CALL = 6
     }
 }

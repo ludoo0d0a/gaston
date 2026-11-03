@@ -186,6 +186,27 @@ open class OverpassClient(
         return parseWayGeometries(jsonText)
     }
 
+    /**
+     * Road ways (with geometry) within [radiusMeters] of a point, restricted to
+     * [highwayRegex] (OSM `highway=*`). Unlike a bbox query, the radial filter plus the class
+     * filter keep long (km) corridors from being cut by the result limit in dense areas.
+     */
+    open suspend fun queryRoadWaysAround(
+        latitude: Double,
+        longitude: Double,
+        radiusMeters: Int,
+        highwayRegex: String,
+        limit: Int = 400,
+    ): List<OverpassWayGeom> {
+        if (radiusMeters <= 0 || limit <= 0) return emptyList()
+        val query = """
+            [out:json][timeout:25];
+            way(around:$radiusMeters,$latitude,$longitude)["highway"~"^($highwayRegex)$"];
+            out geom qt ${limit.coerceIn(1, 1000)};
+        """.trimIndent()
+        return parseWayGeometries(executeQuery(query))
+    }
+
     private fun parseWayGeometries(body: String): List<OverpassWayGeom> {
         val root = json.parseToJsonElement(body).jsonObject
         val arr = root["elements"]?.jsonArray ?: return emptyList()

@@ -396,6 +396,7 @@ class CarMapsforgeRenderer(
         lat = newLat
         lon = newLon
         zoom = newZoom
+        fr.geoking.gaston.radar.RadarCorridorStore.request(newLat, newLon)
         lastPositionUpdateTime = System.currentTimeMillis()
         invalidate()
     }
@@ -1259,8 +1260,7 @@ class CarMapsforgeRenderer(
         AutoMapOverlayHelper.drawRadarRoadCorridors(
             canvas = canvas,
             density = density,
-            radarPois = radarPois,
-            roadPolylines = emptyList(), // Mapsforge uses vector tile basemap
+            rings = fr.geoking.gaston.radar.RadarCorridorStore.rings.value,
         ) { lat, lon ->
             val tileX = lonToTileX(lon, zoom)
             val tileY = latToTileY(lat, zoom)

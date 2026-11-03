@@ -133,7 +133,7 @@ object RadarRoadCorridorCalculator {
     }
 
     /** Max distance between the radar and the road it is snapped on. */
-    const val SNAP_MAX_METERS = 60.0
+    const val SNAP_MAX_METERS = 80.0
 
     /** Max gap between two OSM ways for them to be chained into one continuous road. */
     private const val CHAIN_GAP_METERS = 8.0

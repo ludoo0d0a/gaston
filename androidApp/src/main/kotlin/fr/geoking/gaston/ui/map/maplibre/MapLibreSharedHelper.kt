@@ -2,7 +2,7 @@ package fr.geoking.gaston.ui.map.maplibre
 
 import android.content.Context
 import fr.geoking.gaston.aac.DangerZoneTriangle
-import fr.geoking.gaston.aac.RadarRoadCorridorCalculator
+import fr.geoking.gaston.radar.RadarCorridorStyle
 import fr.geoking.gaston.road.RoadPolyline
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.traffic.TrafficEvent
@@ -154,8 +154,7 @@ object MapLibreSharedHelper {
      */
     fun syncRadarRoadCorridorLayer(
         map: MapLibreMap,
-        pois: List<Poi>,
-        roadPolylines: List<RoadPolyline>
+        rings: List<List<Pair<Double, Double>>>,
     ) {
         map.getStyle { style ->
             if (style.getSource(RADAR_CORRIDOR_SOURCE_ID) == null) {
@@ -186,15 +185,13 @@ object MapLibreSharedHelper {
             }
 
             val source = style.getSourceAs<GeoJsonSource>(RADAR_CORRIDOR_SOURCE_ID) ?: return@getStyle
-            val features = pois.filter { it.poiCategory == PoiCategory.Radar }.flatMap { poi ->
-                RadarRoadCorridorCalculator.calculateCorridors(poi, roadPolylines)
-            }.mapNotNull { corridor ->
-                if (corridor.points.size < 4) return@mapNotNull null
-                val ring = corridor.points.map { (lat, lon) -> Point.fromLngLat(lon, lat) }
+            val features = rings.mapNotNull { points ->
+                if (points.size < 4) return@mapNotNull null
+                val ring = points.map { (lat, lon) -> Point.fromLngLat(lon, lat) }
                 Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).apply {
-                    addStringProperty(RADAR_ZONE_FILL_COLOR_PROPERTY, argbToRgbHex(corridor.fillArgb))
-                    addNumberProperty(RADAR_ZONE_FILL_OPACITY_PROPERTY, argbAlpha(corridor.fillArgb).toDouble())
-                    addStringProperty(RADAR_ZONE_STROKE_COLOR_PROPERTY, argbToRgbHex(corridor.strokeArgb))
+                    addStringProperty(RADAR_ZONE_FILL_COLOR_PROPERTY, argbToRgbHex(RadarCorridorStyle.FILL_ARGB))
+                    addNumberProperty(RADAR_ZONE_FILL_OPACITY_PROPERTY, argbAlpha(RadarCorridorStyle.FILL_ARGB).toDouble())
+                    addStringProperty(RADAR_ZONE_STROKE_COLOR_PROPERTY, argbToRgbHex(RadarCorridorStyle.STROKE_ARGB))
                 }
             }
             source.setGeoJson(FeatureCollection.fromFeatures(features))

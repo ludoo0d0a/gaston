@@ -271,6 +271,7 @@ class AutoSurfaceRenderer(
         lat = newLat
         lon = newLon
         zoom = newZoom
+        fr.geoking.gaston.radar.RadarCorridorStore.request(newLat, newLon)
         lastPositionUpdateTime = System.currentTimeMillis()
         invalidate() // Throttled to prevent too frequent redraws when position is moving
     }
@@ -1058,8 +1059,7 @@ class AutoSurfaceRenderer(
         AutoMapOverlayHelper.drawRadarRoadCorridors(
             canvas = canvas,
             density = density,
-            radarPois = radarPois,
-            roadPolylines = emptyList(),
+            rings = fr.geoking.gaston.radar.RadarCorridorStore.rings.value,
         ) { lat, lon ->
             val tileX = lonToTileX(lon, zoom)
             val tileY = latToTileY(lat, zoom)
