@@ -19,33 +19,17 @@ class MapsforgeMapThemeTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Test
-    fun assetPath_groupsByOpenFreeMapStyleUrl() {
-        assertEquals("mapsforge/themes/dark.xml", MapsforgeMapTheme.assetPathFor(MapTheme.Dark))
-        assertEquals("mapsforge/themes/fiord.xml", MapsforgeMapTheme.assetPathFor(MapTheme.Fiord))
-        assertEquals("mapsforge/themes/positron.xml", MapsforgeMapTheme.assetPathFor(MapTheme.Positron))
-
-        assertEquals("mapsforge/themes/bright.xml", MapsforgeMapTheme.assetPathFor(MapTheme.Voyager))
-        assertEquals("mapsforge/themes/bright.xml", MapsforgeMapTheme.assetPathFor(MapTheme.Bright))
-        assertEquals("mapsforge/themes/bright.xml", MapsforgeMapTheme.assetPathFor(MapTheme.OsmFr))
-        assertEquals("mapsforge/themes/bright.xml", MapsforgeMapTheme.assetPathFor(MapTheme.Hot))
-
-        assertEquals("mapsforge/themes/liberty.xml", MapsforgeMapTheme.assetPathFor(MapTheme.Standard))
-        assertEquals("mapsforge/themes/liberty.xml", MapsforgeMapTheme.assetPathFor(MapTheme.Liberty))
-    }
-
-    @Test
-    fun uniqueStyleUrls_mapToFiveAssets() {
-        val paths = MapTheme.entries.map { MapsforgeMapTheme.assetPathFor(it) }.toSet()
-        assertEquals(
-            setOf(
-                "mapsforge/themes/dark.xml",
-                "mapsforge/themes/bright.xml",
-                "mapsforge/themes/liberty.xml",
-                "mapsforge/themes/positron.xml",
-                "mapsforge/themes/fiord.xml",
-            ),
-            paths,
+    fun assetPath_oneFilePerSettingsTheme() {
+        val expected = mapOf(
+            MapTheme.Dark to "dark_matter", MapTheme.Voyager to "voyager", MapTheme.Standard to "osm",
+            MapTheme.Positron to "positron", MapTheme.Fiord to "fiord", MapTheme.OsmFr to "osm_fr",
+            MapTheme.Hot to "hot", MapTheme.Bright to "bright", MapTheme.Liberty to "liberty",
         )
+        assertEquals(MapTheme.entries.toSet(), expected.keys)
+        for ((theme, name) in expected) {
+            assertEquals("mapsforge/themes/$name.xml", MapsforgeMapTheme.assetPathFor(theme))
+        }
+        assertEquals(MapTheme.entries.size, MapTheme.entries.map { MapsforgeMapTheme.assetPathFor(it) }.toSet().size)
     }
 
     @Test

@@ -13,20 +13,27 @@ import java.io.InputStream
 /**
  * Maps each [MapTheme] (OpenFreeMap style list) to a bundled Mapsforge rendertheme XML.
  *
- * OpenFreeMap JSON cannot be converted to Mapsforge XML; these are approximate colour palettes
- * sharing the same names / grouping as [MapTheme.styleUrl].
+ * OpenFreeMap JSON cannot be converted to Mapsforge XML; these are approximate colour palettes,
+ * one file per theme listed in the settings.
  */
 object MapsforgeMapTheme {
     private const val TAG = "MapsforgeMapTheme"
     private const val THEME_DIR = "mapsforge/themes"
 
     /** Asset path under `androidApp/src/main/assets/` for the given theme. */
-    fun assetPathFor(theme: MapTheme): String = when (theme.styleUrl.substringAfterLast('/')) {
-        "dark" -> "$THEME_DIR/dark.xml"
-        "liberty" -> "$THEME_DIR/liberty.xml"
-        "positron" -> "$THEME_DIR/positron.xml"
-        "fiord" -> "$THEME_DIR/fiord.xml"
-        else -> "$THEME_DIR/bright.xml" // bright (Voyager, Bright, OsmFr, Hot)
+    fun assetPathFor(theme: MapTheme): String = "$THEME_DIR/${fileNameFor(theme)}.xml"
+
+    /** One bundled XML per entry of the settings theme list (same names as the settings labels). */
+    private fun fileNameFor(theme: MapTheme): String = when (theme) {
+        MapTheme.Dark -> "dark_matter"
+        MapTheme.Voyager -> "voyager"
+        MapTheme.Standard -> "osm"
+        MapTheme.Positron -> "positron"
+        MapTheme.Fiord -> "fiord"
+        MapTheme.OsmFr -> "osm_fr"
+        MapTheme.Hot -> "hot"
+        MapTheme.Bright -> "bright"
+        MapTheme.Liberty -> "liberty"
     }
 
     /**

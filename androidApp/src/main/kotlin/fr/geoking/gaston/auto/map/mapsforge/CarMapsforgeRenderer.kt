@@ -335,8 +335,10 @@ class CarMapsforgeRenderer(
                     graphicFactory,
                     tileCache,
                     store,
+                    // Labels are drawn upright/along roads in drawMapLabels(): they must be collected
+                    // (cacheLabels=true), otherwise Mapsforge skips all street/POI labels.
                     false,
-                    false,
+                    true,
                     null
                 )
                 Log.d(TAG, "Initialized Mapsforge vector DatabaseRenderer successfully")
