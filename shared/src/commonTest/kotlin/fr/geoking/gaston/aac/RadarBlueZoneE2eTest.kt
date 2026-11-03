@@ -46,7 +46,9 @@ class RadarBlueZoneE2eTest {
     }
 
     /** Counts every request by host and lets a test script the Overpass answers. */
-    private inner class FakeNetwork {
+    private inner class FakeNetwork(
+        private val csv: String = radarCsv,
+    ) {
         var overpassCalls = 0
         var radarCalls = 0
         var overpassResponse: (Int) -> Pair<HttpStatusCode, Map<String, String>> = {
@@ -56,7 +58,7 @@ class RadarBlueZoneE2eTest {
         val engine = MockEngine { request ->
             if (request.url.host == radarHost) {
                 radarCalls++
-                respond(radarCsv, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/csv"))
+                respond(csv, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/csv"))
             } else {
                 overpassCalls++
                 val (status, extraHeaders) = overpassResponse(overpassCalls)
@@ -97,8 +99,24 @@ class RadarBlueZoneE2eTest {
         assertTrue(blue(rings, 48.8527, 2.3500), "corridor should cover the road north of the radar")
         // ~150 m east: off the road, outside the ~35 m half-width buffer.
         assertFalse(blue(rings, 48.8500, 2.3520), "corridor must not spill far off the road")
-        assertEquals(1, net.overpassCalls, "one radial road query per radar")
+        assertEquals(1, net.overpassCalls, "one road query per road-class batch")
         assertEquals(1, net.radarCalls, "radar CSV fetched once")
+    }
+
+    @Test
+    fun twoRadarsSameClass_shareOneOverpassRoadFetch() = runBlocking {
+        // Second radar ~1.1 km north on the same motorway (same RoadNetworkClass).
+        val net = FakeNetwork(
+            csv = """
+                Numéro de radar;Type de radar;Date de mise en service;VMA ;Latitude; Longitude
+                12014;FIXE;01/01/2012 00:00;130;+48.8500;+2.3500
+                12015;FIXE;01/01/2012 00:00;130;+48.8600;+2.3500
+            """.trimIndent(),
+        )
+
+        val rings = net.repository.roadCorridorRingsNear(48.8500, 2.3500, radiusKm = 8.0)
+        assertTrue(rings.isNotEmpty())
+        assertEquals(1, net.overpassCalls, "same class → one Overpass road fetch for both radars")
     }
 
     @Test

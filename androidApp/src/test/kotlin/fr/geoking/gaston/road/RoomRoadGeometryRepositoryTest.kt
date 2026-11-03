@@ -93,4 +93,20 @@ class RoomRoadGeometryRepositoryTest {
         repo.fetchRoadsNear(48.85, 2.35, radiusKm = 1.0)
         assertEquals(2, delegateCallCount)
     }
+
+    @Test
+    fun fetchRoadsAround_reusesRoomCache_withoutRedelegating() = runBlocking {
+        repo.fetchRoadsNear(48.85, 2.35, radiusKm = 1.0)
+        assertEquals(1, delegateCallCount)
+
+        val around = repo.fetchRoadsAround(
+            latitude = 48.85,
+            longitude = 2.35,
+            radiusMeters = 800.0,
+            roadClass = fr.geoking.gaston.aac.RoadNetworkClass.Motorway,
+        )
+        assertEquals(1, delegateCallCount)
+        assertEquals(1, around.size)
+        assertEquals("motorway", around.first().highwayType)
+    }
 }

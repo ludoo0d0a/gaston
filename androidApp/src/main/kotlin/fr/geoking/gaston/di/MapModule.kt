@@ -398,7 +398,7 @@ val mapModule = module {
             useOsmRadarsFallback = noLufopKey,
             roadClassifier = get(),
             radarOsmEnricher = get(),
-            roadGeometryRepository = get<fr.geoking.gaston.road.RoadGeometryRepository>(),
+            roadGeometryRepository = get<fr.geoking.gaston.road.RoomRoadGeometryRepository>(),
         )
     }
     single<PoiProvider>(named("franceradars")) {

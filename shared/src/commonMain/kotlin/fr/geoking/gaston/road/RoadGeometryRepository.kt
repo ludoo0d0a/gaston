@@ -1,5 +1,6 @@
 package fr.geoking.gaston.road
 
+import fr.geoking.gaston.aac.RoadNetworkClass
 import fr.geoking.gaston.api.overpass.OverpassClient
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.sync.Mutex
@@ -21,7 +22,7 @@ data class RoadPolyline(
  */
 open class RoadGeometryRepository(
     private val overpassClient: OverpassClient,
-) {
+) : RoadGeometrySource {
     private val mutex = Mutex()
     private var cachedCenterLat: Double? = null
     private var cachedCenterLon: Double? = null
@@ -32,10 +33,10 @@ open class RoadGeometryRepository(
      * Fetches drivable road polylines around [latitude]/[longitude] within [radiusKm].
      * Returns cached polylines if the requested area is already covered.
      */
-    open suspend fun fetchRoadsNear(
+    override suspend fun fetchRoadsNear(
         latitude: Double,
         longitude: Double,
-        radiusKm: Double = 1.0,
+        radiusKm: Double,
     ): List<RoadPolyline> {
         mutex.withLock {
             val cLat = cachedCenterLat
@@ -86,39 +87,80 @@ open class RoadGeometryRepository(
     }
 
     /**
-     * Roads of the radar's class within [radiusMeters] of the radar, for zone corridors
-     * (uncached: the per-zone result is kept on the zone itself).
+     * Roads of the radar's class within [radiusMeters] of the radar, for zone corridors.
+     * Reuses the in-memory near-cache when it already covers the area (no extra Overpass);
+     * otherwise one class-filtered radial query, then folded into that cache.
      */
-    open suspend fun fetchRoadsAround(
+    override suspend fun fetchRoadsAround(
         latitude: Double,
         longitude: Double,
         radiusMeters: Double,
-        roadClass: fr.geoking.gaston.aac.RoadNetworkClass,
+        roadClass: RoadNetworkClass,
     ): List<RoadPolyline> {
-        val regex = when (roadClass) {
-            fr.geoking.gaston.aac.RoadNetworkClass.Motorway ->
-                "motorway|motorway_link|trunk|trunk_link"
-            fr.geoking.gaston.aac.RoadNetworkClass.ExtraUrban ->
-                "motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified"
-            fr.geoking.gaston.aac.RoadNetworkClass.Urban ->
-                "motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service"
+        val radiusKm = (radiusMeters + SLACK_METERS) / 1000.0
+        mutex.withLock {
+            val cLat = cachedCenterLat
+            val cLon = cachedCenterLon
+            if (cLat != null && cLon != null) {
+                val distKm = haversineKm(latitude, longitude, cLat, cLon)
+                if (distKm + radiusKm <= cachedRadiusKm && cachedPolylines.isNotEmpty()) {
+                    val filtered = cachedPolylines.filter { matchesRoadClass(it.highwayType, roadClass) }
+                    if (filtered.isNotEmpty()) return filtered
+                }
+            }
         }
+
         val ways = overpassClient.queryRoadWaysAround(
             latitude = latitude,
             longitude = longitude,
-            radiusMeters = (radiusMeters + 150.0).toInt(),
-            highwayRegex = regex,
+            radiusMeters = (radiusMeters + SLACK_METERS).toInt(),
+            highwayRegex = highwayRegexFor(roadClass),
         )
-        return ways.map { RoadPolyline(it.id, it.tags["highway"], it.tags["name"], it.points) }
+        val polylines = ways.map { RoadPolyline(it.id, it.tags["highway"], it.tags["name"], it.points) }
+        if (polylines.isNotEmpty()) {
+            mutex.withLock {
+                val cLat = cachedCenterLat
+                val cLon = cachedCenterLon
+                val covered = cLat != null && cLon != null &&
+                    haversineKm(latitude, longitude, cLat, cLon) + radiusKm <= cachedRadiusKm &&
+                    cachedPolylines.isNotEmpty()
+                if (!covered) {
+                    cachedCenterLat = latitude
+                    cachedCenterLon = longitude
+                    cachedRadiusKm = radiusKm
+                    cachedPolylines = polylines
+                }
+            }
+        }
+        return polylines
     }
 
     /** Clears the in-memory cache of road polylines. */
-    open suspend fun clearCache() {
+    override suspend fun clearCache() {
         mutex.withLock {
             cachedCenterLat = null
             cachedCenterLon = null
             cachedRadiusKm = 0.0
             cachedPolylines = emptyList()
+        }
+    }
+
+    companion object {
+        private const val SLACK_METERS = 150.0
+
+        fun highwayRegexFor(roadClass: RoadNetworkClass): String = when (roadClass) {
+            RoadNetworkClass.Motorway ->
+                "motorway|motorway_link|trunk|trunk_link"
+            RoadNetworkClass.ExtraUrban ->
+                "motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified"
+            RoadNetworkClass.Urban ->
+                "motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service"
+        }
+
+        fun matchesRoadClass(highwayType: String?, roadClass: RoadNetworkClass): Boolean {
+            val tag = highwayType?.trim()?.lowercase().orEmpty()
+            if (tag.isEmpty()) return false
+            return tag.matches(Regex("^(${highwayRegexFor(roadClass)})$"))
         }
     }
 }

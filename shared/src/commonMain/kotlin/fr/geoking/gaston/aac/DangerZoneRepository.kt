@@ -6,7 +6,8 @@ import fr.geoking.gaston.api.radars.FranceRadarsClient
 import fr.geoking.gaston.api.radars.LufopOpenSpeedCamClient
 import fr.geoking.gaston.api.radars.LuxembourgRadarsClient
 import fr.geoking.gaston.api.radars.toDangerZone
-import fr.geoking.gaston.road.RoadGeometryRepository
+import fr.geoking.gaston.road.RoadGeometrySource
+import fr.geoking.gaston.road.RoadPolyline
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -34,7 +35,7 @@ class DangerZoneRepository(
     private val roadClassifier: OsmRoadClassifier? = null,
     private val radarOsmEnricher: RadarOsmEnricher? = null,
     /** When set, speed-control zones near the vehicle follow the OSM road geometry. */
-    private val roadGeometryRepository: RoadGeometryRepository? = null,
+    private val roadGeometryRepository: RoadGeometrySource? = null,
 ) {
     private var cachedZones: List<DangerZone> = emptyList()
     private var cacheCenterLat: Double = Double.NaN
@@ -97,8 +98,8 @@ class DangerZoneRepository(
 
     /**
      * Attaches the OSM road corridor (length = zone radius along the road) to the closest
-     * speed-control zones the vehicle is about to reach. Lazy + bounded: Overpass is only asked
-     * for a few zones per call, once each.
+     * speed-control zones the vehicle is about to reach. Lazy + bounded: one road fetch per
+     * [RoadNetworkClass] batch (not per zone), so Overpass is not hammered on map refresh.
      */
     private suspend fun enrichNearbyWithRoadGeometry(latitude: Double, longitude: Double, limit: Int) {
         val roads = roadGeometryRepository ?: return
@@ -114,22 +115,29 @@ class DangerZoneRepository(
                 .take(limit)
                 .also { picked -> corridorAttemptedIds.addAll(picked.map { it.id }) }
         }
-        for (zone in pending) {
+        corridorLog.i { "enrich at ($latitude,$longitude): pending=${pending.size} cachedZones=${cachedZones.size}" }
+        if (pending.isEmpty()) return
+
+        // One radial query per road class covering all pending tips of that class.
+        val polylinesByClass = linkedMapOf<RoadNetworkClass, List<RoadPolyline>>()
+        for ((roadClass, zones) in pending.groupBy { it.roadClass }) {
+            val coverRadiusM = zones.maxOf { zone ->
+                zone.distanceMetersFrom(latitude, longitude) + zone.radiusMeters
+            }
             val polylines = try {
-                roads.fetchRoadsAround(
-                    zone.centerLatitude,
-                    zone.centerLongitude,
-                    zone.radiusMeters,
-                    zone.roadClass,
-                )
+                roads.fetchRoadsAround(latitude, longitude, coverRadiusM, roadClass)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // Network / rate-limit failure: allow a later retry (an empty result is final).
-                corridorLog.w(e) { "Road corridor skipped for zone ${zone.id}: ${e.message}" }
-                stateLock.withLock { corridorAttemptedIds.remove(zone.id) }
+                corridorLog.w(e) { "Road corridor batch skipped for $roadClass: ${e.message}" }
+                stateLock.withLock { corridorAttemptedIds.removeAll(zones.map { it.id }.toSet()) }
                 break
             }
+            polylinesByClass[roadClass] = polylines
+        }
+
+        for (zone in pending) {
+            val polylines = polylinesByClass[zone.roadClass] ?: continue
             val rings = RadarRoadCorridorCalculator.corridorRings(
                 tipLat = zone.centerLatitude,
                 tipLon = zone.centerLongitude,
@@ -141,6 +149,9 @@ class DangerZoneRepository(
             if (rings.isEmpty()) continue
             stateLock.withLock {
                 cachedZones = cachedZones.map { if (it.id == zone.id) it.withRoadCorridor(rings) else it }
+            }
+            corridorLog.i {
+                "zone ${zone.id}: rings=${rings.size} roads=${polylines.size} class=${zone.roadClass}"
             }
         }
     }
