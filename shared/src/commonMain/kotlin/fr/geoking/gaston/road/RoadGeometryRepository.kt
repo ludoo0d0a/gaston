@@ -85,6 +85,33 @@ open class RoadGeometryRepository(
         return polylines
     }
 
+    /**
+     * Roads of the radar's class within [radiusMeters] of the radar, for zone corridors
+     * (uncached: the per-zone result is kept on the zone itself).
+     */
+    open suspend fun fetchRoadsAround(
+        latitude: Double,
+        longitude: Double,
+        radiusMeters: Double,
+        roadClass: fr.geoking.gaston.aac.RoadNetworkClass,
+    ): List<RoadPolyline> {
+        val regex = when (roadClass) {
+            fr.geoking.gaston.aac.RoadNetworkClass.Motorway ->
+                "motorway|motorway_link|trunk|trunk_link"
+            fr.geoking.gaston.aac.RoadNetworkClass.ExtraUrban ->
+                "motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified"
+            fr.geoking.gaston.aac.RoadNetworkClass.Urban ->
+                "motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service"
+        }
+        val ways = overpassClient.queryRoadWaysAround(
+            latitude = latitude,
+            longitude = longitude,
+            radiusMeters = (radiusMeters + 150.0).toInt(),
+            highwayRegex = regex,
+        )
+        return ways.map { RoadPolyline(it.id, it.tags["highway"], it.tags["name"], it.points) }
+    }
+
     /** Clears the in-memory cache of road polylines. */
     open suspend fun clearCache() {
         mutex.withLock {

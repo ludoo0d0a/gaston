@@ -114,15 +114,18 @@ class DangerZoneRepository(
         }
         for (zone in pending) {
             val polylines = try {
-                roads.fetchRoadsNear(
+                roads.fetchRoadsAround(
                     zone.centerLatitude,
                     zone.centerLongitude,
-                    radiusKm = zone.radiusMeters / 1000.0 + 0.2,
+                    zone.radiusMeters,
+                    zone.roadClass,
                 )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (_: Exception) {
-                continue
+                // Network / rate-limit failure: allow a later retry (an empty result is final).
+                stateLock.withLock { corridorAttemptedIds.remove(zone.id) }
+                break
             }
             val rings = RadarRoadCorridorCalculator.corridorRings(
                 tipLat = zone.centerLatitude,
