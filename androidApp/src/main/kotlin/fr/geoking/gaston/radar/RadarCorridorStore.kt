@@ -55,7 +55,9 @@ object RadarCorridorStore {
             try {
                 MapModuleLoader.ensureLoaded()
                 val repo = GlobalContext.get().get<DangerZoneRepository>()
-                _rings.value = repo.roadCorridorRingsNear(lat, lon, RADIUS_KM)
+                val rings = repo.roadCorridorRingsNear(lat, lon, RADIUS_KM)
+                Log.i(TAG, "published ${rings.size} corridor rings at ($lat,$lon)")
+                _rings.value = rings
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 Log.w(TAG, "Corridor refresh failed", e)

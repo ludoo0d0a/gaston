@@ -233,6 +233,11 @@ fun MapScreen(
     }
 
     val cameraTarget = cameraPositionState.position.target
+    // Blue road-following radar corridors (shared store, same geometry as AA / MapLibre / Mapsforge).
+    LaunchedEffect(cameraTarget.latitude, cameraTarget.longitude) {
+        fr.geoking.gaston.radar.RadarCorridorStore.request(cameraTarget.latitude, cameraTarget.longitude)
+    }
+    val corridorRings by fr.geoking.gaston.radar.RadarCorridorStore.rings.collectAsState()
     val effectiveProviders = remember(settings, cameraTarget.latitude, cameraTarget.longitude) {
         settings.effectiveProvidersAt(cameraTarget.latitude, cameraTarget.longitude)
     }
@@ -623,6 +628,17 @@ fun MapScreen(
                         }
 
                         val poisToShow = filteredPois
+
+                        // Blue road-following corridors in front of radars (same styling as AA / MapLibre / Mapsforge).
+                        corridorRings.forEach { ring ->
+                            if (ring.size < 4) return@forEach
+                            Polygon(
+                                points = ring.map { (lat, lon) -> LatLng(lat, lon) },
+                                strokeColor = Color(fr.geoking.gaston.radar.RadarCorridorStyle.STROKE_ARGB.toLong() and 0xFFFFFFFFL),
+                                strokeWidth = 3f,
+                                fillColor = Color(fr.geoking.gaston.radar.RadarCorridorStyle.FILL_ARGB.toLong() and 0xFFFFFFFFL),
+                            )
+                        }
 
                         // Shared danger-zone sectors (full + km + 200 m) — same API as AA / MapLibre.
                         poisToShow.filter { it.poiCategory == PoiCategory.Radar }.forEach { poi ->

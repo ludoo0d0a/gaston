@@ -66,3 +66,6 @@ backend/.dev.vars
 backend/.wrangler/
 backend/worker-configuration.d.ts
 backend/.cache/
+
+## Offline test map data (large, local only)
+testdata/mapsforge/
