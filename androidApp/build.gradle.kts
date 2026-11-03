@@ -53,12 +53,16 @@ configure<ApplicationExtension> {
                 ?: versionProps.getProperty("versionCode")
                 ?: "1"
         ).toInt()
-        val computedVersionName = (
+        val baseVersionName = (
             System.getenv("VERSION_NAME")?.takeIf { it.isNotBlank() }
                 ?: prop("VERSION_NAME").takeIf { it.isNotEmpty() }
                 ?: versionProps.getProperty("versionName")
                 ?: "1.0"
         ).removePrefix("v")
+        // Play / About: semver + build, e.g. 1.0.0.345 (idempotent if already suffixed).
+        val computedVersionName =
+            if (baseVersionName.endsWith(".$computedVersionCode")) baseVersionName
+            else "$baseVersionName.$computedVersionCode"
         versionCode = computedVersionCode
         versionName = computedVersionName
         buildConfigField("int", "VERSION_CODE", "$computedVersionCode")
