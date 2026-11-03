@@ -25,6 +25,7 @@ import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Ensures [appModule] + [mapModule] can resolve every dependency [MapDeps] / MainActivity need.
@@ -32,10 +33,13 @@ import org.robolectric.RobolectricTestRunner
  * forever CircularProgress on the phone map / empty dashboard POI widgets.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class MapModuleResolutionTest {
 
     @Before
     fun setUp() {
+        MapModuleLoader.resetForTests()
+        if (GlobalContext.getOrNull() != null) stopKoin()
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         startKoin {
             androidContext(context)
@@ -89,7 +93,20 @@ class MapModuleResolutionTest {
         check("DangerZoneRepository") { koin.get<DangerZoneRepository>() }
 
         if (failures.isNotEmpty()) {
-            throw AssertionError("MapDeps Koin resolution failed:\n" + failures.joinToString("\n"))
+            throw AssertionError("MapDeps Koin resolution failed: " + failures.joinToString(" | "))
         }
+    }
+
+    @Test
+    fun mapModuleReloadsAfterStopKoinEvenIfLoaderFlagWasSet() {
+        stopKoin()
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        startKoin {
+            androidContext(context)
+            modules(appModule)
+        }
+        MapModuleLoader.ensureLoaded()
+        assertNotNull(GlobalContext.get().get<DangerZoneRepository>())
+        assertNotNull(GlobalContext.get().get<PoiProvider>())
     }
 }

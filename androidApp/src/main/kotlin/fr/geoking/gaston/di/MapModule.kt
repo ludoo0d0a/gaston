@@ -832,27 +832,29 @@ data class MapDeps(
 object MapModuleLoader {
 
     @Volatile
-    private var loaded = false
+    private var loadedKoin: org.koin.core.Koin? = null
 
     private val lock = Any()
 
     /** True after [ensureLoaded] has registered [mapModule] in the current Koin process. */
-    fun isLoaded(): Boolean = loaded
+    fun isLoaded(): Boolean = loadedKoin != null && loadedKoin === org.koin.core.context.GlobalContext.getOrNull()
 
     fun ensureLoaded() {
-        if (loaded) return
+        val current = org.koin.core.context.GlobalContext.getOrNull() ?: return
+        if (loadedKoin === current) return
         synchronized(lock) {
-            if (loaded) return
+            val koin = org.koin.core.context.GlobalContext.getOrNull() ?: return
+            if (loadedKoin === koin) return
             android.util.Log.d("MapModuleLoader", "Loading map module (first map open)")
             org.koin.core.context.loadKoinModules(mapModule)
-            loaded = true
+            loadedKoin = koin
         }
     }
 
     /** For unit tests that [org.koin.core.context.stopKoin] and restart. */
     internal fun resetForTests() {
         synchronized(lock) {
-            loaded = false
+            loadedKoin = null
         }
     }
 }
