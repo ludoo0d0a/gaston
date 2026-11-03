@@ -35,6 +35,9 @@ gaston-*.json
 *service-account*.json
 *serviceAccount*.json
 
+## Mapsforge offline map binaries (large; local/testdata only)
+**/mapsforge/*.map
+
 ## Temporary folders
 tmp/
 
