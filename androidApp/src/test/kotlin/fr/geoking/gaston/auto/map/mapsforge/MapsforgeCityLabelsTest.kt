@@ -71,23 +71,69 @@ class MapsforgeCityLabelsTest {
 
     @Test
     fun testZoomVisibilityRules() {
+        // Mirrors CarMapsforgeRenderer.isPlaceVisibleAtZoom (stricter density).
         fun isPlaceVisibleAtZoom(placeType: String, zoom: Int): Boolean = when (placeType) {
-            "city" -> zoom >= 5
-            "town" -> zoom >= 8
-            "village", "suburb" -> zoom >= 11
-            "hamlet" -> zoom >= 13
-            else -> zoom >= 12
+            "city" -> zoom in 5..13
+            "town" -> zoom in 9..15
+            "village", "suburb" -> zoom >= 13
+            "hamlet" -> zoom >= 15
+            else -> zoom >= 14
         }
 
         assertTrue(isPlaceVisibleAtZoom("city", 5))
+        assertTrue(isPlaceVisibleAtZoom("city", 13))
+        assertFalse(isPlaceVisibleAtZoom("city", 14))
         assertFalse(isPlaceVisibleAtZoom("town", 5))
 
-        assertTrue(isPlaceVisibleAtZoom("town", 8))
-        assertFalse(isPlaceVisibleAtZoom("village", 8))
+        assertTrue(isPlaceVisibleAtZoom("town", 9))
+        assertFalse(isPlaceVisibleAtZoom("town", 8))
+        assertFalse(isPlaceVisibleAtZoom("village", 12))
 
-        assertTrue(isPlaceVisibleAtZoom("village", 11))
-        assertFalse(isPlaceVisibleAtZoom("hamlet", 11))
+        assertTrue(isPlaceVisibleAtZoom("village", 13))
+        assertFalse(isPlaceVisibleAtZoom("hamlet", 14))
 
-        assertTrue(isPlaceVisibleAtZoom("hamlet", 13))
+        assertTrue(isPlaceVisibleAtZoom("hamlet", 15))
+    }
+
+    @Test
+    fun testCityLabelSizeShrinksAtHighZoom() {
+        fun cityLabelSizeDp(placeType: String, zoom: Int): Float = when (placeType) {
+            "city" -> when {
+                zoom <= 7 -> 13f
+                zoom <= 10 -> 14f
+                zoom <= 12 -> 13f
+                else -> 12f
+            }
+            "town" -> when {
+                zoom <= 11 -> 11f
+                zoom <= 13 -> 12f
+                else -> 11f
+            }
+            "village", "suburb" -> when {
+                zoom <= 14 -> 10f
+                else -> 11f
+            }
+            else -> 10f
+        }
+
+        assertTrue(cityLabelSizeDp("city", 6) < 16f)
+        assertTrue(cityLabelSizeDp("city", 13) <= cityLabelSizeDp("city", 9))
+        assertTrue(cityLabelSizeDp("village", 13) <= 11f)
+    }
+
+    @Test
+    fun testPlaceTypePriorityPrefersCities() {
+        fun placeTypePriority(placeType: String): Int = when (placeType) {
+            "city" -> 5
+            "town" -> 4
+            "village" -> 3
+            "suburb" -> 2
+            "hamlet" -> 1
+            else -> 0
+        }
+
+        assertTrue(placeTypePriority("city") > placeTypePriority("town"))
+        assertTrue(placeTypePriority("town") > placeTypePriority("village"))
+        assertTrue(placeTypePriority("village") > placeTypePriority("hamlet"))
     }
 }

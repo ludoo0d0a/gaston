@@ -469,24 +469,9 @@
             <name lang="zh" value="植被" />
             <cat id="nature" />
         </layer>
+        <!-- Gaston: omit amenity/shop/tourism POI overlays (app draws its own stations).
+             Keep basemap detail overlays only. -->
         <layer id="normal" visible="true">
-            <overlay id="accommodation" />
-            <overlay id="camping" />
-            <overlay id="money" />
-            <overlay id="entertainment" />
-            <overlay id="food" />
-            <overlay id="emergency" />
-            <overlay id="fuel" />
-            <overlay id="charging_station" />
-            <overlay id="parking" />
-            <overlay id="moto-parking" />
-            <overlay id="misc" />
-            <overlay id="mountain_pass" />
-            <overlay id="mountain_peak" />
-            <overlay id="public_transport" />
-            <overlay id="shop" />
-            <overlay id="attraction" />
-            <overlay id="view" />
             <overlay id="contour" />
             <overlay id="housenumber" />
             <overlay id="off_road" />
@@ -1288,8 +1273,12 @@
         <rule e="way" k="highway" v="tertiary|tertiary_link" zoom-min="14">
             <pathText k="ref" fill="#FFFFFF" font-size="10" font-style="bold" priority="40" stroke="#0B1220" stroke-width="2" />
         </rule>
-        <rule e="way" k="highway" v="cycleway|service|construction|road|pedestrian|unclassified|residential|living_street|tertiary|tertiary_link" zoom-min="14">
+        <!-- Major/secondary axes earlier; residential only when zoomed in (less label clutter). -->
+        <rule e="way" k="highway" v="tertiary|tertiary_link" zoom-min="14">
             <pathText fill="#FFFFFF" font-size="10" font-style="bold" k="name" priority="50" stroke="#0B1220" stroke-width="2.0" />
+        </rule>
+        <rule e="way" k="highway" v="cycleway|service|construction|road|pedestrian|unclassified|residential|living_street" zoom-min="16">
+            <pathText fill="#FFFFFF" font-size="10" font-style="bold" k="name" priority="40" stroke="#0B1220" stroke-width="2.0" />
         </rule>
         <rule e="way" k="highway" v="motorway|motorway_link" zoom-min="11" zoom-max="12">
             <caption k="ref" fill="#8ab4f8" font-size="10" font-style="normal" priority="95" stroke="#0B1220" stroke-width="8" />

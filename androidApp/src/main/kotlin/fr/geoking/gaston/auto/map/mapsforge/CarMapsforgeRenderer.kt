@@ -30,6 +30,8 @@ import org.mapsforge.map.android.graphics.AndroidGraphicFactory
 import org.mapsforge.map.datastore.MapDataStore
 import org.mapsforge.core.graphics.Filter
 import org.mapsforge.core.mapelements.MapElementContainer
+import org.mapsforge.core.mapelements.PointTextContainer
+import org.mapsforge.core.mapelements.SymbolContainer
 import org.mapsforge.core.mapelements.WayTextContainer
 import org.mapsforge.core.model.Point
 import org.mapsforge.map.layer.cache.InMemoryTileCache
@@ -656,8 +658,11 @@ class CarMapsforgeRenderer(
     }
 
     /**
-     * Draws Mapsforge labels outside the rotated block: point labels and symbols are re-anchored at
-     * their rotated screen position but drawn upright; street names follow their road (rotated).
+     * Draws Mapsforge road labels outside the rotated block.
+     *
+     * OSM amenity/shop/tourism icons and their captions are skipped — Gaston draws its own
+     * station POIs, and city/town names come from [drawCityLabels]. Street/axis names
+     * ([WayTextContainer]) are kept and follow the road under map rotation.
      */
     private fun drawMapLabels(canvas: Canvas, bearing: Float) {
         val store = labelStore ?: return
@@ -691,25 +696,16 @@ class CarMapsforgeRenderer(
         if (labelCache.isEmpty()) return
 
         val gc = AndroidGraphicFactory.createGraphicContext(canvas)
-        val theta = Math.toRadians(-bearing.toDouble())
-        val cosT = cos(theta)
-        val sinT = sin(theta)
-        val margin = 160.0
         for (item in labelCache.toList()) {
+            // Drop Mapsforge POI icons and point captions (amenity/shop/tourism, place names
+            // from the theme). Place names are drawn by drawCityLabels with zoom-aware density.
+            if (item is SymbolContainer || item is PointTextContainer) continue
+            if (item !is WayTextContainer) continue
             try {
-                if (item is WayTextContainer) {
-                    canvas.save()
-                    if (bearing != 0f) canvas.rotate(-bearing, cx.toFloat(), cy.toFloat())
-                    item.draw(gc, Point(centerPxMapX - cx, centerPxMapY - cy), identityMatrix, Filter.NONE)
-                    canvas.restore()
-                    continue
-                }
-                val dx = item.point.x - centerPxMapX
-                val dy = item.point.y - centerPxMapY
-                val sx = cx + dx * cosT - dy * sinT
-                val sy = cy + dx * sinT + dy * cosT
-                if (sx < -margin || sy < -margin || sx > width + margin || sy > height + margin) continue
-                item.draw(gc, Point(item.point.x - sx, item.point.y - sy), identityMatrix, Filter.NONE)
+                canvas.save()
+                if (bearing != 0f) canvas.rotate(-bearing, cx.toFloat(), cy.toFloat())
+                item.draw(gc, Point(centerPxMapX - cx, centerPxMapY - cy), identityMatrix, Filter.NONE)
+                canvas.restore()
             } catch (_: Exception) {
             }
         }
@@ -1070,22 +1066,65 @@ class CarMapsforgeRenderer(
     }
 
     private fun isPlaceVisibleAtZoom(placeType: String, zoom: Int): Boolean = when (placeType) {
-        "city" -> zoom >= 5
-        "town" -> zoom >= 8
-        "village", "suburb" -> zoom >= 11
-        "hamlet" -> zoom >= 13
-        else -> zoom >= 12
+        "city" -> zoom in 5..13
+        "town" -> zoom in 9..15
+        "village", "suburb" -> zoom >= 13
+        "hamlet" -> zoom >= 15
+        else -> zoom >= 14
     }
 
-    private fun configureCityPaint(placeType: String) {
-        val textSizeDp = when (placeType) {
-            "city" -> 20f
-            "town" -> 16f
-            "village", "suburb" -> 14f
+    private fun placeTypePriority(placeType: String): Int = when (placeType) {
+        "city" -> 5
+        "town" -> 4
+        "village" -> 3
+        "suburb" -> 2
+        "hamlet" -> 1
+        else -> 0
+    }
+
+    /** Min screen distance between place labels; grows at lower zooms to reduce clutter. */
+    private fun cityLabelMinDistancePx(zoom: Int): Float = when {
+        zoom <= 8 -> 140f
+        zoom <= 11 -> 110f
+        zoom <= 13 -> 95f
+        else -> 85f
+    }
+
+    private fun cityLabelMaxCount(zoom: Int): Int = when {
+        zoom <= 8 -> 12
+        zoom <= 11 -> 18
+        zoom <= 14 -> 28
+        else -> 36
+    }
+
+    /**
+     * Zoom-aware label size in dp. Keeps cities readable without dominating the map
+     * (especially on dark themes / high-density AA displays).
+     */
+    private fun cityLabelSizeDp(placeType: String, zoom: Int): Float = when (placeType) {
+        "city" -> when {
+            zoom <= 7 -> 13f
+            zoom <= 10 -> 14f
+            zoom <= 12 -> 13f
             else -> 12f
         }
+        "town" -> when {
+            zoom <= 11 -> 11f
+            zoom <= 13 -> 12f
+            else -> 11f
+        }
+        "village", "suburb" -> when {
+            zoom <= 14 -> 10f
+            else -> 11f
+        }
+        else -> 10f
+    }
+
+    private fun configureCityPaint(placeType: String, zoom: Int) {
+        val textSizeDp = cityLabelSizeDp(placeType, zoom)
         val density = context.resources.displayMetrics.density
-        val px = textSizeDp * density
+        // Cap density scaling so labels don't explode on high-dpi AA / phone screens.
+        val px = textSizeDp * density.coerceAtMost(2.5f)
 
         cityFillPaint.textSize = px
         cityStrokePaint.textSize = px
@@ -1096,10 +1135,10 @@ class CarMapsforgeRenderer(
 
         cityFillPaint.color = if (darkHud) {
             when (placeType) {
-                "city" -> Color.parseColor("#F1F5F9")
-                "town" -> Color.parseColor("#E2E8F0")
-                "village", "suburb" -> Color.parseColor("#CBD5E1")
-                else -> Color.parseColor("#94A3B8")
+                "city" -> Color.parseColor("#E2E8F0")
+                "town" -> Color.parseColor("#CBD5E1")
+                "village", "suburb" -> Color.parseColor("#94A3B8")
+                else -> Color.parseColor("#64748B")
             }
         } else {
             when (placeType) {
@@ -1173,9 +1212,15 @@ class CarMapsforgeRenderer(
 
         if (visibleLabels.isEmpty()) return
 
+        // Prefer cities/towns when labels collide; draw highest priority first.
+        visibleLabels.sortByDescending { placeTypePriority(it.placeType) }
+
         val drawnPositions = mutableListOf<Pair<Float, Float>>()
+        val minDistance = cityLabelMinDistancePx(currentZoom)
+        val maxLabels = cityLabelMaxCount(currentZoom)
 
         for (label in visibleLabels) {
+            if (drawnPositions.size >= maxLabels) break
             if (!isPlaceVisibleAtZoom(label.placeType, currentZoom)) continue
 
             val tileX = lonToTileX(label.lon, currentZoom)
@@ -1187,12 +1232,12 @@ class CarMapsforgeRenderer(
                 continue
             }
 
-            if (drawnPositions.any { hypot(it.first - drawX, it.second - drawY) < 80f }) {
+            if (drawnPositions.any { hypot(it.first - drawX, it.second - drawY) < minDistance }) {
                 continue
             }
             drawnPositions.add(drawX to drawY)
 
-            configureCityPaint(label.placeType)
+            configureCityPaint(label.placeType, currentZoom)
 
             if (bearing != 0f) {
                 canvas.save()

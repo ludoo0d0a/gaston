@@ -7,6 +7,7 @@ import fr.geoking.gaston.MapTheme
 import org.mapsforge.map.rendertheme.InternalRenderTheme
 import org.mapsforge.map.rendertheme.XmlRenderTheme
 import org.mapsforge.map.rendertheme.XmlRenderThemeMenuCallback
+import org.mapsforge.map.rendertheme.XmlRenderThemeStyleMenu
 import org.mapsforge.map.rendertheme.XmlThemeResourceProvider
 import java.io.InputStream
 
@@ -19,6 +20,23 @@ import java.io.InputStream
 object MapsforgeMapTheme {
     private const val TAG = "MapsforgeMapTheme"
     private const val THEME_DIR = "mapsforge/themes"
+
+    /**
+     * Applies the theme's default stylemenu layer and every overlay listed under it.
+     * Without a callback, Mapsforge ignores the stylemenu and renders all `cat=` rules
+     * (including shops / restaurants). Themes that omit amenity overlays from `normal`
+     * rely on this to keep the basemap clean.
+     */
+    val basemapCategoriesCallback: XmlRenderThemeMenuCallback =
+        XmlRenderThemeMenuCallback { menu: XmlRenderThemeStyleMenu ->
+            val base = menu.getLayer(menu.defaultValue) ?: return@XmlRenderThemeMenuCallback emptySet()
+            LinkedHashSet<String>().apply {
+                addAll(base.categories)
+                for (overlay in base.overlays) {
+                    addAll(overlay.categories)
+                }
+            }
+        }
 
     /** Asset path under `androidApp/src/main/assets/` for the given theme. */
     fun assetPathFor(theme: MapTheme): String = "$THEME_DIR/${fileNameFor(theme)}.xml"
@@ -59,7 +77,7 @@ object MapsforgeMapTheme {
                 assets = assets,
                 assetPath = path,
                 relativePathPrefix = "/assets/",
-            )
+            ).also { it.setMenuCallback(basemapCategoriesCallback) }
         } catch (e: Exception) {
             Log.w(TAG, "Mapsforge theme asset missing or unreadable: $path — using DEFAULT", e)
             InternalRenderTheme.DEFAULT
