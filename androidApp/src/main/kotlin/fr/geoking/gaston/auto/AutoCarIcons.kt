@@ -130,20 +130,20 @@ fun CarContext.dashboardWeatherAlertIcon(enabled: Boolean): CarIcon =
 fun CarContext.dashboardMapIcon(): CarIcon = carIcon(R.drawable.ic_map, AutoCarIcons.primary)
 
 /**
- * Icon-only ActionStrip toggle for traffic / radar / weather alerts.
- * Active uses [Action.FLAG_PRIMARY] so the strip background tints.
+ * Icon-only ActionStrip / header toggle for traffic / radar / weather alerts.
+ *
+ * Active state is conveyed only via [icon] tint (emergency vs muted). Do not set
+ * [Action.FLAG_PRIMARY] here: map ActionStrips allow at most one primary action, and
+ * radar + traffic are both on the strip — two primaries make the host reject the screen.
+ *
+ * @param enabled kept for call-site clarity; icon tint already encodes on/off.
  */
-fun CarContext.alertToggleAction(enabled: Boolean, icon: CarIcon, onToggle: () -> Unit): Action {
-    val builder = Action.Builder()
+@Suppress("UNUSED_PARAMETER")
+fun CarContext.alertToggleAction(enabled: Boolean, icon: CarIcon, onToggle: () -> Unit): Action =
+    Action.Builder()
         .setIcon(icon)
         .setOnClickListener(onToggle)
-    if (enabled) {
-        builder
-            .setFlags(Action.FLAG_PRIMARY)
-            .setBackgroundColor(AutoCarIcons.emergency)
-    }
-    return builder.build()
-}
+        .build()
 
 /**
  * Map ActionStrip radar + traffic toggles (display layer + notifications, coupled).
