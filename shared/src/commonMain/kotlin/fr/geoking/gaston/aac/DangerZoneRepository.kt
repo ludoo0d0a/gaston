@@ -102,25 +102,32 @@ class DangerZoneRepository(
      * [RoadNetworkClass] batch (not per zone), so Overpass is not hammered on map refresh.
      */
     private suspend fun enrichNearbyWithRoadGeometry(latitude: Double, longitude: Double, limit: Int) {
-        val roads = roadGeometryRepository ?: return
         val pending = stateLock.withLock {
             cachedZones
                 .filter {
                     it.kind == DangerZoneKind.SpeedControlArea &&
-                        it.corridorRings.isEmpty() &&
+                        // Empty or synthetic-only: still eligible for an OSM upgrade.
+                        (it.corridorRings.isEmpty() || it.corridorIsSynthetic) &&
                         it.id !in corridorAttemptedIds &&
                         it.distanceMetersFrom(latitude, longitude) <= it.radiusMeters + CORRIDOR_PREFETCH_METERS
                 }
                 .sortedBy { it.distanceMetersFrom(latitude, longitude) }
                 .take(limit)
-                .also { picked -> corridorAttemptedIds.addAll(picked.map { it.id }) }
         }
         corridorLog.i { "enrich at ($latitude,$longitude): pending=${pending.size} cachedZones=${cachedZones.size}" }
         if (pending.isEmpty()) return
 
         // One radial query per road class covering all pending tips of that class.
+        // On Overpass failure, remaining classes get empty roads → synthetic blue ribbons
+        // (kept upgradeable until a real OSM snap succeeds).
+        val roads = roadGeometryRepository
         val polylinesByClass = linkedMapOf<RoadNetworkClass, List<RoadPolyline>>()
+        var fetchFailed = false
         for ((roadClass, zones) in pending.groupBy { it.roadClass }) {
+            if (roads == null || fetchFailed) {
+                polylinesByClass[roadClass] = emptyList()
+                continue
+            }
             val coverRadiusM = zones.maxOf { zone ->
                 zone.distanceMetersFrom(latitude, longitude) + zone.radiusMeters
             }
@@ -130,28 +137,44 @@ class DangerZoneRepository(
                 throw e
             } catch (e: Exception) {
                 corridorLog.w(e) { "Road corridor batch skipped for $roadClass: ${e.message}" }
-                stateLock.withLock { corridorAttemptedIds.removeAll(zones.map { it.id }.toSet()) }
-                break
+                fetchFailed = true
+                emptyList()
             }
             polylinesByClass[roadClass] = polylines
         }
 
         for (zone in pending) {
-            val polylines = polylinesByClass[zone.roadClass] ?: continue
-            val rings = RadarRoadCorridorCalculator.corridorRings(
+            val polylines = polylinesByClass[zone.roadClass].orEmpty()
+            val fromRoads = RadarRoadCorridorCalculator.corridorRings(
                 tipLat = zone.centerLatitude,
                 tipLon = zone.centerLongitude,
                 radiusMeters = zone.radiusMeters,
                 monitoredBearingDegrees = zone.monitoredBearingDegrees,
                 bidirectional = zone.monitoredBidirectional,
                 roads = polylines,
+                allowSynthetic = false,
             )
+            val synthetic = fromRoads.isEmpty()
+            val rings = fromRoads.ifEmpty {
+                RadarRoadCorridorCalculator.syntheticCorridorRings(
+                    tipLat = zone.centerLatitude,
+                    tipLon = zone.centerLongitude,
+                    radiusMeters = zone.radiusMeters,
+                    monitoredBearingDegrees = zone.monitoredBearingDegrees,
+                    bidirectional = zone.monitoredBidirectional,
+                )
+            }
             if (rings.isEmpty()) continue
             stateLock.withLock {
-                cachedZones = cachedZones.map { if (it.id == zone.id) it.withRoadCorridor(rings) else it }
+                cachedZones = cachedZones.map {
+                    if (it.id == zone.id) it.withRoadCorridor(rings, synthetic = synthetic) else it
+                }
+                // Only freeze enrichment once OSM road geometry is attached.
+                if (!synthetic) corridorAttemptedIds.add(zone.id)
             }
             corridorLog.i {
-                "zone ${zone.id}: rings=${rings.size} roads=${polylines.size} class=${zone.roadClass}"
+                "zone ${zone.id}: rings=${rings.size} roads=${polylines.size} " +
+                    "class=${zone.roadClass} synthetic=$synthetic"
             }
         }
     }

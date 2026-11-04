@@ -1,5 +1,7 @@
 package fr.geoking.gaston.radar
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import fr.geoking.gaston.aac.DangerZoneRepository
 import fr.geoking.gaston.di.MapModuleLoader
@@ -12,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.koin.core.context.GlobalContext
+import java.util.concurrent.CopyOnWriteArrayList
 
 /** Blue road-corridor polygon colours shared by phone and Android Auto maps. */
 object RadarCorridorStyle {
@@ -31,6 +34,8 @@ object RadarCorridorStore {
     private const val RADIUS_KM = 8.0
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val redrawListeners = CopyOnWriteArrayList<() -> Unit>()
     private val _rings = MutableStateFlow<List<List<Pair<Double, Double>>>>(emptyList())
     val rings: StateFlow<List<List<Pair<Double, Double>>>> = _rings.asStateFlow()
 
@@ -38,6 +43,15 @@ object RadarCorridorStore {
     private var lastLon = Double.NaN
     private var lastAtMs = 0L
     private var inFlight = false
+
+    /** AA canvas renderers: register so a completed fetch triggers a redraw. */
+    fun addRedrawListener(listener: () -> Unit) {
+        redrawListeners.addIfAbsent(listener)
+    }
+
+    fun removeRedrawListener(listener: () -> Unit) {
+        redrawListeners.remove(listener)
+    }
 
     /** Cheap + throttled: call on every location / camera update. */
     @Synchronized
@@ -57,12 +71,24 @@ object RadarCorridorStore {
                 val repo = GlobalContext.get().get<DangerZoneRepository>()
                 val rings = repo.roadCorridorRingsNear(lat, lon, RADIUS_KM)
                 Log.i(TAG, "published ${rings.size} corridor rings at ($lat,$lon)")
+                val changed = _rings.value != rings
                 _rings.value = rings
+                if (changed) notifyRedrawListeners()
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 Log.w(TAG, "Corridor refresh failed", e)
             } finally {
                 synchronized(this@RadarCorridorStore) { inFlight = false }
+            }
+        }
+    }
+
+    private fun notifyRedrawListeners() {
+        val listeners = redrawListeners.toList()
+        if (listeners.isEmpty()) return
+        mainHandler.post {
+            for (listener in listeners) {
+                runCatching { listener() }
             }
         }
     }

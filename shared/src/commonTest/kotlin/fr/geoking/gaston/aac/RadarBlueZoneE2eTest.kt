@@ -161,22 +161,23 @@ class RadarBlueZoneE2eTest {
             else HttpStatusCode.OK to emptyMap()
         }
 
-        // 1st call: Overpass answers 429 → no exception escapes, no blue yet.
+        // 1st call: Overpass answers 429 → synthetic blue ribbon still published for the map.
         val first = net.repository.roadCorridorRingsNear(48.8500, 2.3500)
-        assertTrue(first.isEmpty())
+        assertTrue(first.isNotEmpty(), "synthetic blue corridor must show while Overpass is down")
         assertEquals(1, net.overpassCalls)
         assertTrue(RateLimitTracker.isRateLimited(overpassHost), "host must be in cooldown")
 
-        // 2nd call during cooldown: short-circuited, Overpass is NOT contacted again.
+        // 2nd call during cooldown: Overpass is NOT contacted again (RateLimitTracker short-circuit).
         val second = net.repository.roadCorridorRingsNear(48.8500, 2.3500)
-        assertTrue(second.isEmpty())
+        assertTrue(second.isNotEmpty())
         assertEquals(1, net.overpassCalls, "no Overpass request while cooling down")
 
-        // After cooldown the zone is retried once and becomes blue.
+        // After cooldown the zone is upgraded once to the real OSM road corridor.
         delay(2_100)
         val third = net.repository.roadCorridorRingsNear(48.8500, 2.3500)
         assertEquals(2, net.overpassCalls, "exactly one retry after the cooldown expires")
-        assertTrue(blue(third, 48.8473, 2.3500), "corridor appears once Overpass answers again")
+        assertTrue(blue(third, 48.8473, 2.3500), "corridor follows the road once Overpass answers again")
+        assertFalse(blue(third, 48.8500, 2.3520), "upgraded corridor must not spill far off the road")
     }
 
     @Test

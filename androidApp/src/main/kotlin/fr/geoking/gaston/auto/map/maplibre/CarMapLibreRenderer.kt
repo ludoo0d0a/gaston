@@ -316,6 +316,8 @@ class CarMapLibreRenderer(
 
     override fun centerPxYForHitTest(): Double = followFocalPoint().y
 
+    private val corridorRedrawListener: () -> Unit = { drawOnSurface() }
+
     override fun attachSurface(container: SurfaceContainer) {
         // Do NOT attach an EGL window surface here: this renderer blits via
         // Surface.lockHardwareCanvas()/lockCanvas() below, and a Surface can only be
@@ -335,6 +337,7 @@ class CarMapLibreRenderer(
             "attachSurface ${surfaceWidth}x${surfaceHeight} dpi=$surfaceDpi valid=$surfaceValid style=$styleUrl",
         )
         debugPhase = if (surfaceValid) "surface_ready" else "surface_invalid"
+        fr.geoking.gaston.radar.RadarCorridorStore.addRedrawListener(corridorRedrawListener)
         fetchOverpassRoads()
         scheduleVectorSnapshot()
         drawOnSurface()
@@ -342,6 +345,7 @@ class CarMapLibreRenderer(
 
     override fun detachSurface() {
         Log.i(TAG, "detachSurface")
+        fr.geoking.gaston.radar.RadarCorridorStore.removeRedrawListener(corridorRedrawListener)
         uiHandler.removeCallbacksAndMessages(null)
         try {
             reusableSnapshotter?.cancel()

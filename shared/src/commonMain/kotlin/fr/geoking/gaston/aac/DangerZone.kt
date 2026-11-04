@@ -66,8 +66,16 @@ data class DangerZone(
      * geometry known (sector / circle fallback).
      */
     val corridorRings: List<List<Pair<Double, Double>>> = emptyList(),
+    /**
+     * True when [corridorRings] is a bearing ribbon (no OSM snap yet). Such zones stay eligible
+     * for a later Overpass upgrade.
+     */
+    val corridorIsSynthetic: Boolean = false,
 ) {
-    fun withRoadCorridor(rings: List<List<Pair<Double, Double>>>): DangerZone = copy(corridorRings = rings)
+    fun withRoadCorridor(
+        rings: List<List<Pair<Double, Double>>>,
+        synthetic: Boolean = false,
+    ): DangerZone = copy(corridorRings = rings, corridorIsSynthetic = synthetic)
 
     /** True when alert hit-testing uses a single approach sector instead of the AFFTAC circle. */
     val usesApproachTrapezoid: Boolean

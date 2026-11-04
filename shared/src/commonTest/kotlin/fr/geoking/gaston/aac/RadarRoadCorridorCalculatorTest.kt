@@ -85,6 +85,33 @@ class RadarRoadCorridorCalculatorTest {
     }
 
     @Test
+    fun corridorRingsFallsBackToSyntheticWhenNoRoads() {
+        val rings = RadarRoadCorridorCalculator.corridorRings(
+            tipLat = 48.8566,
+            tipLon = 2.3522,
+            radiusMeters = 2_000.0,
+            monitoredBearingDegrees = 90.0,
+            bidirectional = false,
+            roads = emptyList(),
+        )
+        assertEquals(1, rings.size)
+        assertTrue(rings[0].size >= 4)
+        assertEquals(rings[0].first(), rings[0].last())
+    }
+
+    @Test
+    fun corridorRingsSyntheticIsBidirectionalWhenAsked() {
+        val rings = RadarRoadCorridorCalculator.syntheticCorridorRings(
+            tipLat = 48.8566,
+            tipLon = 2.3522,
+            radiusMeters = 1_000.0,
+            monitoredBearingDegrees = 0.0,
+            bidirectional = true,
+        )
+        assertEquals(2, rings.size)
+    }
+
+    @Test
     fun corridorFollowsRoadOnApproachSideForFullRadiusAcrossWays() {
         // Road runs north (bearing 0). Controlled traffic heads north → approach side is south.
         // Two chained ways: radar sits on the first, the second continues 1.5 km further south.

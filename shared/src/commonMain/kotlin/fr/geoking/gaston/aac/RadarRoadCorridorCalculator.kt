@@ -178,27 +178,68 @@ object RadarRoadCorridorCalculator {
         monitoredBearingDegrees: Double?,
         bidirectional: Boolean,
         roads: List<RoadPolyline>,
+        /**
+         * When true (default), falls back to a straight approach ribbon if OSM roads are missing
+         * or cannot be snapped — so phone / AA still show a blue corridor near the radar.
+         */
+        allowSynthetic: Boolean = true,
     ): List<List<Pair<Double, Double>>> {
-        if (radiusMeters <= 0.0 || roads.isEmpty()) return emptyList()
-        val snap = snapToRoad(tipLat, tipLon, roads) ?: return emptyList()
+        if (radiusMeters <= 0.0) return emptyList()
 
-        val forward = walk(snap, forward = true, radiusMeters, roads)
-        val backward = walk(snap, forward = false, radiusMeters, roads)
-        val candidates = listOf(forward, backward).filter { it.size >= 2 }
-        if (candidates.isEmpty()) return emptyList()
-
-        val bearings = DangerZoneTriangle.approachBearings(monitoredBearingDegrees, bidirectional)
-        val chosen = LinkedHashSet<List<Pair<Double, Double>>>()
-        for (b in bearings) {
-            if (b == null) {
-                chosen.addAll(candidates)
-                continue
+        if (roads.isNotEmpty()) {
+            val snap = snapToRoad(tipLat, tipLon, roads)
+            if (snap != null) {
+                val forward = walk(snap, forward = true, radiusMeters, roads)
+                val backward = walk(snap, forward = false, radiusMeters, roads)
+                val candidates = listOf(forward, backward).filter { it.size >= 2 }
+                if (candidates.isNotEmpty()) {
+                    val bearings = DangerZoneTriangle.approachBearings(monitoredBearingDegrees, bidirectional)
+                    val chosen = LinkedHashSet<List<Pair<Double, Double>>>()
+                    for (b in bearings) {
+                        if (b == null) {
+                            chosen.addAll(candidates)
+                            continue
+                        }
+                        val approachFrom = OsmSpeedCameraDirection.normalizeBearing(b + 180.0)
+                        val best = candidates.minByOrNull { angleTo(it, approachFrom) } ?: continue
+                        if (angleTo(best, approachFrom) <= 90.0) chosen.add(best)
+                    }
+                    if (chosen.isNotEmpty()) {
+                        return chosen.map { bufferPath(it, BUFFER_HALF_WIDTH_METERS) }
+                    }
+                }
             }
-            val approachFrom = OsmSpeedCameraDirection.normalizeBearing(b + 180.0)
-            val best = candidates.minByOrNull { angleTo(it, approachFrom) } ?: continue
-            if (angleTo(best, approachFrom) <= 90.0) chosen.add(best)
         }
-        return chosen.map { bufferPath(it, BUFFER_HALF_WIDTH_METERS) }
+
+        if (!allowSynthetic) return emptyList()
+        return syntheticCorridorRings(
+            tipLat = tipLat,
+            tipLon = tipLon,
+            radiusMeters = radiusMeters,
+            monitoredBearingDegrees = monitoredBearingDegrees,
+            bidirectional = bidirectional,
+        )
+    }
+
+    /**
+     * Straight ±[BUFFER_HALF_WIDTH_METERS] ribbon along the approach bearing(s). Used when OSM
+     * road geometry is unavailable so phone / AA still show a blue corridor near the radar.
+     */
+    fun syntheticCorridorRings(
+        tipLat: Double,
+        tipLon: Double,
+        radiusMeters: Double,
+        monitoredBearingDegrees: Double?,
+        bidirectional: Boolean,
+    ): List<List<Pair<Double, Double>>> {
+        if (radiusMeters <= 0.0) return emptyList()
+        val bearings = DangerZoneTriangle.approachBearings(monitoredBearingDegrees, bidirectional)
+        return bearings.map { bearing ->
+            val axis = bearing ?: 0.0
+            val approachFrom = OsmSpeedCameraDirection.normalizeBearing(axis + 180.0)
+            val end = DangerZoneTriangle.offsetMeters(tipLat, tipLon, approachFrom, radiusMeters)
+            bufferPath(listOf(tipLat to tipLon, end), BUFFER_HALF_WIDTH_METERS)
+        }
     }
 
     private data class Snap(

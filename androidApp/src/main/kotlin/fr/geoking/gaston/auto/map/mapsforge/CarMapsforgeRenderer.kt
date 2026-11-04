@@ -357,11 +357,15 @@ class CarMapsforgeRenderer(
         }
     }
 
+    private val corridorRedrawListener: () -> Unit = { invalidate(force = true) }
+
     fun start() {
+        fr.geoking.gaston.radar.RadarCorridorStore.addRedrawListener(corridorRedrawListener)
         if (!drawThread.isAlive) drawThread.start()
     }
 
     fun stop() {
+        fr.geoking.gaston.radar.RadarCorridorStore.removeRedrawListener(corridorRedrawListener)
         drawLock.withLock {
             running = false
             drawCondition.signalAll()
