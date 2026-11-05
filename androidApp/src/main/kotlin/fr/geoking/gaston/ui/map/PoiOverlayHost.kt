@@ -38,9 +38,12 @@ import fr.geoking.gaston.community.isCommunityPoiId
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.intent.IntentNavigationHelper
+import android.widget.Toast
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.premium.BillingManager
+import fr.geoking.gaston.radar.RadarCorridorStore
 import fr.geoking.gaston.shared.location.approxDistanceKm
 import fr.geoking.gaston.entitlements.Feature
 import fr.geoking.gaston.ui.components.PremiumPaywallPopup
@@ -233,9 +236,11 @@ fun PoiOverlayHost(
         val highlightedPowerLevels = settings.effectiveIrvePowerLevels()
         val isLoggedIn = settings.isLoggedIn
         val hasPremiumFeatures = settings.hasPremiumFeatures
-        val selectedPoiId = selectedPoi.id
-        val cardWidth = (configuration.screenWidthDp - 32).dp
-        LazyRow(
+    val selectedPoiId = selectedPoi.id
+    val isDevMode = settings.isDevMode
+    var recalculatingCorridorPoiId by remember { mutableStateOf<String?>(null) }
+    val cardWidth = (configuration.screenWidthDp - 32).dp
+    LazyRow(
             state = lazyListState,
             flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState),
             modifier = carouselModifier
@@ -275,6 +280,26 @@ fun PoiOverlayHost(
                             }
                         }
                     },
+                    onRecalculateCorridor = if (isDevMode && poi.poiCategory == PoiCategory.Radar) {
+                        {
+                            recalculatingCorridorPoiId = poi.id
+                            RadarCorridorStore.recalculateAt(poi.latitude, poi.longitude) { matched, ringCount, synthetic, error ->
+                                recalculatingCorridorPoiId = null
+                                val message = when {
+                                    error ->
+                                        context.getString(R.string.dev_recalculate_radar_corridor_failed)
+                                    !matched ->
+                                        context.getString(R.string.dev_recalculate_radar_corridor_none)
+                                    synthetic ->
+                                        context.getString(R.string.dev_recalculate_radar_corridor_synthetic, ringCount)
+                                    else ->
+                                        context.getString(R.string.dev_recalculate_radar_corridor_done, ringCount)
+                                }
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } else null,
+                    isRecalculatingCorridor = recalculatingCorridorPoiId == poi.id,
                     onToggleFavorite = if (isLoggedIn && favoritesRepo != null) {
                         {
                             val maxFav = settingsManager.entitlements.limit(Feature.FavoritesUnlimited)
@@ -338,6 +363,7 @@ fun PoiOverlayHost(
                 }
             } else null,
             showRawDetail = settings.devRawDetail,
+            isDevMode = settings.isDevMode,
             onNavigate = {
                 val uri = IntentNavigationHelper.getNavigationUri(poi)
                 context.startActivity(Intent(Intent.ACTION_VIEW, uri))
@@ -349,6 +375,23 @@ fun PoiOverlayHost(
                 }
                 refreshed
             },
+            onRecalculateCorridor = if (settings.isDevMode && poi.poiCategory == PoiCategory.Radar) {
+                { p ->
+                    RadarCorridorStore.recalculateAt(p.latitude, p.longitude) { matched, ringCount, synthetic, error ->
+                        val message = when {
+                            error ->
+                                context.getString(R.string.dev_recalculate_radar_corridor_failed)
+                            !matched ->
+                                context.getString(R.string.dev_recalculate_radar_corridor_none)
+                            synthetic ->
+                                context.getString(R.string.dev_recalculate_radar_corridor_synthetic, ringCount)
+                            else ->
+                                context.getString(R.string.dev_recalculate_radar_corridor_done, ringCount)
+                        }
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else null,
             onEdit = if (settings.isLoggedIn && isCommunityPoiId(poi.id) && communityRepo != null) {
                 {
                     addPoiExistingCommunityId = poi.id

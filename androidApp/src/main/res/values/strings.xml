@@ -930,6 +930,11 @@
     <string name="dev_test_danger_zone_notification_subtitle_aa">Beep + TTS + HUN (Android Auto)</string>
     <string name="dev_test_radar_notification_sent">Danger zone test alert sent</string>
     <string name="dev_test_radar_notification_permission">Notification permission required on phone</string>
+    <string name="dev_recalculate_radar_corridor">Recalculate corridor</string>
+    <string name="dev_recalculate_radar_corridor_done">Corridor updated (%1$d rings)</string>
+    <string name="dev_recalculate_radar_corridor_synthetic">Corridor updated (synthetic, %1$d rings)</string>
+    <string name="dev_recalculate_radar_corridor_none">No danger zone matched this radar</string>
+    <string name="dev_recalculate_radar_corridor_failed">Corridor recalculation failed</string>
 
     <!-- Station Details / Amenities -->
     <string name="poi_station_details">Station details</string>

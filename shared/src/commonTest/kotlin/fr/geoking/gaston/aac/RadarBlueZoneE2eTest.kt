@@ -84,7 +84,10 @@ class RadarBlueZoneE2eTest {
         RateLimitTracker.reset()
     }
 
-    private fun blue(rings: List<List<Pair<Double, Double>>>, lat: Double, lon: Double) =
+    private fun blue(rings: List<RadarCorridorOverlay>, lat: Double, lon: Double) =
+        rings.any { DangerZoneTriangle.pointInRing(lat, lon, it.points) }
+
+    private fun bluePoints(rings: List<List<Pair<Double, Double>>>, lat: Double, lon: Double) =
         rings.any { DangerZoneTriangle.pointInRing(lat, lon, it) }
 
     @Test
@@ -94,6 +97,7 @@ class RadarBlueZoneE2eTest {
         val rings = net.repository.roadCorridorRingsNear(48.8500, 2.3500, radiusKm = 8.0)
 
         assertTrue(rings.isNotEmpty(), "a blue corridor must be produced for the radar")
+        assertTrue(rings.none { it.synthetic }, "OSM road corridor must not be marked synthetic")
         // ~300 m south and ~300 m north of the radar, on the motorway centreline.
         assertTrue(blue(rings, 48.8473, 2.3500), "corridor should cover the road south of the radar")
         assertTrue(blue(rings, 48.8527, 2.3500), "corridor should cover the road north of the radar")
@@ -138,8 +142,8 @@ class RadarBlueZoneE2eTest {
             roads = listOf(road),
         )
         assertTrue(rings.isNotEmpty())
-        assertTrue(blue(rings, 48.8473, 2.3500), "upstream (south) must be blue")
-        assertFalse(blue(rings, 48.8527, 2.3500), "downstream (north) must not be blue")
+        assertTrue(bluePoints(rings, 48.8473, 2.3500), "upstream (south) must be blue")
+        assertFalse(bluePoints(rings, 48.8527, 2.3500), "downstream (north) must not be blue")
     }
 
     @Test
@@ -154,6 +158,23 @@ class RadarBlueZoneE2eTest {
     }
 
     @Test
+    fun recalculateCorridorNear_clearsAndRebuildsBlueZone() = runBlocking {
+        val net = FakeNetwork()
+        val first = net.repository.roadCorridorRingsNear(48.8500, 2.3500)
+        assertTrue(first.isNotEmpty())
+        assertEquals(1, net.overpassCalls)
+
+        val result = net.repository.recalculateCorridorNear(48.8500, 2.3500)
+        assertTrue(result.matched)
+        assertTrue(result.ringCount > 0)
+        assertFalse(result.synthetic)
+        assertEquals(2, net.overpassCalls, "recalculate must hit Overpass again after cache clear")
+
+        val again = net.repository.roadCorridorRingsNear(48.8500, 2.3500)
+        assertTrue(blue(again, 48.8473, 2.3500))
+    }
+
+    @Test
     fun http429_opensCooldown_noRetryDuringCooldown_thenRecovers() = runBlocking {
         val net = FakeNetwork()
         net.overpassResponse = { call ->
@@ -161,21 +182,24 @@ class RadarBlueZoneE2eTest {
             else HttpStatusCode.OK to emptyMap()
         }
 
-        // 1st call: Overpass answers 429 → synthetic blue ribbon still published for the map.
+        // 1st call: Overpass answers 429 → synthetic violet ribbon still published for the map.
         val first = net.repository.roadCorridorRingsNear(48.8500, 2.3500)
-        assertTrue(first.isNotEmpty(), "synthetic blue corridor must show while Overpass is down")
+        assertTrue(first.isNotEmpty(), "synthetic corridor must show while Overpass is down")
+        assertTrue(first.all { it.synthetic }, "429 fallback must be marked synthetic")
         assertEquals(1, net.overpassCalls)
         assertTrue(RateLimitTracker.isRateLimited(overpassHost), "host must be in cooldown")
 
         // 2nd call during cooldown: Overpass is NOT contacted again (RateLimitTracker short-circuit).
         val second = net.repository.roadCorridorRingsNear(48.8500, 2.3500)
         assertTrue(second.isNotEmpty())
+        assertTrue(second.all { it.synthetic })
         assertEquals(1, net.overpassCalls, "no Overpass request while cooling down")
 
         // After cooldown the zone is upgraded once to the real OSM road corridor.
         delay(2_100)
         val third = net.repository.roadCorridorRingsNear(48.8500, 2.3500)
         assertEquals(2, net.overpassCalls, "exactly one retry after the cooldown expires")
+        assertTrue(third.none { it.synthetic }, "upgraded corridor must be OSM (not synthetic)")
         assertTrue(blue(third, 48.8473, 2.3500), "corridor follows the road once Overpass answers again")
         assertFalse(blue(third, 48.8500, 2.3520), "upgraded corridor must not spill far off the road")
     }

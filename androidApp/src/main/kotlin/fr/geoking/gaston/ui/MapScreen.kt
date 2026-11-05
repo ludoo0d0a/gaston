@@ -629,14 +629,16 @@ fun MapScreen(
 
                         val poisToShow = filteredPois
 
-                        // Blue road-following corridors in front of radars (same styling as AA / MapLibre / Mapsforge).
-                        corridorRings.forEach { ring ->
-                            if (ring.size < 4) return@forEach
+                        // Road-following corridors in front of radars (blue OSM / violet synthetic).
+                        corridorRings.forEach { overlay ->
+                            if (overlay.points.size < 4) return@forEach
+                            val fill = fr.geoking.gaston.radar.RadarCorridorStyle.fillArgb(overlay.synthetic)
+                            val stroke = fr.geoking.gaston.radar.RadarCorridorStyle.strokeArgb(overlay.synthetic)
                             Polygon(
-                                points = ring.map { (lat, lon) -> LatLng(lat, lon) },
-                                strokeColor = Color(fr.geoking.gaston.radar.RadarCorridorStyle.STROKE_ARGB.toLong() and 0xFFFFFFFFL),
+                                points = overlay.points.map { (lat, lon) -> LatLng(lat, lon) },
+                                strokeColor = Color(stroke.toLong() and 0xFFFFFFFFL),
                                 strokeWidth = 3f,
-                                fillColor = Color(fr.geoking.gaston.radar.RadarCorridorStyle.FILL_ARGB.toLong() and 0xFFFFFFFFL),
+                                fillColor = Color(fill.toLong() and 0xFFFFFFFFL),
                             )
                         }
 

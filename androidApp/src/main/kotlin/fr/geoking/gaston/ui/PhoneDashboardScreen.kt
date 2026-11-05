@@ -1,6 +1,7 @@
 package fr.geoking.gaston.ui
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.geocoding.GeocodedPlace
 import fr.geoking.gaston.api.geocoding.GeocodingClient
@@ -31,7 +33,9 @@ import fr.geoking.gaston.effectiveProvidersAt
 import fr.geoking.gaston.intent.IntentNavigationHelper
 import fr.geoking.gaston.intent.NavDestination
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.radar.RadarCorridorStore
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.ui.components.AdMobBanner
 import fr.geoking.gaston.ui.dashboard.PhoneDashboardMainContent
@@ -180,6 +184,7 @@ fun PhoneDashboardScreen(
         PoiDetailsFullscreenDialog(
             poi = poi,
             showRawDetail = settings.devRawDetail,
+            isDevMode = settings.isDevMode,
             isFavorite = poi.id in uiState.favoriteIds,
             onToggleFavorite = if (settings.isLoggedIn && favoritesRepo != null) {
                 {
@@ -194,6 +199,19 @@ fun PhoneDashboardScreen(
                 onOpenMap(it, null)
                 poiForDetails = null
             },
+            onRecalculateCorridor = if (settings.isDevMode && poi.poiCategory == PoiCategory.Radar) {
+                { radar ->
+                    RadarCorridorStore.recalculateAt(radar.latitude, radar.longitude) { matched, ringCount, synthetic, error ->
+                        val message = when {
+                            error -> context.getString(R.string.dev_recalculate_radar_corridor_failed)
+                            !matched -> context.getString(R.string.dev_recalculate_radar_corridor_none)
+                            synthetic -> context.getString(R.string.dev_recalculate_radar_corridor_synthetic, ringCount)
+                            else -> context.getString(R.string.dev_recalculate_radar_corridor_done, ringCount)
+                        }
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else null,
             onDismiss = { poiForDetails = null }
         )
     }

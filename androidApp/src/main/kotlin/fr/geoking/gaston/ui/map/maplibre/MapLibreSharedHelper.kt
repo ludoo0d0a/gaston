@@ -154,7 +154,7 @@ object MapLibreSharedHelper {
      */
     fun syncRadarRoadCorridorLayer(
         map: MapLibreMap,
-        rings: List<List<Pair<Double, Double>>>,
+        rings: List<fr.geoking.gaston.aac.RadarCorridorOverlay>,
     ) {
         map.getStyle { style ->
             if (style.getSource(RADAR_CORRIDOR_SOURCE_ID) == null) {
@@ -185,13 +185,15 @@ object MapLibreSharedHelper {
             }
 
             val source = style.getSourceAs<GeoJsonSource>(RADAR_CORRIDOR_SOURCE_ID) ?: return@getStyle
-            val features = rings.mapNotNull { points ->
-                if (points.size < 4) return@mapNotNull null
-                val ring = points.map { (lat, lon) -> Point.fromLngLat(lon, lat) }
+            val features = rings.mapNotNull { overlay ->
+                if (overlay.points.size < 4) return@mapNotNull null
+                val fill = RadarCorridorStyle.fillArgb(overlay.synthetic)
+                val stroke = RadarCorridorStyle.strokeArgb(overlay.synthetic)
+                val ring = overlay.points.map { (lat, lon) -> Point.fromLngLat(lon, lat) }
                 Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).apply {
-                    addStringProperty(RADAR_ZONE_FILL_COLOR_PROPERTY, argbToRgbHex(RadarCorridorStyle.FILL_ARGB))
-                    addNumberProperty(RADAR_ZONE_FILL_OPACITY_PROPERTY, argbAlpha(RadarCorridorStyle.FILL_ARGB).toDouble())
-                    addStringProperty(RADAR_ZONE_STROKE_COLOR_PROPERTY, argbToRgbHex(RadarCorridorStyle.STROKE_ARGB))
+                    addStringProperty(RADAR_ZONE_FILL_COLOR_PROPERTY, argbToRgbHex(fill))
+                    addNumberProperty(RADAR_ZONE_FILL_OPACITY_PROPERTY, argbAlpha(fill).toDouble())
+                    addStringProperty(RADAR_ZONE_STROKE_COLOR_PROPERTY, argbToRgbHex(stroke))
                 }
             }
             source.setGeoJson(FeatureCollection.fromFeatures(features))

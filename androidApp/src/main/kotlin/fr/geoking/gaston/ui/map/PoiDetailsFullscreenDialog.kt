@@ -62,13 +62,17 @@ fun PoiDetailsFullscreenDialog(
     onToggleFavorite: (() -> Unit)? = null,
     onNavigate: (() -> Unit)? = null,
     onRefreshPoi: (suspend (Poi) -> Poi?)? = null,
+    /** Dev-only: recalculate the blue road corridor for this radar POI. */
+    onRecalculateCorridor: ((Poi) -> Unit)? = null,
     onDismiss: () -> Unit,
     showRawDetail: Boolean = false,
+    isDevMode: Boolean = false,
     /** When true, renders as full-screen content (for marketing captures) instead of a [Dialog]. */
     embedded: Boolean = false,
 ) {
     var currentPoi by remember(poi) { mutableStateOf(poi) }
     var isRefreshing by remember { mutableStateOf(false) }
+    var isRecalculatingCorridor by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val resolvedAvailability = currentPoi.resolveAvailabilitySummary(availabilitySummary)
@@ -533,6 +537,36 @@ fun PoiDetailsFullscreenDialog(
                             }
                             if (!severity.isNullOrBlank()) {
                                 PoiDetailRowStr("Severity", severity)
+                            }
+                        }
+
+                        if (isDevMode &&
+                            currentPoi.poiCategory == PoiCategory.Radar &&
+                            onRecalculateCorridor != null
+                        ) {
+                            SectionHeader(stringResource(R.string.dev_developer_settings))
+                            OutlinedButton(
+                                onClick = {
+                                    isRecalculatingCorridor = true
+                                    onRecalculateCorridor.invoke(currentPoi)
+                                    // Caller shows Toast; clear spinner after a short delay so
+                                    // rapid double-taps are less likely while Overpass runs.
+                                    scope.launch {
+                                        kotlinx.coroutines.delay(1_500)
+                                        isRecalculatingCorridor = false
+                                    }
+                                },
+                                enabled = !isRecalculatingCorridor,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                if (isRecalculatingCorridor) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                Text(stringResource(R.string.dev_recalculate_radar_corridor))
                             }
                         }
 

@@ -8,6 +8,7 @@ import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
 import fr.geoking.gaston.aac.DangerZoneTriangle
+import fr.geoking.gaston.aac.RadarCorridorOverlay
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.radar.RadarCorridorStyle
 import kotlin.math.cos
@@ -16,11 +17,12 @@ object AutoMapOverlayHelper {
 
     /**
      * Draws upstream road corridor polygons along the road geometry in front of radar POIs.
+     * OSM corridors are blue; synthetic bearing ribbons are violet.
      */
     fun drawRadarRoadCorridors(
         canvas: Canvas,
         density: Float,
-        rings: List<List<Pair<Double, Double>>>,
+        rings: List<RadarCorridorOverlay>,
         toScreenXy: (lat: Double, lon: Double) -> Pair<Float, Float>,
     ) {
         if (rings.isEmpty()) return
@@ -33,13 +35,13 @@ object AutoMapOverlayHelper {
             strokeJoin = Paint.Join.ROUND
         }
 
-        for (ring in rings) {
-            if (ring.size < 4) continue
+        for (overlay in rings) {
+            if (overlay.points.size < 4) continue
 
-            fillPaint.color = RadarCorridorStyle.FILL_ARGB
-            strokePaint.color = RadarCorridorStyle.STROKE_ARGB
+            fillPaint.color = RadarCorridorStyle.fillArgb(overlay.synthetic)
+            strokePaint.color = RadarCorridorStyle.strokeArgb(overlay.synthetic)
             val path = Path()
-            ring.forEachIndexed { index, (lat, lon) ->
+            overlay.points.forEachIndexed { index, (lat, lon) ->
                 val (x, y) = toScreenXy(lat, lon)
                 if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
             }

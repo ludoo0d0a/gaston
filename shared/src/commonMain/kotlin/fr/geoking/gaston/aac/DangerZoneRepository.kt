@@ -86,15 +86,61 @@ class DangerZoneRepository(
      * Road-following polygons (the exact alert hit-test geometry) of the zones within
      * [radiusKm] of the point, for drawing on phone / Android Auto maps. Enriches up to
      * [CORRIDOR_ENRICH_PER_MAP_CALL] more zones per call, so repeated calls fill the map.
+     * [RadarCorridorOverlay.synthetic] is true when the ribbon is a bearing fallback (no OSM).
      */
     suspend fun roadCorridorRingsNear(
         latitude: Double,
         longitude: Double,
         radiusKm: Double = 8.0,
-    ): List<List<Pair<Double, Double>>> =
+    ): List<RadarCorridorOverlay> =
         zonesNear(latitude, longitude, corridorEnrichLimit = CORRIDOR_ENRICH_PER_MAP_CALL)
             .filter { it.distanceMetersFrom(latitude, longitude) <= radiusKm * 1000.0 }
-            .flatMap { it.corridorRings }
+            .flatMap { zone ->
+                zone.corridorRings.map { ring ->
+                    RadarCorridorOverlay(points = ring, synthetic = zone.corridorIsSynthetic)
+                }
+            }
+
+    /**
+     * Dev helper: drop the corridor on the closest speed-control zone to [latitude]/[longitude],
+     * clear road caches, and recompute from Overpass (or synthetic fallback).
+     */
+    suspend fun recalculateCorridorNear(
+        latitude: Double,
+        longitude: Double,
+        matchRadiusMeters: Double = CORRIDOR_RECALCULATE_MATCH_METERS,
+    ): CorridorRecalculateResult {
+        zonesNear(latitude, longitude, corridorEnrichLimit = 0)
+        val zoneId = stateLock.withLock {
+            val target = cachedZones
+                .filter {
+                    it.kind == DangerZoneKind.SpeedControlArea &&
+                        it.distanceMetersFrom(latitude, longitude) <= matchRadiusMeters
+                }
+                .minByOrNull { it.distanceMetersFrom(latitude, longitude) }
+                ?: return@withLock null
+            cachedZones = cachedZones.map {
+                if (it.id == target.id) {
+                    it.copy(corridorRings = emptyList(), corridorIsSynthetic = false)
+                } else {
+                    it
+                }
+            }
+            corridorAttemptedIds.remove(target.id)
+            target.id
+        } ?: return CorridorRecalculateResult(matched = false)
+
+        runCatching { roadGeometryRepository?.clearCache() }
+        enrichNearbyWithRoadGeometry(latitude, longitude, limit = 1)
+
+        val updated = stateLock.withLock { cachedZones.find { it.id == zoneId } }
+        return CorridorRecalculateResult(
+            matched = true,
+            zoneId = zoneId,
+            ringCount = updated?.corridorRings?.size ?: 0,
+            synthetic = updated?.corridorIsSynthetic == true,
+        )
+    }
 
     /**
      * Attaches the OSM road corridor (length = zone radius along the road) to the closest
@@ -303,5 +349,20 @@ class DangerZoneRepository(
         private const val CORRIDOR_PREFETCH_METERS = 3_000.0
         private const val CORRIDOR_ENRICH_PER_CALL = 3
         private const val CORRIDOR_ENRICH_PER_MAP_CALL = 6
+        private const val CORRIDOR_RECALCULATE_MATCH_METERS = 75.0
     }
 }
+
+/** Result of [DangerZoneRepository.recalculateCorridorNear] (dev / diagnostics). */
+data class CorridorRecalculateResult(
+    val matched: Boolean,
+    val zoneId: String? = null,
+    val ringCount: Int = 0,
+    val synthetic: Boolean = false,
+)
+
+/** Map overlay ring: OSM road corridor (blue) or synthetic bearing ribbon (violet). */
+data class RadarCorridorOverlay(
+    val points: List<Pair<Double, Double>>,
+    val synthetic: Boolean = false,
+)

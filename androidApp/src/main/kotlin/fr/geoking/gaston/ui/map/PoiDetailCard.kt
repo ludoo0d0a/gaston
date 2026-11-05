@@ -55,6 +55,9 @@ fun PoiDetailCard(
     onToggleFavorite: (() -> Unit)? = null,
     onRefreshPoi: (() -> Unit)? = null,
     isRefreshing: Boolean = false,
+    /** Dev-only: recalculate the blue road corridor for this radar and refresh the map. */
+    onRecalculateCorridor: (() -> Unit)? = null,
+    isRecalculatingCorridor: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val selected = isSelected()
@@ -316,6 +319,30 @@ fun PoiDetailCard(
                     Spacer(modifier = Modifier.height(6.dp))
                     HorizontalDivider()
                     Spacer(modifier = Modifier.height(6.dp))
+
+                    if (poi.poiCategory == PoiCategory.Radar && onRecalculateCorridor != null) {
+                        TextButton(
+                            onClick = onRecalculateCorridor,
+                            enabled = !isRecalculatingCorridor,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier.height(28.dp)
+                        ) {
+                            if (isRecalculatingCorridor) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    color = Color(0xFF60A5FA),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+                            Text(
+                                text = stringResource(R.string.dev_recalculate_radar_corridor),
+                                color = Color(0xFF60A5FA),
+                                fontSize = 12.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
 
                     // Compact “show everything we have” summary for merged POIs.
                     Column(
