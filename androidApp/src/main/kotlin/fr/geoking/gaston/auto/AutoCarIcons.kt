@@ -1,11 +1,17 @@
 package fr.geoking.gaston.auto
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import androidx.annotation.DrawableRes
 import androidx.car.app.CarContext
 import androidx.car.app.model.Action
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.R
@@ -114,13 +120,42 @@ fun CarContext.dashboardParkedCarIcon(): CarIcon = carIcon(R.drawable.ic_poi_par
 /** Pin when a garage vehicle already has a saved parked position. */
 fun CarContext.dashboardParkedCarActiveIcon(): CarIcon = carIcon(R.drawable.ic_location_on, AutoCarIcons.primary)
 
-/** Traffic alert ActionStrip icon — active uses emergency tint. */
-fun CarContext.dashboardTrafficAlertIcon(enabled: Boolean): CarIcon =
-    carIcon(R.drawable.ic_poi_traffic, if (enabled) AutoCarIcons.emergency else AutoCarIcons.muted)
+/**
+ * Detection toggle icon: classic host circle chrome + muted glyph when off;
+ * blue filled rounded square with white glyph when on.
+ *
+ * Baked into the bitmap (not [Action.FLAG_PRIMARY]) so radar + traffic can both
+ * look enabled on the same map ActionStrip (hosts allow at most one primary).
+ */
+fun CarContext.detectionToggleIcon(@DrawableRes glyphRes: Int, enabled: Boolean): CarIcon {
+    if (!enabled) {
+        return carIcon(glyphRes, AutoCarIcons.muted)
+    }
+    val density = resources.displayMetrics.density
+    val size = (48f * density).toInt().coerceAtLeast(48)
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val inset = size * 0.06f
+    val corner = size * 0.22f
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF1D4ED8.toInt() }
+    canvas.drawRoundRect(RectF(inset, inset, size - inset, size - inset), corner, corner, fill)
+    val glyph = ContextCompat.getDrawable(this, glyphRes)?.mutate()
+    if (glyph != null) {
+        glyph.setTint(Color.WHITE)
+        val pad = (size * 0.22f).toInt()
+        glyph.setBounds(pad, pad, size - pad, size - pad)
+        glyph.draw(canvas)
+    }
+    return CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
+}
 
-/** Speed-camera / danger-zone alert ActionStrip icon — active uses emergency tint. */
+/** Traffic detection ActionStrip / header icon. */
+fun CarContext.dashboardTrafficAlertIcon(enabled: Boolean): CarIcon =
+    detectionToggleIcon(R.drawable.ic_poi_traffic, enabled)
+
+/** Speed-camera / danger-zone detection ActionStrip / header icon. */
 fun CarContext.dashboardRadarAlertIcon(enabled: Boolean): CarIcon =
-    carIcon(R.drawable.ic_poi_radar, if (enabled) AutoCarIcons.emergency else AutoCarIcons.muted)
+    detectionToggleIcon(R.drawable.ic_poi_radar, enabled)
 
 /** Weather alert ActionStrip icon — active uses emergency tint. */
 fun CarContext.dashboardWeatherAlertIcon(enabled: Boolean): CarIcon =
@@ -130,13 +165,13 @@ fun CarContext.dashboardWeatherAlertIcon(enabled: Boolean): CarIcon =
 fun CarContext.dashboardMapIcon(): CarIcon = carIcon(R.drawable.ic_map, AutoCarIcons.primary)
 
 /**
- * Icon-only ActionStrip / header toggle for traffic / radar / weather alerts.
+ * Icon-only ActionStrip / header toggle for traffic / radar alerts.
  *
- * Active state is conveyed only via [icon] tint (emergency vs muted). Do not set
+ * Enabled look is carried by [icon] (blue rounded square). Do not set
  * [Action.FLAG_PRIMARY] here: map ActionStrips allow at most one primary action, and
  * radar + traffic are both on the strip — two primaries make the host reject the screen.
  *
- * @param enabled kept for call-site clarity; icon tint already encodes on/off.
+ * @param enabled kept for call-site clarity; icon already encodes on/off.
  */
 @Suppress("UNUSED_PARAMETER")
 fun CarContext.alertToggleAction(enabled: Boolean, icon: CarIcon, onToggle: () -> Unit): Action =
@@ -154,8 +189,8 @@ fun CarContext.radarTrafficDetectionActions(
     settingsManager: SettingsManager,
     onChanged: () -> Unit,
 ): List<Action> {
-    val radarOn = settings.radarWarningEnabled
-    val trafficOn = settings.mapTrafficEnabled || settings.trafficAlertEnabled
+    val radarOn = settings.isRadarDetectionOn()
+    val trafficOn = settings.isTrafficDetectionOn()
     return listOf(
         alertToggleAction(
             enabled = radarOn,

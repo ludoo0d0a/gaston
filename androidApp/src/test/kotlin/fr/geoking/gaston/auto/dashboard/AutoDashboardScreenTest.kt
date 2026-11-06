@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.auto.testutil.CarScreenTestHarness
 import fr.geoking.gaston.auto.testutil.fakeMapDeps
+import fr.geoking.gaston.isOtherModeActive
 import fr.geoking.gaston.persistence.AppDatabase
 import fr.geoking.gaston.repository.FuelForecastRepository
 import fr.geoking.gaston.shared.location.ConnectivityManager
@@ -132,6 +133,29 @@ class AutoDashboardScreenTest {
         assertTrue(!settingsManager.settings.value.radarWarningEnabled)
         assertTrue(!settingsManager.settings.value.trafficAlertEnabled)
         assertTrue(!settingsManager.settings.value.mapTrafficEnabled)
+    }
+
+    @Test
+    fun prepareDetectionLayersMapMode_exclusiveRadarAndTraffic() {
+        settingsManager.setRadarDetectionEnabled(true)
+        settingsManager.setTrafficDetectionEnabled(true)
+        settingsManager.prepareDetectionLayersMapMode()
+
+        val s = settingsManager.settings.value
+        assertTrue(s.radarWarningEnabled)
+        assertTrue(s.mapTrafficEnabled)
+        assertTrue(s.trafficAlertEnabled)
+        assertTrue("speed_camera" in s.selectedOverpassAmenityTypes)
+        assertTrue(s.isOtherModeActive())
+    }
+
+
+    @Test
+    fun prepareDetectionLayersMapMode_noopWhenNeitherEnabled() {
+        val before = settingsManager.settings.value
+        settingsManager.prepareDetectionLayersMapMode()
+        assertEquals(before.selectedOverpassAmenityTypes, settingsManager.settings.value.selectedOverpassAmenityTypes)
+        assertEquals(before.selectedPoiProviders, settingsManager.settings.value.selectedPoiProviders)
     }
 
     @Test

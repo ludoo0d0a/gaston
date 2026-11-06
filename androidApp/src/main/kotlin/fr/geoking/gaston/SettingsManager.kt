@@ -866,6 +866,54 @@ open class SettingsManager(
         )
     }
 
+    /**
+     * AA dashboard "Ouvrir la carte" when radar and/or traffic toggles are on:
+     * exclusive Other-mode map showing only those layers (menu lists mixed POIs by distance).
+     * No-op when neither toggle is enabled (caller opens a plain map instead).
+     */
+    open fun prepareDetectionLayersMapMode() {
+        val current = _settings.value
+        val radar = current.radarWarningEnabled
+        val traffic = current.mapTrafficEnabled || current.trafficAlertEnabled
+        if (!radar && !traffic) return
+
+        val types = linkedSetOf<String>()
+        val providers = linkedSetOf<PoiProviderType>()
+        if (radar) {
+            types += "speed_camera"
+            providers += PoiProviderType.LufopOpenSpeedCam
+            providers += PoiProviderType.LuxembourgRadars
+            providers += PoiProviderType.Overpass
+        }
+        if (traffic) {
+            val trafficProviders = current.selectedPoiProviders
+                .filter { it.providesTraffic }
+                .toSet()
+                .ifEmpty {
+                    setOf(
+                        PoiProviderType.TipiBisonFute,
+                        PoiProviderType.TomTomTraffic,
+                        PoiProviderType.CitaTraffic,
+                    )
+                }
+            providers += trafficProviders
+            providers += PoiProviderType.Overpass
+        }
+
+        saveSettings(
+            current.copy(
+                useVehicleFilter = false,
+                poiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+                selectedPoiProviders = providers,
+                selectedOverpassAmenityTypes = types,
+                cacheWarmAmenityTypes = current.cacheWarmAmenityTypes + types,
+                mapTrafficEnabled = traffic,
+                trafficAlertEnabled = traffic,
+                radarWarningEnabled = radar,
+            )
+        )
+    }
+
     open fun setMapEnseigneType(type: String) {
         saveSettings(_settings.value.copy(mapEnseigneType = type))
     }

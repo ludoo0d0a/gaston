@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import fr.geoking.gaston.auto.poi.AutoPoiUiHelper
+import fr.geoking.gaston.auto.mapMenuTitleForSettings
 import fr.geoking.gaston.auto.radarTrafficDetectionActions
 import fr.geoking.gaston.auto.safeCarTemplate
 import fr.geoking.gaston.auto.actionSettingsIcon
@@ -291,10 +292,12 @@ class NativeMapPoiScreen(
             .setMarker(PlaceMarker.Builder().setColor(CarColor.RED).build())
             .build()
 
+        val menuTitle = carContext.mapMenuTitleForSettings(currentSettings, title)
+
         // PlaceListMapTemplate: loading and item list are mutually exclusive (see Builder.build()).
         if (isLoading) {
             return@safeCarTemplate PlaceListMapTemplate.Builder()
-                .setTitle(title)
+                .setTitle(menuTitle)
                 .setHeaderAction(Action.BACK)
                 .setActionStrip(actionStrip)
                 .setLoading(true)
@@ -320,6 +323,7 @@ class NativeMapPoiScreen(
         val itemListBuilder = ItemList.Builder()
             .setNoItemsMessage(noItemsMessage)
 
+        // Same POIs as the map (radar / traffic / stations); distance order for mixed layers.
         val filteredPois = getFilteredPois(currentSettings)
 
         val fuelIds = effectiveEnergies - "electric"
@@ -374,7 +378,7 @@ class NativeMapPoiScreen(
         }
 
         PlaceListMapTemplate.Builder()
-            .setTitle(title)
+            .setTitle(menuTitle)
             .setHeaderAction(Action.BACK)
             .setActionStrip(actionStrip)
             .setLoading(false)

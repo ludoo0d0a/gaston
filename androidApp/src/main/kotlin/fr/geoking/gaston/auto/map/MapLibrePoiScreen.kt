@@ -76,6 +76,7 @@ import fr.geoking.gaston.auto.actionZoomInIcon
 import fr.geoking.gaston.auto.actionZoomOutIcon
 import fr.geoking.gaston.auto.cheapestFilterAction
 import fr.geoking.gaston.auto.compassArrowSector
+import fr.geoking.gaston.auto.mapMenuTitleForSettings
 import fr.geoking.gaston.auto.menuVisibilityAction
 import fr.geoking.gaston.auto.radarTrafficDetectionActions
 import fr.geoking.gaston.auto.settings.map.AutoMapSettingsScreen
@@ -1119,7 +1120,8 @@ open class MapLibrePoiScreen(
 
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
-        val contentHeader = mapContentHeaderBuilder(title, currentSettings, cheapestAction, visibilityAction).build()
+        val menuTitle = carContext.mapMenuTitleForSettings(currentSettings, title)
+        val contentHeader = mapContentHeaderBuilder(menuTitle, currentSettings, cheapestAction, visibilityAction).build()
         val contentTemplate = if (isLoading) {
             ListTemplate.Builder()
                 .setLoading(true)
@@ -1131,6 +1133,7 @@ open class MapLibrePoiScreen(
                 .setSingleList(ItemList.Builder().build())
                 .build()
         } else {
+            // Same POIs as the map (radar / traffic / stations); distance order for mixed layers.
             val filteredPoisForSorting = getFilteredPois(currentSettings)
             val (userLat, userLon) = searchCenterFlow.value
             val sortedPois = MapPoiFilter.sortPois(

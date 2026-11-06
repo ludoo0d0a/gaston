@@ -33,12 +33,15 @@ import fr.geoking.gaston.auto.dashboardOtherIcon
 import fr.geoking.gaston.auto.dashboardRadarAlertIcon
 import fr.geoking.gaston.auto.dashboardRoutesIcon
 import fr.geoking.gaston.auto.dashboardTrafficAlertIcon
+import fr.geoking.gaston.auto.detectionLayersMenuTitle
+import fr.geoking.gaston.auto.isRadarDetectionOn
+import fr.geoking.gaston.auto.isTrafficDetectionOn
 import fr.geoking.gaston.auto.safeCarTemplate
 import fr.geoking.gaston.auto.carIconUntinted
 import fr.geoking.gaston.auto.dashboardEmergencyIcon
 import fr.geoking.gaston.auto.dashboardMapIcon
 import fr.geoking.gaston.auto.dashboardSettingsIcon
-import fr.geoking.gaston.auto.map.AutoMapScreenFactory
+import fr.geoking.gaston.auto.pushMapScreen
 
 /**
  * Root Android Auto hub — ≤6 grid tiles so strict hosts (CONTENT_LIMIT_TYPE_GRID min 6) show all items.
@@ -55,22 +58,26 @@ class AutoDashboardScreen(
 
     override fun onGetTemplate(): Template = safeCarTemplate(carContext, "AutoDashboardScreen") {
         val settings = settingsManager.settings.value
-        // Layer + alert detection (independent). None selected → no warning / no alert.
+        // Layer + alert detection (independent, global). None selected → no warning / no alert.
         // Header end actions replace deprecated GridTemplate.setActionStrip (max 2).
-        val trafficOn = settings.mapTrafficEnabled || settings.trafficAlertEnabled
-        val radarOn = settings.radarWarningEnabled
+        val trafficOn = settings.isTrafficDetectionOn()
+        val radarOn = settings.isRadarDetectionOn()
         val gridBuilder = ItemList.Builder()
 
-        // 1. Map (Voir carte with active radar / traffic / weather options)
+        // 1. Map — opens with enabled radar/traffic layers; plain map when none enabled.
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.action_open_map))
                 .setImage(carContext.dashboardMapIcon())
                 .setOnClickListener {
                     val mapDeps = getMapDeps() ?: return@setOnClickListener
-                    screenManager.push(
-                        AutoMapScreenFactory.createMapPoiScreen(carContext, mapDeps, settingsManager)
-                    )
+                    val layerTitle = carContext.detectionLayersMenuTitle(settingsManager.settings.value)
+                    if (layerTitle != null) {
+                        settingsManager.prepareDetectionLayersMapMode()
+                        pushMapScreen(settingsManager, mapDeps, layerTitle)
+                    } else {
+                        pushMapScreen(settingsManager, mapDeps)
+                    }
                 }
                 .build()
         )
