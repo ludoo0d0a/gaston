@@ -36,6 +36,7 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.isChargingStation
 import fr.geoking.gaston.poi.isGenericStationName
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
+import fr.geoking.gaston.shared.datetime.DateTimeUtils
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.ColorHelper
 import kotlin.math.roundToInt
@@ -129,7 +130,7 @@ fun PoiDetailCard(
                         val updatedAt = fp.updatedAt
                         if (updatedAt != null) {
                             Text(
-                                text = fr.geoking.gaston.shared.datetime.DateTimeUtils.formatRelativeTime(updatedAt),
+                                text = DateTimeUtils.formatRelativeTime(updatedAt),
                                 color = Color.White.copy(alpha = 0.5f),
                                 fontSize = 10.sp,
                                 modifier = Modifier.padding(end = 8.dp)
@@ -233,6 +234,26 @@ fun PoiDetailCard(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
+                            }
+
+                            resolvedAvailability?.let { summary ->
+                                Spacer(modifier = Modifier.height(4.dp))
+                                AvailabilitySlotsRow(
+                                    summary = summary,
+                                    textColor = Color.White.copy(alpha = 0.85f),
+                                )
+                                summary.updatedAt?.let { timestamp ->
+                                    Text(
+                                        text = stringResource(
+                                            R.string.poi_last_updated,
+                                            DateTimeUtils.formatRelativeTime(timestamp)
+                                        ),
+                                        color = Color.White.copy(alpha = 0.5f),
+                                        fontSize = 10.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             }
 
                             // Display power level with its specific color.
@@ -365,13 +386,6 @@ fun PoiDetailCard(
                                 }
                             }
                             PoiCategory.Irve -> {
-                                resolvedAvailability?.let { summary ->
-                                    AvailabilitySlotsRow(
-                                        summary = summary,
-                                        textColor = Color.White.copy(alpha = 0.85f),
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                }
                                 val line = listOfNotNull(
                                     poi.operator?.takeIf { it.isNotBlank() },
                                     poi.powerKw?.let { "${it.roundToInt()} kW" },

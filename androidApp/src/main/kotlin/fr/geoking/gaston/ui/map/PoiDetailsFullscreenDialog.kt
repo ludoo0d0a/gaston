@@ -86,15 +86,15 @@ fun PoiDetailsFullscreenDialog(
             ?: emptyList()
     }
     val locationSummary = buildList {
-        listOf(poi.townLocal, poi.postcode).filter { !it.isNullOrBlank() }.joinToString(", ").takeIf { it.isNotBlank() }?.let { add(it) }
-        poi.countryLocal?.takeIf { it.isNotBlank() }?.let { add(it) }
+        listOf(currentPoi.townLocal, currentPoi.postcode).filter { !it.isNullOrBlank() }.joinToString(", ").takeIf { it.isNotBlank() }?.let { add(it) }
+        currentPoi.countryLocal?.takeIf { it.isNotBlank() }?.let { add(it) }
     }.joinToString(", ").takeIf { it.isNotBlank() }
-    val streetAddress = poi.addressLocal?.takeIf { it.isNotBlank() } ?: poi.address.takeIf { it.isNotBlank() }
+    val streetAddress = currentPoi.addressLocal?.takeIf { it.isNotBlank() } ?: currentPoi.address.takeIf { it.isNotBlank() }
 
     val addressLines = buildList {
         if (!streetAddress.isNullOrBlank()) add(streetAddress)
         if (!locationSummary.isNullOrBlank() && locationSummary != streetAddress) add(locationSummary)
-        if (isEmpty()) add("%.4f, %.4f".format(poi.latitude, poi.longitude))
+        if (isEmpty()) add("%.4f, %.4f".format(currentPoi.latitude, currentPoi.longitude))
     }
 
     val detailContent: @Composable () -> Unit = {
@@ -104,7 +104,7 @@ fun PoiDetailsFullscreenDialog(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 TopAppBar(
-                    title = { Text(poi.name.takeIf { it.isNotBlank() } ?: stringResource(R.string.poi_station_details)) },
+                    title = { Text(currentPoi.name.takeIf { it.isNotBlank() } ?: stringResource(R.string.poi_station_details)) },
                     navigationIcon = {
                         IconButton(onClick = onDismiss) {
                             Icon(
@@ -163,7 +163,7 @@ fun PoiDetailsFullscreenDialog(
                             }
                         }
                         onShowOnMap?.let {
-                            IconButton(onClick = { it(poi) }) {
+                            IconButton(onClick = { it(currentPoi) }) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_map),
                                     contentDescription = stringResource(R.string.action_show_on_map)
@@ -187,7 +187,7 @@ fun PoiDetailsFullscreenDialog(
                     ) {
                         // Header Info
                         Text(
-                            text = poi.name.ifBlank { stringResource(R.string.poi_station_label) },
+                            text = currentPoi.name.ifBlank { stringResource(R.string.poi_station_label) },
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
@@ -200,9 +200,9 @@ fun PoiDetailsFullscreenDialog(
                             Text(line, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                         }
 
-                        if (!poi.isElectric && poi.priceRating != null) {
+                        if (!currentPoi.isElectric && currentPoi.priceRating != null) {
                             Spacer(modifier = Modifier.height(12.dp))
-                            val rating = poi.priceRating!!
+                            val rating = currentPoi.priceRating!!
                             val ratingColor = when {
                                 rating >= 7.5 -> Color(0xFF22C55E) // Green
                                 rating >= 4.5 -> Color(0xFFFACC15) // Yellow
@@ -237,11 +237,11 @@ fun PoiDetailsFullscreenDialog(
                             }
                         }
 
-                        if (poi.isChargingStation) {
+                        if (currentPoi.isChargingStation) {
                             listOfNotNull(
-                                poi.operator?.takeIf { it.isNotBlank() },
-                                if (poi.isOnHighway) stringResource(R.string.highway) else null,
-                                poi.chargePointCount?.let { n ->
+                                currentPoi.operator?.takeIf { it.isNotBlank() },
+                                if (currentPoi.isOnHighway) stringResource(R.string.highway) else null,
+                                currentPoi.chargePointCount?.let { n ->
                                     if (n == 1) stringResource(R.string.poi_charge_point_one) else stringResource(R.string.poi_charge_points, n)
                                 },
                             ).joinToString(" • ").takeIf { it.isNotBlank() }?.let { info ->
@@ -252,10 +252,29 @@ fun PoiDetailsFullscreenDialog(
                                     fontSize = 13.sp
                                 )
                             }
+                            resolvedAvailability?.let { summary ->
+                                Spacer(modifier = Modifier.height(8.dp))
+                                AvailabilitySlotsRow(
+                                    summary = summary,
+                                    textColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    barHeight = 5.dp,
+                                )
+                                summary.updatedAt?.let { timestamp ->
+                                    Text(
+                                        text = stringResource(
+                                            R.string.poi_last_updated,
+                                            DateTimeUtils.formatRelativeTime(timestamp)
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
+                            }
                         }
 
                         // Fuel Prices
-                        poi.fuelPrices?.let { prices ->
+                        currentPoi.fuelPrices?.let { prices ->
                             if (prices.isNotEmpty()) {
                                 SectionHeader(stringResource(R.string.poi_section_prices))
                                 prices.forEach { fp ->
@@ -310,11 +329,24 @@ fun PoiDetailsFullscreenDialog(
                                                 modifier = Modifier.padding(top = 2.dp)
                                             )
                                         }
+                                        val priceUpdatedAt = fp.updatedAt
+                                        if (!fp.outOfStock && priceUpdatedAt != null) {
+                                            Text(
+                                                text = stringResource(
+                                                    R.string.poi_last_updated,
+                                                    DateTimeUtils.formatRelativeTime(priceUpdatedAt)
+                                                ),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontSize = 11.sp,
+                                                modifier = Modifier.padding(top = 2.dp)
+                                            )
+                                        }
                                     }
                                 }
 
-                                val overallLastUpdate = poi.sourceUpdates?.values?.maxOrNull()
-                                    ?: prices.mapNotNull { it.updatedAt }.maxOrNull()
+                                val overallLastUpdate = DateTimeUtils.latestTimestamp(
+                                    (currentPoi.sourceUpdates?.values.orEmpty()) + prices.map { it.updatedAt }
+                                )
                                 overallLastUpdate?.let { timestamp ->
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Text(
@@ -331,18 +363,10 @@ fun PoiDetailsFullscreenDialog(
                         }
 
                         // IRVE Details
-                        if (poi.isChargingStation && poi.irveDetails != null) {
-                            val d = poi.irveDetails!!
+                        if (currentPoi.isChargingStation && currentPoi.irveDetails != null) {
+                            val d = currentPoi.irveDetails!!
                             SectionHeader(stringResource(R.string.poi_label_connectors))
-                            resolvedAvailability?.let { summary ->
-                                AvailabilitySlotsRow(
-                                    summary = summary,
-                                    textColor = MaterialTheme.colorScheme.onSurface,
-                                    barHeight = 5.dp,
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-                            val powerKw = poi.powerKw
+                            val powerKw = currentPoi.powerKw
                             val powerColor = powerKw?.let { ColorHelper.getPowerColor(it) }
                             if (powerKw != null) {
                                 Text(
@@ -425,7 +449,7 @@ fun PoiDetailsFullscreenDialog(
                         }
 
                         // Restaurant Details
-                        poi.restaurantDetails?.let { d ->
+                        currentPoi.restaurantDetails?.let { d ->
                             SectionHeader(stringResource(R.string.poi_section_restaurant))
                             if (d.isFastFood) {
                                 Text(
@@ -448,7 +472,7 @@ fun PoiDetailsFullscreenDialog(
                         }
 
                         // Routex Details
-                        poi.amenities?.let { details ->
+                        currentPoi.amenities?.let { details ->
                             SectionHeader(stringResource(R.string.poi_services_amenities))
                             PoiDetailRow(stringResource(R.string.amenity_manned_24h), details.manned24h)
                             PoiDetailRow(stringResource(R.string.amenity_manned_automat_24h), details.mannedAutomat24h)
@@ -501,7 +525,7 @@ fun PoiDetailsFullscreenDialog(
                         if (sources.isNotEmpty()) {
                             SectionHeader(stringResource(R.string.screen_sources))
                             sources.forEach { s ->
-                                val updateTime = poi.sourceUpdates?.get(s)
+                                val updateTime = currentPoi.sourceUpdates?.get(s)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
