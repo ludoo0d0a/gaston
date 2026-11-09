@@ -98,6 +98,18 @@ fun PoiOverlayHost(
     var addPoiInitialLat by remember { mutableStateOf<Double?>(null) }
     var addPoiInitialLng by remember { mutableStateOf<Double?>(null) }
     var addPoiExistingCommunityId by remember { mutableStateOf<String?>(null) }
+    var refreshingPoiId by remember { mutableStateOf<String?>(null) }
+
+    fun applyRefreshedPoi(refreshed: Poi) {
+        frozenPoisForSheet = frozenPoisForSheet.map { if (it.id == refreshed.id) refreshed else it }
+        if (selectedPoi?.id == refreshed.id) {
+            onSelectedPoiChange(refreshed)
+        }
+        if (poiForDetailsDialog?.id == refreshed.id) {
+            poiForDetailsDialog = refreshed
+        }
+        onInvalidate()
+    }
 
     val lazyListState = rememberLazyListState()
 
@@ -274,12 +286,18 @@ fun PoiOverlayHost(
                     isFavorite = { poi.id in favoriteIds },
                     onRefreshPoi = {
                         scope.launch {
-                            val refreshed = poiProvider.refreshPoi(poi)
-                            if (refreshed != null) {
-                                onInvalidate()
+                            refreshingPoiId = poi.id
+                            try {
+                                val refreshed = poiProvider.refreshPoi(poi)
+                                if (refreshed != null) {
+                                    applyRefreshedPoi(refreshed)
+                                }
+                            } finally {
+                                refreshingPoiId = null
                             }
                         }
                     },
+                    isRefreshing = refreshingPoiId == poi.id,
                     onRecalculateCorridor = if (isDevMode && poi.poiCategory == PoiCategory.Radar) {
                         {
                             recalculatingCorridorPoiId = poi.id
@@ -371,7 +389,7 @@ fun PoiOverlayHost(
             onRefreshPoi = { p ->
                 val refreshed = poiProvider.refreshPoi(p)
                 if (refreshed != null) {
-                    onInvalidate()
+                    applyRefreshedPoi(refreshed)
                 }
                 refreshed
             },

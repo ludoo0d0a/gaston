@@ -199,6 +199,15 @@ fun PhoneDashboardScreen(
                 onOpenMap(it, null)
                 poiForDetails = null
             },
+            onRefreshPoi = poiProvider?.let { provider ->
+                { p ->
+                    val refreshed = provider.refreshPoi(p)
+                    if (refreshed != null) {
+                        poiForDetails = refreshed
+                    }
+                    refreshed
+                }
+            },
             onRecalculateCorridor = if (settings.isDevMode && poi.poiCategory == PoiCategory.Radar) {
                 { radar ->
                     RadarCorridorStore.recalculateAt(radar.latitude, radar.longitude) { matched, ringCount, synthetic, error ->
