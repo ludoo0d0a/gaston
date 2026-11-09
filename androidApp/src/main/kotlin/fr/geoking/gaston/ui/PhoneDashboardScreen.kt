@@ -162,6 +162,12 @@ fun PhoneDashboardScreen(
                             onOpenMap(null, 12.5f)
                         }
                     },
+                    onOpenParking = {
+                        scope.launch {
+                            settingsManager.setOtherMode("parking")
+                            onOpenMap(null, 12.5f)
+                        }
+                    },
                     onOpenRoutes = onOpenRoutes,
                     onOpenFuelForecast = onOpenFuelForecast,
                     onOpenEmergency = onOpenEmergency,

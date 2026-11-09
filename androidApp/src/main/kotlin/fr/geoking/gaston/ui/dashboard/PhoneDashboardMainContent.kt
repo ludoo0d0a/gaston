@@ -94,6 +94,7 @@ fun PhoneDashboardMainContent(
     onOpenRadars: () -> Unit,
     onOpenWeather: () -> Unit,
     onOpenTraffic: () -> Unit,
+    onOpenParking: () -> Unit,
     onOpenRoutes: (NavDestination?, NavDestination?) -> Unit,
     onOpenFuelForecast: () -> Unit,
     onOpenEmergency: () -> Unit,
@@ -196,6 +197,13 @@ fun PhoneDashboardMainContent(
                     iconResId = R.drawable.ic_poi_traffic,
                     onClick = onOpenTraffic,
                     testTag = "dashboard_traffic_btn"
+                ),
+                DashboardRow(
+                    title = stringResource(R.string.dashboard_parking),
+                    subtitle = stringResource(R.string.dashboard_parking_subtitle),
+                    iconResId = R.drawable.ic_poi_parking,
+                    onClick = onOpenParking,
+                    testTag = "dashboard_parking_btn"
                 ),
             )
 
