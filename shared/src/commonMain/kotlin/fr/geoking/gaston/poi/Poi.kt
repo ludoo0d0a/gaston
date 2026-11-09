@@ -310,6 +310,8 @@ data class IrveDetails(
     val availableConnectors: Int? = null,
     /** Real-time availability: total number of connectors. */
     val totalConnectors: Int? = null,
+    /** Source last-update for embedded availability (e.g. QualiCharge/Gireve `horodatage`). */
+    val availabilityUpdatedAt: String? = null,
     /** PDC itinerance ids at this station (e.g. DataGouv `id_pdc_itinerance`), for availability matching. */
     val pdcIds: Set<String> = emptySet()
 )

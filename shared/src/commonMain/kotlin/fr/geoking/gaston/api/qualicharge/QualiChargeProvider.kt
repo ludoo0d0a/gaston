@@ -7,6 +7,7 @@ import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderRules
+import fr.geoking.gaston.shared.datetime.DateTimeUtils
 
 /**
  * [PoiProvider] implementation for QualiCharge IRVE (France),
@@ -45,6 +46,7 @@ class QualiChargeProvider(
                 client.mapStatus(it.etatPdc, it.occupationPdc) == AvailabilityStatus.Available
             }
             val pdcIds = pdcs.map { it.idPdcItinerance }.toSet()
+            val availabilityUpdatedAt = DateTimeUtils.latestTimestamp(pdcs.map { it.horodatage })
 
             Poi(
                 id = "qualicharge_$stationKey",
@@ -58,6 +60,7 @@ class QualiChargeProvider(
                 irveDetails = IrveDetails(
                     availableConnectors = available,
                     totalConnectors = total,
+                    availabilityUpdatedAt = availabilityUpdatedAt,
                     pdcIds = pdcIds
                 ),
                 source = "QualiCharge"

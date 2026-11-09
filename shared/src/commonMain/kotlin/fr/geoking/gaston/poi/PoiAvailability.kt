@@ -18,6 +18,7 @@ fun Poi.embeddedAvailabilitySummary(): StationAvailabilitySummary? {
     return StationAvailabilitySummary(
         availableCount = available.coerceIn(0, total),
         totalCount = total,
+        updatedAt = irve.availabilityUpdatedAt,
     )
 }
 

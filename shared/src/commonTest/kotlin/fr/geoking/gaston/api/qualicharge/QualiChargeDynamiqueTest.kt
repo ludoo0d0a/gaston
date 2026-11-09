@@ -30,7 +30,9 @@ class QualiChargeDynamiqueTest {
         assertEquals("FREVCE9008842", rows[0].idPdcItinerance)
         assertEquals("en_service", rows[0].etatPdc)
         assertEquals("libre", rows[0].occupationPdc)
+        assertEquals("2026-08-21 15:34:58+00:00", rows[0].horodatage)
         assertEquals("occupe", rows[1].occupationPdc)
+        assertEquals("2026-08-21 21:09:48+00:00", rows[1].horodatage)
         assertEquals("hors_service", rows[2].etatPdc)
     }
 

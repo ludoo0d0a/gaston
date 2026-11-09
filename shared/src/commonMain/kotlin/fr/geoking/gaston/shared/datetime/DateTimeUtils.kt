@@ -128,4 +128,28 @@ object DateTimeUtils {
             else -> formatDate(dateStr)
         }
     }
+
+    /**
+     * Returns the chronologically latest timestamp among [timestamps].
+     * Prefer parseable values; when several parse, the newest Instant wins (normalized to ISO when possible).
+     * Unparseable non-blank strings are used only as a last resort when nothing parses.
+     */
+    fun latestTimestamp(timestamps: Iterable<String?>): String? {
+        var bestParsed: String? = null
+        var bestInstant: Instant? = null
+        var bestUnparsed: String? = null
+        for (raw in timestamps) {
+            val s = raw?.trim()?.takeIf { it.isNotEmpty() } ?: continue
+            val instant = parseFlexible(s)
+            if (instant != null) {
+                if (bestInstant == null || instant > bestInstant) {
+                    bestInstant = instant
+                    bestParsed = normalizeToIso(s) ?: s
+                }
+            } else if (bestUnparsed == null) {
+                bestUnparsed = s
+            }
+        }
+        return bestParsed ?: bestUnparsed
+    }
 }

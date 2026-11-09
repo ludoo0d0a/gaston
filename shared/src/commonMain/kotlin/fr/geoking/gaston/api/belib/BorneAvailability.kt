@@ -25,7 +25,9 @@ data class PdcAvailability(
     val latitude: Double,
     val longitude: Double,
     val address: String? = null,
-    val stationId: String? = null
+    val stationId: String? = null,
+    /** Source last-update timestamp when provided (e.g. QualiCharge/Gireve `horodatage`). */
+    val updatedAt: String? = null,
 )
 
 /**
@@ -33,7 +35,9 @@ data class PdcAvailability(
  */
 data class StationAvailabilitySummary(
     val availableCount: Int,
-    val totalCount: Int
+    val totalCount: Int,
+    /** Latest [PdcAvailability.updatedAt] among PDCs at this station, when known. */
+    val updatedAt: String? = null,
 )
 
 /**

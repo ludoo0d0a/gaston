@@ -78,4 +78,21 @@ class DateTimeUtilsTest {
         val old = now - 60.days
         assertEquals(DateTimeUtils.formatDate(old.toString()), DateTimeUtils.formatRelativeTime(old.toString()))
     }
+
+    @Test
+    fun testLatestTimestamp() {
+        assertEquals(null, DateTimeUtils.latestTimestamp(emptyList()))
+        assertEquals(null, DateTimeUtils.latestTimestamp(listOf(null, "", "  ")))
+        assertEquals(
+            "2026-08-21T21:09:48Z",
+            DateTimeUtils.latestTimestamp(
+                listOf(
+                    "2026-08-21 15:34:58",
+                    "2026-08-21 21:09:48",
+                    "2026-07-07 10:27:38",
+                )
+            )
+        )
+        assertEquals("raw-stamp", DateTimeUtils.latestTimestamp(listOf("raw-stamp")))
+    }
 }

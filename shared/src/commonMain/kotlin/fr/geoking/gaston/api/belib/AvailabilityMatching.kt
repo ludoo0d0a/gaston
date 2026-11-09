@@ -1,6 +1,7 @@
 package fr.geoking.gaston.api.belib
 
 import fr.geoking.gaston.poi.Poi
+import fr.geoking.gaston.shared.datetime.DateTimeUtils
 import kotlin.math.*
 
 /**
@@ -63,7 +64,11 @@ fun matchAvailabilityToPois(
 
 private fun summaryOf(list: List<PdcAvailability>): StationAvailabilitySummary {
     val availableCount = list.count { it.status == AvailabilityStatus.Available }
-    return StationAvailabilitySummary(availableCount = availableCount, totalCount = list.size)
+    return StationAvailabilitySummary(
+        availableCount = availableCount,
+        totalCount = list.size,
+        updatedAt = DateTimeUtils.latestTimestamp(list.map { it.updatedAt }),
+    )
 }
 
 private fun roundTo5Decimals(x: Double): Double = round(x * 1e5) / 1e5

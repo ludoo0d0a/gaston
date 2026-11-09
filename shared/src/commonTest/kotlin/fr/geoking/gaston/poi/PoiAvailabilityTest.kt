@@ -35,12 +35,14 @@ class PoiAvailabilityTest {
             irveDetails = IrveDetails(
                 availableConnectors = 2,
                 totalConnectors = 4,
+                availabilityUpdatedAt = "2026-08-21T15:34:58Z",
             ),
         )
         val summary = poi.embeddedAvailabilitySummary()
         assertNotNull(summary)
         assertEquals(2, summary.availableCount)
         assertEquals(4, summary.totalCount)
+        assertEquals("2026-08-21T15:34:58Z", summary.updatedAt)
     }
 
     @Test

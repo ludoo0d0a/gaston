@@ -69,14 +69,16 @@ class BelibAvailabilityTest {
                 status = AvailabilityStatus.Available,
                 latitude = 48.85,
                 longitude = 2.35,
-                stationId = "ST1"
+                stationId = "ST1",
+                updatedAt = "2026-08-21 15:34:58",
             ),
             PdcAvailability(
                 id = "PDC2",
                 status = AvailabilityStatus.Occupied,
                 latitude = 48.85,
                 longitude = 2.35,
-                stationId = "ST1"
+                stationId = "ST1",
+                updatedAt = "2026-08-21 21:09:48",
             )
         )
         val pois = listOf(
@@ -96,6 +98,7 @@ class BelibAvailabilityTest {
         assertNotNull(summary)
         assertEquals(1, summary.availableCount)
         assertEquals(2, summary.totalCount)
+        assertEquals("2026-08-21T21:09:48Z", summary.updatedAt)
     }
 
     @Test

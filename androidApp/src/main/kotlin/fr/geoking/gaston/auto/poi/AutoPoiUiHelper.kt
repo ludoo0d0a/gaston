@@ -393,6 +393,14 @@ object AutoPoiUiHelper {
                 if (canAddRow()) {
                     val row = Row.Builder()
                         .setTitle(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
+                    s.updatedAt?.let { timestamp ->
+                        row.addText(
+                            carContext.getString(
+                                R.string.poi_last_updated,
+                                DateTimeUtils.formatRelativeTime(timestamp),
+                            )
+                        )
+                    }
                     if (includePlace) { row.setMetadata(metadata!!); applyDistanceSpan(row, distanceFromLatLon, poi) }
                     rows.add(row.build())
                 }
@@ -534,8 +542,9 @@ object AutoPoiUiHelper {
                 sb.appendLine("${fp.fuelName.padEnd(nameWidth)}  $priceStr")
             }
 
-            val overallLastUpdate = poi.sourceUpdates?.values?.maxOrNull()
-                ?: fuelPrices.mapNotNull { it.updatedAt }.maxOrNull()
+            val overallLastUpdate = DateTimeUtils.latestTimestamp(
+                (poi.sourceUpdates?.values.orEmpty()) + fuelPrices.map { it.updatedAt }
+            )
             overallLastUpdate?.let { timestamp ->
                 sb.appendLine()
                 sb.appendLine(carContext.getString(R.string.poi_last_updated, DateTimeUtils.formatRelativeTime(timestamp)))
@@ -547,6 +556,14 @@ object AutoPoiUiHelper {
         if (poi.isChargingStation) {
             resolvedAvailability?.let { s ->
                 sb.appendLine(carContext.getString(R.string.poi_availability, s.availableCount, s.totalCount))
+                s.updatedAt?.let { timestamp ->
+                    sb.appendLine(
+                        carContext.getString(
+                            R.string.poi_last_updated,
+                            DateTimeUtils.formatRelativeTime(timestamp),
+                        )
+                    )
+                }
                 sb.appendLine()
             }
             val charging = mutableListOf<String>()

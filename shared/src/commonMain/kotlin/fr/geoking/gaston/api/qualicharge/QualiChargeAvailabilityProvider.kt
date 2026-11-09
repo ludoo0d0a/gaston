@@ -31,7 +31,8 @@ class QualiChargeAvailabilityProvider(
                 status = client.mapStatus(record.etatPdc, record.occupationPdc),
                 latitude = record.latitude,
                 longitude = record.longitude,
-                stationId = record.stationId
+                stationId = record.stationId,
+                updatedAt = record.horodatage,
             )
         }
     }

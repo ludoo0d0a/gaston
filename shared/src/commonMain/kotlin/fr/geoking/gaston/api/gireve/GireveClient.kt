@@ -50,6 +50,7 @@ class GireveClient(
                     idPdcItinerance = dyn.idPdcItinerance,
                     etatPdc = dyn.etatPdc,
                     occupationPdc = dyn.occupationPdc,
+                    horodatage = dyn.horodatage,
                     latitude = staticInfo.latitude,
                     longitude = staticInfo.longitude,
                     stationId = staticInfo.stationId,
@@ -75,6 +76,7 @@ class GireveClient(
         val idxPdc = header.indexOf("id_pdc_itinerance")
         val idxEtat = header.indexOf("etat_pdc")
         val idxOcc = header.indexOf("occupation_pdc")
+        val idxHoro = header.indexOf("horodatage")
         if (idxPdc < 0 || idxEtat < 0 || idxOcc < 0) return emptyList()
 
         val out = ArrayList<GireveDynamicRow>(lines.size - 1)
@@ -86,7 +88,10 @@ class GireveClient(
                 GireveDynamicRow(
                     idPdcItinerance = id,
                     etatPdc = fields.getOrNull(idxEtat)?.trim().orEmpty(),
-                    occupationPdc = fields.getOrNull(idxOcc)?.trim().orEmpty()
+                    occupationPdc = fields.getOrNull(idxOcc)?.trim().orEmpty(),
+                    horodatage = if (idxHoro >= 0) {
+                        fields.getOrNull(idxHoro)?.trim()?.takeIf { it.isNotEmpty() }
+                    } else null,
                 )
             )
         }
@@ -210,7 +215,8 @@ class GireveClient(
 data class GireveDynamicRow(
     val idPdcItinerance: String,
     val etatPdc: String,
-    val occupationPdc: String
+    val occupationPdc: String,
+    val horodatage: String? = null,
 )
 
 data class GireveStaticInfo(
@@ -238,5 +244,6 @@ data class GirevePdcRecord(
     val enseigneName: String? = null,
     val address: String? = null,
     val puissanceNominale: Double? = null,
-    val distanceKm: Double = 0.0
+    val distanceKm: Double = 0.0,
+    val horodatage: String? = null,
 )
