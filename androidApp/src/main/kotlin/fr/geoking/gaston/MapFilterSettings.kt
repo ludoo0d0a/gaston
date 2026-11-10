@@ -66,6 +66,10 @@ fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
     else -> null
 }
 
+/** True when the radar / speed_camera amenity layer is selected on the map. */
+fun AppSettings.isRadarMapLayerOn(): Boolean =
+    "speed_camera" in selectedOverpassAmenityTypes
+
 fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
     val categories = mutableSetOf<PoiCategory>()
 

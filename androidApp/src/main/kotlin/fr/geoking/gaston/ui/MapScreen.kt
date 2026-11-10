@@ -109,6 +109,7 @@ import fr.geoking.gaston.api.geocoding.GeocodingClient
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import fr.geoking.gaston.effectiveProvidersAt
+import fr.geoking.gaston.isRadarMapLayerOn
 import fr.geoking.gaston.ui.dashboard.GastonTheme
 import fr.geoking.gaston.ui.dashboard.PhoneDashboardDestinationSearch
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -630,16 +631,19 @@ fun MapScreen(
                         val poisToShow = filteredPois
 
                         // Road-following corridors in front of radars (blue OSM / violet synthetic).
-                        corridorRings.forEach { overlay ->
-                            if (overlay.points.size < 4) return@forEach
-                            val fill = fr.geoking.gaston.radar.RadarCorridorStyle.fillArgb(overlay.synthetic)
-                            val stroke = fr.geoking.gaston.radar.RadarCorridorStyle.strokeArgb(overlay.synthetic)
-                            Polygon(
-                                points = overlay.points.map { (lat, lon) -> LatLng(lat, lon) },
-                                strokeColor = Color(stroke.toLong() and 0xFFFFFFFFL),
-                                strokeWidth = 3f,
-                                fillColor = Color(fill.toLong() and 0xFFFFFFFFL),
-                            )
+                        // Only when the radar amenity layer is on — same gate as radar pins.
+                        if (settings.isRadarMapLayerOn()) {
+                            corridorRings.forEach { overlay ->
+                                if (overlay.points.size < 4) return@forEach
+                                val fill = fr.geoking.gaston.radar.RadarCorridorStyle.fillArgb(overlay.synthetic)
+                                val stroke = fr.geoking.gaston.radar.RadarCorridorStyle.strokeArgb(overlay.synthetic)
+                                Polygon(
+                                    points = overlay.points.map { (lat, lon) -> LatLng(lat, lon) },
+                                    strokeColor = Color(stroke.toLong() and 0xFFFFFFFFL),
+                                    strokeWidth = 3f,
+                                    fillColor = Color(fill.toLong() and 0xFFFFFFFFL),
+                                )
+                            }
                         }
 
                         // Shared danger-zone sectors (full + km + 200 m) — same API as AA / MapLibre.

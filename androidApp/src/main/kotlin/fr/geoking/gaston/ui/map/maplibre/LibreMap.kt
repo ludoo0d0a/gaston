@@ -11,9 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.api.weather.RainViewerMapsClient
+import fr.geoking.gaston.isRadarMapLayerOn
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.road.RoadGeometryRepository
 import fr.geoking.gaston.road.RoadPolyline
@@ -53,6 +55,9 @@ fun LibreMap(
     val paddingBottomPx = with(density) { contentPaddingBottom.roundToPx() }
     val rainViewerClient = koinInject<RainViewerMapsClient>()
     val roadGeometryRepository = koinInject<RoadGeometryRepository>()
+    val settingsManager = koinInject<SettingsManager>()
+    val settings by settingsManager.settings.collectAsState()
+    val radarMapLayerOn = settings.isRadarMapLayerOn()
 
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
     val lastPaddingBottomPx = remember { intArrayOf(-1) }
@@ -97,6 +102,7 @@ fun LibreMap(
         trafficEvents,
         roadPolylines,
         corridorRings,
+        radarMapLayerOn,
     ) {
         arrayOf(
             poisInView,
@@ -112,6 +118,7 @@ fun LibreMap(
             trafficEvents,
             roadPolylines,
             corridorRings,
+            radarMapLayerOn,
         )
     }
 
@@ -156,7 +163,10 @@ fun LibreMap(
             )
             MapLibreSharedHelper.syncTrafficLayer(map, trafficEvents)
             MapLibreSharedHelper.syncRoadVectorLayer(map, roadPolylines)
-            MapLibreSharedHelper.syncRadarRoadCorridorLayer(map, corridorRings)
+            MapLibreSharedHelper.syncRadarRoadCorridorLayer(
+                map,
+                if (radarMapLayerOn) corridorRings else emptyList(),
+            )
             MapLibreSharedHelper.syncPoiLayer(
                 context = context,
                 map = map,

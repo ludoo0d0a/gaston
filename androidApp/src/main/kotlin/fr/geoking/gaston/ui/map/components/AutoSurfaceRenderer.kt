@@ -11,7 +11,9 @@ import android.graphics.Rect
 import android.util.Log
 import android.util.LruCache
 import android.view.Surface
+import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
+import fr.geoking.gaston.isRadarMapLayerOn
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
@@ -1059,11 +1061,18 @@ class AutoSurfaceRenderer(
         val radarPois = pois.filter { it.poiCategory == PoiCategory.Radar }
 
         val density = context.resources.displayMetrics.density
+        val radarMapLayerOn = runCatching {
+            GlobalContext.get().get<SettingsManager>().settings.value.isRadarMapLayerOn()
+        }.getOrDefault(false)
 
         AutoMapOverlayHelper.drawRadarRoadCorridors(
             canvas = canvas,
             density = density,
-            rings = fr.geoking.gaston.radar.RadarCorridorStore.rings.value,
+            rings = if (radarMapLayerOn) {
+                fr.geoking.gaston.radar.RadarCorridorStore.rings.value
+            } else {
+                emptyList()
+            },
         ) { lat, lon ->
             val tileX = lonToTileX(lon, zoom)
             val tileY = latToTileY(lat, zoom)
