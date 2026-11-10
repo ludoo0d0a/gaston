@@ -2,9 +2,14 @@ package fr.geoking.gaston.feature.location
 
 import android.Manifest
 import androidx.test.core.app.ApplicationProvider
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
+import com.google.android.gms.common.api.Status
 import fr.geoking.gaston.SettingsManager
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -55,5 +60,19 @@ class LocationHelperPermissionTest {
 
         assertEquals(48.8566, lat, 0.0001)
         assertEquals(2.3522, lon, 0.0001)
+    }
+
+    @Test
+    fun isLocationServicesUnavailableDetectsApiException17() {
+        val api = ApiException(
+            Status(
+                CommonStatusCodes.API_NOT_CONNECTED,
+                "API: LocationServices.API is not available on this device. " +
+                    "Connection failed with: ConnectionResult{statusCode=SERVICE_INVALID}",
+            )
+        )
+        assertTrue(LocationHelper.isLocationServicesUnavailable(api))
+        assertTrue(LocationHelper.isLocationServicesUnavailable(RuntimeException(api)))
+        assertFalse(LocationHelper.isLocationServicesUnavailable(IllegalStateException("other")))
     }
 }

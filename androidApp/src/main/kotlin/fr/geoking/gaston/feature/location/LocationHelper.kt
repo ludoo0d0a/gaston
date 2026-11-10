@@ -10,6 +10,8 @@ import android.os.Looper
 import android.util.Log
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
@@ -17,6 +19,8 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import fr.geoking.gaston.SettingsManager
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -27,7 +31,21 @@ object LocationHelper {
     private const val TAG = "LocationHelper"
     private const val FRESH_AGE_MS = 300_000L // 5 minutes
 
-    private fun isPlayServicesAvailable(context: Context): Boolean {
+    /**
+     * Once fused LocationServices fails with API_NOT_CONNECTED / SERVICE_INVALID on a device,
+     * keep using [LocationManager] for the rest of the process — Play Services availability
+     * checks can still return SUCCESS while LocationServices.API is unusable.
+     */
+    private val fusedLocationUsable = AtomicBoolean(true)
+
+    fun markFusedLocationUnavailable() {
+        if (fusedLocationUsable.getAndSet(false)) {
+            Log.w(TAG, "Marked Fused Location unavailable for this process")
+        }
+    }
+
+    private fun canUseFusedLocation(context: Context): Boolean {
+        if (!fusedLocationUsable.get()) return false
         return try {
             GoogleApiAvailability.getInstance()
                 .isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS
@@ -35,6 +53,33 @@ object LocationHelper {
             Log.w(TAG, "Play Services availability check failed", e)
             false
         }
+    }
+
+    private fun noteFusedFailure(e: Throwable) {
+        if (isLocationServicesUnavailable(e)) {
+            markFusedLocationUnavailable()
+        }
+    }
+
+    /** True for ApiException 17 / messages about LocationServices.API not available. */
+    fun isLocationServicesUnavailable(throwable: Throwable): Boolean {
+        val chain = generateSequence(throwable) { it.cause }
+        for (t in chain) {
+            if (t is ApiException) {
+                val code = t.statusCode
+                val msg = t.message.orEmpty()
+                if (code == CommonStatusCodes.API_NOT_CONNECTED ||
+                    msg.contains("LocationServices", ignoreCase = true)
+                ) {
+                    return true
+                }
+            }
+            val msg = t.message.orEmpty()
+            if (msg.contains("LocationServices.API is not available", ignoreCase = true)) {
+                return true
+            }
+        }
+        return false
     }
 
     @SuppressLint("MissingPermission")
@@ -65,7 +110,7 @@ object LocationHelper {
         timeoutMs: Long = 3000L,
         priority: Int = Priority.PRIORITY_HIGH_ACCURACY
     ): Location? {
-        if (!isPlayServicesAvailable(context)) {
+        if (!canUseFusedLocation(context)) {
             Log.w(TAG, "LocationServices unavailable; falling back to LocationManager")
             return getLastKnownFromLocationManager(context)
         }
@@ -74,7 +119,7 @@ object LocationHelper {
             getCurrentLocationFromFused(context, timeoutMs, priority)
                 ?: getLastKnownFromLocationManager(context)
         } catch (e: Exception) {
-            // ApiException 17 / SERVICE_INVALID on devices without usable Play Services
+            noteFusedFailure(e)
             Log.w(TAG, "Fused location failed; falling back to LocationManager", e)
             getLastKnownFromLocationManager(context)
         }
@@ -92,7 +137,9 @@ object LocationHelper {
         val lastLocation = try {
             fusedClient.lastLocation.await()
         } catch (e: Exception) {
+            noteFusedFailure(e)
             Log.w(TAG, "lastLocation failed", e)
+            if (isLocationServicesUnavailable(e)) return null
             null
         }
         if (lastLocation != null && (System.currentTimeMillis() - lastLocation.time) < FRESH_AGE_MS) {
@@ -107,6 +154,7 @@ object LocationHelper {
             try {
                 fusedClient.getCurrentLocation(priority, cts.token).await()
             } catch (e: Exception) {
+                noteFusedFailure(e)
                 Log.w(TAG, "getCurrentLocation failed", e)
                 null
             } finally {
@@ -150,42 +198,8 @@ object LocationHelper {
      */
     @SuppressLint("MissingPermission")
     fun getLocationUpdates(context: Context, intervalMs: Long = 2000L): Flow<Location> = callbackFlow {
-        if (!isPlayServicesAvailable(context)) {
-            Log.w(TAG, "LocationServices unavailable; using LocationManager updates")
-            val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            val listener = object : LocationListener {
-                override fun onLocationChanged(location: Location) {
-                    trySend(location)
-                }
-
-                @Deprecated("Deprecated in Java")
-                override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) = Unit
-                override fun onProviderEnabled(provider: String) = Unit
-                override fun onProviderDisabled(provider: String) = Unit
-            }
-            val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
-            var registered = false
-            for (provider in providers) {
-                try {
-                    if (lm.isProviderEnabled(provider)) {
-                        lm.requestLocationUpdates(provider, intervalMs, 0f, listener, Looper.getMainLooper())
-                        registered = true
-                    }
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to request LocationManager updates from $provider", e)
-                }
-            }
-            if (!registered) {
-                close()
-                return@callbackFlow
-            }
-            awaitClose {
-                try {
-                    lm.removeUpdates(listener)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to remove LocationManager updates", e)
-                }
-            }
+        if (!canUseFusedLocation(context)) {
+            collectFromLocationManager(context, intervalMs)
             return@callbackFlow
         }
 
@@ -201,9 +215,14 @@ object LocationHelper {
         }
 
         try {
-            fusedClient.requestLocationUpdates(locationRequest, callback, Looper.getMainLooper())
+            // Await the Task so API_NOT_CONNECTED / SERVICE_INVALID is handled here,
+            // not left as an unobserved failure on GoogleApiHandler.
+            fusedClient.requestLocationUpdates(locationRequest, callback, Looper.getMainLooper()).await()
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to request location updates", e)
+            noteFusedFailure(e)
+            Log.w(TAG, "Failed to request fused location updates; falling back to LocationManager", e)
+            collectFromLocationManager(context, intervalMs)
+            return@callbackFlow
         }
 
         awaitClose {
@@ -211,6 +230,48 @@ object LocationHelper {
                 fusedClient.removeLocationUpdates(callback)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to remove location updates", e)
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun ProducerScope<Location>.collectFromLocationManager(
+        context: Context,
+        intervalMs: Long,
+    ) {
+        Log.w(TAG, "Using LocationManager updates")
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val listener = object : LocationListener {
+            override fun onLocationChanged(location: Location) {
+                trySend(location)
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) = Unit
+            override fun onProviderEnabled(provider: String) = Unit
+            override fun onProviderDisabled(provider: String) = Unit
+        }
+        val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+        var registered = false
+        for (provider in providers) {
+            try {
+                if (lm.isProviderEnabled(provider)) {
+                    lm.requestLocationUpdates(provider, intervalMs, 0f, listener, Looper.getMainLooper())
+                    registered = true
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to request LocationManager updates from $provider", e)
+            }
+        }
+        if (!registered) {
+            close()
+            return
+        }
+        awaitClose {
+            try {
+                lm.removeUpdates(listener)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to remove LocationManager updates", e)
             }
         }
     }

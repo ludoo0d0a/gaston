@@ -2,12 +2,12 @@ package fr.geoking.gaston
 
 import android.app.Application
 import com.google.android.gms.ads.MobileAds
+import fr.geoking.gaston.diagnostics.DiagnosticsPersistence
 import fr.geoking.gaston.di.appModule
+import fr.geoking.gaston.feature.location.LocationHelper
 import fr.geoking.gaston.premium.RevenueCatInitializer
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
-
-import fr.geoking.gaston.diagnostics.DiagnosticsPersistence
 
 class GastonApplication : Application() {
 
@@ -50,6 +50,18 @@ class GastonApplication : Application() {
     private fun setupUncaughtExceptionHandler() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            // On some devices Play Services reports LocationServices.API as unavailable by
+            // throwing ApiException 17 on GoogleApiHandler (uncaught). Do not kill the process;
+            // LocationHelper already falls back to LocationManager after this.
+            if (isIgnorableLocationServicesCrash(thread, throwable)) {
+                android.util.Log.w(
+                    "GastonApplication",
+                    "Ignoring uncaught LocationServices ApiException on ${thread.name}",
+                    throwable
+                )
+                LocationHelper.markFusedLocationUnavailable()
+                return@setDefaultUncaughtExceptionHandler
+            }
             try {
                 android.util.Log.e("GastonApplication", "Uncaught exception in thread ${thread.name}", throwable)
                 DiagnosticsPersistence.persistCrash(this, throwable)
@@ -59,6 +71,11 @@ class GastonApplication : Application() {
                 defaultHandler?.uncaughtException(thread, throwable)
             }
         }
+    }
+
+    private fun isIgnorableLocationServicesCrash(thread: Thread, throwable: Throwable): Boolean {
+        if (!thread.name.startsWith("GoogleApiHandler")) return false
+        return LocationHelper.isLocationServicesUnavailable(throwable)
     }
 
     companion object {
