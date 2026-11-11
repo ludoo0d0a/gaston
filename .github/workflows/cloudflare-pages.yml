@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   deploy:
-    uses: ludoo0d0a/geoking-ci/.github/workflows/cloudflare-pages.yml@main
+    uses: ludoo0d0a/geoking-ci/.github/workflows/gk-cloudflare-pages.yml@main
     permissions:
       contents: read
       deployments: write
