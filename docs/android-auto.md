@@ -407,8 +407,9 @@ Reference implementations: `auto/settings/about/AutoAboutScreen.kt` (long scroll
 `CustomMapPoiScreen` / `MapLibrePoiScreen` / `MapsforgePoiScreen` split controls across templates:
 
 - **ActionStrip** (top-right): compass, settings, radar-notification toggle, traffic-notification toggle
-  (hard cap 4). Toggles use `setRadarDetectionEnabled` / `setTrafficDetectionEnabled` (map layer + alerts)
-  and tint when on. Map mode cycling lives in map settings (`AutoMapSettingsScreen`).
+  (hard cap 4). Toggles use `setRadarDetectionEnabled` / `setTrafficDetectionEnabled` (map layer + alerts).
+  ON state is a filled rounded-square bitmap with the glyph punched out (`detectionToggleIcon`); no
+  `FLAG_PRIMARY` so both can be enabled. Map mode cycling lives in map settings (`AutoMapSettingsScreen`).
 - **Nested ListTemplate Header** end actions: optional cheapest-filter + hide/show menu (eye).
 - **mapActionStrip**: zoom in / zoom out.
 

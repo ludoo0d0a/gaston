@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import androidx.annotation.DrawableRes
 import androidx.car.app.CarContext
@@ -122,7 +124,12 @@ fun CarContext.dashboardParkedCarActiveIcon(): CarIcon = carIcon(R.drawable.ic_l
 
 /**
  * Detection toggle icon: classic host circle chrome + muted glyph when off;
- * blue filled rounded square with white glyph when on.
+ * filled rounded square with the glyph punched out (creux) when on.
+ *
+ * Hosts often re-tint all opaque action-icon pixels to a single color. Painting a
+ * white glyph on a blue square therefore collapses to a solid white square with no
+ * visible icon. Punching the glyph with [PorterDuff.Mode.DST_OUT] leaves transparent
+ * holes that survive host re-tint.
  *
  * Baked into the bitmap (not [Action.FLAG_PRIMARY]) so radar + traffic can both
  * look enabled on the same map ActionStrip (hosts allow at most one primary).
@@ -137,14 +144,22 @@ fun CarContext.detectionToggleIcon(@DrawableRes glyphRes: Int, enabled: Boolean)
     val canvas = Canvas(bitmap)
     val inset = size * 0.06f
     val corner = size * 0.22f
-    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF1D4ED8.toInt() }
+    // Source color is arbitrary: the host re-tints opaque pixels.
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
     canvas.drawRoundRect(RectF(inset, inset, size - inset, size - inset), corner, corner, fill)
     val glyph = ContextCompat.getDrawable(this, glyphRes)?.mutate()
     if (glyph != null) {
-        glyph.setTint(Color.WHITE)
         val pad = (size * 0.22f).toInt()
+        val glyphBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val glyphCanvas = Canvas(glyphBitmap)
+        glyph.setTint(Color.BLACK)
         glyph.setBounds(pad, pad, size - pad, size - pad)
-        glyph.draw(canvas)
+        glyph.draw(glyphCanvas)
+        val cut = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT)
+        }
+        canvas.drawBitmap(glyphBitmap, 0f, 0f, cut)
+        glyphBitmap.recycle()
     }
     return CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
 }
@@ -167,7 +182,7 @@ fun CarContext.dashboardMapIcon(): CarIcon = carIcon(R.drawable.ic_map, AutoCarI
 /**
  * Icon-only ActionStrip / header toggle for traffic / radar alerts.
  *
- * Enabled look is carried by [icon] (blue rounded square). Do not set
+ * Enabled look is carried by [icon] (filled rounded square with hollow glyph). Do not set
  * [Action.FLAG_PRIMARY] here: map ActionStrips allow at most one primary action, and
  * radar + traffic are both on the strip — two primaries make the host reject the screen.
  *
