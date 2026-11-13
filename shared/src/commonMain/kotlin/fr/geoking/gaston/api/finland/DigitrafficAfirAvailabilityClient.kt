@@ -1,6 +1,7 @@
 package fr.geoking.gaston.api.finland
 
 import fr.geoking.gaston.api.common.OcpiEvseAvailability
+import fr.geoking.gaston.poi.PoiCacheTtl
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
@@ -27,8 +28,8 @@ class DigitrafficAfirAvailabilityClient(
     private val client: HttpClient,
     private val locationsUrl: String = DEFAULT_LOCATIONS_URL,
     private val statusesUrl: String = DEFAULT_STATUSES_URL,
-    private val locationsCacheTtlMs: Long = 900_000L,
-    private val statusesCacheTtlMs: Long = 60_000L,
+    private val locationsCacheTtlMs: Long = PoiCacheTtl.STATION_MS,
+    private val statusesCacheTtlMs: Long = PoiCacheTtl.AVAILABILITY_MS,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
 ) {
     private val json = Json { ignoreUnknownKeys = true }

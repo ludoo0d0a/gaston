@@ -3,6 +3,7 @@ package fr.geoking.gaston.api.ecomovement
 import fr.geoking.gaston.api.belib.BorneAvailabilityProvider
 import fr.geoking.gaston.api.belib.PdcAvailability
 import fr.geoking.gaston.api.common.OcpiEvseAvailability
+import fr.geoking.gaston.poi.PoiCacheTtl
 import fr.geoking.gaston.shared.location.haversineKm
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -18,7 +19,7 @@ class EcoMovementAvailabilityProvider(
     private val client: EcoMovementOcpiClient,
     private val radiusKm: Int = 15,
     private val limit: Int = 100,
-    private val cacheTtlMs: Long = 120_000L,
+    private val cacheTtlMs: Long = PoiCacheTtl.AVAILABILITY_MS,
     private val maxFetch: Int = DEFAULT_MAX_FETCH,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
 ) : BorneAvailabilityProvider {

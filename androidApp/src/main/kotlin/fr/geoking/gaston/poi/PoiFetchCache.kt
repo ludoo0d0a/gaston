@@ -5,16 +5,18 @@ import fr.geoking.gaston.categoryFromAmenityId
 import fr.geoking.gaston.effectiveAllowedCategories
 import fr.geoking.gaston.isOtherModeActive
 import fr.geoking.gaston.shared.location.haversineKm
-import java.util.Calendar
 
-/** Fuel / EV station data (prices, availability) — refreshed daily for prices, static data kept for 7 days. */
-const val POI_CACHE_TTL_ENERGY_MS = 7L * 24 * 60 * 60 * 1000L
+/** Stations / chargers kept in memory & Room — [PoiCacheTtl.STATION_MS] (1 month). */
+const val POI_CACHE_TTL_STATION_MS = PoiCacheTtl.STATION_MS
+
+/** Region refetch for Gas / IRVE / swap so prices refresh — [PoiCacheTtl.PRICE_MS] (6 h). */
+const val POI_CACHE_TTL_PRICE_MS = PoiCacheTtl.PRICE_MS
 
 /** OSM amenities (parking, toilets, …) — stable for days. */
-const val POI_CACHE_TTL_AMENITY_MS = 7L * 24 * 60 * 60 * 1000L
+const val POI_CACHE_TTL_AMENITY_MS = PoiCacheTtl.AMENITY_MS
 
-/** Disk retention and geo-region bounds use the longest TTL. */
-const val POI_CACHE_DISK_RETENTION_MS = POI_CACHE_TTL_AMENITY_MS
+/** Disk retention uses the longest POI TTL (stations). */
+const val POI_CACHE_DISK_RETENTION_MS = POI_CACHE_TTL_STATION_MS
 
 /**
  * Pure helpers for POI fetch cache keys, category unions, and region coverage.
@@ -31,7 +33,7 @@ data class LoadedPoiRegion(
 )
 
 fun cacheTtlMsForCategory(category: PoiCategory): Long = when (category) {
-    PoiCategory.Gas, PoiCategory.Irve -> POI_CACHE_TTL_ENERGY_MS
+    PoiCategory.Gas, PoiCategory.Irve, PoiCategory.BatterySwap -> POI_CACHE_TTL_STATION_MS
     else -> POI_CACHE_TTL_AMENITY_MS
 }
 
@@ -45,9 +47,8 @@ fun poiPrimaryCategory(poi: Poi): PoiCategory {
 fun cacheTtlMsForPoi(poi: Poi): Long = cacheTtlMsForCategory(poiPrimaryCategory(poi))
 
 fun isPoiCacheEntryExpired(poi: Poi, seenAtMs: Long, nowMs: Long): Boolean {
-    // Static data should be cached for 7 days.
-    // We allow price data to be stale (e.g. from previous days) for immediate display.
-    // Background refresh via categoryCacheStillFresh still triggers a new fetch daily.
+    // Keep the static station / charger for up to 1 month so the map is not empty.
+    // Price refresh is driven by categoryCacheStillFresh (6 h for energy categories).
     return nowMs - seenAtMs > cacheTtlMsForPoi(poi)
 }
 
@@ -59,22 +60,13 @@ fun categoryCacheStillFresh(
     if (category !in region.loadedCategories) return false
     val loadedAt = region.categoryLoadedAtMs[category] ?: region.loadedAtMs
 
-    // Prices should be cached for the current day.
+    // Fuel / EV feeds embed prices (and sometimes tariffs). Refetch every 6 h.
+    // Live connector occupation uses BorneAvailability clients (1 h TTL), not this clock.
     if (category == PoiCategory.Gas || category == PoiCategory.Irve || category == PoiCategory.BatterySwap) {
-        if (!isSameDay(loadedAt, nowMs)) return false
+        return nowMs - loadedAt <= POI_CACHE_TTL_PRICE_MS
     }
 
     return nowMs - loadedAt <= cacheTtlMsForCategory(category)
-}
-
-fun isSameDay(t1: Long, t2: Long): Boolean {
-    val dayMillis = 24 * 60 * 60 * 1000L
-    if (Math.abs(t1 - t2) > dayMillis) return false
-
-    val cal1 = Calendar.getInstance().apply { timeInMillis = t1 }
-    val cal2 = Calendar.getInstance().apply { timeInMillis = t2 }
-    return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-            cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
 }
 
 data class PoiCoverageResult(

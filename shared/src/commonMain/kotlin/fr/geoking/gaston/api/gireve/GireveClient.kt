@@ -2,6 +2,7 @@ package fr.geoking.gaston.api.gireve
 
 import fr.geoking.gaston.api.belib.AvailabilityStatus
 import fr.geoking.gaston.api.common.CsvUtils
+import fr.geoking.gaston.poi.PoiCacheTtl
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
@@ -20,8 +21,8 @@ class GireveClient(
     private val client: HttpClient,
     private val dynamicUrl: String = DEFAULT_DYNAMIC_URL,
     private val staticUrl: String = DEFAULT_STATIC_URL,
-    private val dynamicCacheTtlMs: Long = 45_000L,
-    private val staticCacheTtlMs: Long = 3_600_000L,
+    private val dynamicCacheTtlMs: Long = PoiCacheTtl.AVAILABILITY_MS,
+    private val staticCacheTtlMs: Long = PoiCacheTtl.STATION_MS,
     private val nowMs: () -> Long = { System.currentTimeMillis() }
 ) {
     private val mutex = Mutex()

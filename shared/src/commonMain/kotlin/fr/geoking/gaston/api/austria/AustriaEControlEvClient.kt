@@ -2,6 +2,7 @@ package fr.geoking.gaston.api.austria
 
 import fr.geoking.gaston.api.belib.AvailabilityStatus
 import fr.geoking.gaston.api.common.OcpiEvseAvailability
+import fr.geoking.gaston.poi.PoiCacheTtl
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
@@ -32,7 +33,7 @@ class AustriaEControlEvClient(
     private val apiKey: String,
     private val refererDomain: String,
     private val baseUrl: String = DEFAULT_BASE_URL,
-    private val cacheTtlMs: Long = 60_000L,
+    private val cacheTtlMs: Long = PoiCacheTtl.AVAILABILITY_MS,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
 ) {
     private val json = Json { ignoreUnknownKeys = true }

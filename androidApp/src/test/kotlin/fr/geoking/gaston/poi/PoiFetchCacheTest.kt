@@ -413,9 +413,14 @@ class PoiFetchCacheTest {
     }
 
     @Test
-    fun cacheTtl_parkingAndFuelLastSevenDays() {
+    fun cacheTtl_stationOneMonth_priceSixHours_amenitySevenDays() {
+        assertEquals(PoiCacheTtl.AMENITY_MS, POI_CACHE_TTL_AMENITY_MS)
+        assertEquals(PoiCacheTtl.STATION_MS, POI_CACHE_TTL_STATION_MS)
+        assertEquals(PoiCacheTtl.PRICE_MS, POI_CACHE_TTL_PRICE_MS)
+        assertEquals(30L * 24 * 60 * 60 * 1000L, POI_CACHE_TTL_STATION_MS)
+        assertEquals(6L * 60 * 60 * 1000L, POI_CACHE_TTL_PRICE_MS)
         assertEquals(7L * 24 * 60 * 60 * 1000L, POI_CACHE_TTL_AMENITY_MS)
-        assertEquals(7L * 24 * 60 * 60 * 1000L, POI_CACHE_TTL_ENERGY_MS)
+        assertEquals(POI_CACHE_TTL_STATION_MS, POI_CACHE_DISK_RETENTION_MS)
     }
 
     @Test
@@ -433,9 +438,24 @@ class PoiFetchCacheTest {
     }
 
     @Test
-    fun categoryCacheStillFresh_gasExpiredAfterTwelveHours() {
+    fun categoryCacheStillFresh_gasFreshWithinSixHours() {
         val nowMs = 1_000_000_000_000L
-        val loadedAt = nowMs - POI_CACHE_TTL_ENERGY_MS - 1L
+        val loadedAt = nowMs - POI_CACHE_TTL_PRICE_MS + 60_000L
+        val region = LoadedPoiRegion(
+            centerLat = 48.0,
+            centerLng = 2.0,
+            maxRadiusKmLoaded = 10,
+            loadedAtMs = loadedAt,
+            loadedCategories = setOf(PoiCategory.Gas),
+            categoryLoadedAtMs = mapOf(PoiCategory.Gas to loadedAt),
+        )
+        assertTrue(categoryCacheStillFresh(PoiCategory.Gas, region, nowMs))
+    }
+
+    @Test
+    fun categoryCacheStillFresh_gasExpiredAfterSixHours() {
+        val nowMs = 1_000_000_000_000L
+        val loadedAt = nowMs - POI_CACHE_TTL_PRICE_MS - 1L
         val region = LoadedPoiRegion(
             centerLat = 48.0,
             centerLng = 2.0,
@@ -448,9 +468,24 @@ class PoiFetchCacheTest {
     }
 
     @Test
+    fun isPoiCacheEntryExpired_gasKeptForOneMonth() {
+        val nowMs = 1_000_000_000_000L
+        val poi = Poi(
+            id = "gas-1",
+            name = "Station",
+            address = "",
+            latitude = 48.0,
+            longitude = 2.0,
+            poiCategory = PoiCategory.Gas,
+        )
+        assertFalse(isPoiCacheEntryExpired(poi, nowMs - POI_CACHE_TTL_STATION_MS + 60_000L, nowMs))
+        assertTrue(isPoiCacheEntryExpired(poi, nowMs - POI_CACHE_TTL_STATION_MS - 1L, nowMs))
+    }
+
+    @Test
     fun computePoiCoverage_staleGasRequiresRefetchWhileParkingFresh() {
         val nowMs = 1_000_000_000_000_000L
-        val gasLoadedAt = nowMs - POI_CACHE_TTL_ENERGY_MS - 1L
+        val gasLoadedAt = nowMs - POI_CACHE_TTL_PRICE_MS - 1L
         val parkingLoadedAt = nowMs - 60_000L
         val region = LoadedPoiRegion(
             centerLat = 48.85,

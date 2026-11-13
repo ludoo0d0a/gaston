@@ -2,6 +2,7 @@ package fr.geoking.gaston.api.italy
 
 import fr.geoking.gaston.api.belib.AvailabilityStatus
 import fr.geoking.gaston.api.common.OcpiEvseAvailability
+import fr.geoking.gaston.poi.PoiCacheTtl
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
@@ -29,7 +30,7 @@ class ItalyPunAvailabilityClient(
     private val client: HttpClient,
     private val queryUrl: String = DEFAULT_QUERY_URL,
     private val pageSize: Int = DEFAULT_PAGE_SIZE,
-    private val cacheTtlMs: Long = 60_000L,
+    private val cacheTtlMs: Long = PoiCacheTtl.AVAILABILITY_MS,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
 ) {
     private val json = Json { ignoreUnknownKeys = true }

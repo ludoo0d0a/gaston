@@ -1,10 +1,13 @@
 package fr.geoking.gaston.api.belib
 
+import fr.geoking.gaston.poi.PoiCacheTtl
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.encodeURLParameter
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -30,9 +33,13 @@ private fun resultsAsList(obj: JsonObject): List<JsonElement> {
  */
 class BelibAvailabilityClient(
     private val client: HttpClient,
-    private val baseUrl: String = "https://parisdata.opendatasoft.com/api/explore/v2.1/catalog/datasets/belib-points-de-recharge-pour-vehicules-electriques-disponibilite-temps-reel"
+    private val baseUrl: String = "https://parisdata.opendatasoft.com/api/explore/v2.1/catalog/datasets/belib-points-de-recharge-pour-vehicules-electriques-disponibilite-temps-reel",
+    private val cacheTtlMs: Long = PoiCacheTtl.AVAILABILITY_MS,
+    private val nowMs: () -> Long = { System.currentTimeMillis() },
 ) {
     private val json = Json { ignoreUnknownKeys = true }
+    private val mutex = Mutex()
+    private var cache: CachedQuery? = null
 
     /**
      * Fetches Belib' PDC availability within [radiusKm] of (latitude, longitude).
@@ -44,6 +51,20 @@ class BelibAvailabilityClient(
         radiusKm: Int = 10,
         limit: Int = 100
     ): List<BelibPdcRecord> {
+        val key = CacheKey(
+            latitude = roundCoord(latitude),
+            longitude = roundCoord(longitude),
+            radiusKm = radiusKm,
+            limit = limit,
+        )
+        mutex.withLock {
+            val cached = cache
+            val now = nowMs()
+            if (cached != null && cached.key == key && now - cached.atMs < cacheTtlMs) {
+                return cached.records
+            }
+        }
+
         // Use within_distance predicate as coordonneesxy is a geo_point_2d and doesn't support .lat/.lon access in where clause
         val where = "within_distance(coordonneesxy, geom'POINT($longitude $latitude)', ${radiusKm}km)"
         val encodedWhere = where.encodeURLParameter()
@@ -55,7 +76,7 @@ class BelibAvailabilityClient(
             throw NetworkException(response.status.value, "Belib API error: $body")
         }
         val raw = parseRecords(body)
-        return raw
+        val records = raw
             .mapNotNull { record ->
                 val dist = haversineKm(latitude, longitude, record.latitude, record.longitude)
                 if (dist <= radiusKm) record to dist else null
@@ -63,6 +84,11 @@ class BelibAvailabilityClient(
             .sortedBy { it.second }
             .take(limit)
             .map { it.first }
+
+        mutex.withLock {
+            cache = CachedQuery(key = key, records = records, atMs = nowMs())
+        }
+        return records
     }
 
     private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
@@ -103,6 +129,21 @@ class BelibAvailabilityClient(
             adresseStation = address
         )
     }
+
+    private fun roundCoord(value: Double): Double = (value * 1000.0).roundToInt() / 1000.0
+
+    private data class CacheKey(
+        val latitude: Double,
+        val longitude: Double,
+        val radiusKm: Int,
+        val limit: Int,
+    )
+
+    private data class CachedQuery(
+        val key: CacheKey,
+        val records: List<BelibPdcRecord>,
+        val atMs: Long,
+    )
 }
 
 /** Single Belib' PDC record from Paris Data API. */

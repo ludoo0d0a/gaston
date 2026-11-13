@@ -2,15 +2,19 @@
 
 Gaston loads fuel stations, EV chargers, and OSM amenities from many country APIs. This document describes how those results are **cached**, how **network queries are minimized**, and how **duplicate places are merged**.
 
+Canonical TTL constants: `shared/.../poi/PoiCacheTtl.kt` (also mirrored in `androidApp/.../poi/PoiFetchCache.kt`).
+
 Primary code:
 
 | Piece | Location |
 | --- | --- |
+| TTL constants | `shared/.../poi/PoiCacheTtl.kt` |
 | Fetch coordinator | `androidApp/.../poi/SelectorPoiProvider.kt` |
 | Coverage / TTL helpers | `androidApp/.../poi/PoiFetchCache.kt` |
 | Dedup / field merge | `shared/.../poi/PoiMerger.kt` |
 | Display filters (after fetch) | `androidApp/.../MapFilterSettings.kt` (`StationMapFilters`) |
 | Disk cache | `androidApp/.../persistence/PoiCacheDao.kt` |
+| EV availability clients | `shared/.../api/**` (`*Availability*`, Gireve, QualiCharge, Belib, …) |
 
 ---
 
@@ -20,12 +24,42 @@ Primary code:
 2. **Do not re-query a region** that is already covered for the requested providers and categories.
 3. **Fetch only what is missing** when the user toggles energy mode or amenities (incremental queries).
 4. **Treat one physical place as one marker** even when several APIs return it.
+5. **Separate static vs dynamic data** — stations/chargers last a month; prices refresh in hours; live EV status hourly.
 
 Map filters (fuel type, power, brand, highway-only) run **after** cache/network. They never shrink the fetch itself, so toggling a chip can reuse cached POIs.
 
 ---
 
-## Two-level cache
+## Cache inventory (status)
+
+| Cache | Layer | What it stores | TTL | Lifecycle / invalidation |
+| --- | --- | --- | --- | --- |
+| **POI memory** (`SelectorPoiProvider.cachedPois`) | Memory | Station / charger / amenity `Poi` by id | **Stations/IRVE: 1 month**; amenities: **7 days** (`isPoiCacheEntryExpired`) | Evicted on TTL, trim to ~1200 farthest-from-center, or `clearCache()` |
+| **POI region coverage** (`loadedRegions`) | Memory | Geo circles + providers/categories + per-category timestamps | Energy categories **fresh 6 h** (prices); amenities **7 days** | Cleared when provider set key changes; trim to 12 farthest regions |
+| **POI Room** (`poi_cache`) | Disk | JSON blobs + lat/lng + `updatedAtMs` | Retention **1 month** (`POI_CACHE_DISK_RETENTION_MS`) | Hourly delete of rows older than retention; skipped when `disableCache` |
+| **Supermarket enrich** | Memory | Overpass supermarket POIs for brand enrich only | Session / until `clearCache()` | Not shown on map unless Supermarket amenity enabled |
+| **EV availability — dynamic / status** | Memory (per client) | Live occupation / status feeds | **1 hour** (`PoiCacheTtl.AVAILABILITY_MS`) | Replaced on next fetch after TTL; process death clears |
+| **EV availability — static / locations** | Memory (per client) | PDC/EVSE geo + station ids (Gireve, QualiCharge, IchTankeStrom, Digitraffic, …) | **1 month** (`PoiCacheTtl.STATION_MS`) | Same as above |
+| **Belib availability** | Memory | Last geo query result | **1 hour** | Keyed by rounded lat/lng + radius + limit |
+| **Price history samples** | Disk | Historical fuel price samples | **30 days** (`StationPriceHistoryRepository`) | Separate from map POI cache |
+| **Radars (Lufop)** | Memory + disk | Speed-cam catalog | **30 days** | Rate-limited; excluded from routine POI `clearCache` |
+| **Radars (France / LU)** | Memory + disk | National CSV | **24 hours** | — |
+| **Traffic (TIPI / Bison Futé)** | Disk / Room | DATEX events | **1 hour** | Per-source freshness |
+| **Images (Coil)** | Memory + disk | Marker / brand bitmaps | Coil defaults | Cleared via `CacheManager` |
+| **Provider-local HTTP caches** | Memory | Per fuel/EV API client (`cacheMaxAgeMs`, …) | Varies (minutes–hours) | Used inside a fetch wave; region 6 h clock is the main price gate |
+
+### Canonical TTLs (`PoiCacheTtl`)
+
+| Constant | Value | Applies to |
+| --- | --- | --- |
+| `STATION_MS` | **1 month** (30 days) | Keep stations & chargers in POI memory/disk; static IRVE geo feeds |
+| `PRICE_MS` | **6 hours** | Refetch Gas / IRVE / BatterySwap category from network (embedded prices/tariffs) |
+| `AVAILABILITY_MS` | **1 hour** | Live EV connector availability / occupation |
+| `AMENITY_MS` | **7 days** | OSM amenities (parking, toilets, …) |
+
+---
+
+## Two-level POI cache
 
 ```
 Map / Auto / dashboard
@@ -41,7 +75,7 @@ SelectorPoiProvider
 ### Memory (`SelectorPoiProvider`)
 
 - **`cachedPois`**: map of station id → `Poi`.
-- **`poiSeenAtMs`**: last time that id was written (TTL clock).
+- **`poiSeenAtMs`**: last time that id was written (TTL clock for eviction).
 - **`loadedRegions`**: geographic coverage metadata (`LoadedPoiRegion`), not the POI list itself.
 
 Limits (hardcoded in `search` / `searchFlow`):
@@ -53,23 +87,30 @@ Limits (hardcoded in `search` / `searchFlow`):
 
 Each row stores `id`, lat/lng, name, address, full `poiJson`, and `updatedAtMs`. Lookups use a bounding box around the request plus `updatedAtMs >= now - disk retention`.
 
-`searchFlow` also deletes rows older than disk retention about **once per hour**. Price-history samples are kept **30 days** (`StationPriceHistoryRepository`).
+`searchFlow` also deletes rows older than disk retention about **once per hour**.
 
 Setting **`disableCache`** skips memory/disk coverage and always hits the network.
 
 ---
 
-## TTL and freshness
+## TTL and freshness (stations vs prices vs availability)
 
-Constants live in `PoiFetchCache.kt`. Disk retention and per-POI expiry both use **7 days**.
+Constants live in `PoiCacheTtl` / `PoiFetchCache.kt`.
 
-| What | Rule |
-| --- | --- |
-| Amenity POIs (parking, toilets, …) | Keep 7 days. Region is “fresh” if loaded within 7 days. |
-| Energy POIs (Gas, IRVE, battery swap) | Keep the **static** station in cache for 7 days so the map is not empty. **Refetch** when the category was not loaded **today** (`isSameDay`) so prices/availability update daily. |
-| Disk rows | Same 7-day window (`POI_CACHE_DISK_RETENTION_MS`). |
+| What | Eviction (`isPoiCacheEntryExpired`) | Region refetch (`categoryCacheStillFresh`) |
+| --- | --- | --- |
+| Fuel / EV / swap stations | Keep **1 month** so the map stays populated | **Refetch every 6 h** so prices/tariffs update |
+| Amenity POIs | **7 days** | **7 days** |
+| Disk rows | Same **1-month** window as station TTL | — |
+| EV live availability | N/A (separate clients) | Client TTL **1 h** (status); static geo **1 month** |
 
-`isPoiCacheEntryExpired` is the 7-day wall for individual rows. `categoryCacheStillFresh` is the **region** check used to decide whether to call APIs again.
+Why two clocks for energy POIs:
+
+1. **Eviction (1 month)** — location, brand, connectors barely change; dropping them forces empty maps and large downloads.
+2. **Category freshness (6 h)** — most fuel APIs return stations **and** prices in one payload, so a region refetch after 6 h refreshes prices while `PoiMerger` keeps the same markers.
+3. **Availability (1 h)** — `BorneAvailabilityProvider` / Gireve / QualiCharge / Belib / … refresh occupation independently of the POI list.
+
+`isPoiCacheEntryExpired` is the wall for individual rows. `categoryCacheStillFresh` is the **region** check used to decide whether to call station/price APIs again.
 
 ---
 
@@ -139,7 +180,7 @@ The covering region (or a new one) unions:
 
 - providers and categories
 - `maxRadiusKmLoaded = max(old, new)`
-- per-category timestamps (`categoryLoadedAtMs`) so parking loaded yesterday can stay fresh while Gas is refetched today
+- per-category timestamps (`categoryLoadedAtMs`) so parking loaded yesterday can stay fresh while Gas is refetched after 6 h
 
 ---
 
@@ -169,6 +210,8 @@ flowchart TD
 - emit cached/filtered POIs **before** network when geo is already covered
 - fetch providers **in parallel** and merge each batch into `cachedPois` as it arrives
 - persist Room on the provider scope so the collector can close without losing writes
+
+EV availability is fetched **alongside** the map (phone / Auto), not inside `SelectorPoiProvider`. Stale station pins can still show fresh occupation from the 1 h availability cache.
 
 ---
 
@@ -221,8 +264,10 @@ Unbranded Gas stations can inherit a nearby supermarket brand within **300 m** (
 | --- | --- |
 | Provider set key changes | Clear `loadedRegions` only |
 | `clearCache()` | Memory + Room + each provider’s own cache |
-| Hourly job | Delete Room rows older than 7 days |
+| Hourly job | Delete Room rows older than **1 month** |
 | Memory over 1200 / 12 regions | Drop farthest POIs / regions |
+| Energy category age > 6 h | Incremental refetch of fuel/EV providers (prices) |
+| Availability client age > 1 h | Refetch status / dynamic feed |
 
 ---
 

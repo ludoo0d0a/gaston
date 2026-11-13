@@ -1,6 +1,7 @@
 package fr.geoking.gaston.api.switzerland
 
 import fr.geoking.gaston.api.belib.AvailabilityStatus
+import fr.geoking.gaston.poi.PoiCacheTtl
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
@@ -23,8 +24,8 @@ class IchTankeStromAvailabilityClient(
     private val client: HttpClient,
     private val staticUrl: String = DEFAULT_STATIC_URL,
     private val statusUrl: String = DEFAULT_STATUS_URL,
-    private val statusCacheTtlMs: Long = 60_000L,
-    private val staticCacheTtlMs: Long = 3_600_000L,
+    private val statusCacheTtlMs: Long = PoiCacheTtl.AVAILABILITY_MS,
+    private val staticCacheTtlMs: Long = PoiCacheTtl.STATION_MS,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
 ) {
     private val json = Json { ignoreUnknownKeys = true }

@@ -1,6 +1,7 @@
 package fr.geoking.gaston.api.afdc
 
 import fr.geoking.gaston.api.belib.AvailabilityStatus
+import fr.geoking.gaston.poi.PoiCacheTtl
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
@@ -29,7 +30,7 @@ class AfdcAvailabilityClient(
     private val baseUrl: String = DEFAULT_NEAREST_URL,
     /** AFDC `country` query: `US`, `CA`, or `all` (US+CA). Default `all` for North America. */
     private val country: String = "all",
-    private val cacheTtlMs: Long = 120_000L,
+    private val cacheTtlMs: Long = PoiCacheTtl.AVAILABILITY_MS,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
 ) {
     private val json = Json { ignoreUnknownKeys = true }

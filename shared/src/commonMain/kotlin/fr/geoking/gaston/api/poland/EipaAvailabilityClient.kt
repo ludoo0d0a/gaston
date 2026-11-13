@@ -1,6 +1,7 @@
 package fr.geoking.gaston.api.poland
 
 import fr.geoking.gaston.api.belib.AvailabilityStatus
+import fr.geoking.gaston.poi.PoiCacheTtl
 import fr.geoking.gaston.shared.location.haversineKm
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
@@ -28,7 +29,7 @@ class EipaAvailabilityClient(
     private val client: HttpClient,
     private val exportKey: String = DEFAULT_EXPORT_KEY,
     private val exportBaseUrl: String = DEFAULT_EXPORT_BASE_URL,
-    private val cacheTtlMs: Long = 180_000L,
+    private val cacheTtlMs: Long = PoiCacheTtl.AVAILABILITY_MS,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
 ) {
     private val json = Json { ignoreUnknownKeys = true }
