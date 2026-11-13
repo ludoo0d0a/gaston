@@ -2,14 +2,16 @@ package fr.geoking.gaston.auto
 
 import androidx.car.app.CarContext
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.R
 import fr.geoking.gaston.isOtherModeActive
 
 /** Radar detection + map layer toggle (global). */
-fun AppSettings.isRadarDetectionOn(): Boolean = radarWarningEnabled
+fun AppSettings.isRadarDetectionOn(): Boolean = FeatureFlag.RADAR && radarWarningEnabled
 
 /** Traffic detection + map layer toggle (global). */
-fun AppSettings.isTrafficDetectionOn(): Boolean = mapTrafficEnabled || trafficAlertEnabled
+fun AppSettings.isTrafficDetectionOn(): Boolean =
+    FeatureFlag.TRAFFIC && (mapTrafficEnabled || trafficAlertEnabled)
 
 /**
  * Menu title for a radar / traffic detection map: "Radar", "Trafic", or "Radar / Trafic".

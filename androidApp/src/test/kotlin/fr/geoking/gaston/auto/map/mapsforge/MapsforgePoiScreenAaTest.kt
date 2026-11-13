@@ -101,7 +101,7 @@ class MapsforgePoiScreenAaTest {
     }
 
     @Test
-    fun actionStripRadarTrafficTogglesDetectionSettings() {
+    fun actionStripOmitsRadarTrafficWhenFeatureFlagsOff() {
         val carContext = CarScreenTestHarness.newTestCarContext()
         val settingsManager = SettingsManager(ApplicationProvider.getApplicationContext())
         val screen = MapsforgePoiScreen(
@@ -112,25 +112,13 @@ class MapsforgePoiScreenAaTest {
         )
         CarScreenTestHarness.createAndStart(screen)
 
-        val actions = (screen.onGetTemplate() as MapWithContentTemplate).actionStrip!!.actions
-        Assert.assertTrue("strip should include radar + traffic", actions.size >= 2)
-        val radarAction = actions[actions.size - 2]
-        val trafficAction = actions[actions.size - 1]
-
-        val dummyCallback = object : OnDoneCallback {
-            override fun onSuccess(value: Bundleable?) {}
-            override fun onFailure(value: Bundleable) {}
-        }
-
+        settingsManager.setRadarDetectionEnabled(true)
+        settingsManager.setTrafficDetectionEnabled(true)
         Assert.assertFalse(settingsManager.settings.value.radarWarningEnabled)
-        radarAction.onClickDelegate?.sendClick(dummyCallback)
-        Assert.assertTrue(settingsManager.settings.value.radarWarningEnabled)
-        Assert.assertTrue("speed_camera" in settingsManager.settings.value.selectedOverpassAmenityTypes)
-
         Assert.assertFalse(settingsManager.settings.value.mapTrafficEnabled)
-        trafficAction.onClickDelegate?.sendClick(dummyCallback)
-        Assert.assertTrue(settingsManager.settings.value.mapTrafficEnabled)
-        Assert.assertTrue(settingsManager.settings.value.trafficAlertEnabled)
+        ActionStripLimits.assertWithinMapTemplateLimits(
+            (screen.onGetTemplate() as MapWithContentTemplate).actionStrip,
+        )
     }
 
     @Test

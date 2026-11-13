@@ -920,6 +920,14 @@
         </plurals>
 
     <string name="screen_developer">developer</string>
+    <string name="screen_feature_flags">Feature flags</string>
+    <string name="dev_feature_flags_subtitle">Override production FeatureFlag gates (persisted)</string>
+    <string name="dev_feature_flags_reset">Reset all overrides</string>
+    <string name="dev_feature_flags_overridden">overridden</string>
+    <string name="dev_feature_flags_group_countries">Countries</string>
+    <string name="dev_feature_flags_group_layers">Layers (radar / meteo / traffic)</string>
+    <string name="dev_feature_flags_group_phone_map">Phone map engines</string>
+    <string name="dev_feature_flags_group_aa_map">Android Auto map modes</string>
     <string name="dev_developer_settings">Developer Settings</string>
     <string name="dev_premium_mode">premium mode</string>
     <string name="dev_raw_detail">raw detail</string>

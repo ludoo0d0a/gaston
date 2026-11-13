@@ -920,6 +920,14 @@
         </plurals>
 
     <string name="screen_developer">Développeur</string>
+    <string name="screen_feature_flags">Feature flags</string>
+    <string name="dev_feature_flags_subtitle">Surcharger les FeatureFlag de production (persisté)</string>
+    <string name="dev_feature_flags_reset">Réinitialiser les surcharges</string>
+    <string name="dev_feature_flags_overridden">surchargé</string>
+    <string name="dev_feature_flags_group_countries">Pays</string>
+    <string name="dev_feature_flags_group_layers">Couches (radar / météo / trafic)</string>
+    <string name="dev_feature_flags_group_phone_map">Moteurs de carte téléphone</string>
+    <string name="dev_feature_flags_group_aa_map">Modes de carte Android Auto</string>
     <string name="dev_developer_settings">Paramètres développeur</string>
     <string name="dev_premium_mode">mode premium</string>
     <string name="dev_raw_detail">détail brut</string>

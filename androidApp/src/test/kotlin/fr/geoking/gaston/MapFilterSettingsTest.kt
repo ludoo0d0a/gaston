@@ -82,16 +82,15 @@ class MapFilterSettingsTest {
         val gasPoi = poi("gas_station_1", PoiCategory.Gas)
         val radarPoi = poi("radar_1", PoiCategory.Radar)
 
-        // In Traffic mode, StationMapFilters.apply retains Traffic POIs and drops station/radar POIs
+        // FeatureFlag.TRAFFIC=false → traffic category is not allowed even if mapTrafficEnabled.
         val filteredInTrafficMode = StationMapFilters.apply(
             settings = trafficModeSettings,
             pois = listOf(trafficPoi, gasPoi, radarPoi),
             providers = trafficModeSettings.selectedPoiProviders,
             skipWhenOnlyOverpass = false,
         )
-        assertEquals(listOf("traffic_event_1"), filteredInTrafficMode.map { it.id })
+        assertEquals(emptyList<String>(), filteredInTrafficMode.map { it.id })
 
-        // In Fuel mode with traffic overlay enabled, StationMapFilters.apply retains both Fuel and Traffic POIs
         val fuelWithTrafficSettings = AppSettings(
             mapEnergyMode = fr.geoking.gaston.poi.EnergyFilterMode.Fuel,
             selectedMapEnergyTypes = setOf("sp95"),
@@ -103,7 +102,7 @@ class MapFilterSettingsTest {
             providers = emptySet(),
             skipWhenOnlyOverpass = false,
         )
-        assertEquals(listOf("traffic_event_1", "gas_station_1"), filteredFuelWithTraffic.map { it.id })
+        assertEquals(listOf("gas_station_1"), filteredFuelWithTraffic.map { it.id })
     }
 
     @Test
@@ -139,7 +138,8 @@ class MapFilterSettingsTest {
             providers = emptySet(),
             skipWhenOnlyOverpass = false,
         )
-        assertEquals(listOf("traffic_1"), filtered.map { it.id })
+        // Traffic gated off; non-highway gas dropped by highway filter.
+        assertEquals(emptyList<String>(), filtered.map { it.id })
     }
 
     @Test
@@ -153,17 +153,16 @@ class MapFilterSettingsTest {
     @Test
     fun testCountryCodesAtMapPosition_StrasbourgBorder() {
         // Strasbourg is in France but directly on the border with Germany (Kehl).
-        // It must detect both France (FR) and Germany (DE) as it is well within 10km of the border.
+        // With FeatureFlag.COUNTRY_DE=false, only FR is returned for production.
         val codes = countryCodesAtMapPosition(48.583, 7.745)
-        assertEquals(setOf("FR", "DE"), codes.toSet())
+        assertEquals(listOf("FR"), codes)
     }
 
     @Test
     fun testCountryCodesAtMapPosition_Frankfurt() {
-        // Frankfurt is in Germany, far away from France.
-        // It must detect Germany (DE) and NOT France (FR).
+        // Frankfurt is in Germany; DE is feature-flagged off for the lean release.
         val codes = countryCodesAtMapPosition(50.111, 8.682)
-        assertEquals(listOf("DE"), codes)
+        assertTrue(codes.isEmpty())
     }
 
     @Test

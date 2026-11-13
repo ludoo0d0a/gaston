@@ -46,9 +46,9 @@ enum class CarMapMode {
   /** Offline Mapsforge `.map` on AA surface. */
     Mapsforge;
 
-    /** Modes that can be picked and cycled through; unfinished ones are hidden. */
+    /** Modes that can be picked and cycled through; unfinished / feature-flagged-off ones are hidden. */
     val isSelectable: Boolean
-        get() = this != MapLibreEglDirect && this != Mapbox
+        get() = this != MapLibreEglDirect && this != Mapbox && isEnabledByFeatureFlag()
 
     fun next(): CarMapMode {
         var candidate = entries[(ordinal + 1) % entries.size]
@@ -61,18 +61,57 @@ enum class CarMapMode {
     val requiresOfflineMapFile: Boolean
         get() = this == Mapsforge
 
+    fun isEnabledByFeatureFlag(): Boolean = when (this) {
+        Native -> FeatureFlag.AA_MAP_NATIVE
+        Raster -> FeatureFlag.AA_MAP_RASTER
+        MapLibreMapSnapshotter -> FeatureFlag.AA_MAP_MAPLIBRE_SNAPSHOTTER
+        MapLibreVirtualDisplay -> FeatureFlag.AA_MAP_MAPLIBRE_VIRTUAL_DISPLAY
+        MapLibreEglDirect -> FeatureFlag.AA_MAP_MAPLIBRE_EGL_DIRECT
+        Mapbox -> FeatureFlag.AA_MAP_MAPBOX
+        Mapsforge -> FeatureFlag.AA_MAP_MAPSFORGE
+    }
+
     companion object {
+        /** Stock production default when no override disables it. */
+        val DEFAULT_PRODUCTION: CarMapMode = Mapsforge
+
+        /** First mode still allowed by [FeatureFlag] (falls back to [DEFAULT_PRODUCTION]). */
+        fun defaultEnabled(): CarMapMode =
+            entries.firstOrNull { it.isSelectable } ?: DEFAULT_PRODUCTION
+
         /** Maps a persisted name (including removed/renamed modes) to a current mode. */
         fun fromStored(name: String?): CarMapMode = when (name) {
-            null -> Native
+            null -> defaultEnabled()
             "MapLibre" -> MapLibreMapSnapshotter
             "MapLibrePresentation" -> MapLibreVirtualDisplay
             "MapLibreEgl" -> MapLibreEglDirect
-            else -> entries.firstOrNull { it.name == name } ?: Native
-        }
+            else -> entries.firstOrNull { it.name == name } ?: defaultEnabled()
+        }.let { mode -> if (mode.isSelectable) mode else defaultEnabled() }
     }
 }
-enum class MapEngine { Google, MapLibre, Raster, Mapsforge }
+
+enum class MapEngine {
+    Google,
+    MapLibre,
+    Raster,
+    Mapsforge;
+
+    fun isEnabledByFeatureFlag(): Boolean = when (this) {
+        Google -> FeatureFlag.PHONE_MAP_GOOGLE
+        MapLibre -> FeatureFlag.PHONE_MAP_MAPLIBRE
+        Raster -> FeatureFlag.PHONE_MAP_RASTER
+        Mapsforge -> FeatureFlag.PHONE_MAP_MAPSFORGE
+    }
+
+    companion object {
+        /** Stock production default when no override disables it. */
+        val DEFAULT_PRODUCTION: MapEngine = MapLibre
+
+        /** First engine still allowed by [FeatureFlag] (falls back to [DEFAULT_PRODUCTION]). */
+        fun defaultEnabled(): MapEngine =
+            entries.firstOrNull { it.isEnabledByFeatureFlag() } ?: DEFAULT_PRODUCTION
+    }
+}
 enum class ThemeMode { System, Light, Dark }
 
 /** Phone map basemap: streets / photo / hybrid / terrain (Google map types + MapLibre equivalents). */
@@ -200,12 +239,12 @@ data class AppSettings(
     val selectedOverpassAmenityTypes: Set<String> = emptySet(),
     /** Amenities to keep fetching in the background after the user leaves Other mode (cache warming). */
     val cacheWarmAmenityTypes: Set<String> = emptySet(),
-    val phoneMapEngine: MapEngine = MapEngine.Google,
+    val phoneMapEngine: MapEngine = MapEngine.DEFAULT_PRODUCTION,
     val mapTheme: MapTheme = MapTheme.Voyager,
     val mapBaseView: MapBaseView = MapBaseView.Streets,
     val mapThemeMode: ThemeMode = ThemeMode.System,
     val vehicleType: VehicleType = VehicleType.Car,
-    val carMapMode: CarMapMode = CarMapMode.Native,
+    val carMapMode: CarMapMode = CarMapMode.DEFAULT_PRODUCTION,
     /** Absolute path to a local `.pmtiles` file (reserved for future offline MapLibre). Set manually on phone — never auto-downloaded. */
     val offlinePmtilesPath: String? = null,
     val offlineMapsforgePath: String? = null,
@@ -251,6 +290,38 @@ data class AppSettings(
 ) {
     val hasPremiumFeatures: Boolean get() = isPremium || devSimulatePremium
     val isDevMode: Boolean get() = devModeOverride ?: (BuildConfig.DEBUG_DEV || devSimulatePremium || devRawDetail || debugBarEnabled)
+}
+
+/** Forces disabled [FeatureFlag] surfaces off and coerces map backends to production defaults. */
+fun AppSettings.applyFeatureFlags(): AppSettings {
+    var next = this
+    if (!FeatureFlag.RADAR) {
+        next = next.copy(
+            radarWarningEnabled = false,
+            selectedOverpassAmenityTypes = next.selectedOverpassAmenityTypes - "speed_camera",
+        )
+    }
+    if (!FeatureFlag.TRAFFIC) {
+        next = next.copy(mapTrafficEnabled = false, trafficAlertEnabled = false)
+    }
+    if (!FeatureFlag.METEO) {
+        next = next.copy(
+            selectedOverpassAmenityTypes = next.selectedOverpassAmenityTypes - "weather",
+            cacheWarmAmenityTypes = next.cacheWarmAmenityTypes - "weather",
+            selectedPoiProviders = next.selectedPoiProviders - PoiProviderType.OpenMeteoWeather,
+        )
+    }
+    val phoneEngine = if (next.phoneMapEngine.isEnabledByFeatureFlag()) {
+        next.phoneMapEngine
+    } else {
+        MapEngine.defaultEnabled()
+    }
+    val carMode = if (next.carMapMode.isSelectable) {
+        next.carMapMode
+    } else {
+        CarMapMode.defaultEnabled()
+    }
+    return next.copy(phoneMapEngine = phoneEngine, carMapMode = carMode)
 }
 
 open class SettingsManager(
@@ -367,8 +438,13 @@ open class SettingsManager(
             prefs.getStringSet(key, null)?.mapNotNull { it.toIntOrNull() }?.toSet() ?: fallback
 
         val phoneMapEngine = try {
-            MapEngine.valueOf(prefs.getString("phone_map_engine", MapEngine.Google.name) ?: MapEngine.Google.name)
-        } catch (_: Exception) { MapEngine.Google }
+            MapEngine.valueOf(
+                prefs.getString("phone_map_engine", MapEngine.DEFAULT_PRODUCTION.name)
+                    ?: MapEngine.DEFAULT_PRODUCTION.name,
+            )
+        } catch (_: Exception) {
+            MapEngine.defaultEnabled()
+        }.let { engine -> if (engine.isEnabledByFeatureFlag()) engine else MapEngine.defaultEnabled() }
 
         val mapTheme = try {
             MapTheme.valueOf(prefs.getString("map_theme", MapTheme.Voyager.name) ?: MapTheme.Voyager.name)
@@ -378,7 +454,9 @@ open class SettingsManager(
             MapBaseView.valueOf(prefs.getString("map_base_view", MapBaseView.Streets.name) ?: MapBaseView.Streets.name)
         } catch (_: Exception) { MapBaseView.Streets }
 
-        val carMapMode = CarMapMode.fromStored(prefs.getString("car_map_mode", CarMapMode.Native.name))
+        val carMapMode = CarMapMode.fromStored(
+            prefs.getString("car_map_mode", CarMapMode.DEFAULT_PRODUCTION.name),
+        )
         val offlinePmtilesPath = prefs.getString("offline_pmtiles_path", null)?.takeIf { it.isNotBlank() }
         val offlineMapsforgePath = prefs.getString("offline_mapsforge_path", null)?.takeIf { it.isNotBlank() }
 
@@ -508,7 +586,7 @@ open class SettingsManager(
             lastIsRoaming = prefs.getBoolean("last_is_roaming", false),
             offlinePmtilesPath = offlinePmtilesPath,
             offlineMapsforgePath = offlineMapsforgePath,
-        ).ensureVehicleGarageConsistent()
+        ).ensureVehicleGarageConsistent().applyFeatureFlags()
     }
 
     open fun saveSettings(settings: AppSettings) {
@@ -539,7 +617,7 @@ open class SettingsManager(
                 gasConsumptionLper100km = sanitizeConsumption(withGarage.gasConsumptionLper100km),
             )
         }
-        val sanitized = sanitizedBase
+        val sanitized = sanitizedBase.applyFeatureFlags()
         _settings.value = sanitized
 
         val newPlan = if (sanitized.hasPremiumFeatures) Plan.PREMIUM else Plan.FREE
@@ -649,10 +727,12 @@ open class SettingsManager(
     }
 
     open fun setPhoneMapEngine(engine: MapEngine) {
+        if (!engine.isEnabledByFeatureFlag()) return
         saveSettings(_settings.value.copy(phoneMapEngine = engine))
     }
 
     open fun setCarMapMode(mode: CarMapMode) {
+        if (!mode.isSelectable) return
         saveSettings(_settings.value.copy(carMapMode = mode))
     }
 
@@ -673,10 +753,12 @@ open class SettingsManager(
     }
 
     open fun setMapTrafficEnabled(enabled: Boolean) {
+        if (enabled && !FeatureFlag.TRAFFIC) return
         saveSettings(_settings.value.copy(mapTrafficEnabled = enabled))
     }
 
     open fun setTrafficAlertEnabled(enabled: Boolean) {
+        if (enabled && !FeatureFlag.TRAFFIC) return
         saveSettings(_settings.value.copy(trafficAlertEnabled = enabled))
     }
 
@@ -685,6 +767,7 @@ open class SettingsManager(
      * When off (and meteo/radar also off), no traffic warning/alert fires.
      */
     open fun setTrafficDetectionEnabled(enabled: Boolean) {
+        if (enabled && !FeatureFlag.TRAFFIC) return
         saveSettings(
             _settings.value.copy(
                 mapTrafficEnabled = enabled,
@@ -698,6 +781,7 @@ open class SettingsManager(
      * Non-destructive: keeps current energy/search mode; only adds/removes weather.
      */
     open fun setMeteoDetectionEnabled(enabled: Boolean) {
+        if (enabled && !FeatureFlag.METEO) return
         val current = _settings.value
         val types = if (enabled) {
             current.selectedOverpassAmenityTypes + "weather"
@@ -723,6 +807,7 @@ open class SettingsManager(
      * Non-destructive: keeps current energy/search mode; only adds/removes radar amenities.
      */
     open fun setRadarDetectionEnabled(enabled: Boolean) {
+        if (enabled && !FeatureFlag.RADAR) return
         val current = _settings.value
         val types = if (enabled) {
             current.selectedOverpassAmenityTypes + "speed_camera"
@@ -1008,6 +1093,7 @@ open class SettingsManager(
 
     open fun setRadarWarningEnabled(enabled: Boolean) {
         // Prefer [setRadarDetectionEnabled] from AA (layer + alert). This keeps alert-only callers working.
+        if (enabled && !FeatureFlag.RADAR) return
         saveSettings(_settings.value.copy(radarWarningEnabled = enabled))
     }
 

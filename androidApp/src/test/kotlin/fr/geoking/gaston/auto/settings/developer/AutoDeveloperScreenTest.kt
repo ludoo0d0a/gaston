@@ -103,7 +103,7 @@ class AutoDeveloperScreenTest {
     }
 
     @Test
-    fun developerScreenExposesRadarNotificationTest() {
+    fun developerScreenHidesRadarNotificationTestWhenFeatureFlagOff() {
         val carContext = CarScreenTestHarness.newTestCarContext()
         val screen = AutoDeveloperScreen(carContext, settingsManager)
         val template = screen.onGetTemplate() as ListTemplate
@@ -112,13 +112,11 @@ class AutoDeveloperScreenTest {
         val radarRow = items.find {
             it.title.toString() == carContext.getString(R.string.dev_test_danger_zone_notification)
         }
-        assertNotNull("Radar notification test row missing", radarRow)
         assertEquals(
-            carContext.getString(R.string.dev_test_danger_zone_notification_subtitle_aa),
-            radarRow!!.texts.firstOrNull()?.toString(),
+            "Radar notification test hidden while FeatureFlag.RADAR is false",
+            null,
+            radarRow,
         )
-        // Action row (not a toggle): onClickListener is registered so the HUN can be posted.
-        assertNotNull(radarRow.onClickDelegate)
     }
 }
 

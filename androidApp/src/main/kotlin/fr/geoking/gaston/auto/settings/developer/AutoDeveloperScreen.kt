@@ -10,6 +10,7 @@ import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.car.app.model.Toggle
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.feature.notification.NotificationHelper
@@ -60,29 +61,31 @@ class AutoDeveloperScreen(
                 .build()
         )
 
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(carContext.getString(R.string.dev_test_danger_zone_notification))
-                .addText(carContext.getString(R.string.dev_test_danger_zone_notification_subtitle_aa))
-                .setOnClickListener {
-                    if (!notificationHelper.canPostNotifications()) {
+        if (FeatureFlag.RADAR) {
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.dev_test_danger_zone_notification))
+                    .addText(carContext.getString(R.string.dev_test_danger_zone_notification_subtitle_aa))
+                    .setOnClickListener {
+                        if (!notificationHelper.canPostNotifications()) {
+                            carContext.getCarService(androidx.car.app.AppManager::class.java)
+                                .showToast(
+                                    carContext.getString(R.string.dev_test_radar_notification_permission),
+                                    CarToast.LENGTH_LONG,
+                                )
+                            return@setOnClickListener
+                        }
+                        // Same process-wide path as live alerts: beep + TTS + HUN + HUD.
+                        dangerZoneCoordinator.triggerTestAlert()
                         carContext.getCarService(androidx.car.app.AppManager::class.java)
                             .showToast(
-                                carContext.getString(R.string.dev_test_radar_notification_permission),
-                                CarToast.LENGTH_LONG,
+                                carContext.getString(R.string.dev_test_radar_notification_sent),
+                                CarToast.LENGTH_SHORT,
                             )
-                        return@setOnClickListener
                     }
-                    // Same process-wide path as live alerts: beep + TTS + HUN + HUD.
-                    dangerZoneCoordinator.triggerTestAlert()
-                    carContext.getCarService(androidx.car.app.AppManager::class.java)
-                        .showToast(
-                            carContext.getString(R.string.dev_test_radar_notification_sent),
-                            CarToast.LENGTH_SHORT,
-                        )
-                }
-                .build()
-        )
+                    .build()
+            )
+        }
 
         listBuilder.addItem(
             Row.Builder()

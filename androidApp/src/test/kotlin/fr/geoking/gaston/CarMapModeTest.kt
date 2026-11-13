@@ -9,25 +9,28 @@ class CarMapModeTest {
 
     @Test
     fun removedAndRenamedModesAreMigrated() {
-        assertEquals(CarMapMode.MapLibreMapSnapshotter, CarMapMode.fromStored("MapLibre"))
-        assertEquals(CarMapMode.MapLibreVirtualDisplay, CarMapMode.fromStored("MapLibrePresentation"))
-        assertEquals(CarMapMode.MapLibreEglDirect, CarMapMode.fromStored("MapLibreEgl"))
+        // Feature-flagged-off modes coerce to the production default (Mapsforge).
+        assertEquals(CarMapMode.DEFAULT_PRODUCTION, CarMapMode.fromStored("MapLibre"))
+        assertEquals(CarMapMode.DEFAULT_PRODUCTION, CarMapMode.fromStored("MapLibrePresentation"))
+        assertEquals(CarMapMode.DEFAULT_PRODUCTION, CarMapMode.fromStored("MapLibreEgl"))
         assertEquals(CarMapMode.Mapsforge, CarMapMode.fromStored("Mapsforge"))
-        assertEquals(CarMapMode.Native, CarMapMode.fromStored("garbage"))
-        assertEquals(CarMapMode.Native, CarMapMode.fromStored(null))
+        assertEquals(CarMapMode.DEFAULT_PRODUCTION, CarMapMode.fromStored("garbage"))
+        assertEquals(CarMapMode.DEFAULT_PRODUCTION, CarMapMode.fromStored(null))
     }
 
     @Test
     fun nextOnlyCyclesThroughSelectableModes() {
-        var mode = CarMapMode.Native
+        val start = CarMapMode.entries.first { it.isSelectable }
+        var mode = start
         val seen = mutableSetOf<CarMapMode>()
         repeat(CarMapMode.entries.count { it.isSelectable }) {
             seen += mode
             assertTrue(mode.isSelectable)
             mode = mode.next()
         }
-        assertEquals(CarMapMode.Native, mode)
+        assertEquals(start, mode)
         assertFalse(CarMapMode.MapLibreEglDirect in seen)
         assertFalse(CarMapMode.Mapbox in seen)
+        assertTrue(CarMapMode.Mapsforge in seen)
     }
 }

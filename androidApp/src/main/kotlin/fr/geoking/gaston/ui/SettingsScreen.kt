@@ -38,6 +38,8 @@ import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.BulkFileDownloadPolicy
 import fr.geoking.gaston.CarMapMode
 import fr.geoking.gaston.DEFAULT_EV_RANGE_KM
+import fr.geoking.gaston.FeatureFlag
+import fr.geoking.gaston.FeatureFlagOverridesStore
 import fr.geoking.gaston.FuelCard
 import fr.geoking.gaston.MapEngine
 import fr.geoking.gaston.MapTheme
@@ -100,7 +102,8 @@ enum class SettingsScreenPage {
     Sources,
     Theme,
     About,
-    Developer
+    Developer,
+    FeatureFlags,
 }
 
 @Composable
@@ -242,6 +245,7 @@ fun SettingsScreen(
     onOpenMaintenanceLog: () -> Unit = {},
 ) {
     val current by settingsManager.settings.collectAsState()
+    val context = LocalContext.current
     var screenStack by remember { mutableStateOf(listOf(SettingsScreenPage.Main)) }
     val currentScreen = screenStack.last()
     var showDisclaimer by remember { mutableStateOf(false) }
@@ -283,6 +287,7 @@ fun SettingsScreen(
                             SettingsScreenPage.Theme -> stringResource(R.string.screen_theme)
                             SettingsScreenPage.MapConfig -> stringResource(R.string.screen_map)
                             SettingsScreenPage.Developer -> stringResource(R.string.screen_developer)
+                            SettingsScreenPage.FeatureFlags -> stringResource(R.string.screen_feature_flags)
                         }
                     )
                 },
@@ -358,6 +363,13 @@ fun SettingsScreen(
                     onClearErrorLog = onClearErrorLog,
                     onOpenAutoDebug = onOpenAutoDebug
                 )
+                SettingsScreenPage.FeatureFlags -> FeatureFlagsConfig(
+                    onFlagsChanged = {
+                        FeatureFlagOverridesStore.persist(context)
+                        // Re-coerce map backends / clear gated layers against the new flags.
+                        save(settingsManager, settingsManager.settings.value)
+                    },
+                )
             }
         }
     }
@@ -370,6 +382,8 @@ private fun MapConfig(
     onUpdate: (AppSettings) -> Unit
 ) {
     val context = LocalContext.current
+    // Recompose when developer FeatureFlag overrides change.
+    val featureFlagOverrides by FeatureFlag.overrides.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -377,31 +391,48 @@ private fun MapConfig(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Map Engine
-        Column {
-            Text(
-                stringResource(R.string.settings_map_engine),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                MapEngine.entries.forEach { engine ->
-                    FilterChip(
-                        selected = settings.phoneMapEngine == engine,
-                        onClick = { onUpdate(settings.copy(phoneMapEngine = engine)) },
-                        label = { Text(engine.displayLabel()) },
-                    )
+        val enabledPhoneEngines = remember(featureFlagOverrides) {
+            MapEngine.entries.filter { it.isEnabledByFeatureFlag() }
+        }
+        val selectableCarModes = remember(featureFlagOverrides) {
+            CarMapMode.entries.filter { it.isSelectable }
+        }
+        val showMapsforgeOffline = remember(featureFlagOverrides) {
+            FeatureFlag.AA_MAP_MAPSFORGE || FeatureFlag.PHONE_MAP_MAPSFORGE
+        }
+        val showPmtilesOffline = remember(featureFlagOverrides) {
+            FeatureFlag.AA_MAP_MAPLIBRE_SNAPSHOTTER ||
+                FeatureFlag.AA_MAP_MAPLIBRE_VIRTUAL_DISPLAY ||
+                FeatureFlag.AA_MAP_MAPLIBRE_EGL_DIRECT
+        }
+
+        // Map Engine — hidden when FeatureFlag leaves a single production backend.
+        if (enabledPhoneEngines.size > 1) {
+            Column {
+                Text(
+                    stringResource(R.string.settings_map_engine),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    enabledPhoneEngines.forEach { engine ->
+                        FilterChip(
+                            selected = settings.phoneMapEngine == engine,
+                            onClick = { onUpdate(settings.copy(phoneMapEngine = engine)) },
+                            label = { Text(engine.displayLabel()) },
+                        )
+                    }
                 }
             }
         }
 
-        // Offline maps by region — always shown regardless of the currently selected engine, since
-        // Android Auto (Mapsforge/Protomaps) maps are often prepared ahead of time from the phone.
+        // Offline maps by region — only backends enabled by FeatureFlag.
+        if (showMapsforgeOffline || showPmtilesOffline) {
         Column {
             Text(
                 stringResource(R.string.offline_maps_by_region_title),
@@ -417,7 +448,7 @@ private fun MapConfig(
             )
 
             // Mapsforge (.map)
-            run {
+            if (showMapsforgeOffline) run {
                 val mapManager = remember(context) { MapsforgeMapManager(context) }
                 val installedMaps by mapManager.installedMaps.collectAsState()
                 val downloadProgress by mapManager.downloadProgress.collectAsState()
@@ -513,8 +544,8 @@ private fun MapConfig(
                 }
             }
 
-            // Protomaps / PMTiles (.pmtiles)
-            run {
+            // Protomaps / PMTiles (.pmtiles) — MapLibre AA offline only
+            if (showPmtilesOffline) run {
                 val pmtilesManager = remember(context) {
                     PmtilesMapManager(
                         context,
@@ -614,70 +645,81 @@ private fun MapConfig(
                 }
             }
         }
+        }
 
-        // Android Auto map mode (phone)
-        Column {
-            Text(
-                stringResource(R.string.settings_aa_map_mode),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            CarMapMode.entries.filter { it.isSelectable }.forEach { mode ->
-                val selected = settings.carMapMode == mode
-                OutlinedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                        .clickable { onUpdate(settings.copy(carMapMode = mode)) },
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = if (selected) 2.dp else 1.dp,
-                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                    ),
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(mode.displayLabel(), style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            mode.displayDescription(),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+        // Android Auto map mode — hidden when FeatureFlag leaves a single production mode.
+        if (selectableCarModes.size > 1) {
+            Column {
+                Text(
+                    stringResource(R.string.settings_aa_map_mode),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                selectableCarModes.forEach { mode ->
+                    val selected = settings.carMapMode == mode
+                    OutlinedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                            .clickable {
+                                if (mode.isSelectable) onUpdate(settings.copy(carMapMode = mode))
+                            },
+                        border = androidx.compose.foundation.BorderStroke(
+                            width = if (selected) 2.dp else 1.dp,
+                            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                        ),
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(mode.displayLabel(), style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                mode.displayDescription(),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                     }
                 }
             }
         }
 
-        Column {
-            Text(
-                stringResource(R.string.settings_offline_maps),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            OutlinedTextField(
-                value = settings.offlinePmtilesPath.orEmpty(),
-                onValueChange = { onUpdate(settings.copy(offlinePmtilesPath = it.ifBlank { null })) },
-                label = { Text(stringResource(R.string.settings_offline_pmtiles_path)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = settings.offlineMapsforgePath.orEmpty(),
-                onValueChange = { onUpdate(settings.copy(offlineMapsforgePath = it.ifBlank { null })) },
-                label = { Text(stringResource(R.string.settings_offline_mapsforge_path)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            TextButton(
-                onClick = {
-                    onUpdate(
-                        settings.copy(
-                            offlinePmtilesPath = null,
-                            offlineMapsforgePath = null,
-                        )
+        if (showMapsforgeOffline || showPmtilesOffline) {
+            Column {
+                Text(
+                    stringResource(R.string.settings_offline_maps),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                if (showPmtilesOffline) {
+                    OutlinedTextField(
+                        value = settings.offlinePmtilesPath.orEmpty(),
+                        onValueChange = { onUpdate(settings.copy(offlinePmtilesPath = it.ifBlank { null })) },
+                        label = { Text(stringResource(R.string.settings_offline_pmtiles_path)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
                     )
-                },
-            ) {
-                Text(stringResource(R.string.settings_offline_clear))
+                }
+                if (showMapsforgeOffline) {
+                    OutlinedTextField(
+                        value = settings.offlineMapsforgePath.orEmpty(),
+                        onValueChange = { onUpdate(settings.copy(offlineMapsforgePath = it.ifBlank { null })) },
+                        label = { Text(stringResource(R.string.settings_offline_mapsforge_path)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                }
+                TextButton(
+                    onClick = {
+                        onUpdate(
+                            settings.copy(
+                                offlinePmtilesPath = if (showPmtilesOffline) null else settings.offlinePmtilesPath,
+                                offlineMapsforgePath = if (showMapsforgeOffline) null else settings.offlineMapsforgePath,
+                            )
+                        )
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_offline_clear))
+                }
             }
         }
 
@@ -785,8 +827,8 @@ private fun MapConfig(
             }
         }
 
-        // AAC / danger-zone alerts (always on; emergency kill switch via BuildConfig only)
-        if (BuildConfig.AAC_ALERTS_AVAILABLE && !BuildConfig.AAC_ALERTS_KILL_SWITCH) {
+        // AAC / danger-zone alerts (FeatureFlag.RADAR + BuildConfig kill switch)
+        if (FeatureFlag.RADAR && BuildConfig.AAC_ALERTS_AVAILABLE && !BuildConfig.AAC_ALERTS_KILL_SWITCH) {
             Column {
                 Text(
                     stringResource(R.string.aac_settings_title),
@@ -842,19 +884,21 @@ private fun MapConfig(
         }
 
         // Traffic
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.filter_show_traffic), style = MaterialTheme.typography.titleSmall)
-                Text(stringResource(R.string.filter_google_traffic), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (FeatureFlag.TRAFFIC) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.filter_show_traffic), style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.filter_google_traffic), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.mapTrafficEnabled,
+                    onCheckedChange = { onUpdate(settings.copy(mapTrafficEnabled = it)) },
+                )
             }
-            Switch(
-                checked = settings.mapTrafficEnabled,
-                onCheckedChange = { onUpdate(settings.copy(mapTrafficEnabled = it)) },
-            )
         }
 
         // Itinerary
@@ -1014,6 +1058,14 @@ private fun SourcesConfig(
         ProviderUiInfo(PoiProviderType.CitaTraffic, listOf("LU")),
     )
         .filter { it.type.isUserSelectablePoiDataSource() }
+        .filter { info ->
+            when {
+                info.providesRadar && !FeatureFlag.RADAR -> false
+                info.providesMeteo && !FeatureFlag.METEO -> false
+                info.providesTraffic && !FeatureFlag.TRAFFIC -> false
+                else -> true
+            }
+        }
         .distinctBy { it.type }
 
     val providersByCountry: Map<String, List<ProviderUiInfo>> = remember(providers) {
@@ -1026,7 +1078,9 @@ private fun SourcesConfig(
     }
 
     val sortedCountryKeys = remember(providersByCountry) {
-        val keys = providersByCountry.keys
+        val keys = providersByCountry.keys.filter { key ->
+            key == "GLOBAL" || key == "EU" || FeatureFlag.isCountryEnabled(key)
+        }
         buildList {
             if ("GLOBAL" in keys) add("GLOBAL")
             if ("EU" in keys) add("EU")
@@ -1153,15 +1207,21 @@ private fun SourcesConfig(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                listOf(
-                    "all" to stringResource(R.string.action_all),
-                    "fuel" to stringResource(R.string.search_mode_fuel),
-                    "electric" to stringResource(R.string.search_mode_ev),
-                    "swap" to "Swap",
-                    "traffic" to stringResource(R.string.search_mode_traffic),
-                    "meteo" to stringResource(R.string.search_mode_meteo),
-                    "radar" to stringResource(R.string.search_mode_radar),
-                ).forEach { (id, label) ->
+                buildList {
+                    add("all" to stringResource(R.string.action_all))
+                    add("fuel" to stringResource(R.string.search_mode_fuel))
+                    add("electric" to stringResource(R.string.search_mode_ev))
+                    add("swap" to "Swap")
+                    if (FeatureFlag.TRAFFIC) {
+                        add("traffic" to stringResource(R.string.search_mode_traffic))
+                    }
+                    if (FeatureFlag.METEO) {
+                        add("meteo" to stringResource(R.string.search_mode_meteo))
+                    }
+                    if (FeatureFlag.RADAR) {
+                        add("radar" to stringResource(R.string.search_mode_radar))
+                    }
+                }.forEach { (id, label) ->
                     FilterChip(
                         selected = energyFilter == id,
                         onClick = { energyFilter = id },
@@ -2963,20 +3023,27 @@ private fun DeveloperSection(
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 SettingsItem(
+                    label = stringResource(R.string.screen_feature_flags),
+                    value = stringResource(R.string.dev_feature_flags_subtitle),
+                    onClick = { onNavigate(SettingsScreenPage.FeatureFlags) },
+                )
+                SettingsItem(
                     label = stringResource(R.string.dev_test_aa_map_surface),
                     value = stringResource(R.string.dev_test_aa_map_surface_subtitle),
                     onClick = onOpenAutoDebug
                 )
-                SettingsItem(
-                    label = stringResource(R.string.dev_test_danger_zone_notification),
-                    value = stringResource(R.string.dev_test_danger_zone_notification_subtitle),
-                    onClick = {
-                        // Process-wide: beep + TTS + HUN (DangerZoneAlertCoordinator).
-                        org.koin.core.context.GlobalContext.get()
-                            .get<fr.geoking.gaston.radar.DangerZoneAlertTester>()
-                            .trigger()
-                    }
-                )
+                if (FeatureFlag.RADAR) {
+                    SettingsItem(
+                        label = stringResource(R.string.dev_test_danger_zone_notification),
+                        value = stringResource(R.string.dev_test_danger_zone_notification_subtitle),
+                        onClick = {
+                            // Process-wide: beep + TTS + HUN (DangerZoneAlertCoordinator).
+                            org.koin.core.context.GlobalContext.get()
+                                .get<fr.geoking.gaston.radar.DangerZoneAlertTester>()
+                                .trigger()
+                        }
+                    )
+                }
                 SettingsItem(
                     label = stringResource(R.string.screen_clear_cache),
                     value = stringResource(R.string.settings_clear_cache_subtitle),
@@ -3074,6 +3141,92 @@ private fun DeveloperSection(
             )
         }
     }
+}
+
+@Composable
+private fun FeatureFlagsConfig(
+    onFlagsChanged: () -> Unit,
+) {
+    val overrides by FeatureFlag.overrides.collectAsState()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        Text(
+            stringResource(R.string.dev_feature_flags_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        TextButton(
+            onClick = {
+                FeatureFlag.clearOverrides()
+                onFlagsChanged()
+            },
+            enabled = overrides.isNotEmpty(),
+        ) {
+            Text(stringResource(R.string.dev_feature_flags_reset))
+        }
+
+        FeatureFlag.Group.entries.forEach { group ->
+            val keys = FeatureFlag.Key.entries.filter { it.group == group }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    when (group) {
+                        FeatureFlag.Group.Country -> stringResource(R.string.dev_feature_flags_group_countries)
+                        FeatureFlag.Group.Layer -> stringResource(R.string.dev_feature_flags_group_layers)
+                        FeatureFlag.Group.PhoneMap -> stringResource(R.string.dev_feature_flags_group_phone_map)
+                        FeatureFlag.Group.AaMap -> stringResource(R.string.dev_feature_flags_group_aa_map)
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                keys.forEach { key ->
+                    // Read overrides so Compose invalidates when a toggle changes.
+                    val enabled = overrides[key] ?: key.default
+                    val overridden = key in overrides
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                featureFlagLabel(key),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            if (overridden) {
+                                Text(
+                                    stringResource(R.string.dev_feature_flags_overridden),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = enabled,
+                            onCheckedChange = { checked ->
+                                FeatureFlag.setResolved(key, checked)
+                                onFlagsChanged()
+                            },
+                        )
+                    }
+                }
+            }
+            HorizontalDivider()
+        }
+    }
+}
+
+private fun featureFlagLabel(key: FeatureFlag.Key): String {
+    key.countryCode?.let { return it }
+    return key.name
+        .lowercase()
+        .split('_')
+        .joinToString(" ") { part -> part.replaceFirstChar { it.uppercase() } }
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF0F172A)

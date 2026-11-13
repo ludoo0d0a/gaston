@@ -4,6 +4,8 @@ import fr.geoking.gaston.R
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.*
+import fr.geoking.gaston.CarMapMode
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.MapTheme
 import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.SettingsManager
@@ -27,18 +29,20 @@ class AutoMapSettingsScreen(
         val settings = settingsManager.settings.value
         val listBuilder = ItemList.Builder()
 
-        val mapModeLabel = settings.carMapMode.displayLabel(carContext)
-
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(carContext.getString(R.string.settings_map_mode))
-                .addText(mapModeLabel)
-                .setOnClickListener {
-                    settingsManager.setCarMapMode(settings.carMapMode.next())
-                    invalidate()
-                }
-                .build()
-        )
+        val selectableModes = CarMapMode.entries.count { it.isSelectable }
+        if (selectableModes > 1) {
+            val mapModeLabel = settings.carMapMode.displayLabel(carContext)
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.settings_map_mode))
+                    .addText(mapModeLabel)
+                    .setOnClickListener {
+                        settingsManager.setCarMapMode(settings.carMapMode.next())
+                        invalidate()
+                    }
+                    .build()
+            )
+        }
 
         val dataSourceText = when (settings.poiProviderSelectionMode) {
             PoiProviderSelectionMode.Auto -> {
@@ -94,47 +98,53 @@ class AutoMapSettingsScreen(
                 .build()
         )
 
-        val meteoOn = "weather" in settings.selectedOverpassAmenityTypes
-        val trafficOn = settings.mapTrafficEnabled || settings.trafficAlertEnabled
+        val meteoOn = FeatureFlag.METEO && "weather" in settings.selectedOverpassAmenityTypes
+        val trafficOn = FeatureFlag.TRAFFIC && (settings.mapTrafficEnabled || settings.trafficAlertEnabled)
 
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(carContext.getString(R.string.search_mode_meteo))
-                .addText(carContext.getString(R.string.settings_meteo_detection_subtitle))
-                .setToggle(
-                    Toggle.Builder { checked ->
-                        settingsManager.setMeteoDetectionEnabled(checked)
-                        invalidate()
-                    }.setChecked(meteoOn).build()
-                )
-                .build()
-        )
+        if (FeatureFlag.METEO) {
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.search_mode_meteo))
+                    .addText(carContext.getString(R.string.settings_meteo_detection_subtitle))
+                    .setToggle(
+                        Toggle.Builder { checked ->
+                            settingsManager.setMeteoDetectionEnabled(checked)
+                            invalidate()
+                        }.setChecked(meteoOn).build()
+                    )
+                    .build()
+            )
+        }
 
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(carContext.getString(R.string.settings_radar_warning))
-                .addText(carContext.getString(R.string.settings_radar_warning_subtitle))
-                .setToggle(
-                    Toggle.Builder { checked ->
-                        settingsManager.setRadarDetectionEnabled(checked)
-                        invalidate()
-                    }.setChecked(settings.radarWarningEnabled).build()
-                )
-                .build()
-        )
+        if (FeatureFlag.RADAR) {
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.settings_radar_warning))
+                    .addText(carContext.getString(R.string.settings_radar_warning_subtitle))
+                    .setToggle(
+                        Toggle.Builder { checked ->
+                            settingsManager.setRadarDetectionEnabled(checked)
+                            invalidate()
+                        }.setChecked(settings.radarWarningEnabled).build()
+                    )
+                    .build()
+            )
+        }
 
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(carContext.getString(R.string.search_mode_traffic))
-                .addText(carContext.getString(R.string.settings_traffic_detection_subtitle))
-                .setToggle(
-                    Toggle.Builder { checked ->
-                        settingsManager.setTrafficDetectionEnabled(checked)
-                        invalidate()
-                    }.setChecked(trafficOn).build()
-                )
-                .build()
-        )
+        if (FeatureFlag.TRAFFIC) {
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.search_mode_traffic))
+                    .addText(carContext.getString(R.string.settings_traffic_detection_subtitle))
+                    .setToggle(
+                        Toggle.Builder { checked ->
+                            settingsManager.setTrafficDetectionEnabled(checked)
+                            invalidate()
+                        }.setChecked(trafficOn).build()
+                    )
+                    .build()
+            )
+        }
 
         listBuilder.addItem(
             Row.Builder()

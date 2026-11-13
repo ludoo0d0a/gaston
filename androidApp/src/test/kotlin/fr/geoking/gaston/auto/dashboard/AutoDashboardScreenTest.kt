@@ -101,8 +101,8 @@ class AutoDashboardScreenTest {
         val header = gridTemplate.header
         assertNotNull("Header should not be null", header)
         assertEquals(
-            "Header end actions hold radar + traffic toggles (replaces deprecated ActionStrip)",
-            2,
+            "Radar/traffic header toggles hidden while FeatureFlag.RADAR/TRAFFIC are false",
+            0,
             header!!.endHeaderActions.size,
         )
     }
@@ -115,24 +115,17 @@ class AutoDashboardScreenTest {
         assertTrue(!settingsManager.settings.value.trafficAlertEnabled)
         assertTrue(!settingsManager.settings.value.mapTrafficEnabled)
 
+        // Production FeatureFlags gate these complex layers off — enabling is a no-op.
         settingsManager.setMeteoDetectionEnabled(true)
-        assertTrue("weather" in settingsManager.settings.value.selectedOverpassAmenityTypes)
+        assertTrue("weather" !in settingsManager.settings.value.selectedOverpassAmenityTypes)
 
         settingsManager.setRadarDetectionEnabled(true)
-        assertTrue(settingsManager.settings.value.radarWarningEnabled)
-        assertTrue("speed_camera" in settingsManager.settings.value.selectedOverpassAmenityTypes)
+        assertTrue(!settingsManager.settings.value.radarWarningEnabled)
+        assertTrue("speed_camera" !in settingsManager.settings.value.selectedOverpassAmenityTypes)
 
         settingsManager.setTrafficDetectionEnabled(true)
-        assertTrue(settingsManager.settings.value.mapTrafficEnabled)
-        assertTrue(settingsManager.settings.value.trafficAlertEnabled)
-
-        settingsManager.setMeteoDetectionEnabled(false)
-        settingsManager.setRadarDetectionEnabled(false)
-        settingsManager.setTrafficDetectionEnabled(false)
-        assertTrue("weather" !in settingsManager.settings.value.selectedOverpassAmenityTypes)
-        assertTrue(!settingsManager.settings.value.radarWarningEnabled)
-        assertTrue(!settingsManager.settings.value.trafficAlertEnabled)
         assertTrue(!settingsManager.settings.value.mapTrafficEnabled)
+        assertTrue(!settingsManager.settings.value.trafficAlertEnabled)
     }
 
     @Test
@@ -142,11 +135,10 @@ class AutoDashboardScreenTest {
         settingsManager.prepareDetectionLayersMapMode()
 
         val s = settingsManager.settings.value
-        assertTrue(s.radarWarningEnabled)
-        assertTrue(s.mapTrafficEnabled)
-        assertTrue(s.trafficAlertEnabled)
-        assertTrue("speed_camera" in s.selectedOverpassAmenityTypes)
-        assertTrue(s.isOtherModeActive())
+        assertTrue(!s.radarWarningEnabled)
+        assertTrue(!s.mapTrafficEnabled)
+        assertTrue(!s.trafficAlertEnabled)
+        assertTrue("speed_camera" !in s.selectedOverpassAmenityTypes)
     }
 
 
@@ -172,8 +164,8 @@ class AutoDashboardScreenTest {
 
         val template = screen.onGetTemplate() as GridTemplate
         val header = template.header
-        assertNotNull("Header should hold radar + traffic detection toggles", header)
-        assertEquals(2, header!!.endHeaderActions.size)
+        assertNotNull("Header should still be present without radar/traffic toggles", header)
+        assertEquals(0, header!!.endHeaderActions.size)
     }
 }
 

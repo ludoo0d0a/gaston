@@ -11,6 +11,7 @@ import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.di.MapDeps
@@ -143,10 +144,11 @@ class AutoDashboardScreen(
         } else {
             carContext.getString(R.string.app_name)
         }
-        val header = Header.Builder()
+        val headerBuilder = Header.Builder()
             .setTitle(appTitle)
             .setStartHeaderAction(Action.APP_ICON)
-            .addEndHeaderAction(
+        if (FeatureFlag.RADAR) {
+            headerBuilder.addEndHeaderAction(
                 carContext.alertToggleAction(
                     enabled = radarOn,
                     icon = carContext.dashboardRadarAlertIcon(radarOn),
@@ -155,7 +157,9 @@ class AutoDashboardScreen(
                     invalidate()
                 },
             )
-            .addEndHeaderAction(
+        }
+        if (FeatureFlag.TRAFFIC) {
+            headerBuilder.addEndHeaderAction(
                 carContext.alertToggleAction(
                     enabled = trafficOn,
                     icon = carContext.dashboardTrafficAlertIcon(trafficOn),
@@ -164,7 +168,8 @@ class AutoDashboardScreen(
                     invalidate()
                 },
             )
-            .build()
+        }
+        val header = headerBuilder.build()
 
         GridTemplate.Builder()
             .setSingleList(gridBuilder.build())

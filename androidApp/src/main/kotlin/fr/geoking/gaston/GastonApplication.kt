@@ -16,6 +16,9 @@ class GastonApplication : Application() {
         setupUncaughtExceptionHandler()
         android.util.Log.d("GastonApplication", "onCreate start")
         try {
+            // Dev overrides must load before any FeatureFlag reads (settings, map backends).
+            FeatureFlagOverridesStore.load(this)
+
             // Initialize MapLibre singleton globally
             try {
                 org.maplibre.android.MapLibre.getInstance(this)

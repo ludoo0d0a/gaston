@@ -68,7 +68,7 @@ fun categoryFromAmenityId(id: String): PoiCategory? = when (id) {
 
 /** True when the radar / speed_camera amenity layer is selected on the map. */
 fun AppSettings.isRadarMapLayerOn(): Boolean =
-    "speed_camera" in selectedOverpassAmenityTypes
+    FeatureFlag.RADAR && "speed_camera" in selectedOverpassAmenityTypes
 
 fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
     val categories = mutableSetOf<PoiCategory>()
@@ -76,7 +76,7 @@ fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
     // Amenities: strictly based on selection
     selectedOverpassAmenityTypes.mapNotNullTo(categories) { categoryFromAmenityId(it) }
 
-    if (mapTrafficEnabled) {
+    if (FeatureFlag.TRAFFIC && mapTrafficEnabled) {
         categories.add(PoiCategory.Traffic)
     }
 
@@ -223,13 +223,14 @@ fun Set<PoiProviderType>.filterProvidersForEnergy(
 fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Set<PoiProviderType> {
     val wantFuel = wantsFuelProviders()
     val wantElectric = wantsElectricProviders()
+    val enabledCountries = countryCodes.filter { FeatureFlag.isCountryEnabled(it) }
 
     val base = if (poiProviderSelectionMode == PoiProviderSelectionMode.Manual) {
         selectedPoiProviders
     } else {
-        if (countryCodes.isNotEmpty()) {
+        if (enabledCountries.isNotEmpty()) {
             autoProvidersForCountries(
-                countryCodes = countryCodes,
+                countryCodes = enabledCountries,
                 wantFuel = wantFuel,
                 wantElectric = wantElectric,
                 fallbackManual = selectedPoiProviders
@@ -256,9 +257,10 @@ fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Se
 /** ISO country codes for [latitude]/[longitude] when it falls in known [ParkingRegion]s or within 10km of their borders. */
 fun countryCodesAtMapPosition(latitude: Double, longitude: Double): List<String> {
     val regions = ParkingRegion.entries.filter { region ->
-        region.subBoxes.any { box ->
-            box.distanceToKm(latitude, longitude) <= 10.0
-        }
+        FeatureFlag.isCountryEnabled(region.countryCode) &&
+            region.subBoxes.any { box ->
+                box.distanceToKm(latitude, longitude) <= 10.0
+            }
     }
     return regions.map { it.countryCode }.distinct()
 }

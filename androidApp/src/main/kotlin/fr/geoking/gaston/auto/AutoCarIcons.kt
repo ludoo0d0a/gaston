@@ -16,6 +16,7 @@ import androidx.car.app.model.CarIcon
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.feature.emergency.EmergencyCategory
@@ -206,22 +207,30 @@ fun CarContext.radarTrafficDetectionActions(
 ): List<Action> {
     val radarOn = settings.isRadarDetectionOn()
     val trafficOn = settings.isTrafficDetectionOn()
-    return listOf(
-        alertToggleAction(
-            enabled = radarOn,
-            icon = dashboardRadarAlertIcon(radarOn),
-        ) {
-            settingsManager.setRadarDetectionEnabled(!radarOn)
-            onChanged()
-        },
-        alertToggleAction(
-            enabled = trafficOn,
-            icon = dashboardTrafficAlertIcon(trafficOn),
-        ) {
-            settingsManager.setTrafficDetectionEnabled(!trafficOn)
-            onChanged()
-        },
-    )
+    return buildList {
+        if (FeatureFlag.RADAR) {
+            add(
+                alertToggleAction(
+                    enabled = radarOn,
+                    icon = dashboardRadarAlertIcon(radarOn),
+                ) {
+                    settingsManager.setRadarDetectionEnabled(!radarOn)
+                    onChanged()
+                },
+            )
+        }
+        if (FeatureFlag.TRAFFIC) {
+            add(
+                alertToggleAction(
+                    enabled = trafficOn,
+                    icon = dashboardTrafficAlertIcon(trafficOn),
+                ) {
+                    settingsManager.setTrafficDetectionEnabled(!trafficOn)
+                    onChanged()
+                },
+            )
+        }
+    }
 }
 
 fun CarContext.actionHomeIcon(): CarIcon = carIcon(R.drawable.ic_home, AutoCarIcons.primary)
