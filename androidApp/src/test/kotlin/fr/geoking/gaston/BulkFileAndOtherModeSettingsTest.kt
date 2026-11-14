@@ -5,9 +5,11 @@ import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderType
 import fr.geoking.gaston.shared.network.NetworkType
 import fr.geoking.gaston.effectiveAllowedCategories
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -15,6 +17,19 @@ import org.robolectric.RuntimeEnvironment
 
 @RunWith(RobolectricTestRunner::class)
 class BulkFileAndOtherModeSettingsTest {
+
+    @Before
+    fun enableLayerFeatureFlags() {
+        // Production FeatureFlags gate these layers off; unlock them to exercise Other/traffic modes.
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, true)
+        FeatureFlag.setOverride(FeatureFlag.Key.METEO, true)
+        FeatureFlag.setOverride(FeatureFlag.Key.TRAFFIC, true)
+    }
+
+    @After
+    fun clearFeatureFlagOverrides() {
+        FeatureFlag.clearOverrides()
+    }
 
     @Test
     fun isOtherModeActive_withLufopStillOther() {

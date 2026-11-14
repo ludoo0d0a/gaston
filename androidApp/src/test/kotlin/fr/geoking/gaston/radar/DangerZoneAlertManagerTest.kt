@@ -1,6 +1,7 @@
 package fr.geoking.gaston.radar
 
 import android.location.Location
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.aac.DangerZoneAlertCopy
 import fr.geoking.gaston.aac.DangerZoneFactory
@@ -8,6 +9,7 @@ import fr.geoking.gaston.aac.DangerZoneTriangle
 import fr.geoking.gaston.aac.RoadNetworkClass
 import fr.geoking.gaston.shared.logging.DebugLogStore
 import fr.geoking.gaston.shared.logging.RadarDetectionLog
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -67,11 +69,17 @@ class DangerZoneAlertManagerTest {
     @Before
     fun setUp() {
         DebugLogStore.clearAll()
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, true)
         val context = RuntimeEnvironment.getApplication()
         settingsManager = SettingsManager(context)
         settingsManager.setRadarWarningEnabled(true)
         audioNotifier = MockAudioNotifier()
         alertManager = DangerZoneAlertManager(settingsManager, audioNotifier)
+    }
+
+    @After
+    fun tearDown() {
+        FeatureFlag.clearOverrides()
     }
 
     private class MockNotificationHelper(context: android.content.Context) : fr.geoking.gaston.feature.notification.NotificationHelper(context) {

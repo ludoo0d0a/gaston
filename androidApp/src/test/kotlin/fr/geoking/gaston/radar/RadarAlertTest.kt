@@ -2,9 +2,11 @@ package fr.geoking.gaston.radar
 
 import android.location.Location
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -59,6 +61,7 @@ class RadarAlertTest {
 
     @Before
     fun setUp() {
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, true)
         val context = RuntimeEnvironment.getApplication()
         settingsManager = SettingsManager(context)
         settingsManager.setRadarWarningEnabled(true)
@@ -66,6 +69,11 @@ class RadarAlertTest {
 
         audioNotifier = MockAudioNotifier()
         alertManager = RadarAlertManager(settingsManager, audioNotifier)
+    }
+
+    @After
+    fun tearDown() {
+        FeatureFlag.clearOverrides()
     }
 
     @Test

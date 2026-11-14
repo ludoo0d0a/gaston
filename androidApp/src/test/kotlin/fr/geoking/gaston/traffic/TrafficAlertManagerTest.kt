@@ -1,11 +1,13 @@
 package fr.geoking.gaston.traffic
 
 import android.location.Location
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.traffic.TrafficEvent
 import fr.geoking.gaston.api.traffic.TrafficSeverity
 import fr.geoking.gaston.radar.RadarAudioNotifier
 import fr.geoking.gaston.shared.location.haversineKm
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,11 +54,17 @@ class TrafficAlertManagerTest {
 
     @Before
     fun setUp() {
+        FeatureFlag.setOverride(FeatureFlag.Key.TRAFFIC, true)
         val context = RuntimeEnvironment.getApplication()
         settingsManager = SettingsManager(context)
         settingsManager.setTrafficAlertEnabled(true)
         audioNotifier = MockAudioNotifier()
         alertManager = TrafficAlertManager(settingsManager, audioNotifier)
+    }
+
+    @After
+    fun tearDown() {
+        FeatureFlag.clearOverrides()
     }
 
     private fun loc(lat: Double, lon: Double): Location =
