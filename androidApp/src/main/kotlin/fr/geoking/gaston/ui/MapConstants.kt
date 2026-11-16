@@ -1,5 +1,6 @@
 package fr.geoking.gaston.ui
 
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.R
 import fr.geoking.gaston.VehicleType
 
@@ -22,6 +23,16 @@ val OVERPASS_AMENITY_OPTIONS = listOf(
     "cafe" to R.string.amenity_cafe,
     "supermarket" to R.string.amenity_supermarket
 )
+
+/** Amenity chips / AA Other grid entries allowed by the current [FeatureFlag] gates. */
+fun overpassAmenityOptionsForUi(): List<Pair<String, Int>> =
+    OVERPASS_AMENITY_OPTIONS.filter { (id, _) ->
+        when (id) {
+            "speed_camera" -> FeatureFlag.RADAR
+            "weather" -> FeatureFlag.METEO
+            else -> true
+        }
+    }
 
 val VEHICLE_TYPE_OPTIONS = listOf(
     VehicleType.Car to "Car",

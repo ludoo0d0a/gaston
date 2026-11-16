@@ -900,6 +900,8 @@ open class SettingsManager(
     }
 
     open fun setOtherMode(amenityType: String = "parking") {
+        if (amenityType == "speed_camera" && !FeatureFlag.RADAR) return
+        if (amenityType == "weather" && !FeatureFlag.METEO) return
         val current = _settings.value
         val providers = when (amenityType) {
             "speed_camera" -> setOf(
@@ -928,6 +930,7 @@ open class SettingsManager(
      * Uses Other mode with an empty amenity set so [StationMapFilters] drops all POIs.
      */
     open fun setTrafficMode() {
+        if (!FeatureFlag.TRAFFIC) return
         val current = _settings.value
         val trafficProviders = current.selectedPoiProviders
             .filter { it.providesTraffic }
@@ -1167,19 +1170,22 @@ open class SettingsManager(
 
     open fun setOverpassAmenityTypes(types: Set<String>) {
         val current = _settings.value
+        val gatedTypes = types
+            .let { if (FeatureFlag.RADAR) it else it - "speed_camera" }
+            .let { if (FeatureFlag.METEO) it else it - "weather" }
         // Keep radar / weather API sources in sync when toggling amenities in Other mode
         // (phone chips only call this; Auto uses setOtherMode(amenityId)).
         val providers = if (current.isOtherModeActive()) {
             buildSet {
-                if ("speed_camera" in types) {
+                if ("speed_camera" in gatedTypes) {
                     add(PoiProviderType.LufopOpenSpeedCam)
                     add(PoiProviderType.LuxembourgRadars)
                     add(PoiProviderType.Overpass)
                 }
-                if ("weather" in types) {
+                if ("weather" in gatedTypes) {
                     add(PoiProviderType.OpenMeteoWeather)
                 }
-                val osmAmenities = types - "weather"
+                val osmAmenities = gatedTypes - "weather"
                 if (osmAmenities.isNotEmpty()) {
                     add(PoiProviderType.Overpass)
                 }
@@ -1190,8 +1196,8 @@ open class SettingsManager(
         }
         saveSettings(
             current.copy(
-                selectedOverpassAmenityTypes = types,
-                cacheWarmAmenityTypes = (current.cacheWarmAmenityTypes + types) - "weather",
+                selectedOverpassAmenityTypes = gatedTypes,
+                cacheWarmAmenityTypes = (current.cacheWarmAmenityTypes + gatedTypes) - "weather",
                 selectedPoiProviders = providers,
                 // Amenity chips are exclusive with the traffic overlay (dashboard / phone chip).
                 mapTrafficEnabled = false,

@@ -31,6 +31,8 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
@@ -44,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.AppSettings
 import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.PoiProviderSelectionMode
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
@@ -110,6 +113,8 @@ fun PhoneDashboardMainContent(
     onPoiSelected: (Poi) -> Unit
 ) {
     val currentMode = rememberSearchMode(settings)
+    // Recompose when developer FeatureFlag overrides change (radar/meteo/traffic tiles).
+    val featureFlagOverrides by FeatureFlag.overrides.collectAsState()
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -168,7 +173,7 @@ fun PhoneDashboardMainContent(
             )
         }
 
-        item(contentType = "other_actions_grid") {
+        item(contentType = "other_actions_grid", key = "other_actions_${featureFlagOverrides.keys}") {
             val gridActions = mutableListOf(
                 DashboardRow(
                     title = stringResource(R.string.dashboard_network),
@@ -177,27 +182,41 @@ fun PhoneDashboardMainContent(
                     onClick = onOpenNetworkDiagnostics,
                     testTag = "dashboard_network_btn"
                 ),
-                DashboardRow(
-                    title = stringResource(R.string.dashboard_radars),
-                    subtitle = stringResource(R.string.dashboard_radars_subtitle),
-                    iconResId = R.drawable.ic_poi_radar,
-                    onClick = onOpenRadars,
-                    testTag = "dashboard_radars_btn"
-                ),
-                DashboardRow(
-                    title = stringResource(R.string.dashboard_weather),
-                    subtitle = stringResource(R.string.dashboard_weather_subtitle),
-                    iconResId = R.drawable.ic_poi_weather,
-                    onClick = onOpenWeather,
-                    testTag = "dashboard_weather_btn"
-                ),
-                DashboardRow(
-                    title = stringResource(R.string.dashboard_traffic),
-                    subtitle = stringResource(R.string.dashboard_traffic_subtitle),
-                    iconResId = R.drawable.ic_poi_traffic,
-                    onClick = onOpenTraffic,
-                    testTag = "dashboard_traffic_btn"
-                ),
+            )
+            if (FeatureFlag.RADAR) {
+                gridActions.add(
+                    DashboardRow(
+                        title = stringResource(R.string.dashboard_radars),
+                        subtitle = stringResource(R.string.dashboard_radars_subtitle),
+                        iconResId = R.drawable.ic_poi_radar,
+                        onClick = onOpenRadars,
+                        testTag = "dashboard_radars_btn"
+                    ),
+                )
+            }
+            if (FeatureFlag.METEO) {
+                gridActions.add(
+                    DashboardRow(
+                        title = stringResource(R.string.dashboard_weather),
+                        subtitle = stringResource(R.string.dashboard_weather_subtitle),
+                        iconResId = R.drawable.ic_poi_weather,
+                        onClick = onOpenWeather,
+                        testTag = "dashboard_weather_btn"
+                    ),
+                )
+            }
+            if (FeatureFlag.TRAFFIC) {
+                gridActions.add(
+                    DashboardRow(
+                        title = stringResource(R.string.dashboard_traffic),
+                        subtitle = stringResource(R.string.dashboard_traffic_subtitle),
+                        iconResId = R.drawable.ic_poi_traffic,
+                        onClick = onOpenTraffic,
+                        testTag = "dashboard_traffic_btn"
+                    ),
+                )
+            }
+            gridActions.add(
                 DashboardRow(
                     title = stringResource(R.string.dashboard_parking),
                     subtitle = stringResource(R.string.dashboard_parking_subtitle),

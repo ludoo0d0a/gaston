@@ -8,6 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.effectiveEnergyFilterMode
 import fr.geoking.gaston.effectiveIrvePowerLevels
@@ -279,6 +282,9 @@ fun SearchCategorySelector(
                 }
             }
             SearchMode.Other -> {
+                // Recompose amenity chips when developer FeatureFlag overrides change.
+                val featureFlagOverrides by FeatureFlag.overrides.collectAsState()
+                val amenityOptions = remember(featureFlagOverrides) { overpassAmenityOptionsForUi() }
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
@@ -286,27 +292,29 @@ fun SearchCategorySelector(
                         .horizontalScroll(rememberScrollState())
                 ) {
                     // Traffic is a map overlay (not an Overpass amenity), same exclusivity as radar/weather.
-                    FilterChip(
-                        selected = settings.mapTrafficEnabled,
-                        onClick = {
-                            if (settings.mapTrafficEnabled) {
-                                settingsManager.setOtherMode("parking")
-                            } else {
-                                settingsManager.setTrafficMode()
-                            }
-                        },
-                        label = { Text(stringResource(R.string.search_mode_traffic)) },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_poi_traffic),
-                                contentDescription = null,
-                                tint = Color(0xFFF59E0B),
-                                modifier = Modifier.size(18.dp)
-                            )
-                        },
-                        modifier = Modifier.testTag("amenity_traffic"),
-                    )
-                    OVERPASS_AMENITY_OPTIONS.forEach { (id, resId) ->
+                    if (FeatureFlag.TRAFFIC) {
+                        FilterChip(
+                            selected = settings.mapTrafficEnabled,
+                            onClick = {
+                                if (settings.mapTrafficEnabled) {
+                                    settingsManager.setOtherMode("parking")
+                                } else {
+                                    settingsManager.setTrafficMode()
+                                }
+                            },
+                            label = { Text(stringResource(R.string.search_mode_traffic)) },
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_poi_traffic),
+                                    contentDescription = null,
+                                    tint = Color(0xFFF59E0B),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            modifier = Modifier.testTag("amenity_traffic"),
+                        )
+                    }
+                    amenityOptions.forEach { (id, resId) ->
                         val isSelected = !settings.mapTrafficEnabled &&
                             settings.selectedOverpassAmenityTypes.contains(id)
                         FilterChip(
