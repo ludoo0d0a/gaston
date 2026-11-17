@@ -46,6 +46,25 @@ class PoiFetchCacheTest {
     }
 
     @Test
+    fun defaultSettings_loadFuelAndEvForFranceAndLuxembourg() {
+        val settings = AppSettings()
+        assertEquals(EnergyFilterMode.Hybrid, settings.mapEnergyMode)
+        assertEquals(PoiProviderSelectionMode.Auto, settings.poiProviderSelectionMode)
+
+        val categories = resolveCategoriesToFetch(settings)
+        assertTrue(PoiCategory.Gas in categories)
+        assertTrue(PoiCategory.Irve in categories)
+
+        val fr = settings.effectiveProviders(countryCodes = listOf("FR"))
+        assertTrue(PoiProviderType.Etalab in fr)
+        assertTrue(PoiProviderType.DataGouvElec in fr)
+
+        val lu = settings.effectiveProviders(countryCodes = listOf("LU"))
+        assertTrue(PoiProviderType.OpenVanCamp in lu)
+        assertTrue(PoiProviderType.Chargy in lu)
+    }
+
+    @Test
     fun resolveCategoriesToFetch_includesWarmParkingAfterOtherMode() {
         val settings = AppSettings(
             mapEnergyMode = EnergyFilterMode.Fuel,

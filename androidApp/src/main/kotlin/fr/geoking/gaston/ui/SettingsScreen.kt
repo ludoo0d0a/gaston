@@ -3242,7 +3242,11 @@ fun SettingsScreenPreview() {
         object : SettingsManager(context) {
             private val mockSettings = MutableStateFlow(
                 AppSettings(
-                    selectedPoiProviders = setOf(PoiProviderType.Etalab, PoiProviderType.Overpass),
+                    selectedPoiProviders = setOf(
+                        PoiProviderType.Etalab,
+                        PoiProviderType.DataGouvElec,
+                        PoiProviderType.Overpass,
+                    ),
                 )
             )
             override val settings: StateFlow<AppSettings> = mockSettings.asStateFlow()

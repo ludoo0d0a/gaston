@@ -202,10 +202,15 @@ data class AppSettings(
     val vehicles: List<UserVehicle> = emptyList(),
     val activeVehicleId: String = "",
     val useVehicleFilter: Boolean = false,
-    /** When [Auto], provider set is derived from current country (GPS / network). */
-    val poiProviderSelectionMode: PoiProviderSelectionMode = PoiProviderSelectionMode.Manual,
+    /**
+     * When [Auto], provider set is derived from current country (GPS / map position).
+     * Default [Auto] so FR/LU get fuel + EV national feeds without manual picking.
+     */
+    val poiProviderSelectionMode: PoiProviderSelectionMode = PoiProviderSelectionMode.Auto,
+    /** Manual fallback / unknown region: FR fuel + EV + Overpass (+ traffic overlays when flagged on). */
     val selectedPoiProviders: Set<PoiProviderType> = setOf(
         PoiProviderType.Etalab,
+        PoiProviderType.DataGouvElec,
         PoiProviderType.Overpass,
         PoiProviderType.TipiBisonFute,
         PoiProviderType.TomTomTraffic,
@@ -217,7 +222,8 @@ data class AppSettings(
      * Default [BulkFileDownloadPolicy.Never].
      */
     val bulkFileDownloadPolicy: BulkFileDownloadPolicy = BulkFileDownloadPolicy.Never,
-    val mapEnergyMode: EnergyFilterMode = EnergyFilterMode.Fuel,
+    /** Default Hybrid so fuel + EV stations both appear on phone and AA maps. */
+    val mapEnergyMode: EnergyFilterMode = EnergyFilterMode.Hybrid,
     val selectedMapEnergyTypes: Set<String> = DEFAULT_MAP_ENERGY_TYPES,
     val mapEnseigneType: String = DEFAULT_MAP_ENSEIGNE_TYPE,
     val mapBrands: Set<String> = DEFAULT_MAP_BRANDS,
@@ -403,6 +409,7 @@ open class SettingsManager(
             }?.toSet()
             val base = (stored ?: setOf(
                 PoiProviderType.Etalab,
+                PoiProviderType.DataGouvElec,
                 PoiProviderType.Overpass,
                 PoiProviderType.TipiBisonFute,
                 PoiProviderType.TomTomTraffic,
@@ -490,10 +497,10 @@ open class SettingsManager(
 
         val poiProviderSelectionMode = try {
             PoiProviderSelectionMode.valueOf(
-                prefs.getString("poi_provider_selection_mode", PoiProviderSelectionMode.Manual.name)
-                    ?: PoiProviderSelectionMode.Manual.name
+                prefs.getString("poi_provider_selection_mode", PoiProviderSelectionMode.Auto.name)
+                    ?: PoiProviderSelectionMode.Auto.name
             )
-        } catch (_: Exception) { PoiProviderSelectionMode.Manual }
+        } catch (_: Exception) { PoiProviderSelectionMode.Auto }
 
         val uiThemeMode = try {
             ThemeMode.valueOf(prefs.getString("ui_theme_mode", ThemeMode.System.name) ?: ThemeMode.System.name)
@@ -509,6 +516,9 @@ open class SettingsManager(
             val stored = prefs.getString("map_energy_mode", null)
             if (stored != null) {
                 EnergyFilterMode.valueOf(stored)
+            } else if (selectedMapEnergyTypes.isEmpty()) {
+                // Fresh install / no legacy chips: show fuel + EV by default.
+                EnergyFilterMode.Hybrid
             } else {
                 // Infer from legacy selectedMapEnergyTypes
                 val hasElectric = selectedMapEnergyTypes.contains("electric")
@@ -519,7 +529,34 @@ open class SettingsManager(
                     else -> EnergyFilterMode.Fuel
                 }
             }
-        } catch (_: Exception) { EnergyFilterMode.Fuel }
+        } catch (_: Exception) { EnergyFilterMode.Hybrid }
+
+        val useVehicleFilter = prefs.getBoolean("use_vehicle_filter", false)
+
+        // One-shot: previous stock defaults were Fuel + Manual (EV hidden; LU under-served).
+        // Upgrade untouched stock installs to Hybrid + Auto so FR/LU show fuel + EV.
+        var resolvedEnergyMode = mapEnergyMode
+        var resolvedProviderMode = poiProviderSelectionMode
+        var resolvedProviders = selectedProviders
+        if (!prefs.getBoolean("default_fuel_and_ev_stations_v1", false)) {
+            val stillStockFuelManual =
+                mapEnergyMode == EnergyFilterMode.Fuel &&
+                    selectedMapEnergyTypes.isEmpty() &&
+                    !useVehicleFilter &&
+                    poiProviderSelectionMode == PoiProviderSelectionMode.Manual
+            if (stillStockFuelManual) {
+                resolvedEnergyMode = EnergyFilterMode.Hybrid
+                resolvedProviderMode = PoiProviderSelectionMode.Auto
+                resolvedProviders = (selectedProviders + PoiProviderType.DataGouvElec)
+                    .sanitizeUserPoiProviderSelection()
+            }
+            prefs.edit()
+                .putBoolean("default_fuel_and_ev_stations_v1", true)
+                .putString("map_energy_mode", resolvedEnergyMode.name)
+                .putString("poi_provider_selection_mode", resolvedProviderMode.name)
+                .putStringSet("poi_providers", resolvedProviders.map { it.name }.toSet())
+                .apply()
+        }
 
         return AppSettings(
             uiThemeMode = uiThemeMode,
@@ -531,11 +568,11 @@ open class SettingsManager(
             fuelCard = fuelCard,
             vehicles = vehicles,
             activeVehicleId = activeVehicleId,
-            useVehicleFilter = prefs.getBoolean("use_vehicle_filter", false),
-            poiProviderSelectionMode = poiProviderSelectionMode,
-            selectedPoiProviders = selectedProviders,
+            useVehicleFilter = useVehicleFilter,
+            poiProviderSelectionMode = resolvedProviderMode,
+            selectedPoiProviders = resolvedProviders,
             bulkFileDownloadPolicy = SettingsManager.readBulkFileDownloadPolicy(prefs),
-            mapEnergyMode = mapEnergyMode,
+            mapEnergyMode = resolvedEnergyMode,
             selectedMapEnergyTypes = selectedMapEnergyTypes,
             mapEnseigneType = prefs.getString("map_enseigne_type", DEFAULT_MAP_ENSEIGNE_TYPE) ?: DEFAULT_MAP_ENSEIGNE_TYPE,
             mapBrands = prefs.getStringSet("map_brands", null)?.toSet() ?: DEFAULT_MAP_BRANDS,
