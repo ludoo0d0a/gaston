@@ -406,15 +406,17 @@ Reference implementations: `auto/settings/about/AutoAboutScreen.kt` (long scroll
 
 `CustomMapPoiScreen` / `MapLibrePoiScreen` / `MapsforgePoiScreen` split controls across templates:
 
-- **ActionStrip** (top-right): compass, settings, radar-notification toggle, traffic-notification toggle
-  (hard cap 4). Toggles use `setRadarDetectionEnabled` / `setTrafficDetectionEnabled` (map layer + alerts).
-  ON state is a filled rounded-square bitmap with the glyph punched out (`detectionToggleIcon`); no
-  `FLAG_PRIMARY` so both can be enabled. Map mode cycling lives in map settings (`AutoMapSettingsScreen`).
+- **ActionStrip** (top-right): compass, settings, radar-notification toggle, traffic-notification toggle,
+  and Refresh when a slot remains (hard cap 4). Toggles use `setRadarDetectionEnabled` /
+  `setTrafficDetectionEnabled` (map layer + alerts). ON state is a filled rounded-square bitmap with
+  the glyph punched out (`detectionToggleIcon`); no `FLAG_PRIMARY` so both can be enabled. Map mode
+  cycling lives in map settings (`AutoMapSettingsScreen`). Refresh clears the POI cache and reloads
+  (`addMapRefreshIfRoom`); omitted when compass + settings + both detection toggles already fill the strip.
 - **Nested ListTemplate Header** end actions: optional cheapest-filter + hide/show menu (eye).
 - **mapActionStrip**: zoom in / zoom out.
 
-`NativeMapPoiScreen` (`PlaceListMapTemplate`): ActionStrip is optional cheapest + settings + radar + traffic
-(no hide-menu; no compass — host owns the map).
+`NativeMapPoiScreen` (`PlaceListMapTemplate`): ActionStrip is optional cheapest + settings + radar +
+traffic + Refresh-if-room (no hide-menu; no compass — host owns the map).
 
 Do not put all map controls on the ActionStrip; strict hosts reject overloaded strips.
 

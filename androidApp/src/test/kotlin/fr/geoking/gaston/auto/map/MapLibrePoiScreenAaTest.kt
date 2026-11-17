@@ -3,6 +3,7 @@ package fr.geoking.gaston.auto.map
 import androidx.car.app.navigation.model.MapWithContentTemplate
 import androidx.car.app.testing.TestCarContext
 import androidx.test.core.app.ApplicationProvider
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.auto.testutil.ActionStripLimits
@@ -10,6 +11,7 @@ import fr.geoking.gaston.auto.testutil.CarScreenTestHarness
 import fr.geoking.gaston.auto.testutil.FakeBorneAvailabilityProvider
 import fr.geoking.gaston.auto.testutil.FakePoiProvider
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -47,6 +49,7 @@ class MapLibrePoiScreenAaTest {
 
     @After
     fun stopTestKoin() {
+        FeatureFlag.clearOverrides()
         AaSurfaceSession.container = null
         AaSurfaceSession.visibleArea = null
         stopKoin()
@@ -149,5 +152,34 @@ class MapLibrePoiScreenAaTest {
         val template = screen.onGetTemplate() as MapWithContentTemplate
         ActionStripLimits.assertWithinMapTemplateLimits(template.actionStrip)
         ActionStripLimits.assertWithinMapTemplateLimits(template.mapController?.mapActionStrip)
+    }
+
+    @Test
+    fun actionStripIncludesRefreshWhenRoomAvailable() {
+        val carContext = CarScreenTestHarness.newTestCarContext()
+        val screen = newScreen(carContext, CanvasMapModeConfig.mapLibreSnapshotter(carContext), newSettingsManager())
+        CarScreenTestHarness.createAndStart(screen)
+
+        // Flags off → compass + settings + refresh = 3
+        val strip = (screen.onGetTemplate() as MapWithContentTemplate).actionStrip
+        assertEquals(3, strip!!.actions.size)
+        ActionStripLimits.assertWithinMapTemplateLimits(strip)
+    }
+
+    @Test
+    fun actionStripOmitsRefreshWhenFullWithDetectionToggles() {
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, true)
+        FeatureFlag.setOverride(FeatureFlag.Key.TRAFFIC, true)
+        val carContext = CarScreenTestHarness.newTestCarContext()
+        val settingsManager = newSettingsManager()
+        settingsManager.setRadarDetectionEnabled(true)
+        settingsManager.setTrafficDetectionEnabled(true)
+        val screen = newScreen(carContext, CanvasMapModeConfig.mapLibreSnapshotter(carContext), settingsManager)
+        CarScreenTestHarness.createAndStart(screen)
+
+        // compass + settings + radar + traffic = 4; no room for refresh
+        val strip = (screen.onGetTemplate() as MapWithContentTemplate).actionStrip
+        assertEquals(4, strip!!.actions.size)
+        ActionStripLimits.assertWithinMapTemplateLimits(strip)
     }
 }

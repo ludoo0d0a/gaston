@@ -52,6 +52,7 @@ import fr.geoking.gaston.auto.mapMenuTitleForSettings
 import fr.geoking.gaston.auto.radarTrafficDetectionActions
 import fr.geoking.gaston.auto.safeCarTemplate
 import fr.geoking.gaston.auto.actionSettingsIcon
+import fr.geoking.gaston.auto.addMapRefreshIfRoom
 import fr.geoking.gaston.auto.cheapestFilterAction
 import fr.geoking.gaston.auto.settings.map.AutoMapSettingsScreen
 import fr.geoking.gaston.ui.map.components.AutoMapCamera
@@ -253,6 +254,7 @@ class NativeMapPoiScreen(
         val effectivePowerLevels = currentSettings.effectiveIrvePowerLevels()
 
         val actionStripBuilder = ActionStrip.Builder()
+        var actionCount = 0
 
         val fuelIdsForFilter = effectiveEnergies - "electric"
         if (hasFuelFilter && (isCheapestFilterActive || pois.any { p -> p.fuelPrices?.any { MapPoiFilter.fuelNameToId(it.fuelName) in fuelIdsForFilter } == true })) {
@@ -272,6 +274,7 @@ class NativeMapPoiScreen(
                     invalidate()
                 }
             )
+            actionCount++
         }
 
         actionStripBuilder.addAction(
@@ -282,10 +285,20 @@ class NativeMapPoiScreen(
                 }
                 .build()
         )
+        actionCount++
 
-        carContext.radarTrafficDetectionActions(currentSettings, settingsManager) {
+        val detectionActions = carContext.radarTrafficDetectionActions(currentSettings, settingsManager) {
             invalidate()
-        }.forEach { actionStripBuilder.addAction(it) }
+        }
+        detectionActions.forEach { actionStripBuilder.addAction(it) }
+        actionCount += detectionActions.size
+        // Host cap 4: optional cheapest + settings + detection(s); Refresh only if a slot remains.
+        actionStripBuilder.addMapRefreshIfRoom(
+            carContext = carContext,
+            currentActionCount = actionCount,
+        ) {
+            loadPois(clearCache = true)
+        }
         val actionStrip = actionStripBuilder.build()
 
         val anchorPlace = Place.Builder(CarLocation.create(searchLat, searchLon))

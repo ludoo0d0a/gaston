@@ -11,6 +11,7 @@ import android.graphics.RectF
 import androidx.annotation.DrawableRes
 import androidx.car.app.CarContext
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.core.content.ContextCompat
@@ -341,6 +342,25 @@ fun CarContext.actionRecenterIcon(): CarIcon = carIcon(R.drawable.ic_gps_fixed, 
 fun CarContext.actionHistoryIcon(): CarIcon = carIcon(R.drawable.ic_history, AutoCarIcons.muted)
 
 fun CarContext.actionRefreshIcon(): CarIcon = carIcon(R.drawable.ic_refresh, AutoCarIcons.primary)
+
+/**
+ * Map ActionStrip host cap is 4. Adds icon-only Refresh when a slot remains.
+ * @return true if the action was added
+ */
+fun ActionStrip.Builder.addMapRefreshIfRoom(
+    carContext: CarContext,
+    currentActionCount: Int,
+    onRefresh: () -> Unit,
+): Boolean {
+    if (currentActionCount >= 4) return false
+    addAction(
+        Action.Builder()
+            .setIcon(carContext.actionRefreshIcon())
+            .setOnClickListener(onRefresh)
+            .build()
+    )
+    return true
+}
 
 fun CarContext.actionCheapestIcon(active: Boolean): CarIcon =
     carIcon(R.drawable.ic_cheapest_price, if (active) AutoCarIcons.onFuel else AutoCarIcons.primary)

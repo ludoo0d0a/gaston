@@ -73,6 +73,7 @@ import fr.geoking.gaston.auto.actionCompassIcon
 import fr.geoking.gaston.auto.actionSettingsIcon
 import fr.geoking.gaston.auto.actionZoomInIcon
 import fr.geoking.gaston.auto.actionZoomOutIcon
+import fr.geoking.gaston.auto.addMapRefreshIfRoom
 import fr.geoking.gaston.auto.cheapestFilterAction
 import fr.geoking.gaston.auto.compassArrowSector
 import fr.geoking.gaston.auto.mapMenuTitleForSettings
@@ -1040,10 +1041,18 @@ class CustomMapPoiScreen(
                 .build()
         )
 
-        carContext.radarTrafficDetectionActions(currentSettings, settingsManager) {
+        val detectionActions = carContext.radarTrafficDetectionActions(currentSettings, settingsManager) {
             syncRendererWithMapState()
             invalidate()
-        }.forEach { actionStripBuilder.addAction(it) }
+        }
+        detectionActions.forEach { actionStripBuilder.addAction(it) }
+        // Host cap 4: compass + settings + detection(s); Refresh only if a slot remains.
+        actionStripBuilder.addMapRefreshIfRoom(
+            carContext = carContext,
+            currentActionCount = 2 + detectionActions.size,
+        ) {
+            loadPois(preserveZoom = true, clearCache = true)
+        }
         val actionStrip = actionStripBuilder.build()
 
         val mapActionStrip = ActionStrip.Builder()

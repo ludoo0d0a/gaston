@@ -74,6 +74,7 @@ import fr.geoking.gaston.auto.actionCompassIcon
 import fr.geoking.gaston.auto.actionSettingsIcon
 import fr.geoking.gaston.auto.actionZoomInIcon
 import fr.geoking.gaston.auto.actionZoomOutIcon
+import fr.geoking.gaston.auto.addMapRefreshIfRoom
 import fr.geoking.gaston.auto.cheapestFilterAction
 import fr.geoking.gaston.auto.compassArrowSector
 import fr.geoking.gaston.auto.mapMenuTitleForSettings
@@ -567,11 +568,17 @@ open class MapLibrePoiScreen(
 
     private var loadPoisJob: Job? = null
 
-    private fun loadPois(preserveZoom: Boolean = false, showLoading: Boolean = true) {
+    private fun loadPois(preserveZoom: Boolean = false, showLoading: Boolean = true, clearCache: Boolean = false) {
         if (mapSelectedPoi != null) return
         loadPoisJob?.cancel()
         val gen = ++queryGeneration
         loadPoisJob = lifecycleScope.launch {
+            if (clearCache) {
+                try {
+                    poiProvider.clearCache()
+                } catch (_: Exception) {}
+                pois = emptyList()
+            }
             isQueryPending = true
             syncRendererWithMapState()
             if (showLoading) {
@@ -1093,10 +1100,18 @@ open class MapLibrePoiScreen(
                 .build()
         )
 
-        carContext.radarTrafficDetectionActions(currentSettings, settingsManager) {
+        val detectionActions = carContext.radarTrafficDetectionActions(currentSettings, settingsManager) {
             syncRendererWithMapState()
             invalidate()
-        }.forEach { actionStripBuilder.addAction(it) }
+        }
+        detectionActions.forEach { actionStripBuilder.addAction(it) }
+        // Host cap 4: compass + settings + detection(s); Refresh only if a slot remains.
+        actionStripBuilder.addMapRefreshIfRoom(
+            carContext = carContext,
+            currentActionCount = 2 + detectionActions.size,
+        ) {
+            loadPois(preserveZoom = true, clearCache = true)
+        }
         val actionStrip = actionStripBuilder.build()
 
         val mapActionStrip = ActionStrip.Builder()

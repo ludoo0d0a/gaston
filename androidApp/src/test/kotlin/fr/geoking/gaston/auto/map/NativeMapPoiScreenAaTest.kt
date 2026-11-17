@@ -2,12 +2,15 @@ package fr.geoking.gaston.auto.map
 
 import androidx.car.app.model.PlaceListMapTemplate
 import androidx.test.core.app.ApplicationProvider
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.api.belib.BorneAvailabilityProviderFactory
 import fr.geoking.gaston.auto.testutil.ActionStripLimits
 import fr.geoking.gaston.auto.testutil.CarScreenTestHarness
 import fr.geoking.gaston.auto.testutil.FakeBorneAvailabilityProvider
 import fr.geoking.gaston.auto.testutil.FakePoiProvider
+import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -19,26 +22,27 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class NativeMapPoiScreenAaTest {
 
-    private fun newScreen(): NativeMapPoiScreen {
+    @After
+    fun clearFeatureFlagOverrides() {
+        FeatureFlag.clearOverrides()
+    }
+
+    private fun newScreen(
+        settingsManager: SettingsManager = SettingsManager(ApplicationProvider.getApplicationContext()),
+    ): NativeMapPoiScreen {
         val carContext = CarScreenTestHarness.newTestCarContext()
         return NativeMapPoiScreen(
             carContext = carContext,
             poiProvider = FakePoiProvider(),
             availabilityProviderFactory = BorneAvailabilityProviderFactory(belibProvider = FakeBorneAvailabilityProvider()),
-            settingsManager = SettingsManager(ApplicationProvider.getApplicationContext()),
+            settingsManager = settingsManager,
         )
     }
 
     @Test
     fun actionStripOmitsRadarTrafficWhenFeatureFlagsOff() {
-        val carContext = CarScreenTestHarness.newTestCarContext()
         val settingsManager = SettingsManager(ApplicationProvider.getApplicationContext())
-        val screen = NativeMapPoiScreen(
-            carContext = carContext,
-            poiProvider = FakePoiProvider(),
-            availabilityProviderFactory = BorneAvailabilityProviderFactory(belibProvider = FakeBorneAvailabilityProvider()),
-            settingsManager = settingsManager,
-        )
+        val screen = newScreen(settingsManager)
         CarScreenTestHarness.createAndStart(screen)
 
         settingsManager.setRadarDetectionEnabled(true)
@@ -57,5 +61,32 @@ class NativeMapPoiScreenAaTest {
 
         val template = screen.onGetTemplate() as PlaceListMapTemplate
         ActionStripLimits.assertWithinMapTemplateLimits(template.actionStrip)
+    }
+
+    @Test
+    fun actionStripIncludesRefreshWhenRoomAvailable() {
+        val screen = newScreen()
+        CarScreenTestHarness.createAndStart(screen)
+
+        // Flags off, no cheapest → settings + refresh = 2
+        val strip = (screen.onGetTemplate() as PlaceListMapTemplate).actionStrip
+        assertEquals(2, strip!!.actions.size)
+        ActionStripLimits.assertWithinMapTemplateLimits(strip)
+    }
+
+    @Test
+    fun actionStripKeepsRefreshWithDetectionTogglesWhenUnderCap() {
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, true)
+        FeatureFlag.setOverride(FeatureFlag.Key.TRAFFIC, true)
+        val settingsManager = SettingsManager(ApplicationProvider.getApplicationContext())
+        settingsManager.setRadarDetectionEnabled(true)
+        settingsManager.setTrafficDetectionEnabled(true)
+        val screen = newScreen(settingsManager)
+        CarScreenTestHarness.createAndStart(screen)
+
+        // No compass on native: settings + radar + traffic + refresh = 4
+        val strip = (screen.onGetTemplate() as PlaceListMapTemplate).actionStrip
+        assertEquals(4, strip!!.actions.size)
+        ActionStripLimits.assertWithinMapTemplateLimits(strip)
     }
 }
