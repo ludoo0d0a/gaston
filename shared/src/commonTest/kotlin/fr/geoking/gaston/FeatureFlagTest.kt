@@ -31,6 +31,14 @@ class FeatureFlagTest {
     }
 
     @Test
+    fun productFeaturesAreOff() {
+        assertFalse(FeatureFlag.PARKING)
+        assertFalse(FeatureFlag.ACCIDENT)
+        assertFalse(FeatureFlag.MAINTENANCE)
+        assertFalse(FeatureFlag.PRICE_ESTIMATION)
+    }
+
+    @Test
     fun productionMapBackends() {
         assertTrue(FeatureFlag.PHONE_MAP_MAPLIBRE)
         assertFalse(FeatureFlag.PHONE_MAP_GOOGLE)

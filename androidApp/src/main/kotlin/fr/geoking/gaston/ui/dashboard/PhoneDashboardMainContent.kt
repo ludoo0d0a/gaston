@@ -216,18 +216,23 @@ fun PhoneDashboardMainContent(
                     ),
                 )
             }
-            gridActions.add(
-                DashboardRow(
-                    title = stringResource(R.string.dashboard_parking),
-                    subtitle = stringResource(R.string.dashboard_parking_subtitle),
-                    iconResId = R.drawable.ic_poi_parking,
-                    onClick = onOpenParking,
-                    testTag = "dashboard_parking_btn"
-                ),
-            )
+            if (FeatureFlag.PARKING) {
+                gridActions.add(
+                    DashboardRow(
+                        title = stringResource(R.string.dashboard_parking),
+                        subtitle = stringResource(R.string.dashboard_parking_subtitle),
+                        iconResId = R.drawable.ic_poi_parking,
+                        onClick = onOpenParking,
+                        testTag = "dashboard_parking_btn"
+                    ),
+                )
+            }
 
             val energyMode = settings.effectiveEnergyFilterMode()
-            if (fuelForecastRepository != null && (energyMode == EnergyFilterMode.Fuel || energyMode == EnergyFilterMode.Hybrid)) {
+            if (FeatureFlag.PRICE_ESTIMATION &&
+                fuelForecastRepository != null &&
+                (energyMode == EnergyFilterMode.Fuel || energyMode == EnergyFilterMode.Hybrid)
+            ) {
                 gridActions.add(
                     DashboardRow(
                         title = stringResource(R.string.dashboard_price_estimation),
@@ -246,12 +251,16 @@ fun PhoneDashboardMainContent(
             PhoneDashboardEmergencyCard(onOpenEmergency = onOpenEmergency)
         }
 
-        item(contentType = "accident_card") {
-            PhoneDashboardAccidentCard(onOpenAccident = onOpenAccident)
+        if (FeatureFlag.ACCIDENT) {
+            item(contentType = "accident_card") {
+                PhoneDashboardAccidentCard(onOpenAccident = onOpenAccident)
+            }
         }
 
-        item(contentType = "maintenance_card") {
-            PhoneDashboardMaintenanceCard(onOpenMaintenance = onOpenMaintenance)
+        if (FeatureFlag.MAINTENANCE) {
+            item(contentType = "maintenance_card") {
+                PhoneDashboardMaintenanceCard(onOpenMaintenance = onOpenMaintenance)
+            }
         }
 
         item(contentType = "parked_car_card") {

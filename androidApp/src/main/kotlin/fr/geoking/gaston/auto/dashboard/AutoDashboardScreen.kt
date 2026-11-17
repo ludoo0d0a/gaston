@@ -65,25 +65,27 @@ class AutoDashboardScreen(
         val radarOn = settings.isRadarDetectionOn()
         val gridBuilder = ItemList.Builder()
 
-        // 1. Map — opens with enabled radar/traffic layers; plain map when none enabled.
-        gridBuilder.addItem(
-            GridItem.Builder()
-                .setTitle(carContext.getString(R.string.action_open_map))
-                .setImage(carContext.dashboardMapIcon())
-                .setOnClickListener {
-                    val mapDeps = getMapDeps() ?: return@setOnClickListener
-                    val layerTitle = carContext.detectionLayersMenuTitle(settingsManager.settings.value)
-                    if (layerTitle != null) {
-                        settingsManager.prepareDetectionLayersMapMode()
-                        pushMapScreen(settingsManager, mapDeps, layerTitle)
-                    } else {
-                        pushMapScreen(settingsManager, mapDeps)
+        // 1. Map — only when radar/traffic FeatureFlags are on (opens with those layers if toggled).
+        if (FeatureFlag.RADAR || FeatureFlag.TRAFFIC) {
+            gridBuilder.addItem(
+                GridItem.Builder()
+                    .setTitle(carContext.getString(R.string.action_open_map))
+                    .setImage(carContext.dashboardMapIcon())
+                    .setOnClickListener {
+                        val mapDeps = getMapDeps() ?: return@setOnClickListener
+                        val layerTitle = carContext.detectionLayersMenuTitle(settingsManager.settings.value)
+                        if (layerTitle != null) {
+                            settingsManager.prepareDetectionLayersMapMode()
+                            pushMapScreen(settingsManager, mapDeps, layerTitle)
+                        } else {
+                            pushMapScreen(settingsManager, mapDeps)
+                        }
                     }
-                }
-                .build()
-        )
+                    .build()
+            )
+        }
 
-        // 2. Fuel
+        // Fuel
         gridBuilder.addItem(
             GridItem.Builder()
                 .setTitle(carContext.getString(R.string.search_mode_fuel))
@@ -238,16 +240,26 @@ class AutoDashboardScreen(
                                 }
                                 .build()
                         )
-                        .addItem(
-                            Row.Builder()
-                                .setTitle(carContext.getString(R.string.screen_fuel_outlook))
-                                .setImage(carContext.dashboardFuelIcon())
-                                .setBrowsable(true)
-                                .setOnClickListener {
-                                    screenManager.push(AutoFuelForecastScreen(carContext, settingsManager, fuelForecastRepository))
-                                }
-                                .build()
-                        )
+                        .apply {
+                            if (FeatureFlag.PRICE_ESTIMATION) {
+                                addItem(
+                                    Row.Builder()
+                                        .setTitle(carContext.getString(R.string.screen_fuel_outlook))
+                                        .setImage(carContext.dashboardFuelIcon())
+                                        .setBrowsable(true)
+                                        .setOnClickListener {
+                                            screenManager.push(
+                                                AutoFuelForecastScreen(
+                                                    carContext,
+                                                    settingsManager,
+                                                    fuelForecastRepository,
+                                                )
+                                            )
+                                        }
+                                        .build()
+                                )
+                            }
+                        }
                         .addItem(
                             Row.Builder()
                                 .setTitle(carContext.getString(R.string.cd_settings))

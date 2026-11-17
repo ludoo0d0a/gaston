@@ -311,6 +311,12 @@ fun AppSettings.applyFeatureFlags(): AppSettings {
             selectedPoiProviders = next.selectedPoiProviders - PoiProviderType.OpenMeteoWeather,
         )
     }
+    if (!FeatureFlag.PARKING) {
+        next = next.copy(
+            selectedOverpassAmenityTypes = next.selectedOverpassAmenityTypes - "parking",
+            cacheWarmAmenityTypes = next.cacheWarmAmenityTypes - "parking",
+        )
+    }
     val phoneEngine = if (next.phoneMapEngine.isEnabledByFeatureFlag()) {
         next.phoneMapEngine
     } else {
@@ -902,6 +908,7 @@ open class SettingsManager(
     open fun setOtherMode(amenityType: String = "parking") {
         if (amenityType == "speed_camera" && !FeatureFlag.RADAR) return
         if (amenityType == "weather" && !FeatureFlag.METEO) return
+        if (amenityType == "parking" && !FeatureFlag.PARKING) return
         val current = _settings.value
         val providers = when (amenityType) {
             "speed_camera" -> setOf(
@@ -1173,6 +1180,7 @@ open class SettingsManager(
         val gatedTypes = types
             .let { if (FeatureFlag.RADAR) it else it - "speed_camera" }
             .let { if (FeatureFlag.METEO) it else it - "weather" }
+            .let { if (FeatureFlag.PARKING) it else it - "parking" }
         // Keep radar / weather API sources in sync when toggling amenities in Other mode
         // (phone chips only call this; Auto uses setOtherMode(amenityId)).
         val providers = if (current.isOtherModeActive()) {

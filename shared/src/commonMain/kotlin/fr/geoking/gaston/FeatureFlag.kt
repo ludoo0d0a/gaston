@@ -48,6 +48,11 @@ object FeatureFlag {
         METEO(false, Group.Layer),
         TRAFFIC(false, Group.Layer),
 
+        PARKING(false, Group.Feature),
+        ACCIDENT(false, Group.Feature),
+        MAINTENANCE(false, Group.Feature),
+        PRICE_ESTIMATION(false, Group.Feature),
+
         PHONE_MAP_GOOGLE(false, Group.PhoneMap),
         PHONE_MAP_MAPLIBRE(true, Group.PhoneMap),
         PHONE_MAP_RASTER(false, Group.PhoneMap),
@@ -69,6 +74,7 @@ object FeatureFlag {
     enum class Group {
         Country,
         Layer,
+        Feature,
         PhoneMap,
         AaMap,
     }
@@ -185,6 +191,11 @@ object FeatureFlag {
     val RADAR: Boolean get() = resolved(Key.RADAR)
     val METEO: Boolean get() = resolved(Key.METEO)
     val TRAFFIC: Boolean get() = resolved(Key.TRAFFIC)
+
+    val PARKING: Boolean get() = resolved(Key.PARKING)
+    val ACCIDENT: Boolean get() = resolved(Key.ACCIDENT)
+    val MAINTENANCE: Boolean get() = resolved(Key.MAINTENANCE)
+    val PRICE_ESTIMATION: Boolean get() = resolved(Key.PRICE_ESTIMATION)
 
     val PHONE_MAP_GOOGLE: Boolean get() = resolved(Key.PHONE_MAP_GOOGLE)
     val PHONE_MAP_MAPLIBRE: Boolean get() = resolved(Key.PHONE_MAP_MAPLIBRE)

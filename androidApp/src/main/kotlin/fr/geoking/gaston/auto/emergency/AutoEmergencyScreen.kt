@@ -15,6 +15,7 @@ import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 import androidx.lifecycle.lifecycleScope
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.R
 import fr.geoking.gaston.feature.emergency.EmergencyCategory
 import fr.geoking.gaston.feature.emergency.EmergencyContact
@@ -155,25 +156,27 @@ class AutoEmergencyScreen(
         )
 
         // Accident assist (terminal MessageTemplate — checklist/constat on phone)
-        listBuilder.addItem(
-            Row.Builder()
-                .setTitle(carContext.getString(R.string.accident_had_accident))
-                .addText(carContext.getString(R.string.accident_auto_continue_phone))
-                .setImage(carContext.dashboardEmergencyIcon())
-                .setBrowsable(true)
-                .setOnClickListener {
-                    screenManager.push(
-                        AutoAccidentAssistScreen(
-                            carContext = carContext,
-                            universalNumber = universalNumber,
-                            latitude = latitude,
-                            longitude = longitude,
-                            locationAddress = locationAddress,
+        if (FeatureFlag.ACCIDENT) {
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle(carContext.getString(R.string.accident_had_accident))
+                    .addText(carContext.getString(R.string.accident_auto_continue_phone))
+                    .setImage(carContext.dashboardEmergencyIcon())
+                    .setBrowsable(true)
+                    .setOnClickListener {
+                        screenManager.push(
+                            AutoAccidentAssistScreen(
+                                carContext = carContext,
+                                universalNumber = universalNumber,
+                                latitude = latitude,
+                                longitude = longitude,
+                                locationAddress = locationAddress,
+                            )
                         )
-                    )
-                }
-                .build()
-        )
+                    }
+                    .build()
+            )
+        }
 
         // Location Info
         val locationRow = Row.Builder()

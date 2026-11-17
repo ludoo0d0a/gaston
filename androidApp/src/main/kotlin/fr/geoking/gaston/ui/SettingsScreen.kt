@@ -2287,11 +2287,13 @@ private fun VehicleConfig(
             }
         }
 
-        OutlinedButton(
-            onClick = onOpenMaintenanceLog,
-            modifier = Modifier.fillMaxWidth().testTag("settings_open_maintenance"),
-        ) {
-            Text(stringResource(R.string.maintenance_open_from_settings))
+        if (FeatureFlag.MAINTENANCE) {
+            OutlinedButton(
+                onClick = onOpenMaintenanceLog,
+                modifier = Modifier.fillMaxWidth().testTag("settings_open_maintenance"),
+            ) {
+                Text(stringResource(R.string.maintenance_open_from_settings))
+            }
         }
 
         // Identity Section
@@ -2397,45 +2399,47 @@ private fun VehicleConfig(
         }
 
         // Constat insurance (per vehicle in garage)
-        ElevatedCard(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+        if (FeatureFlag.ACCIDENT) {
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Text(
-                    stringResource(R.string.vehicle_insurance_section),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                ConfigTextField(
-                    label = stringResource(R.string.accident_field_insurer),
-                    value = activeVehicle?.insurerName.orEmpty(),
-                ) { value -> updateActiveVehicle { it.copy(insurerName = value) } }
-                ConfigTextField(
-                    label = stringResource(R.string.accident_field_policy),
-                    value = activeVehicle?.policyNumber.orEmpty(),
-                ) { value -> updateActiveVehicle { it.copy(policyNumber = value) } }
-                ConfigTextField(
-                    label = stringResource(R.string.accident_field_green_card),
-                    value = activeVehicle?.greenCardNumber.orEmpty(),
-                ) { value -> updateActiveVehicle { it.copy(greenCardNumber = value) } }
-                ConfigTextField(
-                    label = stringResource(R.string.accident_field_insurer_phone),
-                    value = activeVehicle?.insurerPhone.orEmpty(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                ) { value -> updateActiveVehicle { it.copy(insurerPhone = value) } }
-                ConfigTextField(
-                    label = stringResource(R.string.accident_field_agency),
-                    value = activeVehicle?.agencyName.orEmpty(),
-                ) { value -> updateActiveVehicle { it.copy(agencyName = value) } }
-                ConfigTextField(
-                    label = stringResource(R.string.accident_field_agency_phone),
-                    value = activeVehicle?.agencyPhone.orEmpty(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                ) { value -> updateActiveVehicle { it.copy(agencyPhone = value) } }
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.vehicle_insurance_section),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    ConfigTextField(
+                        label = stringResource(R.string.accident_field_insurer),
+                        value = activeVehicle?.insurerName.orEmpty(),
+                    ) { value -> updateActiveVehicle { it.copy(insurerName = value) } }
+                    ConfigTextField(
+                        label = stringResource(R.string.accident_field_policy),
+                        value = activeVehicle?.policyNumber.orEmpty(),
+                    ) { value -> updateActiveVehicle { it.copy(policyNumber = value) } }
+                    ConfigTextField(
+                        label = stringResource(R.string.accident_field_green_card),
+                        value = activeVehicle?.greenCardNumber.orEmpty(),
+                    ) { value -> updateActiveVehicle { it.copy(greenCardNumber = value) } }
+                    ConfigTextField(
+                        label = stringResource(R.string.accident_field_insurer_phone),
+                        value = activeVehicle?.insurerPhone.orEmpty(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    ) { value -> updateActiveVehicle { it.copy(insurerPhone = value) } }
+                    ConfigTextField(
+                        label = stringResource(R.string.accident_field_agency),
+                        value = activeVehicle?.agencyName.orEmpty(),
+                    ) { value -> updateActiveVehicle { it.copy(agencyName = value) } }
+                    ConfigTextField(
+                        label = stringResource(R.string.accident_field_agency_phone),
+                        value = activeVehicle?.agencyPhone.orEmpty(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    ) { value -> updateActiveVehicle { it.copy(agencyPhone = value) } }
+                }
             }
         }
 
@@ -3178,6 +3182,7 @@ private fun FeatureFlagsConfig(
                     when (group) {
                         FeatureFlag.Group.Country -> stringResource(R.string.dev_feature_flags_group_countries)
                         FeatureFlag.Group.Layer -> stringResource(R.string.dev_feature_flags_group_layers)
+                        FeatureFlag.Group.Feature -> stringResource(R.string.dev_feature_flags_group_features)
                         FeatureFlag.Group.PhoneMap -> stringResource(R.string.dev_feature_flags_group_phone_map)
                         FeatureFlag.Group.AaMap -> stringResource(R.string.dev_feature_flags_group_aa_map)
                     },

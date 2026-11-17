@@ -30,6 +30,7 @@ fun overpassAmenityOptionsForUi(): List<Pair<String, Int>> =
         when (id) {
             "speed_camera" -> FeatureFlag.RADAR
             "weather" -> FeatureFlag.METEO
+            "parking" -> FeatureFlag.PARKING
             else -> true
         }
     }

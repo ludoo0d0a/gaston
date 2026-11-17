@@ -24,6 +24,7 @@ class BulkFileAndOtherModeSettingsTest {
         FeatureFlag.setOverride(FeatureFlag.Key.RADAR, true)
         FeatureFlag.setOverride(FeatureFlag.Key.METEO, true)
         FeatureFlag.setOverride(FeatureFlag.Key.TRAFFIC, true)
+        FeatureFlag.setOverride(FeatureFlag.Key.PARKING, true)
     }
 
     @After

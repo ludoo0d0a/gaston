@@ -8,6 +8,7 @@ import androidx.car.app.model.GridTemplate
 import androidx.car.app.model.Header
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.Template
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.R
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.di.MapDeps
@@ -96,17 +97,19 @@ class AutoMyVehicleDashboardScreen(
                 .build()
         )
 
-        gridBuilder.addItem(
-            GridItem.Builder()
-                .setTitle(carContext.getString(R.string.maintenance_auto_title))
-                .setText(carContext.getString(R.string.maintenance_auto_last_service))
-                .setImage(carContext.dashboardMaintenanceIcon())
-                .setOnClickListener {
-                    val repo = GlobalContext.get().get<MaintenanceRepository>()
-                    screenManager.push(AutoMaintenanceLogScreen(carContext, settingsManager, repo))
-                }
-                .build()
-        )
+        if (FeatureFlag.MAINTENANCE) {
+            gridBuilder.addItem(
+                GridItem.Builder()
+                    .setTitle(carContext.getString(R.string.maintenance_auto_title))
+                    .setText(carContext.getString(R.string.maintenance_auto_last_service))
+                    .setImage(carContext.dashboardMaintenanceIcon())
+                    .setOnClickListener {
+                        val repo = GlobalContext.get().get<MaintenanceRepository>()
+                        screenManager.push(AutoMaintenanceLogScreen(carContext, settingsManager, repo))
+                    }
+                    .build()
+            )
+        }
 
         val latestParked = settings.latestParkedPosition()
         val parkedTitle = if (latestParked != null) {

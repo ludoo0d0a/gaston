@@ -96,7 +96,8 @@ class AutoDashboardScreenTest {
         val gridTemplate = template as GridTemplate
         val itemList = gridTemplate.singleList
         assertNotNull("ItemList should not be null", itemList)
-        assertEquals("Grid should contain exactly 6 items", 6, itemList!!.items.size)
+        // Open Map is gated behind FeatureFlag.RADAR || TRAFFIC (both off by default).
+        assertEquals("Grid should contain 5 items without Open Map", 5, itemList!!.items.size)
 
         val header = gridTemplate.header
         assertNotNull("Header should not be null", header)
