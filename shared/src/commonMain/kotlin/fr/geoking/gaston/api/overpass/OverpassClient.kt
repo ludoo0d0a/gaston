@@ -25,23 +25,49 @@ internal const val OVERPASS_USER_AGENT = "gaston-App (contact@geoking.fr)"
  * Client for the [Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API) (OpenStreetMap).
  * Queries nodes/ways by OSM tags (e.g. amenity=toilets, amenity=drinking_water).
  * No API key required. Use responsibly (public instances enforce slots + cool-down;
- * this client serializes calls, spaces them, and honors HTTP 429 without flooding).
+ * this client serializes calls, spaces them, rotates mirrors on 502/503/504, and
+ * honors HTTP 429 without flooding).
  */
 open class OverpassClient(
     private val client: HttpClient,
-    private val baseUrl: String = "https://overpass-api.de/api/interpreter",
+    private val baseUrl: String = DEFAULT_INTERPRETER_URL,
     /** Minimum gap between Overpass network calls (anti-flood). 0 disables spacing. */
     private val minIntervalMs: Long = DEFAULT_MIN_INTERVAL_MS,
+    /**
+     * Overpass interpreter URLs to try (preferred first). On 429/502/503/504 the failing
+     * host is cooled down and the next URL is attempted under the same mutex.
+     */
+    interpreterUrls: List<String> = DEFAULT_INTERPRETER_URLS,
 ) {
     companion object {
+        const val DEFAULT_INTERPRETER_URL = "https://overpass-api.de/api/interpreter"
+
+        /** Public FOSSGIS Overpass instances (same operator family). */
+        val DEFAULT_INTERPRETER_URLS: List<String> = listOf(
+            DEFAULT_INTERPRETER_URL,
+            "https://lz4.overpass-api.de/api/interpreter",
+            "https://z.overpass-api.de/api/interpreter",
+        )
+
         /** Stay under ~1 req/s on shared public instances (fair-use). */
         const val DEFAULT_MIN_INTERVAL_MS = 1_000L
-        private const val DEFAULT_429_COOLDOWN_SEC = 60L
+
+        /** Capacity errors: skip that host briefly so we stop hammering a full queue. */
+        const val DEFAULT_5XX_COOLDOWN_MS = 30_000L
     }
+
+    private val urls: List<String> = buildList {
+        add(baseUrl)
+        for (u in interpreterUrls) {
+            if (u !in this) add(u)
+        }
+    }.ifEmpty { listOf(DEFAULT_INTERPRETER_URL) }
 
     private val json = Json { ignoreUnknownKeys = true }
     private val mutex = Mutex()
     private var lastRequestEndMs: Long = 0L
+    /** Sticky preferred mirror after a successful response (session-local). */
+    private var preferredUrl: String = urls.first()
 
     /**
      * Fetch POI nodes matching the given OSM amenity tag values in the bounding box.
@@ -265,46 +291,74 @@ open class OverpassClient(
      * Public Overpass instances reject generic OkHttp/Ktor User-Agents with HTTP 406
      * (Apache "Not Acceptable"). Identify the app like Nominatim requests.
      *
-     * Serializes requests, spaces them by [minIntervalMs], and on HTTP 429 records a
-     * host cooldown (from `cooldown N s remaining` / Retry-After / body / 60s default)
-     * so further calls fail fast without flooding the public instance.
+     * Serializes requests, spaces them by [minIntervalMs], rotates across [urls] on
+     * HTTP 429 / 502 / 503 / 504 (host cooldown via [RateLimitTracker]), and fails fast
+     * when every mirror is cooling down so we do not flood public instances.
      */
     protected suspend fun executeQuery(query: String): String {
-        val host = RateLimitTracker.extractHost(baseUrl)
-        if (RateLimitTracker.isRateLimited(host)) {
+        val ordered = orderedUrls()
+        if (ordered.none { !RateLimitTracker.isRateLimited(it) }) {
+            val host = RateLimitTracker.extractHost(preferredUrl)
             throw NetworkException(429, RateLimitTracker.cooldownMessage(host))
         }
         return mutex.withLock {
-            if (RateLimitTracker.isRateLimited(host)) {
-                throw NetworkException(429, RateLimitTracker.cooldownMessage(host))
-            }
-            maybeDelayForMinInterval()
-            val response = try {
-                client.submitForm(
-                    url = baseUrl,
-                    formParameters = Parameters.build {
-                        append("data", query)
+            var lastError: NetworkException? = null
+            for (url in orderedUrls()) {
+                if (RateLimitTracker.isRateLimited(url)) continue
+                maybeDelayForMinInterval()
+                val response = try {
+                    client.submitForm(
+                        url = url,
+                        formParameters = Parameters.build {
+                            append("data", query)
+                        }
+                    ) {
+                        header(HttpHeaders.UserAgent, OVERPASS_USER_AGENT)
+                        header(HttpHeaders.Accept, "*/*")
                     }
-                ) {
-                    header(HttpHeaders.UserAgent, OVERPASS_USER_AGENT)
-                    header(HttpHeaders.Accept, "*/*")
+                } finally {
+                    lastRequestEndMs = System.currentTimeMillis()
                 }
-            } finally {
-                lastRequestEndMs = System.currentTimeMillis()
-            }
-            val body = response.bodyAsText()
-            if (response.status.value == 200) {
-                body
-            } else {
-                if (response.status.value == 429) {
-                    val retryAfter = response.headers[HttpHeaders.RetryAfter]
-                    RateLimitTracker.recordRateLimit(baseUrl, retryAfterHeader = retryAfter, responseBody = body)
+                val body = response.bodyAsText()
+                val code = response.status.value
+                if (code == 200) {
+                    preferredUrl = url
+                    return@withLock body
                 }
-                throw NetworkException(
-                    response.status.value,
-                    "Overpass API error: ${body.take(500)}",
-                )
+                val retryAfter = response.headers[HttpHeaders.RetryAfter]
+                when (code) {
+                    429 -> {
+                        RateLimitTracker.recordRateLimit(
+                            url,
+                            retryAfterHeader = retryAfter,
+                            responseBody = body,
+                        )
+                        lastError = NetworkException(code, "Overpass API error: ${body.take(500)}")
+                    }
+                    502, 503, 504 -> {
+                        RateLimitTracker.recordRateLimit(
+                            url,
+                            retryAfterHeader = retryAfter,
+                            defaultCooldownMs = DEFAULT_5XX_COOLDOWN_MS,
+                            responseBody = body,
+                        )
+                        lastError = NetworkException(code, "Overpass API error: ${body.take(500)}")
+                    }
+                    else -> {
+                        throw NetworkException(code, "Overpass API error: ${body.take(500)}")
+                    }
+                }
             }
+            throw lastError
+                ?: NetworkException(429, RateLimitTracker.cooldownMessage(preferredUrl))
+        }
+    }
+
+    /** Preferred mirror first, then the rest of [urls] (deduped). */
+    private fun orderedUrls(): List<String> = buildList {
+        add(preferredUrl)
+        for (u in urls) {
+            if (u !in this) add(u)
         }
     }
 

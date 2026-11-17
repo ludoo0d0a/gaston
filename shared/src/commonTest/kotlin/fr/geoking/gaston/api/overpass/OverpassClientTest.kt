@@ -37,7 +37,8 @@ class OverpassClientTest {
         }
         val client = OverpassClient(
             HttpClient(engine),
-            baseUrl = "https://overpass-api.de/api/interpreter",
+            baseUrl = PRIMARY,
+            interpreterUrls = listOf(PRIMARY),
             minIntervalMs = 0L,
         )
         val elements = client.queryNodes(
@@ -69,7 +70,8 @@ class OverpassClientTest {
         }
         val client = OverpassClient(
             httpClient,
-            baseUrl = "https://overpass-api.de/api/interpreter",
+            baseUrl = PRIMARY,
+            interpreterUrls = listOf(PRIMARY),
             minIntervalMs = 0L,
         )
 
@@ -100,6 +102,90 @@ class OverpassClientTest {
         assertTrue(second.message!!.contains("cooldown"))
         assertTrue(second.message!!.contains("s remaining"))
         assertEquals(1, callCount) // no network flood while cooling down
+    }
+
+    @Test
+    fun executeQuery_on502_triesNextMirror_andSucceeds() = runBlocking {
+        val hostsHit = mutableListOf<String>()
+        val engine = MockEngine { request ->
+            val host = request.url.host
+            hostsHit += host
+            when (host) {
+                "overpass-api.de" -> respond(
+                    content = "All query workers are busy",
+                    status = HttpStatusCode.BadGateway,
+                    headers = headersOf(HttpHeaders.ContentType, "text/plain"),
+                )
+                else -> respond(
+                    content = NODE_RESPONSE,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            }
+        }
+        val client = OverpassClient(
+            HttpClient(engine),
+            baseUrl = PRIMARY,
+            interpreterUrls = listOf(PRIMARY, LZ4),
+            minIntervalMs = 0L,
+        )
+        val elements = client.queryNodes(
+            latitude = 48.85,
+            longitude = 2.35,
+            radiusKm = 1,
+            amenityValues = setOf("fuel"),
+            limit = 1,
+        )
+        assertEquals(1, elements.size)
+        assertEquals(listOf("overpass-api.de", "lz4.overpass-api.de"), hostsHit)
+        assertTrue(RateLimitTracker.isRateLimited("overpass-api.de"))
+        assertTrue(!RateLimitTracker.isRateLimited("lz4.overpass-api.de"))
+    }
+
+    @Test
+    fun executeQuery_on502_allMirrors_coolsDown_andBlocksNextCall() = runBlocking {
+        var callCount = 0
+        val engine = MockEngine {
+            callCount++
+            respond(
+                content = "All query workers are busy",
+                status = HttpStatusCode.BadGateway,
+                headers = headersOf(HttpHeaders.ContentType, "text/plain"),
+            )
+        }
+        val client = OverpassClient(
+            HttpClient(engine),
+            baseUrl = PRIMARY,
+            interpreterUrls = listOf(PRIMARY, LZ4),
+            minIntervalMs = 0L,
+        )
+
+        val first = assertFailsWith<NetworkException> {
+            client.queryNodes(
+                latitude = 48.85,
+                longitude = 2.35,
+                radiusKm = 1,
+                amenityValues = setOf("fuel"),
+                limit = 1,
+            )
+        }
+        assertEquals(502, first.httpCode)
+        assertEquals(2, callCount)
+        assertTrue(RateLimitTracker.isRateLimited("overpass-api.de"))
+        assertTrue(RateLimitTracker.isRateLimited("lz4.overpass-api.de"))
+
+        val second = assertFailsWith<NetworkException> {
+            client.queryNodes(
+                latitude = 48.85,
+                longitude = 2.35,
+                radiusKm = 1,
+                amenityValues = setOf("fuel"),
+                limit = 1,
+            )
+        }
+        assertEquals(429, second.httpCode)
+        assertTrue(second.message!!.contains("cooldown"))
+        assertEquals(2, callCount) // no network flood while all mirrors cool down
     }
 
     @Test
@@ -147,7 +233,8 @@ class OverpassClientTest {
         }
         val client = OverpassClient(
             HttpClient(engine),
-            baseUrl = "https://overpass-api.de/api/interpreter",
+            baseUrl = PRIMARY,
+            interpreterUrls = listOf(PRIMARY),
             minIntervalMs = 0L
         )
         val ex = assertFailsWith<NetworkException> {
@@ -191,7 +278,8 @@ class OverpassClientTest {
         }
         val client = OverpassClient(
             HttpClient(engine),
-            baseUrl = "https://overpass-api.de/api/interpreter",
+            baseUrl = PRIMARY,
+            interpreterUrls = listOf(PRIMARY),
             minIntervalMs = 0L,
         )
         val ways = client.queryDrivableRoadWaysInBbox(48.85, 2.35, 48.86, 2.36)
@@ -223,6 +311,9 @@ class OverpassClientTest {
     }
 
     companion object {
+        private const val PRIMARY = "https://overpass-api.de/api/interpreter"
+        private const val LZ4 = "https://lz4.overpass-api.de/api/interpreter"
+
         private val NODE_RESPONSE = """
             {
               "elements": [
