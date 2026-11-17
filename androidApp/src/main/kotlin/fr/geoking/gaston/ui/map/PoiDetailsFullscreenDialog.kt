@@ -17,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
@@ -34,6 +36,8 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.isChargingStation
 import fr.geoking.gaston.poi.resolveAvailabilitySummary
+import fr.geoking.gaston.poi.showPoiRefreshFailedToast
+import fr.geoking.gaston.poi.showPoiRefreshToast
 import fr.geoking.gaston.shared.datetime.DateTimeUtils
 import fr.geoking.gaston.ui.BrandHelper
 import fr.geoking.gaston.ui.ColorHelper
@@ -74,6 +78,7 @@ fun PoiDetailsFullscreenDialog(
     var isRefreshing by remember { mutableStateOf(false) }
     var isRecalculatingCorridor by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val resolvedAvailability = currentPoi.resolveAvailabilitySummary(availabilitySummary)
     val brandInfo = BrandHelper.getBrandInfo(currentPoi.brand)
@@ -128,11 +133,17 @@ fun PoiDetailsFullscreenDialog(
                                 onClick = {
                                     scope.launch {
                                         isRefreshing = true
+                                        val before = currentPoi
                                         try {
-                                            val updated = refresh(currentPoi)
+                                            val updated = refresh(before)
                                             if (updated != null) {
                                                 currentPoi = updated
                                             }
+                                            context.showPoiRefreshToast(before, updated)
+                                        } catch (e: CancellationException) {
+                                            throw e
+                                        } catch (_: Exception) {
+                                            context.showPoiRefreshFailedToast()
                                         } finally {
                                             isRefreshing = false
                                         }

@@ -826,6 +826,12 @@
     <string name="poi_reservation_possible">Réservation possible</string>
     <string name="poi_fast_food">Restauration rapide</string>
     <string name="poi_last_updated">Mis à jour %1$s</string>
+    <string name="poi_refresh_failed">Échec de la mise à jour</string>
+    <string name="poi_refresh_no_changes">Déjà à jour</string>
+    <string name="poi_refresh_updated">%1$s mis à jour</string>
+    <string name="poi_refresh_field_prices">Prix</string>
+    <string name="poi_refresh_field_availability">Disponibilité</string>
+    <string name="poi_refresh_field_status">Statut</string>
     <string name="poi_rating_format">%1$.1f / 10</string>
     <string name="poi_rating_format_label">%1$.1f / 10 · %2$s</string>
     <string name="poi_rating_very_cheap">Très bon marché en continu</string>

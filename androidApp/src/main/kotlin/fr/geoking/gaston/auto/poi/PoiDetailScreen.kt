@@ -4,6 +4,7 @@ import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.effectiveIrvePowerLevels
 import fr.geoking.gaston.effectiveMapEnergyFilterIds
 import androidx.car.app.CarContext
+import androidx.car.app.CarToast
 import androidx.car.app.Screen
 import androidx.car.app.constraints.ConstraintManager
 import androidx.car.app.model.Action
@@ -20,6 +21,8 @@ import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiProvider
 import fr.geoking.gaston.api.belib.StationAvailabilitySummary
 import fr.geoking.gaston.community.FavoritesRepository
+import fr.geoking.gaston.poi.poiRefreshMessage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.koin.core.context.GlobalContext
 import fr.geoking.gaston.auto.safeCarTemplate
@@ -59,10 +62,44 @@ class PoiDetailScreen(
     private val provider: PoiProvider? = poiProvider ?: GlobalContext.getOrNull()?.getOrNull<PoiProvider>()
     private var currentIndex = initialPoiIndex
     private var isFavorite: Boolean = false
+    private var isRefreshing: Boolean = false
 
     init {
         lifecycleScope.launch {
             refreshFavoriteState()
+        }
+    }
+
+    private fun refreshPoi() {
+        val p = provider ?: return
+        if (isRefreshing) return
+        lifecycleScope.launch {
+            isRefreshing = true
+            invalidate()
+            val before = poi
+            try {
+                val refreshed = p.refreshPoi(before)
+                if (refreshed != null) {
+                    poi = refreshed
+                    onPoiSelected?.invoke(refreshed)
+                }
+                CarToast.makeText(
+                    carContext,
+                    carContext.poiRefreshMessage(before, refreshed),
+                    CarToast.LENGTH_SHORT,
+                ).show()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                CarToast.makeText(
+                    carContext,
+                    carContext.getString(R.string.poi_refresh_failed),
+                    CarToast.LENGTH_SHORT,
+                ).show()
+            } finally {
+                isRefreshing = false
+                invalidate()
+            }
         }
     }
 
@@ -85,6 +122,14 @@ class PoiDetailScreen(
         templateName = "ListTemplate",
     ) {
         val title = AutoPoiUiHelper.poiDisplayName(poi)
+
+        if (isRefreshing) {
+            return@safeCarTemplate ListTemplate.Builder()
+                .setTitle(title)
+                .setHeaderAction(Action.BACK)
+                .setLoading(true)
+                .build()
+        }
 
         val currentSettings = settingsManager.settings.value
         val resolvedEnergyTypes = if (effectiveEnergyTypes.isNotEmpty()) effectiveEnergyTypes else currentSettings.effectiveMapEnergyFilterIds()
@@ -140,16 +185,7 @@ class PoiDetailScreen(
                 Row.Builder()
                     .setTitle(carContext.getString(R.string.action_refresh))
                     .setImage(carContext.actionRefreshIcon())
-                    .setOnClickListener {
-                        lifecycleScope.launch {
-                            val refreshed = provider.refreshPoi(poi)
-                            if (refreshed != null) {
-                                poi = refreshed
-                                onPoiSelected?.invoke(refreshed)
-                                invalidate()
-                            }
-                        }
-                    }
+                    .setOnClickListener { refreshPoi() }
                     .build()
             )
         }

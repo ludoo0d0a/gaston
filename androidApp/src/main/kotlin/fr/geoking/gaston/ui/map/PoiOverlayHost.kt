@@ -42,6 +42,8 @@ import android.widget.Toast
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProvider
+import fr.geoking.gaston.poi.showPoiRefreshFailedToast
+import fr.geoking.gaston.poi.showPoiRefreshToast
 import fr.geoking.gaston.premium.BillingManager
 import fr.geoking.gaston.radar.RadarCorridorStore
 import fr.geoking.gaston.shared.location.approxDistanceKm
@@ -292,6 +294,11 @@ fun PoiOverlayHost(
                                 if (refreshed != null) {
                                     applyRefreshedPoi(refreshed)
                                 }
+                                context.showPoiRefreshToast(poi, refreshed)
+                            } catch (e: kotlinx.coroutines.CancellationException) {
+                                throw e
+                            } catch (_: Exception) {
+                                context.showPoiRefreshFailedToast()
                             } finally {
                                 refreshingPoiId = null
                             }
