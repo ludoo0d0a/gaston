@@ -18,8 +18,9 @@ import androidx.room.RoomDatabase
         RoadCacheRegionEntity::class,
         RoadPolylineEntity::class,
         RadarCorridorEntity::class,
+        SupermarketEnrichRegionEntity::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -35,4 +36,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun trafficEventDao(): TrafficEventDao
     abstract fun roadCacheDao(): RoadCacheDao
     abstract fun radarCorridorDao(): RadarCorridorDao
+    abstract fun supermarketEnrichRegionDao(): SupermarketEnrichRegionDao
 }

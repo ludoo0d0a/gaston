@@ -37,7 +37,7 @@ Map filters (fuel type, power, brand, highway-only) run **after** cache/network.
 | **POI memory** (`SelectorPoiProvider.cachedPois`) | Memory | Station / charger / amenity `Poi` by id | **Stations/IRVE: 1 month**; amenities: **7 days** (`isPoiCacheEntryExpired`) | Evicted on TTL, trim to ~1200 farthest-from-center, or `clearCache()` |
 | **POI region coverage** (`loadedRegions`) | Memory | Geo circles + providers/categories + per-category timestamps | Energy categories **fresh 6 h** (prices); amenities **7 days** | Cleared when provider set key changes; trim to 12 farthest regions |
 | **POI Room** (`poi_cache`) | Disk | JSON blobs + lat/lng + `updatedAtMs` | Retention **1 month** (`POI_CACHE_DISK_RETENTION_MS`) | Hourly delete of rows older than retention; skipped when `disableCache` |
-| **Supermarket enrich** | Memory | Overpass supermarket POIs for brand enrich only | Session / until `clearCache()` | Not shown on map unless Supermarket amenity enabled |
+| **Supermarket enrich** | Memory + Room | Overpass supermarket POIs + coverage regions (incl. empty) for brand enrich | **7 days** (`AMENITY_MS`) | Survives reboot; not shown on map unless Supermarket amenity enabled; single-flight Overpass; async on `searchFlow` |
 | **EV availability — dynamic / status** | Memory (per client) | Live occupation / status feeds | **1 hour** (`PoiCacheTtl.AVAILABILITY_MS`) | Replaced on next fetch after TTL; process death clears |
 | **EV availability — static / locations** | Memory (per client) | PDC/EVSE geo + station ids (Gireve, QualiCharge, IchTankeStrom, Digitraffic, …) | **1 month** (`PoiCacheTtl.STATION_MS`) | Same as above |
 | **Belib availability** | Memory | Last geo query result | **1 hour** | Keyed by rounded lat/lng + radius + limit |
@@ -248,7 +248,13 @@ APIs:
 
 ### Supermarket brand enrich
 
-Unbranded Gas stations can inherit a nearby supermarket brand within **300 m** (`enrichBrandsFromSupermarkets`). Overpass supermarket fetches for enrich go to a **separate in-memory cache** (not map `cachedPois` / Room) so they are not shown unless the user enables the Supermarket amenity.
+Unbranded Gas stations can inherit a nearby supermarket brand within **300 m** (`enrichBrandsFromSupermarkets`).
+
+- **Memory** (`supermarketEnrichCache` / `supermarketEnrichRegions`) + **Room** (`poi_cache` for supermarket POIs, `supermarket_enrich_region` for coverage circles).
+- **Negative cache**: an empty Overpass result still records the region so the same zone is not re-queried within **7 days**.
+- **Single-flight**: parallel enrich callers for the same coarse lat/lon/radius share one Overpass request.
+- **`searchFlow`**: station providers emit first; supermarket enrich runs once afterward and may emit a follow-up brand update (dashboard clears its loader on the first non-empty emission).
+- Supermarket rows stay hidden on the map unless the Supermarket amenity is enabled.
 
 ---
 
@@ -264,7 +270,7 @@ Unbranded Gas stations can inherit a nearby supermarket brand within **300 m** (
 | --- | --- |
 | Provider set key changes | Clear `loadedRegions` only |
 | `clearCache()` | Memory + Room + each provider’s own cache |
-| Hourly job | Delete Room rows older than **1 month** |
+| Hourly job | Delete Room POI rows older than **1 month**; supermarket enrich regions older than **7 days** |
 | Memory over 1200 / 12 regions | Drop farthest POIs / regions |
 | Energy category age > 6 h | Incremental refetch of fuel/EV providers (prices) |
 | Availability client age > 1 h | Refetch status / dynamic feed |

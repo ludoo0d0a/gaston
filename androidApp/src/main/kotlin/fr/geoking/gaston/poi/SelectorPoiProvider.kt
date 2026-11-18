@@ -13,6 +13,8 @@ import fr.geoking.gaston.api.openvan.OpenVanCampClient
 import fr.geoking.gaston.api.openvan.OpenVanCampProvider
 import fr.geoking.gaston.persistence.PoiCacheDao
 import fr.geoking.gaston.persistence.PoiCacheEntity
+import fr.geoking.gaston.persistence.SupermarketEnrichRegionDao
+import fr.geoking.gaston.persistence.SupermarketEnrichRegionEntity
 import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.repository.StationPriceHistoryRepository
 import fr.geoking.gaston.shared.location.haversineKm
@@ -26,6 +28,7 @@ import kotlin.math.cos
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
@@ -94,6 +97,7 @@ class SelectorPoiProvider(
     private val overpass: PoiProvider,
     private val dataGouvCamping: PoiProvider?,
     private val poiCacheDao: PoiCacheDao,
+    private val supermarketEnrichRegionDao: SupermarketEnrichRegionDao,
     private val settingsManager: SettingsManager,
     private val networkService: NetworkService,
     private val historyRepo: StationPriceHistoryRepository? = null,
@@ -122,6 +126,8 @@ class SelectorPoiProvider(
     private var lastCleanupAtMs: Long = 0
     private val cacheLock = Any()
     private val flowMutex = Mutex()
+    private val supermarketEnrichFetchMutex = Mutex()
+    private val supermarketEnrichInFlight = mutableMapOf<String, Deferred<List<Poi>>>()
 
     private fun getCountryCodes(
         latitude: Double,
@@ -496,14 +502,8 @@ class SelectorPoiProvider(
         val errors = results.flatMap { it.second }
 
         val merged = PoiMerger.mergePois(allPois)
-        val enrichedWithSupermarkets = enrichBrandsFromSupermarkets(
-            pois = merged,
-            latitude = request.latitude,
-            longitude = request.longitude,
-            viewport = request.viewport
-        )
         val enriched = enrichNationalReferencePrices(
-            pois = enrichedWithSupermarkets,
+            pois = merged,
             providers = allProviders,
             centerLat = request.latitude,
             centerLon = request.longitude,
@@ -539,6 +539,7 @@ class SelectorPoiProvider(
             launch(kotlinx.coroutines.Dispatchers.IO) {
                 try {
                     poiCacheDao.deleteOldPois(nowCleanup - POI_CACHE_DISK_RETENTION_MS)
+                    supermarketEnrichRegionDao.deleteOldRegions(nowCleanup - POI_CACHE_TTL_AMENITY_MS)
                     historyRepo?.deleteOldSamples(nowCleanup - (30L * 24L * 60L * 60L * 1000L))
                 } catch (e: Exception) {
                     Log.e("SelectorPoiProvider", "Failed to cleanup old POIs", e)
@@ -773,7 +774,7 @@ class SelectorPoiProvider(
                             cachedPois.values.toList() to errors.toList()
                         }
                     }
-                    // Enrich outside the mutex so an Overpass rate-limit cannot block sibling providers.
+                    // Emit without waiting on supermarket Overpass (brand enrich runs once below).
                     send(
                         PoiSearchResult(
                             pois = finalizePois(snapshot.first, request, providers),
@@ -781,6 +782,33 @@ class SelectorPoiProvider(
                         )
                     )
                 }
+            }
+        }
+
+        // One supermarket brand enrich after providers — does not block the first emissions above.
+        val beforeEnrich = finalEnriched
+        if (beforeEnrich.any { PoiMerger.hasNoBrand(it) }) {
+            val brandEnriched = enrichBrandsFromSupermarkets(
+                pois = beforeEnrich,
+                latitude = request.latitude,
+                longitude = request.longitude,
+                viewport = request.viewport,
+            )
+            if (brandEnriched != beforeEnrich) {
+                val snapshot = flowMutex.withLock {
+                    finalEnriched = brandEnriched
+                    synchronized(cacheLock) {
+                        PoiMerger.mergeInto(cachedPois, brandEnriched)
+                        brandEnriched.forEach { poiSeenAtMs[it.id] = System.currentTimeMillis() }
+                        cachedPois.values.toList() to errors.toList()
+                    }
+                }
+                send(
+                    PoiSearchResult(
+                        pois = finalizePois(snapshot.first, request, providers),
+                        errors = snapshot.second,
+                    )
+                )
             }
         }
 
@@ -1031,10 +1059,17 @@ class SelectorPoiProvider(
             .flatten()
             .toSet()
 
+        val brandEnriched = enrichBrandsFromSupermarkets(
+            pois = rated,
+            latitude = request.latitude,
+            longitude = request.longitude,
+            viewport = request.viewport,
+        )
+
         val mergedNow = System.currentTimeMillis()
         synchronized(cacheLock) {
-            PoiMerger.mergeInto(cachedPois, rated)
-            rated.forEach { poiSeenAtMs[it.id] = mergedNow }
+            PoiMerger.mergeInto(cachedPois, brandEnriched)
+            brandEnriched.forEach { poiSeenAtMs[it.id] = mergedNow }
             cachedPois.values.forEach { p ->
                 if (poiSeenAtMs[p.id] == null) poiSeenAtMs[p.id] = mergedNow
             }
@@ -1198,6 +1233,7 @@ class SelectorPoiProvider(
 
         try {
             poiCacheDao.clearCache()
+            supermarketEnrichRegionDao.clearRegions()
         } catch (e: Exception) {
             Log.e("SelectorPoiProvider", "Failed to clear DB cache", e)
         }
@@ -1489,7 +1525,7 @@ class SelectorPoiProvider(
         val lonMin = longitude - lonDelta
         val lonMax = longitude + lonDelta
 
-        val coverage = synchronized(cacheLock) {
+        var coverage = synchronized(cacheLock) {
             computePoiCoverage(
                 regions = supermarketEnrichRegions,
                 centerLat = latitude,
@@ -1497,68 +1533,271 @@ class SelectorPoiProvider(
                 requiredRadiusKm = radiusKm,
                 providers = setOf(PoiProviderType.Overpass),
                 categoriesToFetch = setOf(PoiCategory.Supermarket),
-                nowMs = nowMs
+                nowMs = nowMs,
             )
         }
 
-        var supermarkets = synchronized(cacheLock) {
-            supermarketEnrichCache.values.filter {
-                it.latitude in latMin..latMax && it.longitude in lonMin..lonMax
+        if (!coverage.fullyCovered) {
+            hydrateSupermarketEnrichFromRoom(
+                latitude = latitude,
+                longitude = longitude,
+                radiusKm = radiusKm,
+                latMin = latMin,
+                latMax = latMax,
+                lonMin = lonMin,
+                lonMax = lonMax,
+                nowMs = nowMs,
+            )
+            coverage = synchronized(cacheLock) {
+                computePoiCoverage(
+                    regions = supermarketEnrichRegions,
+                    centerLat = latitude,
+                    centerLng = longitude,
+                    requiredRadiusKm = radiusKm,
+                    providers = setOf(PoiProviderType.Overpass),
+                    categoriesToFetch = setOf(PoiCategory.Supermarket),
+                    nowMs = nowMs,
+                )
             }
         }
 
-        if (!coverage.fullyCovered || supermarkets.isEmpty()) {
-            val fetchedSupermarkets = try {
-                overpass.search(
-                    PoiSearchRequest(
-                        latitude = latitude,
-                        longitude = longitude,
-                        viewport = viewport,
-                        categories = setOf(PoiCategory.Supermarket),
-                        skipFilters = true
-                    )
-                )
-            } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
-                Log.e("SelectorPoiProvider", "Failed to fetch supermarkets from Overpass", e)
-                emptyList()
-            }.filter { it.poiCategory == PoiCategory.Supermarket }
-
-            if (fetchedSupermarkets.isNotEmpty()) {
-                synchronized(cacheLock) {
-                    fetchedSupermarkets.forEach { supermarketEnrichCache[it.id] = it }
-                    val covering = findCoveringRegion(
-                        supermarketEnrichRegions,
-                        latitude,
-                        longitude,
-                        radiusKm,
-                    )
-                    val updated = mergeLoadedRegion(
-                        existing = covering,
-                        centerLat = latitude,
-                        centerLng = longitude,
-                        requiredRadiusKm = radiusKm,
-                        loadedAtMs = nowMs,
-                        fetchedProviders = setOf(PoiProviderType.Overpass),
-                        fetchedCategories = setOf(PoiCategory.Supermarket),
-                    )
-                    if (covering != null) {
-                        val idx = supermarketEnrichRegions.indexOf(covering)
-                        if (idx >= 0) supermarketEnrichRegions[idx] = updated
-                    } else {
-                        supermarketEnrichRegions.add(updated)
-                    }
-                    while (supermarketEnrichRegions.size > 12) {
-                        val farthest = supermarketEnrichRegions.maxBy { r ->
-                            haversineKm(r.centerLat, r.centerLng, latitude, longitude)
-                        }
-                        supermarketEnrichRegions.remove(farthest)
-                    }
+        val supermarkets = if (coverage.fullyCovered) {
+            // Covered (including negative/empty) — never re-query Overpass.
+            synchronized(cacheLock) {
+                supermarketEnrichCache.values.filter {
+                    it.latitude in latMin..latMax && it.longitude in lonMin..lonMax
                 }
-                supermarkets = (supermarkets + fetchedSupermarkets).distinctBy { it.id }
             }
+        } else {
+            fetchSupermarketsSingleFlight(
+                latitude = latitude,
+                longitude = longitude,
+                radiusKm = radiusKm,
+                viewport = viewport,
+                latMin = latMin,
+                latMax = latMax,
+                lonMin = lonMin,
+                lonMax = lonMax,
+                nowMs = nowMs,
+            )
         }
 
         return PoiMerger.enrichBrandsFromSupermarkets(pois, supermarkets)
     }
+
+    private suspend fun hydrateSupermarketEnrichFromRoom(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        latMin: Double,
+        latMax: Double,
+        lonMin: Double,
+        lonMax: Double,
+        nowMs: Long,
+    ) {
+        val minLoadedAtMs = nowMs - POI_CACHE_TTL_AMENITY_MS
+        val diskRegions = try {
+            supermarketEnrichRegionDao.getRegionsFresherThan(minLoadedAtMs)
+        } catch (e: Exception) {
+            Log.e("SelectorPoiProvider", "Failed to load supermarket enrich regions", e)
+            emptyList()
+        }
+        if (diskRegions.isEmpty()) return
+
+        val memoryRegions = diskRegions.map { entity ->
+            toSupermarketEnrichLoadedRegion(entity)
+        }
+        val covering = findCoveringRegion(memoryRegions, latitude, longitude, radiusKm) ?: return
+
+        val diskPois = try {
+            poiCacheDao.getPoisInRegion(
+                latMin = latMin,
+                latMax = latMax,
+                lonMin = lonMin,
+                lonMax = lonMax,
+                minUpdatedAtMs = minLoadedAtMs,
+            ).mapNotNull { entity ->
+                try {
+                    val poi = json.decodeFromString<Poi>(entity.poiJson)
+                    if (poi.poiCategory == PoiCategory.Supermarket) poi else null
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SelectorPoiProvider", "Failed to load supermarket enrich POIs", e)
+            emptyList()
+        }
+
+        synchronized(cacheLock) {
+            diskPois.forEach { supermarketEnrichCache[it.id] = it }
+            val existing = findCoveringRegion(supermarketEnrichRegions, latitude, longitude, radiusKm)
+            if (existing == null) {
+                supermarketEnrichRegions.add(covering)
+                while (supermarketEnrichRegions.size > 12) {
+                    val farthest = supermarketEnrichRegions.maxBy { r ->
+                        haversineKm(r.centerLat, r.centerLng, latitude, longitude)
+                    }
+                    supermarketEnrichRegions.remove(farthest)
+                }
+            }
+        }
+    }
+
+    private suspend fun fetchSupermarketsSingleFlight(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        viewport: MapViewport?,
+        latMin: Double,
+        latMax: Double,
+        lonMin: Double,
+        lonMax: Double,
+        nowMs: Long,
+    ): List<Poi> {
+        val key = supermarketEnrichFlightKey(latitude, longitude, radiusKm)
+        val deferred = supermarketEnrichFetchMutex.withLock {
+            supermarketEnrichInFlight[key] ?: async {
+                fetchAndPersistSupermarkets(
+                    latitude = latitude,
+                    longitude = longitude,
+                    radiusKm = radiusKm,
+                    viewport = viewport,
+                    nowMs = nowMs,
+                )
+            }.also { created ->
+                supermarketEnrichInFlight[key] = created
+                created.invokeOnCompletion {
+                    launch {
+                        supermarketEnrichFetchMutex.withLock {
+                            if (supermarketEnrichInFlight[key] === created) {
+                                supermarketEnrichInFlight.remove(key)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        val fetched = deferred.await()
+        return fetched.filter {
+            it.latitude in latMin..latMax && it.longitude in lonMin..lonMax
+        }
+    }
+
+    private suspend fun fetchAndPersistSupermarkets(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        viewport: MapViewport?,
+        nowMs: Long,
+    ): List<Poi> {
+        val fetchedSupermarkets = try {
+            overpass.search(
+                PoiSearchRequest(
+                    latitude = latitude,
+                    longitude = longitude,
+                    viewport = viewport,
+                    categories = setOf(PoiCategory.Supermarket),
+                    skipFilters = true,
+                ),
+            )
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.e("SelectorPoiProvider", "Failed to fetch supermarkets from Overpass", e)
+            emptyList()
+        }.filter { it.poiCategory == PoiCategory.Supermarket }
+
+        synchronized(cacheLock) {
+            fetchedSupermarkets.forEach { supermarketEnrichCache[it.id] = it }
+            recordSupermarketEnrichRegion(
+                latitude = latitude,
+                longitude = longitude,
+                radiusKm = radiusKm,
+                loadedAtMs = nowMs,
+            )
+        }
+
+        try {
+            supermarketEnrichRegionDao.insertRegion(
+                SupermarketEnrichRegionEntity(
+                    centerLat = latitude,
+                    centerLng = longitude,
+                    maxRadiusKmLoaded = radiusKm,
+                    loadedAtMs = nowMs,
+                ),
+            )
+            if (fetchedSupermarkets.isNotEmpty()) {
+                poiCacheDao.insertPois(
+                    fetchedSupermarkets.map { poi ->
+                        PoiCacheEntity(
+                            id = poi.id,
+                            latitude = poi.latitude,
+                            longitude = poi.longitude,
+                            name = poi.name,
+                            address = poi.address,
+                            poiJson = json.encodeToString(poi),
+                            updatedAtMs = nowMs,
+                        )
+                    },
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("SelectorPoiProvider", "Failed to persist supermarket enrich cache", e)
+        }
+
+        return fetchedSupermarkets
+    }
+
+    private fun recordSupermarketEnrichRegion(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        loadedAtMs: Long,
+    ) {
+        val covering = findCoveringRegion(
+            supermarketEnrichRegions,
+            latitude,
+            longitude,
+            radiusKm,
+        )
+        val updated = mergeLoadedRegion(
+            existing = covering,
+            centerLat = latitude,
+            centerLng = longitude,
+            requiredRadiusKm = radiusKm,
+            loadedAtMs = loadedAtMs,
+            fetchedProviders = setOf(PoiProviderType.Overpass),
+            fetchedCategories = setOf(PoiCategory.Supermarket),
+        )
+        if (covering != null) {
+            val idx = supermarketEnrichRegions.indexOf(covering)
+            if (idx >= 0) supermarketEnrichRegions[idx] = updated
+        } else {
+            supermarketEnrichRegions.add(updated)
+        }
+        while (supermarketEnrichRegions.size > 12) {
+            val farthest = supermarketEnrichRegions.maxBy { r ->
+                haversineKm(r.centerLat, r.centerLng, latitude, longitude)
+            }
+            supermarketEnrichRegions.remove(farthest)
+        }
+    }
 }
+
+/** Coarse key so parallel enrich callers for the same area share one Overpass flight. */
+internal fun supermarketEnrichFlightKey(latitude: Double, longitude: Double, radiusKm: Int): String {
+    val lat = (latitude * 100.0).toInt()
+    val lon = (longitude * 100.0).toInt()
+    return "$lat,$lon,$radiusKm"
+}
+
+internal fun toSupermarketEnrichLoadedRegion(entity: SupermarketEnrichRegionEntity): LoadedPoiRegion =
+    LoadedPoiRegion(
+        centerLat = entity.centerLat,
+        centerLng = entity.centerLng,
+        maxRadiusKmLoaded = entity.maxRadiusKmLoaded,
+        loadedAtMs = entity.loadedAtMs,
+        loadedProviders = setOf(PoiProviderType.Overpass),
+        loadedCategories = setOf(PoiCategory.Supermarket),
+        categoryLoadedAtMs = mapOf(PoiCategory.Supermarket to entity.loadedAtMs),
+    )

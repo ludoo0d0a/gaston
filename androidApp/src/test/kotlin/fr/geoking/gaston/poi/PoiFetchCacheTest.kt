@@ -638,4 +638,83 @@ class PoiFetchCacheTest {
             providers,
         )
     }
+
+    @Test
+    fun supermarketEnrich_emptyRegionStillFullyCovered() {
+        val nowMs = 1_000_000_000_000L
+        val region = LoadedPoiRegion(
+            centerLat = 48.85,
+            centerLng = 2.35,
+            maxRadiusKmLoaded = 10,
+            loadedAtMs = nowMs - 60_000L,
+            loadedProviders = setOf(PoiProviderType.Overpass),
+            loadedCategories = setOf(PoiCategory.Supermarket),
+            categoryLoadedAtMs = mapOf(PoiCategory.Supermarket to nowMs - 60_000L),
+        )
+        val coverage = computePoiCoverage(
+            regions = listOf(region),
+            centerLat = 48.85,
+            centerLng = 2.35,
+            requiredRadiusKm = 10,
+            providers = setOf(PoiProviderType.Overpass),
+            categoriesToFetch = setOf(PoiCategory.Supermarket),
+            nowMs = nowMs,
+        )
+        assertTrue(coverage.fullyCovered)
+        assertTrue(coverage.missingCategories.isEmpty())
+    }
+
+    @Test
+    fun supermarketEnrich_staleRegionNeedsRefetch() {
+        val nowMs = 1_000_000_000_000L
+        val region = LoadedPoiRegion(
+            centerLat = 48.85,
+            centerLng = 2.35,
+            maxRadiusKmLoaded = 10,
+            loadedAtMs = nowMs - POI_CACHE_TTL_AMENITY_MS - 1L,
+            loadedProviders = setOf(PoiProviderType.Overpass),
+            loadedCategories = setOf(PoiCategory.Supermarket),
+            categoryLoadedAtMs = mapOf(PoiCategory.Supermarket to nowMs - POI_CACHE_TTL_AMENITY_MS - 1L),
+        )
+        val coverage = computePoiCoverage(
+            regions = listOf(region),
+            centerLat = 48.85,
+            centerLng = 2.35,
+            requiredRadiusKm = 10,
+            providers = setOf(PoiProviderType.Overpass),
+            categoriesToFetch = setOf(PoiCategory.Supermarket),
+            nowMs = nowMs,
+        )
+        assertFalse(coverage.fullyCovered)
+        assertTrue(PoiCategory.Supermarket in coverage.missingCategories)
+    }
+
+    @Test
+    fun supermarketEnrichFlightKey_sameAreaSharesKey() {
+        assertEquals(
+            supermarketEnrichFlightKey(48.8566, 2.3522, 10),
+            supermarketEnrichFlightKey(48.8561, 2.3528, 10),
+        )
+        assertTrue(
+            supermarketEnrichFlightKey(48.85, 2.35, 10) !=
+                supermarketEnrichFlightKey(48.85, 2.35, 20),
+        )
+    }
+
+    @Test
+    fun toSupermarketEnrichLoadedRegion_marksOverpassSupermarket() {
+        val entity = fr.geoking.gaston.persistence.SupermarketEnrichRegionEntity(
+            id = 1,
+            centerLat = 48.0,
+            centerLng = 2.0,
+            maxRadiusKmLoaded = 12,
+            loadedAtMs = 99L,
+        )
+        val region = toSupermarketEnrichLoadedRegion(entity)
+        assertEquals(48.0, region.centerLat)
+        assertEquals(12, region.maxRadiusKmLoaded)
+        assertEquals(setOf(PoiProviderType.Overpass), region.loadedProviders)
+        assertEquals(setOf(PoiCategory.Supermarket), region.loadedCategories)
+        assertEquals(99L, region.categoryLoadedAtMs[PoiCategory.Supermarket])
+    }
 }

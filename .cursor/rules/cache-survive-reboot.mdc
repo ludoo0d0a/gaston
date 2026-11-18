@@ -1,0 +1,13 @@
+---
+description: On-device caches must survive app reboot / process death
+alwaysApply: true
+---
+
+# Caches survive reboot
+
+**Caches must survive app reboot / process death.**
+
+- Prefer **Room** (or equivalent disk) alongside an in-memory layer.
+- Session-only / memory-only caches are the exception — only when explicitly justified (e.g. truly ephemeral UI state).
+- When adding a new cache: define TTL, hydrate memory from disk on miss, persist after fetch, clear both layers in `clearCache()`.
+- Negative results (empty coverage) must be persisted too when they prevent repeated network calls.

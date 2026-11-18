@@ -172,6 +172,8 @@ class PhoneDashboardViewModel(
                                 } else {
                                     fr.geoking.gaston.poi.PoiMerger.mergeInto(rawNearbyPois.value, result.pois)
                                 }
+                                // Clear loader on first useful emission; later brand-enrich updates still merge.
+                                isLoadingPois.value = false
                             }
                         } catch (e: kotlinx.coroutines.CancellationException) {
                             throw e
