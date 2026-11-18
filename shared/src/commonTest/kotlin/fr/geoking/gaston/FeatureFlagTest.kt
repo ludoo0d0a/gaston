@@ -36,6 +36,7 @@ class FeatureFlagTest {
         assertFalse(FeatureFlag.ACCIDENT)
         assertFalse(FeatureFlag.MAINTENANCE)
         assertFalse(FeatureFlag.PRICE_ESTIMATION)
+        assertFalse(FeatureFlag.NETWORK)
     }
 
     @Test

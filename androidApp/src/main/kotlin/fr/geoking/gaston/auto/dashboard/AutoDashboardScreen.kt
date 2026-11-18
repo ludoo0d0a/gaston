@@ -228,19 +228,21 @@ class AutoDashboardScreen(
                                 }
                                 .build()
                         )
-                        .addItem(
-                            Row.Builder()
-                                .setTitle(carContext.getString(R.string.dashboard_network))
-                                .setImage(carContext.dashboardNetworkIcon())
-                                .setBrowsable(true)
-                                .setOnClickListener {
-                                    screenManager.push(
-                                        AutoNetworkLocationInfoScreen(carContext, networkService, connectivityManager)
-                                    )
-                                }
-                                .build()
-                        )
                         .apply {
+                            if (FeatureFlag.NETWORK) {
+                                addItem(
+                                    Row.Builder()
+                                        .setTitle(carContext.getString(R.string.dashboard_network))
+                                        .setImage(carContext.dashboardNetworkIcon())
+                                        .setBrowsable(true)
+                                        .setOnClickListener {
+                                            screenManager.push(
+                                                AutoNetworkLocationInfoScreen(carContext, networkService, connectivityManager)
+                                            )
+                                        }
+                                        .build()
+                                )
+                            }
                             if (FeatureFlag.PRICE_ESTIMATION) {
                                 addItem(
                                     Row.Builder()

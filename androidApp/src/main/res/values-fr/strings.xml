@@ -932,7 +932,7 @@
     <string name="dev_feature_flags_overridden">surchargé</string>
     <string name="dev_feature_flags_group_countries">Pays</string>
     <string name="dev_feature_flags_group_layers">Couches (radar / météo / trafic)</string>
-    <string name="dev_feature_flags_group_features">Fonctionnalités (parking / constat / entretien / estimation des prix)</string>
+    <string name="dev_feature_flags_group_features">Fonctionnalités (parking / constat / entretien / estimation des prix / réseau)</string>
     <string name="dev_feature_flags_group_phone_map">Moteurs de carte téléphone</string>
     <string name="dev_feature_flags_group_aa_map">Modes de carte Android Auto</string>
     <string name="dev_developer_settings">Paramètres développeur</string>

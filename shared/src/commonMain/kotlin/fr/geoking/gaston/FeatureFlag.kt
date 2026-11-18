@@ -52,6 +52,7 @@ object FeatureFlag {
         ACCIDENT(false, Group.Feature),
         MAINTENANCE(false, Group.Feature),
         PRICE_ESTIMATION(false, Group.Feature),
+        NETWORK(false, Group.Feature),
 
         PHONE_MAP_GOOGLE(false, Group.PhoneMap),
         PHONE_MAP_MAPLIBRE(true, Group.PhoneMap),
@@ -196,6 +197,7 @@ object FeatureFlag {
     val ACCIDENT: Boolean get() = resolved(Key.ACCIDENT)
     val MAINTENANCE: Boolean get() = resolved(Key.MAINTENANCE)
     val PRICE_ESTIMATION: Boolean get() = resolved(Key.PRICE_ESTIMATION)
+    val NETWORK: Boolean get() = resolved(Key.NETWORK)
 
     val PHONE_MAP_GOOGLE: Boolean get() = resolved(Key.PHONE_MAP_GOOGLE)
     val PHONE_MAP_MAPLIBRE: Boolean get() = resolved(Key.PHONE_MAP_MAPLIBRE)

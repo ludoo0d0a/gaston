@@ -932,7 +932,7 @@
     <string name="dev_feature_flags_overridden">overridden</string>
     <string name="dev_feature_flags_group_countries">Countries</string>
     <string name="dev_feature_flags_group_layers">Layers (radar / meteo / traffic)</string>
-    <string name="dev_feature_flags_group_features">Features (parking / accident / maintenance / price estimation)</string>
+    <string name="dev_feature_flags_group_features">Features (parking / accident / maintenance / price estimation / network)</string>
     <string name="dev_feature_flags_group_phone_map">Phone map engines</string>
     <string name="dev_feature_flags_group_aa_map">Android Auto map modes</string>
     <string name="dev_developer_settings">Developer Settings</string>

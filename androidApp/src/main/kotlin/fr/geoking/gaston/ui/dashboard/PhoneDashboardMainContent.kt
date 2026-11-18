@@ -174,15 +174,18 @@ fun PhoneDashboardMainContent(
         }
 
         item(contentType = "other_actions_grid", key = "other_actions_${featureFlagOverrides.keys}") {
-            val gridActions = mutableListOf(
-                DashboardRow(
-                    title = stringResource(R.string.dashboard_network),
-                    subtitle = stringResource(R.string.dashboard_network),
-                    iconResId = R.drawable.ic_signal_cellular,
-                    onClick = onOpenNetworkDiagnostics,
-                    testTag = "dashboard_network_btn"
-                ),
-            )
+            val gridActions = mutableListOf<DashboardRow>()
+            if (FeatureFlag.NETWORK) {
+                gridActions.add(
+                    DashboardRow(
+                        title = stringResource(R.string.dashboard_network),
+                        subtitle = stringResource(R.string.dashboard_network),
+                        iconResId = R.drawable.ic_signal_cellular,
+                        onClick = onOpenNetworkDiagnostics,
+                        testTag = "dashboard_network_btn"
+                    ),
+                )
+            }
             if (FeatureFlag.RADAR) {
                 gridActions.add(
                     DashboardRow(
@@ -244,7 +247,9 @@ fun PhoneDashboardMainContent(
                 )
             }
 
-            PhoneDashboardOtherActionsGrid(otherActions = gridActions)
+            if (gridActions.isNotEmpty()) {
+                PhoneDashboardOtherActionsGrid(otherActions = gridActions)
+            }
         }
 
         item(contentType = "emergency_card") {
