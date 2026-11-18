@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import fr.geoking.gaston.BuildConfig
@@ -73,6 +74,9 @@ fun PhoneDashboardScreen(
     viewModel: PhoneDashboardViewModel = org.koin.androidx.compose.koinViewModel()
 ) {
     val context = LocalContext.current
+    // Read configuration so string lookups below stay locale/config-aware for Compose lint.
+    val configuration = LocalConfiguration.current
+    val resources = remember(configuration) { context.resources }
     val scope = rememberCoroutineScope()
     val settings by settingsManager.settings.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
@@ -218,10 +222,10 @@ fun PhoneDashboardScreen(
                 { radar ->
                     RadarCorridorStore.recalculateAt(radar.latitude, radar.longitude) { matched, ringCount, synthetic, error ->
                         val message = when {
-                            error -> context.getString(R.string.dev_recalculate_radar_corridor_failed)
-                            !matched -> context.getString(R.string.dev_recalculate_radar_corridor_none)
-                            synthetic -> context.getString(R.string.dev_recalculate_radar_corridor_synthetic, ringCount)
-                            else -> context.getString(R.string.dev_recalculate_radar_corridor_done, ringCount)
+                            error -> resources.getString(R.string.dev_recalculate_radar_corridor_failed)
+                            !matched -> resources.getString(R.string.dev_recalculate_radar_corridor_none)
+                            synthetic -> resources.getString(R.string.dev_recalculate_radar_corridor_synthetic, ringCount)
+                            else -> resources.getString(R.string.dev_recalculate_radar_corridor_done, ringCount)
                         }
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }

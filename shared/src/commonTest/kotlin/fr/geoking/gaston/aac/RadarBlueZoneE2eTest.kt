@@ -71,7 +71,15 @@ class RadarBlueZoneE2eTest {
             }
         }
 
-        val overpass = OverpassClient(HttpClient(engine), minIntervalMs = 0L)
+        // Single mirror: mirror rotation is covered by OverpassClientTest; this harness
+        // exercises corridor / synthetic fallback when that one host is rate-limited.
+        private val overpassUrl = "https://$overpassHost/api/interpreter"
+        val overpass = OverpassClient(
+            HttpClient(engine),
+            baseUrl = overpassUrl,
+            interpreterUrls = listOf(overpassUrl),
+            minIntervalMs = 0L,
+        )
         val radars = FranceRadarsClient(HttpClient(engine), csvUrl = "https://$radarHost/radars.csv")
         val repository = DangerZoneRepository(
             franceRadarsClient = radars,
