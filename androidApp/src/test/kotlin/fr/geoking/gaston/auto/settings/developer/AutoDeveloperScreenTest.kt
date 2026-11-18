@@ -42,6 +42,7 @@ class AutoDeveloperScreenTest {
                 module {
                     single { settingsManager }
                     single { notificationHelper }
+                    single<NetworkService> { FakeNetworkService() }
                 }
             )
         }
