@@ -246,6 +246,11 @@ APIs:
 - `mergePois` — full pairwise pass on a batch (deterministic: sort by id).
 - `mergeInto(existing, incoming)` — keep list/map identity; used when folding network or Room results into `cachedPois`.
 
+### Gas station detail amenities (FR)
+
+- **Gas API** (`gas-api.ovh`) maps `services`, `schedules`, `allDayService`, and `freeway` into `PoiAmenities` on every list fetch (`GasApiAmenities`).
+- **On-demand Overpass**: when opening/refreshing a Gas station whose amenities are still thin (no hours and no service flags), `SelectorPoiProvider.refreshPoi` queries nearby `amenity=fuel` (~500 m), merges OSM amenities (prefer `refId` / prix-carburants ref, else ≤100 m), and persists the station row in Room. This does **not** add Overpass to the Auto FR fuel provider set for map/list fetches.
+
 ### Supermarket brand enrich
 
 Unbranded Gas stations can inherit a nearby supermarket brand within **300 m** (`enrichBrandsFromSupermarkets`).

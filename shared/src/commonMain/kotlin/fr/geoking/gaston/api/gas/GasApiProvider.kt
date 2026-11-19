@@ -51,6 +51,7 @@ class GasApiProvider(
                 latitude = station.latitude,
                 longitude = station.longitude,
                 brand = station.brand,
+                isOnHighway = station.isOnHighway,
                 fuelPrices = station.prices.map { p ->
                     FuelPrice(
                         fuelName = p.fuelName,
@@ -59,6 +60,7 @@ class GasApiProvider(
                         outOfStock = p.outOfStock
                     )
                 }.ifEmpty { null },
+                amenities = station.amenities,
                 source = "GasAPI",
                 rawSourceData = station.rawJson?.let { mapOf("GasAPI" to it) }
             )

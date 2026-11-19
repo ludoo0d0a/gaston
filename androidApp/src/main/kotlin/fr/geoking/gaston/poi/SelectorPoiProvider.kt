@@ -1190,7 +1190,14 @@ class SelectorPoiProvider(
         if (refreshedPoi == null) return null
 
         // Merge updated POI with original to preserve any merged fields (ratings, amenities, etc.)
-        val finalPoi = PoiMerger.mergePois(listOf(poi, refreshedPoi)).firstOrNull() ?: refreshedPoi
+        var finalPoi = PoiMerger.mergePois(listOf(poi, refreshedPoi)).firstOrNull() ?: refreshedPoi
+
+        // On-demand OSM amenities when GasAPI/DataGouv left the detail sheet thin.
+        if (cat == PoiCategory.Gas &&
+            fr.geoking.gaston.api.gas.GasApiAmenities.isThin(finalPoi.amenities)
+        ) {
+            finalPoi = enrichGasAmenitiesFromOverpass(finalPoi)
+        }
 
         // Update in-memory cache and DB DAO
         synchronized(cacheLock) {
@@ -1219,6 +1226,60 @@ class SelectorPoiProvider(
         }
 
         return finalPoi
+    }
+
+    /**
+     * Complements a FR gas station with nearby Overpass `amenity=fuel` amenities.
+     * Match by `refId` / prix-carburants ref when possible, else nearest within ~100 m.
+     */
+    private suspend fun enrichGasAmenitiesFromOverpass(poi: Poi): Poi {
+        // ~500 m bbox so we do not pull a wide Overpass fuel dump for a single detail sheet.
+        val deltaDeg = 0.0045
+        val detailViewport = MapViewport(
+            zoom = 16f,
+            mapWidthPx = 400,
+            mapHeightPx = 400,
+            minLat = poi.latitude - deltaDeg,
+            maxLat = poi.latitude + deltaDeg,
+            minLng = poi.longitude - deltaDeg,
+            maxLng = poi.longitude + deltaDeg,
+        )
+        val osmCandidates = try {
+            overpass.search(
+                PoiSearchRequest(
+                    latitude = poi.latitude,
+                    longitude = poi.longitude,
+                    viewport = detailViewport,
+                    categories = setOf(PoiCategory.Gas),
+                    skipFilters = true,
+                ),
+            )
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.w("SelectorPoiProvider", "Overpass gas detail enrich failed", e)
+            return poi
+        }.filter { it.poiCategory == PoiCategory.Gas }
+
+        if (osmCandidates.isEmpty()) return poi
+
+        val byRef = poi.refId?.takeIf { it.isNotBlank() }?.let { ref ->
+            osmCandidates.firstOrNull { it.refId == ref }
+        }
+        val nearest = osmCandidates
+            .map { candidate ->
+                candidate to approxDistanceKm(
+                    poi.latitude,
+                    poi.longitude,
+                    candidate.latitude,
+                    candidate.longitude,
+                )
+            }
+            .filter { (_, km) -> km <= 0.1 }
+            .minByOrNull { it.second }
+            ?.first
+
+        val osmMatch = byRef ?: nearest ?: return poi
+        return PoiMerger.mergePois(listOf(poi, osmMatch)).firstOrNull() ?: poi
     }
 
     override suspend fun clearCache() {

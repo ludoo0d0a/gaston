@@ -1,6 +1,7 @@
 package fr.geoking.gaston.api.gas
 
 import fr.geoking.gaston.api.datagouv.DataGouvPrice
+import fr.geoking.gaston.api.routex.PoiAmenities
 import fr.geoking.gaston.shared.datetime.DateTimeUtils
 import fr.geoking.gaston.shared.network.NetworkException
 import io.ktor.client.HttpClient
@@ -156,6 +157,12 @@ class GasApiClient(
             }
         }
 
+        val freeway = when (val f = obj["freeway"]) {
+            is JsonPrimitive -> f.contentOrNull?.toBooleanStrictOrNull()
+            else -> null
+        }
+        val amenities = GasApiAmenities.fromStationJson(obj)
+
         return GasApiStation(
             id = id,
             name = name,
@@ -164,6 +171,8 @@ class GasApiClient(
             longitude = lng,
             brand = brandName,
             prices = prices,
+            isOnHighway = freeway == true,
+            amenities = amenities,
             rawJson = element.toString()
         )
     }
@@ -181,5 +190,7 @@ data class GasApiStation(
     val longitude: Double,
     val brand: String? = null,
     val prices: List<DataGouvPrice> = emptyList(),
+    val isOnHighway: Boolean = false,
+    val amenities: PoiAmenities? = null,
     val rawJson: String? = null
 )

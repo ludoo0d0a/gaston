@@ -57,7 +57,7 @@ This document compares **Pumperly**’s documented sources (from its “Data Sou
 | **AFDC / NREL** | United States + Canada | EV inventory + station status | `https://developer.nlr.gov/api/alt-fuel-stations/v1/…` | Yes — `NREL_AFDC_KEY` — see [`AFDC_AVAILABILITY.md`](AFDC_AVAILABILITY.md) |
 | **Belib’ availability** | Paris (FR, secondary) | EV availability | `https://parisdata.opendatasoft.com/.../belib-...` | No — complements QualiCharge; see [`BELIB_AVAILABILITY_API.md`](BELIB_AVAILABILITY_API.md) |
 | **QualiCharge IRVE dynamique** | Mainland France | EV availability | `https://proxy.transport.data.gouv.fr/resource/qualicharge-irve-dynamique` (+ statique join) | No — see [`IRVE_DYNAMIQUE.md`](IRVE_DYNAMIQUE.md) |
-| **OpenStreetMap (Overpass)** | Global | POIs (many), Battery Swap | `https://overpass-api.de/api/interpreter` | No |
+| **OpenStreetMap (Overpass)** | Global | POIs (many), Battery Swap; on-demand FR gas amenities when detail is thin | `https://overpass-api.de/api/interpreter` | No |
 | **Bison Futé / TIPI (ouvert)** | France (réseau national non concédé) | Traffic incidents | `…/bison-fute-ouvert/…/RRN/content.xml` | No — DATEX II — see [`DATEX_II_BISON_FUTE.md`](DATEX_II_BISON_FUTE.md) |
 | **TIPI Action C** | France (incl. autoroutes concédées / SRTI) | Traffic safety incidents | `…/bison-fute-restreint/…/ACTION-C/content.xml` | Yes — `TIPI_USER` + `TIPI_PASSWORD` (Basic) — [`DATEX_II_BISON_FUTE.md`](DATEX_II_BISON_FUTE.md) |
 | **TIPI Action B** | France (national network events) | Traffic incidents | `…/bison-fute-restreint/…/ACTION-B/content.xml` | Same TIPI credentials — [`DATEX_II_BISON_FUTE.md`](DATEX_II_BISON_FUTE.md) |

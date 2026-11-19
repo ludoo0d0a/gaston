@@ -11,11 +11,13 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import fr.geoking.gaston.api.gas.GasApiAmenities
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.CancellationException
@@ -79,6 +81,24 @@ fun PoiDetailsFullscreenDialog(
     var isRecalculatingCorridor by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // First open: complete thin Gas amenities (GasAPI parse + on-demand Overpass via refreshPoi).
+    LaunchedEffect(poi.id) {
+        val refresh = onRefreshPoi ?: return@LaunchedEffect
+        val cat = currentPoi.poiCategory ?: if (currentPoi.isElectric) PoiCategory.Irve else PoiCategory.Gas
+        if (cat != PoiCategory.Gas || !GasApiAmenities.isThin(currentPoi.amenities)) return@LaunchedEffect
+        isRefreshing = true
+        try {
+            val updated = refresh(currentPoi)
+            if (updated != null) currentPoi = updated
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Silent on auto-enrich; user can still tap refresh.
+        } finally {
+            isRefreshing = false
+        }
+    }
 
     val resolvedAvailability = currentPoi.resolveAvailabilitySummary(availabilitySummary)
     val brandInfo = BrandHelper.getBrandInfo(currentPoi.brand)
