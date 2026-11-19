@@ -479,6 +479,7 @@ val mapModule = module {
             dataGouvCamping = get(named("datagouvcamping")),
             poiCacheDao = get<fr.geoking.gaston.persistence.AppDatabase>().poiCacheDao(),
             supermarketEnrichRegionDao = get<fr.geoking.gaston.persistence.AppDatabase>().supermarketEnrichRegionDao(),
+            osmFuelEnrichRegionDao = get<fr.geoking.gaston.persistence.AppDatabase>().osmFuelEnrichRegionDao(),
             settingsManager = get(),
             networkService = get(),
             historyRepo = get(),

@@ -11,10 +11,13 @@ import fr.geoking.gaston.feature.network.BulkFileNetworkAccess
 import fr.geoking.gaston.parking.ParkingRegion
 import fr.geoking.gaston.api.openvan.OpenVanCampClient
 import fr.geoking.gaston.api.openvan.OpenVanCampProvider
+import fr.geoking.gaston.persistence.OsmFuelEnrichRegionDao
+import fr.geoking.gaston.persistence.OsmFuelEnrichRegionEntity
 import fr.geoking.gaston.persistence.PoiCacheDao
 import fr.geoking.gaston.persistence.PoiCacheEntity
 import fr.geoking.gaston.persistence.SupermarketEnrichRegionDao
 import fr.geoking.gaston.persistence.SupermarketEnrichRegionEntity
+import fr.geoking.gaston.api.gas.GasApiAmenities
 import fr.geoking.gaston.poi.PoiMerger
 import fr.geoking.gaston.repository.StationPriceHistoryRepository
 import fr.geoking.gaston.shared.location.haversineKm
@@ -98,6 +101,7 @@ class SelectorPoiProvider(
     private val dataGouvCamping: PoiProvider?,
     private val poiCacheDao: PoiCacheDao,
     private val supermarketEnrichRegionDao: SupermarketEnrichRegionDao,
+    private val osmFuelEnrichRegionDao: OsmFuelEnrichRegionDao,
     private val settingsManager: SettingsManager,
     private val networkService: NetworkService,
     private val historyRepo: StationPriceHistoryRepository? = null,
@@ -122,12 +126,17 @@ class SelectorPoiProvider(
     /** Overpass supermarchés fetched only for brand enrich — never shown unless amenity is on. */
     private val supermarketEnrichCache = mutableMapOf<String, Poi>()
     private val supermarketEnrichRegions = mutableListOf<LoadedPoiRegion>()
+    /** Overpass amenity=fuel zone cache for on-demand gas detail enrich (one query per geo zone). */
+    private val osmFuelEnrichCache = mutableMapOf<String, Poi>()
+    private val osmFuelEnrichRegions = mutableListOf<LoadedPoiRegion>()
     private var lastCacheKey: String? = null
     private var lastCleanupAtMs: Long = 0
     private val cacheLock = Any()
     private val flowMutex = Mutex()
     private val supermarketEnrichFetchMutex = Mutex()
     private val supermarketEnrichInFlight = mutableMapOf<String, Deferred<List<Poi>>>()
+    private val osmFuelEnrichFetchMutex = Mutex()
+    private val osmFuelEnrichInFlight = mutableMapOf<String, Deferred<List<Poi>>>()
 
     private fun getCountryCodes(
         latitude: Double,
@@ -540,6 +549,7 @@ class SelectorPoiProvider(
                 try {
                     poiCacheDao.deleteOldPois(nowCleanup - POI_CACHE_DISK_RETENTION_MS)
                     supermarketEnrichRegionDao.deleteOldRegions(nowCleanup - POI_CACHE_TTL_AMENITY_MS)
+                    osmFuelEnrichRegionDao.deleteOldRegions(nowCleanup - POI_CACHE_TTL_AMENITY_MS)
                     historyRepo?.deleteOldSamples(nowCleanup - (30L * 24L * 60L * 60L * 1000L))
                 } catch (e: Exception) {
                     Log.e("SelectorPoiProvider", "Failed to cleanup old POIs", e)
@@ -783,6 +793,17 @@ class SelectorPoiProvider(
                     )
                 }
             }
+        }
+
+        // Prefetch one Overpass fuel zone for the visible area (when small enough) so detail
+        // sheets reuse the list instead of one Overpass call per station.
+        if (PoiCategory.Gas in categoriesToFetch && shouldPrefetchOsmFuelZone(requiredRadiusKm)) {
+            ensureOsmFuelZoneCached(
+                latitude = request.latitude,
+                longitude = request.longitude,
+                radiusKm = requiredRadiusKm,
+                viewport = request.viewport,
+            )
         }
 
         // One supermarket brand enrich after providers — does not block the first emissions above.
@@ -1193,9 +1214,8 @@ class SelectorPoiProvider(
         var finalPoi = PoiMerger.mergePois(listOf(poi, refreshedPoi)).firstOrNull() ?: refreshedPoi
 
         // On-demand OSM amenities when GasAPI/DataGouv left the detail sheet thin.
-        if (cat == PoiCategory.Gas &&
-            fr.geoking.gaston.api.gas.GasApiAmenities.isThin(finalPoi.amenities)
-        ) {
+        // Uses a zone-cached Overpass list (one query per geo area), not per-station.
+        if (cat == PoiCategory.Gas && GasApiAmenities.isThin(finalPoi.amenities)) {
             finalPoi = enrichGasAmenitiesFromOverpass(finalPoi)
         }
 
@@ -1229,57 +1249,308 @@ class SelectorPoiProvider(
     }
 
     /**
-     * Complements a FR gas station with nearby Overpass `amenity=fuel` amenities.
-     * Match by `refId` / prix-carburants ref when possible, else nearest within ~100 m.
+     * Complements a FR gas station with Overpass `amenity=fuel` amenities from a **zone cache**.
+     * One Overpass query covers [OSM_FUEL_ENRICH_DEFAULT_ZONE_KM] (or the map viewport zone);
+     * subsequent stations in that zone reuse the list (match by refId or ≤100 m).
      */
     private suspend fun enrichGasAmenitiesFromOverpass(poi: Poi): Poi {
-        // ~500 m bbox so we do not pull a wide Overpass fuel dump for a single detail sheet.
-        val deltaDeg = 0.0045
-        val detailViewport = MapViewport(
-            zoom = 16f,
-            mapWidthPx = 400,
-            mapHeightPx = 400,
-            minLat = poi.latitude - deltaDeg,
-            maxLat = poi.latitude + deltaDeg,
-            minLng = poi.longitude - deltaDeg,
-            maxLng = poi.longitude + deltaDeg,
+        val osmCandidates = ensureOsmFuelZoneCached(
+            latitude = poi.latitude,
+            longitude = poi.longitude,
+            radiusKm = OSM_FUEL_ENRICH_DEFAULT_ZONE_KM,
+            viewport = null,
         )
-        val osmCandidates = try {
+        val osmMatch = matchOsmFuelForGasStation(poi, osmCandidates) ?: return poi
+        return PoiMerger.mergePois(listOf(poi, osmMatch)).firstOrNull() ?: poi
+    }
+
+    /**
+     * Returns Overpass fuel POIs covering ([latitude], [longitude]) within [radiusKm].
+     * Hits memory → Room hydrate → single-flight Overpass fetch. Always records region
+     * coverage (including empty) so the zone is not re-queried within amenity TTL.
+     */
+    private suspend fun ensureOsmFuelZoneCached(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        viewport: MapViewport?,
+    ): List<Poi> {
+        val zoneKm = radiusKm.coerceIn(1, OSM_FUEL_ENRICH_MAX_ZONE_KM)
+        val nowMs = System.currentTimeMillis()
+        val latDelta = zoneKm / 111.0
+        val lonDelta = zoneKm / (111.0 * cos(latitude * PI / 180.0))
+        val latMin = latitude - latDelta
+        val latMax = latitude + latDelta
+        val lonMin = longitude - lonDelta
+        val lonMax = longitude + lonDelta
+
+        // Use amenity TTL (7d), not Gas price TTL (6h) — zone coverage is stable OSM inventory.
+        var covered = synchronized(cacheLock) {
+            findFreshOsmFuelCovering(osmFuelEnrichRegions, latitude, longitude, zoneKm, nowMs) != null
+        }
+
+        if (!covered) {
+            hydrateOsmFuelEnrichFromRoom(
+                latitude = latitude,
+                longitude = longitude,
+                radiusKm = zoneKm,
+                latMin = latMin,
+                latMax = latMax,
+                lonMin = lonMin,
+                lonMax = lonMax,
+                nowMs = nowMs,
+            )
+            covered = synchronized(cacheLock) {
+                findFreshOsmFuelCovering(osmFuelEnrichRegions, latitude, longitude, zoneKm, nowMs) != null
+            }
+        }
+
+        if (covered) {
+            return synchronized(cacheLock) {
+                osmFuelEnrichCache.values.filter {
+                    it.latitude in latMin..latMax && it.longitude in lonMin..lonMax
+                }
+            }
+        }
+
+        return fetchOsmFuelZoneSingleFlight(
+            latitude = latitude,
+            longitude = longitude,
+            radiusKm = zoneKm,
+            viewport = viewport,
+            latMin = latMin,
+            latMax = latMax,
+            lonMin = lonMin,
+            lonMax = lonMax,
+            nowMs = nowMs,
+        )
+    }
+
+    private suspend fun hydrateOsmFuelEnrichFromRoom(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        latMin: Double,
+        latMax: Double,
+        lonMin: Double,
+        lonMax: Double,
+        nowMs: Long,
+    ) {
+        val minLoadedAtMs = nowMs - POI_CACHE_TTL_AMENITY_MS
+        val diskRegions = try {
+            osmFuelEnrichRegionDao.getRegionsFresherThan(minLoadedAtMs)
+        } catch (e: Exception) {
+            Log.e("SelectorPoiProvider", "Failed to load OSM fuel enrich regions", e)
+            emptyList()
+        }
+        if (diskRegions.isEmpty()) return
+
+        val memoryRegions = diskRegions.map { toOsmFuelEnrichLoadedRegion(it) }
+        val covering = findCoveringRegion(memoryRegions, latitude, longitude, radiusKm) ?: return
+
+        val diskPois = try {
+            poiCacheDao.getPoisInRegion(
+                latMin = latMin,
+                latMax = latMax,
+                lonMin = lonMin,
+                lonMax = lonMax,
+                minUpdatedAtMs = minLoadedAtMs,
+            ).mapNotNull { entity ->
+                try {
+                    val poi = json.decodeFromString<Poi>(entity.poiJson)
+                    if (poi.poiCategory == PoiCategory.Gas &&
+                        (poi.source?.contains("OpenStreetMap", ignoreCase = true) == true ||
+                            poi.id.startsWith("osm:"))
+                    ) {
+                        poi
+                    } else {
+                        null
+                    }
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SelectorPoiProvider", "Failed to load OSM fuel enrich POIs", e)
+            emptyList()
+        }
+
+        synchronized(cacheLock) {
+            diskPois.forEach { osmFuelEnrichCache[it.id] = it }
+            val existing = findCoveringRegion(osmFuelEnrichRegions, latitude, longitude, radiusKm)
+            if (existing == null) {
+                osmFuelEnrichRegions.add(covering)
+                while (osmFuelEnrichRegions.size > 12) {
+                    val farthest = osmFuelEnrichRegions.maxBy { r ->
+                        haversineKm(r.centerLat, r.centerLng, latitude, longitude)
+                    }
+                    osmFuelEnrichRegions.remove(farthest)
+                }
+            }
+        }
+    }
+
+    private suspend fun fetchOsmFuelZoneSingleFlight(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        viewport: MapViewport?,
+        latMin: Double,
+        latMax: Double,
+        lonMin: Double,
+        lonMax: Double,
+        nowMs: Long,
+    ): List<Poi> {
+        val key = osmFuelEnrichFlightKey(latitude, longitude, radiusKm)
+        val deferred = osmFuelEnrichFetchMutex.withLock {
+            osmFuelEnrichInFlight[key] ?: async {
+                fetchAndPersistOsmFuelZone(
+                    latitude = latitude,
+                    longitude = longitude,
+                    radiusKm = radiusKm,
+                    viewport = viewport,
+                    nowMs = nowMs,
+                )
+            }.also { created ->
+                osmFuelEnrichInFlight[key] = created
+                created.invokeOnCompletion {
+                    launch {
+                        osmFuelEnrichFetchMutex.withLock {
+                            if (osmFuelEnrichInFlight[key] === created) {
+                                osmFuelEnrichInFlight.remove(key)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        val fetched = deferred.await()
+        return fetched.filter {
+            it.latitude in latMin..latMax && it.longitude in lonMin..lonMax
+        }
+    }
+
+    private suspend fun fetchAndPersistOsmFuelZone(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        viewport: MapViewport?,
+        nowMs: Long,
+    ): List<Poi> {
+        val effectiveViewport = viewport ?: run {
+            val deltaDeg = radiusKm / 111.0
+            MapViewport(
+                zoom = 14f,
+                mapWidthPx = 400,
+                mapHeightPx = 400,
+                minLat = latitude - deltaDeg,
+                maxLat = latitude + deltaDeg,
+                minLng = longitude - deltaDeg,
+                maxLng = longitude + deltaDeg,
+            )
+        }
+        val fetched = try {
             overpass.search(
                 PoiSearchRequest(
-                    latitude = poi.latitude,
-                    longitude = poi.longitude,
-                    viewport = detailViewport,
+                    latitude = latitude,
+                    longitude = longitude,
+                    viewport = effectiveViewport,
                     categories = setOf(PoiCategory.Gas),
                     skipFilters = true,
                 ),
             )
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
-            Log.w("SelectorPoiProvider", "Overpass gas detail enrich failed", e)
-            return poi
+            Log.w("SelectorPoiProvider", "Overpass fuel zone fetch failed", e)
+            emptyList()
         }.filter { it.poiCategory == PoiCategory.Gas }
 
-        if (osmCandidates.isEmpty()) return poi
-
-        val byRef = poi.refId?.takeIf { it.isNotBlank() }?.let { ref ->
-            osmCandidates.firstOrNull { it.refId == ref }
+        synchronized(cacheLock) {
+            fetched.forEach { osmFuelEnrichCache[it.id] = it }
+            recordOsmFuelEnrichRegion(
+                latitude = latitude,
+                longitude = longitude,
+                radiusKm = radiusKm,
+                loadedAtMs = nowMs,
+            )
         }
-        val nearest = osmCandidates
-            .map { candidate ->
-                candidate to approxDistanceKm(
-                    poi.latitude,
-                    poi.longitude,
-                    candidate.latitude,
-                    candidate.longitude,
+
+        try {
+            osmFuelEnrichRegionDao.insertRegion(
+                OsmFuelEnrichRegionEntity(
+                    centerLat = latitude,
+                    centerLng = longitude,
+                    maxRadiusKmLoaded = radiusKm,
+                    loadedAtMs = nowMs,
+                ),
+            )
+            if (fetched.isNotEmpty()) {
+                poiCacheDao.insertPois(
+                    fetched.map { poi ->
+                        PoiCacheEntity(
+                            id = poi.id,
+                            latitude = poi.latitude,
+                            longitude = poi.longitude,
+                            name = poi.name,
+                            address = poi.address,
+                            poiJson = json.encodeToString(poi),
+                            updatedAtMs = nowMs,
+                        )
+                    },
                 )
             }
-            .filter { (_, km) -> km <= 0.1 }
-            .minByOrNull { it.second }
-            ?.first
+        } catch (e: Exception) {
+            Log.e("SelectorPoiProvider", "Failed to persist OSM fuel enrich cache", e)
+        }
 
-        val osmMatch = byRef ?: nearest ?: return poi
-        return PoiMerger.mergePois(listOf(poi, osmMatch)).firstOrNull() ?: poi
+        return fetched
+    }
+
+    private fun findFreshOsmFuelCovering(
+        regions: List<LoadedPoiRegion>,
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        nowMs: Long,
+    ): LoadedPoiRegion? {
+        val covering = findCoveringRegion(regions, latitude, longitude, radiusKm) ?: return null
+        val loadedAt = covering.categoryLoadedAtMs[PoiCategory.Gas] ?: covering.loadedAtMs
+        return if (nowMs - loadedAt <= POI_CACHE_TTL_AMENITY_MS) covering else null
+    }
+
+    private fun recordOsmFuelEnrichRegion(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int,
+        loadedAtMs: Long,
+    ) {
+        val covering = findCoveringRegion(
+            osmFuelEnrichRegions,
+            latitude,
+            longitude,
+            radiusKm,
+        )
+        val updated = mergeLoadedRegion(
+            existing = covering,
+            centerLat = latitude,
+            centerLng = longitude,
+            requiredRadiusKm = radiusKm,
+            loadedAtMs = loadedAtMs,
+            fetchedProviders = setOf(PoiProviderType.Overpass),
+            fetchedCategories = setOf(PoiCategory.Gas),
+        )
+        if (covering != null) {
+            val idx = osmFuelEnrichRegions.indexOf(covering)
+            if (idx >= 0) osmFuelEnrichRegions[idx] = updated
+        } else {
+            osmFuelEnrichRegions.add(updated)
+        }
+        while (osmFuelEnrichRegions.size > 12) {
+            val farthest = osmFuelEnrichRegions.maxBy { r ->
+                haversineKm(r.centerLat, r.centerLng, latitude, longitude)
+            }
+            osmFuelEnrichRegions.remove(farthest)
+        }
     }
 
     override suspend fun clearCache() {
@@ -1289,12 +1560,15 @@ class SelectorPoiProvider(
             poiSeenAtMs.clear()
             supermarketEnrichCache.clear()
             supermarketEnrichRegions.clear()
+            osmFuelEnrichCache.clear()
+            osmFuelEnrichRegions.clear()
             lastCacheKey = null
         }
 
         try {
             poiCacheDao.clearCache()
             supermarketEnrichRegionDao.clearRegions()
+            osmFuelEnrichRegionDao.clearRegions()
         } catch (e: Exception) {
             Log.e("SelectorPoiProvider", "Failed to clear DB cache", e)
         }
