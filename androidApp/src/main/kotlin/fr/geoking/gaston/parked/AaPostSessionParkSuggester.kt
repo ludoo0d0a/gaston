@@ -151,7 +151,23 @@ class AaPostSessionParkSuggester(
         settings.activeVehicleId.ifBlank { settings.vehicles.firstOrNull()?.id.orEmpty() }
             .ifBlank { "default" }
 
-    private fun onParkConfirmed(candidate: ParkCandidate) {
+    /**
+     * Refresh GPS before freezing the candidate and posting the notification, so we do not
+     * persist a stale [AppSettings.lastKnownLat]/[AppSettings.lastKnownLon] from earlier in the trip.
+     */
+    private suspend fun onParkConfirmed(seed: ParkCandidate) {
+        val loc = try {
+            LocationHelper.getCurrentLocation(appContext)
+        } catch (e: Exception) {
+            Log.w(TAG, "Fresh park location failed; falling back to seed coords", e)
+            null
+        }
+        val candidate = if (loc != null) {
+            settingsManager.saveLastKnownLocation(loc.latitude, loc.longitude)
+            seed.copy(latitude = loc.latitude, longitude = loc.longitude)
+        } else {
+            seed
+        }
         candidateStore.save(candidate.copy(aaSuggestionShown = true))
         val settings = settingsManager.settings.value
         val label = settings.vehicles.firstOrNull { it.id == candidate.vehicleId }?.displayLabel()?.ifBlank { null }
