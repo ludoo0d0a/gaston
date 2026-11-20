@@ -13,6 +13,43 @@ const val OSM_FUEL_ENRICH_DEFAULT_ZONE_KM = 3
 const val OSM_FUEL_ENRICH_MATCH_KM = 0.1
 
 /**
+ * Room/map id prefix for Overpass fuel rows stored only for detail enrich.
+ * Must never appear as map pins (keeps DataGouv/GasAPI names + brand icons).
+ */
+const val OSM_FUEL_ENRICH_ID_PREFIX = "osm-fuel-enrich:"
+
+/** True for enrich-cache-only OSM fuel rows (current prefix or legacy `osm:` contamination). */
+fun isOsmFuelEnrichCachePoi(poi: Poi): Boolean {
+    if (poi.id.startsWith(OSM_FUEL_ENRICH_ID_PREFIX)) return true
+    // Legacy rows written before the dedicated prefix — treat OSM Gas as enrich-only
+    // unless the caller explicitly includes Overpass as a map provider.
+    return poi.poiCategory == PoiCategory.Gas &&
+        poi.id.startsWith("osm:") &&
+        (poi.source?.contains("OpenStreetMap", ignoreCase = true) == true)
+}
+
+/**
+ * Disk hydrate filter for the map/list cache. Enrich-only OSM fuel must not pollute pins.
+ */
+fun shouldIncludeDiskPoiOnMap(
+    poi: Poi,
+    providers: Set<PoiProviderType>,
+    categoriesToFetch: Set<PoiCategory>,
+): Boolean {
+    if (poi.poiCategory == PoiCategory.Supermarket && PoiCategory.Supermarket !in categoriesToFetch) {
+        return false
+    }
+    if (poi.id.startsWith(OSM_FUEL_ENRICH_ID_PREFIX)) return false
+    if (isOsmFuelEnrichCachePoi(poi) && PoiProviderType.Overpass !in providers) return false
+    return true
+}
+
+fun toOsmFuelEnrichCachePoi(osmFuel: Poi): Poi {
+    val rawId = osmFuel.id.removePrefix("osm:").removePrefix(OSM_FUEL_ENRICH_ID_PREFIX)
+    return osmFuel.copy(id = "$OSM_FUEL_ENRICH_ID_PREFIX$rawId")
+}
+
+/**
  * Pick the best Overpass fuel POI for [station] from a zone result list.
  * Prefer matching [Poi.refId], else nearest within [OSM_FUEL_ENRICH_MATCH_KM].
  */

@@ -18,6 +18,64 @@ class OsmFuelDetailEnrichTest {
     }
 
     @Test
+    fun shouldIncludeDiskPoiOnMap_excludesEnrichOnlyOsmFuel() {
+        val enrich = Poi(
+            id = "${OSM_FUEL_ENRICH_ID_PREFIX}123",
+            name = "Gas station",
+            address = "",
+            latitude = 48.0,
+            longitude = 2.0,
+            poiCategory = PoiCategory.Gas,
+            source = "OpenStreetMap",
+        )
+        val legacyOsm = Poi(
+            id = "osm:999",
+            name = "Gas station",
+            address = "",
+            latitude = 48.0,
+            longitude = 2.0,
+            poiCategory = PoiCategory.Gas,
+            source = "OpenStreetMap",
+        )
+        val dataGouv = Poi(
+            id = "57120005",
+            name = "Total Paris",
+            address = "",
+            latitude = 48.0,
+            longitude = 2.0,
+            brand = "Total",
+            poiCategory = PoiCategory.Gas,
+            source = "DataGouvPrixCarburant",
+        )
+        val fuelOnly = setOf(PoiProviderType.Etalab, PoiProviderType.GasApi)
+        assertFalse(shouldIncludeDiskPoiOnMap(enrich, fuelOnly, setOf(PoiCategory.Gas)))
+        assertFalse(shouldIncludeDiskPoiOnMap(legacyOsm, fuelOnly, setOf(PoiCategory.Gas)))
+        assertTrue(shouldIncludeDiskPoiOnMap(dataGouv, fuelOnly, setOf(PoiCategory.Gas)))
+        // Prefixed enrich rows stay hidden even if Overpass is enabled for other amenities.
+        assertFalse(
+            shouldIncludeDiskPoiOnMap(
+                enrich,
+                fuelOnly + PoiProviderType.Overpass,
+                setOf(PoiCategory.Gas),
+            ),
+        )
+    }
+
+    @Test
+    fun toOsmFuelEnrichCachePoi_prefixesId() {
+        val osm = Poi(
+            id = "osm:42",
+            name = "OSM",
+            address = "",
+            latitude = 1.0,
+            longitude = 2.0,
+            poiCategory = PoiCategory.Gas,
+            source = "OpenStreetMap",
+        )
+        assertEquals("${OSM_FUEL_ENRICH_ID_PREFIX}42", toOsmFuelEnrichCachePoi(osm).id)
+    }
+
+    @Test
     fun matchOsmFuelForGasStation_prefersRefIdOverDistance() {
         val station = Poi(
             id = "57120005",

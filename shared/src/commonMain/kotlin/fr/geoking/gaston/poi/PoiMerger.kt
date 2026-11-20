@@ -493,6 +493,20 @@ object PoiMerger {
         )
     }
 
+    /**
+     * Copy amenities (and blank refId) from [donor] onto [base] without changing
+     * name, brand, or coordinates — used for on-demand OSM fuel detail enrich.
+     */
+    fun enrichAmenitiesFrom(base: Poi, donor: Poi): Poi {
+        val mergedAmenities = mergeAmenities(base.amenities, donor.amenities)
+        val mergedRef = base.refId?.takeIf { it.isNotBlank() } ?: donor.refId?.takeIf { it.isNotBlank() }
+        if (mergedAmenities == base.amenities && mergedRef == base.refId) return base
+        return base.copy(
+            amenities = mergedAmenities,
+            refId = mergedRef,
+        )
+    }
+
     private fun mergeAmenities(a: PoiAmenities?, b: PoiAmenities?): PoiAmenities? {
         if (a == null) return b
         if (b == null) return a

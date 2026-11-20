@@ -249,7 +249,7 @@ APIs:
 ### Gas station detail amenities (FR)
 
 - **Gas API** (`gas-api.ovh`) maps `services`, `schedules`, `allDayService`, and `freeway` into `PoiAmenities` on every list fetch (`GasApiAmenities`).
-- **Zone Overpass (not per station)**: one `amenity=fuel` query covers a geo zone (map viewport if ≤15 km, else ~3 km around the station). Results live in memory + Room (`osm_fuel_enrich_region` + `poi_cache`, **7-day** TTL, negative cache, single-flight). Opening/refreshing a thin Gas detail sheet matches from that list (`refId` or ≤100 m) and persists the merged station. Prefetch runs after `searchFlow` when Gas is requested and the viewport radius is ≤15 km. Overpass is **not** added to the Auto FR fuel provider set for map pins.
+- **Zone Overpass (not per station)**: one `amenity=fuel` query covers a geo zone (map viewport if ≤15 km, else ~3 km around the station). Results live in memory + Room (`osm_fuel_enrich_region` + `poi_cache` ids prefixed `osm-fuel-enrich:`, **7-day** TTL, negative cache, single-flight). Those rows are **never** shown as map pins (keeps DataGouv/GasAPI names and brand icons). Detail enrich copies **amenities only** onto the station (`PoiMerger.enrichAmenitiesFrom`). Prefetch runs after `searchFlow` when Gas is requested and the viewport radius is ≤15 km.
 
 ### Supermarket brand enrich
 

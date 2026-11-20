@@ -2,6 +2,7 @@ package fr.geoking.gaston.poi
 
 import android.util.Log
 import fr.geoking.gaston.AppSettings
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.StationMapFilters
 import fr.geoking.gaston.effectiveProviders
 import fr.geoking.gaston.SettingsManager
@@ -200,7 +201,7 @@ class SelectorPoiProvider(
         latitude: Double,
         longitude: Double,
     ): Set<PoiProviderType> {
-        if (PoiCategory.Radar !in categories) return providers
+        if (!FeatureFlag.RADAR || PoiCategory.Radar !in categories) return providers
         val radarSources = buildSet {
             add(PoiProviderType.LufopOpenSpeedCam)
             add(PoiProviderType.LuxembourgRadars)
@@ -365,10 +366,15 @@ class SelectorPoiProvider(
         request: PoiSearchRequest,
         providers: Set<PoiProviderType>,
     ): List<Poi> {
+        // Never show enrich-only OSM fuel as map/list pins (preserves DataGouv names + brand icons).
+        val mapPois = pois.filter { poi ->
+            !poi.id.startsWith(OSM_FUEL_ENRICH_ID_PREFIX) &&
+                !(isOsmFuelEnrichCachePoi(poi) && PoiProviderType.Overpass !in providers)
+        }
         val enrichRadiusKm = request.viewport?.let { v ->
             radiusKmFromMapViewport(request.latitude, request.longitude, v).coerceIn(1, 50)
         } ?: 10
-        val enrichScope = pois.filter { poi ->
+        val enrichScope = mapPois.filter { poi ->
             approxDistanceKm(request.latitude, request.longitude, poi.latitude, poi.longitude) <=
                 enrichRadiusKm + 0.5
         }
@@ -380,12 +386,12 @@ class SelectorPoiProvider(
         }
         val enriched = if (enrichedScope !== enrichScope) {
             val byId = enrichedScope.associateBy { it.id }
-            pois.map { byId[it.id] ?: it }
+            mapPois.map { byId[it.id] ?: it }
         } else {
-            pois
+            mapPois
         }
         // Persist direction onto in-memory cache so triangles survive without re-query.
-        if (enriched !== pois) {
+        if (enriched !== mapPois) {
             synchronized(cacheLock) {
                 for (poi in enriched) {
                     if (poi.poiCategory == PoiCategory.Radar &&
@@ -655,7 +661,7 @@ class SelectorPoiProvider(
             }
 
             val dbPoisForDisplay = dbPois.filter { (poi, _) ->
-                poi.poiCategory != PoiCategory.Supermarket || PoiCategory.Supermarket in categoriesToFetch
+                shouldIncludeDiskPoiOnMap(poi, providers, categoriesToFetch)
             }
             if (dbPoisForDisplay.isNotEmpty()) {
                 val dbResultPois = synchronized(cacheLock) {
@@ -1015,7 +1021,7 @@ class SelectorPoiProvider(
 
         if (dbPois.isNotEmpty()) {
             val dbPoisForDisplay = dbPois.filter { (poi, _) ->
-                poi.poiCategory != PoiCategory.Supermarket || PoiCategory.Supermarket in categoriesToFetch
+                shouldIncludeDiskPoiOnMap(poi, providers, categoriesToFetch)
             }
             if (dbPoisForDisplay.isNotEmpty()) {
                 synchronized(cacheLock) {
@@ -1261,7 +1267,8 @@ class SelectorPoiProvider(
             viewport = null,
         )
         val osmMatch = matchOsmFuelForGasStation(poi, osmCandidates) ?: return poi
-        return PoiMerger.mergePois(listOf(poi, osmMatch)).firstOrNull() ?: poi
+        // Amenities only — do not overwrite DataGouv/GasAPI name, brand, or coordinates.
+        return PoiMerger.enrichAmenitiesFrom(poi, osmMatch)
     }
 
     /**
@@ -1358,13 +1365,13 @@ class SelectorPoiProvider(
             ).mapNotNull { entity ->
                 try {
                     val poi = json.decodeFromString<Poi>(entity.poiJson)
-                    if (poi.poiCategory == PoiCategory.Gas &&
-                        (poi.source?.contains("OpenStreetMap", ignoreCase = true) == true ||
-                            poi.id.startsWith("osm:"))
-                    ) {
-                        poi
-                    } else {
-                        null
+                    when {
+                        poi.id.startsWith(OSM_FUEL_ENRICH_ID_PREFIX) -> poi
+                        // Legacy enrich rows before dedicated prefix
+                        poi.poiCategory == PoiCategory.Gas &&
+                            (poi.source?.contains("OpenStreetMap", ignoreCase = true) == true ||
+                                poi.id.startsWith("osm:")) -> toOsmFuelEnrichCachePoi(poi)
+                        else -> null
                     }
                 } catch (_: Exception) {
                     null
@@ -1465,8 +1472,18 @@ class SelectorPoiProvider(
             emptyList()
         }.filter { it.poiCategory == PoiCategory.Gas }
 
+        val forEnrichCache = fetched.map { toOsmFuelEnrichCachePoi(it) }
+
         synchronized(cacheLock) {
-            fetched.forEach { osmFuelEnrichCache[it.id] = it }
+            forEnrichCache.forEach { osmFuelEnrichCache[it.id] = it }
+            // Drop any legacy osm: enrich rows that leaked into the map cache.
+            val leakedIds = cachedPois.keys.filter { id ->
+                cachedPois[id]?.let { isOsmFuelEnrichCachePoi(it) } == true
+            }
+            leakedIds.forEach {
+                cachedPois.remove(it)
+                poiSeenAtMs.remove(it)
+            }
             recordOsmFuelEnrichRegion(
                 latitude = latitude,
                 longitude = longitude,
@@ -1484,9 +1501,9 @@ class SelectorPoiProvider(
                     loadedAtMs = nowMs,
                 ),
             )
-            if (fetched.isNotEmpty()) {
+            if (forEnrichCache.isNotEmpty()) {
                 poiCacheDao.insertPois(
-                    fetched.map { poi ->
+                    forEnrichCache.map { poi ->
                         PoiCacheEntity(
                             id = poi.id,
                             latitude = poi.latitude,
@@ -1503,7 +1520,7 @@ class SelectorPoiProvider(
             Log.e("SelectorPoiProvider", "Failed to persist OSM fuel enrich cache", e)
         }
 
-        return fetched
+        return forEnrichCache
     }
 
     private fun findFreshOsmFuelCovering(
