@@ -115,8 +115,9 @@ enum class PoiCategory {
 }
 
 /**
- * POI / overlay data source. [providesFuel] / [providesElectric] / [providesTraffic] classify for UI
- * (e.g. Settings → Sources filters), not OSM extras.
+ * POI / overlay data source. [providesFuel] / [providesElectric] / [providesTraffic] /
+ * [providesRadar] classify for UI (e.g. Settings → Sources filters), not OSM extras.
+ * Radar feeds are also gated by [fr.geoking.gaston.FeatureFlag.RADAR].
  */
 @Serializable
 /**
@@ -133,6 +134,7 @@ enum class PoiProviderType(
     val providesElectric: Boolean = false,
     val providesSwap: Boolean = false,
     val providesTraffic: Boolean = false,
+    val providesRadar: Boolean = false,
     val fetchKind: PoiProviderFetchKind = PoiProviderFetchKind.Api,
 ) {
     Routex(providesFuel = true),
@@ -213,11 +215,11 @@ enum class PoiProviderType(
     /** US state-level weekly retail fuel prices (EIA petroleum/pri/gnd) + OSM stations. */
     UsaEia(providesFuel = true),
     /** French speed cameras (radars fixes) open data from data.gouv.fr. Kept wired; disabled in user selection for now. */
-    FranceRadars(fetchKind = PoiProviderFetchKind.File),
+    FranceRadars(providesRadar = true, fetchKind = PoiProviderFetchKind.File),
     /** Lufop API (api.lufop.net) speed cameras / danger zones. Requires LUFOP_API_KEY. */
-    LufopOpenSpeedCam,
+    LufopOpenSpeedCam(providesRadar = true),
     /** Luxembourg fixed radars (PCH / data.public.lu GeoJSON, CC0). */
-    LuxembourgRadars(fetchKind = PoiProviderFetchKind.File),
+    LuxembourgRadars(providesRadar = true, fetchKind = PoiProviderFetchKind.File),
     /** Open-Meteo precipitation grid for the weather map amenity. */
     OpenMeteoWeather,
     /**
@@ -278,6 +280,13 @@ fun Iterable<PoiProviderType>.anyProvidesSwap(): Boolean = any { it.providesSwap
 
 /** True if any selected provider can supply traffic overlays. */
 fun Iterable<PoiProviderType>.anyProvidesTraffic(): Boolean = any { it.providesTraffic }
+
+/** True if any selected provider can supply radar / speed-camera POIs. */
+fun Iterable<PoiProviderType>.anyProvidesRadar(): Boolean = any { it.providesRadar }
+
+/** Dedicated radar feeds (Lufop, France open data, Luxembourg). Not Overpass OSM. */
+val RADAR_POI_PROVIDERS: Set<PoiProviderType> =
+    PoiProviderType.entries.filter { it.providesRadar }.toSet()
 
 /**
  * Which traffic overlay backends to call.

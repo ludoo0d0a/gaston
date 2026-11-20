@@ -1,5 +1,6 @@
 package fr.geoking.gaston.aac
 
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.api.overpass.OverpassClient
 import fr.geoking.gaston.api.radars.FranceRadarRecord
 import fr.geoking.gaston.api.radars.FranceRadarsClient
@@ -58,6 +59,17 @@ class DangerZoneRepository(
         radiusKm: Double = 100.0,
         corridorEnrichLimit: Int = CORRIDOR_ENRICH_PER_CALL,
     ): List<DangerZone> {
+        if (!FeatureFlag.RADAR) {
+            stateLock.withLock {
+                cachedZones = emptyList()
+                cacheCenterLat = Double.NaN
+                cacheCenterLon = Double.NaN
+                cacheRadiusKm = 0.0
+                corridorAttemptedIds.clear()
+            }
+            return emptyList()
+        }
+
         val needRefresh = cachedZones.isEmpty() ||
             cacheCenterLat.isNaN() ||
             haversineKm(latitude, longitude, cacheCenterLat, cacheCenterLon) > cacheRadiusKm * 0.4

@@ -305,6 +305,7 @@ fun AppSettings.applyFeatureFlags(): AppSettings {
         next = next.copy(
             radarWarningEnabled = false,
             selectedOverpassAmenityTypes = next.selectedOverpassAmenityTypes - "speed_camera",
+            selectedPoiProviders = next.selectedPoiProviders.filterNot { it.providesRadar }.toSet(),
         )
     }
     if (!FeatureFlag.TRAFFIC) {

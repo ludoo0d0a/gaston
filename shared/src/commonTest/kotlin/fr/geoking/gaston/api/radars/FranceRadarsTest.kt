@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.radars
 
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiSearchRequest
 import fr.geoking.gaston.api.radars.toDangerZone
@@ -10,6 +11,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.runBlocking
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -17,6 +20,16 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class FranceRadarsTest {
+
+    @BeforeTest
+    fun enableRadarFeatureFlag() {
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, true)
+    }
+
+    @AfterTest
+    fun clearFeatureFlagOverrides() {
+        FeatureFlag.clearOverrides()
+    }
 
     private val sampleCsv = """
 Numéro de radar;Type de radar;Date de mise en service;VMA ;Latitude; Longitude
@@ -95,6 +108,16 @@ Numéro de radar;Type de radar;Date de mise en service;VMA ;Latitude; Longitude
         val (northLat, northLon) = fr.geoking.gaston.aac.DangerZoneTriangle.offsetMeters(48.8566, 2.3522, 0.0, 200.0)
         assertTrue(zone.contains(southLat, southLon))
         assertFalse(zone.contains(northLat, northLon))
+    }
+
+    @Test
+    fun featureFlagRadarOff_skipsNetwork() = runBlocking {
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, false)
+        val mockEngine = MockEngine {
+            error("FranceRadars must not be called while FeatureFlag.RADAR is off")
+        }
+        val client = FranceRadarsClient(HttpClient(mockEngine))
+        assertTrue(client.getRecordsNear(48.8566, 2.3522).isEmpty())
     }
 
     @Test

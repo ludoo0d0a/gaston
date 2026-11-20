@@ -3,6 +3,7 @@ package fr.geoking.gaston.radar
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.aac.DangerZoneRepository
 import fr.geoking.gaston.aac.RadarCorridorOverlay
 import fr.geoking.gaston.di.MapModuleLoader
@@ -68,6 +69,10 @@ object RadarCorridorStore {
     /** Cheap + throttled: call on every location / camera update. */
     @Synchronized
     fun request(lat: Double, lon: Double) {
+        if (!FeatureFlag.RADAR) {
+            if (_rings.value.isNotEmpty()) publishRings(emptyList())
+            return
+        }
         if (inFlight) return
         val now = System.currentTimeMillis()
         val moved = lastLat.isNaN() || haversineKm(lat, lon, lastLat, lastLon) >= MIN_MOVE_KM

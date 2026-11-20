@@ -3,6 +3,7 @@ package fr.geoking.gaston.radar
 import android.content.Context
 import android.util.Log
 import fr.geoking.gaston.BuildConfig
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.SettingsManager
 import fr.geoking.gaston.aac.DangerZoneRepository
 import fr.geoking.gaston.di.MapModuleLoader
@@ -83,16 +84,20 @@ class DangerZoneAlertCoordinator(
                     break
                 }
                 try {
-                    MapModuleLoader.ensureLoaded()
-                    val zoneRepo = GlobalContext.get().get<DangerZoneRepository>()
-                    val loc = LocationHelper.getCurrentLocation(appContext)
-                    if (loc != null) {
-                        val zones = zoneRepo.zonesNear(
-                            latitude = loc.latitude,
-                            longitude = loc.longitude,
-                            radiusKm = ZONE_CACHE_RADIUS_KM,
-                        )
-                        manager.evaluateAndAlert(loc, zones)
+                    if (!FeatureFlag.RADAR || !settingsManager.settings.value.radarWarningEnabled) {
+                        manager.clearAlerts()
+                    } else {
+                        MapModuleLoader.ensureLoaded()
+                        val zoneRepo = GlobalContext.get().get<DangerZoneRepository>()
+                        val loc = LocationHelper.getCurrentLocation(appContext)
+                        if (loc != null) {
+                            val zones = zoneRepo.zonesNear(
+                                latitude = loc.latitude,
+                                longitude = loc.longitude,
+                                radiusKm = ZONE_CACHE_RADIUS_KM,
+                            )
+                            manager.evaluateAndAlert(loc, zones)
+                        }
                     }
                 } catch (e: Exception) {
                     if (e is kotlinx.coroutines.CancellationException) throw e

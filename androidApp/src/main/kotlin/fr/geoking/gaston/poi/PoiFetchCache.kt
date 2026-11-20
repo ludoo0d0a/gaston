@@ -163,11 +163,7 @@ fun computePoiCoverage(
  * Overpass `highway=speed_camera` alone must not mark Radar coverage complete while these
  * are still selected but never successfully loaded.
  */
-val PRIMARY_RADAR_POI_PROVIDERS: Set<PoiProviderType> = setOf(
-    PoiProviderType.LufopOpenSpeedCam,
-    PoiProviderType.LuxembourgRadars,
-    PoiProviderType.FranceRadars,
-)
+val PRIMARY_RADAR_POI_PROVIDERS: Set<PoiProviderType> = fr.geoking.gaston.poi.RADAR_POI_PROVIDERS
 
 /**
  * Providers that still need a network call.
@@ -229,14 +225,11 @@ fun providersForIncrementalFetch(
     if (needsAmenityFetch && PoiProviderType.Overpass in allProviders) {
         result += PoiProviderType.Overpass
     }
-    if (PoiCategory.Radar in missingCategories && PoiProviderType.LufopOpenSpeedCam in allProviders) {
-        result += PoiProviderType.LufopOpenSpeedCam
-    }
-    if (PoiCategory.Radar in missingCategories && PoiProviderType.LuxembourgRadars in allProviders) {
-        result += PoiProviderType.LuxembourgRadars
-    }
-    if (PoiCategory.Radar in missingCategories && PoiProviderType.Overpass in allProviders) {
-        result += PoiProviderType.Overpass
+    if (PoiCategory.Radar in missingCategories) {
+        result += allProviders.filter { it.providesRadar }
+        if (PoiProviderType.Overpass in allProviders) {
+            result += PoiProviderType.Overpass
+        }
     }
     // If Overpass is an explicit provider for Gas or Irve, and they are missing, include it.
     if (PoiProviderType.Overpass in allProviders) {

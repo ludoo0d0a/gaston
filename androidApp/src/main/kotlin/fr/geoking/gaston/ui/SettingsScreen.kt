@@ -956,7 +956,7 @@ private fun SourcesConfig(
         val providesSwap: Boolean = type.providesSwap,
         val providesTraffic: Boolean = type.providesTraffic,
         val providesMeteo: Boolean = type == PoiProviderType.OpenMeteoWeather,
-        val providesRadar: Boolean = type in setOf(PoiProviderType.FranceRadars, PoiProviderType.LufopOpenSpeedCam, PoiProviderType.LuxembourgRadars),
+        val providesRadar: Boolean = type.providesRadar,
     )
 
     fun providerLabel(type: PoiProviderType): String =

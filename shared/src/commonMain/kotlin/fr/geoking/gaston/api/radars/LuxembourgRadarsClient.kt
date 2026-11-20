@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.radars
 
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.aac.TextFileCache
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
@@ -19,6 +20,7 @@ import kotlinx.serialization.json.jsonPrimitive
 /**
  * Client for Luxembourg fixed speed cameras (PCH / data.public.lu GeoJSON).
  * Licence: Creative Commons Zero (CC0).
+ * Gated by [FeatureFlag.RADAR] — no network when the radar layer is off.
  *
  * Dataset: [PCH : Emplacement des radars fixes](https://data.public.lu/fr/datasets/pch-emplacement-des-radars-fixes/)
  * Resource: [https://data.geoportail.lu/radar](https://data.geoportail.lu/radar)
@@ -51,6 +53,7 @@ class LuxembourgRadarsClient(
         longitude: Double,
         radiusKm: Double = 15.0
     ): List<LuxembourgRadarRecord> {
+        if (!FeatureFlag.RADAR) return emptyList()
         val allRadars = ensureCachedRadars()
         return allRadars.filter { radar ->
             haversineKm(latitude, longitude, radar.latitude, radar.longitude) <= radiusKm

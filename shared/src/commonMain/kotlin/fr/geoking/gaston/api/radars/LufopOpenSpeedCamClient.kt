@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.radars
 
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.aac.TextFileCache
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
@@ -25,6 +26,7 @@ import kotlinx.serialization.json.jsonPrimitive
  *
  * Geo query: `GET /api?key=…&format=json&q=lat,lon&m=…&nbr=…`
  * [m] is ≈ 1/10 km (e.g. `m=100` ≈ 10 km). Blank [apiKey] → empty results.
+ * Gated by [FeatureFlag.RADAR] — no network when the radar layer is off.
  *
  * Aggressive cache: prefetch ≥ [MIN_FETCH_RADIUS_KM], TTL 30 days (memory + optional disk),
  * and at most one network call every [minNetworkIntervalMs] (free tier ≈ 10 req/min).
@@ -79,6 +81,7 @@ class LufopOpenSpeedCamClient(
         longitude: Double,
         radiusKm: Double = 15.0
     ): List<LufopOpenSpeedCamRecord> {
+        if (!FeatureFlag.RADAR) return emptyList()
         if (apiKey.isBlank()) return emptyList()
 
         val allRadars = ensureCachedRadars(latitude, longitude, radiusKm)

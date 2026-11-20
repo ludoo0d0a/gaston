@@ -3,11 +3,24 @@ package fr.geoking.gaston
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderType
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class MapFilterSettingsTest {
+
+    @Before
+    fun enableRadarFeatureFlag() {
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, true)
+    }
+
+    @After
+    fun clearFeatureFlagOverrides() {
+        FeatureFlag.clearOverrides()
+    }
 
     private fun poi(id: String, category: PoiCategory) = Poi(
         id = id,
@@ -179,10 +192,11 @@ class MapFilterSettingsTest {
         val openMeteoType = PoiProviderType.OpenMeteoWeather
         assertEquals(PoiProviderType.OpenMeteoWeather, openMeteoType)
 
-        // Radar providers
-        val radarTypes = setOf(PoiProviderType.FranceRadars, PoiProviderType.LufopOpenSpeedCam, PoiProviderType.LuxembourgRadars)
-        assertTrue(PoiProviderType.FranceRadars in radarTypes)
-        assertTrue(PoiProviderType.LufopOpenSpeedCam in radarTypes)
-        assertTrue(PoiProviderType.LuxembourgRadars in radarTypes)
+        // Radar providers share providesRadar (FeatureFlag.RADAR gate).
+        assertTrue(PoiProviderType.FranceRadars.providesRadar)
+        assertTrue(PoiProviderType.LufopOpenSpeedCam.providesRadar)
+        assertTrue(PoiProviderType.LuxembourgRadars.providesRadar)
+        assertFalse(PoiProviderType.Overpass.providesRadar)
+        assertFalse(PoiProviderType.Etalab.providesRadar)
     }
 }

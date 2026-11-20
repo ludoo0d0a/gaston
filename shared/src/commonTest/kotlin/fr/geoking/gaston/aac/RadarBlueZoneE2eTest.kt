@@ -1,5 +1,6 @@
 package fr.geoking.gaston.aac
 
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.api.overpass.OverpassClient
 import fr.geoking.gaston.api.radars.FranceRadarsClient
 import fr.geoking.gaston.road.RoadGeometryRepository
@@ -14,6 +15,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -90,6 +92,12 @@ class RadarBlueZoneE2eTest {
     @BeforeTest
     fun setUp() {
         RateLimitTracker.reset()
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, true)
+    }
+
+    @AfterTest
+    fun tearDown() {
+        FeatureFlag.clearOverrides()
     }
 
     private fun blue(rings: List<RadarCorridorOverlay>, lat: Double, lon: Double) =

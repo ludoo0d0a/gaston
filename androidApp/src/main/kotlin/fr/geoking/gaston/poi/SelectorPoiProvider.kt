@@ -202,11 +202,12 @@ class SelectorPoiProvider(
         longitude: Double,
     ): Set<PoiProviderType> {
         if (!FeatureFlag.RADAR || PoiCategory.Radar !in categories) return providers
-        val radarSources = buildSet {
-            add(PoiProviderType.LufopOpenSpeedCam)
-            add(PoiProviderType.LuxembourgRadars)
-            add(PoiProviderType.Overpass)
-        }
+        // Active map radar feeds (+ Overpass OSM). FranceRadars stays opt-in via Sources.
+        val radarSources = setOf(
+            PoiProviderType.LufopOpenSpeedCam,
+            PoiProviderType.LuxembourgRadars,
+            PoiProviderType.Overpass,
+        )
         return applyBulkFileNetworkPolicy(providers + radarSources)
     }
 
@@ -344,8 +345,8 @@ class SelectorPoiProvider(
             if (needsRadar && !hasRadarPin) {
                 val radarProviders = setOf(
                     PoiProviderType.LufopOpenSpeedCam,
-                    PoiProviderType.Overpass,
                     PoiProviderType.LuxembourgRadars,
+                    PoiProviderType.Overpass,
                 ).intersect(providers)
                 return PoiCoverageResult(
                     coveringRegion = coverage.coveringRegion,

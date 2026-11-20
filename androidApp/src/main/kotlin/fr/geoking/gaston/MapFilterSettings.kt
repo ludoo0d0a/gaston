@@ -7,6 +7,7 @@ import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.poi.Poi
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiProviderType
+import fr.geoking.gaston.poi.RADAR_POI_PROVIDERS
 import fr.geoking.gaston.poi.autoProvidersForCountries
 import fr.geoking.gaston.poi.calculateBoundsFromMapViewport
 import java.util.Locale
@@ -28,13 +29,8 @@ fun AppSettings.isSwapExclusive(): Boolean =
  * Amenity / radar-only sources (no fuel or EV station feed).
  * Selecting these (e.g. Lufop) must not exit "Other" mode.
  */
-val AMENITY_ONLY_POI_PROVIDERS: Set<PoiProviderType> = setOf(
-    PoiProviderType.Overpass,
-    PoiProviderType.LufopOpenSpeedCam,
-    PoiProviderType.LuxembourgRadars,
-    PoiProviderType.FranceRadars,
-    PoiProviderType.OpenMeteoWeather,
-)
+val AMENITY_ONLY_POI_PROVIDERS: Set<PoiProviderType> =
+    setOf(PoiProviderType.Overpass, PoiProviderType.OpenMeteoWeather) + RADAR_POI_PROVIDERS
 
 /** True when the user explicitly selected "Other" (amenities) mode. */
 fun AppSettings.isOtherModeActive(): Boolean {
@@ -75,6 +71,9 @@ fun AppSettings.effectiveAllowedCategories(): Set<PoiCategory> {
 
     // Amenities: strictly based on selection
     selectedOverpassAmenityTypes.mapNotNullTo(categories) { categoryFromAmenityId(it) }
+    if (!FeatureFlag.RADAR) {
+        categories.remove(PoiCategory.Radar)
+    }
 
     if (FeatureFlag.TRAFFIC && mapTrafficEnabled) {
         categories.add(PoiCategory.Traffic)
@@ -247,11 +246,17 @@ fun AppSettings.effectiveProviders(countryCodes: List<String> = emptyList()): Se
     }
     // Traffic overlays are not station POI feeds (TrafficProviderFactory).
     val withoutTraffic = energyFiltered.filterNot { it.providesTraffic }.toSet()
+    // Dedicated radar feeds require FeatureFlag.RADAR (Overpass speed_camera is category-gated).
+    val withoutRadar = if (FeatureFlag.RADAR) {
+        withoutTraffic
+    } else {
+        withoutTraffic.filterNot { it.providesRadar }.toSet()
+    }
 
     if (useVehicleFilter && fuelCard == FuelCard.Routex) {
-        return withoutTraffic + setOf(PoiProviderType.Routex, PoiProviderType.Overpass)
+        return withoutRadar + setOf(PoiProviderType.Routex, PoiProviderType.Overpass)
     }
-    return withoutTraffic
+    return withoutRadar
 }
 
 /** ISO country codes for [latitude]/[longitude] when it falls in known [ParkingRegion]s or within 10km of their borders. */

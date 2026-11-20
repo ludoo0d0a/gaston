@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.overpass
 
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.poi.radiusKmFromMapViewport
 import fr.geoking.gaston.poi.MapViewport
 import fr.geoking.gaston.api.routex.PoiAmenities
@@ -50,7 +51,9 @@ class OverpassProvider(
             ?: radiusKm
 
         val cat = request.categories.ifEmpty { supportedCategories() }
-        val wanted = cat.filter { it in supportedCategories() }.toSet()
+        val wanted = cat.filter { it in supportedCategories() }
+            .filterNot { it == PoiCategory.Radar && !FeatureFlag.RADAR }
+            .toSet()
         if (wanted.isEmpty()) return emptyList()
         val amenityValues = wanted.mapNotNull { categoryToOsmAmenity(it) }.toSet()
         val tourismValues = wanted.mapNotNull { categoryToOsmTourism(it) }.toSet()

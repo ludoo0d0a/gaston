@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.radars
 
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.aac.FranceRadarsCsvResolver
 import fr.geoking.gaston.aac.TextFileCache
 import fr.geoking.gaston.poi.Poi
@@ -15,6 +16,7 @@ import kotlinx.coroutines.sync.withLock
 /**
  * Client for French fixed speed-control dataset from data.gouv.fr.
  * Open Data licence: Licence Ouverte v2.0 (Etalab).
+ * Gated by [FeatureFlag.RADAR] — no network when the radar layer is off.
  *
  * Resolves the latest CSV via data.gouv API when possible; falls back to [DEFAULT_CSV_URL].
  * Memory cache + optional [TextFileCache] disk TTL (24 h).
@@ -52,6 +54,7 @@ class FranceRadarsClient(
         longitude: Double,
         radiusKm: Double = 15.0
     ): List<FranceRadarRecord> {
+        if (!FeatureFlag.RADAR) return emptyList()
         val allRadars = ensureCachedRadars()
         return allRadars.filter { radar ->
             haversineKm(latitude, longitude, radar.latitude, radar.longitude) <= radiusKm

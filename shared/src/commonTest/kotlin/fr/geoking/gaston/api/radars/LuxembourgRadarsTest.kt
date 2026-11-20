@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.radars
 
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.poi.PoiCategory
 import fr.geoking.gaston.poi.PoiSearchRequest
 import io.ktor.client.HttpClient
@@ -9,11 +10,23 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.runBlocking
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class LuxembourgRadarsTest {
+
+    @BeforeTest
+    fun enableRadarFeatureFlag() {
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, true)
+    }
+
+    @AfterTest
+    fun clearFeatureFlagOverrides() {
+        FeatureFlag.clearOverrides()
+    }
 
     private val sampleGeoJson = """
 {
@@ -80,6 +93,16 @@ class LuxembourgRadarsTest {
         assertEquals(PoiCategory.Radar, poi.poiCategory)
         assertEquals("LuxembourgRadars", poi.source)
         assertEquals("true", poi.rawSourceData?.get("aac_zone"))
+    }
+
+    @Test
+    fun featureFlagRadarOff_skipsNetwork() = runBlocking {
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, false)
+        val mockEngine = MockEngine {
+            error("geoportail.lu must not be called while FeatureFlag.RADAR is off")
+        }
+        val client = LuxembourgRadarsClient(HttpClient(mockEngine))
+        assertTrue(client.getRecordsNear(49.6116, 6.1319).isEmpty())
     }
 
     @Test

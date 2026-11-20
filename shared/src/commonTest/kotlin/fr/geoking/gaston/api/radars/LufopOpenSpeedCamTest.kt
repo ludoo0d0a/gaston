@@ -1,5 +1,6 @@
 package fr.geoking.gaston.api.radars
 
+import fr.geoking.gaston.FeatureFlag
 import fr.geoking.gaston.aac.CachedText
 import fr.geoking.gaston.aac.TextFileCache
 import fr.geoking.gaston.poi.PoiCategory
@@ -12,6 +13,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.runBlocking
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,6 +25,12 @@ class LufopOpenSpeedCamTest {
     @BeforeTest
     fun resetRateLimits() {
         RateLimitTracker.reset()
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, true)
+    }
+
+    @AfterTest
+    fun clearFeatureFlagOverrides() {
+        FeatureFlag.clearOverrides()
     }
 
     private class InMemoryTextFileCache : TextFileCache {
@@ -145,6 +153,16 @@ class LufopOpenSpeedCamTest {
         assertEquals("both", poi.rawSourceData?.get("direction"))
         // Keep azimut as road axis for opposite approach polygons.
         assertEquals("45.0", poi.rawSourceData?.get("monitored_bearing"))
+    }
+
+    @Test
+    fun featureFlagRadarOff_skipsNetwork() = runBlocking {
+        FeatureFlag.setOverride(FeatureFlag.Key.RADAR, false)
+        val mockEngine = MockEngine {
+            error("Lufop must not be called while FeatureFlag.RADAR is off")
+        }
+        val client = LufopOpenSpeedCamClient(HttpClient(mockEngine), apiKey = "test-key")
+        assertTrue(client.getRecordsNear(48.8566, 2.3522).isEmpty())
     }
 
     @Test
